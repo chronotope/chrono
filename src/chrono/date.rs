@@ -105,50 +105,143 @@ impl Weekday {
     }
 }
 
-/// ISO 8601 calendar date. Also supports the conversion from ISO 8601 ordinal and week date.
+pub trait Datelike {
+    /// Returns the year number.
+    fn year(&self) -> int;
+
+    /// Returns the absolute year number starting from 1 with a boolean flag,
+    /// which is false when the year predates the epoch (BCE/BC) and true otherwise (CE/AD).
+    #[inline]
+    fn year_ce(&self) -> (bool, uint) {
+        let year = self.year();
+        if year < 1 {
+            (false, (1 - year) as uint)
+        } else {
+            (true, year as uint)
+        }
+    }
+
+    /// Returns the month number starting from 1.
+    fn month(&self) -> uint;
+
+    /// Returns the month number starting from 0.
+    fn month0(&self) -> uint;
+
+    /// Returns the day of month starting from 1.
+    fn day(&self) -> uint;
+
+    /// Returns the day of month starting from 0.
+    fn day0(&self) -> uint;
+
+    /// Returns the day of year starting from 1.
+    fn ordinal(&self) -> uint;
+
+    /// Returns the day of year starting from 0.
+    fn ordinal0(&self) -> uint;
+
+    /// Returns the day of week.
+    fn weekday(&self) -> Weekday;
+
+    /// Returns the ISO week date: an adjusted year, week number and day of week.
+    /// The adjusted year may differ from that of the calendar date.
+    fn isoweekdate(&self) -> (int, uint, Weekday);
+
+    /// Makes a new value with the year number changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_year(&self, year: int) -> Option<Self>;
+
+    /// Makes a new value with the month number (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_month(&self, month: uint) -> Option<Self>;
+
+    /// Makes a new value with the month number (starting from 0) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_month0(&self, month0: uint) -> Option<Self>;
+
+    /// Makes a new value with the day of month (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_day(&self, day: uint) -> Option<Self>;
+
+    /// Makes a new value with the day of month (starting from 0) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_day0(&self, day0: uint) -> Option<Self>;
+
+    /// Makes a new value with the day of year (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_ordinal(&self, ordinal: uint) -> Option<Self>;
+
+    /// Makes a new value with the day of year (starting from 0) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_ordinal0(&self, ordinal0: uint) -> Option<Self>;
+
+    /// Returns the number of days since January 1, 1 (Day 1) in the proleptic Gregorian calendar.
+    fn ndays_from_ce(&self) -> int {
+        // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
+        let mut year = self.year() - 1;
+        let mut ndays = 0;
+        if year < 0 {
+            let excess = 1 + (-year) / 400;
+            year += excess * 400;
+            ndays -= excess * 146097;
+        }
+        let div_100 = year / 100;
+        ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
+        ndays + self.ordinal() as int
+    }
+}
+
+/// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
+/// Also supports the conversion from ISO 8601 ordinal and week date.
 #[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
-pub struct Date {
+pub struct DateZ {
     priv ymdf: DateImpl, // (year << 13) | mdf
 }
 
-impl Date {
+impl DateZ {
     /// The internal constructor with the verification.
-    fn new(year: int, mdf: Mdf) -> Option<Date> {
+    fn new(year: int, mdf: Mdf) -> Option<DateZ> {
         if year >= MIN_YEAR as int && year <= MAX_YEAR as int && mdf.valid() {
             let Mdf(mdf) = mdf;
-            Some(Date { ymdf: ((year << 13) as DateImpl) | (mdf as DateImpl) })
+            Some(DateZ { ymdf: ((year << 13) as DateImpl) | (mdf as DateImpl) })
         } else {
             None
         }
     }
 
-    /// Makes a new `Date` from year, month and day.
+    /// Makes a new `DateZ` from year, month and day.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
-    pub fn from_ymd(year: int, month: uint, day: uint) -> Option<Date> {
+    pub fn from_ymd(year: int, month: uint, day: uint) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
         let mdf = Mdf::new(month, day, flags);
-        Date::new(year, mdf)
+        DateZ::new(year, mdf)
     }
 
-    /// Makes a new `Date` from year and day of year (DOY or "ordinal").
+    /// Makes a new `DateZ` from year and day of year (DOY or "ordinal").
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
-    pub fn from_yo(year: int, ordinal: uint) -> Option<Date> {
+    pub fn from_yo(year: int, ordinal: uint) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
         let mdf = Of::new(ordinal, flags).to_mdf();
-        Date::new(year, mdf)
+        DateZ::new(year, mdf)
     }
 
-    /// Makes a new `Date` from ISO week date (year and week number) and day of the week (DOW).
+    /// Makes a new `DateZ` from ISO week date (year and week number) and day of the week (DOW).
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    /// The resulting `Date` may have a different year from the input year.
+    /// The resulting `DateZ` may have a different year from the input year.
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
-    pub fn from_isoywd(year: int, week: uint, weekday: Weekday) -> Option<Date> {
+    pub fn from_isoywd(year: int, week: uint, weekday: Weekday) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
         let nweeks = flags.nisoweeks();
         if 1 <= week && week <= nweeks {
@@ -158,17 +251,17 @@ impl Date {
             if weekord <= delta { // ordinal < 1, previous year
                 let prevflags = YearFlags::from_year(year - 1);
                 let mdf = Of::new(weekord + prevflags.ndays() - delta, prevflags).to_mdf();
-                Date::new(year - 1, mdf)
+                DateZ::new(year - 1, mdf)
             } else {
                 let ordinal = weekord - delta;
                 let ndays = flags.ndays();
                 if ordinal <= ndays { // this year
                     let mdf = Of::new(ordinal, flags).to_mdf();
-                    Date::new(year, mdf)
+                    DateZ::new(year, mdf)
                 } else { // ordinal > ndays, next year
                     let nextflags = YearFlags::from_year(year + 1);
                     let mdf = Of::new(ordinal - ndays, nextflags).to_mdf();
-                    Date::new(year + 1, mdf)
+                    DateZ::new(year + 1, mdf)
                 }
             }
         } else {
@@ -188,69 +281,31 @@ impl Date {
         self.mdf().to_of()
     }
 
-    /// Returns the year number.
+    /// Makes a new `DateZ` with the packed month, day and year flags changed.
+    ///
+    /// Returns `None` when the resulting `DateZ` would be invalid.
     #[inline]
-    pub fn year(&self) -> int {
-        (self.ymdf >> 13) as int
-    }
-
-    /// Returns the absolute year number starting from 1 with a boolean flag,
-    /// which is false when the year predates the epoch (BCE/BC) and true otherwise (CE/AD).
-    #[inline]
-    pub fn year_ce(&self) -> (bool, uint) {
-        let year = self.year();
-        if year < 1 {
-            (false, (1 - year) as uint)
+    fn with_mdf(&self, mdf: Mdf) -> Option<DateZ> {
+        if mdf.valid() {
+            let Mdf(mdf) = mdf;
+            Some(DateZ { ymdf: (self.ymdf & !0b1111_11111_1111) | mdf as DateImpl })
         } else {
-            (true, year as uint)
+            None
         }
     }
+}
 
-    /// Returns the month number starting from 1.
-    #[inline]
-    pub fn month(&self) -> uint {
-        self.mdf().month()
-    }
+impl Datelike for DateZ {
+    #[inline] fn year(&self) -> int { (self.ymdf >> 13) as int }
+    #[inline] fn month(&self) -> uint { self.mdf().month() }
+    #[inline] fn month0(&self) -> uint { self.mdf().month() - 1 }
+    #[inline] fn day(&self) -> uint { self.mdf().day() }
+    #[inline] fn day0(&self) -> uint { self.mdf().day() - 1 }
+    #[inline] fn ordinal(&self) -> uint { self.of().ordinal() }
+    #[inline] fn ordinal0(&self) -> uint { self.of().ordinal() - 1 }
+    #[inline] fn weekday(&self) -> Weekday { self.of().weekday() }
 
-    /// Returns the month number starting from 0.
-    #[inline]
-    pub fn month0(&self) -> uint {
-        self.mdf().month() - 1
-    }
-
-    /// Returns the day of month starting from 1.
-    #[inline]
-    pub fn day(&self) -> uint {
-        self.mdf().day()
-    }
-
-    /// Returns the day of month starting from 0.
-    #[inline]
-    pub fn day0(&self) -> uint {
-        self.mdf().day() - 1
-    }
-
-    /// Returns the day of year starting from 1.
-    #[inline]
-    pub fn ordinal(&self) -> uint {
-        self.of().ordinal()
-    }
-
-    /// Returns the day of year starting from 0.
-    #[inline]
-    pub fn ordinal0(&self) -> uint {
-        self.of().ordinal() - 1
-    }
-
-    /// Returns the day of week.
-    #[inline]
-    pub fn weekday(&self) -> Weekday {
-        self.of().weekday()
-    }
-
-    /// Returns the ISO week date: an adjusted year, week number and day of week.
-    /// The adjusted year may differ from that of the calendar date.
-    pub fn isoweekdate(&self) -> (int, uint, Weekday) {
+    fn isoweekdate(&self) -> (int, uint, Weekday) {
         let of = self.of();
         let year = self.year();
         let (rawweek, weekday) = of.isoweekdate_raw();
@@ -267,95 +322,46 @@ impl Date {
         }
     }
 
-    /// Makes a new `Date` with the year number changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    pub fn with_year(&self, year: int) -> Option<Date> {
+    fn with_year(&self, year: int) -> Option<DateZ> {
         // adjust the flags as needed
         let flags = YearFlags::from_year(year);
         let mdf = self.mdf().with_flags(flags);
-        Date::new(year, mdf)
+        DateZ::new(year, mdf)
     }
 
-    /// Makes a new `Date` with the packed month, day and year flags changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    fn with_mdf(&self, mdf: Mdf) -> Option<Date> {
-        if mdf.valid() {
-            let Mdf(mdf) = mdf;
-            Some(Date { ymdf: (self.ymdf & !0b1111_11111_1111) | mdf as DateImpl })
-        } else {
-            None
-        }
-    }
-
-    /// Makes a new `Date` with the month number (starting from 1) changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
-    #[inline]
-    pub fn with_month(&self, month: uint) -> Option<Date> {
+    fn with_month(&self, month: uint) -> Option<DateZ> {
         self.with_mdf(self.mdf().with_month(month))
     }
 
-    /// Makes a new `Date` with the month number (starting from 0) changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    pub fn with_month0(&self, month0: uint) -> Option<Date> {
+    fn with_month0(&self, month0: uint) -> Option<DateZ> {
         self.with_mdf(self.mdf().with_month(month0 + 1))
     }
 
-    /// Makes a new `Date` with the day of month (starting from 1) changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    pub fn with_day(&self, day: uint) -> Option<Date> {
+    fn with_day(&self, day: uint) -> Option<DateZ> {
         self.with_mdf(self.mdf().with_day(day))
     }
 
-    /// Makes a new `Date` with the day of month (starting from 0) changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    pub fn with_day0(&self, day0: uint) -> Option<Date> {
+    fn with_day0(&self, day0: uint) -> Option<DateZ> {
         self.with_mdf(self.mdf().with_day(day0 + 1))
     }
 
-    /// Makes a new `Date` with the day of year (starting from 1) changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    pub fn with_ordinal(&self, ordinal: uint) -> Option<Date> {
+    fn with_ordinal(&self, ordinal: uint) -> Option<DateZ> {
         self.with_mdf(self.mdf().to_of().with_ordinal(ordinal).to_mdf())
     }
 
-    /// Makes a new `Date` with the day of year (starting from 0) changed.
-    ///
-    /// Returns `None` when the resulting `Date` would be invalid.
     #[inline]
-    pub fn with_ordinal0(&self, ordinal0: uint) -> Option<Date> {
+    fn with_ordinal0(&self, ordinal0: uint) -> Option<DateZ> {
         self.with_mdf(self.mdf().to_of().with_ordinal(ordinal0 + 1).to_mdf())
-    }
-
-    /// Returns the number of days since January 1, 1 (Day 1) in the proleptic Gregorian calendar.
-    pub fn ndays_from_ce(&self) -> int {
-        // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
-        let mut year = self.year() - 1;
-        let mut ndays = 0;
-        if year < 0 {
-            let excess = 1 + (-year) / 400;
-            year += excess * 400;
-            ndays -= excess * 146097;
-        }
-        let div_100 = year / 100;
-        ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
-        ndays + self.of().ordinal() as int
     }
 }
 
-impl fmt::Show for Date {
+impl fmt::Show for DateZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f.buf, "{:04}-{:02}-{:02}", self.year(), self.month(), self.day())
     }
@@ -369,69 +375,69 @@ mod tests {
 
     #[test]
     fn test_date_from_ymd() {
-        assert!(Date::from_ymd(2012, 0, 1).is_none());
-        assert!(Date::from_ymd(2012, 1, 1).is_some());
-        assert!(Date::from_ymd(2012, 2, 29).is_some());
-        assert!(Date::from_ymd(2014, 2, 29).is_none());
-        assert!(Date::from_ymd(2014, 3, 0).is_none());
-        assert!(Date::from_ymd(2014, 3, 1).is_some());
-        assert!(Date::from_ymd(2014, 3, 31).is_some());
-        assert!(Date::from_ymd(2014, 3, 32).is_none());
-        assert!(Date::from_ymd(2014, 12, 31).is_some());
-        assert!(Date::from_ymd(2014, 13, 1).is_none());
+        assert!(DateZ::from_ymd(2012, 0, 1).is_none());
+        assert!(DateZ::from_ymd(2012, 1, 1).is_some());
+        assert!(DateZ::from_ymd(2012, 2, 29).is_some());
+        assert!(DateZ::from_ymd(2014, 2, 29).is_none());
+        assert!(DateZ::from_ymd(2014, 3, 0).is_none());
+        assert!(DateZ::from_ymd(2014, 3, 1).is_some());
+        assert!(DateZ::from_ymd(2014, 3, 31).is_some());
+        assert!(DateZ::from_ymd(2014, 3, 32).is_none());
+        assert!(DateZ::from_ymd(2014, 12, 31).is_some());
+        assert!(DateZ::from_ymd(2014, 13, 1).is_none());
     }
 
     #[test]
     fn test_date_from_yo() {
-        assert!(Date::from_yo(2012, 0).is_none());
-        assert_eq!(Date::from_yo(2012, 1), Date::from_ymd(2012, 1, 1));
-        assert_eq!(Date::from_yo(2012, 2), Date::from_ymd(2012, 1, 2));
-        assert_eq!(Date::from_yo(2012, 32), Date::from_ymd(2012, 2, 1));
-        assert_eq!(Date::from_yo(2012, 60), Date::from_ymd(2012, 2, 29));
-        assert_eq!(Date::from_yo(2012, 61), Date::from_ymd(2012, 3, 1));
-        assert_eq!(Date::from_yo(2012, 100), Date::from_ymd(2012, 4, 9));
-        assert_eq!(Date::from_yo(2012, 200), Date::from_ymd(2012, 7, 18));
-        assert_eq!(Date::from_yo(2012, 300), Date::from_ymd(2012, 10, 26));
-        assert_eq!(Date::from_yo(2012, 366), Date::from_ymd(2012, 12, 31));
-        assert!(Date::from_yo(2012, 367).is_none());
+        assert!(DateZ::from_yo(2012, 0).is_none());
+        assert_eq!(DateZ::from_yo(2012, 1), DateZ::from_ymd(2012, 1, 1));
+        assert_eq!(DateZ::from_yo(2012, 2), DateZ::from_ymd(2012, 1, 2));
+        assert_eq!(DateZ::from_yo(2012, 32), DateZ::from_ymd(2012, 2, 1));
+        assert_eq!(DateZ::from_yo(2012, 60), DateZ::from_ymd(2012, 2, 29));
+        assert_eq!(DateZ::from_yo(2012, 61), DateZ::from_ymd(2012, 3, 1));
+        assert_eq!(DateZ::from_yo(2012, 100), DateZ::from_ymd(2012, 4, 9));
+        assert_eq!(DateZ::from_yo(2012, 200), DateZ::from_ymd(2012, 7, 18));
+        assert_eq!(DateZ::from_yo(2012, 300), DateZ::from_ymd(2012, 10, 26));
+        assert_eq!(DateZ::from_yo(2012, 366), DateZ::from_ymd(2012, 12, 31));
+        assert!(DateZ::from_yo(2012, 367).is_none());
 
-        assert!(Date::from_yo(2014, 0).is_none());
-        assert_eq!(Date::from_yo(2014, 1), Date::from_ymd(2014, 1, 1));
-        assert_eq!(Date::from_yo(2014, 2), Date::from_ymd(2014, 1, 2));
-        assert_eq!(Date::from_yo(2014, 32), Date::from_ymd(2014, 2, 1));
-        assert_eq!(Date::from_yo(2014, 59), Date::from_ymd(2014, 2, 28));
-        assert_eq!(Date::from_yo(2014, 60), Date::from_ymd(2014, 3, 1));
-        assert_eq!(Date::from_yo(2014, 100), Date::from_ymd(2014, 4, 10));
-        assert_eq!(Date::from_yo(2014, 200), Date::from_ymd(2014, 7, 19));
-        assert_eq!(Date::from_yo(2014, 300), Date::from_ymd(2014, 10, 27));
-        assert_eq!(Date::from_yo(2014, 365), Date::from_ymd(2014, 12, 31));
-        assert!(Date::from_yo(2014, 366).is_none());
+        assert!(DateZ::from_yo(2014, 0).is_none());
+        assert_eq!(DateZ::from_yo(2014, 1), DateZ::from_ymd(2014, 1, 1));
+        assert_eq!(DateZ::from_yo(2014, 2), DateZ::from_ymd(2014, 1, 2));
+        assert_eq!(DateZ::from_yo(2014, 32), DateZ::from_ymd(2014, 2, 1));
+        assert_eq!(DateZ::from_yo(2014, 59), DateZ::from_ymd(2014, 2, 28));
+        assert_eq!(DateZ::from_yo(2014, 60), DateZ::from_ymd(2014, 3, 1));
+        assert_eq!(DateZ::from_yo(2014, 100), DateZ::from_ymd(2014, 4, 10));
+        assert_eq!(DateZ::from_yo(2014, 200), DateZ::from_ymd(2014, 7, 19));
+        assert_eq!(DateZ::from_yo(2014, 300), DateZ::from_ymd(2014, 10, 27));
+        assert_eq!(DateZ::from_yo(2014, 365), DateZ::from_ymd(2014, 12, 31));
+        assert!(DateZ::from_yo(2014, 366).is_none());
     }
 
     #[test]
     fn test_date_from_isoywd() {
-        assert!(Date::from_isoywd(2004, 0, Sun).is_none());
-        assert_eq!(Date::from_isoywd(2004, 1, Mon), Date::from_ymd(2003, 12, 29));
-        assert_eq!(Date::from_isoywd(2004, 1, Sun), Date::from_ymd(2004, 1, 4));
-        assert_eq!(Date::from_isoywd(2004, 2, Mon), Date::from_ymd(2004, 1, 5));
-        assert_eq!(Date::from_isoywd(2004, 2, Sun), Date::from_ymd(2004, 1, 11));
-        assert_eq!(Date::from_isoywd(2004, 52, Mon), Date::from_ymd(2004, 12, 20));
-        assert_eq!(Date::from_isoywd(2004, 52, Sun), Date::from_ymd(2004, 12, 26));
-        assert_eq!(Date::from_isoywd(2004, 53, Mon), Date::from_ymd(2004, 12, 27));
-        assert_eq!(Date::from_isoywd(2004, 53, Sun), Date::from_ymd(2005, 1, 2));
-        assert!(Date::from_isoywd(2004, 54, Mon).is_none());
+        assert!(DateZ::from_isoywd(2004, 0, Sun).is_none());
+        assert_eq!(DateZ::from_isoywd(2004, 1, Mon), DateZ::from_ymd(2003, 12, 29));
+        assert_eq!(DateZ::from_isoywd(2004, 1, Sun), DateZ::from_ymd(2004, 1, 4));
+        assert_eq!(DateZ::from_isoywd(2004, 2, Mon), DateZ::from_ymd(2004, 1, 5));
+        assert_eq!(DateZ::from_isoywd(2004, 2, Sun), DateZ::from_ymd(2004, 1, 11));
+        assert_eq!(DateZ::from_isoywd(2004, 52, Mon), DateZ::from_ymd(2004, 12, 20));
+        assert_eq!(DateZ::from_isoywd(2004, 52, Sun), DateZ::from_ymd(2004, 12, 26));
+        assert_eq!(DateZ::from_isoywd(2004, 53, Mon), DateZ::from_ymd(2004, 12, 27));
+        assert_eq!(DateZ::from_isoywd(2004, 53, Sun), DateZ::from_ymd(2005, 1, 2));
+        assert!(DateZ::from_isoywd(2004, 54, Mon).is_none());
 
-        assert!(Date::from_isoywd(2011, 0, Sun).is_none());
-        assert_eq!(Date::from_isoywd(2011, 1, Mon), Date::from_ymd(2011, 1, 3));
-        assert_eq!(Date::from_isoywd(2011, 1, Sun), Date::from_ymd(2011, 1, 9));
-        assert_eq!(Date::from_isoywd(2011, 2, Mon), Date::from_ymd(2011, 1, 10));
-        assert_eq!(Date::from_isoywd(2011, 2, Sun), Date::from_ymd(2011, 1, 16));
+        assert!(DateZ::from_isoywd(2011, 0, Sun).is_none());
+        assert_eq!(DateZ::from_isoywd(2011, 1, Mon), DateZ::from_ymd(2011, 1, 3));
+        assert_eq!(DateZ::from_isoywd(2011, 1, Sun), DateZ::from_ymd(2011, 1, 9));
+        assert_eq!(DateZ::from_isoywd(2011, 2, Mon), DateZ::from_ymd(2011, 1, 10));
+        assert_eq!(DateZ::from_isoywd(2011, 2, Sun), DateZ::from_ymd(2011, 1, 16));
 
-        assert_eq!(Date::from_isoywd(2018, 51, Mon), Date::from_ymd(2018, 12, 17));
-        assert_eq!(Date::from_isoywd(2018, 51, Sun), Date::from_ymd(2018, 12, 23));
-        assert_eq!(Date::from_isoywd(2018, 52, Mon), Date::from_ymd(2018, 12, 24));
-        assert_eq!(Date::from_isoywd(2018, 52, Sun), Date::from_ymd(2018, 12, 30));
-        assert!(Date::from_isoywd(2018, 53, Mon).is_none());
+        assert_eq!(DateZ::from_isoywd(2018, 51, Mon), DateZ::from_ymd(2018, 12, 17));
+        assert_eq!(DateZ::from_isoywd(2018, 51, Sun), DateZ::from_ymd(2018, 12, 23));
+        assert_eq!(DateZ::from_isoywd(2018, 52, Mon), DateZ::from_ymd(2018, 12, 24));
+        assert_eq!(DateZ::from_isoywd(2018, 52, Sun), DateZ::from_ymd(2018, 12, 30));
+        assert!(DateZ::from_isoywd(2018, 53, Mon).is_none());
     }
 
     #[test]
@@ -439,7 +445,7 @@ mod tests {
         for year in range_inclusive(2000i, 2400) {
             for week in range_inclusive(1u, 53) {
                 for &weekday in [Mon, Tue, Wed, Thu, Fri, Sat, Sun].iter() {
-                    let d = Date::from_isoywd(year, week, weekday);
+                    let d = DateZ::from_isoywd(year, week, weekday);
                     if d.is_some() {
                         let d = d.unwrap();
                         assert_eq!(d.weekday(), weekday);
@@ -455,11 +461,11 @@ mod tests {
         for year in range_inclusive(2000i, 2400) {
             for month in range_inclusive(1u, 12) {
                 for day in range_inclusive(1u, 31) {
-                    let d = Date::from_ymd(year, month, day);
+                    let d = DateZ::from_ymd(year, month, day);
                     if d.is_some() {
                         let d = d.unwrap();
                         let (year_, week_, weekday_) = d.isoweekdate();
-                        let d_ = Date::from_isoywd(year_, week_, weekday_).unwrap();
+                        let d_ = DateZ::from_isoywd(year_, week_, weekday_).unwrap();
                         assert_eq!(d, d_);
                     }
                 }
@@ -470,14 +476,14 @@ mod tests {
     #[test]
     fn test_date_fields() {
         fn check(year: int, month: uint, day: uint, ordinal: uint) {
-            let d1 = Date::from_ymd(year, month, day);
+            let d1 = DateZ::from_ymd(year, month, day);
             assert!(d1.is_some());
             assert_eq!(d1.unwrap().year(), year);
             assert_eq!(d1.unwrap().month(), month);
             assert_eq!(d1.unwrap().day(), day);
             assert_eq!(d1.unwrap().ordinal(), ordinal);
 
-            let d2 = Date::from_yo(year, ordinal);
+            let d2 = DateZ::from_yo(year, ordinal);
             assert!(d2.is_some());
             assert_eq!(d2.unwrap().year(), year);
             assert_eq!(d2.unwrap().month(), month);
@@ -510,57 +516,57 @@ mod tests {
 
     #[test]
     fn test_date_weekday() {
-        assert_eq!(Date::from_ymd(1582, 10, 15).unwrap().weekday(), Fri);
-        assert_eq!(Date::from_ymd(1875, 5, 20).unwrap().weekday(), Thu); // ISO 8601 reference date
-        assert_eq!(Date::from_ymd(2000, 1, 1).unwrap().weekday(), Sat);
+        assert_eq!(DateZ::from_ymd(1582, 10, 15).unwrap().weekday(), Fri);
+        assert_eq!(DateZ::from_ymd(1875, 5, 20).unwrap().weekday(), Thu); // ISO 8601 reference date
+        assert_eq!(DateZ::from_ymd(2000, 1, 1).unwrap().weekday(), Sat);
     }
 
     #[test]
     fn test_date_with_fields() {
-        let d = Date::from_ymd(2000, 2, 29).unwrap();
-        assert_eq!(d.with_year(-400), Date::from_ymd(-400, 2, 29));
+        let d = DateZ::from_ymd(2000, 2, 29).unwrap();
+        assert_eq!(d.with_year(-400), DateZ::from_ymd(-400, 2, 29));
         assert_eq!(d.with_year(-100), None);
-        assert_eq!(d.with_year(1600), Date::from_ymd(1600, 2, 29));
+        assert_eq!(d.with_year(1600), DateZ::from_ymd(1600, 2, 29));
         assert_eq!(d.with_year(1900), None);
-        assert_eq!(d.with_year(2000), Date::from_ymd(2000, 2, 29));
+        assert_eq!(d.with_year(2000), DateZ::from_ymd(2000, 2, 29));
         assert_eq!(d.with_year(2001), None);
-        assert_eq!(d.with_year(2004), Date::from_ymd(2004, 2, 29));
+        assert_eq!(d.with_year(2004), DateZ::from_ymd(2004, 2, 29));
         assert_eq!(d.with_year(int::MAX), None);
 
-        let d = Date::from_ymd(2000, 4, 30).unwrap();
+        let d = DateZ::from_ymd(2000, 4, 30).unwrap();
         assert_eq!(d.with_month(0), None);
-        assert_eq!(d.with_month(1), Date::from_ymd(2000, 1, 30));
+        assert_eq!(d.with_month(1), DateZ::from_ymd(2000, 1, 30));
         assert_eq!(d.with_month(2), None);
-        assert_eq!(d.with_month(3), Date::from_ymd(2000, 3, 30));
-        assert_eq!(d.with_month(4), Date::from_ymd(2000, 4, 30));
-        assert_eq!(d.with_month(12), Date::from_ymd(2000, 12, 30));
+        assert_eq!(d.with_month(3), DateZ::from_ymd(2000, 3, 30));
+        assert_eq!(d.with_month(4), DateZ::from_ymd(2000, 4, 30));
+        assert_eq!(d.with_month(12), DateZ::from_ymd(2000, 12, 30));
         assert_eq!(d.with_month(13), None);
         assert_eq!(d.with_month(uint::MAX), None);
 
-        let d = Date::from_ymd(2000, 2, 8).unwrap();
+        let d = DateZ::from_ymd(2000, 2, 8).unwrap();
         assert_eq!(d.with_day(0), None);
-        assert_eq!(d.with_day(1), Date::from_ymd(2000, 2, 1));
-        assert_eq!(d.with_day(29), Date::from_ymd(2000, 2, 29));
+        assert_eq!(d.with_day(1), DateZ::from_ymd(2000, 2, 1));
+        assert_eq!(d.with_day(29), DateZ::from_ymd(2000, 2, 29));
         assert_eq!(d.with_day(30), None);
         assert_eq!(d.with_day(uint::MAX), None);
 
-        let d = Date::from_ymd(2000, 5, 5).unwrap();
+        let d = DateZ::from_ymd(2000, 5, 5).unwrap();
         assert_eq!(d.with_ordinal(0), None);
-        assert_eq!(d.with_ordinal(1), Date::from_ymd(2000, 1, 1));
-        assert_eq!(d.with_ordinal(60), Date::from_ymd(2000, 2, 29));
-        assert_eq!(d.with_ordinal(61), Date::from_ymd(2000, 3, 1));
-        assert_eq!(d.with_ordinal(366), Date::from_ymd(2000, 12, 31));
+        assert_eq!(d.with_ordinal(1), DateZ::from_ymd(2000, 1, 1));
+        assert_eq!(d.with_ordinal(60), DateZ::from_ymd(2000, 2, 29));
+        assert_eq!(d.with_ordinal(61), DateZ::from_ymd(2000, 3, 1));
+        assert_eq!(d.with_ordinal(366), DateZ::from_ymd(2000, 12, 31));
         assert_eq!(d.with_ordinal(367), None);
         assert_eq!(d.with_ordinal(uint::MAX), None);
     }
 
     #[test]
     fn test_date_ndays_from_ce() {
-        assert_eq!(Date::from_ymd(1, 1, 1).unwrap().ndays_from_ce(), 1);
+        assert_eq!(DateZ::from_ymd(1, 1, 1).unwrap().ndays_from_ce(), 1);
 
         for year in range_inclusive(-9999i, 10000) {
-            assert_eq!(Date::from_ymd(year, 1, 1).unwrap().ndays_from_ce(),
-                       Date::from_ymd(year - 1, 12, 31).unwrap().ndays_from_ce() + 1);
+            assert_eq!(DateZ::from_ymd(year, 1, 1).unwrap().ndays_from_ce(),
+                       DateZ::from_ymd(year - 1, 12, 31).unwrap().ndays_from_ce() + 1);
         }
     }
 }
@@ -570,13 +576,13 @@ mod tests {
  *
  * The current implementation is optimized for determining year, month, day and day of week. 
  * 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
- * which are included in every packed `Date` instance.
+ * which are included in every packed `DateZ` instance.
  * The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
  * based on the moderately-sized lookup table (~1.5KB)
  * and the packed representation is chosen for the efficient lookup.
  * Every internal data structure does not validate its input,
  * but the conversion keeps the valid value valid and the invalid value invalid
- * so that the user-facing `Date` can validate the input as late as possible.
+ * so that the user-facing `DateZ` can validate the input as late as possible.
  */
 mod internals {
     use std::{i32, num, fmt};
