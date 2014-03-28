@@ -1,0 +1,33 @@
+VPATH=%VPATH%
+
+CC ?= gcc
+CXX ?= g++
+CXXFLAGS ?=
+AR ?= ar
+RUSTC ?= rustc
+RUSTDOC ?= rustdoc
+RUSTFLAGS ?= -O
+
+LIB_RS = src/chrono/lib.rs
+RUST_SRC = $(shell find $(VPATH)/src/chrono -type f -name '*.rs')
+
+.PHONY: all
+all: libchrono.dummy
+
+libchrono.dummy: $(LIB_RS) $(RUST_SRC)
+	$(RUSTC) $(RUSTFLAGS) $< --out-dir .
+	touch $@
+
+chrono-test: $(LIB_RS) $(RUST_SRC)
+	$(RUSTC) $(RUSTFLAGS) $< -o $@ --test
+
+check: chrono-test
+	./chrono-test
+
+doc: $(LIB_RS) $(RUST_SRC)
+	$(RUSTDOC) $(LIB_RS)
+
+.PHONY: clean
+clean:
+	rm -f *.o *.a *.so *.dylib *.rlib *.dll *.dummy *.exe *-test
+
