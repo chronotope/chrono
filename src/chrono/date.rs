@@ -3,6 +3,7 @@
  */
 
 use std::fmt;
+use duration::Duration;
 
 use self::internals::{Of, Mdf, YearFlags};
 use self::internals::{DateImpl, MIN_YEAR, MAX_YEAR};
@@ -361,6 +362,49 @@ impl Datelike for DateZ {
     }
 }
 
+impl Add<Duration,DateZ> for DateZ {
+    fn add(&self, rhs: &Duration) -> DateZ {
+        // TODO overflow
+
+        let year = self.year();
+        let mut year_div_400 = year / 400;
+        let year_mod_400 = (year % 400) as uint;
+        let mut cycle = internals::yo_to_cycle(year_mod_400, self.of().ordinal()) as int;
+        cycle += rhs.ndays();
+        year_div_400 += cycle / 146097;
+        cycle %= 146097;
+        if cycle < 0 {
+            cycle += 146097;
+            year_div_400 -= 400;
+        }
+
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as uint);
+        let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as int) };
+        let mdf = Of::new(ordinal, flags).to_mdf();
+        DateZ::new(year_div_400 * 400 + year_mod_400 as int, mdf).unwrap()
+    }
+}
+
+/*
+// Rust issue #7590, the current coherence checker can't handle multiple Add impls
+impl Add<DateZ,DateZ> for Duration {
+    #[inline]
+    fn add(&self, rhs: &DateZ) -> DateZ { rhs.add(self) }
+}
+*/
+
+impl Sub<DateZ,Duration> for DateZ {
+    fn sub(&self, rhs: &DateZ) -> Duration {
+        let year1 = self.year();
+        let year2 = rhs.year();
+        let (year1_div_400, year1_mod_400) = (year1 / 400, year1 % 400);
+        let (year2_div_400, year2_mod_400) = (year2 / 400, year2 % 400);
+        let cycle1 = internals::yo_to_cycle(year1_mod_400 as uint, self.of().ordinal()) as int;
+        let cycle2 = internals::yo_to_cycle(year2_mod_400 as uint, rhs.of().ordinal()) as int;
+        Duration::days((year1_div_400 - year2_div_400) * 146097 + (cycle1 - cycle2))
+    }
+}
+
 impl fmt::Show for DateZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
@@ -376,6 +420,7 @@ impl fmt::Show for DateZ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use duration::Duration;
     use std::{int, uint};
     use std::iter::range_inclusive;
 
@@ -577,6 +622,41 @@ mod tests {
     }
 
     #[test]
+    fn test_date_add() {
+        fn check((y1,m1,d1): (int, uint, uint), rhs: Duration, (y,m,d): (int, uint, uint)) {
+            let lhs = DateZ::from_ymd(y1, m1, d1).unwrap();
+            let sum = DateZ::from_ymd(y, m, d).unwrap();
+            assert_eq!(lhs + rhs, sum);
+            //assert_eq!(rhs + lhs, sum);
+        }
+
+        check((2014, 1, 1), Duration::zero(), (2014, 1, 1));
+        check((2014, 1, 1), Duration::seconds(86399), (2014, 1, 1));
+        check((2014, 1, 1), Duration::days(1), (2014, 1, 2));
+        check((2014, 1, 1), Duration::days(-1), (2013, 12, 31));
+        check((2014, 1, 1), Duration::days(364), (2014, 12, 31));
+        check((2014, 1, 1), Duration::days(365*4 + 1), (2018, 1, 1));
+        check((2014, 1, 1), Duration::days(365*400 + 97), (2414, 1, 1));
+    }
+
+    #[test]
+    fn test_date_sub() {
+        fn check((y1,m1,d1): (int, uint, uint), (y2,m2,d2): (int, uint, uint), diff: Duration) {
+            let lhs = DateZ::from_ymd(y1, m1, d1).unwrap();
+            let rhs = DateZ::from_ymd(y2, m2, d2).unwrap();
+            assert_eq!(lhs - rhs, diff);
+            assert_eq!(rhs - lhs, -diff);
+        }
+
+        check((2014, 1, 1), (2014, 1, 1), Duration::zero());
+        check((2014, 1, 2), (2014, 1, 1), Duration::days(1));
+        check((2014, 12, 31), (2014, 1, 1), Duration::days(364));
+        check((2015, 1, 3), (2014, 1, 1), Duration::days(365 + 2));
+        check((2018, 1, 1), (2014, 1, 1), Duration::days(365*4 + 1));
+        check((2414, 1, 1), (2014, 1, 1), Duration::days(365*400 + 97));
+    }
+
+    #[test]
     fn test_date_fmt() {
         assert_eq!(DateZ::from_ymd(2012,  3, 4).unwrap().to_str(),  ~"2012-03-04");
         assert_eq!(DateZ::from_ymd(0,     3, 4).unwrap().to_str(),  ~"0000-03-04");
@@ -650,11 +730,56 @@ mod internals {
         FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
     ];
 
+    static YEAR_DELTAS: [u8, ..401] = [
+         0,  1,  1,  1,  1,  2,  2,  2,  2,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,
+         5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  8,  9,  9,  9,  9, 10, 10, 10,
+        10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15,
+        15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20,
+        20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25, 25, // 100
+        25, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29,
+        29, 30, 30, 30, 30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34,
+        34, 35, 35, 35, 35, 36, 36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39,
+        39, 40, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44,
+        44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47, 47, 48, 48, 48, 48, 49, 49, 49, // 200
+        49, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53,
+        53, 54, 54, 54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58,
+        58, 59, 59, 59, 59, 60, 60, 60, 60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63,
+        63, 64, 64, 64, 64, 65, 65, 65, 65, 66, 66, 66, 66, 67, 67, 67, 67, 68, 68, 68,
+        68, 69, 69, 69, 69, 70, 70, 70, 70, 71, 71, 71, 71, 72, 72, 72, 72, 73, 73, 73, // 300
+        73, 73, 73, 73, 73, 74, 74, 74, 74, 75, 75, 75, 75, 76, 76, 76, 76, 77, 77, 77,
+        77, 78, 78, 78, 78, 79, 79, 79, 79, 80, 80, 80, 80, 81, 81, 81, 81, 82, 82, 82,
+        82, 83, 83, 83, 83, 84, 84, 84, 84, 85, 85, 85, 85, 86, 86, 86, 86, 87, 87, 87,
+        87, 88, 88, 88, 88, 89, 89, 89, 89, 90, 90, 90, 90, 91, 91, 91, 91, 92, 92, 92,
+        92, 93, 93, 93, 93, 94, 94, 94, 94, 95, 95, 95, 95, 96, 96, 96, 96, 97, 97, 97, 97 // 400+1
+    ];
+
+    pub fn cycle_to_yo(cycle: uint) -> (uint, uint) {
+        let mut year_mod_400 = cycle / 365;
+        let mut ordinal0 = cycle % 365;
+        let delta = YEAR_DELTAS[year_mod_400] as uint;
+        if ordinal0 < delta {
+            year_mod_400 -= 1;
+            ordinal0 += 365 - YEAR_DELTAS[year_mod_400] as uint;
+        } else {
+            ordinal0 -= delta;
+        }
+        (year_mod_400, ordinal0 + 1)
+    }
+
+    pub fn yo_to_cycle(year_mod_400: uint, ordinal: uint) -> uint {
+        year_mod_400 * 365 + YEAR_DELTAS[year_mod_400] as uint + ordinal - 1
+    }
+
     impl YearFlags {
         #[inline]
         pub fn from_year(year: int) -> YearFlags {
             let mut year = year % 400;
             if year < 0 { year += 400; }
+            unsafe { YearFlags::from_year_mod_400(year) }
+        }
+
+        #[inline]
+        pub unsafe fn from_year_mod_400(year: int) -> YearFlags {
             YEAR_TO_FLAGS[year]
         }
 
