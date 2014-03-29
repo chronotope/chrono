@@ -363,7 +363,13 @@ impl Datelike for DateZ {
 
 impl fmt::Show for DateZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f.buf, "{:04}-{:02}-{:02}", self.year(), self.month(), self.day())
+        let year = self.year();
+        if 0 <= year && year <= 9999 {
+            write!(f.buf, "{:04}-{:02}-{:02}", year, self.month(), self.day())
+        } else {
+            // ISO 8601 requires the explicit sign for out-of-range years
+            write!(f.buf, "{:+05}-{:02}-{:02}", year, self.month(), self.day())
+        }
     }
 }
 
@@ -568,6 +574,14 @@ mod tests {
             assert_eq!(DateZ::from_ymd(year, 1, 1).unwrap().ndays_from_ce(),
                        DateZ::from_ymd(year - 1, 12, 31).unwrap().ndays_from_ce() + 1);
         }
+    }
+
+    #[test]
+    fn test_date_fmt() {
+        assert_eq!(DateZ::from_ymd(2012,  3, 4).unwrap().to_str(),  ~"2012-03-04");
+        assert_eq!(DateZ::from_ymd(0,     3, 4).unwrap().to_str(),  ~"0000-03-04");
+        assert_eq!(DateZ::from_ymd(-307,  3, 4).unwrap().to_str(), ~"-0307-03-04");
+        assert_eq!(DateZ::from_ymd(12345, 3, 4).unwrap().to_str(), ~"+12345-03-04");
     }
 }
 

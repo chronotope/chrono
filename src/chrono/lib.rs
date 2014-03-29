@@ -3,6 +3,7 @@
 
 #[feature(globs, macro_rules)];
 
+pub mod duration;
 pub mod date;
 pub mod time;
 pub mod datetime;
