@@ -5,8 +5,10 @@
 use std::fmt;
 use duration::Duration;
 
-use self::internals::{Of, Mdf, YearFlags};
-use self::internals::{DateImpl, MIN_YEAR, MAX_YEAR};
+use self::internals::{DateImpl, Of, Mdf, YearFlags};
+
+pub static MAX_YEAR: int = internals::MAX_YEAR as int;
+pub static MIN_YEAR: int = internals::MIN_YEAR as int;
 
 /// The day of week (DOW).
 #[deriving(Eq, TotalEq, FromPrimitive, Show)]
@@ -209,7 +211,7 @@ pub struct DateZ {
 impl DateZ {
     /// The internal constructor with the verification.
     fn new(year: int, mdf: Mdf) -> Option<DateZ> {
-        if year >= MIN_YEAR as int && year <= MAX_YEAR as int && mdf.valid() {
+        if year >= MIN_YEAR && year <= MAX_YEAR && mdf.valid() {
             let Mdf(mdf) = mdf;
             Some(DateZ { ymdf: ((year << 13) as DateImpl) | (mdf as DateImpl) })
         } else {
@@ -293,6 +295,18 @@ impl DateZ {
         } else {
             None
         }
+    }
+
+    #[inline]
+    pub fn succ(&self) -> Option<DateZ> {
+        let mdf = self.of().succ().to_mdf();
+        self.with_mdf(mdf).or_else(|| DateZ::from_ymd(self.year() + 1, 1, 1))
+    }
+
+    #[inline]
+    pub fn pred(&self) -> Option<DateZ> {
+        let mdf = self.of().pred().to_mdf();
+        self.with_mdf(mdf).or_else(|| DateZ::from_ymd(self.year() - 1, 12, 31))
     }
 }
 
@@ -619,6 +633,24 @@ mod tests {
             assert_eq!(DateZ::from_ymd(year, 1, 1).unwrap().ndays_from_ce(),
                        DateZ::from_ymd(year - 1, 12, 31).unwrap().ndays_from_ce() + 1);
         }
+    }
+
+    #[test]
+    fn test_date_succ() {
+        assert_eq!(DateZ::from_ymd(2014, 5, 6).unwrap().succ(), DateZ::from_ymd(2014, 5, 7));
+        assert_eq!(DateZ::from_ymd(2014, 5, 31).unwrap().succ(), DateZ::from_ymd(2014, 6, 1));
+        assert_eq!(DateZ::from_ymd(2014, 12, 31).unwrap().succ(), DateZ::from_ymd(2015, 1, 1));
+        assert_eq!(DateZ::from_ymd(2016, 2, 28).unwrap().succ(), DateZ::from_ymd(2016, 2, 29));
+        assert_eq!(DateZ::from_ymd(MAX_YEAR, 12, 31).unwrap().succ(), None);
+    }
+
+    #[test]
+    fn test_date_pred() {
+        assert_eq!(DateZ::from_ymd(2016, 3, 1).unwrap().pred(), DateZ::from_ymd(2016, 2, 29));
+        assert_eq!(DateZ::from_ymd(2015, 1, 1).unwrap().pred(), DateZ::from_ymd(2014, 12, 31));
+        assert_eq!(DateZ::from_ymd(2014, 6, 1).unwrap().pred(), DateZ::from_ymd(2014, 5, 31));
+        assert_eq!(DateZ::from_ymd(2014, 5, 7).unwrap().pred(), DateZ::from_ymd(2014, 5, 6));
+        assert_eq!(DateZ::from_ymd(MIN_YEAR, 1, 1).unwrap().pred(), None);
     }
 
     #[test]
@@ -1011,6 +1043,18 @@ mod internals {
         #[inline]
         pub fn to_mdf(&self) -> Mdf {
             Mdf::from_of(*self)
+        }
+
+        #[inline]
+        pub fn succ(&self) -> Of {
+            let Of(of) = *self;
+            Of(of + (1 << 4))
+        }
+
+        #[inline]
+        pub fn pred(&self) -> Of {
+            let Of(of) = *self;
+            Of(of - (1 << 4))
         }
     }
 

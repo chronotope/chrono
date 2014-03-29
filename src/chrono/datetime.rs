@@ -3,6 +3,7 @@
  */
 
 use std::fmt;
+use duration::Duration;
 use time::{Timelike, TimeZ};
 use date::{Datelike, DateZ, Weekday};
 
@@ -127,6 +128,33 @@ impl Timelike for DateTimeZ {
     }
 }
 
+impl Add<Duration,DateTimeZ> for DateTimeZ {
+    fn add(&self, rhs: &Duration) -> DateTimeZ {
+        let mut date = self.date + *rhs;
+        let time = self.time + *rhs;
+        if time < self.time {
+            // since the time portion of the duration is always positive and bounded,
+            // this condition always means that the time part has been overflowed.
+            date = date.succ().unwrap();
+        }
+        DateTimeZ { date: date, time: time }
+    }
+}
+
+/*
+// Rust issue #7590, the current coherence checker can't handle multiple Add impls
+impl Add<DateTimeZ,DateTimeZ> for Duration {
+    #[inline]
+    fn add(&self, rhs: &DateTimeZ) -> DateTimeZ { rhs.add(self) }
+}
+*/
+
+impl Sub<DateTimeZ,Duration> for DateTimeZ {
+    fn sub(&self, rhs: &DateTimeZ) -> Duration {
+        (self.date - rhs.date) + (self.time - rhs.time)
+    }
+}
+
 impl fmt::Show for DateTimeZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f.buf, "{}T{}", self.date, self.time)
@@ -136,9 +164,37 @@ impl fmt::Show for DateTimeZ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use duration::Duration;
 
     #[test]
-    fn test_time_nseconds_from_unix_epoch() {
+    fn test_datetime_add() {
+        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).unwrap();
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(3600 + 60 + 1),
+                   ymdhms(2014, 5, 6, 8, 9, 10));
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86399),
+                   ymdhms(2014, 5, 7, 7, 8, 8));
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86400 * 10),
+                   ymdhms(2014, 5, 16, 7, 8, 9));
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(-86400 * 10),
+                   ymdhms(2014, 4, 26, 7, 8, 9));
+    }
+
+    #[test]
+    fn test_datetime_sub() {
+        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).unwrap();
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Duration::zero());
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 10) - ymdhms(2014, 5, 6, 7, 8, 9),
+                   Duration::seconds(1));
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 10),
+                   Duration::seconds(-1));
+        assert_eq!(ymdhms(2014, 5, 7, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 10),
+                   Duration::seconds(86399));
+        assert_eq!(ymdhms(2001, 9, 9, 1, 46, 39) - ymdhms(1970, 1, 1, 0, 0, 0),
+                   Duration::seconds(999_999_999));
+    }
+
+    #[test]
+    fn test_datetime_nseconds_from_unix_epoch() {
         let to_timestamp =
             |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).unwrap().nseconds_from_unix_epoch();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
