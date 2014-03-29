@@ -3,6 +3,7 @@
  */
 
 use std::fmt;
+use duration::Duration;
 
 pub trait Timelike {
     /// Returns the hour number from 0 to 23.
@@ -133,6 +134,52 @@ impl Timelike for TimeZ {
     }
 }
 
+impl Add<Duration,TimeZ> for TimeZ {
+    fn add(&self, rhs: &Duration) -> TimeZ {
+        let mut secs = self.nseconds_from_midnight() as int + rhs.nseconds() as int;
+        let mut nanos = self.frac + rhs.nnanoseconds() as u32;
+
+        // always ignore leap seconds after the current whole second
+        let maxnanos = if self.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
+
+        if nanos >= maxnanos {
+            nanos -= maxnanos;
+            secs += 1;
+        }
+        let (s, mins) = (secs % 60, secs / 60);
+        let (m, hours) = (mins % 60, mins / 60);
+        let h = hours % 24;
+        TimeZ { hour: h as u8, min: m as u8, sec: s as u8, frac: nanos }
+    }
+}
+
+/*
+// Rust issue #7590, the current coherence checker can't handle multiple Add impls
+impl Add<TimeZ,TimeZ> for Duration {
+    #[inline]
+    fn add(&self, rhs: &TimeZ) -> TimeZ { rhs.add(self) }
+}
+*/
+
+impl Sub<TimeZ,Duration> for TimeZ {
+    fn sub(&self, rhs: &TimeZ) -> Duration {
+        // the number of whole non-leap seconds
+        let secs = (self.hour as int - rhs.hour as int) * 3600 +
+                   (self.min  as int - rhs.min  as int) * 60 +
+                   (self.sec  as int - rhs.sec  as int) - 1;
+
+        // the fractional second from the rhs to the next non-leap second
+        let maxnanos = if rhs.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
+        let nanos1 = maxnanos - rhs.frac;
+
+        // the fractional second from the last leap or non-leap second to the lhs
+        let lastfrac = if self.frac >= 1_000_000_000 {1_000_000_000} else {0};
+        let nanos2 = self.frac - lastfrac;
+
+        Duration::seconds(secs) + Duration::nanoseconds(nanos1 as int + nanos2 as int)
+    }
+}
+
 impl fmt::Show for TimeZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (sec, nano) = if self.frac >= 1_000_000_000 {
@@ -157,12 +204,60 @@ impl fmt::Show for TimeZ {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use duration::Duration;
+
+    fn hmsm(hour: uint, min: uint, sec: uint, millis: uint) -> TimeZ {
+        TimeZ::from_hms_milli(hour, min, sec, millis).unwrap()
+    }
+
+    #[test]
+    fn test_time_add() {
+        fn check(lhs: TimeZ, rhs: Duration, sum: TimeZ) {
+            assert_eq!(lhs + rhs, sum);
+            //assert_eq!(rhs + lhs, sum);
+        }
+
+        check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
+        check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
+        check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
+        check(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
+        check(hmsm(3, 5, 7, 900), Duration::seconds(-86399), hmsm(3, 5, 8, 900));
+        check(hmsm(3, 5, 7, 900), Duration::days(12345), hmsm(3, 5, 7, 900));
+    }
+
+    #[test]
+    fn test_time_sub() {
+        fn check(lhs: TimeZ, rhs: TimeZ, diff: Duration) {
+            // `time1 - time2 = duration` is equivalent to `time2 - time1 = -duration`
+            assert_eq!(lhs - rhs, diff);
+            assert_eq!(rhs - lhs, -diff);
+        }
+
+        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
+        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
+        check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
+        check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 300),
+                   Duration::seconds(3600 + 60) + Duration::milliseconds(900));
+
+        // treats the leap second as if it coincides with the prior non-leap second,
+        // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
+        check(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), Duration::milliseconds(400));
+        check(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), Duration::milliseconds(400));
+        check(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), Duration::milliseconds(400));
+
+        // additional equality: `time1 + duration = time2` is equivalent to
+        // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
+        assert_eq!(hmsm(3, 5, 6, 800) + Duration::milliseconds(400), hmsm(3, 5, 7, 200));
+        assert_eq!(hmsm(3, 5, 6, 1_800) + Duration::milliseconds(400), hmsm(3, 5, 7, 200));
+    }
 
     #[test]
     fn test_time_fmt() {
-        assert_eq!(TimeZ::from_hms_milli(23, 59, 59,   999).unwrap().to_str(), ~"23:59:59,999");
-        assert_eq!(TimeZ::from_hms_milli(23, 59, 59, 1_000).unwrap().to_str(), ~"23:59:60");
-        assert_eq!(TimeZ::from_hms_milli(23, 59, 59, 1_001).unwrap().to_str(), ~"23:59:60,001");
+        assert_eq!(hmsm(23, 59, 59,   999).to_str(), ~"23:59:59,999");
+        assert_eq!(hmsm(23, 59, 59, 1_000).to_str(), ~"23:59:60");
+        assert_eq!(hmsm(23, 59, 59, 1_001).to_str(), ~"23:59:60,001");
+        assert_eq!(TimeZ::from_hms_micro(0, 0, 0, 43210).unwrap().to_str(), ~"00:00:00,043210");
+        assert_eq!(TimeZ::from_hms_nano(0, 0, 0, 6543210).unwrap().to_str(), ~"00:00:00,006543210");
     }
 }
 

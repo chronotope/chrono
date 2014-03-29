@@ -77,6 +77,21 @@ impl Duration {
         if nanos < 0 { secs -= 1; nanos += NANOS_PER_SEC; }
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
+
+    #[inline]
+    pub fn ndays(&self) -> int {
+        self.days
+    }
+
+    #[inline]
+    pub fn nseconds(&self) -> uint {
+        self.secs as uint
+    }
+
+    #[inline]
+    pub fn nnanoseconds(&self) -> uint {
+        self.nanos as uint
+    }
 }
 
 impl num::Zero for Duration {
