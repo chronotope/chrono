@@ -206,18 +206,23 @@ pub trait Datelike {
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
 pub struct DateZ {
-    priv ymdf: DateImpl, // (year << 13) | mdf
+    priv ymdf: DateImpl, // (year << 13) | of
 }
 
 impl DateZ {
-    /// The internal constructor with the verification.
-    fn new(year: int, mdf: Mdf) -> Option<DateZ> {
-        if year >= MIN_YEAR && year <= MAX_YEAR && mdf.valid() {
-            let Mdf(mdf) = mdf;
-            Some(DateZ { ymdf: ((year << 13) as DateImpl) | (mdf as DateImpl) })
+    /// Makes a new `DateZ` from year and packed ordinal-flags, with a verification.
+    fn from_of(year: int, of: Of) -> Option<DateZ> {
+        if year >= MIN_YEAR && year <= MAX_YEAR && of.valid() {
+            let Of(of) = of;
+            Some(DateZ { ymdf: ((year << 13) as DateImpl) | (of as DateImpl) })
         } else {
             None
         }
+    }
+
+    /// Makes a new `DateZ` from year and packed month-day-flags, with a verification.
+    fn from_mdf(year: int, mdf: Mdf) -> Option<DateZ> {
+        DateZ::from_of(year, mdf.to_of())
     }
 
     /// Makes a new `DateZ` from year, month and day.
@@ -226,8 +231,7 @@ impl DateZ {
     /// Returns `None` on the out-of-range date, invalid month and/or day.
     pub fn from_ymd(year: int, month: uint, day: uint) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
-        let mdf = Mdf::new(month, day, flags);
-        DateZ::new(year, mdf)
+        DateZ::from_mdf(year, Mdf::new(month, day, flags))
     }
 
     /// Makes a new `DateZ` from year and day of year (DOY or "ordinal").
@@ -236,8 +240,7 @@ impl DateZ {
     /// Returns `None` on the out-of-range date and/or invalid DOY.
     pub fn from_yo(year: int, ordinal: uint) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
-        let mdf = Of::new(ordinal, flags).to_mdf();
-        DateZ::new(year, mdf)
+        DateZ::from_of(year, Of::new(ordinal, flags))
     }
 
     /// Makes a new `DateZ` from ISO week date (year and week number) and day of the week (DOW).
@@ -254,18 +257,15 @@ impl DateZ {
             let delta = flags.isoweek_delta();
             if weekord <= delta { // ordinal < 1, previous year
                 let prevflags = YearFlags::from_year(year - 1);
-                let mdf = Of::new(weekord + prevflags.ndays() - delta, prevflags).to_mdf();
-                DateZ::new(year - 1, mdf)
+                DateZ::from_of(year - 1, Of::new(weekord + prevflags.ndays() - delta, prevflags))
             } else {
                 let ordinal = weekord - delta;
                 let ndays = flags.ndays();
                 if ordinal <= ndays { // this year
-                    let mdf = Of::new(ordinal, flags).to_mdf();
-                    DateZ::new(year, mdf)
+                    DateZ::from_of(year, Of::new(ordinal, flags))
                 } else { // ordinal > ndays, next year
                     let nextflags = YearFlags::from_year(year + 1);
-                    let mdf = Of::new(ordinal - ndays, nextflags).to_mdf();
-                    DateZ::new(year + 1, mdf)
+                    DateZ::from_of(year + 1, Of::new(ordinal - ndays, nextflags))
                 }
             }
         } else {
@@ -273,26 +273,34 @@ impl DateZ {
         }
     }
 
-    /// Returns the packed month, day and year flags.
+    /// Returns the packed month-day-flags.
     #[inline]
     fn mdf(&self) -> Mdf {
-        Mdf((self.ymdf & 0b1111_11111_1111) as uint)
+        self.of().to_mdf()
     }
 
-    /// Returns the packed ordinal and year flags.
+    /// Returns the packed ordinal-flags.
     #[inline]
     fn of(&self) -> Of {
-        self.mdf().to_of()
+        Of((self.ymdf & 0b1111_11111_1111) as uint)
     }
 
-    /// Makes a new `DateZ` with the packed month, day and year flags changed.
+    /// Makes a new `DateZ` with the packed month-day-flags changed.
     ///
     /// Returns `None` when the resulting `DateZ` would be invalid.
     #[inline]
     fn with_mdf(&self, mdf: Mdf) -> Option<DateZ> {
-        if mdf.valid() {
-            let Mdf(mdf) = mdf;
-            Some(DateZ { ymdf: (self.ymdf & !0b1111_11111_1111) | mdf as DateImpl })
+        self.with_of(mdf.to_of())
+    }
+
+    /// Makes a new `DateZ` with the packed ordinal-flags changed.
+    ///
+    /// Returns `None` when the resulting `DateZ` would be invalid.
+    #[inline]
+    fn with_of(&self, of: Of) -> Option<DateZ> {
+        if of.valid() {
+            let Of(of) = of;
+            Some(DateZ { ymdf: (self.ymdf & !0b111111111_1111) | of as DateImpl })
         } else {
             None
         }
@@ -300,14 +308,12 @@ impl DateZ {
 
     #[inline]
     pub fn succ(&self) -> Option<DateZ> {
-        let mdf = self.of().succ().to_mdf();
-        self.with_mdf(mdf).or_else(|| DateZ::from_ymd(self.year() + 1, 1, 1))
+        self.with_of(self.of().succ()).or_else(|| DateZ::from_ymd(self.year() + 1, 1, 1))
     }
 
     #[inline]
     pub fn pred(&self) -> Option<DateZ> {
-        let mdf = self.of().pred().to_mdf();
-        self.with_mdf(mdf).or_else(|| DateZ::from_ymd(self.year() - 1, 12, 31))
+        self.with_of(self.of().pred()).or_else(|| DateZ::from_ymd(self.year() - 1, 12, 31))
     }
 }
 
@@ -340,10 +346,14 @@ impl Datelike for DateZ {
 
     #[inline]
     fn with_year(&self, year: int) -> Option<DateZ> {
+        // we need to operate with `mdf` since we should keep the month and day number as is
+        let mdf = self.mdf();
+
         // adjust the flags as needed
         let flags = YearFlags::from_year(year);
-        let mdf = self.mdf().with_flags(flags);
-        DateZ::new(year, mdf)
+        let mdf = mdf.with_flags(flags);
+
+        DateZ::from_mdf(year, mdf)
     }
 
     #[inline]
@@ -368,12 +378,12 @@ impl Datelike for DateZ {
 
     #[inline]
     fn with_ordinal(&self, ordinal: uint) -> Option<DateZ> {
-        self.with_mdf(self.mdf().to_of().with_ordinal(ordinal).to_mdf())
+        self.with_of(self.of().with_ordinal(ordinal))
     }
 
     #[inline]
     fn with_ordinal0(&self, ordinal0: uint) -> Option<DateZ> {
-        self.with_mdf(self.mdf().to_of().with_ordinal(ordinal0 + 1).to_mdf())
+        self.with_of(self.of().with_ordinal(ordinal0 + 1))
     }
 }
 
@@ -383,15 +393,14 @@ impl Add<Duration,DateZ> for DateZ {
 
         let year = self.year();
         let (mut year_div_400, year_mod_400) = year.div_mod_floor(&400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as uint, self.of().ordinal()) as int;
-        let cycle = cycle + rhs.ndays();
+        let cycle = internals::yo_to_cycle(year_mod_400 as uint, self.of().ordinal());
+        let cycle = cycle as int + rhs.ndays();
         let (cycle_div_400y, cycle) = cycle.div_mod_floor(&146097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as uint);
         let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as int) };
-        let mdf = Of::new(ordinal, flags).to_mdf();
-        DateZ::new(year_div_400 * 400 + year_mod_400 as int, mdf).unwrap()
+        DateZ::from_of(year_div_400 * 400 + year_mod_400 as int, Of::new(ordinal, flags)).unwrap()
     }
 }
 
