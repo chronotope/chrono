@@ -3,6 +3,7 @@
  */
 
 use std::{fmt, num};
+use num::Integer;
 
 static NANOS_PER_SEC: int = 1_000_000_000;
 static SECS_PER_DAY: int = 86400;
@@ -16,13 +17,9 @@ pub struct Duration {
 
 impl Duration {
     pub fn new(days: int, secs: int, nanos: int) -> Option<Duration> {
-        let mut secs_ = nanos / NANOS_PER_SEC;
-        let mut nanos = nanos % NANOS_PER_SEC;
-        if nanos < 0 { secs_ -= 1; nanos += NANOS_PER_SEC; }
+        let (secs_, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
         let secs = match secs.checked_add(&secs_) { Some(v) => v, None => return None };
-        let mut days_ = secs / SECS_PER_DAY;
-        let mut secs = secs % SECS_PER_DAY;
-        if secs < 0 { days_ -= 1; secs += SECS_PER_DAY; }
+        let (days_, secs) = secs.div_mod_floor(&SECS_PER_DAY);
         let days = match days.checked_add(&days_) { Some(v) => v, None => return None };
         Some(Duration { days: days, secs: secs as u32, nanos: nanos as u32 })
     }
@@ -54,9 +51,7 @@ impl Duration {
 
     #[inline]
     pub fn seconds(secs: int) -> Duration {
-        let mut days = secs / SECS_PER_DAY;
-        let mut secs = secs % SECS_PER_DAY;
-        if secs < 0 { days -= 1; secs += SECS_PER_DAY; }
+        let (days, secs) = secs.div_mod_floor(&SECS_PER_DAY);
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
@@ -72,9 +67,7 @@ impl Duration {
 
     #[inline]
     pub fn nanoseconds(nanos: int) -> Duration {
-        let mut secs = nanos / NANOS_PER_SEC;
-        let mut nanos = nanos % NANOS_PER_SEC;
-        if nanos < 0 { secs -= 1; nanos += NANOS_PER_SEC; }
+        let (secs, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 

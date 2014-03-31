@@ -3,6 +3,7 @@
  */
 
 use std::fmt;
+use num::Integer;
 use duration::Duration;
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
@@ -381,16 +382,11 @@ impl Add<Duration,DateZ> for DateZ {
         // TODO overflow
 
         let year = self.year();
-        let mut year_div_400 = year / 400;
-        let year_mod_400 = (year % 400) as uint;
-        let mut cycle = internals::yo_to_cycle(year_mod_400, self.of().ordinal()) as int;
-        cycle += rhs.ndays();
-        year_div_400 += cycle / 146097;
-        cycle %= 146097;
-        if cycle < 0 {
-            cycle += 146097;
-            year_div_400 -= 400;
-        }
+        let (mut year_div_400, year_mod_400) = year.div_mod_floor(&400);
+        let cycle = internals::yo_to_cycle(year_mod_400 as uint, self.of().ordinal()) as int;
+        let cycle = cycle + rhs.ndays();
+        let (cycle_div_400y, cycle) = cycle.div_mod_floor(&146097);
+        year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as uint);
         let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as int) };
@@ -411,8 +407,8 @@ impl Sub<DateZ,Duration> for DateZ {
     fn sub(&self, rhs: &DateZ) -> Duration {
         let year1 = self.year();
         let year2 = rhs.year();
-        let (year1_div_400, year1_mod_400) = (year1 / 400, year1 % 400);
-        let (year2_div_400, year2_mod_400) = (year2 / 400, year2 % 400);
+        let (year1_div_400, year1_mod_400) = year1.div_mod_floor(&400);
+        let (year2_div_400, year2_mod_400) = year2.div_mod_floor(&400);
         let cycle1 = internals::yo_to_cycle(year1_mod_400 as uint, self.of().ordinal()) as int;
         let cycle2 = internals::yo_to_cycle(year2_mod_400 as uint, rhs.of().ordinal()) as int;
         Duration::days((year1_div_400 - year2_div_400) * 146097 + (cycle1 - cycle2))
@@ -669,6 +665,8 @@ mod tests {
         check((2014, 1, 1), Duration::days(364), (2014, 12, 31));
         check((2014, 1, 1), Duration::days(365*4 + 1), (2018, 1, 1));
         check((2014, 1, 1), Duration::days(365*400 + 97), (2414, 1, 1));
+
+        check((-7, 1, 1), Duration::days(365*12 + 3), (5, 1, 1));
     }
 
     #[test]
@@ -712,6 +710,7 @@ mod tests {
  */
 mod internals {
     use std::{i32, num, fmt};
+    use num::Integer;
     pub use super::{Weekday, Sun, Mon, Tue, Wed, Thu, Fri, Sat};
 
     /// The internal date representation. This also includes the packed `Mdf` value.
@@ -786,8 +785,7 @@ mod internals {
     ];
 
     pub fn cycle_to_yo(cycle: uint) -> (uint, uint) {
-        let mut year_mod_400 = cycle / 365;
-        let mut ordinal0 = cycle % 365;
+        let (mut year_mod_400, mut ordinal0) = cycle.div_rem(&365);
         let delta = YEAR_DELTAS[year_mod_400] as uint;
         if ordinal0 < delta {
             year_mod_400 -= 1;
@@ -805,8 +803,7 @@ mod internals {
     impl YearFlags {
         #[inline]
         pub fn from_year(year: int) -> YearFlags {
-            let mut year = year % 400;
-            if year < 0 { year += 400; }
+            let year = year.mod_floor(&400);
             unsafe { YearFlags::from_year_mod_400(year) }
         }
 

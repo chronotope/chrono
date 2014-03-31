@@ -3,6 +3,7 @@
  */
 
 use std::fmt;
+use num::Integer;
 use duration::Duration;
 
 pub trait Timelike {
@@ -146,8 +147,8 @@ impl Add<Duration,TimeZ> for TimeZ {
             nanos -= maxnanos;
             secs += 1;
         }
-        let (s, mins) = (secs % 60, secs / 60);
-        let (m, hours) = (mins % 60, mins / 60);
+        let (mins, s) = secs.div_rem(&60);
+        let (hours, m) = mins.div_rem(&60);
         let h = hours % 24;
         TimeZ { hour: h as u8, min: m as u8, sec: s as u8, frac: nanos }
     }
