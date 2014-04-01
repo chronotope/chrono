@@ -1,3 +1,7 @@
+// This is a part of rust-chrono.
+// Copyright (c) 2014, Kang Seonghoon.
+// See README.md and LICENSE.txt for details.
+
 /*!
  * ISO 8601 date and time.
  */
