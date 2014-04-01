@@ -61,10 +61,10 @@ pub trait Timelike {
 /// Allows for the nanosecond precision and optional leap second representation.
 #[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
 pub struct TimeZ {
-    priv hour: u8,
-    priv min: u8,
-    priv sec: u8,
-    priv frac: u32,
+    hour: u8,
+    min: u8,
+    sec: u8,
+    frac: u32,
 }
 
 impl TimeZ {

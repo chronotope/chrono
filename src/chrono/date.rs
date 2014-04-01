@@ -206,7 +206,7 @@ pub trait Datelike {
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
 pub struct DateZ {
-    priv ymdf: DateImpl, // (year << 13) | of
+    ymdf: DateImpl, // (year << 13) | of
 }
 
 impl DateZ {

@@ -10,9 +10,9 @@ static SECS_PER_DAY: int = 86400;
 
 #[deriving(Eq, TotalEq, Ord, TotalOrd)]
 pub struct Duration {
-    priv days: int,
-    priv secs: u32,
-    priv nanos: u32,
+    days: int,
+    secs: u32,
+    nanos: u32,
 }
 
 impl Duration {

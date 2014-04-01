@@ -46,6 +46,16 @@ impl DateTimeZ {
         }
     }
 
+    #[inline]
+    pub fn date(&self) -> DateZ {
+        self.date
+    }
+
+    #[inline]
+    pub fn time(&self) -> TimeZ {
+        self.time
+    }
+
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00.
     /// Note that this does *not* account for the timezone!
     #[inline]
