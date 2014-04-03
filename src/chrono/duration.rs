@@ -6,15 +6,22 @@
  * ISO 8601 duration.
  */
 
-use std::{fmt, num};
+use std::{fmt, num, i32};
 use num::Integer;
+
+pub static MIN_DAYS: int = i32::MIN as int;
+pub static MAX_DAYS: int = i32::MAX as int;
 
 static NANOS_PER_SEC: int = 1_000_000_000;
 static SECS_PER_DAY: int = 86400;
 
+macro_rules! earlyexit(
+    ($e:expr) => (match $e { Some(v) => v, None => return None })
+)
+
 #[deriving(Eq, TotalEq, Ord, TotalOrd)]
 pub struct Duration {
-    days: int,
+    days: i32,
     secs: u32,
     nanos: u32,
 }
@@ -22,9 +29,9 @@ pub struct Duration {
 impl Duration {
     pub fn new(days: int, secs: int, nanos: int) -> Option<Duration> {
         let (secs_, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
-        let secs = match secs.checked_add(&secs_) { Some(v) => v, None => return None };
+        let secs = earlyexit!(secs.checked_add(&secs_));
         let (days_, secs) = secs.div_mod_floor(&SECS_PER_DAY);
-        let days = match days.checked_add(&days_) { Some(v) => v, None => return None };
+        let days = earlyexit!(days.checked_add(&days_).and_then(|v| v.to_i32()));
         Some(Duration { days: days, secs: secs as u32, nanos: nanos as u32 })
     }
 
@@ -40,6 +47,7 @@ impl Duration {
 
     #[inline]
     pub fn days(days: int) -> Duration {
+        let days = days.to_i32().expect("Duration::days out of bounds");
         Duration { days: days, secs: 0, nanos: 0 }
     }
 
@@ -77,7 +85,7 @@ impl Duration {
 
     #[inline]
     pub fn ndays(&self) -> int {
-        self.days
+        self.days as int
     }
 
     #[inline]
@@ -105,7 +113,8 @@ impl num::Zero for Duration {
 
 impl Neg<Duration> for Duration {
     fn neg(&self) -> Duration {
-        let mut days = -self.days;
+        // XXX overflow (e.g. `-Duration::days(i32::MIN as int)`)
+        let mut days = -(self.days as int);
         let mut secs = -(self.secs as int);
         let mut nanos = -(self.nanos as int);
         if nanos < 0 {
@@ -116,7 +125,7 @@ impl Neg<Duration> for Duration {
             secs += SECS_PER_DAY;
             days -= 1;
         }
-        Duration { days: days, secs: secs as u32, nanos: nanos as u32 }
+        Duration { days: days as i32, secs: secs as u32, nanos: nanos as u32 }
     }
 }
 
@@ -139,7 +148,7 @@ impl Add<Duration,Duration> for Duration {
 
 impl num::CheckedAdd for Duration {
     fn checked_add(&self, rhs: &Duration) -> Option<Duration> {
-        let mut days = match self.days.checked_add(&rhs.days) { Some(v) => v, None => return None };
+        let mut days = earlyexit!(self.days.checked_add(&rhs.days));
         let mut secs = self.secs + rhs.secs;
         let mut nanos = self.nanos + rhs.nanos;
         if nanos >= NANOS_PER_SEC as u32 {
@@ -148,7 +157,7 @@ impl num::CheckedAdd for Duration {
         }
         if secs >= SECS_PER_DAY as u32 {
             secs -= SECS_PER_DAY as u32;
-            days = match days.checked_add(&1) { Some(v) => v, None => return None };
+            days = earlyexit!(days.checked_add(&1));
         }
         Some(Duration { days: days, secs: secs, nanos: nanos })
     }
@@ -173,7 +182,7 @@ impl Sub<Duration,Duration> for Duration {
 
 impl num::CheckedSub for Duration {
     fn checked_sub(&self, rhs: &Duration) -> Option<Duration> {
-        let mut days = match self.days.checked_sub(&rhs.days) { Some(v) => v, None => return None };
+        let mut days = earlyexit!(self.days.checked_sub(&rhs.days));
         let mut secs = self.secs as int - rhs.secs as int;
         let mut nanos = self.nanos as int - rhs.nanos as int;
         if nanos < 0 {
@@ -182,7 +191,7 @@ impl num::CheckedSub for Duration {
         }
         if secs < 0 {
             secs += SECS_PER_DAY;
-            days = match days.checked_sub(&1) { Some(v) => v, None => return None };
+            days = earlyexit!(days.checked_sub(&1));
         }
         Some(Duration { days: days, secs: secs as u32, nanos: nanos as u32 })
     }
@@ -217,7 +226,6 @@ impl fmt::Show for Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::int;
 
     #[test]
     fn test_duration() {
@@ -236,14 +244,53 @@ mod tests {
     }
 
     #[test]
-    fn test_duration_checked_ops() {
-        assert_eq!(Duration::days(int::MAX).checked_add(&Duration::seconds(86399)),
-                   Some(Duration::days(int::MAX - 1) + Duration::seconds(86400+86399)));
-        assert!(Duration::days(int::MAX).checked_add(&Duration::seconds(86400)).is_none());
+    #[cfg(target_word_size = "64")]
+    fn test_duration_carry() {
+        assert_eq!(Duration::seconds((MAX_DAYS + 1) * 86400 - 1),
+                   Duration::new(MAX_DAYS, 86399, 0).unwrap());
+        assert_eq!(Duration::seconds(MIN_DAYS * 86400),
+                   Duration::new(MIN_DAYS, 0, 0).unwrap());
 
-        assert_eq!(Duration::days(int::MIN).checked_sub(&Duration::seconds(0)),
-                   Some(Duration::days(int::MIN)));
-        assert!(Duration::days(int::MIN).checked_sub(&Duration::seconds(1)).is_none());
+        // 86400 * 10^9 * (2^31-1) exceeds 2^63-1, so there is no test for nanoseconds
+    }
+
+    #[test]
+    #[should_fail]
+    #[cfg(target_word_size = "64")]
+    fn test_duration_days_out_of_bound_1() {
+        Duration::days(MAX_DAYS + 1);
+    }
+
+    #[test]
+    #[should_fail]
+    #[cfg(target_word_size = "64")]
+    fn test_duration_days_out_of_bound_2() {
+        Duration::days(MIN_DAYS - 1);
+    }
+
+    #[test]
+    #[should_fail]
+    #[cfg(target_word_size = "64")]
+    fn test_duration_seconds_out_of_bound_1() {
+        Duration::seconds((MAX_DAYS + 1) * 86400);
+    }
+
+    #[test]
+    #[should_fail]
+    #[cfg(target_word_size = "64")]
+    fn test_duration_seconds_out_of_bound_2() {
+        Duration::seconds(MIN_DAYS * 86400 - 1);
+    }
+
+    #[test]
+    fn test_duration_checked_ops() {
+        assert_eq!(Duration::days(MAX_DAYS).checked_add(&Duration::seconds(86399)),
+                   Some(Duration::days(MAX_DAYS - 1) + Duration::seconds(86400+86399)));
+        assert!(Duration::days(MAX_DAYS).checked_add(&Duration::seconds(86400)).is_none());
+
+        assert_eq!(Duration::days(MIN_DAYS).checked_sub(&Duration::seconds(0)),
+                   Some(Duration::days(MIN_DAYS)));
+        assert!(Duration::days(MIN_DAYS).checked_sub(&Duration::seconds(1)).is_none());
     }
 
     #[test]

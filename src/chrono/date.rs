@@ -822,7 +822,7 @@ mod internals {
 
         #[inline]
         pub unsafe fn from_year_mod_400(year: int) -> YearFlags {
-            YEAR_TO_FLAGS[year]
+            YEAR_TO_FLAGS[year as uint]
         }
 
         #[inline]
