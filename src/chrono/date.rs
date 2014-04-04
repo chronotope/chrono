@@ -741,7 +741,7 @@ mod internals {
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
     #[deriving(Eq, TotalEq)]
-    pub struct YearFlags(u8);
+    pub struct YearFlags(pub u8);
 
     pub static A: YearFlags = YearFlags(0o15); pub static AG: YearFlags = YearFlags(0o05);
     pub static B: YearFlags = YearFlags(0o14); pub static BA: YearFlags = YearFlags(0o04);
@@ -981,7 +981,7 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
     #[deriving(Eq, Ord)]
-    pub struct Of(uint);
+    pub struct Of(pub uint);
 
     impl Of {
         #[inline]
@@ -1082,7 +1082,7 @@ mod internals {
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
     #[deriving(Eq, Ord)]
-    pub struct Mdf(uint);
+    pub struct Mdf(pub uint);
 
     impl Mdf {
         #[inline]
