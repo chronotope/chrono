@@ -197,6 +197,51 @@ impl num::CheckedSub for Duration {
     }
 }
 
+impl Mul<int,Duration> for Duration {
+    fn mul(&self, rhs: &int) -> Duration {
+        /// Given `0 <= y < limit <= 2^30`,
+        /// returns `(h,l)` such that `x * y = h * limit + l` where `0 <= l < limit`.
+        fn mul_i64_u32_limit(x: i64, y: u32, limit: u32) -> (i64,u32) {
+            let y = y as i64;
+            let limit = limit as i64;
+            let (xh, xl) = x.div_mod_floor(&limit);
+            let (h, l) = (xh * y, xl * y);
+            let (h_, l) = l.div_rem(&limit);
+            (h + h_, l as u32)
+        }
+
+        let rhs = *rhs as i64;
+        let (secs1, nanos) = mul_i64_u32_limit(rhs, self.nanos, NANOS_PER_SEC as u32);
+        let (days1, secs1) = secs1.div_mod_floor(&(SECS_PER_DAY as i64));
+        let (days2, secs2) = mul_i64_u32_limit(rhs, self.secs, SECS_PER_DAY as u32);
+        let mut days = self.days as i64 * rhs + days1 + days2;
+        let mut secs = secs1 as u32 + secs2;
+        if secs >= SECS_PER_DAY as u32 {
+            secs -= 1;
+            days += 1;
+        }
+        Duration { days: days as i32, secs: secs, nanos: nanos }
+    }
+}
+
+impl Div<int,Duration> for Duration {
+    fn div(&self, rhs: &int) -> Duration {
+        let (rhs, days, secs, nanos) = if *rhs < 0 {
+            let negated = -*self;
+            (-*rhs as i64, negated.days as i64, negated.secs as i64, negated.nanos as i64)
+        } else {
+            (*rhs as i64, self.days as i64, self.secs as i64, self.nanos as i64)
+        };
+
+        let (days, carry) = days.div_mod_floor(&rhs);
+        let secs = secs + carry * SECS_PER_DAY as i64;
+        let (secs, carry) = secs.div_mod_floor(&rhs);
+        let nanos = nanos + carry * NANOS_PER_SEC as i64;
+        let nanos = nanos / rhs;
+        Duration { days: days as i32, secs: secs as u32, nanos: nanos as u32 }
+    }
+}
+
 impl fmt::Show for Duration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let hasdate = self.days != 0;
@@ -226,6 +271,7 @@ impl fmt::Show for Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::int;
 
     #[test]
     fn test_duration() {
@@ -291,6 +337,56 @@ mod tests {
         assert_eq!(Duration::days(MIN_DAYS).checked_sub(&Duration::seconds(0)),
                    Some(Duration::days(MIN_DAYS)));
         assert!(Duration::days(MIN_DAYS).checked_sub(&Duration::seconds(1)).is_none());
+    }
+
+    #[test]
+    fn test_duration_mul() {
+        assert_eq!(Duration::zero() * int::MAX, Duration::zero());
+        assert_eq!(Duration::zero() * int::MIN, Duration::zero());
+        assert_eq!(Duration::nanoseconds(1) * 0, Duration::zero());
+        assert_eq!(Duration::nanoseconds(1) * 1, Duration::nanoseconds(1));
+        assert_eq!(Duration::nanoseconds(1) * 1_000_000_000, Duration::seconds(1));
+        assert_eq!(Duration::nanoseconds(1) * -1_000_000_000, -Duration::seconds(1));
+        assert_eq!(-Duration::nanoseconds(1) * 1_000_000_000, -Duration::seconds(1));
+        assert_eq!(Duration::nanoseconds(30) * 333_333_333,
+                   Duration::seconds(10) - Duration::nanoseconds(10));
+        assert_eq!((Duration::nanoseconds(1) + Duration::seconds(1) + Duration::days(1)) * 3,
+                   Duration::nanoseconds(3) + Duration::seconds(3) + Duration::days(3));
+    }
+
+    #[test]
+    #[cfg(target_word_size = "64")]
+    fn test_duration_mul_64() {
+        assert_eq!(Duration::nanoseconds(1) * 86400_000_000_000, Duration::days(1));
+        assert_eq!((Duration::seconds(13) + Duration::nanoseconds(333_333_333)) * 64800,
+                   Duration::days(10) - Duration::nanoseconds(21600));
+        assert_eq!((Duration::nanoseconds(1) + Duration::seconds(1) +
+                    Duration::days(1)) * 2_000_000_000,
+                   Duration::nanoseconds(2_000_000_000) + Duration::seconds(2_000_000_000) +
+                   Duration::days(2_000_000_000));
+    }
+
+    #[test]
+    fn test_duration_div() {
+        assert_eq!(Duration::zero() / int::MAX, Duration::zero());
+        assert_eq!(Duration::zero() / int::MIN, Duration::zero());
+        assert_eq!(Duration::nanoseconds(123_456_789) / 1, Duration::nanoseconds(123_456_789));
+        assert_eq!(Duration::nanoseconds(123_456_789) / -1, -Duration::nanoseconds(123_456_789));
+        assert_eq!(-Duration::nanoseconds(123_456_789) / -1, Duration::nanoseconds(123_456_789));
+        assert_eq!(-Duration::nanoseconds(123_456_789) / 1, -Duration::nanoseconds(123_456_789));
+    }
+
+    #[test]
+    #[cfg(target_word_size = "64")]
+    fn test_duration_div_64() {
+        assert_eq!(Duration::nanoseconds(  999_999_999_999_999_999) / 9,
+                   Duration::nanoseconds(  111_111_111_111_111_111));
+        assert_eq!(Duration::nanoseconds(1_000_000_000_000_000_000) / 9,
+                   Duration::nanoseconds(  111_111_111_111_111_111));
+        assert_eq!(-Duration::nanoseconds(  999_999_999_999_999_999) / 9,
+                   -Duration::nanoseconds(  111_111_111_111_111_111));
+        assert_eq!(-Duration::nanoseconds(1_000_000_000_000_000_000) / 9,
+                   -Duration::nanoseconds(  111_111_111_111_111_112)); // XXX inconsistent
     }
 
     #[test]

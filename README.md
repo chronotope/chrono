@@ -15,7 +15,7 @@ Design Goals
 * Timezone-aware by default.
 * Space efficient.
 * Moderate lookup table size, should not exceed a few KBs.
-* Avoid divisions as long as possible.
+* Avoid divisions as much as possible.
 
 References
 ----------
