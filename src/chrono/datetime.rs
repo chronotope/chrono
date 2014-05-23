@@ -171,7 +171,7 @@ impl Sub<DateTimeZ,Duration> for DateTimeZ {
 
 impl fmt::Show for DateTimeZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f.buf, "{}T{}", self.date, self.time)
+        write!(f, "{}T{}", self.date, self.time)
     }
 }
 

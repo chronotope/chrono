@@ -432,10 +432,10 @@ impl fmt::Show for DateZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
         if 0 <= year && year <= 9999 {
-            write!(f.buf, "{:04}-{:02}-{:02}", year, self.month(), self.day())
+            write!(f, "{:04}-{:02}-{:02}", year, self.month(), self.day())
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
-            write!(f.buf, "{:+05}-{:02}-{:02}", year, self.month(), self.day())
+            write!(f, "{:+05}-{:02}-{:02}", year, self.month(), self.day())
         }
     }
 }
@@ -858,7 +858,7 @@ mod internals {
                 0o10 => "F?".fmt(f), 0o00 => "FE?".fmt(f), // non-canonical
                 0o17 => "F".fmt(f),  0o07 => "FE".fmt(f),
                 0o16 => "G".fmt(f),  0o06 => "GF".fmt(f),
-                _ => write!(f.buf, "YearFlags({})", flags),
+                _ => write!(f, "YearFlags({})", flags),
             }
         }
     }
@@ -1071,7 +1071,7 @@ mod internals {
     impl fmt::Show for Of {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let Of(of) = *self;
-            write!(f.buf, "Of(({} << 4) | {:#04o} /*{}*/)",
+            write!(f, "Of(({} << 4) | {:#04o} /*{}*/)",
                    of >> 4, of & 0b1111, YearFlags((of & 0b1111) as u8))
         }
     }
@@ -1168,7 +1168,7 @@ mod internals {
     impl fmt::Show for Mdf {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let Mdf(mdf) = *self;
-            write!(f.buf, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{}*/)",
+            write!(f, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{}*/)",
                    mdf >> 9, (mdf >> 4) & 0b11111, mdf & 0b1111, YearFlags((mdf & 0b1111) as u8))
         }
     }

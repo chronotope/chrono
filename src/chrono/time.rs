@@ -193,15 +193,15 @@ impl fmt::Show for TimeZ {
             (self.sec, self.frac)
         };
 
-        try!(write!(f.buf, "{:02}:{:02}:{:02}", self.hour, self.min, sec));
+        try!(write!(f, "{:02}:{:02}:{:02}", self.hour, self.min, sec));
         if nano == 0 {
             Ok(())
         } else if nano % 1_000_000 == 0 {
-            write!(f.buf, ",{:03}", nano / 1_000_000)
+            write!(f, ",{:03}", nano / 1_000_000)
         } else if nano % 1_000 == 0 {
-            write!(f.buf, ",{:06}", nano / 1_000)
+            write!(f, ",{:06}", nano / 1_000)
         } else {
-            write!(f.buf, ",{:09}", nano)
+            write!(f, ",{:09}", nano)
         }
     }
 }

@@ -251,17 +251,17 @@ impl fmt::Show for Duration {
         if hasdate {
             // technically speaking the negative part is not the valid ISO 8601,
             // but we need to print it anyway.
-            try!(write!(f.buf, "{}D", self.days));
+            try!(write!(f, "{}D", self.days));
         }
         if hastime {
             if self.nanos == 0 {
-                try!(write!(f.buf, "T{}S", self.secs));
+                try!(write!(f, "T{}S", self.secs));
             } else if self.nanos % 1_000_000 == 0 {
-                try!(write!(f.buf, "T{},{:03}S", self.secs, self.nanos / 1_000_000));
+                try!(write!(f, "T{},{:03}S", self.secs, self.nanos / 1_000_000));
             } else if self.nanos % 1_000 == 0 {
-                try!(write!(f.buf, "T{},{:06}S", self.secs, self.nanos / 1_000));
+                try!(write!(f, "T{},{:06}S", self.secs, self.nanos / 1_000));
             } else {
-                try!(write!(f.buf, "T{},{:09}S", self.secs, self.nanos));
+                try!(write!(f, "T{},{:09}S", self.secs, self.nanos));
             }
         }
         Ok(())
