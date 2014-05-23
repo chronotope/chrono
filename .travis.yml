@@ -1,11 +1,14 @@
 env:
   global:
     - secure: i8Ijk6g4/26e3e7+r2OeGAPSP8G8O9P50JibW1omJ0j0ixXhyhPoY2bch3CGhnOu44dI5O31IIbjJJ+iEMp29xQBvkv9YpxAI+hIzOP+XAH6GCYxUDiBVcDoWrXTj+wU6/veuvjLCunu4eRHlskrgJbZXhUVODYzJuLgsN8Ou0w=
-before_install:
-  - yes | sudo add-apt-repository ppa:hansjorg/rust
-  - sudo apt-get update
+#before_install:
+#  - yes | sudo add-apt-repository ppa:hansjorg/rust
+#  - sudo apt-get update
 install:
-  - sudo apt-get install rust-nightly
+  - curl -O http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+  - tar xfz rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+  - (cd rust-nightly-x86_64-unknown-linux-gnu/ && sudo ./install.sh)
+#  - sudo apt-get install rust-nightly
 script:
   - ./configure
   - make check RUSTFLAGS=
