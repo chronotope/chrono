@@ -701,10 +701,10 @@ mod tests {
 
     #[test]
     fn test_date_fmt() {
-        assert_eq!(DateZ::from_ymd(2012,  3, 4).unwrap().to_str(),  "2012-03-04".to_owned());
-        assert_eq!(DateZ::from_ymd(0,     3, 4).unwrap().to_str(),  "0000-03-04".to_owned());
-        assert_eq!(DateZ::from_ymd(-307,  3, 4).unwrap().to_str(), "-0307-03-04".to_owned());
-        assert_eq!(DateZ::from_ymd(12345, 3, 4).unwrap().to_str(), "+12345-03-04".to_owned());
+        assert_eq!(DateZ::from_ymd(2012,  3, 4).unwrap().to_str(),  "2012-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(0,     3, 4).unwrap().to_str(),  "0000-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(-307,  3, 4).unwrap().to_str(), "-0307-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(12345, 3, 4).unwrap().to_str(), "+12345-03-04".to_string());
     }
 }
 
