@@ -53,12 +53,16 @@ impl Duration {
 
     #[inline]
     pub fn hours(hours: int) -> Duration {
-        Duration::seconds(hours * 3600)
+        let (days, hours) = hours.div_mod_floor(&(SECS_PER_DAY / 3600));
+        let secs = hours * 3600;
+        Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
     #[inline]
     pub fn minutes(mins: int) -> Duration {
-        Duration::seconds(mins * 60)
+        let (days, mins) = mins.div_mod_floor(&(SECS_PER_DAY / 60));
+        let secs = mins * 60;
+        Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
     #[inline]
@@ -69,12 +73,16 @@ impl Duration {
 
     #[inline]
     pub fn milliseconds(millis: int) -> Duration {
-        Duration::nanoseconds(millis * 1_000_000)
+        let (secs, millis) = millis.div_mod_floor(&(NANOS_PER_SEC / 1_000_000));
+        let nanos = millis * 1_000_000;
+        Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
     #[inline]
     pub fn microseconds(micros: int) -> Duration {
-        Duration::nanoseconds(micros * 1_000)
+        let (secs, micros) = micros.div_mod_floor(&(NANOS_PER_SEC / 1_000));
+        let nanos = micros * 1_000;
+        Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
     #[inline]
@@ -282,8 +290,8 @@ mod tests {
                    Duration::days(1) + Duration::seconds(3));
         assert_eq!(Duration::days(10) - Duration::seconds(1000), Duration::seconds(863000));
         assert_eq!(Duration::days(10) - Duration::seconds(1000000), Duration::seconds(-136000));
-        assert_eq!(Duration::days(2) + Duration::seconds(86391) + Duration::nanoseconds(9876543210),
-                   Duration::days(3) + Duration::nanoseconds(876543210));
+        assert_eq!(Duration::days(2) + Duration::seconds(86399) + Duration::nanoseconds(1234567890),
+                   Duration::days(3) + Duration::nanoseconds(234567890));
         assert_eq!(-Duration::days(3), Duration::days(-3));
         assert_eq!(-(Duration::days(3) + Duration::seconds(70)),
                    Duration::days(-4) + Duration::seconds(86400-70));
