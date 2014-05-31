@@ -16,7 +16,7 @@ pub static MAX_YEAR: int = internals::MAX_YEAR as int;
 pub static MIN_YEAR: int = internals::MIN_YEAR as int;
 
 /// The day of week (DOW).
-#[deriving(Eq, TotalEq, FromPrimitive, Show)]
+#[deriving(PartialEq, Eq, FromPrimitive, Show)]
 pub enum Weekday {
     Mon = 0,
     Tue = 1,
@@ -208,7 +208,7 @@ pub trait Datelike {
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
-#[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DateZ {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -740,7 +740,7 @@ mod internals {
     /// where `a` is `1` for the common year (simplifies the `Of` validation)
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
-    #[deriving(Eq, TotalEq)]
+    #[deriving(PartialEq, Eq)]
     pub struct YearFlags(pub u8);
 
     pub static A: YearFlags = YearFlags(0o15); pub static AG: YearFlags = YearFlags(0o05);
@@ -980,7 +980,7 @@ mod internals {
     ///
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
-    #[deriving(Eq, Ord)]
+    #[deriving(PartialEq, PartialOrd)]
     pub struct Of(pub uint);
 
     impl Of {
@@ -1081,7 +1081,7 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Mdl`
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
-    #[deriving(Eq, Ord)]
+    #[deriving(PartialEq, PartialOrd)]
     pub struct Mdf(pub uint);
 
     impl Mdf {

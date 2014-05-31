@@ -19,7 +19,7 @@ macro_rules! earlyexit(
     ($e:expr) => (match $e { Some(v) => v, None => return None })
 )
 
-#[deriving(Eq, TotalEq, Ord, TotalOrd)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Duration {
     days: i32,
     secs: u32,

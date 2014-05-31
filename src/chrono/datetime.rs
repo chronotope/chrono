@@ -11,7 +11,7 @@ use duration::Duration;
 use time::{Timelike, TimeZ};
 use date::{Datelike, DateZ, Weekday};
 
-#[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DateTimeZ {
     date: DateZ,
     time: TimeZ,

@@ -63,7 +63,7 @@ pub trait Timelike {
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
-#[deriving(Eq, TotalEq, Ord, TotalOrd, Hash)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimeZ {
     hour: u8,
     min: u8,
