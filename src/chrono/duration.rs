@@ -399,14 +399,14 @@ mod tests {
 
     #[test]
     fn test_duration_fmt() {
-        assert_eq!(Duration::zero().to_str(), "PT0S".to_string());
-        assert_eq!(Duration::days(42).to_str(), "P42D".to_string());
-        assert_eq!(Duration::days(-42).to_str(), "P-42D".to_string());
-        assert_eq!(Duration::seconds(42).to_str(), "PT42S".to_string());
-        assert_eq!(Duration::milliseconds(42).to_str(), "PT0,042S".to_string());
-        assert_eq!(Duration::microseconds(42).to_str(), "PT0,000042S".to_string());
-        assert_eq!(Duration::nanoseconds(42).to_str(), "PT0,000000042S".to_string());
-        assert_eq!((Duration::days(7) + Duration::milliseconds(6543)).to_str(),
+        assert_eq!(Duration::zero().to_string(), "PT0S".to_string());
+        assert_eq!(Duration::days(42).to_string(), "P42D".to_string());
+        assert_eq!(Duration::days(-42).to_string(), "P-42D".to_string());
+        assert_eq!(Duration::seconds(42).to_string(), "PT42S".to_string());
+        assert_eq!(Duration::milliseconds(42).to_string(), "PT0,042S".to_string());
+        assert_eq!(Duration::microseconds(42).to_string(), "PT0,000042S".to_string());
+        assert_eq!(Duration::nanoseconds(42).to_string(), "PT0,000000042S".to_string());
+        assert_eq!((Duration::days(7) + Duration::milliseconds(6543)).to_string(),
                    "P7DT6,543S".to_string());
     }
 }

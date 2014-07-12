@@ -258,12 +258,12 @@ mod tests {
 
     #[test]
     fn test_time_fmt() {
-        assert_eq!(hmsm(23, 59, 59,   999).to_str(), "23:59:59,999".to_string());
-        assert_eq!(hmsm(23, 59, 59, 1_000).to_str(), "23:59:60".to_string());
-        assert_eq!(hmsm(23, 59, 59, 1_001).to_str(), "23:59:60,001".to_string());
-        assert_eq!(TimeZ::from_hms_micro(0, 0, 0, 43210).unwrap().to_str(),
+        assert_eq!(hmsm(23, 59, 59,   999).to_string(), "23:59:59,999".to_string());
+        assert_eq!(hmsm(23, 59, 59, 1_000).to_string(), "23:59:60".to_string());
+        assert_eq!(hmsm(23, 59, 59, 1_001).to_string(), "23:59:60,001".to_string());
+        assert_eq!(TimeZ::from_hms_micro(0, 0, 0, 43210).unwrap().to_string(),
                    "00:00:00,043210".to_string());
-        assert_eq!(TimeZ::from_hms_nano(0, 0, 0, 6543210).unwrap().to_str(),
+        assert_eq!(TimeZ::from_hms_nano(0, 0, 0, 6543210).unwrap().to_string(),
                    "00:00:00,006543210".to_string());
     }
 }
