@@ -5,7 +5,7 @@
 #![comment = "Date and time library for Rust"]
 #![license = "MIT"]
 
-#![feature(globs, macro_rules)]
+#![feature(macro_rules)]
 
 extern crate num;
 

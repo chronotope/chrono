@@ -208,7 +208,7 @@ impl fmt::Show for TimeZ {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::TimeZ;
     use duration::Duration;
 
     fn hmsm(hour: uint, min: uint, sec: uint, millis: uint) -> TimeZ {

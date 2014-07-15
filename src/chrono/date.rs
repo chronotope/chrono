@@ -442,7 +442,8 @@ impl fmt::Show for DateZ {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{Datelike, DateZ, MIN_YEAR, MAX_YEAR};
+    use super::{Sun, Mon, Tue, Wed, Thu, Fri, Sat};
     use duration::Duration;
     use std::{int, uint};
     use std::iter::range_inclusive;
@@ -1177,7 +1178,9 @@ mod internals {
     mod tests {
         extern crate test;
 
-        use super::*;
+        use super::{Of, Mdf};
+        use super::{YearFlags, A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
+        use super::{Sun, Mon, Tue, Wed, Thu, Fri, Sat};
         use std::iter::range_inclusive;
         use std::uint;
 

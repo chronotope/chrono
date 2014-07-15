@@ -278,7 +278,7 @@ impl fmt::Show for Duration {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{Duration, MIN_DAYS, MAX_DAYS};
     use std::int;
 
     #[test]

@@ -177,7 +177,7 @@ impl fmt::Show for DateTimeZ {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::DateTimeZ;
     use duration::Duration;
 
     #[test]
