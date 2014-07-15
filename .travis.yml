@@ -8,13 +8,13 @@ before_install:
   - curl -O http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz
   - curl -O http://static.rust-lang.org/cargo-dist/cargo-nightly-linux.tar.gz
   - tar xfz rust-nightly-x86_64-unknown-linux-gnu.tar.gz
-  - (cd rust-nightly-x86_64-unknown-linux-gnu/ && sudo ./install.sh --prefix=/usr)
   - tar xfz cargo-nightly-linux.tar.gz
-  - sudo cp -R cargo-nightly/* /usr
+  - (cd rust-nightly-x86_64-unknown-linux-gnu/ && sudo ./install.sh)
+  - (cd cargo-nightly/ && sudo ./install.sh)
 script:
   - cargo build
   - cargo test
-  - rustdoc src/chrono/lib.rs
+  - rustdoc src/lib.rs
 branches:
   only:
     - master

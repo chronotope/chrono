@@ -7,4 +7,3 @@ authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 [[lib]]
 
 name = "chrono"
-path = "src/chrono/lib.rs"
