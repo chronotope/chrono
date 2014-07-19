@@ -74,10 +74,27 @@ pub struct TimeZ {
 impl TimeZ {
     /// Makes a new `TimeZ` from hour, minute and second.
     ///
+    /// Fails on invalid hour, minute and/or second.
+    #[inline]
+    pub fn from_hms(hour: u32, min: u32, sec: u32) -> TimeZ {
+        TimeZ::from_hms_opt(hour, min, sec).expect("invalid time")
+    }
+
+    /// Makes a new `TimeZ` from hour, minute and second.
+    ///
     /// Returns `None` on invalid hour, minute and/or second.
     #[inline]
-    pub fn from_hms(hour: u32, min: u32, sec: u32) -> Option<TimeZ> {
-        TimeZ::from_hms_nano(hour, min, sec, 0)
+    pub fn from_hms_opt(hour: u32, min: u32, sec: u32) -> Option<TimeZ> {
+        TimeZ::from_hms_nano_opt(hour, min, sec, 0)
+    }
+
+    /// Makes a new `TimeZ` from hour, minute, second and millisecond.
+    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid hour, minute, second and/or millisecond.
+    #[inline]
+    pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> TimeZ {
+        TimeZ::from_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
     }
 
     /// Makes a new `TimeZ` from hour, minute, second and millisecond.
@@ -85,8 +102,18 @@ impl TimeZ {
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     #[inline]
-    pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> Option<TimeZ> {
-        TimeZ::from_hms_nano(hour, min, sec, milli * 1_000_000)
+    pub fn from_hms_milli_opt(hour: u32, min: u32, sec: u32, milli: u32) -> Option<TimeZ> {
+        milli.checked_mul(&1_000_000).and_then(|nano| TimeZ::from_hms_nano_opt(hour, min, sec,
+                                                                               nano))
+    }
+
+    /// Makes a new `TimeZ` from hour, minute, second and microsecond.
+    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid hour, minute, second and/or microsecond.
+    #[inline]
+    pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> TimeZ {
+        TimeZ::from_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
     }
 
     /// Makes a new `TimeZ` from hour, minute, second and microsecond.
@@ -94,15 +121,23 @@ impl TimeZ {
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     #[inline]
-    pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> Option<TimeZ> {
-        TimeZ::from_hms_nano(hour, min, sec, micro * 1_000)
+    pub fn from_hms_micro_opt(hour: u32, min: u32, sec: u32, micro: u32) -> Option<TimeZ> {
+        micro.checked_mul(&1_000).and_then(|nano| TimeZ::from_hms_nano_opt(hour, min, sec, nano))
+    }
+
+    /// Makes a new `TimeZ` from hour, minute, second and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid hour, minute, second and/or nanosecond.
+    pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> TimeZ {
+        TimeZ::from_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
 
     /// Makes a new `TimeZ` from hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
-    pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Option<TimeZ> {
+    pub fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<TimeZ> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 { return None; }
         Some(TimeZ { hour: hour as u8, min: min as u8, sec: sec as u8, frac: nano as u32 })
     }
@@ -210,9 +245,34 @@ impl fmt::Show for TimeZ {
 mod tests {
     use super::TimeZ;
     use duration::Duration;
+    use std::u32;
 
-    fn hmsm(hour: u32, min: u32, sec: u32, millis: u32) -> TimeZ {
-        TimeZ::from_hms_milli(hour, min, sec, millis).unwrap()
+    #[test]
+    fn test_time_from_hms_milli() {
+        assert_eq!(TimeZ::from_hms_milli_opt(3, 5, 7, 0),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 0)));
+        assert_eq!(TimeZ::from_hms_milli_opt(3, 5, 7, 777),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 777_000_000)));
+        assert_eq!(TimeZ::from_hms_milli_opt(3, 5, 7, 1_999),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 1_999_000_000)));
+        assert_eq!(TimeZ::from_hms_milli_opt(3, 5, 7, 2_000), None);
+        assert_eq!(TimeZ::from_hms_milli_opt(3, 5, 7, 5_000), None); // overflow check
+        assert_eq!(TimeZ::from_hms_milli_opt(3, 5, 7, u32::MAX), None);
+    }
+
+    #[test]
+    fn test_time_from_hms_micro() {
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 0),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 0)));
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 333),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 333_000)));
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 777_777),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 777_777_000)));
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 1_999_999),
+                   Some(TimeZ::from_hms_nano(3, 5, 7, 1_999_999_000)));
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 2_000_000), None);
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 5_000_000), None); // overflow check
+        assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, u32::MAX), None);
     }
 
     #[test]
@@ -221,6 +281,8 @@ mod tests {
             assert_eq!(lhs + rhs, sum);
             //assert_eq!(rhs + lhs, sum);
         }
+
+        let hmsm = |h,m,s,mi| TimeZ::from_hms_milli(h, m, s, mi);
 
         check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
@@ -237,6 +299,8 @@ mod tests {
             assert_eq!(lhs - rhs, diff);
             assert_eq!(rhs - lhs, -diff);
         }
+
+        let hmsm = |h,m,s,mi| TimeZ::from_hms_milli(h, m, s, mi);
 
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
@@ -258,12 +322,15 @@ mod tests {
 
     #[test]
     fn test_time_fmt() {
-        assert_eq!(hmsm(23, 59, 59,   999).to_string(), "23:59:59,999".to_string());
-        assert_eq!(hmsm(23, 59, 59, 1_000).to_string(), "23:59:60".to_string());
-        assert_eq!(hmsm(23, 59, 59, 1_001).to_string(), "23:59:60,001".to_string());
-        assert_eq!(TimeZ::from_hms_micro(0, 0, 0, 43210).unwrap().to_string(),
+        assert_eq!(TimeZ::from_hms_milli(23, 59, 59, 999).to_string(),
+                   "23:59:59,999".to_string());
+        assert_eq!(TimeZ::from_hms_milli(23, 59, 59, 1_000).to_string(),
+                   "23:59:60".to_string());
+        assert_eq!(TimeZ::from_hms_milli(23, 59, 59, 1_001).to_string(),
+                   "23:59:60,001".to_string());
+        assert_eq!(TimeZ::from_hms_micro(0, 0, 0, 43210).to_string(),
                    "00:00:00,043210".to_string());
-        assert_eq!(TimeZ::from_hms_nano(0, 0, 0, 6543210).unwrap().to_string(),
+        assert_eq!(TimeZ::from_hms_nano(0, 0, 0, 6543210).to_string(),
                    "00:00:00,006543210".to_string());
     }
 }

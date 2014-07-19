@@ -25,8 +25,15 @@ impl DateTimeZ {
 
     #[inline]
     pub fn from_ymdhms(year: i32, month: u32, day: u32,
-                       hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        match (DateZ::from_ymd(year, month, day), TimeZ::from_hms(hour, min, sec)) {
+                       hour: u32, min: u32, sec: u32) -> DateTimeZ {
+        let dt = DateTimeZ::from_ymdhms_opt(year, month, day, hour, min, sec);
+        dt.expect("invalid or out-of-range date or time")
+    }
+
+    #[inline]
+    pub fn from_ymdhms_opt(year: i32, month: u32, day: u32,
+                           hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
+        match (DateZ::from_ymd_opt(year, month, day), TimeZ::from_hms_opt(hour, min, sec)) {
             (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
             (_, _) => None,
         }
@@ -34,8 +41,15 @@ impl DateTimeZ {
 
     #[inline]
     pub fn from_yohms(year: i32, ordinal: u32,
-                      hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        match (DateZ::from_yo(year, ordinal), TimeZ::from_hms(hour, min, sec)) {
+                      hour: u32, min: u32, sec: u32) -> DateTimeZ {
+        let dt = DateTimeZ::from_yohms_opt(year, ordinal, hour, min, sec);
+        dt.expect("invalid or out-of-range date or time")
+    }
+
+    #[inline]
+    pub fn from_yohms_opt(year: i32, ordinal: u32,
+                          hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
+        match (DateZ::from_yo_opt(year, ordinal), TimeZ::from_hms_opt(hour, min, sec)) {
             (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
             (_, _) => None,
         }
@@ -43,8 +57,15 @@ impl DateTimeZ {
 
     #[inline]
     pub fn from_isoywdhms(year: i32, week: u32, weekday: Weekday,
-                          hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        match (DateZ::from_isoywd(year, week, weekday), TimeZ::from_hms(hour, min, sec)) {
+                          hour: u32, min: u32, sec: u32) -> DateTimeZ {
+        let dt = DateTimeZ::from_isoywdhms_opt(year, week, weekday, hour, min, sec);
+        dt.expect("invalid or out-of-range date or time")
+    }
+
+    #[inline]
+    pub fn from_isoywdhms_opt(year: i32, week: u32, weekday: Weekday,
+                              hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
+        match (DateZ::from_isoywd_opt(year, week, weekday), TimeZ::from_hms_opt(hour, min, sec)) {
             (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
             (_, _) => None,
         }
@@ -151,7 +172,7 @@ impl Add<Duration,DateTimeZ> for DateTimeZ {
         if time < self.time {
             // since the time portion of the duration is always positive and bounded,
             // this condition always means that the time part has been overflowed.
-            date = date.succ().unwrap();
+            date = date.succ();
         }
         DateTimeZ { date: date, time: time }
     }
@@ -184,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_datetime_add() {
-        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).unwrap();
+        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    ymdhms(2014, 5, 6, 8, 9, 10));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86399),
@@ -197,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_datetime_sub() {
-        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).unwrap();
+        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Duration::zero());
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 10) - ymdhms(2014, 5, 6, 7, 8, 9),
                    Duration::seconds(1));
@@ -212,7 +233,7 @@ mod tests {
     #[test]
     fn test_datetime_nseconds_from_unix_epoch() {
         let to_timestamp =
-            |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).unwrap().nseconds_from_unix_epoch();
+            |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).nseconds_from_unix_epoch();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);

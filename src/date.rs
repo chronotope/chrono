@@ -232,8 +232,16 @@ impl DateZ {
     /// Makes a new `DateZ` from year, month and day.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
+    /// Fails on the out-of-range date, invalid month and/or day.
+    pub fn from_ymd(year: i32, month: u32, day: u32) -> DateZ {
+        DateZ::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
+    }
+
+    /// Makes a new `DateZ` from year, month and day.
+    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
-    pub fn from_ymd(year: i32, month: u32, day: u32) -> Option<DateZ> {
+    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
         DateZ::from_mdf(year, Mdf::new(month, day, flags))
     }
@@ -241,8 +249,16 @@ impl DateZ {
     /// Makes a new `DateZ` from year and day of year (DOY or "ordinal").
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
+    /// Fails on the out-of-range date and/or invalid DOY.
+    pub fn from_yo(year: i32, ordinal: u32) -> DateZ {
+        DateZ::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
+    }
+
+    /// Makes a new `DateZ` from year and day of year (DOY or "ordinal").
+    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
-    pub fn from_yo(year: i32, ordinal: u32) -> Option<DateZ> {
+    pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
         DateZ::from_of(year, Of::new(ordinal, flags))
     }
@@ -251,8 +267,17 @@ impl DateZ {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     /// The resulting `DateZ` may have a different year from the input year.
     ///
+    /// Fails on the out-of-range date and/or invalid week number.
+    pub fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> DateZ {
+        DateZ::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
+    }
+
+    /// Makes a new `DateZ` from ISO week date (year and week number) and day of the week (DOW).
+    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// The resulting `DateZ` may have a different year from the input year.
+    ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
-    pub fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> Option<DateZ> {
+    pub fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<DateZ> {
         let flags = YearFlags::from_year(year);
         let nweeks = flags.nisoweeks();
         if 1 <= week && week <= nweeks {
@@ -310,14 +335,36 @@ impl DateZ {
         }
     }
 
+    /// Makes a new `DateZ` for the next date.
+    ///
+    /// Fails when `self` is the last representable date.
     #[inline]
-    pub fn succ(&self) -> Option<DateZ> {
-        self.with_of(self.of().succ()).or_else(|| DateZ::from_ymd(self.year() + 1, 1, 1))
+    pub fn succ(&self) -> DateZ {
+        self.succ_opt().expect("out of bound")
     }
 
+    /// Makes a new `DateZ` for the next date.
+    ///
+    /// Returns `None` when `self` is the last representable date.
     #[inline]
-    pub fn pred(&self) -> Option<DateZ> {
-        self.with_of(self.of().pred()).or_else(|| DateZ::from_ymd(self.year() - 1, 12, 31))
+    pub fn succ_opt(&self) -> Option<DateZ> {
+        self.with_of(self.of().succ()).or_else(|| DateZ::from_ymd_opt(self.year() + 1, 1, 1))
+    }
+
+    /// Makes a new `DateZ` for the prior date.
+    ///
+    /// Fails when `self` is the first representable date.
+    #[inline]
+    pub fn pred(&self) -> DateZ {
+        self.pred_opt().expect("out of bound")
+    }
+
+    /// Makes a new `DateZ` for the prior date.
+    ///
+    /// Returns `None` when `self` is the first representable date.
+    #[inline]
+    pub fn pred_opt(&self) -> Option<DateZ> {
+        self.with_of(self.of().pred()).or_else(|| DateZ::from_ymd_opt(self.year() - 1, 12, 31))
     }
 }
 
@@ -450,69 +497,69 @@ mod tests {
 
     #[test]
     fn test_date_from_ymd() {
-        assert!(DateZ::from_ymd(2012, 0, 1).is_none());
-        assert!(DateZ::from_ymd(2012, 1, 1).is_some());
-        assert!(DateZ::from_ymd(2012, 2, 29).is_some());
-        assert!(DateZ::from_ymd(2014, 2, 29).is_none());
-        assert!(DateZ::from_ymd(2014, 3, 0).is_none());
-        assert!(DateZ::from_ymd(2014, 3, 1).is_some());
-        assert!(DateZ::from_ymd(2014, 3, 31).is_some());
-        assert!(DateZ::from_ymd(2014, 3, 32).is_none());
-        assert!(DateZ::from_ymd(2014, 12, 31).is_some());
-        assert!(DateZ::from_ymd(2014, 13, 1).is_none());
+        assert!(DateZ::from_ymd_opt(2012, 0, 1).is_none());
+        assert!(DateZ::from_ymd_opt(2012, 1, 1).is_some());
+        assert!(DateZ::from_ymd_opt(2012, 2, 29).is_some());
+        assert!(DateZ::from_ymd_opt(2014, 2, 29).is_none());
+        assert!(DateZ::from_ymd_opt(2014, 3, 0).is_none());
+        assert!(DateZ::from_ymd_opt(2014, 3, 1).is_some());
+        assert!(DateZ::from_ymd_opt(2014, 3, 31).is_some());
+        assert!(DateZ::from_ymd_opt(2014, 3, 32).is_none());
+        assert!(DateZ::from_ymd_opt(2014, 12, 31).is_some());
+        assert!(DateZ::from_ymd_opt(2014, 13, 1).is_none());
     }
 
     #[test]
     fn test_date_from_yo() {
-        assert!(DateZ::from_yo(2012, 0).is_none());
-        assert_eq!(DateZ::from_yo(2012, 1), DateZ::from_ymd(2012, 1, 1));
-        assert_eq!(DateZ::from_yo(2012, 2), DateZ::from_ymd(2012, 1, 2));
-        assert_eq!(DateZ::from_yo(2012, 32), DateZ::from_ymd(2012, 2, 1));
-        assert_eq!(DateZ::from_yo(2012, 60), DateZ::from_ymd(2012, 2, 29));
-        assert_eq!(DateZ::from_yo(2012, 61), DateZ::from_ymd(2012, 3, 1));
-        assert_eq!(DateZ::from_yo(2012, 100), DateZ::from_ymd(2012, 4, 9));
-        assert_eq!(DateZ::from_yo(2012, 200), DateZ::from_ymd(2012, 7, 18));
-        assert_eq!(DateZ::from_yo(2012, 300), DateZ::from_ymd(2012, 10, 26));
-        assert_eq!(DateZ::from_yo(2012, 366), DateZ::from_ymd(2012, 12, 31));
-        assert!(DateZ::from_yo(2012, 367).is_none());
+        assert_eq!(DateZ::from_yo_opt(2012, 0), None);
+        assert_eq!(DateZ::from_yo_opt(2012, 1), Some(DateZ::from_ymd(2012, 1, 1)));
+        assert_eq!(DateZ::from_yo_opt(2012, 2), Some(DateZ::from_ymd(2012, 1, 2)));
+        assert_eq!(DateZ::from_yo_opt(2012, 32), Some(DateZ::from_ymd(2012, 2, 1)));
+        assert_eq!(DateZ::from_yo_opt(2012, 60), Some(DateZ::from_ymd(2012, 2, 29)));
+        assert_eq!(DateZ::from_yo_opt(2012, 61), Some(DateZ::from_ymd(2012, 3, 1)));
+        assert_eq!(DateZ::from_yo_opt(2012, 100), Some(DateZ::from_ymd(2012, 4, 9)));
+        assert_eq!(DateZ::from_yo_opt(2012, 200), Some(DateZ::from_ymd(2012, 7, 18)));
+        assert_eq!(DateZ::from_yo_opt(2012, 300), Some(DateZ::from_ymd(2012, 10, 26)));
+        assert_eq!(DateZ::from_yo_opt(2012, 366), Some(DateZ::from_ymd(2012, 12, 31)));
+        assert_eq!(DateZ::from_yo_opt(2012, 367), None);
 
-        assert!(DateZ::from_yo(2014, 0).is_none());
-        assert_eq!(DateZ::from_yo(2014, 1), DateZ::from_ymd(2014, 1, 1));
-        assert_eq!(DateZ::from_yo(2014, 2), DateZ::from_ymd(2014, 1, 2));
-        assert_eq!(DateZ::from_yo(2014, 32), DateZ::from_ymd(2014, 2, 1));
-        assert_eq!(DateZ::from_yo(2014, 59), DateZ::from_ymd(2014, 2, 28));
-        assert_eq!(DateZ::from_yo(2014, 60), DateZ::from_ymd(2014, 3, 1));
-        assert_eq!(DateZ::from_yo(2014, 100), DateZ::from_ymd(2014, 4, 10));
-        assert_eq!(DateZ::from_yo(2014, 200), DateZ::from_ymd(2014, 7, 19));
-        assert_eq!(DateZ::from_yo(2014, 300), DateZ::from_ymd(2014, 10, 27));
-        assert_eq!(DateZ::from_yo(2014, 365), DateZ::from_ymd(2014, 12, 31));
-        assert!(DateZ::from_yo(2014, 366).is_none());
+        assert_eq!(DateZ::from_yo_opt(2014, 0), None);
+        assert_eq!(DateZ::from_yo_opt(2014, 1), Some(DateZ::from_ymd(2014, 1, 1)));
+        assert_eq!(DateZ::from_yo_opt(2014, 2), Some(DateZ::from_ymd(2014, 1, 2)));
+        assert_eq!(DateZ::from_yo_opt(2014, 32), Some(DateZ::from_ymd(2014, 2, 1)));
+        assert_eq!(DateZ::from_yo_opt(2014, 59), Some(DateZ::from_ymd(2014, 2, 28)));
+        assert_eq!(DateZ::from_yo_opt(2014, 60), Some(DateZ::from_ymd(2014, 3, 1)));
+        assert_eq!(DateZ::from_yo_opt(2014, 100), Some(DateZ::from_ymd(2014, 4, 10)));
+        assert_eq!(DateZ::from_yo_opt(2014, 200), Some(DateZ::from_ymd(2014, 7, 19)));
+        assert_eq!(DateZ::from_yo_opt(2014, 300), Some(DateZ::from_ymd(2014, 10, 27)));
+        assert_eq!(DateZ::from_yo_opt(2014, 365), Some(DateZ::from_ymd(2014, 12, 31)));
+        assert_eq!(DateZ::from_yo_opt(2014, 366), None);
     }
 
     #[test]
     fn test_date_from_isoywd() {
-        assert!(DateZ::from_isoywd(2004, 0, Sun).is_none());
-        assert_eq!(DateZ::from_isoywd(2004, 1, Mon), DateZ::from_ymd(2003, 12, 29));
-        assert_eq!(DateZ::from_isoywd(2004, 1, Sun), DateZ::from_ymd(2004, 1, 4));
-        assert_eq!(DateZ::from_isoywd(2004, 2, Mon), DateZ::from_ymd(2004, 1, 5));
-        assert_eq!(DateZ::from_isoywd(2004, 2, Sun), DateZ::from_ymd(2004, 1, 11));
-        assert_eq!(DateZ::from_isoywd(2004, 52, Mon), DateZ::from_ymd(2004, 12, 20));
-        assert_eq!(DateZ::from_isoywd(2004, 52, Sun), DateZ::from_ymd(2004, 12, 26));
-        assert_eq!(DateZ::from_isoywd(2004, 53, Mon), DateZ::from_ymd(2004, 12, 27));
-        assert_eq!(DateZ::from_isoywd(2004, 53, Sun), DateZ::from_ymd(2005, 1, 2));
-        assert!(DateZ::from_isoywd(2004, 54, Mon).is_none());
+        assert_eq!(DateZ::from_isoywd_opt(2004, 0, Sun), None);
+        assert_eq!(DateZ::from_isoywd_opt(2004, 1, Mon), Some(DateZ::from_ymd(2003, 12, 29)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 1, Sun), Some(DateZ::from_ymd(2004, 1, 4)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 2, Mon), Some(DateZ::from_ymd(2004, 1, 5)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 2, Sun), Some(DateZ::from_ymd(2004, 1, 11)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 52, Mon), Some(DateZ::from_ymd(2004, 12, 20)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 52, Sun), Some(DateZ::from_ymd(2004, 12, 26)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 53, Mon), Some(DateZ::from_ymd(2004, 12, 27)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 53, Sun), Some(DateZ::from_ymd(2005, 1, 2)));
+        assert_eq!(DateZ::from_isoywd_opt(2004, 54, Mon), None);
 
-        assert!(DateZ::from_isoywd(2011, 0, Sun).is_none());
-        assert_eq!(DateZ::from_isoywd(2011, 1, Mon), DateZ::from_ymd(2011, 1, 3));
-        assert_eq!(DateZ::from_isoywd(2011, 1, Sun), DateZ::from_ymd(2011, 1, 9));
-        assert_eq!(DateZ::from_isoywd(2011, 2, Mon), DateZ::from_ymd(2011, 1, 10));
-        assert_eq!(DateZ::from_isoywd(2011, 2, Sun), DateZ::from_ymd(2011, 1, 16));
+        assert_eq!(DateZ::from_isoywd_opt(2011, 0, Sun), None);
+        assert_eq!(DateZ::from_isoywd_opt(2011, 1, Mon), Some(DateZ::from_ymd(2011, 1, 3)));
+        assert_eq!(DateZ::from_isoywd_opt(2011, 1, Sun), Some(DateZ::from_ymd(2011, 1, 9)));
+        assert_eq!(DateZ::from_isoywd_opt(2011, 2, Mon), Some(DateZ::from_ymd(2011, 1, 10)));
+        assert_eq!(DateZ::from_isoywd_opt(2011, 2, Sun), Some(DateZ::from_ymd(2011, 1, 16)));
 
-        assert_eq!(DateZ::from_isoywd(2018, 51, Mon), DateZ::from_ymd(2018, 12, 17));
-        assert_eq!(DateZ::from_isoywd(2018, 51, Sun), DateZ::from_ymd(2018, 12, 23));
-        assert_eq!(DateZ::from_isoywd(2018, 52, Mon), DateZ::from_ymd(2018, 12, 24));
-        assert_eq!(DateZ::from_isoywd(2018, 52, Sun), DateZ::from_ymd(2018, 12, 30));
-        assert!(DateZ::from_isoywd(2018, 53, Mon).is_none());
+        assert_eq!(DateZ::from_isoywd_opt(2018, 51, Mon), Some(DateZ::from_ymd(2018, 12, 17)));
+        assert_eq!(DateZ::from_isoywd_opt(2018, 51, Sun), Some(DateZ::from_ymd(2018, 12, 23)));
+        assert_eq!(DateZ::from_isoywd_opt(2018, 52, Mon), Some(DateZ::from_ymd(2018, 12, 24)));
+        assert_eq!(DateZ::from_isoywd_opt(2018, 52, Sun), Some(DateZ::from_ymd(2018, 12, 30)));
+        assert_eq!(DateZ::from_isoywd_opt(2018, 53, Mon), None);
     }
 
     #[test]
@@ -520,7 +567,7 @@ mod tests {
         for year in range_inclusive(2000i32, 2400) {
             for week in range_inclusive(1u32, 53) {
                 for &weekday in [Mon, Tue, Wed, Thu, Fri, Sat, Sun].iter() {
-                    let d = DateZ::from_isoywd(year, week, weekday);
+                    let d = DateZ::from_isoywd_opt(year, week, weekday);
                     if d.is_some() {
                         let d = d.unwrap();
                         assert_eq!(d.weekday(), weekday);
@@ -536,11 +583,11 @@ mod tests {
         for year in range_inclusive(2000i32, 2400) {
             for month in range_inclusive(1u32, 12) {
                 for day in range_inclusive(1u32, 31) {
-                    let d = DateZ::from_ymd(year, month, day);
+                    let d = DateZ::from_ymd_opt(year, month, day);
                     if d.is_some() {
                         let d = d.unwrap();
                         let (year_, week_, weekday_) = d.isoweekdate();
-                        let d_ = DateZ::from_isoywd(year_, week_, weekday_).unwrap();
+                        let d_ = DateZ::from_isoywd(year_, week_, weekday_);
                         assert_eq!(d, d_);
                     }
                 }
@@ -552,18 +599,16 @@ mod tests {
     fn test_date_fields() {
         fn check(year: i32, month: u32, day: u32, ordinal: u32) {
             let d1 = DateZ::from_ymd(year, month, day);
-            assert!(d1.is_some());
-            assert_eq!(d1.unwrap().year(), year);
-            assert_eq!(d1.unwrap().month(), month);
-            assert_eq!(d1.unwrap().day(), day);
-            assert_eq!(d1.unwrap().ordinal(), ordinal);
+            assert_eq!(d1.year(), year);
+            assert_eq!(d1.month(), month);
+            assert_eq!(d1.day(), day);
+            assert_eq!(d1.ordinal(), ordinal);
 
             let d2 = DateZ::from_yo(year, ordinal);
-            assert!(d2.is_some());
-            assert_eq!(d2.unwrap().year(), year);
-            assert_eq!(d2.unwrap().month(), month);
-            assert_eq!(d2.unwrap().day(), day);
-            assert_eq!(d2.unwrap().ordinal(), ordinal);
+            assert_eq!(d2.year(), year);
+            assert_eq!(d2.month(), month);
+            assert_eq!(d2.day(), day);
+            assert_eq!(d2.ordinal(), ordinal);
 
             assert_eq!(d1, d2);
         }
@@ -591,83 +636,83 @@ mod tests {
 
     #[test]
     fn test_date_weekday() {
-        assert_eq!(DateZ::from_ymd(1582, 10, 15).unwrap().weekday(), Fri);
-        assert_eq!(DateZ::from_ymd(1875, 5, 20).unwrap().weekday(), Thu); // ISO 8601 reference date
-        assert_eq!(DateZ::from_ymd(2000, 1, 1).unwrap().weekday(), Sat);
+        assert_eq!(DateZ::from_ymd(1582, 10, 15).weekday(), Fri);
+        assert_eq!(DateZ::from_ymd(1875, 5, 20).weekday(), Thu); // ISO 8601 reference date
+        assert_eq!(DateZ::from_ymd(2000, 1, 1).weekday(), Sat);
     }
 
     #[test]
     fn test_date_with_fields() {
-        let d = DateZ::from_ymd(2000, 2, 29).unwrap();
-        assert_eq!(d.with_year(-400), DateZ::from_ymd(-400, 2, 29));
+        let d = DateZ::from_ymd(2000, 2, 29);
+        assert_eq!(d.with_year(-400), Some(DateZ::from_ymd(-400, 2, 29)));
         assert_eq!(d.with_year(-100), None);
-        assert_eq!(d.with_year(1600), DateZ::from_ymd(1600, 2, 29));
+        assert_eq!(d.with_year(1600), Some(DateZ::from_ymd(1600, 2, 29)));
         assert_eq!(d.with_year(1900), None);
-        assert_eq!(d.with_year(2000), DateZ::from_ymd(2000, 2, 29));
+        assert_eq!(d.with_year(2000), Some(DateZ::from_ymd(2000, 2, 29)));
         assert_eq!(d.with_year(2001), None);
-        assert_eq!(d.with_year(2004), DateZ::from_ymd(2004, 2, 29));
+        assert_eq!(d.with_year(2004), Some(DateZ::from_ymd(2004, 2, 29)));
         assert_eq!(d.with_year(i32::MAX), None);
 
-        let d = DateZ::from_ymd(2000, 4, 30).unwrap();
+        let d = DateZ::from_ymd(2000, 4, 30);
         assert_eq!(d.with_month(0), None);
-        assert_eq!(d.with_month(1), DateZ::from_ymd(2000, 1, 30));
+        assert_eq!(d.with_month(1), Some(DateZ::from_ymd(2000, 1, 30)));
         assert_eq!(d.with_month(2), None);
-        assert_eq!(d.with_month(3), DateZ::from_ymd(2000, 3, 30));
-        assert_eq!(d.with_month(4), DateZ::from_ymd(2000, 4, 30));
-        assert_eq!(d.with_month(12), DateZ::from_ymd(2000, 12, 30));
+        assert_eq!(d.with_month(3), Some(DateZ::from_ymd(2000, 3, 30)));
+        assert_eq!(d.with_month(4), Some(DateZ::from_ymd(2000, 4, 30)));
+        assert_eq!(d.with_month(12), Some(DateZ::from_ymd(2000, 12, 30)));
         assert_eq!(d.with_month(13), None);
         assert_eq!(d.with_month(u32::MAX), None);
 
-        let d = DateZ::from_ymd(2000, 2, 8).unwrap();
+        let d = DateZ::from_ymd(2000, 2, 8);
         assert_eq!(d.with_day(0), None);
-        assert_eq!(d.with_day(1), DateZ::from_ymd(2000, 2, 1));
-        assert_eq!(d.with_day(29), DateZ::from_ymd(2000, 2, 29));
+        assert_eq!(d.with_day(1), Some(DateZ::from_ymd(2000, 2, 1)));
+        assert_eq!(d.with_day(29), Some(DateZ::from_ymd(2000, 2, 29)));
         assert_eq!(d.with_day(30), None);
         assert_eq!(d.with_day(u32::MAX), None);
 
-        let d = DateZ::from_ymd(2000, 5, 5).unwrap();
+        let d = DateZ::from_ymd(2000, 5, 5);
         assert_eq!(d.with_ordinal(0), None);
-        assert_eq!(d.with_ordinal(1), DateZ::from_ymd(2000, 1, 1));
-        assert_eq!(d.with_ordinal(60), DateZ::from_ymd(2000, 2, 29));
-        assert_eq!(d.with_ordinal(61), DateZ::from_ymd(2000, 3, 1));
-        assert_eq!(d.with_ordinal(366), DateZ::from_ymd(2000, 12, 31));
+        assert_eq!(d.with_ordinal(1), Some(DateZ::from_ymd(2000, 1, 1)));
+        assert_eq!(d.with_ordinal(60), Some(DateZ::from_ymd(2000, 2, 29)));
+        assert_eq!(d.with_ordinal(61), Some(DateZ::from_ymd(2000, 3, 1)));
+        assert_eq!(d.with_ordinal(366), Some(DateZ::from_ymd(2000, 12, 31)));
         assert_eq!(d.with_ordinal(367), None);
         assert_eq!(d.with_ordinal(u32::MAX), None);
     }
 
     #[test]
     fn test_date_ndays_from_ce() {
-        assert_eq!(DateZ::from_ymd(1, 1, 1).unwrap().ndays_from_ce(), 1);
+        assert_eq!(DateZ::from_ymd(1, 1, 1).ndays_from_ce(), 1);
 
         for year in range_inclusive(-9999i32, 10000) {
-            assert_eq!(DateZ::from_ymd(year, 1, 1).unwrap().ndays_from_ce(),
-                       DateZ::from_ymd(year - 1, 12, 31).unwrap().ndays_from_ce() + 1);
+            assert_eq!(DateZ::from_ymd(year, 1, 1).ndays_from_ce(),
+                       DateZ::from_ymd(year - 1, 12, 31).ndays_from_ce() + 1);
         }
     }
 
     #[test]
     fn test_date_succ() {
-        assert_eq!(DateZ::from_ymd(2014, 5, 6).unwrap().succ(), DateZ::from_ymd(2014, 5, 7));
-        assert_eq!(DateZ::from_ymd(2014, 5, 31).unwrap().succ(), DateZ::from_ymd(2014, 6, 1));
-        assert_eq!(DateZ::from_ymd(2014, 12, 31).unwrap().succ(), DateZ::from_ymd(2015, 1, 1));
-        assert_eq!(DateZ::from_ymd(2016, 2, 28).unwrap().succ(), DateZ::from_ymd(2016, 2, 29));
-        assert_eq!(DateZ::from_ymd(MAX_YEAR, 12, 31).unwrap().succ(), None);
+        assert_eq!(DateZ::from_ymd(2014, 5, 6).succ_opt(), Some(DateZ::from_ymd(2014, 5, 7)));
+        assert_eq!(DateZ::from_ymd(2014, 5, 31).succ_opt(), Some(DateZ::from_ymd(2014, 6, 1)));
+        assert_eq!(DateZ::from_ymd(2014, 12, 31).succ_opt(), Some(DateZ::from_ymd(2015, 1, 1)));
+        assert_eq!(DateZ::from_ymd(2016, 2, 28).succ_opt(), Some(DateZ::from_ymd(2016, 2, 29)));
+        assert_eq!(DateZ::from_ymd(MAX_YEAR, 12, 31).succ_opt(), None);
     }
 
     #[test]
     fn test_date_pred() {
-        assert_eq!(DateZ::from_ymd(2016, 3, 1).unwrap().pred(), DateZ::from_ymd(2016, 2, 29));
-        assert_eq!(DateZ::from_ymd(2015, 1, 1).unwrap().pred(), DateZ::from_ymd(2014, 12, 31));
-        assert_eq!(DateZ::from_ymd(2014, 6, 1).unwrap().pred(), DateZ::from_ymd(2014, 5, 31));
-        assert_eq!(DateZ::from_ymd(2014, 5, 7).unwrap().pred(), DateZ::from_ymd(2014, 5, 6));
-        assert_eq!(DateZ::from_ymd(MIN_YEAR, 1, 1).unwrap().pred(), None);
+        assert_eq!(DateZ::from_ymd(2016, 3, 1).pred_opt(), Some(DateZ::from_ymd(2016, 2, 29)));
+        assert_eq!(DateZ::from_ymd(2015, 1, 1).pred_opt(), Some(DateZ::from_ymd(2014, 12, 31)));
+        assert_eq!(DateZ::from_ymd(2014, 6, 1).pred_opt(), Some(DateZ::from_ymd(2014, 5, 31)));
+        assert_eq!(DateZ::from_ymd(2014, 5, 7).pred_opt(), Some(DateZ::from_ymd(2014, 5, 6)));
+        assert_eq!(DateZ::from_ymd(MIN_YEAR, 1, 1).pred_opt(), None);
     }
 
     #[test]
     fn test_date_add() {
         fn check((y1,m1,d1): (i32, u32, u32), rhs: Duration, (y,m,d): (i32, u32, u32)) {
-            let lhs = DateZ::from_ymd(y1, m1, d1).unwrap();
-            let sum = DateZ::from_ymd(y, m, d).unwrap();
+            let lhs = DateZ::from_ymd(y1, m1, d1);
+            let sum = DateZ::from_ymd(y, m, d);
             assert_eq!(lhs + rhs, sum);
             //assert_eq!(rhs + lhs, sum);
         }
@@ -686,8 +731,8 @@ mod tests {
     #[test]
     fn test_date_sub() {
         fn check((y1,m1,d1): (i32, u32, u32), (y2,m2,d2): (i32, u32, u32), diff: Duration) {
-            let lhs = DateZ::from_ymd(y1, m1, d1).unwrap();
-            let rhs = DateZ::from_ymd(y2, m2, d2).unwrap();
+            let lhs = DateZ::from_ymd(y1, m1, d1);
+            let rhs = DateZ::from_ymd(y2, m2, d2);
             assert_eq!(lhs - rhs, diff);
             assert_eq!(rhs - lhs, -diff);
         }
@@ -702,10 +747,10 @@ mod tests {
 
     #[test]
     fn test_date_fmt() {
-        assert_eq!(DateZ::from_ymd(2012,  3, 4).unwrap().to_string(),  "2012-03-04".to_string());
-        assert_eq!(DateZ::from_ymd(0,     3, 4).unwrap().to_string(),  "0000-03-04".to_string());
-        assert_eq!(DateZ::from_ymd(-307,  3, 4).unwrap().to_string(), "-0307-03-04".to_string());
-        assert_eq!(DateZ::from_ymd(12345, 3, 4).unwrap().to_string(), "+12345-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(2012,  3, 4).to_string(),  "2012-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(0,     3, 4).to_string(),  "0000-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(-307,  3, 4).to_string(), "-0307-03-04".to_string());
+        assert_eq!(DateZ::from_ymd(12345, 3, 4).to_string(), "+12345-03-04".to_string());
     }
 }
 
