@@ -12,12 +12,12 @@ use duration::Duration;
 
 pub trait Timelike {
     /// Returns the hour number from 0 to 23.
-    fn hour(&self) -> uint;
+    fn hour(&self) -> u32;
 
     /// Returns the hour number from 1 to 12 with a boolean flag,
     /// which is false for AM and true for PM.
     #[inline]
-    fn hour12(&self) -> (bool, uint) {
+    fn hour12(&self) -> (bool, u32) {
         let hour = self.hour();
         let mut hour12 = hour % 12;
         if hour12 == 0 { hour12 = 12; }
@@ -25,38 +25,38 @@ pub trait Timelike {
     }
 
     /// Returns the minute number from 0 to 59.
-    fn minute(&self) -> uint;
+    fn minute(&self) -> u32;
 
     /// Returns the second number from 0 to 59.
-    fn second(&self) -> uint;
+    fn second(&self) -> u32;
 
     /// Returns the number of nanoseconds since the whole non-leap second.
     /// The range from 1,000,000,000 to 1,999,999,999 represents the leap second.
-    fn nanosecond(&self) -> uint;
+    fn nanosecond(&self) -> u32;
 
     /// Makes a new value with the hour number changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_hour(&self, hour: uint) -> Option<Self>;
+    fn with_hour(&self, hour: u32) -> Option<Self>;
 
     /// Makes a new value with the minute number changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_minute(&self, min: uint) -> Option<Self>;
+    fn with_minute(&self, min: u32) -> Option<Self>;
 
     /// Makes a new value with the second number changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_second(&self, sec: uint) -> Option<Self>;
+    fn with_second(&self, sec: u32) -> Option<Self>;
 
     /// Makes a new value with nanoseconds since the whole non-leap second changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_nanosecond(&self, nano: uint) -> Option<Self>;
+    fn with_nanosecond(&self, nano: u32) -> Option<Self>;
 
     /// Returns the number of non-leap seconds past the last midnight.
     #[inline]
-    fn nseconds_from_midnight(&self) -> uint {
+    fn nseconds_from_midnight(&self) -> u32 {
         self.hour() * 3600 + self.minute() * 60 + self.second()
     }
 }
@@ -76,7 +76,7 @@ impl TimeZ {
     ///
     /// Returns `None` on invalid hour, minute and/or second.
     #[inline]
-    pub fn from_hms(hour: uint, min: uint, sec: uint) -> Option<TimeZ> {
+    pub fn from_hms(hour: u32, min: u32, sec: u32) -> Option<TimeZ> {
         TimeZ::from_hms_nano(hour, min, sec, 0)
     }
 
@@ -85,7 +85,7 @@ impl TimeZ {
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     #[inline]
-    pub fn from_hms_milli(hour: uint, min: uint, sec: uint, milli: uint) -> Option<TimeZ> {
+    pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> Option<TimeZ> {
         TimeZ::from_hms_nano(hour, min, sec, milli * 1_000_000)
     }
 
@@ -94,7 +94,7 @@ impl TimeZ {
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     #[inline]
-    pub fn from_hms_micro(hour: uint, min: uint, sec: uint, micro: uint) -> Option<TimeZ> {
+    pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> Option<TimeZ> {
         TimeZ::from_hms_nano(hour, min, sec, micro * 1_000)
     }
 
@@ -102,38 +102,38 @@ impl TimeZ {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
-    pub fn from_hms_nano(hour: uint, min: uint, sec: uint, nano: uint) -> Option<TimeZ> {
+    pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Option<TimeZ> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 { return None; }
         Some(TimeZ { hour: hour as u8, min: min as u8, sec: sec as u8, frac: nano as u32 })
     }
 }
 
 impl Timelike for TimeZ {
-    #[inline] fn hour(&self) -> uint { self.hour as uint }
-    #[inline] fn minute(&self) -> uint { self.min as uint }
-    #[inline] fn second(&self) -> uint { self.sec as uint }
-    #[inline] fn nanosecond(&self) -> uint { self.frac as uint }
+    #[inline] fn hour(&self) -> u32 { self.hour as u32 }
+    #[inline] fn minute(&self) -> u32 { self.min as u32 }
+    #[inline] fn second(&self) -> u32 { self.sec as u32 }
+    #[inline] fn nanosecond(&self) -> u32 { self.frac as u32 }
 
     #[inline]
-    fn with_hour(&self, hour: uint) -> Option<TimeZ> {
+    fn with_hour(&self, hour: u32) -> Option<TimeZ> {
         if hour >= 24 { return None; }
         Some(TimeZ { hour: hour as u8, ..*self })
     }
 
     #[inline]
-    fn with_minute(&self, min: uint) -> Option<TimeZ> {
+    fn with_minute(&self, min: u32) -> Option<TimeZ> {
         if min >= 60 { return None; }
         Some(TimeZ { min: min as u8, ..*self })
     }
 
     #[inline]
-    fn with_second(&self, sec: uint) -> Option<TimeZ> {
+    fn with_second(&self, sec: u32) -> Option<TimeZ> {
         if sec >= 60 { return None; }
         Some(TimeZ { sec: sec as u8, ..*self })
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: uint) -> Option<TimeZ> {
+    fn with_nanosecond(&self, nano: u32) -> Option<TimeZ> {
         if nano >= 2_000_000_000 { return None; }
         Some(TimeZ { frac: nano as u32, ..*self })
     }
@@ -141,7 +141,7 @@ impl Timelike for TimeZ {
 
 impl Add<Duration,TimeZ> for TimeZ {
     fn add(&self, rhs: &Duration) -> TimeZ {
-        let mut secs = self.nseconds_from_midnight() as int + rhs.nseconds() as int;
+        let mut secs = self.nseconds_from_midnight() as i32 + rhs.nseconds() as i32;
         let mut nanos = self.frac + rhs.nnanoseconds() as u32;
 
         // always ignore leap seconds after the current whole second
@@ -169,9 +169,9 @@ impl Add<TimeZ,TimeZ> for Duration {
 impl Sub<TimeZ,Duration> for TimeZ {
     fn sub(&self, rhs: &TimeZ) -> Duration {
         // the number of whole non-leap seconds
-        let secs = (self.hour as int - rhs.hour as int) * 3600 +
-                   (self.min  as int - rhs.min  as int) * 60 +
-                   (self.sec  as int - rhs.sec  as int) - 1;
+        let secs = (self.hour as i32 - rhs.hour as i32) * 3600 +
+                   (self.min  as i32 - rhs.min  as i32) * 60 +
+                   (self.sec  as i32 - rhs.sec  as i32) - 1;
 
         // the fractional second from the rhs to the next non-leap second
         let maxnanos = if rhs.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
@@ -181,7 +181,7 @@ impl Sub<TimeZ,Duration> for TimeZ {
         let lastfrac = if self.frac >= 1_000_000_000 {1_000_000_000} else {0};
         let nanos2 = self.frac - lastfrac;
 
-        Duration::seconds(secs) + Duration::nanoseconds(nanos1 as int + nanos2 as int)
+        Duration::seconds(secs) + Duration::nanoseconds(nanos1 as i32 + nanos2 as i32)
     }
 }
 
@@ -211,7 +211,7 @@ mod tests {
     use super::TimeZ;
     use duration::Duration;
 
-    fn hmsm(hour: uint, min: uint, sec: uint, millis: uint) -> TimeZ {
+    fn hmsm(hour: u32, min: u32, sec: u32, millis: u32) -> TimeZ {
         TimeZ::from_hms_milli(hour, min, sec, millis).unwrap()
     }
 

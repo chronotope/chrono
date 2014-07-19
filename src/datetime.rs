@@ -24,8 +24,8 @@ impl DateTimeZ {
     }
 
     #[inline]
-    pub fn from_ymdhms(year: int, month: uint, day: uint,
-                       hour: uint, min: uint, sec: uint) -> Option<DateTimeZ> {
+    pub fn from_ymdhms(year: i32, month: u32, day: u32,
+                       hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
         match (DateZ::from_ymd(year, month, day), TimeZ::from_hms(hour, min, sec)) {
             (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
             (_, _) => None,
@@ -33,8 +33,8 @@ impl DateTimeZ {
     }
 
     #[inline]
-    pub fn from_yohms(year: int, ordinal: uint,
-                      hour: uint, min: uint, sec: uint) -> Option<DateTimeZ> {
+    pub fn from_yohms(year: i32, ordinal: u32,
+                      hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
         match (DateZ::from_yo(year, ordinal), TimeZ::from_hms(hour, min, sec)) {
             (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
             (_, _) => None,
@@ -42,8 +42,8 @@ impl DateTimeZ {
     }
 
     #[inline]
-    pub fn from_isoywdhms(year: int, week: uint, weekday: Weekday,
-                          hour: uint, min: uint, sec: uint) -> Option<DateTimeZ> {
+    pub fn from_isoywdhms(year: i32, week: u32, weekday: Weekday,
+                          hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
         match (DateZ::from_isoywd(year, week, weekday), TimeZ::from_hms(hour, min, sec)) {
             (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
             (_, _) => None,
@@ -63,81 +63,83 @@ impl DateTimeZ {
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00.
     /// Note that this does *not* account for the timezone!
     #[inline]
-    pub fn nseconds_from_unix_epoch(&self) -> int {
-        (self.date.ndays_from_ce() - 719163) * 86400 + self.time.nseconds_from_midnight() as int
+    pub fn nseconds_from_unix_epoch(&self) -> i64 {
+        let ndays = self.date.ndays_from_ce() as i64;
+        let nseconds = self.time.nseconds_from_midnight() as i64;
+        (ndays - 719163) * 86400 + nseconds
     }
 }
 
 impl Datelike for DateTimeZ {
-    #[inline] fn year(&self) -> int { self.date.year() }
-    #[inline] fn month(&self) -> uint { self.date.month() }
-    #[inline] fn month0(&self) -> uint { self.date.month0() }
-    #[inline] fn day(&self) -> uint { self.date.day() }
-    #[inline] fn day0(&self) -> uint { self.date.day0() }
-    #[inline] fn ordinal(&self) -> uint { self.date.ordinal() }
-    #[inline] fn ordinal0(&self) -> uint { self.date.ordinal0() }
+    #[inline] fn year(&self) -> i32 { self.date.year() }
+    #[inline] fn month(&self) -> u32 { self.date.month() }
+    #[inline] fn month0(&self) -> u32 { self.date.month0() }
+    #[inline] fn day(&self) -> u32 { self.date.day() }
+    #[inline] fn day0(&self) -> u32 { self.date.day0() }
+    #[inline] fn ordinal(&self) -> u32 { self.date.ordinal() }
+    #[inline] fn ordinal0(&self) -> u32 { self.date.ordinal0() }
     #[inline] fn weekday(&self) -> Weekday { self.date.weekday() }
-    #[inline] fn isoweekdate(&self) -> (int, uint, Weekday) { self.date.isoweekdate() }
+    #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.date.isoweekdate() }
 
     #[inline]
-    fn with_year(&self, year: int) -> Option<DateTimeZ> {
+    fn with_year(&self, year: i32) -> Option<DateTimeZ> {
         self.date.with_year(year).map(|d| DateTimeZ { date: d, ..*self })
     }
 
     #[inline]
-    fn with_month(&self, month: uint) -> Option<DateTimeZ> {
+    fn with_month(&self, month: u32) -> Option<DateTimeZ> {
         self.date.with_month(month).map(|d| DateTimeZ { date: d, ..*self })
     }
 
     #[inline]
-    fn with_month0(&self, month0: uint) -> Option<DateTimeZ> {
+    fn with_month0(&self, month0: u32) -> Option<DateTimeZ> {
         self.date.with_month0(month0).map(|d| DateTimeZ { date: d, ..*self })
     }
 
     #[inline]
-    fn with_day(&self, day: uint) -> Option<DateTimeZ> {
+    fn with_day(&self, day: u32) -> Option<DateTimeZ> {
         self.date.with_day(day).map(|d| DateTimeZ { date: d, ..*self })
     }
 
     #[inline]
-    fn with_day0(&self, day0: uint) -> Option<DateTimeZ> {
+    fn with_day0(&self, day0: u32) -> Option<DateTimeZ> {
         self.date.with_day0(day0).map(|d| DateTimeZ { date: d, ..*self })
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: uint) -> Option<DateTimeZ> {
+    fn with_ordinal(&self, ordinal: u32) -> Option<DateTimeZ> {
         self.date.with_ordinal(ordinal).map(|d| DateTimeZ { date: d, ..*self })
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: uint) -> Option<DateTimeZ> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTimeZ> {
         self.date.with_ordinal0(ordinal0).map(|d| DateTimeZ { date: d, ..*self })
     }
 }
 
 impl Timelike for DateTimeZ {
-    #[inline] fn hour(&self) -> uint { self.time.hour() }
-    #[inline] fn minute(&self) -> uint { self.time.minute() }
-    #[inline] fn second(&self) -> uint { self.time.second() }
-    #[inline] fn nanosecond(&self) -> uint { self.time.nanosecond() }
+    #[inline] fn hour(&self) -> u32 { self.time.hour() }
+    #[inline] fn minute(&self) -> u32 { self.time.minute() }
+    #[inline] fn second(&self) -> u32 { self.time.second() }
+    #[inline] fn nanosecond(&self) -> u32 { self.time.nanosecond() }
 
     #[inline]
-    fn with_hour(&self, hour: uint) -> Option<DateTimeZ> {
+    fn with_hour(&self, hour: u32) -> Option<DateTimeZ> {
         self.time.with_hour(hour).map(|t| DateTimeZ { time: t, ..*self })
     }
 
     #[inline]
-    fn with_minute(&self, min: uint) -> Option<DateTimeZ> {
+    fn with_minute(&self, min: u32) -> Option<DateTimeZ> {
         self.time.with_minute(min).map(|t| DateTimeZ { time: t, ..*self })
     }
 
     #[inline]
-    fn with_second(&self, sec: uint) -> Option<DateTimeZ> {
+    fn with_second(&self, sec: u32) -> Option<DateTimeZ> {
         self.time.with_second(sec).map(|t| DateTimeZ { time: t, ..*self })
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: uint) -> Option<DateTimeZ> {
+    fn with_nanosecond(&self, nano: u32) -> Option<DateTimeZ> {
         self.time.with_nanosecond(nano).map(|t| DateTimeZ { time: t, ..*self })
     }
 }

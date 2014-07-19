@@ -9,11 +9,11 @@
 use std::{fmt, num, i32};
 use num::Integer;
 
-pub static MIN_DAYS: int = i32::MIN as int;
-pub static MAX_DAYS: int = i32::MAX as int;
+pub static MIN_DAYS: i32 = i32::MIN;
+pub static MAX_DAYS: i32 = i32::MAX;
 
-static NANOS_PER_SEC: int = 1_000_000_000;
-static SECS_PER_DAY: int = 86400;
+static NANOS_PER_SEC: i32 = 1_000_000_000;
+static SECS_PER_DAY: i32 = 86400;
 
 macro_rules! earlyexit(
     ($e:expr) => (match $e { Some(v) => v, None => return None })
@@ -27,7 +27,7 @@ pub struct Duration {
 }
 
 impl Duration {
-    pub fn new(days: int, secs: int, nanos: int) -> Option<Duration> {
+    pub fn new(days: i32, secs: i32, nanos: i32) -> Option<Duration> {
         let (secs_, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
         let secs = earlyexit!(secs.checked_add(&secs_));
         let (days_, secs) = secs.div_mod_floor(&SECS_PER_DAY);
@@ -41,69 +41,69 @@ impl Duration {
     }
 
     #[inline]
-    pub fn weeks(weeks: int) -> Duration {
+    pub fn weeks(weeks: i32) -> Duration {
         Duration::days(weeks * 7)
     }
 
     #[inline]
-    pub fn days(days: int) -> Duration {
+    pub fn days(days: i32) -> Duration {
         let days = days.to_i32().expect("Duration::days out of bounds");
         Duration { days: days, secs: 0, nanos: 0 }
     }
 
     #[inline]
-    pub fn hours(hours: int) -> Duration {
+    pub fn hours(hours: i32) -> Duration {
         let (days, hours) = hours.div_mod_floor(&(SECS_PER_DAY / 3600));
         let secs = hours * 3600;
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
     #[inline]
-    pub fn minutes(mins: int) -> Duration {
+    pub fn minutes(mins: i32) -> Duration {
         let (days, mins) = mins.div_mod_floor(&(SECS_PER_DAY / 60));
         let secs = mins * 60;
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
     #[inline]
-    pub fn seconds(secs: int) -> Duration {
+    pub fn seconds(secs: i32) -> Duration {
         let (days, secs) = secs.div_mod_floor(&SECS_PER_DAY);
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
     #[inline]
-    pub fn milliseconds(millis: int) -> Duration {
+    pub fn milliseconds(millis: i32) -> Duration {
         let (secs, millis) = millis.div_mod_floor(&(NANOS_PER_SEC / 1_000_000));
         let nanos = millis * 1_000_000;
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
     #[inline]
-    pub fn microseconds(micros: int) -> Duration {
+    pub fn microseconds(micros: i32) -> Duration {
         let (secs, micros) = micros.div_mod_floor(&(NANOS_PER_SEC / 1_000));
         let nanos = micros * 1_000;
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
     #[inline]
-    pub fn nanoseconds(nanos: int) -> Duration {
+    pub fn nanoseconds(nanos: i32) -> Duration {
         let (secs, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
     #[inline]
-    pub fn ndays(&self) -> int {
-        self.days as int
+    pub fn ndays(&self) -> i32 {
+        self.days as i32
     }
 
     #[inline]
-    pub fn nseconds(&self) -> uint {
-        self.secs as uint
+    pub fn nseconds(&self) -> u32 {
+        self.secs as u32
     }
 
     #[inline]
-    pub fn nnanoseconds(&self) -> uint {
-        self.nanos as uint
+    pub fn nnanoseconds(&self) -> u32 {
+        self.nanos as u32
     }
 }
 
@@ -121,10 +121,10 @@ impl num::Zero for Duration {
 
 impl Neg<Duration> for Duration {
     fn neg(&self) -> Duration {
-        // XXX overflow (e.g. `-Duration::days(i32::MIN as int)`)
-        let mut days = -(self.days as int);
-        let mut secs = -(self.secs as int);
-        let mut nanos = -(self.nanos as int);
+        // XXX overflow (e.g. `-Duration::days(i32::MIN as i32)`)
+        let mut days = -(self.days as i32);
+        let mut secs = -(self.secs as i32);
+        let mut nanos = -(self.nanos as i32);
         if nanos < 0 {
             nanos += NANOS_PER_SEC;
             secs -= 1;
@@ -174,8 +174,8 @@ impl num::CheckedAdd for Duration {
 impl Sub<Duration,Duration> for Duration {
     fn sub(&self, rhs: &Duration) -> Duration {
         let mut days = self.days - rhs.days;
-        let mut secs = self.secs as int - rhs.secs as int;
-        let mut nanos = self.nanos as int - rhs.nanos as int;
+        let mut secs = self.secs as i32 - rhs.secs as i32;
+        let mut nanos = self.nanos as i32 - rhs.nanos as i32;
         if nanos < 0 {
             nanos += NANOS_PER_SEC;
             secs -= 1;
@@ -191,8 +191,8 @@ impl Sub<Duration,Duration> for Duration {
 impl num::CheckedSub for Duration {
     fn checked_sub(&self, rhs: &Duration) -> Option<Duration> {
         let mut days = earlyexit!(self.days.checked_sub(&rhs.days));
-        let mut secs = self.secs as int - rhs.secs as int;
-        let mut nanos = self.nanos as int - rhs.nanos as int;
+        let mut secs = self.secs as i32 - rhs.secs as i32;
+        let mut nanos = self.nanos as i32 - rhs.nanos as i32;
         if nanos < 0 {
             nanos += NANOS_PER_SEC;
             secs -= 1;
@@ -205,8 +205,8 @@ impl num::CheckedSub for Duration {
     }
 }
 
-impl Mul<int,Duration> for Duration {
-    fn mul(&self, rhs: &int) -> Duration {
+impl Mul<i32,Duration> for Duration {
+    fn mul(&self, rhs: &i32) -> Duration {
         /// Given `0 <= y < limit <= 2^30`,
         /// returns `(h,l)` such that `x * y = h * limit + l` where `0 <= l < limit`.
         fn mul_i64_u32_limit(x: i64, y: u32, limit: u32) -> (i64,u32) {
@@ -232,8 +232,8 @@ impl Mul<int,Duration> for Duration {
     }
 }
 
-impl Div<int,Duration> for Duration {
-    fn div(&self, rhs: &int) -> Duration {
+impl Div<i32,Duration> for Duration {
+    fn div(&self, rhs: &i32) -> Duration {
         let (rhs, days, secs, nanos) = if *rhs < 0 {
             let negated = -*self;
             (-*rhs as i64, negated.days as i64, negated.secs as i64, negated.nanos as i64)
@@ -279,7 +279,7 @@ impl fmt::Show for Duration {
 #[cfg(test)]
 mod tests {
     use super::{Duration, MIN_DAYS, MAX_DAYS};
-    use std::int;
+    use std::i32;
 
     #[test]
     fn test_duration() {
@@ -298,45 +298,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_carry() {
-        assert_eq!(Duration::seconds((MAX_DAYS + 1) * 86400 - 1),
-                   Duration::new(MAX_DAYS, 86399, 0).unwrap());
-        assert_eq!(Duration::seconds(MIN_DAYS * 86400),
-                   Duration::new(MIN_DAYS, 0, 0).unwrap());
-
-        // 86400 * 10^9 * (2^31-1) exceeds 2^63-1, so there is no test for nanoseconds
-    }
-
-    #[test]
-    #[should_fail]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_days_out_of_bound_1() {
-        Duration::days(MAX_DAYS + 1);
-    }
-
-    #[test]
-    #[should_fail]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_days_out_of_bound_2() {
-        Duration::days(MIN_DAYS - 1);
-    }
-
-    #[test]
-    #[should_fail]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_seconds_out_of_bound_1() {
-        Duration::seconds((MAX_DAYS + 1) * 86400);
-    }
-
-    #[test]
-    #[should_fail]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_seconds_out_of_bound_2() {
-        Duration::seconds(MIN_DAYS * 86400 - 1);
-    }
-
-    #[test]
     fn test_duration_checked_ops() {
         assert_eq!(Duration::days(MAX_DAYS).checked_add(&Duration::seconds(86399)),
                    Some(Duration::days(MAX_DAYS - 1) + Duration::seconds(86400+86399)));
@@ -349,8 +310,8 @@ mod tests {
 
     #[test]
     fn test_duration_mul() {
-        assert_eq!(Duration::zero() * int::MAX, Duration::zero());
-        assert_eq!(Duration::zero() * int::MIN, Duration::zero());
+        assert_eq!(Duration::zero() * i32::MAX, Duration::zero());
+        assert_eq!(Duration::zero() * i32::MIN, Duration::zero());
         assert_eq!(Duration::nanoseconds(1) * 0, Duration::zero());
         assert_eq!(Duration::nanoseconds(1) * 1, Duration::nanoseconds(1));
         assert_eq!(Duration::nanoseconds(1) * 1_000_000_000, Duration::seconds(1));
@@ -363,38 +324,13 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_mul_64() {
-        assert_eq!(Duration::nanoseconds(1) * 86400_000_000_000, Duration::days(1));
-        assert_eq!((Duration::seconds(13) + Duration::nanoseconds(333_333_333)) * 64800,
-                   Duration::days(10) - Duration::nanoseconds(21600));
-        assert_eq!((Duration::nanoseconds(1) + Duration::seconds(1) +
-                    Duration::days(1)) * 2_000_000_000,
-                   Duration::nanoseconds(2_000_000_000) + Duration::seconds(2_000_000_000) +
-                   Duration::days(2_000_000_000));
-    }
-
-    #[test]
     fn test_duration_div() {
-        assert_eq!(Duration::zero() / int::MAX, Duration::zero());
-        assert_eq!(Duration::zero() / int::MIN, Duration::zero());
+        assert_eq!(Duration::zero() / i32::MAX, Duration::zero());
+        assert_eq!(Duration::zero() / i32::MIN, Duration::zero());
         assert_eq!(Duration::nanoseconds(123_456_789) / 1, Duration::nanoseconds(123_456_789));
         assert_eq!(Duration::nanoseconds(123_456_789) / -1, -Duration::nanoseconds(123_456_789));
         assert_eq!(-Duration::nanoseconds(123_456_789) / -1, Duration::nanoseconds(123_456_789));
         assert_eq!(-Duration::nanoseconds(123_456_789) / 1, -Duration::nanoseconds(123_456_789));
-    }
-
-    #[test]
-    #[cfg(target_word_size = "64")]
-    fn test_duration_div_64() {
-        assert_eq!(Duration::nanoseconds(  999_999_999_999_999_999) / 9,
-                   Duration::nanoseconds(  111_111_111_111_111_111));
-        assert_eq!(Duration::nanoseconds(1_000_000_000_000_000_000) / 9,
-                   Duration::nanoseconds(  111_111_111_111_111_111));
-        assert_eq!(-Duration::nanoseconds(  999_999_999_999_999_999) / 9,
-                   -Duration::nanoseconds(  111_111_111_111_111_111));
-        assert_eq!(-Duration::nanoseconds(1_000_000_000_000_000_000) / 9,
-                   -Duration::nanoseconds(  111_111_111_111_111_112)); // XXX inconsistent
     }
 
     #[test]
