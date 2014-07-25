@@ -255,7 +255,7 @@ impl fmt::Show for Duration {
         let hasdate = self.days != 0;
         let hastime = (self.secs != 0 || self.nanos != 0) || !hasdate;
 
-        try!('P'.fmt(f));
+        try!(write!(f, "P"));
         if hasdate {
             // technically speaking the negative part is not the valid ISO 8601,
             // but we need to print it anyway.
@@ -344,6 +344,10 @@ mod tests {
         assert_eq!(Duration::nanoseconds(42).to_string(), "PT0,000000042S".to_string());
         assert_eq!((Duration::days(7) + Duration::milliseconds(6543)).to_string(),
                    "P7DT6,543S".to_string());
+
+        // the format specifier should have no effect on `Duration`
+        assert_eq!(format!("{:30}", Duration::days(1) + Duration::milliseconds(2345)),
+                   "P1DT2,345S".to_string());
     }
 }
 

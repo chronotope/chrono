@@ -751,6 +751,10 @@ mod tests {
         assert_eq!(DateZ::from_ymd(0,     3, 4).to_string(),  "0000-03-04".to_string());
         assert_eq!(DateZ::from_ymd(-307,  3, 4).to_string(), "-0307-03-04".to_string());
         assert_eq!(DateZ::from_ymd(12345, 3, 4).to_string(), "+12345-03-04".to_string());
+
+        // the format specifier should have no effect on `TimeZ`
+        assert_eq!(format!("{:+30}", DateZ::from_ymd(1234, 5, 6)), "1234-05-06".to_string());
+        assert_eq!(format!("{:30}", DateZ::from_ymd(12345, 6, 7)), "+12345-06-07".to_string());
     }
 }
 

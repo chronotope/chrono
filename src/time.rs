@@ -332,6 +332,10 @@ mod tests {
                    "00:00:00,043210".to_string());
         assert_eq!(TimeZ::from_hms_nano(0, 0, 0, 6543210).to_string(),
                    "00:00:00,006543210".to_string());
+
+        // the format specifier should have no effect on `TimeZ`
+        assert_eq!(format!("{:30}", TimeZ::from_hms_milli(3, 5, 7, 9)),
+                   "03:05:07,009".to_string());
     }
 }
 
