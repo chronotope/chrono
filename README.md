@@ -10,10 +10,10 @@ Date and time handling for Rust.
 
 ```rust
 // find out if the doomsday rule is correct!
-use chrono::{MIN_YEAR, MAX_YEAR, Weekday, DateZ};
+use chrono::{Weekday, DateZ, date};
 use std::iter::range_inclusive;
 
-for y in range_inclusive(MIN_YEAR, MAX_YEAR) {
+for y in range_inclusive(date::MINZ.year(), date::MAXZ.year()) {
     // even months
     let d4   = DateZ::from_ymd(y,  4,  4);
     let d6   = DateZ::from_ymd(y,  6,  6);

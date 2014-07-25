@@ -29,7 +29,7 @@ pub mod datetime;
 fn test_readme_doomsday() {
     use std::iter::range_inclusive;
 
-    for y in range_inclusive(date::MIN.year(), date::MAX.year()) {
+    for y in range_inclusive(date::MINZ.year(), date::MAXZ.year()) {
         // even months
         let d4   = DateZ::from_ymd(y,  4,  4);
         let d6   = DateZ::from_ymd(y,  6,  6);

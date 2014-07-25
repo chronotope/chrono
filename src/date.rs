@@ -225,17 +225,19 @@ pub struct DateZ {
 }
 
 /// The minimum possible `DateZ`.
-pub static MIN: DateZ = DateZ { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+pub static MINZ: DateZ = DateZ { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
 /// The maximum possible `DateZ`.
-pub static MAX: DateZ = DateZ { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+pub static MAXZ: DateZ = DateZ { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
 
 // as it is hard to verify year flags in `MIN` and `MAX`, we use a separate run-time test.
 #[test]
 fn test_datez_bounds() {
     let calculated_min = DateZ::from_ymd(MIN_YEAR, 1, 1);
     let calculated_max = DateZ::from_ymd(MAX_YEAR, 12, 31);
-    assert!(MIN == calculated_min, "`MIN` should have a year flag {}", calculated_min.of().flags());
-    assert!(MAX == calculated_max, "`MAX` should have a year flag {}", calculated_max.of().flags());
+    assert!(MINZ == calculated_min,
+            "`MINZ` should have a year flag {}", calculated_min.of().flags());
+    assert!(MAXZ == calculated_max,
+            "`MAXZ` should have a year flag {}", calculated_max.of().flags());
 }
 
 impl DateZ {
@@ -464,8 +466,8 @@ impl Datelike for DateZ {
 }
 
 impl num::Bounded for DateZ {
-    #[inline] fn min_value() -> DateZ { MIN }
-    #[inline] fn max_value() -> DateZ { MAX }
+    #[inline] fn min_value() -> DateZ { MINZ }
+    #[inline] fn max_value() -> DateZ { MAXZ }
 }
 
 impl Add<Duration,DateZ> for DateZ {
