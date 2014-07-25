@@ -19,7 +19,7 @@ static NANOS_PER_SEC: i32 = 1_000_000_000;
 /// The number of (non-leap) seconds in days.
 static SECS_PER_DAY: i32 = 86400;
 
-macro_rules! earlyexit(
+macro_rules! try_opt(
     ($e:expr) => (match $e { Some(v) => v, None => return None })
 )
 
@@ -52,9 +52,9 @@ impl Duration {
     /// Returns `None` when the duration is out of bounds.
     pub fn new_opt(days: i32, secs: i32, nanos: i32) -> Option<Duration> {
         let (secs_, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
-        let secs = earlyexit!(secs.checked_add(&secs_));
+        let secs = try_opt!(secs.checked_add(&secs_));
         let (days_, secs) = secs.div_mod_floor(&SECS_PER_DAY);
-        let days = earlyexit!(days.checked_add(&days_).and_then(|v| v.to_i32()));
+        let days = try_opt!(days.checked_add(&days_).and_then(|v| v.to_i32()));
         Some(Duration { days: days, secs: secs as u32, nanos: nanos as u32 })
     }
 
@@ -148,25 +148,123 @@ impl Duration {
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
-    /// Returns the number of days in the duration.
-    /// For the negative duration, this is a largest integral number of days smaller than `self`.
+    /// Returns a tuple of the number of days, (non-leap) seconds and nanoseconds in the duration.
+    /// Note that the number of seconds and nanoseconds are always positive,
+    /// so that for example `-Duration::seconds(3)` has -1 days and 86,397 seconds.
     #[inline]
-    pub fn ndays(&self) -> i32 {
-        self.days as i32
+    pub fn to_tuple(&self) -> (i32, u32, u32) {
+        (self.days, self.secs, self.nanos)
     }
 
-    /// Returns the number of (non-leap) seconds in the duration.
-    /// This never goes negative even when the duration is negative.
+    /// Same as `to_tuple` but returns a tuple compatible to `to_negated_tuple`.
     #[inline]
-    pub fn nseconds(&self) -> u32 {
-        self.secs as u32
+    fn to_tuple_64(&self) -> (i64, u32, u32) {
+        (self.days as i64, self.secs, self.nanos)
     }
 
-    /// Returns the number of nanoseconds in the duration.
-    /// This never goes negative even when the duration is negative.
+    /// Negates the duration and returns a tuple like `to_tuple`.
+    /// This does not overflow and thus is internally used for several methods.
+    fn to_negated_tuple_64(&self) -> (i64, u32, u32) {
+        let mut days = -(self.days as i64);
+        let mut secs = -(self.secs as i32);
+        let mut nanos = -(self.nanos as i32);
+        if nanos < 0 {
+            nanos += NANOS_PER_SEC;
+            secs -= 1;
+        }
+        if secs < 0 {
+            secs += SECS_PER_DAY;
+            days -= 1;
+        }
+        (days, secs as u32, nanos as u32)
+    }
+
+    /// Returns the total number of whole weeks in the duration.
     #[inline]
-    pub fn nnanoseconds(&self) -> u32 {
-        self.nanos as u32
+    pub fn num_weeks(&self) -> i32 {
+        self.num_days() / 7
+    }
+
+    /// Returns the total number of whole days in the duration.
+    pub fn num_days(&self) -> i32 {
+        if self.days < 0 {
+            let negated = -*self;
+            -negated.days
+        } else {
+            self.days
+        }
+    }
+
+    /// Returns the total number of whole hours in the duration.
+    #[inline]
+    pub fn num_hours(&self) -> i64 {
+        self.num_seconds() / 3600
+    }
+
+    /// Returns the total number of whole minutes in the duration.
+    #[inline]
+    pub fn num_minutes(&self) -> i64 {
+        self.num_seconds() / 60
+    }
+
+    /// Returns the total number of (non-leap) whole seconds in the duration.
+    pub fn num_seconds(&self) -> i64 {
+        // cannot overflow, 2^32 * 86400 < 2^64
+        fn secs((days, secs, _): (i64, u32, u32)) -> i64 {
+            days as i64 * SECS_PER_DAY as i64 + secs as i64
+        }
+        if self.days < 0 {-secs(self.to_negated_tuple_64())} else {secs(self.to_tuple_64())}
+    }
+
+    /// Returns the total number of whole milliseconds in the duration.
+    pub fn num_milliseconds(&self) -> i64 {
+        // cannot overflow, 2^32 * 86400 * 1000 < 2^64
+        fn millis((days, secs, nanos): (i64, u32, u32)) -> i64 {
+            static MILLIS_PER_SEC: i64 = 1_000;
+            static NANOS_PER_MILLI: i64 = 1_000_000;
+            (days as i64 * MILLIS_PER_SEC * SECS_PER_DAY as i64 +
+             secs as i64 * MILLIS_PER_SEC +
+             nanos as i64 / NANOS_PER_MILLI)
+        }
+        if self.days < 0 {-millis(self.to_negated_tuple_64())} else {millis(self.to_tuple_64())}
+    }
+
+    /// Returns the total number of whole microseconds in the duration,
+    /// or `None` on the overflow (exceeding 2^63 microseconds in either directions).
+    pub fn num_microseconds(&self) -> Option<i64> {
+        fn micros((days, secs, nanos): (i64, u32, u32)) -> Option<i64> {
+            static MICROS_PER_SEC: i64 = 1_000_000;
+            static MICROS_PER_DAY: i64 = MICROS_PER_SEC * SECS_PER_DAY as i64;
+            static NANOS_PER_MICRO: i64 = 1_000;
+            let nmicros = try_opt!((days as i64).checked_mul(&MICROS_PER_DAY));
+            let nmicros = try_opt!(nmicros.checked_add(&(secs as i64 * MICROS_PER_SEC)));
+            let nmicros = try_opt!(nmicros.checked_add(&(nanos as i64 / NANOS_PER_MICRO as i64)));
+            Some(nmicros)
+        }
+        if self.days < 0 {
+            // the final negation won't overflow since we start with positive numbers.
+            micros(self.to_negated_tuple_64()).map(|micros| -micros)
+        } else {
+            micros(self.to_tuple_64())
+        }
+    }
+
+    /// Returns the total number of whole nanoseconds in the duration,
+    /// or `None` on the overflow (exceeding 2^63 nanoseconds in either directions).
+    pub fn num_nanoseconds(&self) -> Option<i64> {
+        fn nanos((days, secs, nanos): (i64, u32, u32)) -> Option<i64> {
+            static NANOS_PER_DAY: i64 = NANOS_PER_SEC as i64 * SECS_PER_DAY as i64;
+            let nnanos = try_opt!((days as i64).checked_mul(&NANOS_PER_DAY));
+            let nnanos = try_opt!(nnanos.checked_add(&(secs as i64 * NANOS_PER_SEC as i64)));
+            let nnanos = try_opt!(nnanos.checked_add(&(nanos as i64)));
+            Some(nnanos)
+        }
+        if self.days < 0 {
+            // the final negation won't overflow since we start with positive numbers.
+            nanos(self.to_negated_tuple_64()).map(|micros| -micros)
+        } else {
+            nanos(self.to_tuple_64())
+        }
     }
 }
 
@@ -188,20 +286,10 @@ impl num::Zero for Duration {
 }
 
 impl Neg<Duration> for Duration {
+    #[inline]
     fn neg(&self) -> Duration {
-        // XXX overflow (e.g. `-Duration::days(i32::MIN as i32)`)
-        let mut days = -(self.days as i32);
-        let mut secs = -(self.secs as i32);
-        let mut nanos = -(self.nanos as i32);
-        if nanos < 0 {
-            nanos += NANOS_PER_SEC;
-            secs -= 1;
-        }
-        if secs < 0 {
-            secs += SECS_PER_DAY;
-            days -= 1;
-        }
-        Duration { days: days as i32, secs: secs as u32, nanos: nanos as u32 }
+        let (days, secs, nanos) = self.to_negated_tuple_64();
+        Duration { days: days as i32, secs: secs, nanos: nanos } // XXX can overflow
     }
 }
 
@@ -224,7 +312,7 @@ impl Add<Duration,Duration> for Duration {
 
 impl num::CheckedAdd for Duration {
     fn checked_add(&self, rhs: &Duration) -> Option<Duration> {
-        let mut days = earlyexit!(self.days.checked_add(&rhs.days));
+        let mut days = try_opt!(self.days.checked_add(&rhs.days));
         let mut secs = self.secs + rhs.secs;
         let mut nanos = self.nanos + rhs.nanos;
         if nanos >= NANOS_PER_SEC as u32 {
@@ -233,7 +321,7 @@ impl num::CheckedAdd for Duration {
         }
         if secs >= SECS_PER_DAY as u32 {
             secs -= SECS_PER_DAY as u32;
-            days = earlyexit!(days.checked_add(&1));
+            days = try_opt!(days.checked_add(&1));
         }
         Some(Duration { days: days, secs: secs, nanos: nanos })
     }
@@ -258,7 +346,7 @@ impl Sub<Duration,Duration> for Duration {
 
 impl num::CheckedSub for Duration {
     fn checked_sub(&self, rhs: &Duration) -> Option<Duration> {
-        let mut days = earlyexit!(self.days.checked_sub(&rhs.days));
+        let mut days = try_opt!(self.days.checked_sub(&rhs.days));
         let mut secs = self.secs as i32 - rhs.secs as i32;
         let mut nanos = self.nanos as i32 - rhs.nanos as i32;
         if nanos < 0 {
@@ -267,7 +355,7 @@ impl num::CheckedSub for Duration {
         }
         if secs < 0 {
             secs += SECS_PER_DAY;
-            days = earlyexit!(days.checked_sub(&1));
+            days = try_opt!(days.checked_sub(&1));
         }
         Some(Duration { days: days, secs: secs as u32, nanos: nanos as u32 })
     }
@@ -303,8 +391,8 @@ impl Mul<i32,Duration> for Duration {
 impl Div<i32,Duration> for Duration {
     fn div(&self, rhs: &i32) -> Duration {
         let (rhs, days, secs, nanos) = if *rhs < 0 {
-            let negated = -*self;
-            (-*rhs as i64, negated.days as i64, negated.secs as i64, negated.nanos as i64)
+            let (days, secs, nanos) = self.to_negated_tuple_64();
+            (-(*rhs as i64), days, secs as i64, nanos as i64)
         } else {
             (*rhs as i64, self.days as i64, self.secs as i64, self.nanos as i64)
         };
@@ -346,8 +434,8 @@ impl fmt::Show for Duration {
 
 #[cfg(test)]
 mod tests {
-    use super::{Duration, MIN_DAYS, MAX_DAYS};
-    use std::i32;
+    use super::{Duration, MIN_DAYS, MAX_DAYS, MIN, MAX};
+    use std::{i32, i64};
 
     #[test]
     fn test_duration() {
@@ -363,6 +451,105 @@ mod tests {
         assert_eq!(-Duration::days(3), Duration::days(-3));
         assert_eq!(-(Duration::days(3) + Duration::seconds(70)),
                    Duration::days(-4) + Duration::seconds(86400-70));
+    }
+
+    #[test]
+    fn test_duration_num_days() {
+        assert_eq!(Duration::zero().num_days(), 0);
+        assert_eq!(Duration::days(1).num_days(), 1);
+        assert_eq!(Duration::days(-1).num_days(), -1);
+        assert_eq!(Duration::seconds(86399).num_days(), 0);
+        assert_eq!(Duration::seconds(86401).num_days(), 1);
+        assert_eq!(Duration::seconds(-86399).num_days(), 0);
+        assert_eq!(Duration::seconds(-86401).num_days(), -1);
+        assert_eq!(Duration::new(1, 2, 3_004_005).num_days(), 1);
+        assert_eq!(Duration::new(-1, -2, -3_004_005).num_days(), -1);
+        assert_eq!(Duration::days(i32::MAX).num_days(), i32::MAX);
+        assert_eq!(Duration::days(i32::MIN).num_days(), i32::MIN);
+        assert_eq!(MAX.num_days(), MAX_DAYS);
+        assert_eq!(MIN.num_days(), MIN_DAYS);
+    }
+
+    #[test]
+    fn test_duration_num_seconds() {
+        assert_eq!(Duration::zero().num_seconds(), 0);
+        assert_eq!(Duration::seconds(1).num_seconds(), 1);
+        assert_eq!(Duration::seconds(-1).num_seconds(), -1);
+        assert_eq!(Duration::milliseconds(999).num_seconds(), 0);
+        assert_eq!(Duration::milliseconds(1001).num_seconds(), 1);
+        assert_eq!(Duration::milliseconds(-999).num_seconds(), 0);
+        assert_eq!(Duration::milliseconds(-1001).num_seconds(), -1);
+        assert_eq!(Duration::new(1, 2, 3_004_005).num_seconds(), 86402);
+        assert_eq!(Duration::new(-1, -2, -3_004_005).num_seconds(), -86402);
+        assert_eq!(Duration::seconds(i32::MAX).num_seconds(), i32::MAX as i64);
+        assert_eq!(Duration::seconds(i32::MIN).num_seconds(), i32::MIN as i64);
+        assert_eq!(MAX.num_seconds(), (MAX_DAYS as i64 + 1) * 86400 - 1);
+        assert_eq!(MIN.num_seconds(), MIN_DAYS as i64 * 86400);
+    }
+
+    #[test]
+    fn test_duration_num_milliseconds() {
+        assert_eq!(Duration::zero().num_milliseconds(), 0);
+        assert_eq!(Duration::milliseconds(1).num_milliseconds(), 1);
+        assert_eq!(Duration::milliseconds(-1).num_milliseconds(), -1);
+        assert_eq!(Duration::microseconds(999).num_milliseconds(), 0);
+        assert_eq!(Duration::microseconds(1001).num_milliseconds(), 1);
+        assert_eq!(Duration::microseconds(-999).num_milliseconds(), 0);
+        assert_eq!(Duration::microseconds(-1001).num_milliseconds(), -1);
+        assert_eq!(Duration::new(1, 2, 3_004_005).num_milliseconds(), 86402_003);
+        assert_eq!(Duration::new(-1, -2, -3_004_005).num_milliseconds(), -86402_003);
+        assert_eq!(Duration::milliseconds(i32::MAX).num_milliseconds(), i32::MAX as i64);
+        assert_eq!(Duration::milliseconds(i32::MIN).num_milliseconds(), i32::MIN as i64);
+        assert_eq!(MAX.num_milliseconds(), (MAX_DAYS as i64 + 1) * 86400_000 - 1);
+        assert_eq!(MIN.num_milliseconds(), MIN_DAYS as i64 * 86400_000);
+    }
+
+    #[test]
+    fn test_duration_num_microseconds() {
+        assert_eq!(Duration::zero().num_microseconds(), Some(0));
+        assert_eq!(Duration::microseconds(1).num_microseconds(), Some(1));
+        assert_eq!(Duration::microseconds(-1).num_microseconds(), Some(-1));
+        assert_eq!(Duration::nanoseconds(999).num_microseconds(), Some(0));
+        assert_eq!(Duration::nanoseconds(1001).num_microseconds(), Some(1));
+        assert_eq!(Duration::nanoseconds(-999).num_microseconds(), Some(0));
+        assert_eq!(Duration::nanoseconds(-1001).num_microseconds(), Some(-1));
+        assert_eq!(Duration::new(1, 2, 3_004_005).num_microseconds(), Some(86402_003_004));
+        assert_eq!(Duration::new(-1, -2, -3_004_005).num_microseconds(), Some(-86402_003_004));
+        assert_eq!(Duration::microseconds(i32::MAX).num_microseconds(), Some(i32::MAX as i64));
+        assert_eq!(Duration::microseconds(i32::MIN).num_microseconds(), Some(i32::MIN as i64));
+        assert_eq!(MAX.num_microseconds(), None);
+        assert_eq!(MIN.num_microseconds(), None);
+
+        // overflow checks
+        static MICROS_PER_DAY: i64 = 86400_000_000;
+        assert_eq!(Duration::days((i64::MAX / MICROS_PER_DAY) as i32).num_microseconds(),
+                   Some(i64::MAX / MICROS_PER_DAY * MICROS_PER_DAY));
+        assert_eq!(Duration::days((i64::MIN / MICROS_PER_DAY) as i32).num_microseconds(),
+                   Some(i64::MIN / MICROS_PER_DAY * MICROS_PER_DAY));
+        assert_eq!(Duration::days((i64::MAX / MICROS_PER_DAY + 1) as i32).num_microseconds(), None);
+        assert_eq!(Duration::days((i64::MIN / MICROS_PER_DAY - 1) as i32).num_microseconds(), None);
+    }
+
+    #[test]
+    fn test_duration_num_nanoseconds() {
+        assert_eq!(Duration::zero().num_nanoseconds(), Some(0));
+        assert_eq!(Duration::nanoseconds(1).num_nanoseconds(), Some(1));
+        assert_eq!(Duration::nanoseconds(-1).num_nanoseconds(), Some(-1));
+        assert_eq!(Duration::new(1, 2, 3_004_005).num_nanoseconds(), Some(86402_003_004_005));
+        assert_eq!(Duration::new(-1, -2, -3_004_005).num_nanoseconds(), Some(-86402_003_004_005));
+        assert_eq!(Duration::nanoseconds(i32::MAX).num_nanoseconds(), Some(i32::MAX as i64));
+        assert_eq!(Duration::nanoseconds(i32::MIN).num_nanoseconds(), Some(i32::MIN as i64));
+        assert_eq!(MAX.num_nanoseconds(), None);
+        assert_eq!(MIN.num_nanoseconds(), None);
+
+        // overflow checks
+        static NANOS_PER_DAY: i64 = 86400_000_000_000;
+        assert_eq!(Duration::days((i64::MAX / NANOS_PER_DAY) as i32).num_nanoseconds(),
+                   Some(i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY));
+        assert_eq!(Duration::days((i64::MIN / NANOS_PER_DAY) as i32).num_nanoseconds(),
+                   Some(i64::MIN / NANOS_PER_DAY * NANOS_PER_DAY));
+        assert_eq!(Duration::days((i64::MAX / NANOS_PER_DAY + 1) as i32).num_nanoseconds(), None);
+        assert_eq!(Duration::days((i64::MIN / NANOS_PER_DAY - 1) as i32).num_nanoseconds(), None);
     }
 
     #[test]

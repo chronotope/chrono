@@ -108,9 +108,9 @@ impl DateTimeZ {
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00.
     /// Note that this does *not* account for the timezone!
     #[inline]
-    pub fn nseconds_from_unix_epoch(&self) -> i64 {
-        let ndays = self.date.ndays_from_ce() as i64;
-        let nseconds = self.time.nseconds_from_midnight() as i64;
+    pub fn num_seconds_from_unix_epoch(&self) -> i64 {
+        let ndays = self.date.num_days_from_ce() as i64;
+        let nseconds = self.time.num_seconds_from_midnight() as i64;
         (ndays - 719163) * 86400 + nseconds
     }
 }
@@ -257,7 +257,7 @@ mod tests {
     #[test]
     fn test_datetime_nseconds_from_unix_epoch() {
         let to_timestamp =
-            |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).nseconds_from_unix_epoch();
+            |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).num_seconds_from_unix_epoch();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);

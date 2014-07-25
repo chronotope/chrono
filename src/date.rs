@@ -201,7 +201,7 @@ pub trait Datelike {
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self>;
 
     /// Returns the number of days since January 1, 1 (Day 1) in the proleptic Gregorian calendar.
-    fn ndays_from_ce(&self) -> i32 {
+    fn num_days_from_ce(&self) -> i32 {
         // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
         let mut year = self.year() - 1;
         let mut ndays = 0;
@@ -477,7 +477,7 @@ impl Add<Duration,DateZ> for DateZ {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = year.div_mod_floor(&400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = cycle as i32 + rhs.ndays();
+        let cycle = cycle as i32 + rhs.num_days();
         let (cycle_div_400y, cycle) = cycle.div_mod_floor(&146097);
         year_div_400 += cycle_div_400y;
 
@@ -714,12 +714,12 @@ mod tests {
     }
 
     #[test]
-    fn test_date_ndays_from_ce() {
-        assert_eq!(DateZ::from_ymd(1, 1, 1).ndays_from_ce(), 1);
+    fn test_date_num_days_from_ce() {
+        assert_eq!(DateZ::from_ymd(1, 1, 1).num_days_from_ce(), 1);
 
         for year in range_inclusive(-9999i32, 10000) {
-            assert_eq!(DateZ::from_ymd(year, 1, 1).ndays_from_ce(),
-                       DateZ::from_ymd(year - 1, 12, 31).ndays_from_ce() + 1);
+            assert_eq!(DateZ::from_ymd(year, 1, 1).num_days_from_ce(),
+                       DateZ::from_ymd(year - 1, 12, 31).num_days_from_ce() + 1);
         }
     }
 

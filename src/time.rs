@@ -57,7 +57,7 @@ pub trait Timelike {
 
     /// Returns the number of non-leap seconds past the last midnight.
     #[inline]
-    fn nseconds_from_midnight(&self) -> u32 {
+    fn num_seconds_from_midnight(&self) -> u32 {
         self.hour() * 3600 + self.minute() * 60 + self.second()
     }
 }
@@ -177,8 +177,9 @@ impl Timelike for TimeZ {
 
 impl Add<Duration,TimeZ> for TimeZ {
     fn add(&self, rhs: &Duration) -> TimeZ {
-        let mut secs = self.nseconds_from_midnight() as i32 + rhs.nseconds() as i32;
-        let mut nanos = self.frac + rhs.nnanoseconds() as u32;
+        let (_, rhssecs, rhsnanos) = rhs.to_tuple();
+        let mut secs = self.num_seconds_from_midnight() as i32 + rhssecs as i32;
+        let mut nanos = self.frac + rhsnanos;
 
         // always ignore leap seconds after the current whole second
         let maxnanos = if self.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
