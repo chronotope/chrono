@@ -332,11 +332,11 @@ impl fmt::Show for Duration {
             if self.nanos == 0 {
                 try!(write!(f, "T{}S", self.secs));
             } else if self.nanos % 1_000_000 == 0 {
-                try!(write!(f, "T{},{:03}S", self.secs, self.nanos / 1_000_000));
+                try!(write!(f, "T{}.{:03}S", self.secs, self.nanos / 1_000_000));
             } else if self.nanos % 1_000 == 0 {
-                try!(write!(f, "T{},{:06}S", self.secs, self.nanos / 1_000));
+                try!(write!(f, "T{}.{:06}S", self.secs, self.nanos / 1_000));
             } else {
-                try!(write!(f, "T{},{:09}S", self.secs, self.nanos));
+                try!(write!(f, "T{}.{:09}S", self.secs, self.nanos));
             }
         }
         Ok(())
@@ -406,15 +406,15 @@ mod tests {
         assert_eq!(Duration::days(42).to_string(), "P42D".to_string());
         assert_eq!(Duration::days(-42).to_string(), "P-42D".to_string());
         assert_eq!(Duration::seconds(42).to_string(), "PT42S".to_string());
-        assert_eq!(Duration::milliseconds(42).to_string(), "PT0,042S".to_string());
-        assert_eq!(Duration::microseconds(42).to_string(), "PT0,000042S".to_string());
-        assert_eq!(Duration::nanoseconds(42).to_string(), "PT0,000000042S".to_string());
+        assert_eq!(Duration::milliseconds(42).to_string(), "PT0.042S".to_string());
+        assert_eq!(Duration::microseconds(42).to_string(), "PT0.000042S".to_string());
+        assert_eq!(Duration::nanoseconds(42).to_string(), "PT0.000000042S".to_string());
         assert_eq!((Duration::days(7) + Duration::milliseconds(6543)).to_string(),
-                   "P7DT6,543S".to_string());
+                   "P7DT6.543S".to_string());
 
         // the format specifier should have no effect on `Duration`
         assert_eq!(format!("{:30}", Duration::days(1) + Duration::milliseconds(2345)),
-                   "P1DT2,345S".to_string());
+                   "P1DT2.345S".to_string());
     }
 }
 
