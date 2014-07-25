@@ -10,6 +10,7 @@ use std::fmt;
 use num::Integer;
 use duration::Duration;
 
+/// The common set of methods for time component.
 pub trait Timelike {
     /// Returns the hour number from 0 to 23.
     fn hour(&self) -> u32;

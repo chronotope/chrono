@@ -11,6 +11,7 @@ use duration::Duration;
 use time::{Timelike, TimeZ};
 use date::{Datelike, DateZ, Weekday};
 
+/// ISO 8601 combined date and time.
 #[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DateTimeZ {
     date: DateZ,
@@ -18,11 +19,15 @@ pub struct DateTimeZ {
 }
 
 impl DateTimeZ {
+    /// Makes a new `DateTimeZ` from date and time components.
     #[inline]
     pub fn new(date: DateZ, time: TimeZ) -> DateTimeZ {
         DateTimeZ { date: date, time: time }
     }
 
+    /// Makes a new `DateTimeZ` from year, month, day, hour, minute and second.
+    ///
+    /// Fails on invalid arguments.
     #[inline]
     pub fn from_ymdhms(year: i32, month: u32, day: u32,
                        hour: u32, min: u32, sec: u32) -> DateTimeZ {
@@ -30,6 +35,9 @@ impl DateTimeZ {
         dt.expect("invalid or out-of-range date or time")
     }
 
+    /// Makes a new `DateTimeZ` from year, month, day, hour, minute and second.
+    ///
+    /// Returns `None` on invalid arguments.
     #[inline]
     pub fn from_ymdhms_opt(year: i32, month: u32, day: u32,
                            hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
@@ -39,6 +47,9 @@ impl DateTimeZ {
         }
     }
 
+    /// Makes a new `DateTimeZ` from year, day of year (DOY or "ordinal"), hour, minute and second.
+    ///
+    /// Fails on invalid arguments.
     #[inline]
     pub fn from_yohms(year: i32, ordinal: u32,
                       hour: u32, min: u32, sec: u32) -> DateTimeZ {
@@ -46,6 +57,9 @@ impl DateTimeZ {
         dt.expect("invalid or out-of-range date or time")
     }
 
+    /// Makes a new `DateTimeZ` from year, day of year (DOY or "ordinal"), hour, minute and second.
+    ///
+    /// Returns `None` on invalid arguments.
     #[inline]
     pub fn from_yohms_opt(year: i32, ordinal: u32,
                           hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
@@ -55,6 +69,10 @@ impl DateTimeZ {
         }
     }
 
+    /// Makes a new `DateTimeZ` from ISO week date (year and week number), day of the week (DOW),
+    /// hour, minute and second.
+    ///
+    /// Fails on invalid arguments.
     #[inline]
     pub fn from_isoywdhms(year: i32, week: u32, weekday: Weekday,
                           hour: u32, min: u32, sec: u32) -> DateTimeZ {
@@ -62,6 +80,10 @@ impl DateTimeZ {
         dt.expect("invalid or out-of-range date or time")
     }
 
+    /// Makes a new `DateTimeZ` from ISO week date (year and week number), day of the week (DOW),
+    /// hour, minute and second.
+    ///
+    /// Returns `None` on invalid arguments.
     #[inline]
     pub fn from_isoywdhms_opt(year: i32, week: u32, weekday: Weekday,
                               hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
@@ -71,11 +93,13 @@ impl DateTimeZ {
         }
     }
 
+    /// Retrieves a `Date` component.
     #[inline]
     pub fn date(&self) -> DateZ {
         self.date
     }
 
+    /// Retrieves a `Time` component.
     #[inline]
     pub fn time(&self) -> TimeZ {
         self.time

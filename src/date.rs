@@ -16,14 +16,24 @@ static MAX_YEAR: i32 = internals::MAX_YEAR as i32;
 static MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 
 /// The day of week (DOW).
+///
+/// The order of the days of week depends on the context.
+/// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[deriving(PartialEq, Eq, FromPrimitive, Show)]
 pub enum Weekday {
+    /// Monday.
     Mon = 0,
+    /// Tuesday.
     Tue = 1,
+    /// Wednesday.
     Wed = 2,
+    /// Thursday.
     Thu = 3,
+    /// Friday.
     Fri = 4,
+    /// Saturday.
     Sat = 5,
+    /// Sunday.
     Sun = 6,
 }
 
@@ -113,6 +123,7 @@ impl Weekday {
     }
 }
 
+/// The common set of methods for date component.
 pub trait Datelike {
     /// Returns the year number.
     fn year(&self) -> i32;

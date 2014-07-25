@@ -2,10 +2,15 @@
 // Copyright (c) 2014, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
+/*!
+Experimental date and time handling for Rust.
+*/
+
 #![comment = "Date and time library for Rust"]
 #![license = "MIT"]
 
 #![feature(macro_rules)]
+#![deny(missing_doc)]
 
 extern crate num;
 

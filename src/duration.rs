@@ -48,6 +48,7 @@ impl Duration {
     }
 
     /// Makes a new `Duration` with given number of days, seconds and nanoseconds.
+    ///
     /// Returns `None` when the duration is out of bounds.
     pub fn new_opt(days: i32, secs: i32, nanos: i32) -> Option<Duration> {
         let (secs_, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
