@@ -9,16 +9,22 @@
 use std::{fmt, num, i32};
 use num::Integer;
 
-pub static MIN_DAYS: i32 = i32::MIN;
-pub static MAX_DAYS: i32 = i32::MAX;
+/// `Duration`'s `days` component should have no more than this value.
+static MIN_DAYS: i32 = i32::MIN;
+/// `Duration`'s `days` component should have no less than this value.
+static MAX_DAYS: i32 = i32::MAX;
 
+/// The number of nanoseconds in seconds.
 static NANOS_PER_SEC: i32 = 1_000_000_000;
+/// The number of (non-leap) seconds in days.
 static SECS_PER_DAY: i32 = 86400;
 
 macro_rules! earlyexit(
     ($e:expr) => (match $e { Some(v) => v, None => return None })
 )
 
+/// ISO 8601 time duration with nanosecond precision.
+/// This also allows for the negative duration; see individual methods for details.
 #[deriving(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Duration {
     days: i32,
@@ -26,8 +32,24 @@ pub struct Duration {
     nanos: u32,
 }
 
+/// The minimum possible `Duration`.
+pub static MIN: Duration = Duration { days: MIN_DAYS, secs: 0, nanos: 0 };
+/// The maximum possible `Duration`.
+pub static MAX: Duration = Duration { days: MAX_DAYS, secs: SECS_PER_DAY as u32 - 1,
+                                      nanos: NANOS_PER_SEC as u32 - 1 };
+
 impl Duration {
-    pub fn new(days: i32, secs: i32, nanos: i32) -> Option<Duration> {
+    /// Makes a new `Duration` with given number of days, seconds and nanoseconds.
+    ///
+    /// Fails when the duration is out of bounds.
+    #[inline]
+    pub fn new(days: i32, secs: i32, nanos: i32) -> Duration {
+        Duration::new_opt(days, secs, nanos).expect("Duration::new out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of days, seconds and nanoseconds.
+    /// Returns `None` when the duration is out of bounds.
+    pub fn new_opt(days: i32, secs: i32, nanos: i32) -> Option<Duration> {
         let (secs_, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
         let secs = earlyexit!(secs.checked_add(&secs_));
         let (days_, secs) = secs.div_mod_floor(&SECS_PER_DAY);
@@ -35,22 +57,36 @@ impl Duration {
         Some(Duration { days: days, secs: secs as u32, nanos: nanos as u32 })
     }
 
+    /// Makes a new `Duration` with zero seconds.
     #[inline]
     pub fn zero() -> Duration {
         Duration { days: 0, secs: 0, nanos: 0 }
     }
 
+    /// Makes a new `Duration` with given number of weeks.
+    /// Equivalent to `Duration::new(weeks * 7, 0, 0)` with overflow checks.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn weeks(weeks: i32) -> Duration {
-        Duration::days(weeks * 7)
+        let days = weeks.checked_mul(&7).expect("Duration::weeks out of bounds");
+        Duration::days(days)
     }
 
+    /// Makes a new `Duration` with given number of days.
+    /// Equivalent to `Duration::new(days, 0, 0)`.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn days(days: i32) -> Duration {
         let days = days.to_i32().expect("Duration::days out of bounds");
         Duration { days: days, secs: 0, nanos: 0 }
     }
 
+    /// Makes a new `Duration` with given number of hours.
+    /// Equivalent to `Duration::new(0, hours * 3600, 0)` with overflow checks.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn hours(hours: i32) -> Duration {
         let (days, hours) = hours.div_mod_floor(&(SECS_PER_DAY / 3600));
@@ -58,6 +94,10 @@ impl Duration {
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
+    /// Makes a new `Duration` with given number of minutes.
+    /// Equivalent to `Duration::new(0, mins * 60, 0)` with overflow checks.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn minutes(mins: i32) -> Duration {
         let (days, mins) = mins.div_mod_floor(&(SECS_PER_DAY / 60));
@@ -65,12 +105,20 @@ impl Duration {
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
+    /// Makes a new `Duration` with given number of seconds.
+    /// Equivalent to `Duration::new(0, secs, 0)`.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn seconds(secs: i32) -> Duration {
         let (days, secs) = secs.div_mod_floor(&SECS_PER_DAY);
         Duration { secs: secs as u32, ..Duration::days(days) }
     }
 
+    /// Makes a new `Duration` with given number of milliseconds.
+    /// Equivalent to `Duration::new(0, 0, millis * 1_000_000)` with overflow checks.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn milliseconds(millis: i32) -> Duration {
         let (secs, millis) = millis.div_mod_floor(&(NANOS_PER_SEC / 1_000_000));
@@ -78,6 +126,10 @@ impl Duration {
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
+    /// Makes a new `Duration` with given number of microseconds.
+    /// Equivalent to `Duration::new(0, 0, micros * 1_000)` with overflow checks.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn microseconds(micros: i32) -> Duration {
         let (secs, micros) = micros.div_mod_floor(&(NANOS_PER_SEC / 1_000));
@@ -85,26 +137,41 @@ impl Duration {
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
+    /// Makes a new `Duration` with given number of nanoseconds.
+    /// Equivalent to `Duration::new(0, 0, nanos)`.
+    ///
+    /// Fails when the duration is out of bounds.
     #[inline]
     pub fn nanoseconds(nanos: i32) -> Duration {
         let (secs, nanos) = nanos.div_mod_floor(&NANOS_PER_SEC);
         Duration { nanos: nanos as u32, ..Duration::seconds(secs) }
     }
 
+    /// Returns the number of days in the duration.
+    /// For the negative duration, this is a largest integral number of days smaller than `self`.
     #[inline]
     pub fn ndays(&self) -> i32 {
         self.days as i32
     }
 
+    /// Returns the number of (non-leap) seconds in the duration.
+    /// This never goes negative even when the duration is negative.
     #[inline]
     pub fn nseconds(&self) -> u32 {
         self.secs as u32
     }
 
+    /// Returns the number of nanoseconds in the duration.
+    /// This never goes negative even when the duration is negative.
     #[inline]
     pub fn nnanoseconds(&self) -> u32 {
         self.nanos as u32
     }
+}
+
+impl num::Bounded for Duration {
+    #[inline] fn min_value() -> Duration { MIN }
+    #[inline] fn max_value() -> Duration { MAX }
 }
 
 impl num::Zero for Duration {

@@ -6,14 +6,14 @@
  * ISO 8601 calendar date.
  */
 
-use std::fmt;
+use std::{fmt, num};
 use num::Integer;
 use duration::Duration;
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
-pub static MAX_YEAR: i32 = internals::MAX_YEAR as i32;
-pub static MIN_YEAR: i32 = internals::MIN_YEAR as i32;
+static MAX_YEAR: i32 = internals::MAX_YEAR as i32;
+static MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 
 /// The day of week (DOW).
 #[deriving(PartialEq, Eq, FromPrimitive, Show)]
@@ -211,6 +211,20 @@ pub trait Datelike {
 #[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DateZ {
     ymdf: DateImpl, // (year << 13) | of
+}
+
+/// The minimum possible `DateZ`.
+pub static MIN: DateZ = DateZ { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+/// The maximum possible `DateZ`.
+pub static MAX: DateZ = DateZ { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+
+// as it is hard to verify year flags in `MIN` and `MAX`, we use a separate run-time test.
+#[test]
+fn test_datez_bounds() {
+    let calculated_min = DateZ::from_ymd(MIN_YEAR, 1, 1);
+    let calculated_max = DateZ::from_ymd(MAX_YEAR, 12, 31);
+    assert!(MIN == calculated_min, "`MIN` should have a year flag {}", calculated_min.of().flags());
+    assert!(MAX == calculated_max, "`MAX` should have a year flag {}", calculated_max.of().flags());
 }
 
 impl DateZ {
@@ -438,6 +452,11 @@ impl Datelike for DateZ {
     }
 }
 
+impl num::Bounded for DateZ {
+    #[inline] fn min_value() -> DateZ { MIN }
+    #[inline] fn max_value() -> DateZ { MAX }
+}
+
 impl Add<Duration,DateZ> for DateZ {
     fn add(&self, rhs: &Duration) -> DateZ {
         // TODO overflow
@@ -478,11 +497,12 @@ impl Sub<DateZ,Duration> for DateZ {
 impl fmt::Show for DateZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
+        let mdf = self.mdf();
         if 0 <= year && year <= 9999 {
-            write!(f, "{:04}-{:02}-{:02}", year, self.month(), self.day())
+            write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
-            write!(f, "{:+05}-{:02}-{:02}", year, self.month(), self.day())
+            write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
         }
     }
 }
@@ -914,10 +934,10 @@ mod internals {
         }
     }
 
-    static MIN_OL: u32 = 1 << 1;
-    static MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(365 << 1) | 1`
-    static MIN_MDL: u32 = (1 << 6) | (1 << 1);
-    static MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
+    pub static MIN_OL: u32 = 1 << 1;
+    pub static MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(365 << 1) | 1`
+    pub static MIN_MDL: u32 = (1 << 6) | (1 << 1);
+    pub static MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
     static XX: i8 = -128;
     static MDL_TO_OL: [i8, ..MAX_MDL+1] = [

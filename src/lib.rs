@@ -9,8 +9,8 @@
 
 extern crate num;
 
-pub use duration::{MIN_DAYS, MAX_DAYS, Duration};
-pub use date::{MAX_YEAR, MIN_YEAR, Weekday, Mon, Tue, Wed, Thu, Fri, Sat, Sun};
+pub use duration::Duration;
+pub use date::{Weekday, Mon, Tue, Wed, Thu, Fri, Sat, Sun};
 pub use date::{Datelike, DateZ};
 pub use time::{Timelike, TimeZ};
 pub use datetime::DateTimeZ;
@@ -24,7 +24,7 @@ pub mod datetime;
 fn test_readme_doomsday() {
     use std::iter::range_inclusive;
 
-    for y in range_inclusive(MIN_YEAR, MAX_YEAR) {
+    for y in range_inclusive(date::MIN.year(), date::MAX.year()) {
         // even months
         let d4   = DateZ::from_ymd(y,  4,  4);
         let d6   = DateZ::from_ymd(y,  6,  6);
