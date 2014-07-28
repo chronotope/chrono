@@ -66,9 +66,7 @@ pub trait Timelike {
 /// Allows for the nanosecond precision and optional leap second representation.
 #[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimeZ {
-    hour: u8,
-    min: u8,
-    sec: u8,
+    secs: u32,
     frac: u32,
 }
 
@@ -130,6 +128,7 @@ impl TimeZ {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or nanosecond.
+    #[inline]
     pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> TimeZ {
         TimeZ::from_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
@@ -140,45 +139,61 @@ impl TimeZ {
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     pub fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<TimeZ> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 { return None; }
-        Some(TimeZ { hour: hour as u8, min: min as u8, sec: sec as u8, frac: nano as u32 })
+        let secs = hour * 3600 + min * 60 + sec;
+        Some(TimeZ { secs: secs, frac: nano })
+    }
+
+    /// Returns a triple of the hour, minute and second numbers.
+    fn hms(&self) -> (u32, u32, u32) {
+        let (mins, sec) = self.secs.div_mod_floor(&60);
+        let (hour, min) = mins.div_mod_floor(&60);
+        (hour, min, sec)
     }
 }
 
 impl Timelike for TimeZ {
-    #[inline] fn hour(&self) -> u32 { self.hour as u32 }
-    #[inline] fn minute(&self) -> u32 { self.min as u32 }
-    #[inline] fn second(&self) -> u32 { self.sec as u32 }
-    #[inline] fn nanosecond(&self) -> u32 { self.frac as u32 }
+    #[inline] fn hour(&self) -> u32 { self.hms().val0() }
+    #[inline] fn minute(&self) -> u32 { self.hms().val1() }
+    #[inline] fn second(&self) -> u32 { self.hms().val2() }
+    #[inline] fn nanosecond(&self) -> u32 { self.frac }
 
     #[inline]
     fn with_hour(&self, hour: u32) -> Option<TimeZ> {
         if hour >= 24 { return None; }
-        Some(TimeZ { hour: hour as u8, ..*self })
+        let secs = hour * 3600 + self.secs % 3600;
+        Some(TimeZ { secs: secs, ..*self })
     }
 
     #[inline]
     fn with_minute(&self, min: u32) -> Option<TimeZ> {
         if min >= 60 { return None; }
-        Some(TimeZ { min: min as u8, ..*self })
+        let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
+        Some(TimeZ { secs: secs, ..*self })
     }
 
     #[inline]
     fn with_second(&self, sec: u32) -> Option<TimeZ> {
         if sec >= 60 { return None; }
-        Some(TimeZ { sec: sec as u8, ..*self })
+        let secs = self.secs / 60 * 60 + sec;
+        Some(TimeZ { secs: secs, ..*self })
     }
 
     #[inline]
     fn with_nanosecond(&self, nano: u32) -> Option<TimeZ> {
         if nano >= 2_000_000_000 { return None; }
-        Some(TimeZ { frac: nano as u32, ..*self })
+        Some(TimeZ { frac: nano, ..*self })
+    }
+
+    #[inline]
+    fn num_seconds_from_midnight(&self) -> u32 {
+        self.secs // do not repeat the calculation!
     }
 }
 
 impl Add<Duration,TimeZ> for TimeZ {
     fn add(&self, rhs: &Duration) -> TimeZ {
         let (_, rhssecs, rhsnanos) = rhs.to_tuple();
-        let mut secs = self.num_seconds_from_midnight() as i32 + rhssecs as i32;
+        let mut secs = self.secs + rhssecs;
         let mut nanos = self.frac + rhsnanos;
 
         // always ignore leap seconds after the current whole second
@@ -188,10 +203,7 @@ impl Add<Duration,TimeZ> for TimeZ {
             nanos -= maxnanos;
             secs += 1;
         }
-        let (mins, s) = secs.div_rem(&60);
-        let (hours, m) = mins.div_rem(&60);
-        let h = hours % 24;
-        TimeZ { hour: h as u8, min: m as u8, sec: s as u8, frac: nanos }
+        TimeZ { secs: secs % 86400, frac: nanos }
     }
 }
 
@@ -206,9 +218,7 @@ impl Add<TimeZ,TimeZ> for Duration {
 impl Sub<TimeZ,Duration> for TimeZ {
     fn sub(&self, rhs: &TimeZ) -> Duration {
         // the number of whole non-leap seconds
-        let secs = (self.hour as i32 - rhs.hour as i32) * 3600 +
-                   (self.min  as i32 - rhs.min  as i32) * 60 +
-                   (self.sec  as i32 - rhs.sec  as i32) - 1;
+        let secs = self.secs as i32 - rhs.secs as i32 - 1;
 
         // the fractional second from the rhs to the next non-leap second
         let maxnanos = if rhs.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
@@ -224,13 +234,14 @@ impl Sub<TimeZ,Duration> for TimeZ {
 
 impl fmt::Show for TimeZ {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (hour, min, sec) = self.hms();
         let (sec, nano) = if self.frac >= 1_000_000_000 {
-            (self.sec + 1, self.frac - 1_000_000_000)
+            (sec + 1, self.frac - 1_000_000_000)
         } else {
-            (self.sec, self.frac)
+            (sec, self.frac)
         };
 
-        try!(write!(f, "{:02}:{:02}:{:02}", self.hour, self.min, sec));
+        try!(write!(f, "{:02}:{:02}:{:02}", hour, min, sec));
         if nano == 0 {
             Ok(())
         } else if nano % 1_000_000 == 0 {
@@ -245,7 +256,7 @@ impl fmt::Show for TimeZ {
 
 #[cfg(test)]
 mod tests {
-    use super::TimeZ;
+    use super::{Timelike, TimeZ};
     use duration::Duration;
     use std::u32;
 
@@ -275,6 +286,27 @@ mod tests {
         assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 2_000_000), None);
         assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, 5_000_000), None); // overflow check
         assert_eq!(TimeZ::from_hms_micro_opt(3, 5, 7, u32::MAX), None);
+    }
+
+    #[test]
+    fn test_time_hms() {
+        assert_eq!(TimeZ::from_hms(3, 5, 7).hour(), 3);
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_hour(0), Some(TimeZ::from_hms(0, 5, 7)));
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_hour(23), Some(TimeZ::from_hms(23, 5, 7)));
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_hour(24), None);
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_hour(u32::MAX), None);
+
+        assert_eq!(TimeZ::from_hms(3, 5, 7).minute(), 5);
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_minute(0), Some(TimeZ::from_hms(3, 0, 7)));
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_minute(59), Some(TimeZ::from_hms(3, 59, 7)));
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_minute(60), None);
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_minute(u32::MAX), None);
+
+        assert_eq!(TimeZ::from_hms(3, 5, 7).second(), 7);
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_second(0), Some(TimeZ::from_hms(3, 5, 0)));
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_second(59), Some(TimeZ::from_hms(3, 5, 59)));
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_second(60), None);
+        assert_eq!(TimeZ::from_hms(3, 5, 7).with_second(u32::MAX), None);
     }
 
     #[test]
