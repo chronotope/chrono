@@ -191,7 +191,9 @@ impl Timelike for DateTimeZ {
 
 impl Add<Duration,DateTimeZ> for DateTimeZ {
     fn add(&self, rhs: &Duration) -> DateTimeZ {
-        let mut date = self.date + *rhs;
+        // we want `(DateZ + days in Duration) + (TimeZ + secs/nanos in Duration)`
+        // to be equal to `DateTimeZ + Duration`, but `DateZ + Duration` rounds towards zero.
+        let mut date = self.date + Duration::days(rhs.to_tuple().val0());
         let time = self.time + *rhs;
         if time < self.time {
             // since the time portion of the duration is always positive and bounded,
@@ -232,6 +234,8 @@ mod tests {
         let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    ymdhms(2014, 5, 6, 8, 9, 10));
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(-(3600 + 60 + 1)),
+                   ymdhms(2014, 5, 6, 6, 7, 8));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86399),
                    ymdhms(2014, 5, 7, 7, 8, 8));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86400 * 10),

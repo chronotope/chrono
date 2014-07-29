@@ -832,6 +832,7 @@ mod tests {
 
         check((2014, 1, 1), Duration::zero(), (2014, 1, 1));
         check((2014, 1, 1), Duration::seconds(86399), (2014, 1, 1));
+        check((2014, 1, 1), Duration::seconds(-86399), (2014, 1, 1)); // always round towards zero
         check((2014, 1, 1), Duration::days(1), (2014, 1, 2));
         check((2014, 1, 1), Duration::days(-1), (2013, 12, 31));
         check((2014, 1, 1), Duration::days(364), (2014, 12, 31));
