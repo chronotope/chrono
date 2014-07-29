@@ -8,10 +8,15 @@
 
 use std::fmt;
 use num::Integer;
+
+use Weekday;
 use duration::Duration;
-use date::{NaiveDate, Date, Weekday};
-use time::{NaiveTime, Time};
-use datetime::{NaiveDateTime, DateTime};
+use naive::date::NaiveDate;
+use naive::time::NaiveTime;
+use naive::datetime::NaiveDateTime;
+use date::Date;
+use time::Time;
+use datetime::DateTime;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 pub enum LocalResult<T> {
