@@ -10,8 +10,8 @@ use std::{fmt, num, hash};
 use num::Integer;
 use duration::Duration;
 use offset::{Offset, UTC};
-use time::TimeZ;
-use datetime::{DateTimeZ, DateTime};
+use time::NaiveTime;
+use datetime::{NaiveDateTime, DateTime};
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -223,91 +223,91 @@ pub trait Datelike {
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
-pub struct DateZ {
+pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
 
-/// The minimum possible `DateZ`.
-pub static MINZ: DateZ = DateZ { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
-/// The maximum possible `DateZ`.
-pub static MAXZ: DateZ = DateZ { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+/// The minimum possible `NaiveDate`.
+pub static MIN_NAIVE: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+/// The maximum possible `NaiveDate`.
+pub static MAX_NAIVE: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
 
 // as it is hard to verify year flags in `MIN` and `MAX`, we use a separate run-time test.
 #[test]
 fn test_datez_bounds() {
-    let calculated_min = DateZ::from_ymd(MIN_YEAR, 1, 1);
-    let calculated_max = DateZ::from_ymd(MAX_YEAR, 12, 31);
-    assert!(MINZ == calculated_min,
-            "`MINZ` should have a year flag {}", calculated_min.of().flags());
-    assert!(MAXZ == calculated_max,
-            "`MAXZ` should have a year flag {}", calculated_max.of().flags());
+    let calculated_min = NaiveDate::from_ymd(MIN_YEAR, 1, 1);
+    let calculated_max = NaiveDate::from_ymd(MAX_YEAR, 12, 31);
+    assert!(MIN_NAIVE == calculated_min,
+            "`MIN_NAIVE` should have a year flag {}", calculated_min.of().flags());
+    assert!(MAX_NAIVE == calculated_max,
+            "`MAX_NAIVE` should have a year flag {}", calculated_max.of().flags());
 }
 
-impl DateZ {
-    /// Makes a new `DateZ` from year and packed ordinal-flags, with a verification.
-    fn from_of(year: i32, of: Of) -> Option<DateZ> {
+impl NaiveDate {
+    /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
+    fn from_of(year: i32, of: Of) -> Option<NaiveDate> {
         if year >= MIN_YEAR && year <= MAX_YEAR && of.valid() {
             let Of(of) = of;
-            Some(DateZ { ymdf: ((year << 13) as DateImpl) | (of as DateImpl) })
+            Some(NaiveDate { ymdf: ((year << 13) as DateImpl) | (of as DateImpl) })
         } else {
             None
         }
     }
 
-    /// Makes a new `DateZ` from year and packed month-day-flags, with a verification.
-    fn from_mdf(year: i32, mdf: Mdf) -> Option<DateZ> {
-        DateZ::from_of(year, mdf.to_of())
+    /// Makes a new `NaiveDate` from year and packed month-day-flags, with a verification.
+    fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
+        NaiveDate::from_of(year, mdf.to_of())
     }
 
-    /// Makes a new `DateZ` from year, month and day.
+    /// Makes a new `NaiveDate` from year, month and day.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Fails on the out-of-range date, invalid month and/or day.
-    pub fn from_ymd(year: i32, month: u32, day: u32) -> DateZ {
-        DateZ::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
+    pub fn from_ymd(year: i32, month: u32, day: u32) -> NaiveDate {
+        NaiveDate::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `DateZ` from year, month and day.
+    /// Makes a new `NaiveDate` from year, month and day.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
-    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<DateZ> {
+    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        DateZ::from_mdf(year, Mdf::new(month, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
     }
 
-    /// Makes a new `DateZ` from year and day of year (DOY or "ordinal").
+    /// Makes a new `NaiveDate` from year and day of year (DOY or "ordinal").
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Fails on the out-of-range date and/or invalid DOY.
-    pub fn from_yo(year: i32, ordinal: u32) -> DateZ {
-        DateZ::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
+    pub fn from_yo(year: i32, ordinal: u32) -> NaiveDate {
+        NaiveDate::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `DateZ` from year and day of year (DOY or "ordinal").
+    /// Makes a new `NaiveDate` from year and day of year (DOY or "ordinal").
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
-    pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<DateZ> {
+    pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        DateZ::from_of(year, Of::new(ordinal, flags))
+        NaiveDate::from_of(year, Of::new(ordinal, flags))
     }
 
-    /// Makes a new `DateZ` from ISO week date (year and week number) and day of the week (DOW).
+    /// Makes a new `NaiveDate` from ISO week date (year and week number) and day of the week (DOW).
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    /// The resulting `DateZ` may have a different year from the input year.
+    /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Fails on the out-of-range date and/or invalid week number.
-    pub fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> DateZ {
-        DateZ::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
+    pub fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> NaiveDate {
+        NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `DateZ` from ISO week date (year and week number) and day of the week (DOW).
+    /// Makes a new `NaiveDate` from ISO week date (year and week number) and day of the week (DOW).
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    /// The resulting `DateZ` may have a different year from the input year.
+    /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
-    pub fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<DateZ> {
+    pub fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         let nweeks = flags.nisoweeks();
         if 1 <= week && week <= nweeks {
@@ -316,15 +316,16 @@ impl DateZ {
             let delta = flags.isoweek_delta();
             if weekord <= delta { // ordinal < 1, previous year
                 let prevflags = YearFlags::from_year(year - 1);
-                DateZ::from_of(year - 1, Of::new(weekord + prevflags.ndays() - delta, prevflags))
+                NaiveDate::from_of(year - 1, Of::new(weekord + prevflags.ndays() - delta,
+                                                     prevflags))
             } else {
                 let ordinal = weekord - delta;
                 let ndays = flags.ndays();
                 if ordinal <= ndays { // this year
-                    DateZ::from_of(year, Of::new(ordinal, flags))
+                    NaiveDate::from_of(year, Of::new(ordinal, flags))
                 } else { // ordinal > ndays, next year
                     let nextflags = YearFlags::from_year(year + 1);
-                    DateZ::from_of(year + 1, Of::new(ordinal - ndays, nextflags))
+                    NaiveDate::from_of(year + 1, Of::new(ordinal - ndays, nextflags))
                 }
             }
         } else {
@@ -332,82 +333,83 @@ impl DateZ {
         }
     }
 
-    /// Makes a new `DateTimeZ` from the current date and given `TimeZ`.
+    /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
     #[inline]
-    pub fn and_time(&self, time: TimeZ) -> DateTimeZ {
-        DateTimeZ::new(self.clone(), time)
+    pub fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
+        NaiveDateTime::new(self.clone(), time)
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
     /// Fails on invalid hour, minute and/or second.
     #[inline]
-    pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTimeZ {
+    pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> NaiveDateTime {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
     #[inline]
-    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        TimeZ::from_hms_opt(hour, min, sec).map(|time| self.and_time(time))
+    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
+        NaiveTime::from_hms_opt(hour, min, sec).map(|time| self.and_time(time))
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or millisecond.
     #[inline]
-    pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTimeZ {
+    pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> NaiveDateTime {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     #[inline]
     pub fn and_hms_milli_opt(&self, hour: u32, min: u32, sec: u32,
-                             milli: u32) -> Option<DateTimeZ> {
-        TimeZ::from_hms_milli_opt(hour, min, sec, milli).map(|time| self.and_time(time))
+                             milli: u32) -> Option<NaiveDateTime> {
+        NaiveTime::from_hms_milli_opt(hour, min, sec, milli).map(|time| self.and_time(time))
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or microsecond.
     #[inline]
-    pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTimeZ {
+    pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> NaiveDateTime {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     #[inline]
     pub fn and_hms_micro_opt(&self, hour: u32, min: u32, sec: u32,
-                             micro: u32) -> Option<DateTimeZ> {
-        TimeZ::from_hms_micro_opt(hour, min, sec, micro).map(|time| self.and_time(time))
+                             micro: u32) -> Option<NaiveDateTime> {
+        NaiveTime::from_hms_micro_opt(hour, min, sec, micro).map(|time| self.and_time(time))
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or nanosecond.
     #[inline]
-    pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTimeZ {
+    pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> NaiveDateTime {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     #[inline]
-    pub fn and_hms_nano_opt(&self, hour: u32, min: u32, sec: u32, nano: u32) -> Option<DateTimeZ> {
-        TimeZ::from_hms_nano_opt(hour, min, sec, nano).map(|time| self.and_time(time))
+    pub fn and_hms_nano_opt(&self, hour: u32, min: u32, sec: u32,
+                            nano: u32) -> Option<NaiveDateTime> {
+        NaiveTime::from_hms_nano_opt(hour, min, sec, nano).map(|time| self.and_time(time))
     }
 
     /// Returns the packed month-day-flags.
@@ -422,61 +424,61 @@ impl DateZ {
         Of((self.ymdf & 0b1111_11111_1111) as u32)
     }
 
-    /// Makes a new `DateZ` with the packed month-day-flags changed.
+    /// Makes a new `NaiveDate` with the packed month-day-flags changed.
     ///
-    /// Returns `None` when the resulting `DateZ` would be invalid.
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
-    fn with_mdf(&self, mdf: Mdf) -> Option<DateZ> {
+    fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
         self.with_of(mdf.to_of())
     }
 
-    /// Makes a new `DateZ` with the packed ordinal-flags changed.
+    /// Makes a new `NaiveDate` with the packed ordinal-flags changed.
     ///
-    /// Returns `None` when the resulting `DateZ` would be invalid.
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
-    fn with_of(&self, of: Of) -> Option<DateZ> {
+    fn with_of(&self, of: Of) -> Option<NaiveDate> {
         if of.valid() {
             let Of(of) = of;
-            Some(DateZ { ymdf: (self.ymdf & !0b111111111_1111) | of as DateImpl })
+            Some(NaiveDate { ymdf: (self.ymdf & !0b111111111_1111) | of as DateImpl })
         } else {
             None
         }
     }
 
-    /// Makes a new `DateZ` for the next date.
+    /// Makes a new `NaiveDate` for the next date.
     ///
     /// Fails when `self` is the last representable date.
     #[inline]
-    pub fn succ(&self) -> DateZ {
+    pub fn succ(&self) -> NaiveDate {
         self.succ_opt().expect("out of bound")
     }
 
-    /// Makes a new `DateZ` for the next date.
+    /// Makes a new `NaiveDate` for the next date.
     ///
     /// Returns `None` when `self` is the last representable date.
     #[inline]
-    pub fn succ_opt(&self) -> Option<DateZ> {
-        self.with_of(self.of().succ()).or_else(|| DateZ::from_ymd_opt(self.year() + 1, 1, 1))
+    pub fn succ_opt(&self) -> Option<NaiveDate> {
+        self.with_of(self.of().succ()).or_else(|| NaiveDate::from_ymd_opt(self.year() + 1, 1, 1))
     }
 
-    /// Makes a new `DateZ` for the prior date.
+    /// Makes a new `NaiveDate` for the prior date.
     ///
     /// Fails when `self` is the first representable date.
     #[inline]
-    pub fn pred(&self) -> DateZ {
+    pub fn pred(&self) -> NaiveDate {
         self.pred_opt().expect("out of bound")
     }
 
-    /// Makes a new `DateZ` for the prior date.
+    /// Makes a new `NaiveDate` for the prior date.
     ///
     /// Returns `None` when `self` is the first representable date.
     #[inline]
-    pub fn pred_opt(&self) -> Option<DateZ> {
-        self.with_of(self.of().pred()).or_else(|| DateZ::from_ymd_opt(self.year() - 1, 12, 31))
+    pub fn pred_opt(&self) -> Option<NaiveDate> {
+        self.with_of(self.of().pred()).or_else(|| NaiveDate::from_ymd_opt(self.year() - 1, 12, 31))
     }
 }
 
-impl Datelike for DateZ {
+impl Datelike for NaiveDate {
     #[inline] fn year(&self) -> i32 { (self.ymdf >> 13) as i32 }
     #[inline] fn month(&self) -> u32 { self.mdf().month() }
     #[inline] fn month0(&self) -> u32 { self.mdf().month() - 1 }
@@ -504,7 +506,7 @@ impl Datelike for DateZ {
     }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Option<DateZ> {
+    fn with_year(&self, year: i32) -> Option<NaiveDate> {
         // we need to operate with `mdf` since we should keep the month and day number as is
         let mdf = self.mdf();
 
@@ -512,47 +514,47 @@ impl Datelike for DateZ {
         let flags = YearFlags::from_year(year);
         let mdf = mdf.with_flags(flags);
 
-        DateZ::from_mdf(year, mdf)
+        NaiveDate::from_mdf(year, mdf)
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Option<DateZ> {
+    fn with_month(&self, month: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_month(month))
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<DateZ> {
+    fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_month(month0 + 1))
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Option<DateZ> {
+    fn with_day(&self, day: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_day(day))
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<DateZ> {
+    fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_day(day0 + 1))
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<DateZ> {
+    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
         self.with_of(self.of().with_ordinal(ordinal))
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateZ> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
         self.with_of(self.of().with_ordinal(ordinal0 + 1))
     }
 }
 
-impl num::Bounded for DateZ {
-    #[inline] fn min_value() -> DateZ { MINZ }
-    #[inline] fn max_value() -> DateZ { MAXZ }
+impl num::Bounded for NaiveDate {
+    #[inline] fn min_value() -> NaiveDate { MIN_NAIVE }
+    #[inline] fn max_value() -> NaiveDate { MAX_NAIVE }
 }
 
-impl Add<Duration,DateZ> for DateZ {
-    fn add(&self, rhs: &Duration) -> DateZ {
+impl Add<Duration,NaiveDate> for NaiveDate {
+    fn add(&self, rhs: &Duration) -> NaiveDate {
         // TODO overflow
 
         let year = self.year();
@@ -564,20 +566,21 @@ impl Add<Duration,DateZ> for DateZ {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as i32) };
-        DateZ::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)).unwrap()
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
+                           Of::new(ordinal, flags)).unwrap()
     }
 }
 
 /*
 // Rust issue #7590, the current coherence checker can't handle multiple Add impls
-impl Add<DateZ,DateZ> for Duration {
+impl Add<NaiveDate,NaiveDate> for Duration {
     #[inline]
-    fn add(&self, rhs: &DateZ) -> DateZ { rhs.add(self) }
+    fn add(&self, rhs: &NaiveDate) -> NaiveDate { rhs.add(self) }
 }
 */
 
-impl Sub<DateZ,Duration> for DateZ {
-    fn sub(&self, rhs: &DateZ) -> Duration {
+impl Sub<NaiveDate,Duration> for NaiveDate {
+    fn sub(&self, rhs: &NaiveDate) -> Duration {
         let year1 = self.year();
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = year1.div_mod_floor(&400);
@@ -588,7 +591,7 @@ impl Sub<DateZ,Duration> for DateZ {
     }
 }
 
-impl fmt::Show for DateZ {
+impl fmt::Show for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
         let mdf = self.mdf();
@@ -604,33 +607,33 @@ impl fmt::Show for DateZ {
 /// ISO 8601 calendar date with timezone.
 #[deriving(Clone)]
 pub struct Date<Off> {
-    date: DateZ,
+    date: NaiveDate,
     offset: Off,
 }
 
 /// The minimum possible `Date`.
-pub static MIN: Date<UTC> = Date { date: MINZ, offset: UTC };
+pub static MIN: Date<UTC> = Date { date: MIN_NAIVE, offset: UTC };
 /// The maximum possible `Date`.
-pub static MAX: Date<UTC> = Date { date: MAXZ, offset: UTC };
+pub static MAX: Date<UTC> = Date { date: MAX_NAIVE, offset: UTC };
 
 impl<Off:Offset> Date<Off> {
     /// Makes a new `Date` with given *UTC* date and offset.
     /// The local date should be constructed via the `Offset` trait.
     #[inline]
-    pub fn from_utc(date: DateZ, offset: Off) -> Date<Off> {
+    pub fn from_utc(date: NaiveDate, offset: Off) -> Date<Off> {
         Date { date: date, offset: offset }
     }
 
-    /// Makes a new `DateTimeZ` from the current date and given `TimeZ`.
+    /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
     ///
     /// Fails on invalid datetime.
     #[inline]
-    pub fn and_time(&self, time: TimeZ) -> Option<DateTime<Off>> {
+    pub fn and_time(&self, time: NaiveTime) -> Option<DateTime<Off>> {
         self.offset.from_local_datetime(&self.date.and_time(time)).single()
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     /// The offset in the current date is preserved.
     ///
     /// Fails on invalid hour, minute and/or second.
@@ -639,16 +642,16 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     /// The offset in the current date is preserved.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
     #[inline]
     pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTime<Off>> {
-        TimeZ::from_hms_opt(hour, min, sec).and_then(|time| self.and_time(time))
+        NaiveTime::from_hms_opt(hour, min, sec).and_then(|time| self.and_time(time))
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -658,7 +661,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -666,10 +669,10 @@ impl<Off:Offset> Date<Off> {
     #[inline]
     pub fn and_hms_milli_opt(&self, hour: u32, min: u32, sec: u32,
                              milli: u32) -> Option<DateTime<Off>> {
-        TimeZ::from_hms_milli_opt(hour, min, sec, milli).and_then(|time| self.and_time(time))
+        NaiveTime::from_hms_milli_opt(hour, min, sec, milli).and_then(|time| self.and_time(time))
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -679,7 +682,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -687,10 +690,10 @@ impl<Off:Offset> Date<Off> {
     #[inline]
     pub fn and_hms_micro_opt(&self, hour: u32, min: u32, sec: u32,
                              micro: u32) -> Option<DateTime<Off>> {
-        TimeZ::from_hms_micro_opt(hour, min, sec, micro).and_then(|time| self.and_time(time))
+        NaiveTime::from_hms_micro_opt(hour, min, sec, micro).and_then(|time| self.and_time(time))
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -700,7 +703,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
 
-    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -708,7 +711,7 @@ impl<Off:Offset> Date<Off> {
     #[inline]
     pub fn and_hms_nano_opt(&self, hour: u32, min: u32, sec: u32,
                             nano: u32) -> Option<DateTime<Off>> {
-        TimeZ::from_hms_nano_opt(hour, min, sec, nano).and_then(|time| self.and_time(time))
+        NaiveTime::from_hms_nano_opt(hour, min, sec, nano).and_then(|time| self.and_time(time))
     }
 
     /// Makes a new `Date` for the next date.
@@ -744,7 +747,7 @@ impl<Off:Offset> Date<Off> {
     }
 
     /// Returns a view to the local date.
-    fn local(&self) -> DateZ {
+    fn local(&self) -> NaiveDate {
         self.offset.to_local_date(&self.date)
     }
 }
@@ -861,7 +864,7 @@ impl<Off:Offset> fmt::Show for Date<Off> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Datelike, DateZ, MIN_YEAR, MAX_YEAR};
+    use super::{Datelike, NaiveDate, MIN_YEAR, MAX_YEAR};
     use super::{Sun, Mon, Tue, Wed, Thu, Fri, Sat};
     use duration::Duration;
     use std::{i32, u32};
@@ -869,69 +872,77 @@ mod tests {
 
     #[test]
     fn test_date_from_ymd() {
-        assert!(DateZ::from_ymd_opt(2012, 0, 1).is_none());
-        assert!(DateZ::from_ymd_opt(2012, 1, 1).is_some());
-        assert!(DateZ::from_ymd_opt(2012, 2, 29).is_some());
-        assert!(DateZ::from_ymd_opt(2014, 2, 29).is_none());
-        assert!(DateZ::from_ymd_opt(2014, 3, 0).is_none());
-        assert!(DateZ::from_ymd_opt(2014, 3, 1).is_some());
-        assert!(DateZ::from_ymd_opt(2014, 3, 31).is_some());
-        assert!(DateZ::from_ymd_opt(2014, 3, 32).is_none());
-        assert!(DateZ::from_ymd_opt(2014, 12, 31).is_some());
-        assert!(DateZ::from_ymd_opt(2014, 13, 1).is_none());
+        let ymd_opt = |y,m,d| NaiveDate::from_ymd_opt(y, m, d);
+
+        assert!(ymd_opt(2012, 0, 1).is_none());
+        assert!(ymd_opt(2012, 1, 1).is_some());
+        assert!(ymd_opt(2012, 2, 29).is_some());
+        assert!(ymd_opt(2014, 2, 29).is_none());
+        assert!(ymd_opt(2014, 3, 0).is_none());
+        assert!(ymd_opt(2014, 3, 1).is_some());
+        assert!(ymd_opt(2014, 3, 31).is_some());
+        assert!(ymd_opt(2014, 3, 32).is_none());
+        assert!(ymd_opt(2014, 12, 31).is_some());
+        assert!(ymd_opt(2014, 13, 1).is_none());
     }
 
     #[test]
     fn test_date_from_yo() {
-        assert_eq!(DateZ::from_yo_opt(2012, 0), None);
-        assert_eq!(DateZ::from_yo_opt(2012, 1), Some(DateZ::from_ymd(2012, 1, 1)));
-        assert_eq!(DateZ::from_yo_opt(2012, 2), Some(DateZ::from_ymd(2012, 1, 2)));
-        assert_eq!(DateZ::from_yo_opt(2012, 32), Some(DateZ::from_ymd(2012, 2, 1)));
-        assert_eq!(DateZ::from_yo_opt(2012, 60), Some(DateZ::from_ymd(2012, 2, 29)));
-        assert_eq!(DateZ::from_yo_opt(2012, 61), Some(DateZ::from_ymd(2012, 3, 1)));
-        assert_eq!(DateZ::from_yo_opt(2012, 100), Some(DateZ::from_ymd(2012, 4, 9)));
-        assert_eq!(DateZ::from_yo_opt(2012, 200), Some(DateZ::from_ymd(2012, 7, 18)));
-        assert_eq!(DateZ::from_yo_opt(2012, 300), Some(DateZ::from_ymd(2012, 10, 26)));
-        assert_eq!(DateZ::from_yo_opt(2012, 366), Some(DateZ::from_ymd(2012, 12, 31)));
-        assert_eq!(DateZ::from_yo_opt(2012, 367), None);
+        let yo_opt = |y,o| NaiveDate::from_yo_opt(y, o);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
 
-        assert_eq!(DateZ::from_yo_opt(2014, 0), None);
-        assert_eq!(DateZ::from_yo_opt(2014, 1), Some(DateZ::from_ymd(2014, 1, 1)));
-        assert_eq!(DateZ::from_yo_opt(2014, 2), Some(DateZ::from_ymd(2014, 1, 2)));
-        assert_eq!(DateZ::from_yo_opt(2014, 32), Some(DateZ::from_ymd(2014, 2, 1)));
-        assert_eq!(DateZ::from_yo_opt(2014, 59), Some(DateZ::from_ymd(2014, 2, 28)));
-        assert_eq!(DateZ::from_yo_opt(2014, 60), Some(DateZ::from_ymd(2014, 3, 1)));
-        assert_eq!(DateZ::from_yo_opt(2014, 100), Some(DateZ::from_ymd(2014, 4, 10)));
-        assert_eq!(DateZ::from_yo_opt(2014, 200), Some(DateZ::from_ymd(2014, 7, 19)));
-        assert_eq!(DateZ::from_yo_opt(2014, 300), Some(DateZ::from_ymd(2014, 10, 27)));
-        assert_eq!(DateZ::from_yo_opt(2014, 365), Some(DateZ::from_ymd(2014, 12, 31)));
-        assert_eq!(DateZ::from_yo_opt(2014, 366), None);
+        assert_eq!(yo_opt(2012, 0), None);
+        assert_eq!(yo_opt(2012, 1), Some(ymd(2012, 1, 1)));
+        assert_eq!(yo_opt(2012, 2), Some(ymd(2012, 1, 2)));
+        assert_eq!(yo_opt(2012, 32), Some(ymd(2012, 2, 1)));
+        assert_eq!(yo_opt(2012, 60), Some(ymd(2012, 2, 29)));
+        assert_eq!(yo_opt(2012, 61), Some(ymd(2012, 3, 1)));
+        assert_eq!(yo_opt(2012, 100), Some(ymd(2012, 4, 9)));
+        assert_eq!(yo_opt(2012, 200), Some(ymd(2012, 7, 18)));
+        assert_eq!(yo_opt(2012, 300), Some(ymd(2012, 10, 26)));
+        assert_eq!(yo_opt(2012, 366), Some(ymd(2012, 12, 31)));
+        assert_eq!(yo_opt(2012, 367), None);
+
+        assert_eq!(yo_opt(2014, 0), None);
+        assert_eq!(yo_opt(2014, 1), Some(ymd(2014, 1, 1)));
+        assert_eq!(yo_opt(2014, 2), Some(ymd(2014, 1, 2)));
+        assert_eq!(yo_opt(2014, 32), Some(ymd(2014, 2, 1)));
+        assert_eq!(yo_opt(2014, 59), Some(ymd(2014, 2, 28)));
+        assert_eq!(yo_opt(2014, 60), Some(ymd(2014, 3, 1)));
+        assert_eq!(yo_opt(2014, 100), Some(ymd(2014, 4, 10)));
+        assert_eq!(yo_opt(2014, 200), Some(ymd(2014, 7, 19)));
+        assert_eq!(yo_opt(2014, 300), Some(ymd(2014, 10, 27)));
+        assert_eq!(yo_opt(2014, 365), Some(ymd(2014, 12, 31)));
+        assert_eq!(yo_opt(2014, 366), None);
     }
 
     #[test]
     fn test_date_from_isoywd() {
-        assert_eq!(DateZ::from_isoywd_opt(2004, 0, Sun), None);
-        assert_eq!(DateZ::from_isoywd_opt(2004, 1, Mon), Some(DateZ::from_ymd(2003, 12, 29)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 1, Sun), Some(DateZ::from_ymd(2004, 1, 4)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 2, Mon), Some(DateZ::from_ymd(2004, 1, 5)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 2, Sun), Some(DateZ::from_ymd(2004, 1, 11)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 52, Mon), Some(DateZ::from_ymd(2004, 12, 20)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 52, Sun), Some(DateZ::from_ymd(2004, 12, 26)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 53, Mon), Some(DateZ::from_ymd(2004, 12, 27)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 53, Sun), Some(DateZ::from_ymd(2005, 1, 2)));
-        assert_eq!(DateZ::from_isoywd_opt(2004, 54, Mon), None);
+        let isoywd_opt = |y,w,d| NaiveDate::from_isoywd_opt(y, w, d);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
 
-        assert_eq!(DateZ::from_isoywd_opt(2011, 0, Sun), None);
-        assert_eq!(DateZ::from_isoywd_opt(2011, 1, Mon), Some(DateZ::from_ymd(2011, 1, 3)));
-        assert_eq!(DateZ::from_isoywd_opt(2011, 1, Sun), Some(DateZ::from_ymd(2011, 1, 9)));
-        assert_eq!(DateZ::from_isoywd_opt(2011, 2, Mon), Some(DateZ::from_ymd(2011, 1, 10)));
-        assert_eq!(DateZ::from_isoywd_opt(2011, 2, Sun), Some(DateZ::from_ymd(2011, 1, 16)));
+        assert_eq!(isoywd_opt(2004, 0, Sun), None);
+        assert_eq!(isoywd_opt(2004, 1, Mon), Some(ymd(2003, 12, 29)));
+        assert_eq!(isoywd_opt(2004, 1, Sun), Some(ymd(2004, 1, 4)));
+        assert_eq!(isoywd_opt(2004, 2, Mon), Some(ymd(2004, 1, 5)));
+        assert_eq!(isoywd_opt(2004, 2, Sun), Some(ymd(2004, 1, 11)));
+        assert_eq!(isoywd_opt(2004, 52, Mon), Some(ymd(2004, 12, 20)));
+        assert_eq!(isoywd_opt(2004, 52, Sun), Some(ymd(2004, 12, 26)));
+        assert_eq!(isoywd_opt(2004, 53, Mon), Some(ymd(2004, 12, 27)));
+        assert_eq!(isoywd_opt(2004, 53, Sun), Some(ymd(2005, 1, 2)));
+        assert_eq!(isoywd_opt(2004, 54, Mon), None);
 
-        assert_eq!(DateZ::from_isoywd_opt(2018, 51, Mon), Some(DateZ::from_ymd(2018, 12, 17)));
-        assert_eq!(DateZ::from_isoywd_opt(2018, 51, Sun), Some(DateZ::from_ymd(2018, 12, 23)));
-        assert_eq!(DateZ::from_isoywd_opt(2018, 52, Mon), Some(DateZ::from_ymd(2018, 12, 24)));
-        assert_eq!(DateZ::from_isoywd_opt(2018, 52, Sun), Some(DateZ::from_ymd(2018, 12, 30)));
-        assert_eq!(DateZ::from_isoywd_opt(2018, 53, Mon), None);
+        assert_eq!(isoywd_opt(2011, 0, Sun), None);
+        assert_eq!(isoywd_opt(2011, 1, Mon), Some(ymd(2011, 1, 3)));
+        assert_eq!(isoywd_opt(2011, 1, Sun), Some(ymd(2011, 1, 9)));
+        assert_eq!(isoywd_opt(2011, 2, Mon), Some(ymd(2011, 1, 10)));
+        assert_eq!(isoywd_opt(2011, 2, Sun), Some(ymd(2011, 1, 16)));
+
+        assert_eq!(isoywd_opt(2018, 51, Mon), Some(ymd(2018, 12, 17)));
+        assert_eq!(isoywd_opt(2018, 51, Sun), Some(ymd(2018, 12, 23)));
+        assert_eq!(isoywd_opt(2018, 52, Mon), Some(ymd(2018, 12, 24)));
+        assert_eq!(isoywd_opt(2018, 52, Sun), Some(ymd(2018, 12, 30)));
+        assert_eq!(isoywd_opt(2018, 53, Mon), None);
     }
 
     #[test]
@@ -939,7 +950,7 @@ mod tests {
         for year in range_inclusive(2000i32, 2400) {
             for week in range_inclusive(1u32, 53) {
                 for &weekday in [Mon, Tue, Wed, Thu, Fri, Sat, Sun].iter() {
-                    let d = DateZ::from_isoywd_opt(year, week, weekday);
+                    let d = NaiveDate::from_isoywd_opt(year, week, weekday);
                     if d.is_some() {
                         let d = d.unwrap();
                         assert_eq!(d.weekday(), weekday);
@@ -955,11 +966,11 @@ mod tests {
         for year in range_inclusive(2000i32, 2400) {
             for month in range_inclusive(1u32, 12) {
                 for day in range_inclusive(1u32, 31) {
-                    let d = DateZ::from_ymd_opt(year, month, day);
+                    let d = NaiveDate::from_ymd_opt(year, month, day);
                     if d.is_some() {
                         let d = d.unwrap();
                         let (year_, week_, weekday_) = d.isoweekdate();
-                        let d_ = DateZ::from_isoywd(year_, week_, weekday_);
+                        let d_ = NaiveDate::from_isoywd(year_, week_, weekday_);
                         assert_eq!(d, d_);
                     }
                 }
@@ -970,13 +981,13 @@ mod tests {
     #[test]
     fn test_date_fields() {
         fn check(year: i32, month: u32, day: u32, ordinal: u32) {
-            let d1 = DateZ::from_ymd(year, month, day);
+            let d1 = NaiveDate::from_ymd(year, month, day);
             assert_eq!(d1.year(), year);
             assert_eq!(d1.month(), month);
             assert_eq!(d1.day(), day);
             assert_eq!(d1.ordinal(), ordinal);
 
-            let d2 = DateZ::from_yo(year, ordinal);
+            let d2 = NaiveDate::from_yo(year, ordinal);
             assert_eq!(d2.year(), year);
             assert_eq!(d2.month(), month);
             assert_eq!(d2.day(), day);
@@ -1008,83 +1019,85 @@ mod tests {
 
     #[test]
     fn test_date_weekday() {
-        assert_eq!(DateZ::from_ymd(1582, 10, 15).weekday(), Fri);
-        assert_eq!(DateZ::from_ymd(1875, 5, 20).weekday(), Thu); // ISO 8601 reference date
-        assert_eq!(DateZ::from_ymd(2000, 1, 1).weekday(), Sat);
+        assert_eq!(NaiveDate::from_ymd(1582, 10, 15).weekday(), Fri);
+        assert_eq!(NaiveDate::from_ymd(1875, 5, 20).weekday(), Thu); // ISO 8601 reference date
+        assert_eq!(NaiveDate::from_ymd(2000, 1, 1).weekday(), Sat);
     }
 
     #[test]
     fn test_date_with_fields() {
-        let d = DateZ::from_ymd(2000, 2, 29);
-        assert_eq!(d.with_year(-400), Some(DateZ::from_ymd(-400, 2, 29)));
+        let d = NaiveDate::from_ymd(2000, 2, 29);
+        assert_eq!(d.with_year(-400), Some(NaiveDate::from_ymd(-400, 2, 29)));
         assert_eq!(d.with_year(-100), None);
-        assert_eq!(d.with_year(1600), Some(DateZ::from_ymd(1600, 2, 29)));
+        assert_eq!(d.with_year(1600), Some(NaiveDate::from_ymd(1600, 2, 29)));
         assert_eq!(d.with_year(1900), None);
-        assert_eq!(d.with_year(2000), Some(DateZ::from_ymd(2000, 2, 29)));
+        assert_eq!(d.with_year(2000), Some(NaiveDate::from_ymd(2000, 2, 29)));
         assert_eq!(d.with_year(2001), None);
-        assert_eq!(d.with_year(2004), Some(DateZ::from_ymd(2004, 2, 29)));
+        assert_eq!(d.with_year(2004), Some(NaiveDate::from_ymd(2004, 2, 29)));
         assert_eq!(d.with_year(i32::MAX), None);
 
-        let d = DateZ::from_ymd(2000, 4, 30);
+        let d = NaiveDate::from_ymd(2000, 4, 30);
         assert_eq!(d.with_month(0), None);
-        assert_eq!(d.with_month(1), Some(DateZ::from_ymd(2000, 1, 30)));
+        assert_eq!(d.with_month(1), Some(NaiveDate::from_ymd(2000, 1, 30)));
         assert_eq!(d.with_month(2), None);
-        assert_eq!(d.with_month(3), Some(DateZ::from_ymd(2000, 3, 30)));
-        assert_eq!(d.with_month(4), Some(DateZ::from_ymd(2000, 4, 30)));
-        assert_eq!(d.with_month(12), Some(DateZ::from_ymd(2000, 12, 30)));
+        assert_eq!(d.with_month(3), Some(NaiveDate::from_ymd(2000, 3, 30)));
+        assert_eq!(d.with_month(4), Some(NaiveDate::from_ymd(2000, 4, 30)));
+        assert_eq!(d.with_month(12), Some(NaiveDate::from_ymd(2000, 12, 30)));
         assert_eq!(d.with_month(13), None);
         assert_eq!(d.with_month(u32::MAX), None);
 
-        let d = DateZ::from_ymd(2000, 2, 8);
+        let d = NaiveDate::from_ymd(2000, 2, 8);
         assert_eq!(d.with_day(0), None);
-        assert_eq!(d.with_day(1), Some(DateZ::from_ymd(2000, 2, 1)));
-        assert_eq!(d.with_day(29), Some(DateZ::from_ymd(2000, 2, 29)));
+        assert_eq!(d.with_day(1), Some(NaiveDate::from_ymd(2000, 2, 1)));
+        assert_eq!(d.with_day(29), Some(NaiveDate::from_ymd(2000, 2, 29)));
         assert_eq!(d.with_day(30), None);
         assert_eq!(d.with_day(u32::MAX), None);
 
-        let d = DateZ::from_ymd(2000, 5, 5);
+        let d = NaiveDate::from_ymd(2000, 5, 5);
         assert_eq!(d.with_ordinal(0), None);
-        assert_eq!(d.with_ordinal(1), Some(DateZ::from_ymd(2000, 1, 1)));
-        assert_eq!(d.with_ordinal(60), Some(DateZ::from_ymd(2000, 2, 29)));
-        assert_eq!(d.with_ordinal(61), Some(DateZ::from_ymd(2000, 3, 1)));
-        assert_eq!(d.with_ordinal(366), Some(DateZ::from_ymd(2000, 12, 31)));
+        assert_eq!(d.with_ordinal(1), Some(NaiveDate::from_ymd(2000, 1, 1)));
+        assert_eq!(d.with_ordinal(60), Some(NaiveDate::from_ymd(2000, 2, 29)));
+        assert_eq!(d.with_ordinal(61), Some(NaiveDate::from_ymd(2000, 3, 1)));
+        assert_eq!(d.with_ordinal(366), Some(NaiveDate::from_ymd(2000, 12, 31)));
         assert_eq!(d.with_ordinal(367), None);
         assert_eq!(d.with_ordinal(u32::MAX), None);
     }
 
     #[test]
     fn test_date_num_days_from_ce() {
-        assert_eq!(DateZ::from_ymd(1, 1, 1).num_days_from_ce(), 1);
+        assert_eq!(NaiveDate::from_ymd(1, 1, 1).num_days_from_ce(), 1);
 
         for year in range_inclusive(-9999i32, 10000) {
-            assert_eq!(DateZ::from_ymd(year, 1, 1).num_days_from_ce(),
-                       DateZ::from_ymd(year - 1, 12, 31).num_days_from_ce() + 1);
+            assert_eq!(NaiveDate::from_ymd(year, 1, 1).num_days_from_ce(),
+                       NaiveDate::from_ymd(year - 1, 12, 31).num_days_from_ce() + 1);
         }
     }
 
     #[test]
     fn test_date_succ() {
-        assert_eq!(DateZ::from_ymd(2014, 5, 6).succ_opt(), Some(DateZ::from_ymd(2014, 5, 7)));
-        assert_eq!(DateZ::from_ymd(2014, 5, 31).succ_opt(), Some(DateZ::from_ymd(2014, 6, 1)));
-        assert_eq!(DateZ::from_ymd(2014, 12, 31).succ_opt(), Some(DateZ::from_ymd(2015, 1, 1)));
-        assert_eq!(DateZ::from_ymd(2016, 2, 28).succ_opt(), Some(DateZ::from_ymd(2016, 2, 29)));
-        assert_eq!(DateZ::from_ymd(MAX_YEAR, 12, 31).succ_opt(), None);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+        assert_eq!(ymd(2014, 5, 6).succ_opt(), Some(ymd(2014, 5, 7)));
+        assert_eq!(ymd(2014, 5, 31).succ_opt(), Some(ymd(2014, 6, 1)));
+        assert_eq!(ymd(2014, 12, 31).succ_opt(), Some(ymd(2015, 1, 1)));
+        assert_eq!(ymd(2016, 2, 28).succ_opt(), Some(ymd(2016, 2, 29)));
+        assert_eq!(ymd(MAX_YEAR, 12, 31).succ_opt(), None);
     }
 
     #[test]
     fn test_date_pred() {
-        assert_eq!(DateZ::from_ymd(2016, 3, 1).pred_opt(), Some(DateZ::from_ymd(2016, 2, 29)));
-        assert_eq!(DateZ::from_ymd(2015, 1, 1).pred_opt(), Some(DateZ::from_ymd(2014, 12, 31)));
-        assert_eq!(DateZ::from_ymd(2014, 6, 1).pred_opt(), Some(DateZ::from_ymd(2014, 5, 31)));
-        assert_eq!(DateZ::from_ymd(2014, 5, 7).pred_opt(), Some(DateZ::from_ymd(2014, 5, 6)));
-        assert_eq!(DateZ::from_ymd(MIN_YEAR, 1, 1).pred_opt(), None);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+        assert_eq!(ymd(2016, 3, 1).pred_opt(), Some(ymd(2016, 2, 29)));
+        assert_eq!(ymd(2015, 1, 1).pred_opt(), Some(ymd(2014, 12, 31)));
+        assert_eq!(ymd(2014, 6, 1).pred_opt(), Some(ymd(2014, 5, 31)));
+        assert_eq!(ymd(2014, 5, 7).pred_opt(), Some(ymd(2014, 5, 6)));
+        assert_eq!(ymd(MIN_YEAR, 1, 1).pred_opt(), None);
     }
 
     #[test]
     fn test_date_add() {
         fn check((y1,m1,d1): (i32, u32, u32), rhs: Duration, (y,m,d): (i32, u32, u32)) {
-            let lhs = DateZ::from_ymd(y1, m1, d1);
-            let sum = DateZ::from_ymd(y, m, d);
+            let lhs = NaiveDate::from_ymd(y1, m1, d1);
+            let sum = NaiveDate::from_ymd(y, m, d);
             assert_eq!(lhs + rhs, sum);
             //assert_eq!(rhs + lhs, sum);
         }
@@ -1104,8 +1117,8 @@ mod tests {
     #[test]
     fn test_date_sub() {
         fn check((y1,m1,d1): (i32, u32, u32), (y2,m2,d2): (i32, u32, u32), diff: Duration) {
-            let lhs = DateZ::from_ymd(y1, m1, d1);
-            let rhs = DateZ::from_ymd(y2, m2, d2);
+            let lhs = NaiveDate::from_ymd(y1, m1, d1);
+            let rhs = NaiveDate::from_ymd(y2, m2, d2);
             assert_eq!(lhs - rhs, diff);
             assert_eq!(rhs - lhs, -diff);
         }
@@ -1120,14 +1133,14 @@ mod tests {
 
     #[test]
     fn test_date_fmt() {
-        assert_eq!(DateZ::from_ymd(2012,  3, 4).to_string(),  "2012-03-04".to_string());
-        assert_eq!(DateZ::from_ymd(0,     3, 4).to_string(),  "0000-03-04".to_string());
-        assert_eq!(DateZ::from_ymd(-307,  3, 4).to_string(), "-0307-03-04".to_string());
-        assert_eq!(DateZ::from_ymd(12345, 3, 4).to_string(), "+12345-03-04".to_string());
+        assert_eq!(NaiveDate::from_ymd(2012,  3, 4).to_string(),  "2012-03-04".to_string());
+        assert_eq!(NaiveDate::from_ymd(0,     3, 4).to_string(),  "0000-03-04".to_string());
+        assert_eq!(NaiveDate::from_ymd(-307,  3, 4).to_string(), "-0307-03-04".to_string());
+        assert_eq!(NaiveDate::from_ymd(12345, 3, 4).to_string(), "+12345-03-04".to_string());
 
-        // the format specifier should have no effect on `TimeZ`
-        assert_eq!(format!("{:+30}", DateZ::from_ymd(1234, 5, 6)), "1234-05-06".to_string());
-        assert_eq!(format!("{:30}", DateZ::from_ymd(12345, 6, 7)), "+12345-06-07".to_string());
+        // the format specifier should have no effect on `NaiveTime`
+        assert_eq!(format!("{:+30}", NaiveDate::from_ymd(1234, 5, 6)), "1234-05-06".to_string());
+        assert_eq!(format!("{:30}", NaiveDate::from_ymd(12345, 6, 7)), "+12345-06-07".to_string());
     }
 }
 
@@ -1136,13 +1149,13 @@ mod tests {
  *
  * The current implementation is optimized for determining year, month, day and day of week. 
  * 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
- * which are included in every packed `DateZ` instance.
+ * which are included in every packed `NaiveDate` instance.
  * The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
  * based on the moderately-sized lookup table (~1.5KB)
  * and the packed representation is chosen for the efficient lookup.
  * Every internal data structure does not validate its input,
  * but the conversion keeps the valid value valid and the invalid value invalid
- * so that the user-facing `DateZ` can validate the input as late as possible.
+ * so that the user-facing `NaiveDate` can validate the input as late as possible.
  */
 #[allow(dead_code)] // some internal methods have been left for consistency
 mod internals {

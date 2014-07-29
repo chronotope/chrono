@@ -9,100 +9,33 @@
 use std::{fmt, hash};
 use offset::Offset;
 use duration::Duration;
-use time::{Timelike, TimeZ, Time};
-use date::{Datelike, DateZ, Date, Weekday};
+use time::{Timelike, NaiveTime, Time};
+use date::{Datelike, NaiveDate, Date, Weekday};
 
 /// ISO 8601 combined date and time without timezone.
 #[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
-pub struct DateTimeZ {
-    date: DateZ,
-    time: TimeZ,
+pub struct NaiveDateTime {
+    date: NaiveDate,
+    time: NaiveTime,
 }
 
-impl DateTimeZ {
-    /// Makes a new `DateTimeZ` from date and time components.
+impl NaiveDateTime {
+    /// Makes a new `NaiveDateTime` from date and time components.
+    /// Equivalent to `date.and_time(time)` and many other helper constructors on `NaiveDate`.
     #[inline]
-    pub fn new(date: DateZ, time: TimeZ) -> DateTimeZ {
-        DateTimeZ { date: date, time: time }
-    }
-
-    /// Makes a new `DateTimeZ` from year, month, day, hour, minute and second.
-    ///
-    /// Fails on invalid arguments.
-    #[inline]
-    pub fn from_ymdhms(year: i32, month: u32, day: u32,
-                       hour: u32, min: u32, sec: u32) -> DateTimeZ {
-        let dt = DateTimeZ::from_ymdhms_opt(year, month, day, hour, min, sec);
-        dt.expect("invalid or out-of-range date or time")
-    }
-
-    /// Makes a new `DateTimeZ` from year, month, day, hour, minute and second.
-    ///
-    /// Returns `None` on invalid arguments.
-    #[inline]
-    pub fn from_ymdhms_opt(year: i32, month: u32, day: u32,
-                           hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        match (DateZ::from_ymd_opt(year, month, day), TimeZ::from_hms_opt(hour, min, sec)) {
-            (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
-            (_, _) => None,
-        }
-    }
-
-    /// Makes a new `DateTimeZ` from year, day of year (DOY or "ordinal"), hour, minute and second.
-    ///
-    /// Fails on invalid arguments.
-    #[inline]
-    pub fn from_yohms(year: i32, ordinal: u32,
-                      hour: u32, min: u32, sec: u32) -> DateTimeZ {
-        let dt = DateTimeZ::from_yohms_opt(year, ordinal, hour, min, sec);
-        dt.expect("invalid or out-of-range date or time")
-    }
-
-    /// Makes a new `DateTimeZ` from year, day of year (DOY or "ordinal"), hour, minute and second.
-    ///
-    /// Returns `None` on invalid arguments.
-    #[inline]
-    pub fn from_yohms_opt(year: i32, ordinal: u32,
-                          hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        match (DateZ::from_yo_opt(year, ordinal), TimeZ::from_hms_opt(hour, min, sec)) {
-            (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
-            (_, _) => None,
-        }
-    }
-
-    /// Makes a new `DateTimeZ` from ISO week date (year and week number), day of the week (DOW),
-    /// hour, minute and second.
-    ///
-    /// Fails on invalid arguments.
-    #[inline]
-    pub fn from_isoywdhms(year: i32, week: u32, weekday: Weekday,
-                          hour: u32, min: u32, sec: u32) -> DateTimeZ {
-        let dt = DateTimeZ::from_isoywdhms_opt(year, week, weekday, hour, min, sec);
-        dt.expect("invalid or out-of-range date or time")
-    }
-
-    /// Makes a new `DateTimeZ` from ISO week date (year and week number), day of the week (DOW),
-    /// hour, minute and second.
-    ///
-    /// Returns `None` on invalid arguments.
-    #[inline]
-    pub fn from_isoywdhms_opt(year: i32, week: u32, weekday: Weekday,
-                              hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
-        match (DateZ::from_isoywd_opt(year, week, weekday), TimeZ::from_hms_opt(hour, min, sec)) {
-            (Some(d), Some(t)) => Some(DateTimeZ::new(d, t)),
-            (_, _) => None,
-        }
+    pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
+        NaiveDateTime { date: date, time: time }
     }
 
     /// Retrieves a date component.
     #[inline]
-    pub fn date(&self) -> DateZ {
+    pub fn date(&self) -> NaiveDate {
         self.date
     }
 
     /// Retrieves a time component.
     #[inline]
-    pub fn time(&self) -> TimeZ {
+    pub fn time(&self) -> NaiveTime {
         self.time
     }
 
@@ -116,7 +49,7 @@ impl DateTimeZ {
     }
 }
 
-impl Datelike for DateTimeZ {
+impl Datelike for NaiveDateTime {
     #[inline] fn year(&self) -> i32 { self.date.year() }
     #[inline] fn month(&self) -> u32 { self.date.month() }
     #[inline] fn month0(&self) -> u32 { self.date.month0() }
@@ -128,72 +61,72 @@ impl Datelike for DateTimeZ {
     #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.date.isoweekdate() }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Option<DateTimeZ> {
-        self.date.with_year(year).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
+        self.date.with_year(year).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Option<DateTimeZ> {
-        self.date.with_month(month).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
+        self.date.with_month(month).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<DateTimeZ> {
-        self.date.with_month0(month0).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
+        self.date.with_month0(month0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Option<DateTimeZ> {
-        self.date.with_day(day).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
+        self.date.with_day(day).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<DateTimeZ> {
-        self.date.with_day0(day0).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
+        self.date.with_day0(day0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<DateTimeZ> {
-        self.date.with_ordinal(ordinal).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
+        self.date.with_ordinal(ordinal).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTimeZ> {
-        self.date.with_ordinal0(ordinal0).map(|d| DateTimeZ { date: d, ..*self })
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
+        self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 }
 
-impl Timelike for DateTimeZ {
+impl Timelike for NaiveDateTime {
     #[inline] fn hour(&self) -> u32 { self.time.hour() }
     #[inline] fn minute(&self) -> u32 { self.time.minute() }
     #[inline] fn second(&self) -> u32 { self.time.second() }
     #[inline] fn nanosecond(&self) -> u32 { self.time.nanosecond() }
 
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<DateTimeZ> {
-        self.time.with_hour(hour).map(|t| DateTimeZ { time: t, ..*self })
+    fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
+        self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
     }
 
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<DateTimeZ> {
-        self.time.with_minute(min).map(|t| DateTimeZ { time: t, ..*self })
+    fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
+        self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
     }
 
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<DateTimeZ> {
-        self.time.with_second(sec).map(|t| DateTimeZ { time: t, ..*self })
+    fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
+        self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<DateTimeZ> {
-        self.time.with_nanosecond(nano).map(|t| DateTimeZ { time: t, ..*self })
+    fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
+        self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
     }
 }
 
-impl Add<Duration,DateTimeZ> for DateTimeZ {
-    fn add(&self, rhs: &Duration) -> DateTimeZ {
-        // we want `(DateZ + days in Duration) + (TimeZ + secs/nanos in Duration)`
-        // to be equal to `DateTimeZ + Duration`, but `DateZ + Duration` rounds towards zero.
+impl Add<Duration,NaiveDateTime> for NaiveDateTime {
+    fn add(&self, rhs: &Duration) -> NaiveDateTime {
+        // we want `(NaiveDate + days in Duration) + (NaiveTime + secs/nanos in Duration)`
+        // to be equal to `NaiveDateTime + Duration`, but `NaiveDate + Duration` rounds towards zero.
         let mut date = self.date + Duration::days(rhs.to_tuple().val0());
         let time = self.time + *rhs;
         if time < self.time {
@@ -201,25 +134,25 @@ impl Add<Duration,DateTimeZ> for DateTimeZ {
             // this condition always means that the time part has been overflowed.
             date = date.succ();
         }
-        DateTimeZ { date: date, time: time }
+        NaiveDateTime { date: date, time: time }
     }
 }
 
 /*
 // Rust issue #7590, the current coherence checker can't handle multiple Add impls
-impl Add<DateTimeZ,DateTimeZ> for Duration {
+impl Add<NaiveDateTime,NaiveDateTime> for Duration {
     #[inline]
-    fn add(&self, rhs: &DateTimeZ) -> DateTimeZ { rhs.add(self) }
+    fn add(&self, rhs: &NaiveDateTime) -> NaiveDateTime { rhs.add(self) }
 }
 */
 
-impl Sub<DateTimeZ,Duration> for DateTimeZ {
-    fn sub(&self, rhs: &DateTimeZ) -> Duration {
+impl Sub<NaiveDateTime,Duration> for NaiveDateTime {
+    fn sub(&self, rhs: &NaiveDateTime) -> Duration {
         (self.date - rhs.date) + (self.time - rhs.time)
     }
 }
 
-impl fmt::Show for DateTimeZ {
+impl fmt::Show for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}T{}", self.date, self.time)
     }
@@ -228,7 +161,7 @@ impl fmt::Show for DateTimeZ {
 /// ISO 8601 combined date and time with timezone.
 #[deriving(Clone)]
 pub struct DateTime<Off> {
-    datetime: DateTimeZ,
+    datetime: NaiveDateTime,
     offset: Off,
 }
 
@@ -236,7 +169,7 @@ impl<Off:Offset> DateTime<Off> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
     /// The local datetime should be constructed via the `Offset` trait.
     #[inline]
-    pub fn from_utc(datetime: DateTimeZ, offset: Off) -> DateTime<Off> {
+    pub fn from_utc(datetime: NaiveDateTime, offset: Off) -> DateTime<Off> {
         DateTime { datetime: datetime, offset: offset }
     }
 
@@ -259,7 +192,7 @@ impl<Off:Offset> DateTime<Off> {
     }
 
     /// Returns a view to the local datetime.
-    fn local(&self) -> DateTimeZ {
+    fn local(&self) -> NaiveDateTime {
         self.offset.to_local_datetime(&self.datetime)
     }
 }
@@ -402,12 +335,12 @@ impl<Off:Offset> fmt::Show for DateTime<Off> {
 
 #[cfg(test)]
 mod tests {
-    use super::DateTimeZ;
+    use date::NaiveDate;
     use duration::Duration;
 
     #[test]
     fn test_datetime_add() {
-        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s);
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    ymdhms(2014, 5, 6, 8, 9, 10));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(-(3600 + 60 + 1)),
@@ -422,7 +355,7 @@ mod tests {
 
     #[test]
     fn test_datetime_sub() {
-        let ymdhms = |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s);
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Duration::zero());
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 10) - ymdhms(2014, 5, 6, 7, 8, 9),
                    Duration::seconds(1));
@@ -437,7 +370,7 @@ mod tests {
     #[test]
     fn test_datetime_num_seconds_from_unix_epoch() {
         let to_timestamp =
-            |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).num_seconds_from_unix_epoch();
+            |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s).num_seconds_from_unix_epoch();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);

@@ -9,9 +9,9 @@
 use std::fmt;
 use num::Integer;
 use duration::Duration;
-use date::{DateZ, Date, Weekday};
-use time::{TimeZ, Time};
-use datetime::{DateTimeZ, DateTime};
+use date::{NaiveDate, Date, Weekday};
+use time::{NaiveTime, Time};
+use datetime::{NaiveDateTime, DateTime};
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 pub enum LocalResult<T> {
@@ -74,7 +74,7 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
     fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
-        match DateZ::from_ymd_opt(year, month, day) {
+        match NaiveDate::from_ymd_opt(year, month, day) {
             Some(d) => self.from_local_date(&d),
             None => NoResult,
         }
@@ -99,7 +99,7 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
     fn yo_opt(&self, year: i32, ordinal: u32) -> LocalResult<Date<Self>> {
-        match DateZ::from_yo_opt(year, ordinal) {
+        match NaiveDate::from_yo_opt(year, ordinal) {
             Some(d) => self.from_local_date(&d),
             None => NoResult,
         }
@@ -128,7 +128,7 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
     fn isoywd_opt(&self, year: i32, week: u32, weekday: Weekday) -> LocalResult<Date<Self>> {
-        match DateZ::from_isoywd_opt(year, week, weekday) {
+        match NaiveDate::from_isoywd_opt(year, week, weekday) {
             Some(d) => self.from_local_date(&d),
             None => NoResult,
         }
@@ -145,7 +145,7 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on invalid hour, minute and/or second.
     fn hms_opt(&self, hour: u32, min: u32, sec: u32) -> LocalResult<Time<Self>> {
-        match TimeZ::from_hms_opt(hour, min, sec) {
+        match NaiveTime::from_hms_opt(hour, min, sec) {
             Some(t) => self.from_local_time(&t),
             None => NoResult,
         }
@@ -164,7 +164,7 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     fn hms_milli_opt(&self, hour: u32, min: u32, sec: u32, milli: u32) -> LocalResult<Time<Self>> {
-        match TimeZ::from_hms_milli_opt(hour, min, sec, milli) {
+        match NaiveTime::from_hms_milli_opt(hour, min, sec, milli) {
             Some(t) => self.from_local_time(&t),
             None => NoResult,
         }
@@ -183,7 +183,7 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     fn hms_micro_opt(&self, hour: u32, min: u32, sec: u32, micro: u32) -> LocalResult<Time<Self>> {
-        match TimeZ::from_hms_micro_opt(hour, min, sec, micro) {
+        match NaiveTime::from_hms_micro_opt(hour, min, sec, micro) {
             Some(t) => self.from_local_time(&t),
             None => NoResult,
         }
@@ -202,32 +202,32 @@ pub trait Offset: Clone + fmt::Show {
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     fn hms_nano_opt(&self, hour: u32, min: u32, sec: u32, nano: u32) -> LocalResult<Time<Self>> {
-        match TimeZ::from_hms_nano_opt(hour, min, sec, nano) {
+        match NaiveTime::from_hms_nano_opt(hour, min, sec, nano) {
             Some(t) => self.from_local_time(&t),
             None => NoResult,
         }
     }
 
-    /// Converts the local `DateZ` to the timezone-aware `Date` if possible.
-    fn from_local_date(&self, local: &DateZ) -> LocalResult<Date<Self>>;
+    /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
+    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>>;
 
-    /// Converts the local `TimeZ` to the timezone-aware `Time` if possible.
-    fn from_local_time(&self, local: &TimeZ) -> LocalResult<Time<Self>>;
+    /// Converts the local `NaiveTime` to the timezone-aware `Time` if possible.
+    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Self>>;
 
-    /// Converts the local `DateTimeZ` to the timezone-aware `DateTime` if possible.
-    fn from_local_datetime(&self, local: &DateTimeZ) -> LocalResult<DateTime<Self>>;
+    /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>>;
 
-    /// Converts the UTC `DateZ` to the local time.
+    /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn to_local_date(&self, utc: &DateZ) -> DateZ;
+    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate;
 
-    /// Converts the UTC `TimeZ` to the local time.
+    /// Converts the UTC `NaiveTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn to_local_time(&self, utc: &TimeZ) -> TimeZ;
+    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime;
 
-    /// Converts the UTC `DateTimeZ` to the local time.
+    /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn to_local_datetime(&self, utc: &DateTimeZ) -> DateTimeZ;
+    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime;
 }
 
 /// The UTC timescale. This is the most efficient offset when you don't need the local time.
@@ -235,19 +235,19 @@ pub trait Offset: Clone + fmt::Show {
 pub struct UTC;
 
 impl Offset for UTC {
-    fn from_local_date(&self, local: &DateZ) -> LocalResult<Date<UTC>> {
+    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
         Single(Date::from_utc(local.clone(), UTC))
     }
-    fn from_local_time(&self, local: &TimeZ) -> LocalResult<Time<UTC>> {
+    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<UTC>> {
         Single(Time::from_utc(local.clone(), UTC))
     }
-    fn from_local_datetime(&self, local: &DateTimeZ) -> LocalResult<DateTime<UTC>> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<UTC>> {
         Single(DateTime::from_utc(local.clone(), UTC))
     }
 
-    fn to_local_date(&self, utc: &DateZ) -> DateZ { utc.clone() }
-    fn to_local_time(&self, utc: &TimeZ) -> TimeZ { utc.clone() }
-    fn to_local_datetime(&self, utc: &DateTimeZ) -> DateTimeZ { utc.clone() }
+    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { utc.clone() }
+    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime { utc.clone() }
+    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime { utc.clone() }
 }
 
 impl fmt::Show for UTC {
@@ -303,23 +303,23 @@ impl FixedOffset {
 }
 
 impl Offset for FixedOffset {
-    fn from_local_date(&self, local: &DateZ) -> LocalResult<Date<FixedOffset>> {
+    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
         Single(Date::from_utc(local.clone(), self.clone()))
     }
-    fn from_local_time(&self, local: &TimeZ) -> LocalResult<Time<FixedOffset>> {
+    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<FixedOffset>> {
         Single(Time::from_utc(*local + Duration::seconds(-self.local_minus_utc), self.clone()))
     }
-    fn from_local_datetime(&self, local: &DateTimeZ) -> LocalResult<DateTime<FixedOffset>> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<FixedOffset>> {
         Single(DateTime::from_utc(*local + Duration::seconds(-self.local_minus_utc), self.clone()))
     }
 
-    fn to_local_date(&self, utc: &DateZ) -> DateZ {
+    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate {
         utc.clone()
     }
-    fn to_local_time(&self, utc: &TimeZ) -> TimeZ {
+    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime {
         *utc + Duration::seconds(self.local_minus_utc)
     }
-    fn to_local_datetime(&self, utc: &DateTimeZ) -> DateTimeZ {
+    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime {
         *utc + Duration::seconds(self.local_minus_utc)
     }
 }

@@ -16,9 +16,9 @@ extern crate num;
 
 pub use duration::Duration;
 pub use date::{Weekday, Mon, Tue, Wed, Thu, Fri, Sat, Sun};
-pub use date::{Datelike, DateZ};
-pub use time::{Timelike, TimeZ};
-pub use datetime::DateTimeZ;
+pub use date::{Datelike, NaiveDate};
+pub use time::{Timelike, NaiveTime};
+pub use datetime::NaiveDateTime;
 
 pub mod duration;
 pub mod offset;
@@ -30,22 +30,22 @@ pub mod datetime;
 fn test_readme_doomsday() {
     use std::iter::range_inclusive;
 
-    for y in range_inclusive(date::MINZ.year(), date::MAXZ.year()) {
+    for y in range_inclusive(date::MIN_NAIVE.year(), date::MAX_NAIVE.year()) {
         // even months
-        let d4   = DateZ::from_ymd(y,  4,  4);
-        let d6   = DateZ::from_ymd(y,  6,  6);
-        let d8   = DateZ::from_ymd(y,  8,  8);
-        let d10  = DateZ::from_ymd(y, 10, 10);
-        let d12  = DateZ::from_ymd(y, 12, 12);
+        let d4   = NaiveDate::from_ymd(y,  4,  4);
+        let d6   = NaiveDate::from_ymd(y,  6,  6);
+        let d8   = NaiveDate::from_ymd(y,  8,  8);
+        let d10  = NaiveDate::from_ymd(y, 10, 10);
+        let d12  = NaiveDate::from_ymd(y, 12, 12);
 
         // nine to five, seven-eleven
-        let d59  = DateZ::from_ymd(y,  5,  9);
-        let d95  = DateZ::from_ymd(y,  9,  5);
-        let d711 = DateZ::from_ymd(y,  7, 11);
-        let d117 = DateZ::from_ymd(y, 11,  7);
+        let d59  = NaiveDate::from_ymd(y,  5,  9);
+        let d95  = NaiveDate::from_ymd(y,  9,  5);
+        let d711 = NaiveDate::from_ymd(y,  7, 11);
+        let d117 = NaiveDate::from_ymd(y, 11,  7);
 
         // "March 0"
-        let d30  = DateZ::from_ymd(y,  3,  1).pred();
+        let d30  = NaiveDate::from_ymd(y,  3,  1).pred();
 
         let weekday = d30.weekday();
         let other_dates = [d4, d6, d8, d10, d12, d59, d95, d711, d117];
