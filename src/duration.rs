@@ -25,7 +25,7 @@ macro_rules! try_opt(
 
 /// ISO 8601 time duration with nanosecond precision.
 /// This also allows for the negative duration; see individual methods for details.
-#[deriving(PartialEq, Eq, PartialOrd, Ord)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Duration {
     days: i32,
     secs: u32,

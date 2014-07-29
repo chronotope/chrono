@@ -11,8 +11,8 @@ use duration::Duration;
 use time::{Timelike, TimeZ};
 use date::{Datelike, DateZ, Weekday};
 
-/// ISO 8601 combined date and time.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// ISO 8601 combined date and time without timezone.
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 pub struct DateTimeZ {
     date: DateZ,
     time: TimeZ,
@@ -93,19 +93,19 @@ impl DateTimeZ {
         }
     }
 
-    /// Retrieves a `Date` component.
+    /// Retrieves a date component.
     #[inline]
     pub fn date(&self) -> DateZ {
         self.date
     }
 
-    /// Retrieves a `Time` component.
+    /// Retrieves a time component.
     #[inline]
     pub fn time(&self) -> TimeZ {
         self.time
     }
 
-    /// Returns the number of non-leap seconds since January 1, 1970 0:00:00.
+    /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC.
     /// Note that this does *not* account for the timezone!
     #[inline]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
@@ -255,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime_nseconds_from_unix_epoch() {
+    fn test_datetime_num_seconds_from_unix_epoch() {
         let to_timestamp =
             |y,m,d,h,n,s| DateTimeZ::from_ymdhms(y,m,d,h,n,s).num_seconds_from_unix_epoch();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);

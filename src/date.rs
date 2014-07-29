@@ -9,6 +9,8 @@
 use std::{fmt, num};
 use num::Integer;
 use duration::Duration;
+use time::TimeZ;
+use datetime::DateTimeZ;
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -19,7 +21,7 @@ static MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 ///
 /// The order of the days of week depends on the context.
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
-#[deriving(PartialEq, Eq, FromPrimitive, Show)]
+#[deriving(PartialEq, Eq, Clone, FromPrimitive, Show)]
 pub enum Weekday {
     /// Monday.
     Mon = 0,
@@ -96,7 +98,7 @@ impl Weekday {
 
     /// Returns a DOW number starting from Monday = 0.
     #[inline]
-    pub fn ndays_from_monday(&self) -> u32 {
+    pub fn num_days_from_monday(&self) -> u32 {
         match *self {
             Mon => 0,
             Tue => 1,
@@ -110,7 +112,7 @@ impl Weekday {
 
     /// Returns a DOW number starting from Sunday = 0.
     #[inline]
-    pub fn ndays_from_sunday(&self) -> u32 {
+    pub fn num_days_from_sunday(&self) -> u32 {
         match *self {
             Mon => 1,
             Tue => 2,
@@ -219,7 +221,7 @@ pub trait Datelike {
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 pub struct DateZ {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -327,6 +329,84 @@ impl DateZ {
         } else {
             None
         }
+    }
+
+    /// Makes a new `DateTimeZ` from the current date and given `TimeZ`.
+    #[inline]
+    pub fn and_time(&self, time: TimeZ) -> DateTimeZ {
+        DateTimeZ::new(self.clone(), time)
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    ///
+    /// Fails on invalid hour, minute and/or second.
+    #[inline]
+    pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTimeZ {
+        self.and_hms_opt(hour, min, sec).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    ///
+    /// Returns `None` on invalid hour, minute and/or second.
+    #[inline]
+    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTimeZ> {
+        TimeZ::from_hms_opt(hour, min, sec).map(|time| self.and_time(time))
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid hour, minute, second and/or millisecond.
+    #[inline]
+    pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTimeZ {
+        self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or millisecond.
+    #[inline]
+    pub fn and_hms_milli_opt(&self, hour: u32, min: u32, sec: u32,
+                             milli: u32) -> Option<DateTimeZ> {
+        TimeZ::from_hms_milli_opt(hour, min, sec, milli).map(|time| self.and_time(time))
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid hour, minute, second and/or microsecond.
+    #[inline]
+    pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTimeZ {
+        self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or microsecond.
+    #[inline]
+    pub fn and_hms_micro_opt(&self, hour: u32, min: u32, sec: u32,
+                             micro: u32) -> Option<DateTimeZ> {
+        TimeZ::from_hms_micro_opt(hour, min, sec, micro).map(|time| self.and_time(time))
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid hour, minute, second and/or nanosecond.
+    #[inline]
+    pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTimeZ {
+        self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    #[inline]
+    pub fn and_hms_nano_opt(&self, hour: u32, min: u32, sec: u32, nano: u32) -> Option<DateTimeZ> {
+        TimeZ::from_hms_nano_opt(hour, min, sec, nano).map(|time| self.and_time(time))
     }
 
     /// Returns the packed month-day-flags.
