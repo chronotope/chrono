@@ -6,11 +6,12 @@
  * ISO 8601 calendar date.
  */
 
-use std::{fmt, num};
+use std::{fmt, num, hash};
 use num::Integer;
 use duration::Duration;
+use offset::{Offset, UTC};
 use time::TimeZ;
-use datetime::DateTimeZ;
+use datetime::{DateTimeZ, DateTime};
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -597,6 +598,264 @@ impl fmt::Show for DateZ {
             // ISO 8601 requires the explicit sign for out-of-range years
             write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
         }
+    }
+}
+
+/// ISO 8601 calendar date with timezone.
+#[deriving(Clone)]
+pub struct Date<Off> {
+    date: DateZ,
+    offset: Off,
+}
+
+/// The minimum possible `Date`.
+pub static MIN: Date<UTC> = Date { date: MINZ, offset: UTC };
+/// The maximum possible `Date`.
+pub static MAX: Date<UTC> = Date { date: MAXZ, offset: UTC };
+
+impl<Off:Offset> Date<Off> {
+    /// Makes a new `Date` with given *UTC* date and offset.
+    /// The local date should be constructed via the `Offset` trait.
+    #[inline]
+    pub fn from_utc(date: DateZ, offset: Off) -> Date<Off> {
+        Date { date: date, offset: offset }
+    }
+
+    /// Makes a new `DateTimeZ` from the current date and given `TimeZ`.
+    /// The offset in the current date is preserved.
+    ///
+    /// Fails on invalid datetime.
+    #[inline]
+    pub fn and_time(&self, time: TimeZ) -> Option<DateTime<Off>> {
+        self.offset.from_local_datetime(&self.date.and_time(time)).single()
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Fails on invalid hour, minute and/or second.
+    #[inline]
+    pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTime<Off> {
+        self.and_hms_opt(hour, min, sec).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute and second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Returns `None` on invalid hour, minute and/or second.
+    #[inline]
+    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTime<Off>> {
+        TimeZ::from_hms_opt(hour, min, sec).and_then(|time| self.and_time(time))
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Fails on invalid hour, minute, second and/or millisecond.
+    #[inline]
+    pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTime<Off> {
+        self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and millisecond.
+    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or millisecond.
+    #[inline]
+    pub fn and_hms_milli_opt(&self, hour: u32, min: u32, sec: u32,
+                             milli: u32) -> Option<DateTime<Off>> {
+        TimeZ::from_hms_milli_opt(hour, min, sec, milli).and_then(|time| self.and_time(time))
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Fails on invalid hour, minute, second and/or microsecond.
+    #[inline]
+    pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTime<Off> {
+        self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and microsecond.
+    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or microsecond.
+    #[inline]
+    pub fn and_hms_micro_opt(&self, hour: u32, min: u32, sec: u32,
+                             micro: u32) -> Option<DateTime<Off>> {
+        TimeZ::from_hms_micro_opt(hour, min, sec, micro).and_then(|time| self.and_time(time))
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Fails on invalid hour, minute, second and/or nanosecond.
+    #[inline]
+    pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTime<Off> {
+        self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
+    }
+
+    /// Makes a new `DateTimeZ` from the current date, hour, minute, second and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    #[inline]
+    pub fn and_hms_nano_opt(&self, hour: u32, min: u32, sec: u32,
+                            nano: u32) -> Option<DateTime<Off>> {
+        TimeZ::from_hms_nano_opt(hour, min, sec, nano).and_then(|time| self.and_time(time))
+    }
+
+    /// Makes a new `Date` for the next date.
+    ///
+    /// Fails when `self` is the last representable date.
+    #[inline]
+    pub fn succ(&self) -> Date<Off> {
+        self.succ_opt().expect("out of bound")
+    }
+
+    /// Makes a new `Date` for the next date.
+    ///
+    /// Returns `None` when `self` is the last representable date.
+    #[inline]
+    pub fn succ_opt(&self) -> Option<Date<Off>> {
+        self.date.succ_opt().map(|date| Date::from_utc(date, self.offset.clone()))
+    }
+
+    /// Makes a new `Date` for the prior date.
+    ///
+    /// Fails when `self` is the first representable date.
+    #[inline]
+    pub fn pred(&self) -> Date<Off> {
+        self.pred_opt().expect("out of bound")
+    }
+
+    /// Makes a new `Date` for the prior date.
+    ///
+    /// Returns `None` when `self` is the first representable date.
+    #[inline]
+    pub fn pred_opt(&self) -> Option<Date<Off>> {
+        self.date.pred_opt().map(|date| Date::from_utc(date, self.offset.clone()))
+    }
+
+    /// Returns a view to the local date.
+    fn local(&self) -> DateZ {
+        self.offset.to_local_date(&self.date)
+    }
+}
+
+impl<Off:Offset> Datelike for Date<Off> {
+    #[inline] fn year(&self) -> i32 { self.local().year() }
+    #[inline] fn month(&self) -> u32 { self.local().month() }
+    #[inline] fn month0(&self) -> u32 { self.local().month0() }
+    #[inline] fn day(&self) -> u32 { self.local().day() }
+    #[inline] fn day0(&self) -> u32 { self.local().day0() }
+    #[inline] fn ordinal(&self) -> u32 { self.local().ordinal() }
+    #[inline] fn ordinal0(&self) -> u32 { self.local().ordinal0() }
+    #[inline] fn weekday(&self) -> Weekday { self.local().weekday() }
+    #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.local().isoweekdate() }
+
+    #[inline]
+    fn with_year(&self, year: i32) -> Option<Date<Off>> {
+        self.local().with_year(year)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+
+    #[inline]
+    fn with_month(&self, month: u32) -> Option<Date<Off>> {
+        self.local().with_month(month)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+
+    #[inline]
+    fn with_month0(&self, month0: u32) -> Option<Date<Off>> {
+        self.local().with_month0(month0)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+
+    #[inline]
+    fn with_day(&self, day: u32) -> Option<Date<Off>> {
+        self.local().with_day(day)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+
+    #[inline]
+    fn with_day0(&self, day0: u32) -> Option<Date<Off>> {
+        self.local().with_day0(day0)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+
+    #[inline]
+    fn with_ordinal(&self, ordinal: u32) -> Option<Date<Off>> {
+        self.local().with_ordinal(ordinal)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+
+    #[inline]
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<Date<Off>> {
+        self.local().with_ordinal0(ordinal0)
+            .and_then(|date| self.offset.from_local_date(&date).single())
+    }
+}
+
+impl num::Bounded for Date<UTC> {
+    #[inline] fn min_value() -> Date<UTC> { MIN }
+    #[inline] fn max_value() -> Date<UTC> { MAX }
+}
+
+impl<Off:Offset> PartialEq for Date<Off> {
+    fn eq(&self, other: &Date<Off>) -> bool { self.date == other.date }
+}
+
+impl<Off:Offset> Eq for Date<Off> {
+}
+
+impl<Off:Offset, Off2:Offset> Equiv<Date<Off2>> for Date<Off> {
+    fn equiv(&self, other: &Date<Off2>) -> bool { self.date == other.date }
+}
+
+impl<Off:Offset> PartialOrd for Date<Off> {
+    fn partial_cmp(&self, other: &Date<Off>) -> Option<Ordering> {
+        self.date.partial_cmp(&other.date)
+    }
+}
+
+impl<Off:Offset> Ord for Date<Off> {
+    fn cmp(&self, other: &Date<Off>) -> Ordering { self.date.cmp(&other.date) }
+}
+
+impl<Off:Offset> hash::Hash for Date<Off> {
+    fn hash(&self, state: &mut hash::sip::SipState) { self.date.hash(state) }
+}
+
+impl<Off:Offset> Add<Duration,Date<Off>> for Date<Off> {
+    fn add(&self, rhs: &Duration) -> Date<Off> {
+        Date { date: self.date + *rhs, offset: self.offset.clone() }
+    }
+}
+
+/*
+// Rust issue #7590, the current coherence checker can't handle multiple Add impls
+impl<Off:Offset> Add<Date<Off>,Date<Off>> for Duration {
+    #[inline]
+    fn add(&self, rhs: &Date<Off>) -> Date<Off> { rhs.add(self) }
+}
+*/
+
+impl<Off:Offset, Off2:Offset> Sub<Date<Off2>,Duration> for Date<Off> {
+    fn sub(&self, rhs: &Date<Off2>) -> Duration {
+        self.date - rhs.date
+    }
+}
+
+impl<Off:Offset> fmt::Show for Date<Off> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", self.local(), self.offset)
     }
 }
 

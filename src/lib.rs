@@ -21,6 +21,7 @@ pub use time::{Timelike, TimeZ};
 pub use datetime::DateTimeZ;
 
 pub mod duration;
+pub mod offset;
 pub mod date;
 pub mod time;
 pub mod datetime;
