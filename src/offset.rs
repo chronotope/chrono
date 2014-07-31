@@ -7,6 +7,7 @@
  */
 
 use std::fmt;
+use std::str::MaybeOwned;
 use stdtime;
 use num::Integer;
 
@@ -214,6 +215,12 @@ pub trait Offset: Clone + fmt::Show {
         }
     }
 
+    /// Returns a name or abbreviation of this offset.
+    fn name(&self) -> MaybeOwned<'static>;
+
+    /// Returns the *current* offset from UTC to the local time.
+    fn local_minus_utc(&self) -> Duration;
+
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>>;
 
@@ -253,6 +260,9 @@ impl UTC {
 }
 
 impl Offset for UTC {
+    fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() }
+    fn local_minus_utc(&self) -> Duration { Duration::zero() }
+
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
         Single(Date::from_utc(local.clone(), UTC))
     }
@@ -321,6 +331,9 @@ impl FixedOffset {
 }
 
 impl Offset for FixedOffset {
+    fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() } // XXX
+    fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc) }
+
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
         Single(Date::from_utc(local.clone(), self.clone()))
     }
@@ -359,7 +372,7 @@ impl fmt::Show for FixedOffset {
 /// The local timescale. This is implemented via the standard `time` crate.
 #[deriving(Clone)]
 pub struct Local {
-   cached: FixedOffset,
+    cached: FixedOffset,
 }
 
 impl Local {
@@ -410,6 +423,9 @@ impl Local {
 }
 
 impl Offset for Local {
+    fn name(&self) -> MaybeOwned<'static> { "LMT".into_maybe_owned() } // XXX XXX
+    fn local_minus_utc(&self) -> Duration { self.cached.local_minus_utc() }
+
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
         match self.from_local_datetime(&local.and_hms(0, 0, 0)) {
             NoResult => NoResult,

@@ -15,6 +15,7 @@ use naive;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use datetime::DateTime;
+use format::DelayedFormat;
 
 /// ISO 8601 calendar date with timezone.
 #[deriving(Clone)]
@@ -156,6 +157,13 @@ impl<Off:Offset> Date<Off> {
     #[inline]
     pub fn pred_opt(&self) -> Option<Date<Off>> {
         self.date.pred_opt().map(|date| Date::from_utc(date, self.offset.clone()))
+    }
+
+    /// Formats the date in the specified format string.
+    /// See the `format` module on the supported escape sequences.
+    #[inline]
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+        DelayedFormat::new_with_offset(Some(self.local()), None, &self.offset, fmt)
     }
 
     /// Returns a view to the local date.

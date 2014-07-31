@@ -13,6 +13,7 @@ use {Weekday, Timelike, Datelike};
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::date::NaiveDate;
+use format::DelayedFormat;
 
 /// ISO 8601 combined date and time without timezone.
 #[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
@@ -76,6 +77,13 @@ impl NaiveDateTime {
         let ndays = self.date.num_days_from_ce() as i64;
         let nseconds = self.time.num_seconds_from_midnight() as i64;
         (ndays - 719163) * 86400 + nseconds
+    }
+
+    /// Formats the combined date and time in the specified format string.
+    /// See the `format` module on the supported escape sequences.
+    #[inline]
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+        DelayedFormat::new(Some(self.date.clone()), Some(self.time.clone()), fmt)
     }
 }
 
@@ -246,6 +254,13 @@ mod tests {
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
         assert_eq!(to_timestamp(2001, 9, 9, 1, 46, 40), 1_000_000_000);
         assert_eq!(to_timestamp(2038, 1, 19, 3, 14, 7), 0x7fffffff);
+    }
+
+    #[test]
+    fn test_datetime_format() {
+        let dt = NaiveDate::from_ymd(2010, 9, 8).and_hms_milli(7, 6, 54, 321);
+        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010".to_string());
+        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t".to_string());
     }
 }
 

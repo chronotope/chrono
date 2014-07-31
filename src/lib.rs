@@ -39,6 +39,7 @@ pub mod naive {
 pub mod date;
 pub mod time;
 pub mod datetime;
+pub mod format;
 
 /// The day of week (DOW).
 ///

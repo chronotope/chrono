@@ -14,6 +14,7 @@ use duration::Duration;
 use naive::datetime::NaiveDateTime;
 use time::Time;
 use date::Date;
+use format::DelayedFormat;
 
 /// ISO 8601 combined date and time with timezone.
 #[deriving(Clone)]
@@ -46,6 +47,14 @@ impl<Off:Offset> DateTime<Off> {
     #[inline]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
         self.datetime.num_seconds_from_unix_epoch()
+    }
+
+    /// Formats the combined date and time in the specified format string.
+    /// See the `format` module on the supported escape sequences.
+    #[inline]
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+        let local = self.local();
+        DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, fmt)
     }
 
     /// Returns a view to the local datetime.

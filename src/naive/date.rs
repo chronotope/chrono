@@ -13,6 +13,7 @@ use {Weekday, Datelike};
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
+use format::DelayedFormat;
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -295,6 +296,13 @@ impl NaiveDate {
     #[inline]
     pub fn pred_opt(&self) -> Option<NaiveDate> {
         self.with_of(self.of().pred()).or_else(|| NaiveDate::from_ymd_opt(self.year() - 1, 12, 31))
+    }
+
+    /// Formats the date in the specified format string.
+    /// See the `format` module on the supported escape sequences.
+    #[inline]
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+        DelayedFormat::new(Some(self.clone()), None, fmt)
     }
 }
 
@@ -735,6 +743,27 @@ mod tests {
         // the format specifier should have no effect on `NaiveTime`
         assert_eq!(format!("{:+30}", NaiveDate::from_ymd(1234, 5, 6)), "1234-05-06".to_string());
         assert_eq!(format!("{:30}", NaiveDate::from_ymd(12345, 6, 7)), "+12345-06-07".to_string());
+    }
+
+    #[test]
+    fn test_date_format() {
+        let d = NaiveDate::from_ymd(2012, 3, 4);
+        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12".to_string());
+        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March".to_string());
+        assert_eq!(d.format("%d,%e").to_string(), "04, 4".to_string());
+        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09".to_string());
+        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7".to_string());
+        assert_eq!(d.format("%j").to_string(), "064".to_string()); // since 2012 is a leap year
+        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12".to_string());
+        assert_eq!(d.format("%F").to_string(), "2012-03-04".to_string());
+        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012".to_string());
+        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t".to_string());
+
+        // corner cases
+        assert_eq!(NaiveDate::from_ymd(2007, 12, 31).format("%G,%g,%U,%W,%V").to_string(),
+                   "2008,08,53,53,01".to_string());
+        assert_eq!(NaiveDate::from_ymd(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(),
+                   "2009,09,01,00,53".to_string());
     }
 }
 

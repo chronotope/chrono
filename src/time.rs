@@ -12,6 +12,7 @@ use Timelike;
 use offset::Offset;
 use duration::Duration;
 use naive::time::NaiveTime;
+use format::DelayedFormat;
 
 /// ISO 8601 time with timezone.
 #[deriving(Clone)]
@@ -26,6 +27,13 @@ impl<Off:Offset> Time<Off> {
     #[inline]
     pub fn from_utc(time: NaiveTime, offset: Off) -> Time<Off> {
         Time { time: time, offset: offset }
+    }
+
+    /// Formats the time in the specified format string.
+    /// See the `format` module on the supported escape sequences.
+    #[inline]
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+        DelayedFormat::new_with_offset(None, Some(self.local()), &self.offset, fmt)
     }
 
     /// Returns a view to the local time.

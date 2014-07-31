@@ -12,6 +12,7 @@ use num::Integer;
 use Timelike;
 use offset::Offset;
 use duration::Duration;
+use format::DelayedFormat;
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -113,6 +114,13 @@ impl NaiveTime {
     pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
         if secs >= 86400 || nano >= 2_000_000_000 { return None; }
         Some(NaiveTime { secs: secs, frac: nano })
+    }
+
+    /// Formats the time in the specified format string.
+    /// See the `format` module on the supported escape sequences.
+    #[inline]
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+        DelayedFormat::new(None, Some(self.clone()), fmt)
     }
 
     /// Returns a triple of the hour, minute and second numbers.
@@ -349,6 +357,22 @@ mod tests {
         // the format specifier should have no effect on `NaiveTime`
         assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)),
                    "03:05:07.009".to_string());
+    }
+
+    #[test]
+    fn test_time_format() {
+        let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
+        assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM".to_string());
+        assert_eq!(t.format("%M").to_string(), "05".to_string());
+        assert_eq!(t.format("%S,%f").to_string(), "07,098765432".to_string());
+        assert_eq!(t.format("%R").to_string(), "03:05".to_string());
+        assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07".to_string());
+        assert_eq!(t.format("%r").to_string(), "03:05:07 AM".to_string());
+        assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t".to_string());
+
+        // corner cases
+        assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(),
+                   "01:57:09 PM".to_string());
     }
 }
 
