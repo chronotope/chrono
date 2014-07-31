@@ -217,11 +217,11 @@ impl fmt::Show for NaiveTime {
         if nano == 0 {
             Ok(())
         } else if nano % 1_000_000 == 0 {
-            write!(f, ",{:03}", nano / 1_000_000)
+            write!(f, ".{:03}", nano / 1_000_000)
         } else if nano % 1_000 == 0 {
-            write!(f, ",{:06}", nano / 1_000)
+            write!(f, ".{:06}", nano / 1_000)
         } else {
-            write!(f, ",{:09}", nano)
+            write!(f, ".{:09}", nano)
         }
     }
 }
@@ -336,19 +336,19 @@ mod tests {
     #[test]
     fn test_time_fmt() {
         assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 999).to_string(),
-                   "23:59:59,999".to_string());
+                   "23:59:59.999".to_string());
         assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).to_string(),
                    "23:59:60".to_string());
         assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_001).to_string(),
-                   "23:59:60,001".to_string());
+                   "23:59:60.001".to_string());
         assert_eq!(NaiveTime::from_hms_micro(0, 0, 0, 43210).to_string(),
-                   "00:00:00,043210".to_string());
+                   "00:00:00.043210".to_string());
         assert_eq!(NaiveTime::from_hms_nano(0, 0, 0, 6543210).to_string(),
-                   "00:00:00,006543210".to_string());
+                   "00:00:00.006543210".to_string());
 
         // the format specifier should have no effect on `NaiveTime`
         assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)),
-                   "03:05:07,009".to_string());
+                   "03:05:07.009".to_string());
     }
 }
 
