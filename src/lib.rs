@@ -17,7 +17,7 @@ extern crate stdtime = "time";
 
 pub use duration::Duration;
 pub use offset::{Offset, LocalResult};
-pub use offset::{UTC, FixedOffset};
+pub use offset::{UTC, FixedOffset, Local};
 pub use naive::date::NaiveDate;
 pub use naive::time::NaiveTime;
 pub use naive::datetime::NaiveDateTime;

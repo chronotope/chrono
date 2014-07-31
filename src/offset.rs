@@ -10,7 +10,7 @@ use std::fmt;
 use stdtime;
 use num::Integer;
 
-use Weekday;
+use {Weekday, Datelike, Timelike};
 use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
@@ -354,5 +354,92 @@ impl fmt::Show for FixedOffset {
             write!(f, "{}{:02}:{:02}:{:02}", sign, hour, min, sec)
         }
     }
+}
+
+/// The local timescale. This is implemented via the standard `time` crate.
+#[deriving(Clone)]
+pub struct Local {
+   cached: FixedOffset,
+}
+
+impl Local {
+    /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
+    /// This assumes that `time` is working correctly, i.e. any error is fatal.
+    fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
+        if tm.tm_sec >= 60 {
+            tm.tm_sec = 59;
+            tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
+        }
+
+        // from_yo is more efficient than from_ymd (since it's the internal representation).
+        let date = NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1);
+        let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
+                                            tm.tm_sec as u32, tm.tm_nsec as u32);
+        let offset = Local { cached: FixedOffset::east(tm.tm_gmtoff) };
+        DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_gmtoff), offset)
+    }
+
+    /// Converts a local `NaiveDateTime` to the `time::Timespec`.
+    fn datetime_to_timespec(d: &NaiveDateTime) -> stdtime::Timespec {
+        let tm = stdtime::Tm {
+            tm_sec: d.second() as i32,
+            tm_min: d.minute() as i32,
+            tm_hour: d.hour() as i32,
+            tm_mday: d.day() as i32,
+            tm_mon: d.month0() as i32, // yes, C is that strange...
+            tm_year: d.year() - 1900, // this doesn't underflow, we know that d is `NaiveDateTime`.
+            tm_wday: 0, // to_local ignores this
+            tm_yday: 0, // and this
+            tm_isdst: -1,
+            tm_gmtoff: 1, // this is arbitrary but should be nonzero
+                          // in order to make `to_timespec` use `rust_mktime` internally.
+            tm_nsec: d.nanosecond() as i32,
+        };
+        tm.to_timespec()
+    }
+
+    /// Returns a `Date` which corresponds to the current date.
+    pub fn today() -> Date<Local> {
+        Local::now().date()
+    }
+
+    /// Returns a `DateTime` which corresponds to the current date.
+    pub fn now() -> DateTime<Local> {
+        Local::tm_to_datetime(stdtime::now())
+    }
+}
+
+impl Offset for Local {
+    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
+        match self.from_local_datetime(&local.and_hms(0, 0, 0)) {
+            NoResult => NoResult,
+            Single(dt) => Single(dt.date()),
+            Ambiguous(min, max) => {
+                let min = min.date();
+                let max = max.date();
+                if min == max {Single(min)} else {Ambiguous(min, max)}
+            }
+        }
+    }
+
+    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Local>> {
+        // XXX we don't have enough information here, so we assume that the timezone remains same
+        Single(Time::from_utc(local.clone(), self.clone()))
+    }
+
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
+        let timespec = Local::datetime_to_timespec(local);
+        Single(Local::tm_to_datetime(stdtime::at(timespec)))
+    }
+
+    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { self.cached.to_local_date(utc) }
+    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime { self.cached.to_local_time(utc) }
+    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime {
+        self.cached.to_local_datetime(utc)
+    }
+}
+
+impl fmt::Show for Local {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
 }
 
