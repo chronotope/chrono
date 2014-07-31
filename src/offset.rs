@@ -7,6 +7,7 @@
  */
 
 use std::fmt;
+use stdtime;
 use num::Integer;
 
 use Weekday;
@@ -238,6 +239,18 @@ pub trait Offset: Clone + fmt::Show {
 /// The UTC timescale. This is the most efficient offset when you don't need the local time.
 #[deriving(Clone)]
 pub struct UTC;
+
+impl UTC {
+    /// Returns a `Date` which corresponds to the current date.
+    pub fn today() -> Date<UTC> { UTC::now().date() }
+
+    /// Returns a `DateTime` which corresponds to the current date.
+    pub fn now() -> DateTime<UTC> {
+        let spec = stdtime::get_time();
+        let naive = NaiveDateTime::from_num_seconds_from_unix_epoch(spec.sec, spec.nsec as u32);
+        DateTime::from_utc(naive, UTC)
+    }
+}
 
 impl Offset for UTC {
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {

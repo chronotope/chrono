@@ -7,6 +7,7 @@
  */
 
 use std::fmt;
+use num::Integer;
 
 use {Weekday, Timelike, Datelike};
 use duration::Duration;
@@ -26,6 +27,34 @@ impl NaiveDateTime {
     #[inline]
     pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime { date: date, time: time }
+    }
+
+    /// Makes a new `NaiveDateTime` from the number of non-leap seconds
+    /// since January 1, 1970 0:00:00 UTC and the number of nanoseconds
+    /// since the last whole non-leap second.
+    ///
+    /// Fails on the out-of-range number of seconds and/or invalid nanosecond.
+    #[inline]
+    pub fn from_num_seconds_from_unix_epoch(secs: i64, nsecs: u32) -> NaiveDateTime {
+        let datetime = NaiveDateTime::from_num_seconds_from_unix_epoch_opt(secs, nsecs);
+        datetime.expect("invalid or out-of-range datetime")
+    }
+
+    /// Makes a new `NaiveDateTime` from the number of non-leap seconds
+    /// since January 1, 1970 0:00:00 UTC and the number of nanoseconds
+    /// since the last whole non-leap second.
+    ///
+    /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
+    #[inline]
+    pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+        let (days, secs) = secs.div_mod_floor(&86400);
+        let date = days.to_i32().and_then(|days| days.checked_add(&719163))
+                                .and_then(|days_ce| NaiveDate::from_num_days_from_ce_opt(days_ce));
+        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
+        match (date, time) {
+            (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
+            (_, _) => None,
+        }
     }
 
     /// Retrieves a date component.
@@ -161,8 +190,23 @@ impl fmt::Show for NaiveDateTime {
 
 #[cfg(test)]
 mod tests {
+    use super::NaiveDateTime;
     use duration::Duration;
     use naive::date::NaiveDate;
+    use std::i64;
+
+    #[test]
+    fn test_datetime_from_num_seconds_from_unix_epoch() {
+        let from_timestamp = |secs| NaiveDateTime::from_num_seconds_from_unix_epoch_opt(secs, 0);
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
+        assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
+        assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
+        assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
+        assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
+        assert_eq!(from_timestamp(i64::MIN), None);
+        assert_eq!(from_timestamp(i64::MAX), None);
+    }
 
     #[test]
     fn test_datetime_add() {

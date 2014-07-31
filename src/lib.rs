@@ -13,6 +13,7 @@ Experimental date and time handling for Rust.
 #![deny(missing_doc)]
 
 extern crate num;
+extern crate stdtime = "time";
 
 pub use duration::Duration;
 pub use offset::{Offset, LocalResult};

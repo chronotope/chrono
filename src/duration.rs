@@ -442,12 +442,13 @@ mod tests {
         assert_eq!(Duration::zero(), Duration::zero());
         assert!(Duration::zero() != Duration::seconds(1));
         assert_eq!(Duration::seconds(1) + Duration::seconds(2), Duration::seconds(3));
-        assert_eq!(Duration::seconds(86399) + Duration::seconds(4),
-                   Duration::days(1) + Duration::seconds(3));
+        assert_eq!(Duration::milliseconds(997) + Duration::milliseconds(15),
+                   Duration::new(0, 1, 12_000_000));
+        assert_eq!(Duration::seconds(86399) + Duration::seconds(4), Duration::new(1, 3, 0));
         assert_eq!(Duration::days(10) - Duration::seconds(1000), Duration::seconds(863000));
         assert_eq!(Duration::days(10) - Duration::seconds(1000000), Duration::seconds(-136000));
         assert_eq!(Duration::days(2) + Duration::seconds(86399) + Duration::nanoseconds(1234567890),
-                   Duration::days(3) + Duration::nanoseconds(234567890));
+                   Duration::new(3, 0, 234567890));
         assert_eq!(-Duration::days(3), Duration::days(-3));
         assert_eq!(-(Duration::days(3) + Duration::seconds(70)),
                    Duration::days(-4) + Duration::seconds(86400-70));

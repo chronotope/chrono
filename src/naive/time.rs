@@ -89,9 +89,29 @@ impl NaiveTime {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    #[inline]
     pub fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 { return None; }
         let secs = hour * 3600 + min * 60 + sec;
+        Some(NaiveTime { secs: secs, frac: nano })
+    }
+
+    /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    ///
+    /// Fails on invalid number of seconds and/or nanosecond.
+    #[inline]
+    pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
+        NaiveTime::from_num_seconds_from_midnight_opt(secs, nano).expect("invalid time")
+    }
+
+    /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    ///
+    /// Returns `None` on invalid number of seconds and/or nanosecond.
+    #[inline]
+    pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
+        if secs >= 86400 || nano >= 2_000_000_000 { return None; }
         Some(NaiveTime { secs: secs, frac: nano })
     }
 

@@ -131,6 +131,28 @@ impl NaiveDate {
         }
     }
 
+    /// Makes a new `NaiveDate` from the number of days since January 1, 1 (Day 1)
+    /// in the proleptic Gregorian calendar.
+    ///
+    /// Fails on the out-of-range date.
+    #[inline]
+    pub fn from_num_days_from_ce(days: i32) -> NaiveDate {
+        NaiveDate::from_num_days_from_ce_opt(days).expect("out-of-range date")
+    }
+
+    /// Makes a new `NaiveDate` from the number of days since January 1, 1 (Day 1)
+    /// in the proleptic Gregorian calendar.
+    ///
+    /// Returns `None` on the out-of-range date.
+    pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
+        let days = days + 365; // make January 1, 1 BCE equal to day 0
+        let (year_div_400, cycle) = days.div_mod_floor(&146097);
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
+        let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as i32) };
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
+                           Of::new(ordinal, flags))
+    }
+
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
     #[inline]
     pub fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
@@ -409,7 +431,7 @@ mod tests {
     use {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
     use duration::Duration;
     use std::{i32, u32};
-    use std::iter::range_inclusive;
+    use std::iter::{range_inclusive, range_step_inclusive};
 
     #[test]
     fn test_date_from_ymd() {
@@ -517,6 +539,37 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_date_from_num_days_from_ce() {
+        let from_ndays_from_ce = |days| NaiveDate::from_num_days_from_ce_opt(days);
+        assert_eq!(from_ndays_from_ce(1), Some(NaiveDate::from_ymd(1, 1, 1)));
+        assert_eq!(from_ndays_from_ce(2), Some(NaiveDate::from_ymd(1, 1, 2)));
+        assert_eq!(from_ndays_from_ce(31), Some(NaiveDate::from_ymd(1, 1, 31)));
+        assert_eq!(from_ndays_from_ce(32), Some(NaiveDate::from_ymd(1, 2, 1)));
+        assert_eq!(from_ndays_from_ce(59), Some(NaiveDate::from_ymd(1, 2, 28)));
+        assert_eq!(from_ndays_from_ce(60), Some(NaiveDate::from_ymd(1, 3, 1)));
+        assert_eq!(from_ndays_from_ce(365), Some(NaiveDate::from_ymd(1, 12, 31)));
+        assert_eq!(from_ndays_from_ce(365*1 + 1), Some(NaiveDate::from_ymd(2, 1, 1)));
+        assert_eq!(from_ndays_from_ce(365*2 + 1), Some(NaiveDate::from_ymd(3, 1, 1)));
+        assert_eq!(from_ndays_from_ce(365*3 + 1), Some(NaiveDate::from_ymd(4, 1, 1)));
+        assert_eq!(from_ndays_from_ce(365*4 + 2), Some(NaiveDate::from_ymd(5, 1, 1)));
+        assert_eq!(from_ndays_from_ce(146097 + 1), Some(NaiveDate::from_ymd(401, 1, 1)));
+        assert_eq!(from_ndays_from_ce(146097*5 + 1), Some(NaiveDate::from_ymd(2001, 1, 1)));
+        assert_eq!(from_ndays_from_ce(719163), Some(NaiveDate::from_ymd(1970, 1, 1)));
+        assert_eq!(from_ndays_from_ce(0), Some(NaiveDate::from_ymd(0, 12, 31))); // 1 BCE
+        assert_eq!(from_ndays_from_ce(-365), Some(NaiveDate::from_ymd(0, 1, 1)));
+        assert_eq!(from_ndays_from_ce(-366), Some(NaiveDate::from_ymd(-1, 12, 31))); // 2 BCE
+
+        for days in range_step_inclusive(-999900i32, 1000000, 100) {
+            assert_eq!(from_ndays_from_ce(days).map(|d| d.num_days_from_ce()), Some(days));
+        }
+
+        assert_eq!(from_ndays_from_ce(MIN.num_days_from_ce()), Some(MIN));
+        assert_eq!(from_ndays_from_ce(MIN.num_days_from_ce() - 1), None);
+        assert_eq!(from_ndays_from_ce(MAX.num_days_from_ce()), Some(MAX));
+        assert_eq!(from_ndays_from_ce(MAX.num_days_from_ce() + 1), None);
     }
 
     #[test]
