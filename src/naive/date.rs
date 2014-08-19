@@ -929,7 +929,7 @@ mod internals {
     pub static MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
     static XX: i8 = -128;
-    static MDL_TO_OL: [i8, ..MAX_MDL+1] = [
+    static MDL_TO_OL: [i8, ..(MAX_MDL as uint + 1u)] = [
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -984,7 +984,7 @@ mod internals {
          98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, // 12
     ];
 
-    static OL_TO_MDL: [u8, ..MAX_OL+1] = [
+    static OL_TO_MDL: [u8, ..(MAX_OL as uint + 1u)] = [
           0,  0,                                                         // 0
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
