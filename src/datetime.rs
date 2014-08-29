@@ -49,6 +49,12 @@ impl<Off:Offset> DateTime<Off> {
         self.datetime.num_seconds_from_unix_epoch()
     }
 
+    /// Retrieves an associated offset.
+    #[inline]
+    pub fn offset<'a>(&'a self) -> &'a Off {
+        &self.offset
+    }
+
     /// Formats the combined date and time in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
@@ -207,7 +213,9 @@ mod tests {
     #[test]
     #[allow(uppercase_variables)]
     fn test_datetime_offset() {
+        let EST = FixedOffset::east(5*60*60);
         let EDT = FixedOffset::east(4*60*60);
+
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).to_string(),
                    "2014-05-06T07:08:09Z".to_string());
         assert_eq!(EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).to_string(),
@@ -217,6 +225,10 @@ mod tests {
                    UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) - EDT.ymd(2014, 5, 6).and_hms(10, 11, 12),
                    Duration::seconds(3600 - 3*60 - 3));
+
+        assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);
+        assert_eq!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), EDT);
+        assert!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != EST);
     }
 }
 

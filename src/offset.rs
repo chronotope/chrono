@@ -244,7 +244,7 @@ pub trait Offset: Clone + fmt::Show {
 }
 
 /// The UTC timescale. This is the most efficient offset when you don't need the local time.
-#[deriving(Clone)]
+#[deriving(Clone, PartialEq, Eq)]
 pub struct UTC;
 
 impl UTC {
@@ -283,7 +283,7 @@ impl fmt::Show for UTC {
 }
 
 /// The fixed offset, from UTC-23:59:59 to UTC+23:59:59.
-#[deriving(Clone)]
+#[deriving(Clone, PartialEq, Eq)]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }

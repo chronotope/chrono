@@ -159,6 +159,12 @@ impl<Off:Offset> Date<Off> {
         self.date.pred_opt().map(|date| Date::from_utc(date, self.offset.clone()))
     }
 
+    /// Retrieves an associated offset.
+    #[inline]
+    pub fn offset<'a>(&'a self) -> &'a Off {
+        &self.offset
+    }
+
     /// Formats the date in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
