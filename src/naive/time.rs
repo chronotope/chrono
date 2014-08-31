@@ -172,9 +172,11 @@ impl Timelike for NaiveTime {
 
 impl Add<Duration,NaiveTime> for NaiveTime {
     fn add(&self, rhs: &Duration) -> NaiveTime {
-        let (_, rhssecs, rhsnanos) = rhs.to_tuple();
-        let mut secs = self.secs + rhssecs;
-        let mut nanos = self.frac + rhsnanos;
+        // there is no direct interface in `Duration` to get only the nanosecond part,
+        // so we need to do the additional calculation here.
+        let rhs2 = *rhs - Duration::seconds(rhs.num_seconds());
+        let mut secs = self.secs + (rhs.num_seconds() % 86400 + 86400) as u32;
+        let mut nanos = self.frac + rhs2.num_nanoseconds().unwrap() as u32;
 
         // always ignore leap seconds after the current whole second
         let maxnanos = if self.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
@@ -198,7 +200,7 @@ impl Add<NaiveTime,NaiveTime> for Duration {
 impl Sub<NaiveTime,Duration> for NaiveTime {
     fn sub(&self, rhs: &NaiveTime) -> Duration {
         // the number of whole non-leap seconds
-        let secs = self.secs as i32 - rhs.secs as i32 - 1;
+        let secs = self.secs as i64 - rhs.secs as i64 - 1;
 
         // the fractional second from the rhs to the next non-leap second
         let maxnanos = if rhs.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
@@ -208,7 +210,7 @@ impl Sub<NaiveTime,Duration> for NaiveTime {
         let lastfrac = if self.frac >= 1_000_000_000 {1_000_000_000} else {0};
         let nanos2 = self.frac - lastfrac;
 
-        Duration::seconds(secs) + Duration::nanoseconds(nanos1 as i32 + nanos2 as i32)
+        Duration::seconds(secs) + Duration::nanoseconds(nanos1 as i64 + nanos2 as i64)
     }
 }
 
@@ -240,6 +242,7 @@ mod tests {
     use Timelike;
     use duration::Duration;
     use std::u32;
+    use std::num::Zero;
 
     #[test]
     fn test_time_from_hms_milli() {
@@ -305,7 +308,7 @@ mod tests {
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
-        check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
+        check(hmsm(3, 5, 7, 900), Zero::zero(), hmsm(3, 5, 7, 900));
         check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
         check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
         check(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
@@ -323,7 +326,7 @@ mod tests {
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
-        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
+        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Zero::zero());
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
         check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
         check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 300),

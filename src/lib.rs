@@ -25,7 +25,13 @@ pub use date::Date;
 pub use time::Time;
 pub use datetime::DateTime;
 
-pub mod duration;
+pub mod duration {
+    //! ISO 8601 duration.
+    //!
+    //! This used to be a part of rust-chrono,
+    //! but has been subsequently merged into Rust's standard library.
+    pub use std::time::duration::{MIN, MAX, Duration};
+}
 pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.

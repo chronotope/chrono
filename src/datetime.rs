@@ -211,7 +211,7 @@ mod tests {
     use offset::{Offset, UTC, FixedOffset};
 
     #[test]
-    #[allow(uppercase_variables)]
+    #[allow(non_snake_case)]
     fn test_datetime_offset() {
         let EST = FixedOffset::east(5*60*60);
         let EDT = FixedOffset::east(4*60*60);

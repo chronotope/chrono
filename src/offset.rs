@@ -8,6 +8,7 @@
 
 use std::fmt;
 use std::str::MaybeOwned;
+use std::num::Zero;
 use stdtime;
 use num::Integer;
 
@@ -261,7 +262,7 @@ impl UTC {
 
 impl Offset for UTC {
     fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() }
-    fn local_minus_utc(&self) -> Duration { Duration::zero() }
+    fn local_minus_utc(&self) -> Duration { Zero::zero() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
         Single(Date::from_utc(local.clone(), UTC))
@@ -332,26 +333,28 @@ impl FixedOffset {
 
 impl Offset for FixedOffset {
     fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() } // XXX
-    fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc) }
+    fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
         Single(Date::from_utc(local.clone(), self.clone()))
     }
     fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<FixedOffset>> {
-        Single(Time::from_utc(*local + Duration::seconds(-self.local_minus_utc), self.clone()))
+        Single(Time::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
+                              self.clone()))
     }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<FixedOffset>> {
-        Single(DateTime::from_utc(*local + Duration::seconds(-self.local_minus_utc), self.clone()))
+        Single(DateTime::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
+                                  self.clone()))
     }
 
     fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate {
         utc.clone()
     }
     fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime {
-        *utc + Duration::seconds(self.local_minus_utc)
+        *utc + Duration::seconds(self.local_minus_utc as i64)
     }
     fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime {
-        *utc + Duration::seconds(self.local_minus_utc)
+        *utc + Duration::seconds(self.local_minus_utc as i64)
     }
 }
 
@@ -389,7 +392,7 @@ impl Local {
         let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
                                             tm.tm_sec as u32, tm.tm_nsec as u32);
         let offset = Local { cached: FixedOffset::east(tm.tm_gmtoff) };
-        DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_gmtoff), offset)
+        DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_gmtoff as i64), offset)
     }
 
     /// Converts a local `NaiveDateTime` to the `time::Timespec`.

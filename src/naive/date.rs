@@ -383,12 +383,12 @@ impl num::Bounded for NaiveDate {
 
 impl Add<Duration,NaiveDate> for NaiveDate {
     fn add(&self, rhs: &Duration) -> NaiveDate {
-        // TODO overflow
+        // TODO overflow currently fails
 
         let year = self.year();
         let (mut year_div_400, year_mod_400) = year.div_mod_floor(&400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = cycle as i32 + rhs.num_days();
+        let cycle = (cycle as i32).checked_add(&rhs.num_days().to_i32().unwrap()).unwrap();
         let (cycle_div_400y, cycle) = cycle.div_mod_floor(&146097);
         year_div_400 += cycle_div_400y;
 
@@ -413,9 +413,9 @@ impl Sub<NaiveDate,Duration> for NaiveDate {
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = year1.div_mod_floor(&400);
         let (year2_div_400, year2_mod_400) = year2.div_mod_floor(&400);
-        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i32;
-        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i32;
-        Duration::days((year1_div_400 - year2_div_400) * 146097 + (cycle1 - cycle2))
+        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
+        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
+        Duration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146097 + (cycle1 - cycle2))
     }
 }
 
@@ -439,6 +439,7 @@ mod tests {
     use {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
     use duration::Duration;
     use std::{i32, u32};
+    use std::num::Zero;
     use std::iter::{range_inclusive, range_step_inclusive};
 
     #[test]
@@ -704,7 +705,7 @@ mod tests {
             //assert_eq!(rhs + lhs, sum);
         }
 
-        check((2014, 1, 1), Duration::zero(), (2014, 1, 1));
+        check((2014, 1, 1), Zero::zero(), (2014, 1, 1));
         check((2014, 1, 1), Duration::seconds(86399), (2014, 1, 1));
         check((2014, 1, 1), Duration::seconds(-86399), (2014, 1, 1)); // always round towards zero
         check((2014, 1, 1), Duration::days(1), (2014, 1, 2));
@@ -725,7 +726,7 @@ mod tests {
             assert_eq!(rhs - lhs, -diff);
         }
 
-        check((2014, 1, 1), (2014, 1, 1), Duration::zero());
+        check((2014, 1, 1), (2014, 1, 1), Zero::zero());
         check((2014, 1, 2), (2014, 1, 1), Duration::days(1));
         check((2014, 12, 31), (2014, 1, 1), Duration::days(364));
         check((2015, 1, 3), (2014, 1, 1), Duration::days(365 + 2));

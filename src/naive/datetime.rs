@@ -163,13 +163,19 @@ impl Timelike for NaiveDateTime {
 
 impl Add<Duration,NaiveDateTime> for NaiveDateTime {
     fn add(&self, rhs: &Duration) -> NaiveDateTime {
-        // we want `(NaiveDate + days in Duration) + (NaiveTime + secs/nanos in Duration)`
-        // to be equal to `NaiveDateTime + Duration`, but `NaiveDate + Duration` rounds towards zero.
-        let mut date = self.date + Duration::days(rhs.to_tuple().val0());
-        let time = self.time + *rhs;
-        if time < self.time {
-            // since the time portion of the duration is always positive and bounded,
-            // this condition always means that the time part has been overflowed.
+        // Duration does not directly give its parts, so we need some additional calculations.
+        let days = rhs.num_days();
+        let nanos = (*rhs - Duration::days(days)).num_nanoseconds().unwrap();
+        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == *rhs);
+        debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
+
+        let mut date = self.date + Duration::days(days);
+        let time = self.time + Duration::nanoseconds(nanos);
+
+        // time always wraps around, but date needs to be adjusted for overflow.
+        if nanos < 0 && time > self.time {
+            date = date.pred();
+        } else if nanos > 0 && time < self.time {
             date = date.succ();
         }
         NaiveDateTime { date: date, time: time }
@@ -202,6 +208,7 @@ mod tests {
     use duration::Duration;
     use naive::date::NaiveDate;
     use std::i64;
+    use std::num::Zero;
 
     #[test]
     fn test_datetime_from_num_seconds_from_unix_epoch() {
@@ -234,7 +241,7 @@ mod tests {
     #[test]
     fn test_datetime_sub() {
         let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Duration::zero());
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Zero::zero());
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 10) - ymdhms(2014, 5, 6, 7, 8, 9),
                    Duration::seconds(1));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 10),
