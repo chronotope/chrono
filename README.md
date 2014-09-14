@@ -8,6 +8,8 @@ Rust-chrono
 
 Date and time handling for Rust.
 
+[Complete Documentation](http://rust-ci.org/lifthrasiir/rust-chrono/doc/chrono/)
+
 ```rust
 // find out if the doomsday rule is correct!
 use chrono::{Weekday, NaiveDate, naive};
