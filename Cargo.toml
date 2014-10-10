@@ -4,6 +4,10 @@ name = "chrono"
 version = "0.1.0"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
+[dependencies.num]
+
+git = "https://github.com/rust-lang/num"
+
 [lib]
 
 name = "chrono"
