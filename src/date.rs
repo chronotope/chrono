@@ -25,9 +25,9 @@ pub struct Date<Off> {
 }
 
 /// The minimum possible `Date`.
-pub static MIN: Date<UTC> = Date { date: naive::date::MIN, offset: UTC };
+pub const MIN: Date<UTC> = Date { date: naive::date::MIN, offset: UTC };
 /// The maximum possible `Date`.
-pub static MAX: Date<UTC> = Date { date: naive::date::MAX, offset: UTC };
+pub const MAX: Date<UTC> = Date { date: naive::date::MAX, offset: UTC };
 
 impl<Off:Offset> Date<Off> {
     /// Makes a new `Date` with given *UTC* date and offset.

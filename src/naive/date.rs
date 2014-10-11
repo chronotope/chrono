@@ -17,8 +17,8 @@ use format::DelayedFormat;
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
-static MAX_YEAR: i32 = internals::MAX_YEAR as i32;
-static MIN_YEAR: i32 = internals::MIN_YEAR as i32;
+const MAX_YEAR: i32 = internals::MAX_YEAR as i32;
+const MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
@@ -29,9 +29,9 @@ pub struct NaiveDate {
 }
 
 /// The minimum possible `NaiveDate`.
-pub static MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
 /// The maximum possible `NaiveDate`.
-pub static MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
 
 // as it is hard to verify year flags in `MIN` and `MAX`, we use a separate run-time test.
 #[test]
@@ -790,8 +790,8 @@ mod internals {
     /// The internal date representation. This also includes the packed `Mdf` value.
     pub type DateImpl = i32;
 
-    pub static MAX_YEAR: DateImpl = i32::MAX >> 13;
-    pub static MIN_YEAR: DateImpl = i32::MIN >> 13;
+    pub const MAX_YEAR: DateImpl = i32::MAX >> 13;
+    pub const MIN_YEAR: DateImpl = i32::MIN >> 13;
 
     /// The year flags (aka the dominical letter).
     ///
@@ -804,13 +804,13 @@ mod internals {
     #[deriving(PartialEq, Eq)]
     pub struct YearFlags(pub u8);
 
-    pub static A: YearFlags = YearFlags(0o15); pub static AG: YearFlags = YearFlags(0o05);
-    pub static B: YearFlags = YearFlags(0o14); pub static BA: YearFlags = YearFlags(0o04);
-    pub static C: YearFlags = YearFlags(0o13); pub static CB: YearFlags = YearFlags(0o03);
-    pub static D: YearFlags = YearFlags(0o12); pub static DC: YearFlags = YearFlags(0o02);
-    pub static E: YearFlags = YearFlags(0o11); pub static ED: YearFlags = YearFlags(0o01);
-    pub static F: YearFlags = YearFlags(0o17); pub static FE: YearFlags = YearFlags(0o07);
-    pub static G: YearFlags = YearFlags(0o16); pub static GF: YearFlags = YearFlags(0o06);
+    pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
+    pub const B: YearFlags = YearFlags(0o14); pub const BA: YearFlags = YearFlags(0o04);
+    pub const C: YearFlags = YearFlags(0o13); pub const CB: YearFlags = YearFlags(0o03);
+    pub const D: YearFlags = YearFlags(0o12); pub const DC: YearFlags = YearFlags(0o02);
+    pub const E: YearFlags = YearFlags(0o11); pub const ED: YearFlags = YearFlags(0o01);
+    pub const F: YearFlags = YearFlags(0o17); pub const FE: YearFlags = YearFlags(0o07);
+    pub const G: YearFlags = YearFlags(0o16); pub const GF: YearFlags = YearFlags(0o06);
 
     static YEAR_TO_FLAGS: [YearFlags, ..400] = [
         BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F,
@@ -924,12 +924,12 @@ mod internals {
         }
     }
 
-    pub static MIN_OL: u32 = 1 << 1;
-    pub static MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(365 << 1) | 1`
-    pub static MIN_MDL: u32 = (1 << 6) | (1 << 1);
-    pub static MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
+    pub const MIN_OL: u32 = 1 << 1;
+    pub const MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(365 << 1) | 1`
+    pub const MIN_MDL: u32 = (1 << 6) | (1 << 1);
+    pub const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
-    static XX: i8 = -128;
+    const XX: i8 = -128;
     static MDL_TO_OL: [i8, ..(MAX_MDL as uint + 1u)] = [
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -1244,9 +1244,9 @@ mod internals {
         use std::iter::range_inclusive;
         use std::u32;
 
-        static NONLEAP_FLAGS: [YearFlags, ..7] = [A, B, C, D, E, F, G];
-        static LEAP_FLAGS: [YearFlags, ..7] = [AG, BA, CB, DC, ED, FE, GF];
-        static FLAGS: [YearFlags, ..14] = [A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF];
+        const NONLEAP_FLAGS: [YearFlags, ..7] = [A, B, C, D, E, F, G];
+        const LEAP_FLAGS: [YearFlags, ..7] = [AG, BA, CB, DC, ED, FE, GF];
+        const FLAGS: [YearFlags, ..14] = [A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF];
 
         #[test]
         fn test_year_flags_ndays_from_year() {
