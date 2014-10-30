@@ -54,9 +54,9 @@ impl<T:fmt::Show> LocalResult<T> {
     /// Returns the single unique conversion result, or fails accordingly.
     pub fn unwrap(self) -> T {
         match self {
-            NoResult => fail!("No such local time"),
+            NoResult => panic!("No such local time"),
             Single(t) => t,
-            Ambiguous(t1,t2) => fail!("Ambiguous local time, ranging from {} to {}", t1, t2),
+            Ambiguous(t1,t2) => panic!("Ambiguous local time, ranging from {} to {}", t1, t2),
         }
     }
 }
