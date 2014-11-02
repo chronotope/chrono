@@ -10,7 +10,7 @@ Experimental date and time handling for Rust.
 #![license = "MIT"]
 
 #![feature(macro_rules)]
-#![deny(missing_doc)]
+#![deny(missing_docs)]
 
 extern crate num;
 extern crate "time" as stdtime;
