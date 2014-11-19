@@ -74,13 +74,13 @@ impl Weekday {
     #[inline]
     pub fn succ(&self) -> Weekday {
         match *self {
-            Mon => Tue,
-            Tue => Wed,
-            Wed => Thu,
-            Thu => Fri,
-            Fri => Sat,
-            Sat => Sun,
-            Sun => Mon,
+            Weekday::Mon => Weekday::Tue,
+            Weekday::Tue => Weekday::Wed,
+            Weekday::Wed => Weekday::Thu,
+            Weekday::Thu => Weekday::Fri,
+            Weekday::Fri => Weekday::Sat,
+            Weekday::Sat => Weekday::Sun,
+            Weekday::Sun => Weekday::Mon,
         }
     }
 
@@ -88,13 +88,13 @@ impl Weekday {
     #[inline]
     pub fn pred(&self) -> Weekday {
         match *self {
-            Mon => Sun,
-            Tue => Mon,
-            Wed => Tue,
-            Thu => Wed,
-            Fri => Thu,
-            Sat => Fri,
-            Sun => Sat,
+            Weekday::Mon => Weekday::Sun,
+            Weekday::Tue => Weekday::Mon,
+            Weekday::Wed => Weekday::Tue,
+            Weekday::Thu => Weekday::Wed,
+            Weekday::Fri => Weekday::Thu,
+            Weekday::Sat => Weekday::Fri,
+            Weekday::Sun => Weekday::Sat,
         }
     }
 
@@ -102,13 +102,13 @@ impl Weekday {
     #[inline]
     pub fn number_from_monday(&self) -> u32 {
         match *self {
-            Mon => 1,
-            Tue => 2,
-            Wed => 3,
-            Thu => 4,
-            Fri => 5,
-            Sat => 6,
-            Sun => 7,
+            Weekday::Mon => 1,
+            Weekday::Tue => 2,
+            Weekday::Wed => 3,
+            Weekday::Thu => 4,
+            Weekday::Fri => 5,
+            Weekday::Sat => 6,
+            Weekday::Sun => 7,
         }
     }
 
@@ -116,13 +116,13 @@ impl Weekday {
     #[inline]
     pub fn number_from_sunday(&self) -> u32 {
         match *self {
-            Mon => 2,
-            Tue => 3,
-            Wed => 4,
-            Thu => 5,
-            Fri => 6,
-            Sat => 7,
-            Sun => 1,
+            Weekday::Mon => 2,
+            Weekday::Tue => 3,
+            Weekday::Wed => 4,
+            Weekday::Thu => 5,
+            Weekday::Fri => 6,
+            Weekday::Sat => 7,
+            Weekday::Sun => 1,
         }
     }
 
@@ -130,13 +130,13 @@ impl Weekday {
     #[inline]
     pub fn num_days_from_monday(&self) -> u32 {
         match *self {
-            Mon => 0,
-            Tue => 1,
-            Wed => 2,
-            Thu => 3,
-            Fri => 4,
-            Sat => 5,
-            Sun => 6,
+            Weekday::Mon => 0,
+            Weekday::Tue => 1,
+            Weekday::Wed => 2,
+            Weekday::Thu => 3,
+            Weekday::Fri => 4,
+            Weekday::Sat => 5,
+            Weekday::Sun => 6,
         }
     }
 
@@ -144,13 +144,13 @@ impl Weekday {
     #[inline]
     pub fn num_days_from_sunday(&self) -> u32 {
         match *self {
-            Mon => 1,
-            Tue => 2,
-            Wed => 3,
-            Thu => 4,
-            Fri => 5,
-            Sat => 6,
-            Sun => 0,
+            Weekday::Mon => 1,
+            Weekday::Tue => 2,
+            Weekday::Wed => 3,
+            Weekday::Thu => 4,
+            Weekday::Fri => 5,
+            Weekday::Sat => 6,
+            Weekday::Sun => 0,
         }
     }
 }

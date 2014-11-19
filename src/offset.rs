@@ -8,7 +8,6 @@
 
 use std::fmt;
 use std::str::MaybeOwned;
-use std::num::Zero;
 use stdtime;
 use num::Integer;
 
@@ -25,7 +24,7 @@ use datetime::DateTime;
 pub enum LocalResult<T> {
     /// Given local time representation is invalid.
     /// This can occur when, for example, the positive timezone transition.
-    NoResult,
+    None,
     /// Given local time representation has a single unique result.
     Single(T),
     /// Given local time representation has multiple results and thus ambiguous.
@@ -36,17 +35,17 @@ pub enum LocalResult<T> {
 impl<T> LocalResult<T> {
     /// Returns `Some` only when the conversion result is unique, or `None` otherwise.
     pub fn single(self) -> Option<T> {
-        match self { Single(t) => Some(t), _ => None }
+        match self { LocalResult::Single(t) => Some(t), _ => None }
     }
 
     /// Returns `Some` for the earliest possible conversion result, or `None` if none.
     pub fn earliest(self) -> Option<T> {
-        match self { Single(t) | Ambiguous(t,_) => Some(t), _ => None }
+        match self { LocalResult::Single(t) | LocalResult::Ambiguous(t,_) => Some(t), _ => None }
     }
 
     /// Returns `Some` for the latest possible conversion result, or `None` if none.
     pub fn latest(self) -> Option<T> {
-        match self { Single(t) | Ambiguous(_,t) => Some(t), _ => None }
+        match self { LocalResult::Single(t) | LocalResult::Ambiguous(_,t) => Some(t), _ => None }
     }
 }
 
@@ -54,9 +53,11 @@ impl<T:fmt::Show> LocalResult<T> {
     /// Returns the single unique conversion result, or fails accordingly.
     pub fn unwrap(self) -> T {
         match self {
-            NoResult => panic!("No such local time"),
-            Single(t) => t,
-            Ambiguous(t1,t2) => panic!("Ambiguous local time, ranging from {} to {}", t1, t2),
+            LocalResult::None => panic!("No such local time"),
+            LocalResult::Single(t) => t,
+            LocalResult::Ambiguous(t1,t2) => {
+                panic!("Ambiguous local time, ranging from {} to {}", t1, t2)
+            }
         }
     }
 }
@@ -84,7 +85,7 @@ pub trait Offset: Clone + fmt::Show {
     fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_ymd_opt(year, month, day) {
             Some(d) => self.from_local_date(&d),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -109,7 +110,7 @@ pub trait Offset: Clone + fmt::Show {
     fn yo_opt(&self, year: i32, ordinal: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_yo_opt(year, ordinal) {
             Some(d) => self.from_local_date(&d),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -138,7 +139,7 @@ pub trait Offset: Clone + fmt::Show {
     fn isoywd_opt(&self, year: i32, week: u32, weekday: Weekday) -> LocalResult<Date<Self>> {
         match NaiveDate::from_isoywd_opt(year, week, weekday) {
             Some(d) => self.from_local_date(&d),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -155,7 +156,7 @@ pub trait Offset: Clone + fmt::Show {
     fn hms_opt(&self, hour: u32, min: u32, sec: u32) -> LocalResult<Time<Self>> {
         match NaiveTime::from_hms_opt(hour, min, sec) {
             Some(t) => self.from_local_time(&t),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -174,7 +175,7 @@ pub trait Offset: Clone + fmt::Show {
     fn hms_milli_opt(&self, hour: u32, min: u32, sec: u32, milli: u32) -> LocalResult<Time<Self>> {
         match NaiveTime::from_hms_milli_opt(hour, min, sec, milli) {
             Some(t) => self.from_local_time(&t),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -193,7 +194,7 @@ pub trait Offset: Clone + fmt::Show {
     fn hms_micro_opt(&self, hour: u32, min: u32, sec: u32, micro: u32) -> LocalResult<Time<Self>> {
         match NaiveTime::from_hms_micro_opt(hour, min, sec, micro) {
             Some(t) => self.from_local_time(&t),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -212,7 +213,7 @@ pub trait Offset: Clone + fmt::Show {
     fn hms_nano_opt(&self, hour: u32, min: u32, sec: u32, nano: u32) -> LocalResult<Time<Self>> {
         match NaiveTime::from_hms_nano_opt(hour, min, sec, nano) {
             Some(t) => self.from_local_time(&t),
-            None => NoResult,
+            None => LocalResult::None,
         }
     }
 
@@ -262,16 +263,16 @@ impl UTC {
 
 impl Offset for UTC {
     fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() }
-    fn local_minus_utc(&self) -> Duration { Zero::zero() }
+    fn local_minus_utc(&self) -> Duration { Duration::zero() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
-        Single(Date::from_utc(local.clone(), UTC))
+        LocalResult::Single(Date::from_utc(local.clone(), UTC))
     }
     fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<UTC>> {
-        Single(Time::from_utc(local.clone(), UTC))
+        LocalResult::Single(Time::from_utc(local.clone(), UTC))
     }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<UTC>> {
-        Single(DateTime::from_utc(local.clone(), UTC))
+        LocalResult::Single(DateTime::from_utc(local.clone(), UTC))
     }
 
     fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { utc.clone() }
@@ -336,15 +337,17 @@ impl Offset for FixedOffset {
     fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
-        Single(Date::from_utc(local.clone(), self.clone()))
+        LocalResult::Single(Date::from_utc(local.clone(), self.clone()))
     }
     fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<FixedOffset>> {
-        Single(Time::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
-                              self.clone()))
+        let t = Time::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
+                               self.clone());
+        LocalResult::Single(t)
     }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<FixedOffset>> {
-        Single(DateTime::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
-                                  self.clone()))
+        let dt = DateTime::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
+                                    self.clone());
+        LocalResult::Single(dt)
     }
 
     fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate {
@@ -391,8 +394,8 @@ impl Local {
         let date = NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1);
         let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
                                             tm.tm_sec as u32, tm.tm_nsec as u32);
-        let offset = Local { cached: FixedOffset::east(tm.tm_gmtoff) };
-        DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_gmtoff as i64), offset)
+        let offset = Local { cached: FixedOffset::east(tm.tm_utcoff) };
+        DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_utcoff as i64), offset)
     }
 
     /// Converts a local `NaiveDateTime` to the `time::Timespec`.
@@ -407,7 +410,7 @@ impl Local {
             tm_wday: 0, // to_local ignores this
             tm_yday: 0, // and this
             tm_isdst: -1,
-            tm_gmtoff: 1, // this is arbitrary but should be nonzero
+            tm_utcoff: 1, // this is arbitrary but should be nonzero
                           // in order to make `to_timespec` use `rust_mktime` internally.
             tm_nsec: d.nanosecond() as i32,
         };
@@ -431,24 +434,24 @@ impl Offset for Local {
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
         match self.from_local_datetime(&local.and_hms(0, 0, 0)) {
-            NoResult => NoResult,
-            Single(dt) => Single(dt.date()),
-            Ambiguous(min, max) => {
+            LocalResult::None => LocalResult::None,
+            LocalResult::Single(dt) => LocalResult::Single(dt.date()),
+            LocalResult::Ambiguous(min, max) => {
                 let min = min.date();
                 let max = max.date();
-                if min == max {Single(min)} else {Ambiguous(min, max)}
+                if min == max {LocalResult::Single(min)} else {LocalResult::Ambiguous(min, max)}
             }
         }
     }
 
     fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Local>> {
         // XXX we don't have enough information here, so we assume that the timezone remains same
-        Single(Time::from_utc(local.clone(), self.clone()))
+        LocalResult::Single(Time::from_utc(local.clone(), self.clone()))
     }
 
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let timespec = Local::datetime_to_timespec(local);
-        Single(Local::tm_to_datetime(stdtime::at(timespec)))
+        LocalResult::Single(Local::tm_to_datetime(stdtime::at(timespec)))
     }
 
     fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { self.cached.to_local_date(utc) }

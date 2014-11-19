@@ -7,6 +7,7 @@
  */
 
 use std::fmt;
+use std::num::Int;
 use num::Integer;
 
 use Timelike;
@@ -54,7 +55,7 @@ impl NaiveTime {
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     #[inline]
     pub fn from_hms_milli_opt(hour: u32, min: u32, sec: u32, milli: u32) -> Option<NaiveTime> {
-        milli.checked_mul(&1_000_000)
+        milli.checked_mul(1_000_000)
              .and_then(|nano| NaiveTime::from_hms_nano_opt(hour, min, sec, nano))
     }
 
@@ -73,7 +74,7 @@ impl NaiveTime {
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     #[inline]
     pub fn from_hms_micro_opt(hour: u32, min: u32, sec: u32, micro: u32) -> Option<NaiveTime> {
-        micro.checked_mul(&1_000)
+        micro.checked_mul(1_000)
              .and_then(|nano| NaiveTime::from_hms_nano_opt(hour, min, sec, nano))
     }
 
@@ -242,7 +243,6 @@ mod tests {
     use Timelike;
     use duration::Duration;
     use std::u32;
-    use std::num::Zero;
 
     #[test]
     fn test_time_from_hms_milli() {
@@ -308,7 +308,7 @@ mod tests {
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
-        check(hmsm(3, 5, 7, 900), Zero::zero(), hmsm(3, 5, 7, 900));
+        check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
         check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
         check(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
@@ -326,7 +326,7 @@ mod tests {
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
-        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Zero::zero());
+        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
         check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
         check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 300),

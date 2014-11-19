@@ -7,6 +7,7 @@
  */
 
 use std::fmt;
+use std::num::Int;
 use num::Integer;
 
 use {Weekday, Timelike, Datelike};
@@ -49,7 +50,7 @@ impl NaiveDateTime {
     #[inline]
     pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = secs.div_mod_floor(&86400);
-        let date = days.to_i32().and_then(|days| days.checked_add(&719163))
+        let date = days.to_i32().and_then(|days| days.checked_add(719163))
                                 .and_then(|days_ce| NaiveDate::from_num_days_from_ce_opt(days_ce));
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
@@ -208,7 +209,6 @@ mod tests {
     use duration::Duration;
     use naive::date::NaiveDate;
     use std::i64;
-    use std::num::Zero;
 
     #[test]
     fn test_datetime_from_num_seconds_from_unix_epoch() {
@@ -241,7 +241,7 @@ mod tests {
     #[test]
     fn test_datetime_sub() {
         let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Zero::zero());
+        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Duration::zero());
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 10) - ymdhms(2014, 5, 6, 7, 8, 9),
                    Duration::seconds(1));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 10),

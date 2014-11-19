@@ -6,7 +6,8 @@
  * ISO 8601 calendar date without timezone.
  */
 
-use std::{fmt, num};
+use std::fmt;
+use std::num::Int;
 use num::Integer;
 
 use {Weekday, Datelike};
@@ -376,11 +377,6 @@ impl Datelike for NaiveDate {
     }
 }
 
-impl num::Bounded for NaiveDate {
-    #[inline] fn min_value() -> NaiveDate { MIN }
-    #[inline] fn max_value() -> NaiveDate { MAX }
-}
-
 impl Add<Duration,NaiveDate> for NaiveDate {
     fn add(&self, rhs: &Duration) -> NaiveDate {
         // TODO overflow currently fails
@@ -388,7 +384,7 @@ impl Add<Duration,NaiveDate> for NaiveDate {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = year.div_mod_floor(&400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_add(&rhs.num_days().to_i32().unwrap()).unwrap();
+        let cycle = (cycle as i32).checked_add(rhs.num_days().to_i32().unwrap()).unwrap();
         let (cycle_div_400y, cycle) = cycle.div_mod_floor(&146097);
         year_div_400 += cycle_div_400y;
 
@@ -435,11 +431,9 @@ impl fmt::Show for NaiveDate {
 #[cfg(test)]
 mod tests {
     use super::{NaiveDate, MIN, MAX};
-    use Datelike;
-    use {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
+    use {Datelike, Weekday};
     use duration::Duration;
     use std::{i32, u32};
-    use std::num::Zero;
     use std::iter::{range_inclusive, range_step_inclusive};
 
     #[test]
@@ -493,35 +487,36 @@ mod tests {
         let isoywd_opt = |y,w,d| NaiveDate::from_isoywd_opt(y, w, d);
         let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
 
-        assert_eq!(isoywd_opt(2004, 0, Sun), None);
-        assert_eq!(isoywd_opt(2004, 1, Mon), Some(ymd(2003, 12, 29)));
-        assert_eq!(isoywd_opt(2004, 1, Sun), Some(ymd(2004, 1, 4)));
-        assert_eq!(isoywd_opt(2004, 2, Mon), Some(ymd(2004, 1, 5)));
-        assert_eq!(isoywd_opt(2004, 2, Sun), Some(ymd(2004, 1, 11)));
-        assert_eq!(isoywd_opt(2004, 52, Mon), Some(ymd(2004, 12, 20)));
-        assert_eq!(isoywd_opt(2004, 52, Sun), Some(ymd(2004, 12, 26)));
-        assert_eq!(isoywd_opt(2004, 53, Mon), Some(ymd(2004, 12, 27)));
-        assert_eq!(isoywd_opt(2004, 53, Sun), Some(ymd(2005, 1, 2)));
-        assert_eq!(isoywd_opt(2004, 54, Mon), None);
+        assert_eq!(isoywd_opt(2004, 0, Weekday::Sun), None);
+        assert_eq!(isoywd_opt(2004, 1, Weekday::Mon), Some(ymd(2003, 12, 29)));
+        assert_eq!(isoywd_opt(2004, 1, Weekday::Sun), Some(ymd(2004, 1, 4)));
+        assert_eq!(isoywd_opt(2004, 2, Weekday::Mon), Some(ymd(2004, 1, 5)));
+        assert_eq!(isoywd_opt(2004, 2, Weekday::Sun), Some(ymd(2004, 1, 11)));
+        assert_eq!(isoywd_opt(2004, 52, Weekday::Mon), Some(ymd(2004, 12, 20)));
+        assert_eq!(isoywd_opt(2004, 52, Weekday::Sun), Some(ymd(2004, 12, 26)));
+        assert_eq!(isoywd_opt(2004, 53, Weekday::Mon), Some(ymd(2004, 12, 27)));
+        assert_eq!(isoywd_opt(2004, 53, Weekday::Sun), Some(ymd(2005, 1, 2)));
+        assert_eq!(isoywd_opt(2004, 54, Weekday::Mon), None);
 
-        assert_eq!(isoywd_opt(2011, 0, Sun), None);
-        assert_eq!(isoywd_opt(2011, 1, Mon), Some(ymd(2011, 1, 3)));
-        assert_eq!(isoywd_opt(2011, 1, Sun), Some(ymd(2011, 1, 9)));
-        assert_eq!(isoywd_opt(2011, 2, Mon), Some(ymd(2011, 1, 10)));
-        assert_eq!(isoywd_opt(2011, 2, Sun), Some(ymd(2011, 1, 16)));
+        assert_eq!(isoywd_opt(2011, 0, Weekday::Sun), None);
+        assert_eq!(isoywd_opt(2011, 1, Weekday::Mon), Some(ymd(2011, 1, 3)));
+        assert_eq!(isoywd_opt(2011, 1, Weekday::Sun), Some(ymd(2011, 1, 9)));
+        assert_eq!(isoywd_opt(2011, 2, Weekday::Mon), Some(ymd(2011, 1, 10)));
+        assert_eq!(isoywd_opt(2011, 2, Weekday::Sun), Some(ymd(2011, 1, 16)));
 
-        assert_eq!(isoywd_opt(2018, 51, Mon), Some(ymd(2018, 12, 17)));
-        assert_eq!(isoywd_opt(2018, 51, Sun), Some(ymd(2018, 12, 23)));
-        assert_eq!(isoywd_opt(2018, 52, Mon), Some(ymd(2018, 12, 24)));
-        assert_eq!(isoywd_opt(2018, 52, Sun), Some(ymd(2018, 12, 30)));
-        assert_eq!(isoywd_opt(2018, 53, Mon), None);
+        assert_eq!(isoywd_opt(2018, 51, Weekday::Mon), Some(ymd(2018, 12, 17)));
+        assert_eq!(isoywd_opt(2018, 51, Weekday::Sun), Some(ymd(2018, 12, 23)));
+        assert_eq!(isoywd_opt(2018, 52, Weekday::Mon), Some(ymd(2018, 12, 24)));
+        assert_eq!(isoywd_opt(2018, 52, Weekday::Sun), Some(ymd(2018, 12, 30)));
+        assert_eq!(isoywd_opt(2018, 53, Weekday::Mon), None);
     }
 
     #[test]
     fn test_date_from_isoymd_and_isoweekdate() {
         for year in range_inclusive(2000i32, 2400) {
             for week in range_inclusive(1u32, 53) {
-                for &weekday in [Mon, Tue, Wed, Thu, Fri, Sat, Sun].iter() {
+                for &weekday in [Weekday::Mon, Weekday::Tue, Weekday::Wed, Weekday::Thu,
+                                 Weekday::Fri, Weekday::Sat, Weekday::Sun].iter() {
                     let d = NaiveDate::from_isoywd_opt(year, week, weekday);
                     if d.is_some() {
                         let d = d.unwrap();
@@ -622,9 +617,10 @@ mod tests {
 
     #[test]
     fn test_date_weekday() {
-        assert_eq!(NaiveDate::from_ymd(1582, 10, 15).weekday(), Fri);
-        assert_eq!(NaiveDate::from_ymd(1875, 5, 20).weekday(), Thu); // ISO 8601 reference date
-        assert_eq!(NaiveDate::from_ymd(2000, 1, 1).weekday(), Sat);
+        assert_eq!(NaiveDate::from_ymd(1582, 10, 15).weekday(), Weekday::Fri);
+        // May 20, 1875 = ISO 8601 reference date
+        assert_eq!(NaiveDate::from_ymd(1875, 5, 20).weekday(), Weekday::Thu);
+        assert_eq!(NaiveDate::from_ymd(2000, 1, 1).weekday(), Weekday::Sat);
     }
 
     #[test]
@@ -705,7 +701,7 @@ mod tests {
             //assert_eq!(rhs + lhs, sum);
         }
 
-        check((2014, 1, 1), Zero::zero(), (2014, 1, 1));
+        check((2014, 1, 1), Duration::zero(), (2014, 1, 1));
         check((2014, 1, 1), Duration::seconds(86399), (2014, 1, 1));
         check((2014, 1, 1), Duration::seconds(-86399), (2014, 1, 1)); // always round towards zero
         check((2014, 1, 1), Duration::days(1), (2014, 1, 2));
@@ -726,7 +722,7 @@ mod tests {
             assert_eq!(rhs - lhs, -diff);
         }
 
-        check((2014, 1, 1), (2014, 1, 1), Zero::zero());
+        check((2014, 1, 1), (2014, 1, 1), Duration::zero());
         check((2014, 1, 2), (2014, 1, 1), Duration::days(1));
         check((2014, 12, 31), (2014, 1, 1), Duration::days(364));
         check((2015, 1, 3), (2014, 1, 1), Duration::days(365 + 2));
@@ -1238,9 +1234,9 @@ mod internals {
     mod tests {
         extern crate test;
 
+        use Weekday;
         use super::{Of, Mdf};
         use super::{YearFlags, A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
-        use {Sun, Mon, Tue, Wed, Thu, Fri, Sat};
         use std::iter::range_inclusive;
         use std::u32;
 
@@ -1413,20 +1409,20 @@ mod internals {
 
         #[test]
         fn test_of_weekday() {
-            assert_eq!(Of::new(1, A).weekday(), Sun);
-            assert_eq!(Of::new(1, B).weekday(), Sat);
-            assert_eq!(Of::new(1, C).weekday(), Fri);
-            assert_eq!(Of::new(1, D).weekday(), Thu);
-            assert_eq!(Of::new(1, E).weekday(), Wed);
-            assert_eq!(Of::new(1, F).weekday(), Tue);
-            assert_eq!(Of::new(1, G).weekday(), Mon);
-            assert_eq!(Of::new(1, AG).weekday(), Sun);
-            assert_eq!(Of::new(1, BA).weekday(), Sat);
-            assert_eq!(Of::new(1, CB).weekday(), Fri);
-            assert_eq!(Of::new(1, DC).weekday(), Thu);
-            assert_eq!(Of::new(1, ED).weekday(), Wed);
-            assert_eq!(Of::new(1, FE).weekday(), Tue);
-            assert_eq!(Of::new(1, GF).weekday(), Mon);
+            assert_eq!(Of::new(1, A).weekday(), Weekday::Sun);
+            assert_eq!(Of::new(1, B).weekday(), Weekday::Sat);
+            assert_eq!(Of::new(1, C).weekday(), Weekday::Fri);
+            assert_eq!(Of::new(1, D).weekday(), Weekday::Thu);
+            assert_eq!(Of::new(1, E).weekday(), Weekday::Wed);
+            assert_eq!(Of::new(1, F).weekday(), Weekday::Tue);
+            assert_eq!(Of::new(1, G).weekday(), Weekday::Mon);
+            assert_eq!(Of::new(1, AG).weekday(), Weekday::Sun);
+            assert_eq!(Of::new(1, BA).weekday(), Weekday::Sat);
+            assert_eq!(Of::new(1, CB).weekday(), Weekday::Fri);
+            assert_eq!(Of::new(1, DC).weekday(), Weekday::Thu);
+            assert_eq!(Of::new(1, ED).weekday(), Weekday::Wed);
+            assert_eq!(Of::new(1, FE).weekday(), Weekday::Tue);
+            assert_eq!(Of::new(1, GF).weekday(), Weekday::Mon);
 
             for &flags in FLAGS.iter() {
                 let mut prev = Of::new(1, flags).weekday();

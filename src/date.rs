@@ -6,7 +6,7 @@
  * ISO 8601 calendar date with timezone.
  */
 
-use std::{fmt, num, hash};
+use std::{fmt, hash};
 
 use {Weekday, Datelike};
 use duration::Duration;
@@ -230,11 +230,6 @@ impl<Off:Offset> Datelike for Date<Off> {
         self.local().with_ordinal0(ordinal0)
             .and_then(|date| self.offset.from_local_date(&date).single())
     }
-}
-
-impl num::Bounded for Date<UTC> {
-    #[inline] fn min_value() -> Date<UTC> { MIN }
-    #[inline] fn max_value() -> Date<UTC> { MAX }
 }
 
 impl<Off:Offset> PartialEq for Date<Off> {

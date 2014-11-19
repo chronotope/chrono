@@ -1,13 +1,19 @@
 [package]
-
 name = "chrono"
 version = "0.1.0"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
-[dependencies.num]
-
-git = "https://github.com/rust-lang/num"
+description = "Date and time library for Rust"
+homepage = "https://github.com/lifthrasiir/rust-chrono"
+readme = "README.md"
+license = "MIT/Apache-2.0"
 
 [lib]
-
 name = "chrono"
+
+[dependencies.num]
+git = "https://github.com/rust-lang/num"
+
+[dependencies.time]
+git = "https://github.com/rust-lang/time"
+
