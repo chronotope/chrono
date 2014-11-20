@@ -5,6 +5,7 @@ authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
 homepage = "https://github.com/lifthrasiir/rust-chrono"
+repository = "https://github.com/lifthrasiir/rust-chrono"
 readme = "README.md"
 license = "MIT/Apache-2.0"
 
