@@ -43,7 +43,10 @@ fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
             continue;
         }
 
-        let (head, tail) = part.slice_shift_char();
+        let (head, tail) = match part.slice_shift_char() {
+            Some((head, tail)) => (Some(head), tail),
+            None => (None, ""),
+        };
         match (head, date, time, off) {
             // year
             (Some('Y'), Some(d), _, _) => try!(write!(w, "{}", d.year())),
