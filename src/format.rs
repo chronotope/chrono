@@ -212,7 +212,7 @@ impl<'a> DelayedFormat<'a> {
 impl<'a> fmt::Show for DelayedFormat<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ret = format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.fmt);
-        ret.map_err(|_| fmt::WriteError) // XXX
+        ret.map_err(|_| fmt::Error) // we don't have any good means to pass detailed errors...
     }
 }
 

@@ -8,7 +8,7 @@ Rust-chrono
 
 Date and time handling for Rust.
 
-[Complete Documentation](http://rust-ci.org/lifthrasiir/rust-chrono/doc/chrono/)
+[Complete Documentation](https://lifthrasiir.github.io/rust-chrono/chrono/)
 
 ```rust
 // find out if the doomsday rule is correct!

@@ -8,6 +8,7 @@ Experimental date and time handling for Rust.
 
 #![comment = "Date and time library for Rust"]
 #![license = "MIT"]
+#![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
 #![feature(macro_rules)]
 #![deny(missing_docs)]
