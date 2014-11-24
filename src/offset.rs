@@ -9,9 +9,9 @@
 use std::fmt;
 use std::str::MaybeOwned;
 use stdtime;
-use num::Integer;
 
 use {Weekday, Datelike, Timelike};
+use div::div_mod_floor;
 use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
@@ -365,8 +365,8 @@ impl fmt::Show for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let offset = self.local_minus_utc;
         let (sign, offset) = if offset < 0 {('-', -offset)} else {('+', offset)};
-        let (mins, sec) = offset.div_mod_floor(&60);
-        let (hour, min) = mins.div_mod_floor(&60);
+        let (mins, sec) = div_mod_floor(offset, 60);
+        let (hour, min) = div_mod_floor(mins, 60);
         if sec == 0 {
             write!(f, "{}{:02}:{:02}", sign, hour, min)
         } else {

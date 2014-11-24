@@ -8,9 +8,9 @@
 
 use std::fmt;
 use std::num::Int;
-use num::Integer;
 
 use Timelike;
+use div::div_mod_floor;
 use offset::Offset;
 use duration::Duration;
 use format::DelayedFormat;
@@ -126,8 +126,8 @@ impl NaiveTime {
 
     /// Returns a triple of the hour, minute and second numbers.
     fn hms(&self) -> (u32, u32, u32) {
-        let (mins, sec) = self.secs.div_mod_floor(&60);
-        let (hour, min) = mins.div_mod_floor(&60);
+        let (mins, sec) = div_mod_floor(self.secs, 60);
+        let (hour, min) = div_mod_floor(mins, 60);
         (hour, min, sec)
     }
 }
@@ -190,13 +190,10 @@ impl Add<Duration,NaiveTime> for NaiveTime {
     }
 }
 
-/*
-// Rust issue #7590, the current coherence checker can't handle multiple Add impls
 impl Add<NaiveTime,NaiveTime> for Duration {
     #[inline]
     fn add(&self, rhs: &NaiveTime) -> NaiveTime { rhs.add(self) }
 }
-*/
 
 impl Sub<NaiveTime,Duration> for NaiveTime {
     fn sub(&self, rhs: &NaiveTime) -> Duration {
@@ -303,7 +300,7 @@ mod tests {
     fn test_time_add() {
         fn check(lhs: NaiveTime, rhs: Duration, sum: NaiveTime) {
             assert_eq!(lhs + rhs, sum);
-            //assert_eq!(rhs + lhs, sum);
+            assert_eq!(rhs + lhs, sum);
         }
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);

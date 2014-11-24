@@ -113,13 +113,10 @@ impl<Off:Offset> Add<Duration,Time<Off>> for Time<Off> {
     }
 }
 
-/*
-// Rust issue #7590, the current coherence checker can't handle multiple Add impls
 impl<Off:Offset> Add<Time<Off>,Time<Off>> for Duration {
     #[inline]
     fn add(&self, rhs: &Time<Off>) -> Time<Off> { rhs.add(self) }
 }
-*/
 
 impl<Off:Offset, Off2:Offset> Sub<Time<Off2>,Duration> for Time<Off> {
     fn sub(&self, rhs: &Time<Off2>) -> Duration {

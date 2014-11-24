@@ -8,9 +8,9 @@
 
 use std::fmt;
 use std::num::Int;
-use num::Integer;
 
 use {Weekday, Datelike};
+use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
@@ -148,9 +148,9 @@ impl NaiveDate {
     /// Returns `None` on the out-of-range date.
     pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
         let days = days + 365; // make January 1, 1 BCE equal to day 0
-        let (year_div_400, cycle) = days.div_mod_floor(&146097);
+        let (year_div_400, cycle) = div_mod_floor(days, 146097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as i32) };
+        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
                            Of::new(ordinal, flags))
     }
@@ -382,33 +382,30 @@ impl Add<Duration,NaiveDate> for NaiveDate {
         // TODO overflow currently fails
 
         let year = self.year();
-        let (mut year_div_400, year_mod_400) = year.div_mod_floor(&400);
+        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
         let cycle = (cycle as i32).checked_add(rhs.num_days().to_i32().unwrap()).unwrap();
-        let (cycle_div_400y, cycle) = cycle.div_mod_floor(&146097);
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = unsafe { YearFlags::from_year_mod_400(year_mod_400 as i32) };
+        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
                            Of::new(ordinal, flags)).unwrap()
     }
 }
 
-/*
-// Rust issue #7590, the current coherence checker can't handle multiple Add impls
 impl Add<NaiveDate,NaiveDate> for Duration {
     #[inline]
     fn add(&self, rhs: &NaiveDate) -> NaiveDate { rhs.add(self) }
 }
-*/
 
 impl Sub<NaiveDate,Duration> for NaiveDate {
     fn sub(&self, rhs: &NaiveDate) -> Duration {
         let year1 = self.year();
         let year2 = rhs.year();
-        let (year1_div_400, year1_mod_400) = year1.div_mod_floor(&400);
-        let (year2_div_400, year2_mod_400) = year2.div_mod_floor(&400);
+        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
+        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
         let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
         let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
         Duration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146097 + (cycle1 - cycle2))
@@ -698,7 +695,7 @@ mod tests {
             let lhs = NaiveDate::from_ymd(y1, m1, d1);
             let sum = NaiveDate::from_ymd(y, m, d);
             assert_eq!(lhs + rhs, sum);
-            //assert_eq!(rhs + lhs, sum);
+            assert_eq!(rhs + lhs, sum);
         }
 
         check((2014, 1, 1), Duration::zero(), (2014, 1, 1));
@@ -780,8 +777,8 @@ mod tests {
 #[allow(dead_code)] // some internal methods have been left for consistency
 mod internals {
     use std::{i32, num, fmt};
-    use num::Integer;
     use Weekday;
+    use div::{div_rem, mod_floor};
 
     /// The internal date representation. This also includes the packed `Mdf` value.
     pub type DateImpl = i32;
@@ -855,7 +852,7 @@ mod internals {
     ];
 
     pub fn cycle_to_yo(cycle: u32) -> (u32, u32) {
-        let (mut year_mod_400, mut ordinal0) = cycle.div_rem(&365);
+        let (mut year_mod_400, mut ordinal0) = div_rem(cycle, 365);
         let delta = YEAR_DELTAS[year_mod_400 as uint] as u32;
         if ordinal0 < delta {
             year_mod_400 -= 1;
@@ -873,12 +870,12 @@ mod internals {
     impl YearFlags {
         #[inline]
         pub fn from_year(year: i32) -> YearFlags {
-            let year = year.mod_floor(&400);
-            unsafe { YearFlags::from_year_mod_400(year) }
+            let year = mod_floor(year, 400);
+            YearFlags::from_year_mod_400(year)
         }
 
         #[inline]
-        pub unsafe fn from_year_mod_400(year: i32) -> YearFlags {
+        pub fn from_year_mod_400(year: i32) -> YearFlags {
             YEAR_TO_FLAGS[year as uint]
         }
 

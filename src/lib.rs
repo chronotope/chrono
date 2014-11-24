@@ -13,7 +13,6 @@ Experimental date and time handling for Rust.
 #![feature(macro_rules)]
 #![deny(missing_docs)]
 
-extern crate num;
 extern crate "time" as stdtime;
 
 pub use duration::Duration;
@@ -26,6 +25,7 @@ pub use date::Date;
 pub use time::Time;
 pub use datetime::DateTime;
 
+mod div;
 pub mod duration {
     //! ISO 8601 duration.
     //!

@@ -185,13 +185,10 @@ impl<Off:Offset> Add<Duration,DateTime<Off>> for DateTime<Off> {
     }
 }
 
-/*
-// Rust issue #7590, the current coherence checker can't handle multiple Add impls
 impl<Off:Offset> Add<DateTime<Off>,DateTime<Off>> for Duration {
     #[inline]
     fn add(&self, rhs: &DateTime<Off>) -> DateTime<Off> { rhs.add(self) }
 }
-*/
 
 impl<Off:Offset, Off2:Offset> Sub<DateTime<Off2>,Duration> for DateTime<Off> {
     fn sub(&self, rhs: &DateTime<Off2>) -> Duration {

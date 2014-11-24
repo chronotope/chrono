@@ -8,9 +8,9 @@
 
 use std::fmt;
 use std::num::Int;
-use num::Integer;
 
 use {Weekday, Timelike, Datelike};
+use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::date::NaiveDate;
@@ -49,7 +49,7 @@ impl NaiveDateTime {
     /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
     #[inline]
     pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        let (days, secs) = secs.div_mod_floor(&86400);
+        let (days, secs) = div_mod_floor(secs, 86400);
         let date = days.to_i32().and_then(|days| days.checked_add(719163))
                                 .and_then(|days_ce| NaiveDate::from_num_days_from_ce_opt(days_ce));
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
@@ -183,13 +183,10 @@ impl Add<Duration,NaiveDateTime> for NaiveDateTime {
     }
 }
 
-/*
-// Rust issue #7590, the current coherence checker can't handle multiple Add impls
 impl Add<NaiveDateTime,NaiveDateTime> for Duration {
     #[inline]
     fn add(&self, rhs: &NaiveDateTime) -> NaiveDateTime { rhs.add(self) }
 }
-*/
 
 impl Sub<NaiveDateTime,Duration> for NaiveDateTime {
     fn sub(&self, rhs: &NaiveDateTime) -> Duration {
