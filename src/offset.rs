@@ -7,7 +7,7 @@
  */
 
 use std::fmt;
-use std::str::MaybeOwned;
+use std::str::SendStr;
 use stdtime;
 
 use {Weekday, Datelike, Timelike};
@@ -218,7 +218,7 @@ pub trait Offset: Clone + fmt::Show {
     }
 
     /// Returns a name or abbreviation of this offset.
-    fn name(&self) -> MaybeOwned<'static>;
+    fn name(&self) -> SendStr;
 
     /// Returns the *current* offset from UTC to the local time.
     fn local_minus_utc(&self) -> Duration;
@@ -262,7 +262,7 @@ impl UTC {
 }
 
 impl Offset for UTC {
-    fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() }
+    fn name(&self) -> SendStr { "UTC".into_cow() }
     fn local_minus_utc(&self) -> Duration { Duration::zero() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
@@ -333,7 +333,7 @@ impl FixedOffset {
 }
 
 impl Offset for FixedOffset {
-    fn name(&self) -> MaybeOwned<'static> { "UTC".into_maybe_owned() } // XXX
+    fn name(&self) -> SendStr { "UTC".into_cow() } // XXX
     fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
@@ -429,7 +429,7 @@ impl Local {
 }
 
 impl Offset for Local {
-    fn name(&self) -> MaybeOwned<'static> { "LMT".into_maybe_owned() } // XXX XXX
+    fn name(&self) -> SendStr { "LMT".into_cow() } // XXX XXX
     fn local_minus_utc(&self) -> Duration { self.cached.local_minus_utc() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
