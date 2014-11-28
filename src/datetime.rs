@@ -55,6 +55,13 @@ impl<Off:Offset> DateTime<Off> {
         &self.offset
     }
 
+    /// Changes the associated offset.
+    /// This does not change the actual `DateTime` (but will change the string representation).
+    #[inline]
+    pub fn with_offset<Off2:Offset>(&self, offset: Off2) -> DateTime<Off2> {
+        DateTime::from_utc(self.datetime, offset)
+    }
+
     /// Formats the combined date and time in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
@@ -194,6 +201,11 @@ impl<Off:Offset, Off2:Offset> Sub<DateTime<Off2>,Duration> for DateTime<Off> {
     fn sub(&self, rhs: &DateTime<Off2>) -> Duration {
         self.datetime - rhs.datetime
     }
+}
+
+impl<Off:Offset> Sub<Duration,DateTime<Off>> for DateTime<Off> {
+    #[inline]
+    fn sub(&self, rhs: &Duration) -> DateTime<Off> { self.add(&-*rhs) }
 }
 
 impl<Off:Offset> fmt::Show for DateTime<Off> {

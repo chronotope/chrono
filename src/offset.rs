@@ -21,6 +21,7 @@ use time::Time;
 use datetime::DateTime;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
+#[deriving(Clone, PartialEq, Show)]
 pub enum LocalResult<T> {
     /// Given local time representation is invalid.
     /// This can occur when, for example, the positive timezone transition.
@@ -47,6 +48,80 @@ impl<T> LocalResult<T> {
     pub fn latest(self) -> Option<T> {
         match self { LocalResult::Single(t) | LocalResult::Ambiguous(_,t) => Some(t), _ => None }
     }
+}
+
+impl<Off:Offset> LocalResult<Date<Off>> {
+    /// Makes a new `DateTime` from the current date and given `NaiveTime`.
+    /// The offset in the current date is preserved.
+    ///
+    /// Propagates any error. Ambiguous result would be discarded.
+    #[inline]
+    pub fn and_time(self, time: NaiveTime) -> LocalResult<DateTime<Off>> {
+        match self {
+            LocalResult::Single(d) => d.and_time(time)
+                                       .map_or(LocalResult::None, LocalResult::Single),
+            _ => LocalResult::None,
+        }
+    }
+
+    /// Makes a new `DateTime` from the current date, hour, minute and second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Propagates any error. Ambiguous result would be discarded.
+    #[inline]
+    pub fn and_hms_opt(self, hour: u32, min: u32, sec: u32) -> LocalResult<DateTime<Off>> {
+        match self {
+            LocalResult::Single(d) => d.and_hms_opt(hour, min, sec)
+                                       .map_or(LocalResult::None, LocalResult::Single),
+            _ => LocalResult::None,
+        }
+    }
+
+    /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
+    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Propagates any error. Ambiguous result would be discarded.
+    #[inline]
+    pub fn and_hms_milli_opt(self, hour: u32, min: u32, sec: u32,
+                             milli: u32) -> LocalResult<DateTime<Off>> {
+        match self {
+            LocalResult::Single(d) => d.and_hms_milli_opt(hour, min, sec, milli)
+                                       .map_or(LocalResult::None, LocalResult::Single),
+            _ => LocalResult::None,
+        }
+    }
+
+    /// Makes a new `DateTime` from the current date, hour, minute, second and microsecond.
+    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Propagates any error. Ambiguous result would be discarded.
+    #[inline]
+    pub fn and_hms_micro_opt(self, hour: u32, min: u32, sec: u32,
+                             micro: u32) -> LocalResult<DateTime<Off>> {
+        match self {
+            LocalResult::Single(d) => d.and_hms_micro_opt(hour, min, sec, micro)
+                                       .map_or(LocalResult::None, LocalResult::Single),
+            _ => LocalResult::None,
+        }
+    }
+
+    /// Makes a new `DateTime` from the current date, hour, minute, second and nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    /// The offset in the current date is preserved.
+    ///
+    /// Propagates any error. Ambiguous result would be discarded.
+    #[inline]
+    pub fn and_hms_nano_opt(self, hour: u32, min: u32, sec: u32,
+                            nano: u32) -> LocalResult<DateTime<Off>> {
+        match self {
+            LocalResult::Single(d) => d.and_hms_nano_opt(hour, min, sec, nano)
+                                       .map_or(LocalResult::None, LocalResult::Single),
+            _ => LocalResult::None,
+        }
+    }
+
 }
 
 impl<T:fmt::Show> LocalResult<T> {

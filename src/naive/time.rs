@@ -212,6 +212,11 @@ impl Sub<NaiveTime,Duration> for NaiveTime {
     }
 }
 
+impl Sub<Duration,NaiveTime> for NaiveTime {
+    #[inline]
+    fn sub(&self, rhs: &Duration) -> NaiveTime { self.add(&-*rhs) }
+}
+
 impl fmt::Show for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (hour, min, sec) = self.hms();

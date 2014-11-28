@@ -412,6 +412,11 @@ impl Sub<NaiveDate,Duration> for NaiveDate {
     }
 }
 
+impl Sub<Duration,NaiveDate> for NaiveDate {
+    #[inline]
+    fn sub(&self, rhs: &Duration) -> NaiveDate { self.add(&-*rhs) }
+}
+
 impl fmt::Show for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();

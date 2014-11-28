@@ -37,7 +37,7 @@ impl<Off:Offset> Date<Off> {
         Date { date: date, offset: offset }
     }
 
-    /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
+    /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
     ///
     /// Fails on invalid datetime.
@@ -46,7 +46,7 @@ impl<Off:Offset> Date<Off> {
         self.offset.from_local_datetime(&self.date.and_time(time)).single()
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
+    /// Makes a new `DateTime` from the current date, hour, minute and second.
     /// The offset in the current date is preserved.
     ///
     /// Fails on invalid hour, minute and/or second.
@@ -55,7 +55,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
+    /// Makes a new `DateTime` from the current date, hour, minute and second.
     /// The offset in the current date is preserved.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
@@ -64,7 +64,7 @@ impl<Off:Offset> Date<Off> {
         NaiveTime::from_hms_opt(hour, min, sec).and_then(|time| self.and_time(time))
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
+    /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -74,7 +74,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
+    /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -85,7 +85,7 @@ impl<Off:Offset> Date<Off> {
         NaiveTime::from_hms_milli_opt(hour, min, sec, milli).and_then(|time| self.and_time(time))
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
+    /// Makes a new `DateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -95,7 +95,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
+    /// Makes a new `DateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -106,7 +106,7 @@ impl<Off:Offset> Date<Off> {
         NaiveTime::from_hms_micro_opt(hour, min, sec, micro).and_then(|time| self.and_time(time))
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
+    /// Makes a new `DateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -116,7 +116,7 @@ impl<Off:Offset> Date<Off> {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
 
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
+    /// Makes a new `DateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
@@ -163,6 +163,13 @@ impl<Off:Offset> Date<Off> {
     #[inline]
     pub fn offset<'a>(&'a self) -> &'a Off {
         &self.offset
+    }
+
+    /// Changes the associated offset.
+    /// This does not change the actual `Date` (but will change the string representation).
+    #[inline]
+    pub fn with_offset<Off2:Offset>(&self, offset: Off2) -> Date<Off2> {
+        Date::from_utc(self.date, offset)
     }
 
     /// Formats the date in the specified format string.
@@ -272,6 +279,11 @@ impl<Off:Offset, Off2:Offset> Sub<Date<Off2>,Duration> for Date<Off> {
     fn sub(&self, rhs: &Date<Off2>) -> Duration {
         self.date - rhs.date
     }
+}
+
+impl<Off:Offset> Sub<Duration,Date<Off>> for Date<Off> {
+    #[inline]
+    fn sub(&self, rhs: &Duration) -> Date<Off> { self.add(&-*rhs) }
 }
 
 impl<Off:Offset> fmt::Show for Date<Off> {

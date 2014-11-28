@@ -194,6 +194,11 @@ impl Sub<NaiveDateTime,Duration> for NaiveDateTime {
     }
 }
 
+impl Sub<Duration,NaiveDateTime> for NaiveDateTime {
+    #[inline]
+    fn sub(&self, rhs: &Duration) -> NaiveDateTime { self.add(&-*rhs) }
+}
+
 impl fmt::Show for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}T{}", self.date, self.time)
