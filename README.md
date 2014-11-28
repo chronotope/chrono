@@ -78,14 +78,10 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
-# /* we intentionally fake the datetime...
 use chrono::{UTC, Local, Datelike, Timelike, Weekday, Duration};
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = Local::now();
-# */ // up to here. we now define a fixed datetime for the illustrative purpose.
-# use chrono::{UTC, FixedOffset, Offset, Datelike, Timelike, Weekday, Duration};
-# let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
 
 // property accessors
 assert_eq!((dt.year(), dt.month(), dt.day()), (2014, 11, 28));
@@ -139,7 +135,6 @@ whenever appropriate.
 ~~~~ {.rust}
 use chrono::{UTC, Local, Offset, LocalResult, Datelike, Weekday};
 
-# // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
 assert_eq!(UTC::today(), UTC::now().date());
 assert_eq!(Local::today(), Local::now().date());
 
