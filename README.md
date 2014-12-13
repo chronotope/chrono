@@ -23,13 +23,15 @@ which Chrono builts upon and should acknowledge:
 
 [Complete Documentation](https://lifthrasiir.github.io/rust-chrono/chrono/)
 
-## Duration
+## Overview
+
+### Duration
 
 Chrono used to have a `Duration` type, which represents the time span.
 Now Rust standard library includes it as `std::time::duration::Duration` and
 Chrono simply reexports it.
 
-## Date and Time
+### Date and Time
 
 Chrono provides a `DateTime` type for the combined date and time.
 
@@ -78,10 +80,14 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
+# /* we intentionally fake the datetime...
 use chrono::{UTC, Local, Datelike, Timelike, Weekday, Duration};
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = Local::now();
+# */ // up to here. we now define a fixed datetime for the illustrative purpose.
+# use chrono::{UTC, FixedOffset, Offset, Datelike, Timelike, Weekday, Duration};
+# let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
 
 // property accessors
 assert_eq!((dt.year(), dt.month(), dt.day()), (2014, 11, 28));
@@ -125,7 +131,7 @@ assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string())
 assert_eq!(dt.to_string(), "2014-11-28T12:00:09Z".into_string());
 ~~~~
 
-## Individual date and time
+### Individual date and time
 
 Chrono also provides an individual date type (`Date`) and time type (`Time`).
 They also have offsets attached, and have to be constructed via offsets.
@@ -135,6 +141,7 @@ whenever appropriate.
 ~~~~ {.rust}
 use chrono::{UTC, Local, Offset, LocalResult, Datelike, Weekday};
 
+# // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
 assert_eq!(UTC::today(), UTC::now().date());
 assert_eq!(Local::today(), Local::now().date());
 
@@ -146,7 +153,7 @@ assert_eq!(UTC.hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(), "070809".int
 `DateTime` has two methods, `date` and `time`,
 which return narrow views to its date and time components respectively.
 
-## Naive date and time
+### Naive date and time
 
 Chrono provides naive counterparts to `Date`, `Time` and `DateTime`
 as `NaiveDate`, `NaiveTime` and `NaiveDateTime` respectively.
@@ -154,4 +161,24 @@ as `NaiveDate`, `NaiveTime` and `NaiveDateTime` respectively.
 They have almost equivalent interfaces as their timezone-aware twins,
 but are not associated to offsets obviously and can be quite low-level.
 They are mostly useful for building blocks for higher-level types.
+
+## Limitations
+
+Only proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
+Be very careful if you really have to deal with pre-20C dates, they can be in Julian or others.
+
+Date types are limited in about +/- 262,000 years from the common epoch.
+Time types are limited in the nanosecond accuracy.
+
+Leap seconds are supported in the representation but Chrono doesn't try to make use of them.
+(The main reason is that leap seconds are not really predictable.)
+Almost *every* operation over the possible leap seconds will ignore them.
+Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale if you want.
+
+Chrono inherently does not support an inaccurate or partial date and time representation.
+Any operation that can be ambiguous will return `None` in such cases.
+For example, "a month later" of 2014-01-30 is not well-defined
+and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
+
+Advanced offset handling and date/time parsing is not yet supported (but is planned).
 
