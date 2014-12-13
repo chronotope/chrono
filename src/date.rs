@@ -43,7 +43,8 @@ impl<Off:Offset> Date<Off> {
     /// Fails on invalid datetime.
     #[inline]
     pub fn and_time(&self, time: NaiveTime) -> Option<DateTime<Off>> {
-        self.offset.from_local_datetime(&self.date.and_time(time)).single()
+        let localdt = self.offset.to_local_date(&self.date).and_time(time);
+        self.offset.from_local_datetime(&localdt).single()
     }
 
     /// Makes a new `DateTime` from the current date, hour, minute and second.
@@ -285,6 +286,61 @@ impl<Off:Offset> Sub<Duration,Date<Off>> for Date<Off> {
 impl<Off:Offset> fmt::Show for Date<Off> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.local(), self.offset)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fmt;
+    use std::str::SendStr;
+
+    use duration::Duration;
+    use naive::date::NaiveDate;
+    use naive::time::NaiveTime;
+    use naive::datetime::NaiveDateTime;
+    use super::Date;
+    use time::Time;
+    use datetime::DateTime;
+    use offset::{Offset, LocalResult};
+
+    #[deriving(Copy, Clone, PartialEq, Eq)]
+    struct UTC1y; // same to UTC but with an offset of 365 days
+
+    impl Offset for UTC1y {
+        fn name(&self) -> SendStr { "UTC+8760".into_cow() } // yes, no kidding
+        fn local_minus_utc(&self) -> Duration { Duration::zero() }
+
+        fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC1y>> {
+            LocalResult::Single(Date::from_utc(*local - Duration::days(365), UTC1y))
+        }
+        fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<UTC1y>> {
+            LocalResult::Single(Time::from_utc(local.clone(), UTC1y))
+        }
+        fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<UTC1y>> {
+            LocalResult::Single(DateTime::from_utc(*local - Duration::days(365), UTC1y))
+        }
+
+        fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { *utc + Duration::days(365) }
+        fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime { utc.clone() }
+        fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime {
+            *utc + Duration::days(365)
+        }
+    }
+
+    impl fmt::Show for UTC1y {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "+8760:00") }
+    }
+
+    #[test]
+    fn test_date_weird_offset() {
+        assert_eq!(UTC1y.ymd(2012, 2, 29).to_string(),
+                   "2012-02-29+8760:00".to_string());
+        assert_eq!(UTC1y.ymd(2012, 2, 29).and_hms(5, 6, 7).to_string(),
+                   "2012-02-29T05:06:07+8760:00".to_string());
+        assert_eq!(UTC1y.ymd(2012, 3, 4).to_string(),
+                   "2012-03-04+8760:00".to_string());
+        assert_eq!(UTC1y.ymd(2012, 3, 4).and_hms(5, 6, 7).to_string(),
+                   "2012-03-04T05:06:07+8760:00".to_string());
     }
 }
 
