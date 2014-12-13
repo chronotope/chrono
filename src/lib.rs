@@ -160,11 +160,9 @@ They are mostly useful for building blocks for higher-level types.
 
 */
 
-#![comment = "Date and time library for Rust"]
-#![license = "MIT"]
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
-#![feature(macro_rules, associated_types)]
+#![feature(macro_rules, associated_types, default_type_params)]
 #![deny(missing_docs)]
 
 extern crate "time" as stdtime;
@@ -206,7 +204,7 @@ pub mod format;
 ///
 /// The order of the days of week depends on the context.
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
-#[deriving(PartialEq, Eq, Clone, FromPrimitive, Show)]
+#[deriving(PartialEq, Eq, Copy, Clone, FromPrimitive, Show)]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

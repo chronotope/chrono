@@ -161,15 +161,11 @@ impl<Off:Offset> Timelike for DateTime<Off> {
     }
 }
 
-impl<Off:Offset> PartialEq for DateTime<Off> {
-    fn eq(&self, other: &DateTime<Off>) -> bool { self.datetime == other.datetime }
+impl<Off:Offset, Off2:Offset> PartialEq<DateTime<Off2>> for DateTime<Off> {
+    fn eq(&self, other: &DateTime<Off2>) -> bool { self.datetime == other.datetime }
 }
 
 impl<Off:Offset> Eq for DateTime<Off> {
-}
-
-impl<Off:Offset, Off2:Offset> Equiv<DateTime<Off2>> for DateTime<Off> {
-    fn equiv(&self, other: &DateTime<Off2>) -> bool { self.datetime == other.datetime }
 }
 
 impl<Off:Offset> PartialOrd for DateTime<Off> {
@@ -229,7 +225,7 @@ mod tests {
                    "2014-05-06T07:08:09Z".to_string());
         assert_eq!(EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).to_string(),
                    "2014-05-06T07:08:09+04:00".to_string());
-        assert!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).equiv(&EDT.ymd(2014, 5, 6).and_hms(11, 8, 9)));
+        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9), EDT.ymd(2014, 5, 6).and_hms(11, 8, 9));
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) - EDT.ymd(2014, 5, 6).and_hms(10, 11, 12),

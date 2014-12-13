@@ -24,7 +24,7 @@ const MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -799,7 +799,7 @@ mod internals {
     /// where `a` is `1` for the common year (simplifies the `Of` validation)
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
-    #[deriving(PartialEq, Eq)]
+    #[deriving(PartialEq, Eq, Copy)]
     pub struct YearFlags(pub u8);
 
     pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
@@ -1039,7 +1039,7 @@ mod internals {
     ///
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
-    #[deriving(PartialEq, PartialOrd)]
+    #[deriving(PartialEq, PartialOrd, Copy)]
     pub struct Of(pub u32);
 
     impl Of {
@@ -1140,7 +1140,7 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Mdl`
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
-    #[deriving(PartialEq, PartialOrd)]
+    #[deriving(PartialEq, PartialOrd, Copy)]
     pub struct Mdf(pub u32);
 
     impl Mdf {

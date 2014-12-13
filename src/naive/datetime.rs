@@ -17,7 +17,7 @@ use naive::date::NaiveDate;
 use format::DelayedFormat;
 
 /// ISO 8601 combined date and time without timezone.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
+#[deriving(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,

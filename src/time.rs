@@ -89,15 +89,11 @@ impl<Off:Offset> Timelike for Time<Off> {
     fn num_seconds_from_midnight(&self) -> u32 { self.local().num_seconds_from_midnight() }
 }
 
-impl<Off:Offset> PartialEq for Time<Off> {
-    fn eq(&self, other: &Time<Off>) -> bool { self.time == other.time }
+impl<Off:Offset, Off2:Offset> PartialEq<Time<Off2>> for Time<Off> {
+    fn eq(&self, other: &Time<Off2>) -> bool { self.time == other.time }
 }
 
 impl<Off:Offset> Eq for Time<Off> {
-}
-
-impl<Off:Offset, Off2:Offset> Equiv<Time<Off2>> for Time<Off> {
-    fn equiv(&self, other: &Time<Off2>) -> bool { self.time == other.time }
 }
 
 impl<Off:Offset> PartialOrd for Time<Off> {
