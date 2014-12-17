@@ -378,7 +378,7 @@ impl Datelike for NaiveDate {
 }
 
 impl Add<Duration,NaiveDate> for NaiveDate {
-    fn add(&self, rhs: &Duration) -> NaiveDate {
+    fn add(self, rhs: Duration) -> NaiveDate {
         // TODO overflow currently fails
 
         let year = self.year();
@@ -397,11 +397,11 @@ impl Add<Duration,NaiveDate> for NaiveDate {
 
 impl Add<NaiveDate,NaiveDate> for Duration {
     #[inline]
-    fn add(&self, rhs: &NaiveDate) -> NaiveDate { rhs.add(self) }
+    fn add(self, rhs: NaiveDate) -> NaiveDate { rhs.add(self) }
 }
 
 impl Sub<NaiveDate,Duration> for NaiveDate {
-    fn sub(&self, rhs: &NaiveDate) -> Duration {
+    fn sub(self, rhs: NaiveDate) -> Duration {
         let year1 = self.year();
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
@@ -414,7 +414,7 @@ impl Sub<NaiveDate,Duration> for NaiveDate {
 
 impl Sub<Duration,NaiveDate> for NaiveDate {
     #[inline]
-    fn sub(&self, rhs: &Duration) -> NaiveDate { self.add(&-*rhs) }
+    fn sub(self, rhs: Duration) -> NaiveDate { self.add(-rhs) }
 }
 
 impl fmt::Show for NaiveDate {

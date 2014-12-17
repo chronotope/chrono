@@ -111,25 +111,23 @@ impl<Off:Offset> hash::Hash for Time<Off> {
 }
 
 impl<Off:Offset> Add<Duration,Time<Off>> for Time<Off> {
-    fn add(&self, rhs: &Duration) -> Time<Off> {
-        Time { time: self.time + *rhs, offset: self.offset.clone() }
+    fn add(self, rhs: Duration) -> Time<Off> {
+        Time { time: self.time + rhs, offset: self.offset }
     }
 }
 
 impl<Off:Offset> Add<Time<Off>,Time<Off>> for Duration {
     #[inline]
-    fn add(&self, rhs: &Time<Off>) -> Time<Off> { rhs.add(self) }
+    fn add(self, rhs: Time<Off>) -> Time<Off> { rhs.add(self) }
 }
 
 impl<Off:Offset, Off2:Offset> Sub<Time<Off2>,Duration> for Time<Off> {
-    fn sub(&self, rhs: &Time<Off2>) -> Duration {
-        self.time - rhs.time
-    }
+    fn sub(self, rhs: Time<Off2>) -> Duration { self.time - rhs.time }
 }
 
 impl<Off:Offset> Sub<Duration,Time<Off>> for Time<Off> {
     #[inline]
-    fn sub(&self, rhs: &Duration) -> Time<Off> { self.add(&-*rhs) }
+    fn sub(self, rhs: Duration) -> Time<Off> { self.add(-rhs) }
 }
 
 impl<Off:Offset> fmt::Show for Time<Off> {

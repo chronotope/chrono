@@ -262,25 +262,23 @@ impl<Off:Offset> hash::Hash for Date<Off> {
 }
 
 impl<Off:Offset> Add<Duration,Date<Off>> for Date<Off> {
-    fn add(&self, rhs: &Duration) -> Date<Off> {
-        Date { date: self.date + *rhs, offset: self.offset.clone() }
+    fn add(self, rhs: Duration) -> Date<Off> {
+        Date { date: self.date + rhs, offset: self.offset }
     }
 }
 
 impl<Off:Offset> Add<Date<Off>,Date<Off>> for Duration {
     #[inline]
-    fn add(&self, rhs: &Date<Off>) -> Date<Off> { rhs.add(self) }
+    fn add(self, rhs: Date<Off>) -> Date<Off> { rhs.add(self) }
 }
 
 impl<Off:Offset, Off2:Offset> Sub<Date<Off2>,Duration> for Date<Off> {
-    fn sub(&self, rhs: &Date<Off2>) -> Duration {
-        self.date - rhs.date
-    }
+    fn sub(self, rhs: Date<Off2>) -> Duration { self.date - rhs.date }
 }
 
 impl<Off:Offset> Sub<Duration,Date<Off>> for Date<Off> {
     #[inline]
-    fn sub(&self, rhs: &Duration) -> Date<Off> { self.add(&-*rhs) }
+    fn sub(self, rhs: Duration) -> Date<Off> { self.add(-rhs) }
 }
 
 impl<Off:Offset> fmt::Show for Date<Off> {

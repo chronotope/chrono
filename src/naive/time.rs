@@ -133,9 +133,9 @@ impl NaiveTime {
 }
 
 impl Timelike for NaiveTime {
-    #[inline] fn hour(&self) -> u32 { self.hms().val0() }
-    #[inline] fn minute(&self) -> u32 { self.hms().val1() }
-    #[inline] fn second(&self) -> u32 { self.hms().val2() }
+    #[inline] fn hour(&self) -> u32 { self.hms().0 }
+    #[inline] fn minute(&self) -> u32 { self.hms().1 }
+    #[inline] fn second(&self) -> u32 { self.hms().2 }
     #[inline] fn nanosecond(&self) -> u32 { self.frac }
 
     #[inline]
@@ -172,10 +172,10 @@ impl Timelike for NaiveTime {
 }
 
 impl Add<Duration,NaiveTime> for NaiveTime {
-    fn add(&self, rhs: &Duration) -> NaiveTime {
+    fn add(self, rhs: Duration) -> NaiveTime {
         // there is no direct interface in `Duration` to get only the nanosecond part,
         // so we need to do the additional calculation here.
-        let rhs2 = *rhs - Duration::seconds(rhs.num_seconds());
+        let rhs2 = rhs - Duration::seconds(rhs.num_seconds());
         let mut secs = self.secs + (rhs.num_seconds() % 86400 + 86400) as u32;
         let mut nanos = self.frac + rhs2.num_nanoseconds().unwrap() as u32;
 
@@ -192,11 +192,11 @@ impl Add<Duration,NaiveTime> for NaiveTime {
 
 impl Add<NaiveTime,NaiveTime> for Duration {
     #[inline]
-    fn add(&self, rhs: &NaiveTime) -> NaiveTime { rhs.add(self) }
+    fn add(self, rhs: NaiveTime) -> NaiveTime { rhs.add(self) }
 }
 
 impl Sub<NaiveTime,Duration> for NaiveTime {
-    fn sub(&self, rhs: &NaiveTime) -> Duration {
+    fn sub(self, rhs: NaiveTime) -> Duration {
         // the number of whole non-leap seconds
         let secs = self.secs as i64 - rhs.secs as i64 - 1;
 
@@ -214,7 +214,7 @@ impl Sub<NaiveTime,Duration> for NaiveTime {
 
 impl Sub<Duration,NaiveTime> for NaiveTime {
     #[inline]
-    fn sub(&self, rhs: &Duration) -> NaiveTime { self.add(&-*rhs) }
+    fn sub(self, rhs: Duration) -> NaiveTime { self.add(-rhs) }
 }
 
 impl fmt::Show for NaiveTime {

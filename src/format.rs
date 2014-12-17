@@ -52,8 +52,8 @@ fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
             (Some('Y'), Some(d), _, _) => try!(write!(w, "{}", d.year())),
             (Some('C'), Some(d), _, _) => try!(write!(w, "{:02}", d.year() / 100)),
             (Some('y'), Some(d), _, _) => try!(write!(w, "{:02}", d.year() % 100)),
-            (Some('G'), Some(d), _, _) => try!(write!(w, "{:04}", d.isoweekdate().val0())),
-            (Some('g'), Some(d), _, _) => try!(write!(w, "{:02}", d.isoweekdate().val0() % 100)),
+            (Some('G'), Some(d), _, _) => try!(write!(w, "{:04}", d.isoweekdate().0)),
+            (Some('g'), Some(d), _, _) => try!(write!(w, "{:02}", d.isoweekdate().0 % 100)),
 
             // month
             (Some('m'), Some(d), _, _) => try!(write!(w, "{:02}", d.month())),
@@ -73,7 +73,7 @@ fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
             (Some('W'), Some(d), _, _) =>
                 try!(write!(w, "{:02}", (d.ordinal() - d.weekday().num_days_from_monday()
                                                      + 7) / 7)),
-            (Some('V'), Some(d), _, _) => try!(write!(w, "{:02}", d.isoweekdate().val1())),
+            (Some('V'), Some(d), _, _) => try!(write!(w, "{:02}", d.isoweekdate().1)),
 
             // day of week
             (Some('a'), Some(d), _, _) =>
@@ -98,12 +98,12 @@ fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
             // hour
             (Some('H'), _, Some(t), _) => try!(write!(w, "{:02}", t.hour())),
             (Some('k'), _, Some(t), _) => try!(write!(w, "{:2}", t.hour())),
-            (Some('I'), _, Some(t), _) => try!(write!(w, "{:02}", t.hour12().val1())),
-            (Some('l'), _, Some(t), _) => try!(write!(w, "{:2}", t.hour12().val1())),
+            (Some('I'), _, Some(t), _) => try!(write!(w, "{:02}", t.hour12().1)),
+            (Some('l'), _, Some(t), _) => try!(write!(w, "{:2}", t.hour12().1)),
             (Some('P'), _, Some(t), _) =>
-                try!(write!(w, "{}", if t.hour12().val0() {"pm"} else {"am"})),
+                try!(write!(w, "{}", if t.hour12().0 {"pm"} else {"am"})),
             (Some('p'), _, Some(t), _) =>
-                try!(write!(w, "{}", if t.hour12().val0() {"PM"} else {"AM"})),
+                try!(write!(w, "{}", if t.hour12().0 {"PM"} else {"AM"})),
 
             // minute
             (Some('M'), _, Some(t), _) => try!(write!(w, "{:02}", t.minute())),

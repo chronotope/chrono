@@ -163,11 +163,11 @@ impl Timelike for NaiveDateTime {
 }
 
 impl Add<Duration,NaiveDateTime> for NaiveDateTime {
-    fn add(&self, rhs: &Duration) -> NaiveDateTime {
+    fn add(self, rhs: Duration) -> NaiveDateTime {
         // Duration does not directly give its parts, so we need some additional calculations.
         let days = rhs.num_days();
-        let nanos = (*rhs - Duration::days(days)).num_nanoseconds().unwrap();
-        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == *rhs);
+        let nanos = (rhs - Duration::days(days)).num_nanoseconds().unwrap();
+        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == rhs);
         debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
 
         let mut date = self.date + Duration::days(days);
@@ -185,18 +185,18 @@ impl Add<Duration,NaiveDateTime> for NaiveDateTime {
 
 impl Add<NaiveDateTime,NaiveDateTime> for Duration {
     #[inline]
-    fn add(&self, rhs: &NaiveDateTime) -> NaiveDateTime { rhs.add(self) }
+    fn add(self, rhs: NaiveDateTime) -> NaiveDateTime { rhs.add(self) }
 }
 
 impl Sub<NaiveDateTime,Duration> for NaiveDateTime {
-    fn sub(&self, rhs: &NaiveDateTime) -> Duration {
+    fn sub(self, rhs: NaiveDateTime) -> Duration {
         (self.date - rhs.date) + (self.time - rhs.time)
     }
 }
 
 impl Sub<Duration,NaiveDateTime> for NaiveDateTime {
     #[inline]
-    fn sub(&self, rhs: &Duration) -> NaiveDateTime { self.add(&-*rhs) }
+    fn sub(self, rhs: Duration) -> NaiveDateTime { self.add(-rhs) }
 }
 
 impl fmt::Show for NaiveDateTime {
