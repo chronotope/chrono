@@ -23,7 +23,7 @@ which Chrono builts upon and should acknowledge:
 
 [Complete Documentation][doc]
 
-[doc]: https://lifthrasiir.github.io/rust-chrono/chrono/
+[doc]: https://lifthrasiir.github.io/rust-chrono/
 
 ## Overview
 
