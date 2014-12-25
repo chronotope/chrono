@@ -1,11 +1,11 @@
 [package]
 name = "chrono"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
 homepage = "https://github.com/lifthrasiir/rust-chrono"
-documentation = "https://lifthrasiir.github.io/rust-chrono/chrono/"
+documentation = "https://lifthrasiir.github.io/rust-chrono/"
 repository = "https://github.com/lifthrasiir/rust-chrono"
 keywords = ["date", "time", "calendar"]
 readme = "README.md"
@@ -14,6 +14,6 @@ license = "MIT/Apache-2.0"
 [lib]
 name = "chrono"
 
-[dependencies.time]
-git = "https://github.com/rust-lang/time"
+[dependencies]
+time = "0.1.4"
 
