@@ -244,7 +244,7 @@ impl<Off:Offset, Off2:Offset> PartialEq<Date<Off2>> for Date<Off> {
     fn eq(&self, other: &Date<Off2>) -> bool { self.date == other.date }
 }
 
-impl<Off:Offset, Off2:Offset> Eq<Date<Off2>> for Date<Off> {
+impl<Off:Offset> Eq for Date<Off> {
 }
 
 impl<Off:Offset> PartialOrd for Date<Off> {
