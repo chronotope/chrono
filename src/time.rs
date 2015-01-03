@@ -7,6 +7,8 @@
  */
 
 use std::{fmt, hash};
+use std::cmp::Ordering;
+use std::ops::{Add, Sub};
 
 use Timelike;
 use offset::Offset;
@@ -15,7 +17,7 @@ use naive::time::NaiveTime;
 use format::DelayedFormat;
 
 /// ISO 8601 time with timezone.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Time<Off> {
     time: NaiveTime,
     offset: Off,

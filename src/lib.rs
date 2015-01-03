@@ -185,6 +185,7 @@ Advanced offset handling and date/time parsing is not yet supported (but is plan
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
 #![feature(macro_rules, associated_types, default_type_params)]
+#![feature(old_orphan_check)]  // TODO: Remove this when derive(Hash) no longer needs it.
 #![deny(missing_docs)]
 
 extern crate "time" as stdtime;
@@ -226,7 +227,7 @@ pub mod format;
 ///
 /// The order of the days of week depends on the context.
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
-#[deriving(PartialEq, Eq, Copy, Clone, FromPrimitive, Show)]
+#[derive(PartialEq, Eq, Copy, Clone, FromPrimitive, Show)]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

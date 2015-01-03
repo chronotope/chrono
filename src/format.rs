@@ -8,7 +8,7 @@
 
 use std::fmt;
 use std::str::SendStr;
-use std::io::{IoResult, IoError, InvalidInput};
+//use std::io::{IoResult, IoError, InvalidInput};
 
 use {Datelike, Timelike};
 use duration::Duration;
@@ -17,16 +17,16 @@ use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 
 /// The internal workhouse for `DelayedFormat`.
-fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
-          off: Option<&(SendStr, Duration)>, fmt: &str) -> IoResult<()> {
-    static SHORT_MONTHS: [&'static str, ..12] =
+fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
+          off: Option<&(SendStr, Duration)>, fmt: &str) -> fmt::Result {
+    static SHORT_MONTHS: [&'static str; 12] =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    static LONG_MONTHS: [&'static str, ..12] =
+    static LONG_MONTHS: [&'static str; 12] =
         ["January", "February", "March", "April", "May", "June",
          "July", "August", "September", "October", "November", "December"];
-    static SHORT_WEEKDAYS: [&'static str, ..7] =
+    static SHORT_WEEKDAYS: [&'static str; 7] =
         ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    static LONG_WEEKDAYS: [&'static str, ..7] =
+    static LONG_WEEKDAYS: [&'static str; 7] =
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     let mut parts = fmt.split('%');
@@ -159,8 +159,9 @@ fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
             (Some('n'), _, _, _) => try!(write!(w, "\n")),
 
             (Some(c), _, _, _) => {
-                return Err(IoError { kind: InvalidInput, desc: "invalid date/time format",
-                                     detail: Some(format!("unsupported escape sequence %{}", c)) });
+                return Err(fmt::Error);
+                // return Err(IoError { kind: InvalidInput, desc: "invalid date/time format",
+                //                      detail: Some(format!("unsupported escape sequence %{}", c)) });
             }
 
             (None, _, _, _) => {
@@ -174,8 +175,9 @@ fn format(w: &mut Writer, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
     }
 
     if last_was_percent { // a stray `%`
-        Err(IoError { kind: InvalidInput,
-                      desc: "invalid date/time format: stray `%`", detail: None })
+        return Err(fmt::Error);
+        // Err(IoError { kind: InvalidInput,
+        //               desc: "invalid date/time format: stray `%`", detail: None })
     } else {
         Ok(())
     }

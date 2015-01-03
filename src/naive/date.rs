@@ -7,7 +7,8 @@
  */
 
 use std::fmt;
-use std::num::Int;
+use std::num::{Int, ToPrimitive};
+use std::ops::{Add, Sub};
 
 use {Weekday, Datelike};
 use div::div_mod_floor;
@@ -24,7 +25,7 @@ const MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -799,7 +800,7 @@ mod internals {
     /// where `a` is `1` for the common year (simplifies the `Of` validation)
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
-    #[deriving(PartialEq, Eq, Copy)]
+    #[derive(PartialEq, Eq, Copy)]
     pub struct YearFlags(pub u8);
 
     pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
@@ -810,7 +811,7 @@ mod internals {
     pub const F: YearFlags = YearFlags(0o17); pub const FE: YearFlags = YearFlags(0o07);
     pub const G: YearFlags = YearFlags(0o16); pub const GF: YearFlags = YearFlags(0o06);
 
-    static YEAR_TO_FLAGS: [YearFlags, ..400] = [
+    static YEAR_TO_FLAGS: [YearFlags; 400] = [
         BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F,
         ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
         AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
@@ -833,7 +834,7 @@ mod internals {
         FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
     ];
 
-    static YEAR_DELTAS: [u8, ..401] = [
+    static YEAR_DELTAS: [u8; 401] = [
          0,  1,  1,  1,  1,  2,  2,  2,  2,  3,  3,  3,  3,  4,  4,  4,  4,  5,  5,  5,
          5,  6,  6,  6,  6,  7,  7,  7,  7,  8,  8,  8,  8,  9,  9,  9,  9, 10, 10, 10,
         10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15,
@@ -928,7 +929,7 @@ mod internals {
     pub const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
     const XX: i8 = -128;
-    static MDL_TO_OL: [i8, ..(MAX_MDL as uint + 1u)] = [
+    static MDL_TO_OL: [i8; (MAX_MDL as uint + 1u)] = [
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -983,7 +984,7 @@ mod internals {
          98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, // 12
     ];
 
-    static OL_TO_MDL: [u8, ..(MAX_OL as uint + 1u)] = [
+    static OL_TO_MDL: [u8; (MAX_OL as uint + 1u)] = [
           0,  0,                                                         // 0
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -1039,7 +1040,7 @@ mod internals {
     ///
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
-    #[deriving(PartialEq, PartialOrd, Copy)]
+    #[derive(PartialEq, PartialOrd, Copy)]
     pub struct Of(pub u32);
 
     impl Of {
@@ -1140,7 +1141,7 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Mdl`
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
-    #[deriving(PartialEq, PartialOrd, Copy)]
+    #[derive(PartialEq, PartialOrd, Copy)]
     pub struct Mdf(pub u32);
 
     impl Mdf {
@@ -1242,9 +1243,9 @@ mod internals {
         use std::iter::range_inclusive;
         use std::u32;
 
-        const NONLEAP_FLAGS: [YearFlags, ..7] = [A, B, C, D, E, F, G];
-        const LEAP_FLAGS: [YearFlags, ..7] = [AG, BA, CB, DC, ED, FE, GF];
-        const FLAGS: [YearFlags, ..14] = [A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF];
+        const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
+        const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];
+        const FLAGS: [YearFlags; 14] = [A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF];
 
         #[test]
         fn test_year_flags_ndays_from_year() {

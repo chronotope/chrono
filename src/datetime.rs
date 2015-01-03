@@ -7,6 +7,8 @@
  */
 
 use std::{fmt, hash};
+use std::cmp::Ordering;
+use std::ops::{Add, Sub};
 
 use {Weekday, Timelike, Datelike};
 use offset::Offset;
@@ -17,7 +19,7 @@ use date::Date;
 use format::DelayedFormat;
 
 /// ISO 8601 combined date and time with timezone.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct DateTime<Off> {
     datetime: NaiveDateTime,
     offset: Off,
