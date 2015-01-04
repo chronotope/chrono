@@ -8,7 +8,6 @@
 
 use std::fmt;
 use std::str::SendStr;
-//use std::io::{IoResult, IoError, InvalidInput};
 
 use {Datelike, Timelike};
 use duration::Duration;
@@ -158,11 +157,8 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
             (Some('t'), _, _, _) => try!(write!(w, "\t")),
             (Some('n'), _, _, _) => try!(write!(w, "\n")),
 
-            (Some(c), _, _, _) => {
-                return Err(fmt::Error);
-                // return Err(IoError { kind: InvalidInput, desc: "invalid date/time format",
-                //                      detail: Some(format!("unsupported escape sequence %{}", c)) });
-            }
+            // TODO issue a detailed error if possible
+            (Some(_), _, _, _) => return Err(fmt::Error),
 
             (None, _, _, _) => {
                 // if there is the next part, a single `%` and that part should be printed
@@ -175,9 +171,8 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
     }
 
     if last_was_percent { // a stray `%`
-        return Err(fmt::Error);
-        // Err(IoError { kind: InvalidInput,
-        //               desc: "invalid date/time format: stray `%`", detail: None })
+        // TODO issue a detailed error if possible
+        Err(fmt::Error)
     } else {
         Ok(())
     }
