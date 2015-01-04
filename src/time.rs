@@ -1,5 +1,5 @@
 // This is a part of rust-chrono.
-// Copyright (c) 2014, Kang Seonghoon.
+// Copyright (c) 2014-2015, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
 /*!
