@@ -1166,7 +1166,7 @@ mod internals {
         pub fn from_of(Of(of): Of) -> Mdf {
             let ol = of >> 3;
             match OL_TO_MDL.get(ol as uint) {
-                Some(&v) => Mdf(of + (v as u32 << 3)),
+                Some(&v) => Mdf(of + ((v as u32) << 3)),
                 None => Mdf(0)
             }
         }
