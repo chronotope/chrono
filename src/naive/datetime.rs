@@ -7,7 +7,8 @@
  */
 
 use std::fmt;
-use std::num::Int;
+use std::num::{Int, ToPrimitive};
+use std::ops::{Add, Sub};
 
 use {Weekday, Timelike, Datelike};
 use div::div_mod_floor;
@@ -17,7 +18,7 @@ use naive::date::NaiveDate;
 use format::DelayedFormat;
 
 /// ISO 8601 combined date and time without timezone.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,

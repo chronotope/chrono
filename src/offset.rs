@@ -6,6 +6,7 @@
  * Offsets from the local time to UTC.
  */
 
+use std::borrow::IntoCow;
 use std::fmt;
 use std::str::SendStr;
 use stdtime;
@@ -21,7 +22,7 @@ use time::Time;
 use datetime::DateTime;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
-#[deriving(Clone, PartialEq, Show)]
+#[derive(Clone, PartialEq, Show)]
 pub enum LocalResult<T> {
     /// Given local time representation is invalid.
     /// This can occur when, for example, the positive timezone transition.
@@ -321,7 +322,7 @@ pub trait Offset: Clone + fmt::Show {
 }
 
 /// The UTC timescale. This is the most efficient offset when you don't need the local time.
-#[deriving(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct UTC;
 
 impl UTC {
@@ -360,7 +361,7 @@ impl fmt::Show for UTC {
 }
 
 /// The fixed offset, from UTC-23:59:59 to UTC+23:59:59.
-#[deriving(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
@@ -451,7 +452,7 @@ impl fmt::Show for FixedOffset {
 }
 
 /// The local timescale. This is implemented via the standard `time` crate.
-#[deriving(Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Local {
     cached: FixedOffset,
 }

@@ -7,6 +7,8 @@
  */
 
 use std::{fmt, hash};
+use std::cmp::Ordering;
+use std::ops::{Add, Sub};
 
 use {Weekday, Datelike};
 use duration::Duration;
@@ -18,7 +20,7 @@ use datetime::DateTime;
 use format::DelayedFormat;
 
 /// ISO 8601 calendar date with timezone.
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct Date<Off> {
     date: NaiveDate,
     offset: Off,
@@ -289,6 +291,7 @@ impl<Off:Offset> fmt::Show for Date<Off> {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::IntoCow;
     use std::fmt;
     use std::str::SendStr;
 
@@ -301,7 +304,7 @@ mod tests {
     use datetime::DateTime;
     use offset::{Offset, LocalResult};
 
-    #[deriving(Copy, Clone, PartialEq, Eq)]
+    #[derive(Copy, Clone, PartialEq, Eq)]
     struct UTC1y; // same to UTC but with an offset of 365 days
 
     impl Offset for UTC1y {

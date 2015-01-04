@@ -8,6 +8,7 @@
 
 use std::fmt;
 use std::num::Int;
+use std::ops::{Add, Sub};
 
 use Timelike;
 use div::div_mod_floor;
@@ -17,7 +18,7 @@ use format::DelayedFormat;
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
-#[deriving(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
