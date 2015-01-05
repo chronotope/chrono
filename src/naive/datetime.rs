@@ -163,7 +163,9 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-impl Add<Duration,NaiveDateTime> for NaiveDateTime {
+impl Add<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
     fn add(self, rhs: Duration) -> NaiveDateTime {
         // Duration does not directly give its parts, so we need some additional calculations.
         let days = rhs.num_days();
@@ -184,18 +186,24 @@ impl Add<Duration,NaiveDateTime> for NaiveDateTime {
     }
 }
 
-impl Add<NaiveDateTime,NaiveDateTime> for Duration {
+impl Add<NaiveDateTime> for Duration {
+    type Output = NaiveDateTime;
+
     #[inline]
     fn add(self, rhs: NaiveDateTime) -> NaiveDateTime { rhs.add(self) }
 }
 
-impl Sub<NaiveDateTime,Duration> for NaiveDateTime {
+impl Sub<NaiveDateTime> for NaiveDateTime {
+    type Output = Duration;
+
     fn sub(self, rhs: NaiveDateTime) -> Duration {
         (self.date - rhs.date) + (self.time - rhs.time)
     }
 }
 
-impl Sub<Duration,NaiveDateTime> for NaiveDateTime {
+impl Sub<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveDateTime { self.add(-rhs) }
 }

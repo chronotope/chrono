@@ -172,7 +172,9 @@ impl Timelike for NaiveTime {
     }
 }
 
-impl Add<Duration,NaiveTime> for NaiveTime {
+impl Add<Duration> for NaiveTime {
+    type Output = NaiveTime;
+
     fn add(self, rhs: Duration) -> NaiveTime {
         // there is no direct interface in `Duration` to get only the nanosecond part,
         // so we need to do the additional calculation here.
@@ -191,12 +193,16 @@ impl Add<Duration,NaiveTime> for NaiveTime {
     }
 }
 
-impl Add<NaiveTime,NaiveTime> for Duration {
+impl Add<NaiveTime> for Duration {
+    type Output = NaiveTime;
+
     #[inline]
     fn add(self, rhs: NaiveTime) -> NaiveTime { rhs.add(self) }
 }
 
-impl Sub<NaiveTime,Duration> for NaiveTime {
+impl Sub<NaiveTime> for NaiveTime {
+    type Output = Duration;
+
     fn sub(self, rhs: NaiveTime) -> Duration {
         // the number of whole non-leap seconds
         let secs = self.secs as i64 - rhs.secs as i64 - 1;
@@ -213,7 +219,9 @@ impl Sub<NaiveTime,Duration> for NaiveTime {
     }
 }
 
-impl Sub<Duration,NaiveTime> for NaiveTime {
+impl Sub<Duration> for NaiveTime {
+    type Output = NaiveTime;
+
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveTime { self.add(-rhs) }
 }

@@ -112,22 +112,30 @@ impl<Off:Offset> hash::Hash for Time<Off> {
     fn hash(&self, state: &mut hash::sip::SipState) { self.time.hash(state) }
 }
 
-impl<Off:Offset> Add<Duration,Time<Off>> for Time<Off> {
+impl<Off:Offset> Add<Duration> for Time<Off> {
+    type Output = Time<Off>;
+
     fn add(self, rhs: Duration) -> Time<Off> {
         Time { time: self.time + rhs, offset: self.offset }
     }
 }
 
-impl<Off:Offset> Add<Time<Off>,Time<Off>> for Duration {
+impl<Off:Offset> Add<Time<Off>> for Duration {
+    type Output = Time<Off>;
+
     #[inline]
     fn add(self, rhs: Time<Off>) -> Time<Off> { rhs.add(self) }
 }
 
-impl<Off:Offset, Off2:Offset> Sub<Time<Off2>,Duration> for Time<Off> {
+impl<Off:Offset, Off2:Offset> Sub<Time<Off2>> for Time<Off> {
+    type Output = Duration;
+
     fn sub(self, rhs: Time<Off2>) -> Duration { self.time - rhs.time }
 }
 
-impl<Off:Offset> Sub<Duration,Time<Off>> for Time<Off> {
+impl<Off:Offset> Sub<Duration> for Time<Off> {
+    type Output = Time<Off>;
+
     #[inline]
     fn sub(self, rhs: Duration) -> Time<Off> { self.add(-rhs) }
 }
