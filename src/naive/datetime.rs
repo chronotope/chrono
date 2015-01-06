@@ -223,8 +223,8 @@ mod tests {
 
     #[test]
     fn test_datetime_from_num_seconds_from_unix_epoch() {
-        let from_timestamp = |secs| NaiveDateTime::from_num_seconds_from_unix_epoch_opt(secs, 0);
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let from_timestamp = |&: secs| NaiveDateTime::from_num_seconds_from_unix_epoch_opt(secs, 0);
+        let ymdhms = |&: y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
         assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
         assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn test_datetime_add() {
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |&: y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    ymdhms(2014, 5, 6, 8, 9, 10));
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(-(3600 + 60 + 1)),
@@ -251,7 +251,7 @@ mod tests {
 
     #[test]
     fn test_datetime_sub() {
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |&: y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) - ymdhms(2014, 5, 6, 7, 8, 9), Duration::zero());
         assert_eq!(ymdhms(2014, 5, 6, 7, 8, 10) - ymdhms(2014, 5, 6, 7, 8, 9),
                    Duration::seconds(1));
@@ -265,8 +265,8 @@ mod tests {
 
     #[test]
     fn test_datetime_num_seconds_from_unix_epoch() {
-        let to_timestamp =
-            |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s).num_seconds_from_unix_epoch();
+        let to_timestamp = |&: y,m,d,h,n,s|
+            NaiveDate::from_ymd(y,m,d).and_hms(h,n,s).num_seconds_from_unix_epoch();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);

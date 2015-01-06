@@ -317,7 +317,7 @@ mod tests {
             assert_eq!(rhs + lhs, sum);
         }
 
-        let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
+        let hmsm = |&: h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
         check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
@@ -335,7 +335,7 @@ mod tests {
             assert_eq!(rhs - lhs, -diff);
         }
 
-        let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
+        let hmsm = |&: h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));

@@ -1,4 +1,4 @@
-[Chrono][doc] 0.1.10
+[Chrono][doc] 0.1.11
 ====================
 
 [![Chrono on Travis CI][travis-image]][travis]

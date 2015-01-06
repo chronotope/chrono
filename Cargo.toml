@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
@@ -15,5 +15,5 @@ license = "MIT/Apache-2.0"
 name = "chrono"
 
 [dependencies]
-time = "0.1.9"
+time = "0.1.10"
 
