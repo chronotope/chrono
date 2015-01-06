@@ -8,7 +8,7 @@
 
 use std::borrow::IntoCow;
 use std::fmt;
-use std::str::SendStr;
+use std::string::CowString;
 use stdtime;
 
 use {Weekday, Datelike, Timelike};
@@ -294,7 +294,7 @@ pub trait Offset: Clone + fmt::Show {
     }
 
     /// Returns a name or abbreviation of this offset.
-    fn name(&self) -> SendStr;
+    fn name(&self) -> CowString<'static>;
 
     /// Returns the *current* offset from UTC to the local time.
     fn local_minus_utc(&self) -> Duration;
@@ -338,7 +338,7 @@ impl UTC {
 }
 
 impl Offset for UTC {
-    fn name(&self) -> SendStr { "UTC".into_cow() }
+    fn name(&self) -> CowString<'static> { "UTC".into_cow() }
     fn local_minus_utc(&self) -> Duration { Duration::zero() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
@@ -409,7 +409,7 @@ impl FixedOffset {
 }
 
 impl Offset for FixedOffset {
-    fn name(&self) -> SendStr { "UTC".into_cow() } // XXX
+    fn name(&self) -> CowString<'static> { "UTC".into_cow() } // XXX
     fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
@@ -505,7 +505,7 @@ impl Local {
 }
 
 impl Offset for Local {
-    fn name(&self) -> SendStr { "LMT".into_cow() } // XXX XXX
+    fn name(&self) -> CowString<'static> { "LMT".into_cow() } // XXX XXX
     fn local_minus_utc(&self) -> Duration { self.cached.local_minus_utc() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
