@@ -7,7 +7,7 @@
  */
 
 use std::fmt;
-use std::str::SendStr;
+use std::string::CowString;
 
 use {Datelike, Timelike};
 use duration::Duration;
@@ -17,7 +17,7 @@ use naive::time::NaiveTime;
 
 /// The internal workhouse for `DelayedFormat`.
 fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
-          off: Option<&(SendStr, Duration)>, fmt: &str) -> fmt::Result {
+          off: Option<&(CowString<'static>, Duration)>, fmt: &str) -> fmt::Result {
     static SHORT_MONTHS: [&'static str; 12] =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     static LONG_MONTHS: [&'static str; 12] =
@@ -186,7 +186,7 @@ pub struct DelayedFormat<'a> {
     /// The time view, if any.
     time: Option<NaiveTime>,
     /// The name and local-to-UTC difference for the offset (timezone), if any.
-    off: Option<(SendStr, Duration)>,
+    off: Option<(CowString<'static>, Duration)>,
     /// The format string.
     fmt: &'a str,
 }
