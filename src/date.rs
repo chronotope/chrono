@@ -301,7 +301,7 @@ impl<Off:Offset> fmt::Show for Date<Off> {
 mod tests {
     use std::borrow::IntoCow;
     use std::fmt;
-    use std::str::SendStr;
+    use std::string::CowString;
 
     use duration::Duration;
     use naive::date::NaiveDate;
@@ -316,7 +316,7 @@ mod tests {
     struct UTC1y; // same to UTC but with an offset of 365 days
 
     impl Offset for UTC1y {
-        fn name(&self) -> SendStr { "UTC+8760".into_cow() } // yes, no kidding
+        fn name(&self) -> CowString<'static> { "UTC+8760".into_cow() } // yes, no kidding
         fn local_minus_utc(&self) -> Duration { Duration::zero() }
 
         fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC1y>> {
