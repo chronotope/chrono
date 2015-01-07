@@ -398,13 +398,6 @@ impl Add<Duration> for NaiveDate {
     }
 }
 
-impl Add<NaiveDate> for Duration {
-    type Output = NaiveDate;
-
-    #[inline]
-    fn add(self, rhs: NaiveDate) -> NaiveDate { rhs.add(self) }
-}
-
 impl Sub<NaiveDate> for NaiveDate {
     type Output = Duration;
 
@@ -709,7 +702,7 @@ mod tests {
             let lhs = NaiveDate::from_ymd(y1, m1, d1);
             let sum = NaiveDate::from_ymd(y, m, d);
             assert_eq!(lhs + rhs, sum);
-            assert_eq!(rhs + lhs, sum);
+            //assert_eq!(rhs + lhs, sum);
         }
 
         check((2014, 1, 1), Duration::zero(), (2014, 1, 1));

@@ -193,13 +193,6 @@ impl Add<Duration> for NaiveTime {
     }
 }
 
-impl Add<NaiveTime> for Duration {
-    type Output = NaiveTime;
-
-    #[inline]
-    fn add(self, rhs: NaiveTime) -> NaiveTime { rhs.add(self) }
-}
-
 impl Sub<NaiveTime> for NaiveTime {
     type Output = Duration;
 
@@ -314,7 +307,7 @@ mod tests {
     fn test_time_add() {
         fn check(lhs: NaiveTime, rhs: Duration, sum: NaiveTime) {
             assert_eq!(lhs + rhs, sum);
-            assert_eq!(rhs + lhs, sum);
+            //assert_eq!(rhs + lhs, sum);
         }
 
         let hmsm = |&: h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);

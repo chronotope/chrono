@@ -186,13 +186,6 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
-impl Add<NaiveDateTime> for Duration {
-    type Output = NaiveDateTime;
-
-    #[inline]
-    fn add(self, rhs: NaiveDateTime) -> NaiveDateTime { rhs.add(self) }
-}
-
 impl Sub<NaiveDateTime> for NaiveDateTime {
     type Output = Duration;
 

@@ -4,7 +4,7 @@
 
 /*!
 
-# Chrono 0.1.11
+# Chrono 0.1.12
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
@@ -184,8 +184,6 @@ Advanced offset handling and date/time parsing is not yet supported (but is plan
 
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
-#![feature(macro_rules, associated_types, default_type_params)]
-#![feature(old_orphan_check)]  // TODO: Remove this when derive(Hash) no longer needs it.
 #![deny(missing_docs)]
 
 extern crate "time" as stdtime;

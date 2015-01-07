@@ -192,13 +192,6 @@ impl<Off:Offset> Add<Duration> for DateTime<Off> {
     }
 }
 
-impl<Off:Offset> Add<DateTime<Off>> for Duration {
-    type Output = DateTime<Off>;
-
-    #[inline]
-    fn add(self, rhs: DateTime<Off>) -> DateTime<Off> { rhs.add(self) }
-}
-
 impl<Off:Offset, Off2:Offset> Sub<DateTime<Off2>> for DateTime<Off> {
     type Output = Duration;
 

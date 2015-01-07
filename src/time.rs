@@ -120,13 +120,6 @@ impl<Off:Offset> Add<Duration> for Time<Off> {
     }
 }
 
-impl<Off:Offset> Add<Time<Off>> for Duration {
-    type Output = Time<Off>;
-
-    #[inline]
-    fn add(self, rhs: Time<Off>) -> Time<Off> { rhs.add(self) }
-}
-
 impl<Off:Offset, Off2:Offset> Sub<Time<Off2>> for Time<Off> {
     type Output = Duration;
 
