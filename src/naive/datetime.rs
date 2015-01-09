@@ -6,7 +6,7 @@
  * ISO 8601 date and time without timezone.
  */
 
-use std::fmt;
+use std::{fmt, hash};
 use std::num::{Int, ToPrimitive};
 use std::ops::{Add, Sub};
 
@@ -18,7 +18,7 @@ use naive::date::NaiveDate;
 use format::DelayedFormat;
 
 /// ISO 8601 combined date and time without timezone.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
@@ -163,6 +163,10 @@ impl Timelike for NaiveDateTime {
     }
 }
 
+impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveDateTime {
+    fn hash(&self, state: &mut H) { self.date.hash(state); self.time.hash(state) }
+}
+
 impl Add<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -203,7 +207,13 @@ impl Sub<Duration> for NaiveDateTime {
 
 impl fmt::Show for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}T{}", self.date, self.time)
+        write!(f, "{:?}T{:?}", self.date, self.time)
+    }
+}
+
+impl fmt::String for NaiveDateTime {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.date, self.time)
     }
 }
 
@@ -270,8 +280,8 @@ mod tests {
     #[test]
     fn test_datetime_format() {
         let dt = NaiveDate::from_ymd(2010, 9, 8).and_hms_milli(7, 6, 54, 321);
-        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010".to_string());
-        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t".to_string());
+        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
+        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
     }
 }
 

@@ -175,16 +175,18 @@ impl<Off:Offset> Date<Off> {
         Date::from_utc(self.date, offset)
     }
 
+    /// Returns a view to the local date.
+    fn local(&self) -> NaiveDate {
+        self.offset.to_local_date(&self.date)
+    }
+}
+
+impl<Off: Offset + fmt::String> Date<Off> {
     /// Formats the date in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
         DelayedFormat::new_with_offset(Some(self.local()), None, &self.offset, fmt)
-    }
-
-    /// Returns a view to the local date.
-    fn local(&self) -> NaiveDate {
-        self.offset.to_local_date(&self.date)
     }
 }
 
@@ -259,8 +261,8 @@ impl<Off:Offset> Ord for Date<Off> {
     fn cmp(&self, other: &Date<Off>) -> Ordering { self.date.cmp(&other.date) }
 }
 
-impl<Off:Offset> hash::Hash for Date<Off> {
-    fn hash(&self, state: &mut hash::sip::SipState) { self.date.hash(state) }
+impl<Off: Offset, H: hash::Hasher + hash::Writer> hash::Hash<H> for Date<Off> {
+    fn hash(&self, state: &mut H) { self.date.hash(state) }
 }
 
 impl<Off:Offset> Add<Duration> for Date<Off> {
@@ -284,7 +286,13 @@ impl<Off:Offset> Sub<Duration> for Date<Off> {
     fn sub(self, rhs: Duration) -> Date<Off> { self.add(-rhs) }
 }
 
-impl<Off:Offset> fmt::Show for Date<Off> {
+impl<Off: Offset> fmt::Show for Date<Off> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}{:?}", self.local(), self.offset)
+    }
+}
+
+impl<Off: Offset + fmt::String> fmt::String for Date<Off> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.local(), self.offset)
     }
@@ -292,9 +300,7 @@ impl<Off:Offset> fmt::Show for Date<Off> {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::IntoCow;
     use std::fmt;
-    use std::string::CowString;
 
     use duration::Duration;
     use naive::date::NaiveDate;
@@ -309,7 +315,6 @@ mod tests {
     struct UTC1y; // same to UTC but with an offset of 365 days
 
     impl Offset for UTC1y {
-        fn name(&self) -> CowString<'static> { "UTC+8760".into_cow() } // yes, no kidding
         fn local_minus_utc(&self) -> Duration { Duration::zero() }
 
         fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC1y>> {
@@ -335,13 +340,13 @@ mod tests {
 
     #[test]
     fn test_date_weird_offset() {
-        assert_eq!(UTC1y.ymd(2012, 2, 29).to_string(),
+        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 2, 29)),
                    "2012-02-29+8760:00".to_string());
-        assert_eq!(UTC1y.ymd(2012, 2, 29).and_hms(5, 6, 7).to_string(),
+        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 2, 29).and_hms(5, 6, 7)),
                    "2012-02-29T05:06:07+8760:00".to_string());
-        assert_eq!(UTC1y.ymd(2012, 3, 4).to_string(),
+        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 3, 4)),
                    "2012-03-04+8760:00".to_string());
-        assert_eq!(UTC1y.ymd(2012, 3, 4).and_hms(5, 6, 7).to_string(),
+        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 3, 4).and_hms(5, 6, 7)),
                    "2012-03-04T05:06:07+8760:00".to_string());
     }
 }

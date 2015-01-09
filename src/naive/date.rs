@@ -6,7 +6,7 @@
  * ISO 8601 calendar date without timezone.
  */
 
-use std::fmt;
+use std::{fmt, hash};
 use std::num::{Int, ToPrimitive};
 use std::ops::{Add, Sub};
 
@@ -25,7 +25,7 @@ const MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -40,8 +40,10 @@ pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o1
 fn test_date_bounds() {
     let calculated_min = NaiveDate::from_ymd(MIN_YEAR, 1, 1);
     let calculated_max = NaiveDate::from_ymd(MAX_YEAR, 12, 31);
-    assert!(MIN == calculated_min, "`MIN` should have a year flag {}", calculated_min.of().flags());
-    assert!(MAX == calculated_max, "`MAX` should have a year flag {}", calculated_max.of().flags());
+    assert!(MIN == calculated_min,
+            "`MIN` should have a year flag {:?}", calculated_min.of().flags());
+    assert!(MAX == calculated_max,
+            "`MAX` should have a year flag {:?}", calculated_max.of().flags());
 }
 
 impl NaiveDate {
@@ -378,6 +380,10 @@ impl Datelike for NaiveDate {
     }
 }
 
+impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveDate {
+    fn hash(&self, state: &mut H) { self.ymdf.hash(state) }
+}
+
 impl Add<Duration> for NaiveDate {
     type Output = NaiveDate;
 
@@ -427,6 +433,18 @@ impl fmt::Show for NaiveDate {
             write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
+            write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
+        }
+    }
+}
+
+impl fmt::String for NaiveDate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let year = self.year();
+        let mdf = self.mdf();
+        if year >= 0 {
+            write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
+        } else {
             write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
         }
     }
@@ -736,35 +754,40 @@ mod tests {
 
     #[test]
     fn test_date_fmt() {
-        assert_eq!(NaiveDate::from_ymd(2012,  3, 4).to_string(),  "2012-03-04".to_string());
-        assert_eq!(NaiveDate::from_ymd(0,     3, 4).to_string(),  "0000-03-04".to_string());
-        assert_eq!(NaiveDate::from_ymd(-307,  3, 4).to_string(), "-0307-03-04".to_string());
-        assert_eq!(NaiveDate::from_ymd(12345, 3, 4).to_string(), "+12345-03-04".to_string());
+        assert_eq!(format!("{:?}", NaiveDate::from_ymd(2012,  3, 4)),   "2012-03-04");
+        assert_eq!(format!("{:?}", NaiveDate::from_ymd(0,     3, 4)),   "0000-03-04");
+        assert_eq!(format!("{:?}", NaiveDate::from_ymd(-307,  3, 4)),  "-0307-03-04");
+        assert_eq!(format!("{:?}", NaiveDate::from_ymd(12345, 3, 4)), "+12345-03-04");
+
+        assert_eq!(NaiveDate::from_ymd(2012,  3, 4).to_string(),  "2012-03-04");
+        assert_eq!(NaiveDate::from_ymd(0,     3, 4).to_string(),  "0000-03-04");
+        assert_eq!(NaiveDate::from_ymd(-307,  3, 4).to_string(), "-0307-03-04");
+        assert_eq!(NaiveDate::from_ymd(12345, 3, 4).to_string(), "12345-03-04");
 
         // the format specifier should have no effect on `NaiveTime`
-        assert_eq!(format!("{:+30}", NaiveDate::from_ymd(1234, 5, 6)), "1234-05-06".to_string());
-        assert_eq!(format!("{:30}", NaiveDate::from_ymd(12345, 6, 7)), "+12345-06-07".to_string());
+        assert_eq!(format!("{:+30?}", NaiveDate::from_ymd(1234, 5, 6)), "1234-05-06");
+        assert_eq!(format!("{:30?}", NaiveDate::from_ymd(12345, 6, 7)), "+12345-06-07");
     }
 
     #[test]
     fn test_date_format() {
         let d = NaiveDate::from_ymd(2012, 3, 4);
-        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12".to_string());
-        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March".to_string());
-        assert_eq!(d.format("%d,%e").to_string(), "04, 4".to_string());
-        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09".to_string());
-        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7".to_string());
-        assert_eq!(d.format("%j").to_string(), "064".to_string()); // since 2012 is a leap year
-        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12".to_string());
-        assert_eq!(d.format("%F").to_string(), "2012-03-04".to_string());
-        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012".to_string());
-        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t".to_string());
+        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
+        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
+        assert_eq!(d.format("%d,%e").to_string(), "04, 4");
+        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
+        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
+        assert_eq!(d.format("%j").to_string(), "064"); // since 2012 is a leap year
+        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12");
+        assert_eq!(d.format("%F").to_string(), "2012-03-04");
+        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
+        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
         // corner cases
         assert_eq!(NaiveDate::from_ymd(2007, 12, 31).format("%G,%g,%U,%W,%V").to_string(),
-                   "2008,08,53,53,01".to_string());
+                   "2008,08,53,53,01");
         assert_eq!(NaiveDate::from_ymd(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(),
-                   "2009,09,01,00,53".to_string());
+                   "2009,09,01,00,53");
     }
 }
 
@@ -860,10 +883,10 @@ mod internals {
 
     pub fn cycle_to_yo(cycle: u32) -> (u32, u32) {
         let (mut year_mod_400, mut ordinal0) = div_rem(cycle, 365);
-        let delta = YEAR_DELTAS[year_mod_400 as uint] as u32;
+        let delta = YEAR_DELTAS[year_mod_400 as usize] as u32;
         if ordinal0 < delta {
             year_mod_400 -= 1;
-            ordinal0 += 365 - YEAR_DELTAS[year_mod_400 as uint] as u32;
+            ordinal0 += 365 - YEAR_DELTAS[year_mod_400 as usize] as u32;
         } else {
             ordinal0 -= delta;
         }
@@ -871,7 +894,7 @@ mod internals {
     }
 
     pub fn yo_to_cycle(year_mod_400: u32, ordinal: u32) -> u32 {
-        year_mod_400 * 365 + YEAR_DELTAS[year_mod_400 as uint] as u32 + ordinal - 1
+        year_mod_400 * 365 + YEAR_DELTAS[year_mod_400 as usize] as u32 + ordinal - 1
     }
 
     impl YearFlags {
@@ -883,7 +906,7 @@ mod internals {
 
         #[inline]
         pub fn from_year_mod_400(year: i32) -> YearFlags {
-            YEAR_TO_FLAGS[year as uint]
+            YEAR_TO_FLAGS[year as usize]
         }
 
         #[inline]
@@ -903,7 +926,7 @@ mod internals {
         #[inline]
         pub fn nisoweeks(&self) -> u32 {
             let YearFlags(flags) = *self;
-            52 + ((0b00000100_00000110 >> flags as uint) & 1)
+            52 + ((0b00000100_00000110 >> flags as usize) & 1)
         }
     }
 
@@ -930,7 +953,7 @@ mod internals {
     pub const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
     const XX: i8 = -128;
-    static MDL_TO_OL: [i8; (MAX_MDL as uint + 1u)] = [
+    static MDL_TO_OL: [i8; (MAX_MDL as usize + 1us)] = [
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -985,7 +1008,7 @@ mod internals {
          98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, // 12
     ];
 
-    static OL_TO_MDL: [u8; (MAX_OL as uint + 1u)] = [
+    static OL_TO_MDL: [u8; (MAX_OL as usize + 1us)] = [
           0,  0,                                                         // 0
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -1059,7 +1082,7 @@ mod internals {
         #[inline]
         pub fn from_mdf(Mdf(mdf): Mdf) -> Of {
             let mdl = mdf >> 3;
-            match MDL_TO_OL.get(mdl as uint) {
+            match MDL_TO_OL.get(mdl as usize) {
                 Some(&v) => Of(mdf - ((v as i32 as u32 & 0x3ff) << 3)),
                 None => Of(0)
             }
@@ -1132,7 +1155,7 @@ mod internals {
     impl fmt::Show for Of {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let Of(of) = *self;
-            write!(f, "Of(({} << 4) | {:#04o} /*{}*/)",
+            write!(f, "Of(({} << 4) | {:#04o} /*{:?}*/)",
                    of >> 4, of & 0b1111, YearFlags((of & 0b1111) as u8))
         }
     }
@@ -1166,7 +1189,7 @@ mod internals {
         #[inline]
         pub fn from_of(Of(of): Of) -> Mdf {
             let ol = of >> 3;
-            match OL_TO_MDL.get(ol as uint) {
+            match OL_TO_MDL.get(ol as usize) {
                 Some(&v) => Mdf(of + ((v as u32) << 3)),
                 None => Mdf(0)
             }
@@ -1176,7 +1199,7 @@ mod internals {
         pub fn valid(&self) -> bool {
             let Mdf(mdf) = *self;
             let mdl = mdf >> 3;
-            match MDL_TO_OL.get(mdl as uint) {
+            match MDL_TO_OL.get(mdl as usize) {
                 Some(&v) => v >= 0,
                 None => false
             }
@@ -1229,7 +1252,7 @@ mod internals {
     impl fmt::Show for Mdf {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let Mdf(mdf) = *self;
-            write!(f, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{}*/)",
+            write!(f, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{:?}*/)",
                    mdf >> 9, (mdf >> 4) & 0b11111, mdf & 0b1111, YearFlags((mdf & 0b1111) as u8))
         }
     }
@@ -1298,7 +1321,7 @@ mod internals {
                 for ordinal in range_inclusive(ordinal1, ordinal2) {
                     let of = Of::new(ordinal, flags);
                     assert!(of.valid() == expected,
-                            "ordinal {} = {} should be {} for dominical year {}",
+                            "ordinal {} = {:?} should be {} for dominical year {:?}",
                             ordinal, of, if expected {"valid"} else {"invalid"}, flags);
                 }
             }
@@ -1326,7 +1349,7 @@ mod internals {
                     for day in range_inclusive(day1, day2) {
                         let mdf = Mdf::new(month, day, flags);
                         assert!(mdf.valid() == expected,
-                                "month {} day {} = {} should be {} for dominical year {}",
+                                "month {} day {} = {:?} should be {} for dominical year {:?}",
                                 month, day, mdf, if expected {"valid"} else {"invalid"}, flags);
                     }
                 }

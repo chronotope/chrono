@@ -7,7 +7,6 @@
  */
 
 use std::fmt;
-use std::string::CowString;
 
 use {Datelike, Timelike};
 use duration::Duration;
@@ -17,7 +16,7 @@ use naive::time::NaiveTime;
 
 /// The internal workhouse for `DelayedFormat`.
 fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
-          off: Option<&(CowString<'static>, Duration)>, fmt: &str) -> fmt::Result {
+          off: Option<&(String, Duration)>, fmt: &str) -> fmt::Result {
     static SHORT_MONTHS: [&'static str; 12] =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     static LONG_MONTHS: [&'static str; 12] =
@@ -57,9 +56,9 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
             // month
             (Some('m'), Some(d), _, _) => try!(write!(w, "{:02}", d.month())),
             (Some('b'), Some(d), _, _) | (Some('h'), Some(d), _, _) =>
-                try!(write!(w, "{}", SHORT_MONTHS[d.month0() as uint])),
+                try!(write!(w, "{}", SHORT_MONTHS[d.month0() as usize])),
             (Some('B'), Some(d), _, _) =>
-                try!(write!(w, "{}", LONG_MONTHS[d.month0() as uint])),
+                try!(write!(w, "{}", LONG_MONTHS[d.month0() as usize])),
 
             // day of month
             (Some('d'), Some(d), _, _) => try!(write!(w, "{:02}", d.day())),
@@ -76,9 +75,9 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
 
             // day of week
             (Some('a'), Some(d), _, _) =>
-                try!(write!(w, "{}", SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as uint])),
+                try!(write!(w, "{}", SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize])),
             (Some('A'), Some(d), _, _) =>
-                try!(write!(w, "{}", LONG_WEEKDAYS[d.weekday().num_days_from_monday() as uint])),
+                try!(write!(w, "{}", LONG_WEEKDAYS[d.weekday().num_days_from_monday() as usize])),
             (Some('w'), Some(d), _, _) => try!(write!(w, "{}", d.weekday().num_days_from_sunday())),
             (Some('u'), Some(d), _, _) => try!(write!(w, "{}", d.weekday().number_from_monday())),
 
@@ -91,7 +90,7 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
             (Some('F'), Some(d), _, _) => // `%Y-%m-%d'
                 try!(write!(w, "{:04}-{:02}-{:02}", d.year(), d.month(), d.day())),
             (Some('v'), Some(d), _, _) => // `%e-%b-%Y'
-                try!(write!(w, "{:2}-{}-{:04}", d.day(), SHORT_MONTHS[d.month0() as uint],
+                try!(write!(w, "{:2}-{}-{:04}", d.day(), SHORT_MONTHS[d.month0() as usize],
                                                 d.year())),
 
             // hour
@@ -141,8 +140,8 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
             // combined date and time
             (Some('c'), Some(d), Some(t), _) => // `%a %b %e %T %Y`
                 try!(write!(w, "{} {} {:2} {:02}:{:02}:{:02} {:04}",
-                               SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as uint],
-                               SHORT_MONTHS[d.month0() as uint], d.day(),
+                               SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                               SHORT_MONTHS[d.month0() as usize], d.day(),
                                t.hour(), t.minute(), t.second(), d.year())),
             (Some('+'), Some(d), Some(t),
                         Some(&(_, ref local_minus_utc))) => { // `%Y-%m-%dT%H:%M:%S` plus tz
@@ -180,13 +179,14 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
+#[derive(Show)]
 pub struct DelayedFormat<'a> {
     /// The date view, if any.
     date: Option<NaiveDate>,
     /// The time view, if any.
     time: Option<NaiveTime>,
     /// The name and local-to-UTC difference for the offset (timezone), if any.
-    off: Option<(CowString<'static>, Duration)>,
+    off: Option<(String, Duration)>,
     /// The format string.
     fmt: &'a str,
 }
@@ -199,14 +199,15 @@ impl<'a> DelayedFormat<'a> {
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
-    pub fn new_with_offset<Off:Offset>(date: Option<NaiveDate>, time: Option<NaiveTime>,
-                                       offset: &Off, fmt: &'a str) -> DelayedFormat<'a> {
-        let name_and_diff = (offset.name(), offset.local_minus_utc());
+    pub fn new_with_offset<Off>(date: Option<NaiveDate>, time: Option<NaiveTime>,
+                                offset: &Off, fmt: &'a str) -> DelayedFormat<'a>
+            where Off: Offset + fmt::String {
+        let name_and_diff = (offset.to_string(), offset.local_minus_utc());
         DelayedFormat { date: date, time: time, off: Some(name_and_diff), fmt: fmt }
     }
 }
 
-impl<'a> fmt::Show for DelayedFormat<'a> {
+impl<'a> fmt::String for DelayedFormat<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ret = format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.fmt);
         ret.map_err(|_| fmt::Error) // we don't have any good means to pass detailed errors...

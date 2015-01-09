@@ -43,28 +43,28 @@ mod tests {
 
     #[test]
     fn test_mod_floor() {
-        assert_eq!(mod_floor( 8i,  3),  2);
-        assert_eq!(mod_floor( 8i, -3), -1);
-        assert_eq!(mod_floor(-8i,  3),  1);
-        assert_eq!(mod_floor(-8i, -3), -2);
+        assert_eq!(mod_floor( 8,  3),  2);
+        assert_eq!(mod_floor( 8, -3), -1);
+        assert_eq!(mod_floor(-8,  3),  1);
+        assert_eq!(mod_floor(-8, -3), -2);
 
-        assert_eq!(mod_floor( 1i,  2),  1);
-        assert_eq!(mod_floor( 1i, -2), -1);
-        assert_eq!(mod_floor(-1i,  2),  1);
-        assert_eq!(mod_floor(-1i, -2), -1);
+        assert_eq!(mod_floor( 1,  2),  1);
+        assert_eq!(mod_floor( 1, -2), -1);
+        assert_eq!(mod_floor(-1,  2),  1);
+        assert_eq!(mod_floor(-1, -2), -1);
     }
 
     #[test]
     fn test_div_mod_floor() {
-        assert_eq!(div_mod_floor( 8i,  3), ( 2,  2));
-        assert_eq!(div_mod_floor( 8i, -3), (-3, -1));
-        assert_eq!(div_mod_floor(-8i,  3), (-3,  1));
-        assert_eq!(div_mod_floor(-8i, -3), ( 2, -2));
+        assert_eq!(div_mod_floor( 8,  3), ( 2,  2));
+        assert_eq!(div_mod_floor( 8, -3), (-3, -1));
+        assert_eq!(div_mod_floor(-8,  3), (-3,  1));
+        assert_eq!(div_mod_floor(-8, -3), ( 2, -2));
 
-        assert_eq!(div_mod_floor( 1i,  2), ( 0,  1));
-        assert_eq!(div_mod_floor( 1i, -2), (-1, -1));
-        assert_eq!(div_mod_floor(-1i,  2), (-1,  1));
-        assert_eq!(div_mod_floor(-1i, -2), ( 0, -1));
+        assert_eq!(div_mod_floor( 1,  2), ( 0,  1));
+        assert_eq!(div_mod_floor( 1, -2), (-1, -1));
+        assert_eq!(div_mod_floor(-1,  2), (-1,  1));
+        assert_eq!(div_mod_floor(-1, -2), ( 0, -1));
     }
 }
 

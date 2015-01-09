@@ -1,4 +1,4 @@
-[Chrono][doc] 0.1.12
+[Chrono][doc] 0.1.13
 ====================
 
 [![Chrono on Travis CI][travis-image]][travis]
@@ -115,17 +115,18 @@ assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_00
 
 Formatting is done via the `format` method,
 which format is equivalent to the familiar `strftime` format.
-The default `to_string` method also gives a reasonable representation.
+The default `to_string` method and `{:?}` specifier also give a reasonable representation.
 
 ~~~~ {.rust}
 use chrono::{UTC, Offset};
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
-assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09".to_string());
-assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014".to_string());
+assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
+assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
 assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 
-assert_eq!(dt.to_string(), "2014-11-28T12:00:09Z".to_string());
+assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
+assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 ~~~~
 
 ### Individual date and time
@@ -143,7 +144,7 @@ assert_eq!(Local::today(), Local::now().date());
 
 assert_eq!(UTC.ymd(2014, 11, 28).weekday(), Weekday::Fri);
 assert_eq!(UTC.ymd_opt(2014, 11, 31), LocalResult::None);
-assert_eq!(UTC.hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(), "070809".to_string());
+assert_eq!(UTC.hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(), "070809");
 ~~~~
 
 `DateTime` has two methods, `date` and `time`,

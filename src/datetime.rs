@@ -64,17 +64,19 @@ impl<Off:Offset> DateTime<Off> {
         DateTime::from_utc(self.datetime, offset)
     }
 
+    /// Returns a view to the local datetime.
+    fn local(&self) -> NaiveDateTime {
+        self.offset.to_local_datetime(&self.datetime)
+    }
+}
+
+impl<Off: Offset + fmt::String> DateTime<Off> {
     /// Formats the combined date and time in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
         let local = self.local();
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, fmt)
-    }
-
-    /// Returns a view to the local datetime.
-    fn local(&self) -> NaiveDateTime {
-        self.offset.to_local_datetime(&self.datetime)
     }
 }
 
@@ -180,8 +182,8 @@ impl<Off:Offset> Ord for DateTime<Off> {
     fn cmp(&self, other: &DateTime<Off>) -> Ordering { self.datetime.cmp(&other.datetime) }
 }
 
-impl<Off:Offset> hash::Hash for DateTime<Off> {
-    fn hash(&self, state: &mut hash::sip::SipState) { self.datetime.hash(state) }
+impl<Off: Offset, H: hash::Hasher + hash::Writer> hash::Hash<H> for DateTime<Off> {
+    fn hash(&self, state: &mut H) { self.datetime.hash(state) }
 }
 
 impl<Off:Offset> Add<Duration> for DateTime<Off> {
@@ -205,9 +207,15 @@ impl<Off:Offset> Sub<Duration> for DateTime<Off> {
     fn sub(self, rhs: Duration) -> DateTime<Off> { self.add(-rhs) }
 }
 
-impl<Off:Offset> fmt::Show for DateTime<Off> {
+impl<Off: Offset> fmt::Show for DateTime<Off> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.local(), self.offset)
+        write!(f, "{:?}{:?}", self.local(), self.offset)
+    }
+}
+
+impl<Off: Offset + fmt::String> fmt::String for DateTime<Off> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {}", self.local(), self.offset)
     }
 }
 
@@ -222,10 +230,15 @@ mod tests {
         let EST = FixedOffset::east(5*60*60);
         let EDT = FixedOffset::east(4*60*60);
 
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).to_string(),
-                   "2014-05-06T07:08:09Z".to_string());
-        assert_eq!(EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).to_string(),
-                   "2014-05-06T07:08:09+04:00".to_string());
+        assert_eq!(format!("{}", UTC.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+                   "2014-05-06 07:08:09 UTC");
+        assert_eq!(format!("{}", EDT.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+                   "2014-05-06 07:08:09 +04:00");
+        assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+                   "2014-05-06T07:08:09Z");
+        assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+                   "2014-05-06T07:08:09+04:00");
+
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9), EDT.ymd(2014, 5, 6).and_hms(11, 8, 9));
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));

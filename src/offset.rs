@@ -6,9 +6,7 @@
  * Offsets from the local time to UTC.
  */
 
-use std::borrow::IntoCow;
 use std::fmt;
-use std::string::CowString;
 use stdtime;
 
 use {Weekday, Datelike, Timelike};
@@ -125,14 +123,14 @@ impl<Off:Offset> LocalResult<Date<Off>> {
 
 }
 
-impl<T:fmt::Show> LocalResult<T> {
+impl<T: fmt::Show> LocalResult<T> {
     /// Returns the single unique conversion result, or fails accordingly.
     pub fn unwrap(self) -> T {
         match self {
             LocalResult::None => panic!("No such local time"),
             LocalResult::Single(t) => t,
             LocalResult::Ambiguous(t1,t2) => {
-                panic!("Ambiguous local time, ranging from {} to {}", t1, t2)
+                panic!("Ambiguous local time, ranging from {:?} to {:?}", t1, t2)
             }
         }
     }
@@ -293,9 +291,6 @@ pub trait Offset: Clone + fmt::Show {
         }
     }
 
-    /// Returns a name or abbreviation of this offset.
-    fn name(&self) -> CowString<'static>;
-
     /// Returns the *current* offset from UTC to the local time.
     fn local_minus_utc(&self) -> Duration;
 
@@ -338,7 +333,6 @@ impl UTC {
 }
 
 impl Offset for UTC {
-    fn name(&self) -> CowString<'static> { "UTC".into_cow() }
     fn local_minus_utc(&self) -> Duration { Duration::zero() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
@@ -358,6 +352,10 @@ impl Offset for UTC {
 
 impl fmt::Show for UTC {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "Z") }
+}
+
+impl fmt::String for UTC {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "UTC") }
 }
 
 /// The fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -409,7 +407,6 @@ impl FixedOffset {
 }
 
 impl Offset for FixedOffset {
-    fn name(&self) -> CowString<'static> { "UTC".into_cow() } // XXX
     fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
@@ -449,6 +446,10 @@ impl fmt::Show for FixedOffset {
             write!(f, "{}{:02}:{:02}:{:02}", sign, hour, min, sec)
         }
     }
+}
+
+impl fmt::String for FixedOffset {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Show::fmt(self, f) }
 }
 
 /// The local timescale. This is implemented via the standard `time` crate.
@@ -505,7 +506,6 @@ impl Local {
 }
 
 impl Offset for Local {
-    fn name(&self) -> CowString<'static> { "LMT".into_cow() } // XXX XXX
     fn local_minus_utc(&self) -> Duration { self.cached.local_minus_utc() }
 
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {

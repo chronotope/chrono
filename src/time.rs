@@ -44,16 +44,18 @@ impl<Off:Offset> Time<Off> {
         Time::from_utc(self.time, offset)
     }
 
+    /// Returns a view to the local time.
+    fn local(&self) -> NaiveTime {
+        self.offset.to_local_time(&self.time)
+    }
+}
+
+impl<Off: Offset + fmt::String> Time<Off> {
     /// Formats the time in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
         DelayedFormat::new_with_offset(None, Some(self.local()), &self.offset, fmt)
-    }
-
-    /// Returns a view to the local time.
-    fn local(&self) -> NaiveTime {
-        self.offset.to_local_time(&self.time)
     }
 }
 
@@ -108,8 +110,8 @@ impl<Off:Offset> Ord for Time<Off> {
     fn cmp(&self, other: &Time<Off>) -> Ordering { self.time.cmp(&other.time) }
 }
 
-impl<Off:Offset> hash::Hash for Time<Off> {
-    fn hash(&self, state: &mut hash::sip::SipState) { self.time.hash(state) }
+impl<Off: Offset, H: hash::Hasher + hash::Writer> hash::Hash<H> for Time<Off> {
+    fn hash(&self, state: &mut H) { self.time.hash(state) }
 }
 
 impl<Off:Offset> Add<Duration> for Time<Off> {
@@ -133,7 +135,13 @@ impl<Off:Offset> Sub<Duration> for Time<Off> {
     fn sub(self, rhs: Duration) -> Time<Off> { self.add(-rhs) }
 }
 
-impl<Off:Offset> fmt::Show for Time<Off> {
+impl<Off: Offset> fmt::Show for Time<Off> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}{:?}", self.local(), self.offset)
+    }
+}
+
+impl<Off: Offset + fmt::String> fmt::String for Time<Off> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.local(), self.offset)
     }

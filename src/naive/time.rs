@@ -6,7 +6,7 @@
  * ISO 8601 time without timezone.
  */
 
-use std::fmt;
+use std::{fmt, hash};
 use std::num::Int;
 use std::ops::{Add, Sub};
 
@@ -18,7 +18,7 @@ use format::DelayedFormat;
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
@@ -172,6 +172,10 @@ impl Timelike for NaiveTime {
     }
 }
 
+impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveTime {
+    fn hash(&self, state: &mut H) { self.secs.hash(state); self.frac.hash(state) }
+}
+
 impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
 
@@ -239,6 +243,10 @@ impl fmt::Show for NaiveTime {
             write!(f, ".{:09}", nano)
         }
     }
+}
+
+impl fmt::String for NaiveTime {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Show::fmt(self, f) }
 }
 
 #[cfg(test)]
@@ -350,36 +358,29 @@ mod tests {
 
     #[test]
     fn test_time_fmt() {
-        assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 999).to_string(),
-                   "23:59:59.999".to_string());
-        assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).to_string(),
-                   "23:59:60".to_string());
-        assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_001).to_string(),
-                   "23:59:60.001".to_string());
-        assert_eq!(NaiveTime::from_hms_micro(0, 0, 0, 43210).to_string(),
-                   "00:00:00.043210".to_string());
-        assert_eq!(NaiveTime::from_hms_nano(0, 0, 0, 6543210).to_string(),
-                   "00:00:00.006543210".to_string());
+        assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 999)), "23:59:59.999");
+        assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_000)), "23:59:60");
+        assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_001)), "23:59:60.001");
+        assert_eq!(format!("{}", NaiveTime::from_hms_micro(0, 0, 0, 43210)), "00:00:00.043210");
+        assert_eq!(format!("{}", NaiveTime::from_hms_nano(0, 0, 0, 6543210)), "00:00:00.006543210");
 
         // the format specifier should have no effect on `NaiveTime`
-        assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)),
-                   "03:05:07.009".to_string());
+        assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)), "03:05:07.009");
     }
 
     #[test]
     fn test_time_format() {
         let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
-        assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM".to_string());
-        assert_eq!(t.format("%M").to_string(), "05".to_string());
-        assert_eq!(t.format("%S,%f").to_string(), "07,098765432".to_string());
-        assert_eq!(t.format("%R").to_string(), "03:05".to_string());
-        assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07".to_string());
-        assert_eq!(t.format("%r").to_string(), "03:05:07 AM".to_string());
-        assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t".to_string());
+        assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
+        assert_eq!(t.format("%M").to_string(), "05");
+        assert_eq!(t.format("%S,%f").to_string(), "07,098765432");
+        assert_eq!(t.format("%R").to_string(), "03:05");
+        assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07");
+        assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
+        assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
         // corner cases
-        assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(),
-                   "01:57:09 PM".to_string());
+        assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(), "01:57:09 PM");
     }
 }
 
