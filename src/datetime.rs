@@ -221,8 +221,9 @@ impl<Off: Offset + fmt::String> fmt::String for DateTime<Off> {
 
 #[cfg(test)]
 mod tests {
+    use {Datelike};
     use duration::Duration;
-    use offset::{Offset, UTC, FixedOffset};
+    use offset::{Offset, UTC, Local, FixedOffset};
 
     #[test]
     #[allow(non_snake_case)]
@@ -248,6 +249,13 @@ mod tests {
         assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);
         assert_eq!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), EDT);
         assert!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != EST);
+    }
+
+    #[test]
+    fn test_datetime_fmt_with_local() {
+        // if we are not around the year boundary, local and UTC date should have the same year
+        let dt = Local::now().with_month(5).unwrap();
+        assert_eq!(dt.format("%Y").to_string(), dt.with_offset(UTC).format("%Y").to_string());
     }
 }
 

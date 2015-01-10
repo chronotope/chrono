@@ -541,3 +541,8 @@ impl fmt::Show for Local {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
 }
 
+impl fmt::String for Local {
+    // TODO this should be a tz name whenever available
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
+}
+
