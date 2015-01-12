@@ -10,7 +10,7 @@ use std::fmt;
 
 use {Datelike, Timelike};
 use duration::Duration;
-use offset::Offset;
+use offset::OffsetState;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 
@@ -198,11 +198,11 @@ impl<'a> DelayedFormat<'a> {
         DelayedFormat { date: date, time: time, off: None, fmt: fmt }
     }
 
-    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
+    /// Makes a new `DelayedFormat` value out of local date and time with offset state.
     pub fn new_with_offset<Off>(date: Option<NaiveDate>, time: Option<NaiveTime>,
-                                offset: &Off, fmt: &'a str) -> DelayedFormat<'a>
-            where Off: Offset + fmt::Display {
-        let name_and_diff = (offset.to_string(), offset.local_minus_utc());
+                                state: &Off, fmt: &'a str) -> DelayedFormat<'a>
+            where Off: OffsetState + fmt::Display {
+        let name_and_diff = (state.to_string(), state.local_minus_utc());
         DelayedFormat { date: date, time: time, off: Some(name_and_diff), fmt: fmt }
     }
 }

@@ -4,13 +4,25 @@
 
 /*!
  * Offsets from the local time to UTC.
+ *
+ * There are three operations provided by the `Offset` trait:
+ *
+ * 1. Converting the local `NaiveDateTime` to `DateTime<Offset>`
+ * 2. Converting the UTC `NaiveDateTime` to `DateTime<Offset>`
+ * 3. Converting `DateTime<Offset>` to the local `NaiveDateTime`
+ *
+ * 1 is used for constructors. 2 is used for the `with_offset` method of date and time types.
+ * 3 is used for other methods, e.g. `year()` or `format()`, and provided by an associated type
+ * which implements `OffsetState` (which then passed to `Offset` for actual implementations).
+ * Technically speaking `Offset` has a total knowledge about given timescale,
+ * but `OffsetState` is used as a cache to avoid the repeated conversion
+ * and provides implementations for 1 and 3.
+ * An `Offset` instance can be reconstructed from the corresponding `OffsetState` instance.
  */
 
 use std::fmt;
-use stdtime;
 
-use {Weekday, Datelike, Timelike};
-use div::div_mod_floor;
+use Weekday;
 use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
@@ -47,9 +59,18 @@ impl<T> LocalResult<T> {
     pub fn latest(self) -> Option<T> {
         match self { LocalResult::Single(t) | LocalResult::Ambiguous(_,t) => Some(t), _ => None }
     }
+
+    /// Maps a `LocalResult<T>` into `LocalResult<U>` with given function.
+    pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> LocalResult<U> {
+        match self {
+            LocalResult::None => LocalResult::None,
+            LocalResult::Single(v) => LocalResult::Single(f(v)),
+            LocalResult::Ambiguous(min, max) => LocalResult::Ambiguous(f(min), f(max)),
+        }
+    }
 }
 
-impl<Off:Offset> LocalResult<Date<Off>> {
+impl<Off: Offset> LocalResult<Date<Off>> {
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
     ///
@@ -136,8 +157,16 @@ impl<T: fmt::Debug> LocalResult<T> {
     }
 }
 
+/// The offset state.
+pub trait OffsetState: Sized + Clone + fmt::Debug {
+    /// Returns the offset from UTC to the local time stored in the offset state.
+    fn local_minus_utc(&self) -> Duration;
+}
+
 /// The offset from the local time to UTC.
-pub trait Offset: Clone + fmt::Debug {
+pub trait Offset: Sized {
+    type State: OffsetState;
+
     /// Makes a new `Date` from year, month, day and the current offset.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
@@ -291,258 +320,68 @@ pub trait Offset: Clone + fmt::Debug {
         }
     }
 
-    /// Returns the *current* offset from UTC to the local time.
-    fn local_minus_utc(&self) -> Duration;
+    /// Reconstructs the offset from the offset state.
+    fn from_state(state: &Self::State) -> Self;
+
+    /// Creates the offset state(s) for given local `NaiveDate` if possible.
+    fn state_from_local_date(&self, local: &NaiveDate) -> LocalResult<Self::State>;
+
+    /// Creates the offset state(s) for given local `NaiveTime` if possible.
+    fn state_from_local_time(&self, local: &NaiveTime) -> LocalResult<Self::State>;
+
+    /// Creates the offset state(s) for given local `NaiveDateTime` if possible.
+    fn state_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<Self::State>;
 
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
-    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>>;
+    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>> {
+        self.state_from_local_date(local).map(|state| {
+            Date::from_utc(*local - state.local_minus_utc(), state)
+        })
+    }
 
     /// Converts the local `NaiveTime` to the timezone-aware `Time` if possible.
-    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Self>>;
+    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Self>> {
+        self.state_from_local_time(local).map(|state| {
+            Time::from_utc(*local - state.local_minus_utc(), state)
+        })
+    }
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>>;
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
+        self.state_from_local_datetime(local).map(|state| {
+            DateTime::from_utc(*local - state.local_minus_utc(), state)
+        })
+    }
+
+    /// Creates the offset state for given UTC `NaiveDate`. This cannot fail.
+    fn state_from_utc_date(&self, utc: &NaiveDate) -> Self::State;
+
+    /// Creates the offset state for given UTC `NaiveTime`. This cannot fail.
+    fn state_from_utc_time(&self, utc: &NaiveTime) -> Self::State;
+
+    /// Creates the offset state for given UTC `NaiveDateTime`. This cannot fail.
+    fn state_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::State;
 
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate;
+    fn from_utc_date(&self, utc: &NaiveDate) -> Date<Self> {
+        Date::from_utc(utc.clone(), self.state_from_utc_date(utc))
+    }
 
     /// Converts the UTC `NaiveTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime;
+    fn from_utc_time(&self, utc: &NaiveTime) -> Time<Self> {
+        Time::from_utc(utc.clone(), self.state_from_utc_time(utc))
+    }
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime;
-}
-
-/// The UTC timescale. This is the most efficient offset when you don't need the local time.
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct UTC;
-
-impl UTC {
-    /// Returns a `Date` which corresponds to the current date.
-    pub fn today() -> Date<UTC> { UTC::now().date() }
-
-    /// Returns a `DateTime` which corresponds to the current date.
-    pub fn now() -> DateTime<UTC> {
-        let spec = stdtime::get_time();
-        let naive = NaiveDateTime::from_num_seconds_from_unix_epoch(spec.sec, spec.nsec as u32);
-        DateTime::from_utc(naive, UTC)
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
+        DateTime::from_utc(utc.clone(), self.state_from_utc_datetime(utc))
     }
 }
 
-impl Offset for UTC {
-    fn local_minus_utc(&self) -> Duration { Duration::zero() }
-
-    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<UTC>> {
-        LocalResult::Single(Date::from_utc(local.clone(), UTC))
-    }
-    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<UTC>> {
-        LocalResult::Single(Time::from_utc(local.clone(), UTC))
-    }
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<UTC>> {
-        LocalResult::Single(DateTime::from_utc(local.clone(), UTC))
-    }
-
-    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { utc.clone() }
-    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime { utc.clone() }
-    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime { utc.clone() }
-}
-
-impl fmt::Debug for UTC {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "Z") }
-}
-
-impl fmt::Display for UTC {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "UTC") }
-}
-
-/// The fixed offset, from UTC-23:59:59 to UTC+23:59:59.
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct FixedOffset {
-    local_minus_utc: i32,
-}
-
-impl FixedOffset {
-    /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
-    /// The negative `secs` means the Western Hemisphere.
-    ///
-    /// Fails on the out-of-bound `secs`.
-    pub fn east(secs: i32) -> FixedOffset {
-        FixedOffset::east_opt(secs).expect("FixedOffset::east out of bounds")
-    }
-
-    /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
-    /// The negative `secs` means the Western Hemisphere.
-    ///
-    /// Returns `None` on the out-of-bound `secs`.
-    pub fn east_opt(secs: i32) -> Option<FixedOffset> {
-        if -86400 < secs && secs < 86400 {
-            Some(FixedOffset { local_minus_utc: secs })
-        } else {
-            None
-        }
-    }
-
-    /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
-    /// The negative `secs` means the Eastern Hemisphere.
-    ///
-    /// Fails on the out-of-bound `secs`.
-    pub fn west(secs: i32) -> FixedOffset {
-        FixedOffset::west_opt(secs).expect("FixedOffset::west out of bounds")
-    }
-
-    /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
-    /// The negative `secs` means the Eastern Hemisphere.
-    ///
-    /// Returns `None` on the out-of-bound `secs`.
-    pub fn west_opt(secs: i32) -> Option<FixedOffset> {
-        if -86400 < secs && secs < 86400 {
-            Some(FixedOffset { local_minus_utc: -secs })
-        } else {
-            None
-        }
-    }
-}
-
-impl Offset for FixedOffset {
-    fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
-
-    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<FixedOffset>> {
-        LocalResult::Single(Date::from_utc(local.clone(), self.clone()))
-    }
-    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<FixedOffset>> {
-        let t = Time::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
-                               self.clone());
-        LocalResult::Single(t)
-    }
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<FixedOffset>> {
-        let dt = DateTime::from_utc(*local + Duration::seconds(-self.local_minus_utc as i64),
-                                    self.clone());
-        LocalResult::Single(dt)
-    }
-
-    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate {
-        utc.clone()
-    }
-    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime {
-        *utc + Duration::seconds(self.local_minus_utc as i64)
-    }
-    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime {
-        *utc + Duration::seconds(self.local_minus_utc as i64)
-    }
-}
-
-impl fmt::Debug for FixedOffset {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let offset = self.local_minus_utc;
-        let (sign, offset) = if offset < 0 {('-', -offset)} else {('+', offset)};
-        let (mins, sec) = div_mod_floor(offset, 60);
-        let (hour, min) = div_mod_floor(mins, 60);
-        if sec == 0 {
-            write!(f, "{}{:02}:{:02}", sign, hour, min)
-        } else {
-            write!(f, "{}{:02}:{:02}:{:02}", sign, hour, min, sec)
-        }
-    }
-}
-
-impl fmt::Display for FixedOffset {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
-}
-
-/// The local timescale. This is implemented via the standard `time` crate.
-#[derive(Copy, Clone)]
-pub struct Local {
-    cached: FixedOffset,
-}
-
-impl Local {
-    /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
-    /// This assumes that `time` is working correctly, i.e. any error is fatal.
-    fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
-        if tm.tm_sec >= 60 {
-            tm.tm_sec = 59;
-            tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
-        }
-
-        // from_yo is more efficient than from_ymd (since it's the internal representation).
-        let date = NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1);
-        let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
-                                            tm.tm_sec as u32, tm.tm_nsec as u32);
-        let offset = Local { cached: FixedOffset::east(tm.tm_utcoff) };
-        DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_utcoff as i64), offset)
-    }
-
-    /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-    fn datetime_to_timespec(d: &NaiveDateTime) -> stdtime::Timespec {
-        let tm = stdtime::Tm {
-            tm_sec: d.second() as i32,
-            tm_min: d.minute() as i32,
-            tm_hour: d.hour() as i32,
-            tm_mday: d.day() as i32,
-            tm_mon: d.month0() as i32, // yes, C is that strange...
-            tm_year: d.year() - 1900, // this doesn't underflow, we know that d is `NaiveDateTime`.
-            tm_wday: 0, // to_local ignores this
-            tm_yday: 0, // and this
-            tm_isdst: -1,
-            tm_utcoff: 1, // this is arbitrary but should be nonzero
-                          // in order to make `to_timespec` use `rust_mktime` internally.
-            tm_nsec: d.nanosecond() as i32,
-        };
-        tm.to_timespec()
-    }
-
-    /// Returns a `Date` which corresponds to the current date.
-    pub fn today() -> Date<Local> {
-        Local::now().date()
-    }
-
-    /// Returns a `DateTime` which corresponds to the current date.
-    pub fn now() -> DateTime<Local> {
-        Local::tm_to_datetime(stdtime::now())
-    }
-}
-
-impl Offset for Local {
-    fn local_minus_utc(&self) -> Duration { self.cached.local_minus_utc() }
-
-    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
-        match self.from_local_datetime(&local.and_hms(0, 0, 0)) {
-            LocalResult::None => LocalResult::None,
-            LocalResult::Single(dt) => LocalResult::Single(dt.date()),
-            LocalResult::Ambiguous(min, max) => {
-                let min = min.date();
-                let max = max.date();
-                if min == max {LocalResult::Single(min)} else {LocalResult::Ambiguous(min, max)}
-            }
-        }
-    }
-
-    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Local>> {
-        // XXX we don't have enough information here, so we assume that the timezone remains same
-        LocalResult::Single(Time::from_utc(local.clone(), self.clone()))
-    }
-
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
-        let timespec = Local::datetime_to_timespec(local);
-        LocalResult::Single(Local::tm_to_datetime(stdtime::at(timespec)))
-    }
-
-    fn to_local_date(&self, utc: &NaiveDate) -> NaiveDate { self.cached.to_local_date(utc) }
-    fn to_local_time(&self, utc: &NaiveTime) -> NaiveTime { self.cached.to_local_time(utc) }
-    fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime {
-        self.cached.to_local_datetime(utc)
-    }
-}
-
-impl fmt::Debug for Local {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
-}
-
-impl fmt::Display for Local {
-    // TODO this should be a tz name whenever available
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
-}
+pub mod utc;
+pub mod fixed;
+pub mod local;
 

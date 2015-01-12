@@ -41,7 +41,7 @@ You can get the current date and time in the UTC timezone (`UTC::now()`)
 or in the local timezone (`Local::now()`).
 
 ~~~~ {.rust}
-use chrono::{UTC, Local, DateTime};
+use chrono::*;
 
 let utc: DateTime<UTC> = UTC::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
@@ -53,7 +53,7 @@ This is a bit verbose due to Rust's lack of function and method overloading,
 but in turn we get a rich combination of initialization methods.
 
 ~~~~ {.rust}
-use chrono::{UTC, Offset, Weekday, LocalResult};
+use chrono::*;
 
 let dt = UTC.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
 // July 8 is 188th day of the year 2014 (`o` for "ordinal")
@@ -78,13 +78,12 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
-# /* we intentionally fake the datetime...
-use chrono::{UTC, Local, Datelike, Timelike, Weekday, Duration};
+use chrono::*;
 
+# /* we intentionally fake the datetime...
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = Local::now();
 # */ // up to here. we now define a fixed datetime for the illustrative purpose.
-# use chrono::{UTC, FixedOffset, Offset, Datelike, Timelike, Weekday, Duration};
 # let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
 
 // property accessors
@@ -98,7 +97,7 @@ assert_eq!(dt.num_days_from_ce(), 735565); // the number of days from and includ
 
 // offset accessor and manipulation
 assert_eq!(dt.offset().local_minus_utc(), Duration::hours(9));
-assert_eq!(dt.with_offset(UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
+assert_eq!(dt.with_timezone(&UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
 
 // a sample of property manipulations (validates dynamically)
 assert_eq!(dt.with_day(29).unwrap().weekday(), Weekday::Sat); // 2014-11-29 is Saturday
@@ -119,7 +118,7 @@ which format is equivalent to the familiar `strftime` format.
 The default `to_string` method and `{:?}` specifier also give a reasonable representation.
 
 ~~~~ {.rust}
-use chrono::{UTC, Offset};
+use chrono::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
@@ -138,7 +137,7 @@ Most operations available to `DateTime` are also available to `Date` and `Time`
 whenever appropriate.
 
 ~~~~ {.rust}
-use chrono::{UTC, Local, Offset, LocalResult, Datelike, Weekday};
+use chrono::*;
 
 # // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
 assert_eq!(UTC::today(), UTC::now().date());
@@ -192,8 +191,10 @@ Advanced offset handling and date/time parsing is not yet supported (but is plan
 extern crate "time" as stdtime;
 
 pub use duration::Duration;
-pub use offset::{Offset, LocalResult};
-pub use offset::{UTC, FixedOffset, Local};
+pub use offset::{Offset, OffsetState, LocalResult};
+pub use offset::utc::UTC;
+pub use offset::fixed::FixedOffset;
+pub use offset::local::Local;
 pub use naive::date::NaiveDate;
 pub use naive::time::NaiveTime;
 pub use naive::datetime::NaiveDateTime;
