@@ -34,8 +34,8 @@ Chrono simply reexports it.
 Chrono provides a `DateTime` type for the combined date and time.
 
 `DateTime`, among others, is timezone-aware and
-must be constructed from the timezone object (`Offset`).
-`DateTime`s with different offsets do not mix, but can be converted to each other.
+must be constructed from the `TimeZone` object.
+`DateTime`s with different time zones do not mix, but can be converted to each other.
 
 You can get the current date and time in the UTC timezone (`UTC::now()`)
 or in the local timezone (`Local::now()`).
@@ -95,8 +95,9 @@ assert_eq!(dt.weekday().number_from_monday(), 5); // Mon=1, ..., Sat=7
 assert_eq!(dt.ordinal(), 332); // the day of year
 assert_eq!(dt.num_days_from_ce(), 735565); // the number of days from and including Jan 1, 1
 
-// offset accessor and manipulation
+// time zone accessor and manipulation
 assert_eq!(dt.offset().local_minus_utc(), Duration::hours(9));
+assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600));
 assert_eq!(dt.with_timezone(&UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
 
 // a sample of property manipulations (validates dynamically)
@@ -132,7 +133,7 @@ assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 ### Individual date and time
 
 Chrono also provides an individual date type (`Date`) and time type (`Time`).
-They also have offsets attached, and have to be constructed via offsets.
+They also have time zones attached, and have to be constructed via time zones.
 Most operations available to `DateTime` are also available to `Date` and `Time`
 whenever appropriate.
 
@@ -157,7 +158,7 @@ Chrono provides naive counterparts to `Date`, `Time` and `DateTime`
 as `NaiveDate`, `NaiveTime` and `NaiveDateTime` respectively.
 
 They have almost equivalent interfaces as their timezone-aware twins,
-but are not associated to offsets obviously and can be quite low-level.
+but are not associated to time zones obviously and can be quite low-level.
 They are mostly useful for building blocks for higher-level types.
 
 ## Limitations
@@ -178,7 +179,7 @@ Any operation that can be ambiguous will return `None` in such cases.
 For example, "a month later" of 2014-01-30 is not well-defined
 and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
 
-Advanced offset handling and date/time parsing is not yet supported (but is planned).
+Advanced time zone handling and date/time parsing is not yet supported (but is planned).
 
 */
 
@@ -191,7 +192,7 @@ Advanced offset handling and date/time parsing is not yet supported (but is plan
 extern crate "time" as stdtime;
 
 pub use duration::Duration;
-pub use offset::{Offset, OffsetState, LocalResult};
+pub use offset::{TimeZone, Offset, LocalResult};
 pub use offset::utc::UTC;
 pub use offset::fixed::FixedOffset;
 pub use offset::local::Local;
@@ -214,7 +215,7 @@ pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.
     //!
-    //! They are primarily building blocks for other types (e.g. `Offset`),
+    //! They are primarily building blocks for other types (e.g. `TimeZone`),
     //! but can be also used for the simpler date and time handling.
     pub mod date;
     pub mod time;

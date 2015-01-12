@@ -13,9 +13,9 @@ use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
-use super::{Offset, OffsetState, LocalResult};
+use super::{TimeZone, Offset, LocalResult};
 
-/// The fixed offset (and also state), from UTC-23:59:59 to UTC+23:59:59.
+/// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct FixedOffset {
     local_minus_utc: i32,
@@ -63,27 +63,27 @@ impl FixedOffset {
     }
 }
 
-impl Offset for FixedOffset {
-    type State = FixedOffset;
+impl TimeZone for FixedOffset {
+    type Offset = FixedOffset;
 
-    fn from_state(state: &FixedOffset) -> FixedOffset { state.clone() }
+    fn from_offset(offset: &FixedOffset) -> FixedOffset { offset.clone() }
 
-    fn state_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
+    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
         LocalResult::Single(self.clone())
     }
-    fn state_from_local_time(&self, _local: &NaiveTime) -> LocalResult<FixedOffset> {
+    fn offset_from_local_time(&self, _local: &NaiveTime) -> LocalResult<FixedOffset> {
         LocalResult::Single(self.clone())
     }
-    fn state_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         LocalResult::Single(self.clone())
     }
 
-    fn state_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset { self.clone() }
-    fn state_from_utc_time(&self, _utc: &NaiveTime) -> FixedOffset { self.clone() }
-    fn state_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset { self.clone() }
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset { self.clone() }
+    fn offset_from_utc_time(&self, _utc: &NaiveTime) -> FixedOffset { self.clone() }
+    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset { self.clone() }
 }
 
-impl OffsetState for FixedOffset {
+impl Offset for FixedOffset {
     fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
 }
 

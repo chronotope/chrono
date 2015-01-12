@@ -12,7 +12,6 @@ use std::ops::{Add, Sub};
 
 use Timelike;
 use div::div_mod_floor;
-use offset::Offset;
 use duration::Duration;
 use format::DelayedFormat;
 

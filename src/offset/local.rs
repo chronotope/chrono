@@ -16,7 +16,7 @@ use naive::datetime::NaiveDateTime;
 use date::Date;
 use time::Time;
 use datetime::DateTime;
-use super::{Offset, LocalResult};
+use super::{TimeZone, LocalResult};
 use super::fixed::FixedOffset;
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
@@ -70,29 +70,29 @@ impl Local {
     }
 }
 
-impl Offset for Local {
-    type State = FixedOffset;
+impl TimeZone for Local {
+    type Offset = FixedOffset;
 
-    fn from_state(_state: &FixedOffset) -> Local { Local }
+    fn from_offset(_offset: &FixedOffset) -> Local { Local }
 
     // they are easier to define in terms of the finished date and time unlike other offsets
-    fn state_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
+    fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
         self.from_local_date(local).map(|&: date| *date.offset())
     }
-    fn state_from_local_time(&self, local: &NaiveTime) -> LocalResult<FixedOffset> {
+    fn offset_from_local_time(&self, local: &NaiveTime) -> LocalResult<FixedOffset> {
         self.from_local_time(local).map(|&: time| *time.offset())
     }
-    fn state_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         self.from_local_datetime(local).map(|&: datetime| *datetime.offset())
     }
 
-    fn state_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset { 
+    fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
         *self.from_utc_date(utc).offset()
     }
-    fn state_from_utc_time(&self, utc: &NaiveTime) -> FixedOffset {
+    fn offset_from_utc_time(&self, utc: &NaiveTime) -> FixedOffset {
         *self.from_utc_time(utc).offset()
     }
-    fn state_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
+    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
         *self.from_utc_datetime(utc).offset()
     }
 
