@@ -201,13 +201,13 @@ impl<'a> DelayedFormat<'a> {
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
     pub fn new_with_offset<Off>(date: Option<NaiveDate>, time: Option<NaiveTime>,
                                 offset: &Off, fmt: &'a str) -> DelayedFormat<'a>
-            where Off: Offset + fmt::String {
+            where Off: Offset + fmt::Display {
         let name_and_diff = (offset.to_string(), offset.local_minus_utc());
         DelayedFormat { date: date, time: time, off: Some(name_and_diff), fmt: fmt }
     }
 }
 
-impl<'a> fmt::String for DelayedFormat<'a> {
+impl<'a> fmt::Display for DelayedFormat<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ret = format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.fmt);
         ret.map_err(|_| fmt::Error) // we don't have any good means to pass detailed errors...

@@ -123,7 +123,7 @@ impl<Off:Offset> LocalResult<Date<Off>> {
 
 }
 
-impl<T: fmt::Show> LocalResult<T> {
+impl<T: fmt::Debug> LocalResult<T> {
     /// Returns the single unique conversion result, or fails accordingly.
     pub fn unwrap(self) -> T {
         match self {
@@ -137,7 +137,7 @@ impl<T: fmt::Show> LocalResult<T> {
 }
 
 /// The offset from the local time to UTC.
-pub trait Offset: Clone + fmt::Show {
+pub trait Offset: Clone + fmt::Debug {
     /// Makes a new `Date` from year, month, day and the current offset.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
@@ -350,11 +350,11 @@ impl Offset for UTC {
     fn to_local_datetime(&self, utc: &NaiveDateTime) -> NaiveDateTime { utc.clone() }
 }
 
-impl fmt::Show for UTC {
+impl fmt::Debug for UTC {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "Z") }
 }
 
-impl fmt::String for UTC {
+impl fmt::Display for UTC {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "UTC") }
 }
 
@@ -434,7 +434,7 @@ impl Offset for FixedOffset {
     }
 }
 
-impl fmt::Show for FixedOffset {
+impl fmt::Debug for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let offset = self.local_minus_utc;
         let (sign, offset) = if offset < 0 {('-', -offset)} else {('+', offset)};
@@ -448,8 +448,8 @@ impl fmt::Show for FixedOffset {
     }
 }
 
-impl fmt::String for FixedOffset {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Show::fmt(self, f) }
+impl fmt::Display for FixedOffset {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
 /// The local timescale. This is implemented via the standard `time` crate.
@@ -537,11 +537,11 @@ impl Offset for Local {
     }
 }
 
-impl fmt::Show for Local {
+impl fmt::Debug for Local {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
 }
 
-impl fmt::String for Local {
+impl fmt::Display for Local {
     // TODO this should be a tz name whenever available
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { self.cached.fmt(f) }
 }

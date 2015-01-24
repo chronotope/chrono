@@ -425,7 +425,7 @@ impl Sub<Duration> for NaiveDate {
     fn sub(self, rhs: Duration) -> NaiveDate { self.add(-rhs) }
 }
 
-impl fmt::Show for NaiveDate {
+impl fmt::Debug for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
         let mdf = self.mdf();
@@ -438,7 +438,7 @@ impl fmt::Show for NaiveDate {
     }
 }
 
-impl fmt::String for NaiveDate {
+impl fmt::Display for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
         let mdf = self.mdf();
@@ -930,7 +930,7 @@ mod internals {
         }
     }
 
-    impl fmt::Show for YearFlags {
+    impl fmt::Debug for YearFlags {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let YearFlags(flags) = *self;
             match flags {
@@ -1152,7 +1152,7 @@ mod internals {
         }
     }
 
-    impl fmt::Show for Of {
+    impl fmt::Debug for Of {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let Of(of) = *self;
             write!(f, "Of(({} << 4) | {:#04o} /*{:?}*/)",
@@ -1249,7 +1249,7 @@ mod internals {
         }
     }
 
-    impl fmt::Show for Mdf {
+    impl fmt::Debug for Mdf {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             let Mdf(mdf) = *self;
             write!(f, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{:?}*/)",

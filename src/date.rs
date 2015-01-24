@@ -181,7 +181,7 @@ impl<Off:Offset> Date<Off> {
     }
 }
 
-impl<Off: Offset + fmt::String> Date<Off> {
+impl<Off: Offset + fmt::Display> Date<Off> {
     /// Formats the date in the specified format string.
     /// See the `format` module on the supported escape sequences.
     #[inline]
@@ -286,13 +286,13 @@ impl<Off:Offset> Sub<Duration> for Date<Off> {
     fn sub(self, rhs: Duration) -> Date<Off> { self.add(-rhs) }
 }
 
-impl<Off: Offset> fmt::Show for Date<Off> {
+impl<Off: Offset> fmt::Debug for Date<Off> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}{:?}", self.local(), self.offset)
     }
 }
 
-impl<Off: Offset + fmt::String> fmt::String for Date<Off> {
+impl<Off: Offset + fmt::Display> fmt::Display for Date<Off> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.local(), self.offset)
     }
@@ -334,7 +334,7 @@ mod tests {
         }
     }
 
-    impl fmt::Show for UTC1y {
+    impl fmt::Debug for UTC1y {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "+8760:00") }
     }
 

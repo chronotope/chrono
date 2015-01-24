@@ -223,7 +223,7 @@ impl Sub<Duration> for NaiveTime {
     fn sub(self, rhs: Duration) -> NaiveTime { self.add(-rhs) }
 }
 
-impl fmt::Show for NaiveTime {
+impl fmt::Debug for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (hour, min, sec) = self.hms();
         let (sec, nano) = if self.frac >= 1_000_000_000 {
@@ -245,8 +245,8 @@ impl fmt::Show for NaiveTime {
     }
 }
 
-impl fmt::String for NaiveTime {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Show::fmt(self, f) }
+impl fmt::Display for NaiveTime {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
 #[cfg(test)]
