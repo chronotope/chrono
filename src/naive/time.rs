@@ -14,7 +14,7 @@ use Timelike;
 use div::div_mod_floor;
 use offset::Offset;
 use duration::Duration;
-use format::DelayedFormat;
+use format::{DelayedFormat, StrftimeItems};
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -119,10 +119,10 @@ impl NaiveTime {
     }
 
     /// Formats the time in the specified format string.
-    /// See the `format` module on the supported escape sequences.
+    /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
-        DelayedFormat::new(None, Some(self.clone()), fmt)
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
+        DelayedFormat::new(None, Some(self.clone()), StrftimeItems::new(fmt))
     }
 
     /// Returns a triple of the hour, minute and second numbers.
@@ -381,6 +381,8 @@ mod tests {
 
         // corner cases
         assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(), "01:57:09 PM");
+        assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(),
+                   "23:59:60");
     }
 }
 

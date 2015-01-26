@@ -15,7 +15,7 @@ use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
-use format::DelayedFormat;
+use format::{DelayedFormat, StrftimeItems};
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -303,10 +303,10 @@ impl NaiveDate {
     }
 
     /// Formats the date in the specified format string.
-    /// See the `format` module on the supported escape sequences.
+    /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
-        DelayedFormat::new(Some(self.clone()), None, fmt)
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
+        DelayedFormat::new(Some(self.clone()), None, StrftimeItems::new(fmt))
     }
 }
 

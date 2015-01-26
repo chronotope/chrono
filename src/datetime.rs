@@ -16,7 +16,7 @@ use duration::Duration;
 use naive::datetime::NaiveDateTime;
 use time::Time;
 use date::Date;
-use format::DelayedFormat;
+use format::{DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time with timezone.
 #[derive(Clone)]
@@ -72,11 +72,12 @@ impl<Off:Offset> DateTime<Off> {
 
 impl<Off: Offset + fmt::Display> DateTime<Off> {
     /// Formats the combined date and time in the specified format string.
-    /// See the `format` module on the supported escape sequences.
+    /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a> {
+    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
         let local = self.local();
-        DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, fmt)
+        DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset,
+                                       StrftimeItems::new(fmt))
     }
 }
 
