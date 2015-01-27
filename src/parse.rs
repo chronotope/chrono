@@ -1,4 +1,3 @@
-#![allow(unstable)]
 extern crate regex_macros;      // for compile-time regular expression compilation
 extern crate regex;
 use std::num::Int;
@@ -87,11 +86,10 @@ use ::{Offset};
 // The only feature not supported is that an offset of "-0000" should return a
 // naive date/time, not a time zone aware one.  This returns a time zone aware
 // date/time object in all cases.
+// 
 //
-//  offsetmins  -- time zone offset in minutes, from string
-//
-//  Allowed input per RFC2822 above - numeric offset or named time zone
-//
+/// Time zone offset in minutes, from string.
+/// Allowed input per RFC2822 above - numeric offset or named time zone
 fn offsetmins(s: &str) -> Option<i32> {
     let offsetre = regex!(r"^([+-])(\d\d)(\d\d)$"); // +0800 as 8 hour offset
     let offsetmatches = offsetre.captures(s);           // match time zone
@@ -116,18 +114,15 @@ fn offsetmins(s: &str) -> Option<i32> {
                 "CST"|"MDT" => Some(-6*60),
                 "MST"|"PDT" => Some(-7*60),
                 "PST" => Some(-8*60),
-                _ => match s.len() { 1 => Some(0), _  => None } // obsolete single-letter miltary forms are treated as 0 per RFC
+                _ => match s.len() { 1 => Some(0), _  => None } // obsolete single-letter miltary forms are treated as 0 per RFC2822
             }
         }       
     };
 }
 
-//
-//  parserfc2822datetime  -- parse a date/time in RFC822 format.
-//
-/// Makes a new `DateTime` with offset given a valid RFC822 string.
+/// Makes a new `DateTime` with offset given a valid RFC2822 string.
 /// Example: "Tue, 20 Jan 2015 17:35:20 -0800"
-pub fn parserfc2822datetime(s: &str) -> Option<::DateTime<::FixedOffset>> {
+pub fn rfc2822_to_datetime(s: &str) -> Option<::DateTime<::FixedOffset>> {
 
     //  Match the date format.  Case-insensitive, compile-time regex.
     let datere = regex!(r"^(?i)(?:Mon,|Tue,|Wed,|Thu,|Fri,|Sat,|Sun,)??\s*(\d+)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d\d\d\d)\s+(\d+):(\d+):(\d+)\s*([+-]\d\d\d\d|[A-Z]+)$");
@@ -171,12 +166,10 @@ pub fn parserfc2822datetime(s: &str) -> Option<::DateTime<::FixedOffset>> {
         _ => return None                                        // date conversion failed
     }     
 }
-//
-//  fmtrfc2822datetime  -- format DateTime as RFC 2822 date.
-//
+
 /// Formats a DateTime as an RF2822 string.
 /// This is primarily for debugging.
-pub fn fmtrfc2822datetime(dt: ::DateTime<::FixedOffset>) -> String {
+pub fn fmt_rfc2822_datetime(dt: ::DateTime<::FixedOffset>) -> String {
     dt.format("%a, %e %b %Y %H:%M:%S %z").to_string()           // inverse of parsing
 }
 
@@ -217,12 +210,10 @@ pub fn fmtrfc2822datetime(dt: ::DateTime<::FixedOffset>) -> String {
 //      readability, to specify a full-date and full-time separated by
 //      (say) a space character.
 //
-//
-//  parserfc3339datetime  -- parse a date/time in RFC822 format.
-//
+
 /// Parse a string with a RFC3339 date, time, and offset into a DateTime.
 /// This is the subset of ISO 8601 date and time strings most used on the Web.
-pub fn parserfc3339datetime(s: &str) -> Option<::DateTime<::FixedOffset>> {
+pub fn rfc3339_to_datetime(s: &str) -> Option<::DateTime<::FixedOffset>> {
     let datere = regex!(r"^(?i)(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d+)??([+-]\d\d\d\d|[A-Z]+)$"); // format regex
         let matches = datere.captures(s.trim());   // Pattern match the date
     let captures = match matches {
@@ -253,11 +244,9 @@ pub fn parserfc3339datetime(s: &str) -> Option<::DateTime<::FixedOffset>> {
         _ => return None                                        // date conversion failed
     }     
 }
-//
-//  parsensfract  -- parse ".NNN" into nanoseconds
-//
-//  Assumes format is ".NNN" for any number of digits
-//
+
+/// Parse ".NNN" into nanoseconds.
+/// Assumes input has already been checked for ".NNN" format.
 fn parsensfract(s: &str) -> u32 {
     let sdigits = &s[1..];                                      // trim off leading "."
     let sdigits9 = &sdigits[0..(cmp::min(sdigits.len(),9))]; // truncate at 9 digits after "."
@@ -268,9 +257,9 @@ fn parsensfract(s: &str) -> u32 {
     v*scale                                                     // as nanoseconds
 }
 
-/// Formats a DateTime as an RFC 3339 date, with 9 digits of nanoseconds.
-/// This is primarily for debugging use.
-pub fn fmtrfc3339datetime(dt: ::DateTime<::FixedOffset>) -> String {
+/// Formats a DateTime as an RFC 3339/ISO8601 date, with 9 digits of nanoseconds.
+/// This is the inverse operation of rfc3339 parsing.
+pub fn fmt_rfc3339_datetime(dt: ::DateTime<::FixedOffset>) -> String {
     dt.format("%Y-%m-%dT%H:%M:%S.%f%z").to_string()           // inverse of parsing
 }
 
@@ -279,6 +268,7 @@ pub fn fmtrfc3339datetime(dt: ::DateTime<::FixedOffset>) -> String {
 //  Unit tests
 //
 #[test]
+/// Test RFC2822 parser.
 fn testrfc2822parser() {
     //  Test data - [input, expected result after parse and format]
     let testdates = [
@@ -299,19 +289,20 @@ fn testrfc2822parser() {
     for testdate in testdates.iter() {
         let date = testdate[0];                 // input
         let checkdate = testdate[1];            // expected result or ""
-        let d = parserfc2822datetime(date);     // parse a date
+        let d = rfc2822_to_datetime(date);      // parse a date
         let dt = match d {                      // did we get a value?
             Some(dt) => dt,                     // yes, go on
             None => if checkdate != "" { panic!("Failed to convert date {}", date)} else { continue },
         };
         // let mut s = String::new();
-        let s = fmtrfc2822datetime(dt); // convert date/time back to string
+        let s = fmt_rfc2822_datetime(dt);       // convert date/time back to string
         if s != checkdate {                     // check for expected result
             panic!("Date conversion failed for {}\nReceived: {}\nExpected: {}",date, s, checkdate);
         }
     };  
 }
 #[test]
+/// Test RFC3339/ISO8601 parser.
 fn testrfc3339parser() {
     //  Test data - [input, expected result after parse and format]
     let testdates = [
@@ -332,13 +323,13 @@ fn testrfc3339parser() {
     for testdate in testdates.iter() {
         let date = testdate[0];                 // input
         let checkdate = testdate[1];            // expected result or ""
-        let d = parserfc3339datetime(date);     // parse a date
+        let d = rfc3339_to_datetime(date);      // parse a date
         let dt = match d {                      // did we get a value?
             Some(dt) => dt,                     // yes, go on
             None => if checkdate != "" { panic!("Failed to convert date {}", date)} else { continue },
         };
         // let mut s = String::new();
-        let s = fmtrfc3339datetime(dt); // convert date/time back to string
+        let s = fmt_rfc3339_datetime(dt);       // convert date/time back to string
         if s != checkdate {                     // check for expected result
             panic!("Date conversion failed for {}\nReceived: {}\nExpected: {}",date, s, checkdate);
         }

@@ -234,6 +234,9 @@ pub mod datetime;
 pub mod format;
 
 /// Parsing functions for date/time strings.
+///
+/// Parsing functions are provided for RFC 2822 ("Tue, 20 Jan 2015 17:35:20 -0800")
+/// and RFC3339/ISO8601 ("2015-01-20T17:35:20.001-0800") date/time strings.
 pub mod parse;
 
 /// The day of week (DOW).
