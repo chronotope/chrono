@@ -78,6 +78,7 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
+
 # #![allow(unstable)]
 # /* we intentionally fake the datetime...
 use chrono::{UTC, Local, Datelike, Timelike, Weekday, Duration};
@@ -190,6 +191,12 @@ Advanced offset handling and date/time parsing is not yet supported (but is plan
 
 #![allow(unstable)]
 #![deny(missing_docs)]
+//  This is needed to allow compile-time regular expressions in this crate.
+#![feature(plugin)]
+#[plugin] #[no_link]
+extern crate regex_macros;
+extern crate regex;
+
 
 extern crate "time" as stdtime;
 
@@ -225,6 +232,9 @@ pub mod date;
 pub mod time;
 pub mod datetime;
 pub mod format;
+
+/// Parsing functions for date/time strings.
+pub mod parse;
 
 /// The day of week (DOW).
 ///

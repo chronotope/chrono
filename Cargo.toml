@@ -16,4 +16,7 @@ name = "chrono"
 
 [dependencies]
 time = "0.1.14"
+regex = "*"
+regex_macros = "*"
+
 
