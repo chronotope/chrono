@@ -81,6 +81,50 @@ impl NaiveDateTime {
         (ndays - 719163) * 86400 + nseconds
     }
 
+    /// Adds given `Duration` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    pub fn checked_add(self, rhs: Duration) -> Option<NaiveDateTime> {
+        // Duration does not directly give its parts, so we need some additional calculations.
+        let days = rhs.num_days();
+        let nanos = (rhs - Duration::days(days)).num_nanoseconds().unwrap();
+        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == rhs);
+        debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
+
+        let mut date = try_opt!(self.date.checked_add(Duration::days(days)));
+        let time = self.time + Duration::nanoseconds(nanos);
+
+        // time always wraps around, but date needs to be adjusted for overflow.
+        if nanos < 0 && time > self.time {
+            date = try_opt!(date.pred_opt());
+        } else if nanos > 0 && time < self.time {
+            date = try_opt!(date.succ_opt());
+        }
+        Some(NaiveDateTime { date: date, time: time })
+    }
+
+    /// Subtracts given `Duration` from the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    pub fn checked_sub(self, rhs: Duration) -> Option<NaiveDateTime> {
+        // Duration does not directly give its parts, so we need some additional calculations.
+        let days = rhs.num_days();
+        let nanos = (rhs - Duration::days(days)).num_nanoseconds().unwrap();
+        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == rhs);
+        debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
+
+        let mut date = try_opt!(self.date.checked_sub(Duration::days(days)));
+        let time = self.time - Duration::nanoseconds(nanos);
+
+        // time always wraps around, but date needs to be adjusted for overflow.
+        if nanos > 0 && time > self.time {
+            date = try_opt!(date.pred_opt());
+        } else if nanos < 0 && time < self.time {
+            date = try_opt!(date.succ_opt());
+        }
+        Some(NaiveDateTime { date: date, time: time })
+    }
+
     /// Formats the combined date and time in the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
@@ -171,23 +215,9 @@ impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveDateTime {
 impl Add<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
+    #[inline]
     fn add(self, rhs: Duration) -> NaiveDateTime {
-        // Duration does not directly give its parts, so we need some additional calculations.
-        let days = rhs.num_days();
-        let nanos = (rhs - Duration::days(days)).num_nanoseconds().unwrap();
-        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == rhs);
-        debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
-
-        let mut date = self.date + Duration::days(days);
-        let time = self.time + Duration::nanoseconds(nanos);
-
-        // time always wraps around, but date needs to be adjusted for overflow.
-        if nanos < 0 && time > self.time {
-            date = date.pred();
-        } else if nanos > 0 && time < self.time {
-            date = date.succ();
-        }
-        NaiveDateTime { date: date, time: time }
+        self.checked_add(rhs).expect("`NaiveDateTime + Duration` overflowed")
     }
 }
 
@@ -203,7 +233,9 @@ impl Sub<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> NaiveDateTime { self.add(-rhs) }
+    fn sub(self, rhs: Duration) -> NaiveDateTime {
+        self.checked_sub(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    }
 }
 
 impl fmt::Debug for NaiveDateTime {
@@ -221,7 +253,9 @@ impl fmt::Display for NaiveDateTime {
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
+    use Datelike;
     use duration::Duration;
+    use naive::date as naive_date;
     use naive::date::NaiveDate;
     use std::i64;
 
@@ -240,17 +274,35 @@ mod tests {
 
     #[test]
     fn test_datetime_add() {
-        let ymdhms = |&: y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(3600 + 60 + 1),
-                   ymdhms(2014, 5, 6, 8, 9, 10));
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(-(3600 + 60 + 1)),
-                   ymdhms(2014, 5, 6, 6, 7, 8));
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86399),
-                   ymdhms(2014, 5, 7, 7, 8, 8));
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(86400 * 10),
-                   ymdhms(2014, 5, 16, 7, 8, 9));
-        assert_eq!(ymdhms(2014, 5, 6, 7, 8, 9) + Duration::seconds(-86400 * 10),
-                   ymdhms(2014, 4, 26, 7, 8, 9));
+        fn check((y,m,d,h,n,s): (i32,u32,u32,u32,u32,u32), rhs: Duration,
+                 result: Option<(i32,u32,u32,u32,u32,u32)>) {
+            let lhs = NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
+            let sum = result.map(|(y,m,d,h,n,s)| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
+            assert_eq!(lhs.checked_add(rhs), sum);
+            assert_eq!(lhs.checked_sub(-rhs), sum);
+        };
+
+        check((2014,5,6, 7,8,9), Duration::seconds(3600 + 60 + 1), Some((2014,5,6, 8,9,10)));
+        check((2014,5,6, 7,8,9), Duration::seconds(-(3600 + 60 + 1)), Some((2014,5,6, 6,7,8)));
+        check((2014,5,6, 7,8,9), Duration::seconds(86399), Some((2014,5,7, 7,8,8)));
+        check((2014,5,6, 7,8,9), Duration::seconds(86400 * 10), Some((2014,5,16, 7,8,9)));
+        check((2014,5,6, 7,8,9), Duration::seconds(-86400 * 10), Some((2014,4,26, 7,8,9)));
+        check((2014,5,6, 7,8,9), Duration::seconds(86400 * 10), Some((2014,5,16, 7,8,9)));
+
+        // overflow check
+        // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
+        // (they are private constants, but the equivalence is tested in that module.)
+        let max_days_from_year_0 = naive_date::MAX - NaiveDate::from_ymd(0,1,1);
+        check((0,1,1, 0,0,0), max_days_from_year_0, Some((naive_date::MAX.year(),12,31, 0,0,0)));
+        check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86399),
+              Some((naive_date::MAX.year(),12,31, 23,59,59)));
+        check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86400), None);
+        check((0,1,1, 0,0,0), Duration::max_value(), None);
+
+        let min_days_from_year_0 = naive_date::MIN - NaiveDate::from_ymd(0,1,1);
+        check((0,1,1, 0,0,0), min_days_from_year_0, Some((naive_date::MIN.year(),1,1, 0,0,0)));
+        check((0,1,1, 0,0,0), min_days_from_year_0 - Duration::seconds(1), None);
+        check((0,1,1, 0,0,0), Duration::min_value(), None);
     }
 
     #[test]

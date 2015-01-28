@@ -201,6 +201,11 @@ pub use date::Date;
 pub use time::Time;
 pub use datetime::DateTime;
 
+// useful throughout the codebase
+macro_rules! try_opt {
+    ($e:expr) => (match $e { Some(v) => v, None => return None })
+}
+
 mod div;
 pub mod duration {
     //! ISO 8601 duration.

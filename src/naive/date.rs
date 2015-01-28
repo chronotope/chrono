@@ -22,6 +22,28 @@ use self::internals::{DateImpl, Of, Mdf, YearFlags};
 const MAX_YEAR: i32 = internals::MAX_YEAR as i32;
 const MIN_YEAR: i32 = internals::MIN_YEAR as i32;
 
+//   MAX_YEAR-12-31 minus 0000-01-01
+// = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
+// = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + 365 days
+// = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365 days
+#[cfg(test)] // only used for testing
+const MAX_DAYS_FROM_YEAR_0: i32 = MAX_YEAR * 365 +
+                                  MAX_YEAR / 4 -
+                                  MAX_YEAR / 100 +
+                                  MAX_YEAR / 400 + 365;
+
+//   MIN_YEAR-01-01 minus 0000-01-01
+// = (MIN_YEAR+400n+1)-01-01 minus (400n+1)-01-01
+// = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - ((400n+1)-01-01 minus 0001-01-01)
+// = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - 146097n days
+//
+// n is set to 1000 for convenience.
+#[cfg(test)] // only used for testing
+const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
+                                  (MIN_YEAR + 400_000) / 4 -
+                                  (MIN_YEAR + 400_000) / 100 +
+                                  (MIN_YEAR + 400_000) / 400 - 146097_000;
+
 /// ISO 8601 calendar date without timezone.
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
@@ -302,6 +324,40 @@ impl NaiveDate {
         self.with_of(self.of().pred()).or_else(|| NaiveDate::from_ymd_opt(self.year() - 1, 12, 31))
     }
 
+    /// Adds the `days` part of given `Duration` to the current date.
+    ///
+    /// Returns `None` when it will result in overflow.
+    pub fn checked_add(self, rhs: Duration) -> Option<NaiveDate> {
+        let year = self.year();
+        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
+        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
+        let cycle = try_opt!((cycle as i32).checked_add(try_opt!(rhs.num_days().to_i32())));
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146097);
+        year_div_400 += cycle_div_400y;
+
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
+        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
+                           Of::new(ordinal, flags))
+    }
+
+    /// Subtracts the `days` part of given `Duration` from the current date.
+    ///
+    /// Returns `None` when it will result in overflow.
+    pub fn checked_sub(self, rhs: Duration) -> Option<NaiveDate> {
+        let year = self.year();
+        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
+        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
+        let cycle = try_opt!((cycle as i32).checked_sub(try_opt!(rhs.num_days().to_i32())));
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146097);
+        year_div_400 += cycle_div_400y;
+
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
+        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
+                           Of::new(ordinal, flags))
+    }
+
     /// Formats the date in the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
@@ -387,20 +443,9 @@ impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveDate {
 impl Add<Duration> for NaiveDate {
     type Output = NaiveDate;
 
+    #[inline]
     fn add(self, rhs: Duration) -> NaiveDate {
-        // TODO overflow currently fails
-
-        let year = self.year();
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_add(rhs.num_days().to_i32().unwrap()).unwrap();
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146097);
-        year_div_400 += cycle_div_400y;
-
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
-                           Of::new(ordinal, flags)).unwrap()
+        self.checked_add(rhs).expect("`NaiveDate + Duration` overflowed")
     }
 }
 
@@ -422,7 +467,9 @@ impl Sub<Duration> for NaiveDate {
     type Output = NaiveDate;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> NaiveDate { self.add(-rhs) }
+    fn sub(self, rhs: Duration) -> NaiveDate {
+        self.checked_sub(rhs).expect("`NaiveDate - Duration` overflowed")
+    }
 }
 
 impl fmt::Debug for NaiveDate {
@@ -452,7 +499,9 @@ impl fmt::Display for NaiveDate {
 
 #[cfg(test)]
 mod tests {
-    use super::{NaiveDate, MIN, MAX};
+    use super::NaiveDate;
+    use super::{MIN, MIN_YEAR, MIN_DAYS_FROM_YEAR_0};
+    use super::{MAX, MAX_YEAR, MAX_DAYS_FROM_YEAR_0};
     use {Datelike, Weekday};
     use duration::Duration;
     use std::{i32, u32};
@@ -716,23 +765,32 @@ mod tests {
 
     #[test]
     fn test_date_add() {
-        fn check((y1,m1,d1): (i32, u32, u32), rhs: Duration, (y,m,d): (i32, u32, u32)) {
+        fn check((y1,m1,d1): (i32, u32, u32), rhs: Duration, ymd: Option<(i32, u32, u32)>) {
             let lhs = NaiveDate::from_ymd(y1, m1, d1);
-            let sum = NaiveDate::from_ymd(y, m, d);
-            assert_eq!(lhs + rhs, sum);
-            //assert_eq!(rhs + lhs, sum);
+            let sum = ymd.map(|(y,m,d)| NaiveDate::from_ymd(y, m, d));
+            assert_eq!(lhs.checked_add(rhs), sum);
+            assert_eq!(lhs.checked_sub(-rhs), sum);
         }
 
-        check((2014, 1, 1), Duration::zero(), (2014, 1, 1));
-        check((2014, 1, 1), Duration::seconds(86399), (2014, 1, 1));
-        check((2014, 1, 1), Duration::seconds(-86399), (2014, 1, 1)); // always round towards zero
-        check((2014, 1, 1), Duration::days(1), (2014, 1, 2));
-        check((2014, 1, 1), Duration::days(-1), (2013, 12, 31));
-        check((2014, 1, 1), Duration::days(364), (2014, 12, 31));
-        check((2014, 1, 1), Duration::days(365*4 + 1), (2018, 1, 1));
-        check((2014, 1, 1), Duration::days(365*400 + 97), (2414, 1, 1));
+        check((2014, 1, 1), Duration::zero(), Some((2014, 1, 1)));
+        check((2014, 1, 1), Duration::seconds(86399), Some((2014, 1, 1)));
+        // always round towards zero
+        check((2014, 1, 1), Duration::seconds(-86399), Some((2014, 1, 1)));
+        check((2014, 1, 1), Duration::days(1), Some((2014, 1, 2)));
+        check((2014, 1, 1), Duration::days(-1), Some((2013, 12, 31)));
+        check((2014, 1, 1), Duration::days(364), Some((2014, 12, 31)));
+        check((2014, 1, 1), Duration::days(365*4 + 1), Some((2018, 1, 1)));
+        check((2014, 1, 1), Duration::days(365*400 + 97), Some((2414, 1, 1)));
 
-        check((-7, 1, 1), Duration::days(365*12 + 3), (5, 1, 1));
+        check((-7, 1, 1), Duration::days(365*12 + 3), Some((5, 1, 1)));
+
+        // overflow check
+        check((0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64), Some((MAX_YEAR, 12, 31)));
+        check((0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1), None);
+        check((0, 1, 1), Duration::max_value(), None);
+        check((0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64), Some((MIN_YEAR, 1, 1)));
+        check((0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1), None);
+        check((0, 1, 1), Duration::min_value(), None);
     }
 
     #[test]
@@ -750,6 +808,9 @@ mod tests {
         check((2015, 1, 3), (2014, 1, 1), Duration::days(365 + 2));
         check((2018, 1, 1), (2014, 1, 1), Duration::days(365*4 + 1));
         check((2414, 1, 1), (2014, 1, 1), Duration::days(365*400 + 97));
+
+        check((MAX_YEAR, 12, 31), (0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64));
+        check((MIN_YEAR, 1, 1), (0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64));
     }
 
     #[test]

@@ -64,6 +64,24 @@ impl<Off:Offset> DateTime<Off> {
         DateTime::from_utc(self.datetime, offset)
     }
 
+    /// Adds given `Duration` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    #[inline]
+    pub fn checked_add(self, rhs: Duration) -> Option<DateTime<Off>> {
+        let datetime = try_opt!(self.datetime.checked_add(rhs));
+        Some(DateTime { datetime: datetime, offset: self.offset })
+    }
+
+    /// Subtracts given `Duration` from the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    #[inline]
+    pub fn checked_sub(self, rhs: Duration) -> Option<DateTime<Off>> {
+        let datetime = try_opt!(self.datetime.checked_sub(rhs));
+        Some(DateTime { datetime: datetime, offset: self.offset })
+    }
+
     /// Returns a view to the local datetime.
     fn local(&self) -> NaiveDateTime {
         self.offset.to_local_datetime(&self.datetime)
@@ -190,14 +208,16 @@ impl<Off: Offset, H: hash::Hasher + hash::Writer> hash::Hash<H> for DateTime<Off
 impl<Off:Offset> Add<Duration> for DateTime<Off> {
     type Output = DateTime<Off>;
 
+    #[inline]
     fn add(self, rhs: Duration) -> DateTime<Off> {
-        DateTime { datetime: self.datetime + rhs, offset: self.offset }
+        self.checked_add(rhs).expect("`DateTime + Duration` overflowed")
     }
 }
 
 impl<Off:Offset, Off2:Offset> Sub<DateTime<Off2>> for DateTime<Off> {
     type Output = Duration;
 
+    #[inline]
     fn sub(self, rhs: DateTime<Off2>) -> Duration { self.datetime - rhs.datetime }
 }
 
@@ -205,7 +225,9 @@ impl<Off:Offset> Sub<Duration> for DateTime<Off> {
     type Output = DateTime<Off>;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> DateTime<Off> { self.add(-rhs) }
+    fn sub(self, rhs: Duration) -> DateTime<Off> {
+        self.checked_sub(rhs).expect("`DateTime - Duration` overflowed")
+    }
 }
 
 impl<Off: Offset> fmt::Debug for DateTime<Off> {
