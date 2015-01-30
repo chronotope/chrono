@@ -401,20 +401,29 @@ impl Parsed {
         } else if let Some(timestamp) = self.timestamp {
             // reconstruct date and time fields from timestamp
             let ts = try_opt!(timestamp.checked_add(offset as i64));
-            let datetime = try_opt!(NaiveDateTime::from_num_seconds_from_unix_epoch_opt(ts, 0));
+            let mut datetime = try_opt!(NaiveDateTime::from_num_seconds_from_unix_epoch_opt(ts, 0));
 
             // fill year, ordinal, hour, minute and second fields from timestamp.
             // if existing fields are consistent, this will allow the full date/time reconstruction.
             let mut parsed = self.clone();
+            if parsed.second == Some(60) {
+                // `datetime.second()` cannot be 60, so this is the only case for a leap second.
+                match datetime.second() {
+                    // it's okay, just do not try to overwrite the existing field.
+                    59 => {}
+                    // `datetime` is known to be off by one second.
+                    0 => { datetime = datetime - Duration::seconds(1); }
+                    // otherwise it is impossible.
+                    _ => return None
+                }
+                // ...and we have the correct candidates for other fields.
+            } else {
+                if !parsed.set_second(datetime.second() as i64) { return None; }
+            }
             if !parsed.set_year   (datetime.year()    as i64) { return None; }
             if !parsed.set_ordinal(datetime.ordinal() as i64) { return None; }
             if !parsed.set_hour   (datetime.hour()    as i64) { return None; }
             if !parsed.set_minute (datetime.minute()  as i64) { return None; }
-            if !(parsed.second == Some(60) && datetime.second() == 59) {
-                // `datetime.second` cannot be 60, so we can know if this is a leap second
-                // only when the original `parsed` had that. do not try to reset it.
-                if !parsed.set_second(datetime.second() as i64) { return None; }
-            }
             if !parsed.set_nanosecond(0) { return None; } // no nanosecond precision in timestamp
 
             // validate other fields (e.g. week) and return
@@ -759,6 +768,45 @@ mod tests {
                    ymdhms(0,1,1, 0,0,0));
         assert_eq!(parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
                    ymdhms(date::MAX.year(),12,31, 23,59,59));
+
+        // leap seconds #1: partial fields
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_798), None);
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_799), ymdhms(2012,6,30, 23,59,59));
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_800), None);
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_799),
+                   ymdhmsn(2012,6,30, 23,59,59,1_000_000_000));
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_800),
+                   ymdhmsn(2012,6,30, 23,59,59,1_000_000_000));
+        assert_eq!(parse!(second: 0, timestamp: 1_341_100_800), ymdhms(2012,7,1, 0,0,0));
+        assert_eq!(parse!(second: 1, timestamp: 1_341_100_800), None);
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_801), None);
+
+        // leap seconds #2: full fields
+        // we need to have separate tests for them since it uses another control flow.
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                          minute: 59, second: 59, timestamp: 1_341_100_798),
+                   None);
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                          minute: 59, second: 59, timestamp: 1_341_100_799),
+                   ymdhms(2012,6,30, 23,59,59));
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                          minute: 59, second: 59, timestamp: 1_341_100_800),
+                   None);
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                          minute: 59, second: 60, timestamp: 1_341_100_799),
+                   ymdhmsn(2012,6,30, 23,59,59,1_000_000_000));
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                          minute: 59, second: 60, timestamp: 1_341_100_800),
+                   ymdhmsn(2012,6,30, 23,59,59,1_000_000_000));
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
+                          minute: 0, second: 0, timestamp: 1_341_100_800),
+                   ymdhms(2012,7,1, 0,0,0));
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
+                          minute: 0, second: 1, timestamp: 1_341_100_800),
+                   None);
+        assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                          minute: 59, second: 60, timestamp: 1_341_100_801),
+                   None);
     }
 
     #[test]
