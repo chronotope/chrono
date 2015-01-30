@@ -272,5 +272,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<'a, 
     }
 }
 
+pub mod parsed;
+
 pub mod strftime;
 
