@@ -1,5 +1,3 @@
-extern crate regex_macros;      // for compile-time regular expression compilation
-extern crate regex;
 use std::num::Int;
 use std::cmp;
 use ::{Offset};
