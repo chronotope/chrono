@@ -21,7 +21,7 @@ use datetime::DateTime;
 
 /// Parsed parts of date and time.
 #[allow(missing_copy_implementations)]
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Parsed {
     /// Year divided by 100. Implies that the year is >= 1 BCE.
     ///
