@@ -24,14 +24,14 @@ Spec.   Example         Description
 
 %m      07              Month number (01--12), zero-padded to 2 digits.
 %b      Jul             Abbreviated month name. Always 3 letters.
-%B      July            Full month name.
+%B      July            Full month name. Also accepts corresponding abbreviation in parsing.
 %h      Jul             Same to `%b`.
 
 %d      08              Day number (01--31), zero-padded to 2 digits.
 %e       8              Same to `%d` but space-padded.
 
 %a      Sun             Abbreviated weekday name. Always 3 letters.
-%A      Sunday          Full weekday name.
+%A      Sunday          Full weekday name. Also accepts corresponding abbreviation in parsing.
 %w      0               Sunday = 0, Monday = 1, ..., Saturday = 6.
 %u      7               Monday = 1, Tuesday = 2, ..., Sunday = 7. (ISO 8601)
 

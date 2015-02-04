@@ -4,7 +4,7 @@
 
 /*!
 
-# Chrono 0.1.17
+# Chrono 0.2.0-dev
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
@@ -116,6 +116,7 @@ assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_00
 
 Formatting is done via the `format` method,
 which format is equivalent to the familiar `strftime` format.
+(See the `format::strftime` module documentation for full syntax.)
 The default `to_string` method and `{:?}` specifier also give a reasonable representation.
 
 ~~~~ {.rust}
@@ -128,6 +129,35 @@ assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string())
 
 assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
 assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
+~~~~
+
+Parsing can be done with two methods:
+
+- `DateTime::from_str` parses a date and time with offsets and returns `DateTime<FixedOffset>`.
+  This should be used when the offset is a part of input and the caller cannot guess that.
+  It *cannot* be used when the offset can be missing.
+
+- `Offset::datetime_from_str` is similar but returns `DateTime` of given offset.
+  When the explicit offset is missing from the input, it simply uses given offset.
+  It issues an error when the input contains an explicit offset different from the current offset.
+
+More detailed control over the parsing process is available via `format` module.
+
+~~~~ {.rust}
+use chrono::{UTC, Offset, DateTime};
+
+let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
+assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
+assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
+assert_eq!(DateTime::from_str("2014-11-28 21:00:09 +09:00",
+                              "%Y-%m-%d %H:%M:%S %z").map(|dt| dt.with_offset(UTC)), Ok(dt));
+
+// oops, the year is missing!
+assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
+// oops, the format string does not include the year at all!
+assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
+// oops, the weekday is incorrect!
+assert!(UTC.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 ~~~~
 
 ### Individual date and time
@@ -179,7 +209,7 @@ Any operation that can be ambiguous will return `None` in such cases.
 For example, "a month later" of 2014-01-30 is not well-defined
 and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
 
-Advanced offset handling and date/time parsing is not yet supported (but is planned).
+Advanced offset handling is not yet supported (but is planned in 0.3).
 
 */
 
