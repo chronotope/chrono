@@ -9,6 +9,7 @@
 use std::fmt;
 use std::iter;
 use std::usize;
+use std::error::Error;
 
 use {Datelike, Timelike};
 use Weekday;
@@ -276,8 +277,75 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
     Ok(())
 }
 
+/// An error from the `parse` function.
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub struct ParseError(ParseErrorKind);
+
+#[derive(Debug, Clone, PartialEq, Copy)]
+enum ParseErrorKind {
+    /// Given field is out of permitted range.
+    OutOfRange,
+
+    /// There is no possible date and time value with given set of fields.
+    ///
+    /// This does not include the out-of-range conditions, which are trivially invalid.
+    /// It includes the case that there are one or more fields that are inconsistent to each other.
+    Impossible,
+
+    /// Given set of fields is not enough to make a requested date and time value.
+    ///
+    /// Note that there *may* be a case that given fields constrain the possible values so much
+    /// that there is a unique possible value. Chrono only tries to be correct for
+    /// most useful sets of fields however, as such constraint solving can be expensive.
+    NotEnough,
+
+    /// The input string has some invalid character sequence for given formatting items.
+    Invalid,
+
+    /// The input string has been prematurely ended.
+    TooShort,
+
+    /// All formatting items have been read but there is a remaining input.
+    TooLong,
+
+    /// There was an error on the formatting string, or there were non-supported formating items.
+    BadFormat,
+}
+
+/// Same to `Result<T, ParseError>`.
+pub type ParseResult<T> = Result<T, ParseError>;
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        match self.0 {
+            ParseErrorKind::OutOfRange => "input is out of range",
+            ParseErrorKind::Impossible => "no possible date and time matching input",
+            ParseErrorKind::NotEnough => "input is not enough for unique date and time",
+            ParseErrorKind::Invalid => "input contains invalid characters",
+            ParseErrorKind::TooShort => "premature end of input",
+            ParseErrorKind::TooLong => "trailing input",
+            ParseErrorKind::BadFormat => "bad or unsupported format string",
+        }
+    }
+}
+
+// to be used in this module and submodules
+const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
+const IMPOSSIBLE:   ParseError = ParseError(ParseErrorKind::Impossible);
+const NOT_ENOUGH:   ParseError = ParseError(ParseErrorKind::NotEnough);
+const INVALID:      ParseError = ParseError(ParseErrorKind::Invalid);
+const TOO_SHORT:    ParseError = ParseError(ParseErrorKind::TooShort);
+const TOO_LONG:     ParseError = ParseError(ParseErrorKind::TooLong);
+const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
+
 /// Tries to parse given string into `parsed` with given formatting items.
-/// Returns true when the entire string has been parsed (otherwise `parsed` should not be used).
+/// Returns `Ok` when the entire string has been parsed (otherwise `parsed` should not be used).
 /// There should be no trailing string after parsing; use a stray `Item::Space` to trim whitespaces.
 ///
 /// This particular date and time parser is:
@@ -288,7 +356,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
 /// - Padding-agnostic (for numeric items). The `Pad` field is completely ignored,
 ///   so one can prepend any number of whitespace then any number of zeroes before numbers.
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
-pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
+pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
         where I: Iterator<Item=Item<'a>> {
     // lowercased month and weekday names
     static LONG_MONTHS: [&'static str; 12] =
@@ -298,64 +366,63 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
         ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
     // tries to parse the month index (0 through 11) with the first three ASCII letters.
-    fn parse_short_month(s: &str) -> Option<u8> {
-        if s.len() < 3 { return None; }
+    fn parse_short_month(s: &str) -> ParseResult<u8> {
+        if s.len() < 3 { return Err(TOO_SHORT); }
         let s = s.as_bytes();
         match [s[0] | 32, s[1] | 32, s[2] | 32] {
-            [b'j',b'a',b'n'] => Some(0),
-            [b'f',b'e',b'b'] => Some(1),
-            [b'm',b'a',b'r'] => Some(2),
-            [b'a',b'p',b'r'] => Some(3),
-            [b'm',b'a',b'y'] => Some(4),
-            [b'j',b'u',b'n'] => Some(5),
-            [b'j',b'u',b'l'] => Some(6),
-            [b'a',b'u',b'g'] => Some(7),
-            [b's',b'e',b'p'] => Some(8),
-            [b'o',b'c',b't'] => Some(9),
-            [b'n',b'o',b'v'] => Some(10),
-            [b'd',b'e',b'c'] => Some(11),
-            _ => None
+            [b'j',b'a',b'n'] => Ok(0),
+            [b'f',b'e',b'b'] => Ok(1),
+            [b'm',b'a',b'r'] => Ok(2),
+            [b'a',b'p',b'r'] => Ok(3),
+            [b'm',b'a',b'y'] => Ok(4),
+            [b'j',b'u',b'n'] => Ok(5),
+            [b'j',b'u',b'l'] => Ok(6),
+            [b'a',b'u',b'g'] => Ok(7),
+            [b's',b'e',b'p'] => Ok(8),
+            [b'o',b'c',b't'] => Ok(9),
+            [b'n',b'o',b'v'] => Ok(10),
+            [b'd',b'e',b'c'] => Ok(11),
+            _ => Err(INVALID)
         }
     }
 
     // tries to parse the weekday with the first three ASCII letters.
-    fn parse_short_weekday(s: &str) -> Option<Weekday> {
-        if s.len() < 3 { return None; }
+    fn parse_short_weekday(s: &str) -> ParseResult<Weekday> {
+        if s.len() < 3 { return Err(TOO_SHORT); }
         let s = s.as_bytes();
         match [s[0] | 32, s[1] | 32, s[2] | 32] {
-            [b'm',b'o',b'n'] => Some(Weekday::Mon),
-            [b't',b'u',b'e'] => Some(Weekday::Tue),
-            [b'w',b'e',b'd'] => Some(Weekday::Wed),
-            [b't',b'h',b'u'] => Some(Weekday::Thu),
-            [b'f',b'r',b'i'] => Some(Weekday::Fri),
-            [b's',b'a',b't'] => Some(Weekday::Sat),
-            [b's',b'u',b'n'] => Some(Weekday::Sun),
-            _ => None
+            [b'm',b'o',b'n'] => Ok(Weekday::Mon),
+            [b't',b'u',b'e'] => Ok(Weekday::Tue),
+            [b'w',b'e',b'd'] => Ok(Weekday::Wed),
+            [b't',b'h',b'u'] => Ok(Weekday::Thu),
+            [b'f',b'r',b'i'] => Ok(Weekday::Fri),
+            [b's',b'a',b't'] => Ok(Weekday::Sat),
+            [b's',b'u',b'n'] => Ok(Weekday::Sun),
+            _ => Err(INVALID)
         }
     }
 
     // tries to consume `\s*[-+]\d\d[\s:]*\d\d` and return an offset in seconds
-    fn parse_timezone_offset(mut s: &str, allow_zulu: bool) -> Option<(&str, i32)> {
+    fn parse_timezone_offset(mut s: &str, allow_zulu: bool) -> ParseResult<(&str, i32)> {
         s = s.trim_left();
 
         // + or -, or Z/z if `allow_zulu` is true
-        let negative = if s.starts_with("+") {
-            false
-        } else if s.starts_with("-") {
-            true
-        } else if allow_zulu && (s.starts_with("z") || s.starts_with("Z")) {
-            return Some((&s[1..], 0));
-        } else {
-            return None;
+        let negative = match s.as_bytes().first() {
+            Some(&b'+') => false,
+            Some(&b'-') => true,
+            Some(&b'z') | Some(&b'Z') if allow_zulu => return Ok((&s[1..], 0)),
+            Some(_) => return Err(INVALID),
+            None => return Err(TOO_SHORT),
         };
         s = &s[1..];
 
         // hours (00--24, where 24 is allowed only with 24:00)
         // the range check happens later for this reason.
         let hours = match s.as_bytes() {
-            [h1 @ b'0'...b'2', h2 @ b'0'...b'9', ..] =>
-                (h1 - b'0') as i32 * 10 + (h2 - b'0') as i32,
-            _ => return None
+            [h1 @ b'0'...b'2', h2 @ b'0'...b'9', ..] => ((h1 - b'0') * 10 + (h2 - b'0')) as i32,
+            [b'3'...b'9', b'0'...b'9', ..] => return Err(OUT_OF_RANGE),
+            [] | [_] => return Err(TOO_SHORT),
+            _ => return Err(INVALID),
         };
         s = &s[2..];
 
@@ -364,15 +431,16 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
 
         // minutes (00--59)
         let minutes = match s.as_bytes() {
-            [m1 @ b'0'...b'5', m2 @ b'0'...b'9', ..] =>
-                (m1 - b'0') as i32 * 10 + (m2 - b'0') as i32,
-            _ => return None
+            [m1 @ b'0'...b'5', m2 @ b'0'...b'9', ..] => ((m1 - b'0') * 10 + (m2 - b'0')) as i32,
+            [b'6'...b'9', b'0'...b'9', ..] => return Err(OUT_OF_RANGE),
+            [] | [_] => return Err(TOO_SHORT),
+            _ => return Err(INVALID),
         };
         s = &s[2..];
 
         let seconds = hours * 3600 + minutes * 60;
-        if seconds > 86400 { return None; } // range check for hours
-        Some((s, if negative {-seconds} else {seconds}))
+        if seconds > 86400 { return Err(OUT_OF_RANGE); } // range check for hours
+        Ok((s, if negative {-seconds} else {seconds}))
     }
 
     // compares two slice case-insensitively (in ASCII).
@@ -386,7 +454,8 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
     for item in items {
         match item {
             Item::Literal(prefix) => {
-                if !s.starts_with(prefix) { return false; }
+                if s.len() < prefix.len() { return Err(TOO_SHORT); }
+                if !s.starts_with(prefix) { return Err(INVALID); }
                 s = &s[prefix.len()..];
             }
 
@@ -397,23 +466,24 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
             Item::Numeric(spec, _pad) => {
                 use self::Numeric::*;
 
-                fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> bool {
+                fn set_weekday_with_num_days_from_sunday(p: &mut Parsed,
+                                                         v: i64) -> ParseResult<()> {
                     p.set_weekday(match v {
                         0 => Weekday::Sun, 1 => Weekday::Mon, 2 => Weekday::Tue,
                         3 => Weekday::Wed, 4 => Weekday::Thu, 5 => Weekday::Fri,
-                        6 => Weekday::Sat, _ => return false
+                        6 => Weekday::Sat, _ => return Err(OUT_OF_RANGE)
                     })
                 }
 
-                fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> bool {
+                fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<()> {
                     p.set_weekday(match v {
                         1 => Weekday::Mon, 2 => Weekday::Tue, 3 => Weekday::Wed,
                         4 => Weekday::Thu, 5 => Weekday::Fri, 6 => Weekday::Sat,
-                        7 => Weekday::Sun, _ => return false
+                        7 => Weekday::Sun, _ => return Err(OUT_OF_RANGE)
                     })
                 }
 
-                let (width, set): (usize, fn(&mut Parsed, i64) -> bool) = match spec {
+                let (width, set): (usize, fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
                     Year           => (4, Parsed::set_year),
                     YearDiv100     => (2, Parsed::set_year_div_100),
                     YearMod100     => (2, Parsed::set_year_mod_100),
@@ -443,15 +513,15 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
                 let mut win = s.as_bytes();
                 if win.len() > width { win = &win[..width]; }
                 let upto = win.iter().position(|&c| c < b'0' || b'9' < c).unwrap_or(win.len());
-                if upto == 0 { return false; } // no digits detected
-
-                if let Ok(v) = s[..upto].parse() {
-                    if !set(parsed, v) { return false; }
-                    s = &s[upto..];
-                } else {
-                    // overflow. this is possible with `Timestamp` for example
-                    return false;
+                if upto == 0 { // no digits detected
+                    return Err(if win.is_empty() {TOO_SHORT} else {INVALID});
                 }
+
+                // overflow is possible with `Timestamp` for example
+                // we have no other error cause, and can safely replace the error to our version
+                let v = try!(s[..upto].parse().map_err(|_| OUT_OF_RANGE));
+                try!(set(parsed, v));
+                s = &s[upto..];
             }
 
             Item::Fixed(spec) => {
@@ -459,91 +529,79 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> bool
 
                 match spec {
                     ShortMonthName => {
-                        if let Some(month0) = parse_short_month(s) {
-                            if !parsed.set_month(month0 as i64 + 1) { return false; }
-                            s = &s[3..];
-                        } else {
-                            return false;
-                        }
+                        let month0 = try!(parse_short_month(s));
+                        try!(parsed.set_month(month0 as i64 + 1));
+                        s = &s[3..];
                     }
 
                     LongMonthName => {
-                        if let Some(month0) = parse_short_month(s) {
-                            // three-letter abbreviation is a prefix of the corresponding long name
-                            let long = LONG_MONTHS[month0 as usize];
-                            if s.len() >= long.len() && equals_ascii_nocase(&s[3..long.len()],
-                                                                            &long[3..]) {
-                                // *optionally* consume the long form if possible
-                                s = &s[long.len()..];
-                            } else {
-                                s = &s[3..];
-                            }
-                            if !parsed.set_month(month0 as i64 + 1) { return false; }
+                        let month0 = try!(parse_short_month(s));
+                        let long = LONG_MONTHS[month0 as usize];
+                        // three-letter abbreviation is a prefix of the corresponding long name
+                        if s.len() >= long.len() && equals_ascii_nocase(&s[3..long.len()],
+                                                                        &long[3..]) {
+                            // *optionally* consume the long form if possible
+                            s = &s[long.len()..];
                         } else {
-                            return false;
+                            s = &s[3..];
                         }
+                        try!(parsed.set_month(month0 as i64 + 1));
                     }
 
                     ShortWeekdayName => {
-                        if let Some(weekday) = parse_short_weekday(s) {
-                            if !parsed.set_weekday(weekday) { return false; }
-                            s = &s[3..];
-                        } else {
-                            return false;
-                        }
+                        let weekday = try!(parse_short_weekday(s));
+                        try!(parsed.set_weekday(weekday));
+                        s = &s[3..];
                     }
 
                     LongWeekdayName => {
-                        if let Some(weekday) = parse_short_weekday(s) {
-                            // three-letter abbreviation is a prefix of the corresponding long name
-                            let long = LONG_WEEKDAYS[weekday.num_days_from_monday() as usize];
-                            if s.len() >= long.len() && equals_ascii_nocase(&s[3..long.len()],
-                                                                            &long[3..]) {
-                                // *optionally* consume the long form if possible
-                                s = &s[long.len()..];
-                            } else {
-                                s = &s[3..];
-                            }
-                            if !parsed.set_weekday(weekday) { return false; }
+                        let weekday = try!(parse_short_weekday(s));
+                        let long = LONG_WEEKDAYS[weekday.num_days_from_monday() as usize];
+                        // three-letter abbreviation is a prefix of the corresponding long name
+                        if s.len() >= long.len() && equals_ascii_nocase(&s[3..long.len()],
+                                                                        &long[3..]) {
+                            // *optionally* consume the long form if possible
+                            s = &s[long.len()..];
                         } else {
-                            return false;
+                            s = &s[3..];
                         }
+                        try!(parsed.set_weekday(weekday));
                     }
 
                     LowerAmPm | UpperAmPm => {
-                        if s.len() < 2 { return false; }
+                        if s.len() < 2 { return Err(TOO_SHORT); }
                         let ampm = match [s.as_bytes()[0] | 32, s.as_bytes()[1] | 32] {
                             [b'a',b'm'] => false,
                             [b'p',b'm'] => true,
-                            _ => return false
+                            _ => return Err(INVALID)
                         };
-                        if !parsed.set_ampm(ampm) { return false; }
+                        try!(parsed.set_ampm(ampm));
                         s = &s[2..];
                     }
 
-                    // not supported in the parser
-                    TimezoneName => return false,
+                    TimezoneName => return Err(BAD_FORMAT),
 
                     TimezoneOffset | TimezoneOffsetZ => {
                         let allow_zulu = spec == TimezoneOffsetZ;
-                        if let Some((s_, offset)) = parse_timezone_offset(s, allow_zulu) {
-                            s = s_;
-                            if !parsed.set_offset(offset as i64) { return false; }
-                        } else {
-                            return false;
-                        }
+                        let (s_, offset) = try!(parse_timezone_offset(s, allow_zulu));
+                        s = s_;
+                        try!(parsed.set_offset(offset as i64));
                     }
                 }
             }
 
             Item::Error => {
-                return false;
+                return Err(BAD_FORMAT);
             }
         }
     }
 
     // if there are trailling chars, it is an error
-    s.is_empty()
+    if !s.is_empty() {
+        Err(TOO_LONG)
+    } else {
+        Ok(())
+    }
 }
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
@@ -589,66 +647,66 @@ pub mod strftime;
 #[test]
 fn test_parse() {
     macro_rules! check {
-        ($fmt:expr, $items:expr; _) => ({
-            assert!(!parse(&mut Parsed::new(), $fmt, $items.iter().cloned()));
+        ($fmt:expr, $items:expr; $err:expr) => ({
+            assert_eq!(parse(&mut Parsed::new(), $fmt, $items.iter().cloned()), Err($err));
         });
 
         ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => ({
             let mut parsed = Parsed::new();
-            assert!(parse(&mut parsed, $fmt, $items.iter().cloned()));
+            assert_eq!(parse(&mut parsed, $fmt, $items.iter().cloned()), Ok(()));
             assert_eq!(parsed, Parsed { $($k: Some($v),)* ..Parsed::new() });
         });
     }
 
     // empty string
     check!("",  []; );
-    check!(" ", []; _);
-    check!("a", []; _);
+    check!(" ", []; TOO_LONG);
+    check!("a", []; TOO_LONG);
 
     // whitespaces
     check!("",          [sp!("")]; );
     check!(" ",         [sp!("")]; );
     check!("\t",        [sp!("")]; );
     check!(" \n\r  \n", [sp!("")]; );
-    check!("a",         [sp!("")]; _);
+    check!("a",         [sp!("")]; TOO_LONG);
 
     // literal
-    check!("",    [lit!("a")]; _);
-    check!(" ",   [lit!("a")]; _);
+    check!("",    [lit!("a")]; TOO_SHORT);
+    check!(" ",   [lit!("a")]; INVALID);
     check!("a",   [lit!("a")]; );
-    check!("aa",  [lit!("a")]; _);
-    check!("A",   [lit!("a")]; _);
+    check!("aa",  [lit!("a")]; TOO_LONG);
+    check!("A",   [lit!("a")]; INVALID);
     check!("xy",  [lit!("xy")]; );
     check!("xy",  [lit!("x"), lit!("y")]; );
-    check!("x y", [lit!("x"), lit!("y")]; _);
+    check!("x y", [lit!("x"), lit!("y")]; INVALID);
     check!("xy",  [lit!("x"), sp!(""), lit!("y")]; );
     check!("x y", [lit!("x"), sp!(""), lit!("y")]; );
 
     // numeric
-    check!("1987",       [num!(Year)]; year_div_100: 19, year_mod_100: 87);
-    check!("1987 ",      [num!(Year)]; _);
-    check!("0x12",       [num!(Year)]; _);
-    check!("2015",       [num!(Year)]; year_div_100: 20, year_mod_100: 15);
-    check!("0000",       [num!(Year)]; year_div_100:  0, year_mod_100:  0);
-    check!("9999",       [num!(Year)]; year_div_100: 99, year_mod_100: 99);
-    check!(" \t987",     [num!(Year)]; year_div_100:  9, year_mod_100: 87);
-    check!("5",          [num!(Year)]; year_div_100:  0, year_mod_100:  5);
-    check!("-42",        [num!(Year)]; _);
-    check!("+42",        [num!(Year)]; _);
-    check!("5\0",        [num!(Year)]; _);
-    check!("\05",        [num!(Year)]; _);
-    check!("",           [num!(Year)]; _);
-    check!("12345",      [num!(Year),  lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12345",      [nums!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12345",      [num0!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12341234",   [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
-    check!("1234 1234",  [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
-    check!("1234 1235",  [num!(Year), num!(Year)]; _);
-    check!("1234 1234",  [num!(Year), lit!("x"), num!(Year)]; _);
-    check!("1234x1234",  [num!(Year), lit!("x"), num!(Year)];
-           year_div_100: 12, year_mod_100: 34);
-    check!("1234xx1234",  [num!(Year), lit!("x"), num!(Year)]; _);
-    check!("1234 x 1234", [num!(Year), lit!("x"), num!(Year)]; _);
+    check!("1987",        [num!(Year)]; year_div_100: 19, year_mod_100: 87);
+    check!("1987 ",       [num!(Year)]; TOO_LONG);
+    check!("0x12",        [num!(Year)]; TOO_LONG); // `0` is parsed
+    check!("x123",        [num!(Year)]; INVALID);
+    check!("2015",        [num!(Year)]; year_div_100: 20, year_mod_100: 15);
+    check!("0000",        [num!(Year)]; year_div_100:  0, year_mod_100:  0);
+    check!("9999",        [num!(Year)]; year_div_100: 99, year_mod_100: 99);
+    check!(" \t987",      [num!(Year)]; year_div_100:  9, year_mod_100: 87);
+    check!("5",           [num!(Year)]; year_div_100:  0, year_mod_100:  5);
+    check!("-42",         [num!(Year)]; INVALID);
+    check!("+42",         [num!(Year)]; INVALID);
+    check!("5\0",         [num!(Year)]; TOO_LONG);
+    check!("\05",         [num!(Year)]; INVALID);
+    check!("",            [num!(Year)]; TOO_SHORT);
+    check!("12345",       [num!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
+    check!("12345",       [nums!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
+    check!("12345",       [num0!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
+    check!("12341234",    [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
+    check!("1234 1234",   [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
+    check!("1234 1235",   [num!(Year), num!(Year)]; IMPOSSIBLE);
+    check!("1234 1234",   [num!(Year), lit!("x"), num!(Year)]; INVALID);
+    check!("1234x1234",   [num!(Year), lit!("x"), num!(Year)]; year_div_100: 12, year_mod_100: 34);
+    check!("1234xx1234",  [num!(Year), lit!("x"), num!(Year)]; INVALID);
+    check!("1234 x 1234", [num!(Year), lit!("x"), num!(Year)]; INVALID);
 
     // various numeric fields
     check!("1234 5678",
@@ -674,32 +732,32 @@ fn test_parse() {
     check!("Apr",       [fix!(ShortMonthName)]; month: 4);
     check!("APR",       [fix!(ShortMonthName)]; month: 4);
     check!("ApR",       [fix!(ShortMonthName)]; month: 4);
-    check!("April",     [fix!(ShortMonthName)]; _);
-    check!("A",         [fix!(ShortMonthName)]; _);
-    check!("Sol",       [fix!(ShortMonthName)]; _);
+    check!("April",     [fix!(ShortMonthName)]; TOO_LONG); // `Apr` is parsed
+    check!("A",         [fix!(ShortMonthName)]; TOO_SHORT);
+    check!("Sol",       [fix!(ShortMonthName)]; INVALID);
     check!("Apr",       [fix!(LongMonthName)]; month: 4);
-    check!("Apri",      [fix!(LongMonthName)]; _);
+    check!("Apri",      [fix!(LongMonthName)]; TOO_LONG); // `Apr` is parsed
     check!("April",     [fix!(LongMonthName)]; month: 4);
-    check!("Aprill",    [fix!(LongMonthName)]; _);
+    check!("Aprill",    [fix!(LongMonthName)]; TOO_LONG);
     check!("Aprill",    [fix!(LongMonthName), lit!("l")]; month: 4);
     check!("Aprl",      [fix!(LongMonthName), lit!("l")]; month: 4);
-    check!("April",     [fix!(LongMonthName), lit!("il")]; _); // do not backtrack
+    check!("April",     [fix!(LongMonthName), lit!("il")]; TOO_SHORT); // do not backtrack
     check!("thu",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
     check!("Thu",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
     check!("THU",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
     check!("tHu",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thursday",  [fix!(ShortWeekdayName)]; _);
-    check!("T",         [fix!(ShortWeekdayName)]; _);
-    check!("The",       [fix!(ShortWeekdayName)]; _);
-    check!("Nop",       [fix!(ShortWeekdayName)]; _);
+    check!("Thursday",  [fix!(ShortWeekdayName)]; TOO_LONG); // `Thu` is parsed
+    check!("T",         [fix!(ShortWeekdayName)]; TOO_SHORT);
+    check!("The",       [fix!(ShortWeekdayName)]; INVALID);
+    check!("Nop",       [fix!(ShortWeekdayName)]; INVALID);
     check!("Thu",       [fix!(LongWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thur",      [fix!(LongWeekdayName)]; _);
-    check!("Thurs",     [fix!(LongWeekdayName)]; _);
+    check!("Thur",      [fix!(LongWeekdayName)]; TOO_LONG); // `Thu` is parsed
+    check!("Thurs",     [fix!(LongWeekdayName)]; TOO_LONG); // ditto
     check!("Thursday",  [fix!(LongWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thursdays", [fix!(LongWeekdayName)]; _);
+    check!("Thursdays", [fix!(LongWeekdayName)]; TOO_LONG);
     check!("Thursdays", [fix!(LongWeekdayName), lit!("s")]; weekday: Weekday::Thu);
     check!("Thus",      [fix!(LongWeekdayName), lit!("s")]; weekday: Weekday::Thu);
-    check!("Thursday",  [fix!(LongWeekdayName), lit!("rsday")]; _); // do not backtrack
+    check!("Thursday",  [fix!(LongWeekdayName), lit!("rsday")]; TOO_SHORT); // do not backtrack
 
     // fixed: am/pm
     check!("am",  [fix!(LowerAmPm)]; hour_div_12: 0);
@@ -711,13 +769,13 @@ fn test_parse() {
     check!("AM",  [fix!(UpperAmPm)]; hour_div_12: 0);
     check!("PM",  [fix!(UpperAmPm)]; hour_div_12: 1);
     check!("Am",  [fix!(LowerAmPm)]; hour_div_12: 0);
-    check!(" Am", [fix!(LowerAmPm)]; _);
-    check!("ame", [fix!(LowerAmPm)]; _);
-    check!("a",   [fix!(LowerAmPm)]; _);
-    check!("p",   [fix!(LowerAmPm)]; _);
-    check!("x",   [fix!(LowerAmPm)]; _);
-    check!("xx",  [fix!(LowerAmPm)]; _);
-    check!("",    [fix!(LowerAmPm)]; _);
+    check!(" Am", [fix!(LowerAmPm)]; INVALID);
+    check!("ame", [fix!(LowerAmPm)]; TOO_LONG); // `am` is parsed
+    check!("a",   [fix!(LowerAmPm)]; TOO_SHORT);
+    check!("p",   [fix!(LowerAmPm)]; TOO_SHORT);
+    check!("x",   [fix!(LowerAmPm)]; TOO_SHORT);
+    check!("xx",  [fix!(LowerAmPm)]; INVALID);
+    check!("",    [fix!(LowerAmPm)]; TOO_SHORT);
 
     // fixed: timezone offsets
     check!("+00:00",    [fix!(TimezoneOffset)]; offset: 0);
@@ -730,33 +788,35 @@ fn test_parse() {
     check!("-04:56",    [fix!(TimezoneOffset)]; offset: -296 * 60);
     check!("+24:00",    [fix!(TimezoneOffset)]; offset: 24 * 60 * 60);
     check!("-24:00",    [fix!(TimezoneOffset)]; offset: -24 * 60 * 60);
-    check!("+24:01",    [fix!(TimezoneOffset)]; _);
-    check!("-24:01",    [fix!(TimezoneOffset)]; _);
+    check!("+24:01",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
+    check!("-24:01",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
     check!("+00:59",    [fix!(TimezoneOffset)]; offset: 59 * 60);
-    check!("+00:60",    [fix!(TimezoneOffset)]; _);
-    check!("+00:99",    [fix!(TimezoneOffset)]; _);
-    check!("+99:00",    [fix!(TimezoneOffset)]; _);
-    check!("#12:34",    [fix!(TimezoneOffset)]; _);
-    check!("12:34",     [fix!(TimezoneOffset)]; _);
-    check!("+12:34 ",   [fix!(TimezoneOffset)]; _);
+    check!("+00:60",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
+    check!("+00:99",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
+    check!("+99:00",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
+    check!("#12:34",    [fix!(TimezoneOffset)]; INVALID);
+    check!("12:34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("+12:34 ",   [fix!(TimezoneOffset)]; TOO_LONG);
     check!(" +12:34",   [fix!(TimezoneOffset)]; offset: 754 * 60);
     check!("\t -12:34", [fix!(TimezoneOffset)]; offset: -754 * 60);
-    check!("+",         [fix!(TimezoneOffset)]; _);
-    check!("+1",        [fix!(TimezoneOffset)]; _);
-    check!("+12",       [fix!(TimezoneOffset)]; _);
-    check!("+123",      [fix!(TimezoneOffset)]; _);
+    check!("",          [fix!(TimezoneOffset)]; TOO_SHORT);
+    check!("+",         [fix!(TimezoneOffset)]; TOO_SHORT);
+    check!("+1",        [fix!(TimezoneOffset)]; TOO_SHORT);
+    check!("+12",       [fix!(TimezoneOffset)]; TOO_SHORT);
+    check!("+123",      [fix!(TimezoneOffset)]; TOO_SHORT);
     check!("+1234",     [fix!(TimezoneOffset)]; offset: 754 * 60);
-    check!("+12345",    [fix!(TimezoneOffset)]; _);
+    check!("+12345",    [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12345",    [fix!(TimezoneOffset), num!(Day)]; offset: 754 * 60, day: 5);
-    check!("Z",         [fix!(TimezoneOffset)]; _);
+    check!("Z",         [fix!(TimezoneOffset)]; INVALID);
+    check!("z",         [fix!(TimezoneOffset)]; INVALID);
     check!("Z",         [fix!(TimezoneOffsetZ)]; offset: 0);
     check!("z",         [fix!(TimezoneOffsetZ)]; offset: 0);
-    check!("Y",         [fix!(TimezoneOffsetZ)]; _);
+    check!("Y",         [fix!(TimezoneOffsetZ)]; INVALID);
     check!("Zulu",      [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 0);
     check!("zulu",      [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 0);
     check!("+1234ulu",  [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
     check!("+12:34ulu", [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
-    check!("???",       [fix!(TimezoneName)]; _); // not allowed
+    check!("???",       [fix!(TimezoneName)]; BAD_FORMAT); // not allowed
 
     // some practical examples
     check!("2015-02-04T14:37:05+09:00",
