@@ -228,7 +228,7 @@ pub mod format;
 ///
 /// The order of the days of week depends on the context.
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
-#[derive(PartialEq, Eq, Copy, Clone, FromPrimitive, Show)]
+#[derive(PartialEq, Eq, Copy, Clone, FromPrimitive, Debug)]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

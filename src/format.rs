@@ -179,7 +179,7 @@ fn format(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveT
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
-#[derive(Show)]
+#[derive(Debug)]
 pub struct DelayedFormat<'a> {
     /// The date view, if any.
     date: Option<NaiveDate>,
