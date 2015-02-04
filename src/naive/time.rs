@@ -14,7 +14,7 @@ use Timelike;
 use div::div_mod_floor;
 use offset::Offset;
 use duration::Duration;
-use format::{DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -116,6 +116,14 @@ impl NaiveTime {
     pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
         if secs >= 86400 || nano >= 2_000_000_000 { return None; }
         Some(NaiveTime { secs: secs, frac: nano })
+    }
+
+    /// Parses a string with the specified format string and returns a new `NaiveTime`.
+    /// See the `format::strftime` module on the supported escape sequences.
+    pub fn from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
+        parsed.to_naive_time()
     }
 
     /// Formats the time in the specified format string.
@@ -366,6 +374,16 @@ mod tests {
 
         // the format specifier should have no effect on `NaiveTime`
         assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)), "03:05:07.009");
+    }
+
+    #[test]
+    fn test_time_from_str() {
+        let hms = |&: h,m,s| NaiveTime::from_hms(h,m,s);
+        assert_eq!(NaiveTime::from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+                   Ok(hms(12, 34, 56))); // ignore date and offset
+        assert_eq!(NaiveTime::from_str("PM 12:59", "%P %H:%M"),
+                   Ok(hms(12, 59, 0)));
+        assert!(NaiveTime::from_str("12:3456", "%H:%M:%S").is_err());
     }
 
     #[test]

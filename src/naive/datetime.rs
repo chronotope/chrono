@@ -15,7 +15,7 @@ use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::date::NaiveDate;
-use format::{DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time without timezone.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
@@ -58,6 +58,14 @@ impl NaiveDateTime {
             (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
             (_, _) => None,
         }
+    }
+
+    /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
+    /// See the `format::strftime` module on the supported escape sequences.
+    pub fn from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
+        parsed.to_naive_datetime_with_offset(0) // no offset adjustment
     }
 
     /// Retrieves a date component.
@@ -328,6 +336,22 @@ mod tests {
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
         assert_eq!(to_timestamp(2001, 9, 9, 1, 46, 40), 1_000_000_000);
         assert_eq!(to_timestamp(2038, 1, 19, 3, 14, 7), 0x7fffffff);
+    }
+
+    #[test]
+    fn test_datetime_from_str() {
+        let ymdhms = |&: y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        assert_eq!(NaiveDateTime::from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+                   Ok(ymdhms(2014, 5, 7, 12, 34, 56))); // ignore offset
+        assert_eq!(NaiveDateTime::from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
+                   Ok(ymdhms(2015, 2, 2, 0, 0, 0)));
+        assert_eq!(NaiveDateTime::from_str("Fri, 09 Aug 2013 23:54:35 GMT",
+                                           "%a, %d %b %Y %H:%M:%S GMT"),
+                   Ok(ymdhms(2013, 8, 9, 23, 54, 35)));
+        assert!(NaiveDateTime::from_str("Sat, 09 Aug 2013 23:54:35 GMT",
+                                        "%a, %d %b %Y %H:%M:%S GMT").is_err());
+        assert!(NaiveDateTime::from_str("2014-5-7 12:3456", "%Y-%m-%d %H:%M:%S").is_err());
+        assert!(NaiveDateTime::from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
     }
 
     #[test]

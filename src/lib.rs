@@ -200,6 +200,7 @@ pub use naive::datetime::NaiveDateTime;
 pub use date::Date;
 pub use time::Time;
 pub use datetime::DateTime;
+pub use format::{ParseError, ParseResult};
 
 // useful throughout the codebase
 macro_rules! try_opt {

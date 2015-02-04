@@ -18,6 +18,7 @@ use naive::datetime::NaiveDateTime;
 use date::Date;
 use time::Time;
 use datetime::DateTime;
+use format::{parse, Parsed, ParseResult, StrftimeItems};
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug)]
@@ -289,6 +290,20 @@ pub trait Offset: Clone + fmt::Debug {
             Some(t) => self.from_local_time(&t),
             None => LocalResult::None,
         }
+    }
+
+    /// Parses a string with the specified format string and
+    /// returns a `DateTime` with the current offset.
+    /// See the `format::strftime` module on the supported escape sequences.
+    ///
+    /// If the format does not include offsets, the current offset is assumed;
+    /// otherwise the input should have a matching UTC offset.
+    ///
+    /// See also `DateTime::from_str` which gives a local `DateTime` with parsed `FixedOffset`.
+    fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
+        parsed.to_datetime_with_offset(self.clone())
     }
 
     /// Returns the *current* offset from UTC to the local time.

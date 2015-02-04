@@ -19,7 +19,7 @@ use offset::Offset;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 
-use self::parsed::Parsed;
+pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
 
 /// Padding characters for numeric items.

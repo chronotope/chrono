@@ -11,12 +11,12 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 
 use {Weekday, Timelike, Datelike};
-use offset::Offset;
+use offset::{Offset, FixedOffset};
 use duration::Duration;
 use naive::datetime::NaiveDateTime;
 use time::Time;
 use date::Date;
-use format::{DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time with timezone.
 #[derive(Clone)]
@@ -85,6 +85,19 @@ impl<Off:Offset> DateTime<Off> {
     /// Returns a view to the local datetime.
     fn local(&self) -> NaiveDateTime {
         self.offset.to_local_datetime(&self.datetime)
+    }
+}
+
+impl DateTime<FixedOffset> {
+    /// Parses a string with the specified format string and
+    /// returns a new `DateTime` with a parsed `FixedOffset`.
+    /// See the `format::strftime` module on the supported escape sequences.
+    ///
+    /// See also `Offset::datetime_from_str` which gives a local `DateTime` on specific time zone.
+    pub fn from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
+        parsed.to_datetime()
     }
 }
 
@@ -244,7 +257,8 @@ impl<Off: Offset + fmt::Display> fmt::Display for DateTime<Off> {
 
 #[cfg(test)]
 mod tests {
-    use {Datelike};
+    use super::DateTime;
+    use Datelike;
     use duration::Duration;
     use offset::{Offset, UTC, Local, FixedOffset};
 
@@ -275,7 +289,20 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime_fmt_with_local() {
+    fn test_datetime_from_str() {
+        let ymdhms = |&: y,m,d,h,n,s,off| FixedOffset::east(off).ymd(y,m,d).and_hms(h,n,s);
+        assert_eq!(DateTime::from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+                   Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570*60))); // ignore offset
+        assert!(DateTime::from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
+        assert!(DateTime::from_str("Fri, 09 Aug 2013 23:54:35 GMT",
+                                   "%a, %d %b %Y %H:%M:%S GMT").is_err());
+        assert_eq!(UTC.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
+                                         "%a, %d %b %Y %H:%M:%S GMT"),
+                   Ok(UTC.ymd(2013, 8, 9).and_hms(23, 54, 35)));
+    }
+
+    #[test]
+    fn test_datetime_format_with_local() {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
         assert_eq!(dt.format("%Y").to_string(), dt.with_offset(UTC).format("%Y").to_string());

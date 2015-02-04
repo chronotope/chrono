@@ -491,6 +491,25 @@ impl Parsed {
             LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
         }
     }
+
+    /// Returns a parsed timezone-aware date and time out of given fields,
+    /// with an additional `Offset` used to interpret and validate the local date.
+    ///
+    /// This method is able to determine the combined date and time
+    /// from date and time fields or a single `timestamp` field, plus a time zone offset.
+    /// Either way those fields have to be consistent to each other.
+    /// If parsed fields include an UTC offset, it also has to be consistent to `offset`.
+    pub fn to_datetime_with_offset<Off: Offset>(&self, offset: Off) -> ParseResult<DateTime<Off>> {
+        let delta = offset.local_minus_utc().num_seconds();
+        let delta = try!(delta.to_i32().ok_or(OUT_OF_RANGE));
+        if self.offset.unwrap_or(delta) != delta { return Err(IMPOSSIBLE); }
+        let datetime = try!(self.to_naive_datetime_with_offset(delta));
+        match offset.from_local_datetime(&datetime) {
+            LocalResult::None => Err(IMPOSSIBLE),
+            LocalResult::Single(t) => Ok(t),
+            LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
+        }
+    }
 }
 
 #[cfg(test)]
