@@ -4,7 +4,7 @@
 
 /*!
 
-# Chrono 0.1.17
+# Chrono 0.1.18
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
