@@ -7,7 +7,6 @@
  */
 
 use std::fmt;
-use std::iter;
 use std::usize;
 use std::error::Error;
 
@@ -229,6 +228,18 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
             Item::Fixed(spec) => {
                 use self::Fixed::*;
 
+                fn write_local_minus_utc(w: &mut fmt::Formatter, off: Duration,
+                                         allow_zulu: bool) -> fmt::Result {
+                    let off = off.num_minutes();
+                    if !allow_zulu || off != 0 {
+                        let (sign, off) = if off < 0 {('-', -off)} else {('+', off)};
+                        write!(w, "{}{:02}{:02}", sign, off / 60, off % 60)
+                    } else {
+                        write!(w, "Z")
+                    }
+                }
+
+
                 let ret = match spec {
                     ShortMonthName =>
                         date.map(|d| write!(w, "{}", SHORT_MONTHS[d.month0() as usize])),
@@ -247,21 +258,9 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     TimezoneName =>
                         off.map(|&(ref name, _)| write!(w, "{}", *name)),
                     TimezoneOffset =>
-                        off.map(|&(_, ref local_minus_utc)| {
-                            let off = local_minus_utc.num_minutes();
-                            let (sign, off) = if off < 0 {('-', -off)} else {('+', off)};
-                            write!(w, "{}{:02}{:02}", sign, off / 60, off % 60)
-                        }),
+                        off.map(|&(_, off)| write_local_minus_utc(w, off, false)),
                     TimezoneOffsetZ =>
-                        off.map(|&(_, ref local_minus_utc)| {
-                            let off = local_minus_utc.num_minutes();
-                            if off != 0 {
-                                let (sign, off) = if off < 0 {('-', -off)} else {('+', off)};
-                                write!(w, "{}{:02}{:02}", sign, off / 60, off % 60)
-                            } else {
-                                write!(w, "Z")
-                            }
-                        }),
+                        off.map(|&(_, off)| write_local_minus_utc(w, off, true)),
                 };
 
                 match ret {
@@ -358,97 +357,8 @@ const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
 pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
         where I: Iterator<Item=Item<'a>> {
-    // lowercased month and weekday names
-    static LONG_MONTHS: [&'static str; 12] =
-        ["january", "february", "march", "april", "may", "june",
-         "july", "august", "september", "october", "november", "december"];
-    static LONG_WEEKDAYS: [&'static str; 7] =
-        ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-
-    // tries to parse the month index (0 through 11) with the first three ASCII letters.
-    fn parse_short_month(s: &str) -> ParseResult<u8> {
-        if s.len() < 3 { return Err(TOO_SHORT); }
-        let s = s.as_bytes();
-        match [s[0] | 32, s[1] | 32, s[2] | 32] {
-            [b'j',b'a',b'n'] => Ok(0),
-            [b'f',b'e',b'b'] => Ok(1),
-            [b'm',b'a',b'r'] => Ok(2),
-            [b'a',b'p',b'r'] => Ok(3),
-            [b'm',b'a',b'y'] => Ok(4),
-            [b'j',b'u',b'n'] => Ok(5),
-            [b'j',b'u',b'l'] => Ok(6),
-            [b'a',b'u',b'g'] => Ok(7),
-            [b's',b'e',b'p'] => Ok(8),
-            [b'o',b'c',b't'] => Ok(9),
-            [b'n',b'o',b'v'] => Ok(10),
-            [b'd',b'e',b'c'] => Ok(11),
-            _ => Err(INVALID)
-        }
-    }
-
-    // tries to parse the weekday with the first three ASCII letters.
-    fn parse_short_weekday(s: &str) -> ParseResult<Weekday> {
-        if s.len() < 3 { return Err(TOO_SHORT); }
-        let s = s.as_bytes();
-        match [s[0] | 32, s[1] | 32, s[2] | 32] {
-            [b'm',b'o',b'n'] => Ok(Weekday::Mon),
-            [b't',b'u',b'e'] => Ok(Weekday::Tue),
-            [b'w',b'e',b'd'] => Ok(Weekday::Wed),
-            [b't',b'h',b'u'] => Ok(Weekday::Thu),
-            [b'f',b'r',b'i'] => Ok(Weekday::Fri),
-            [b's',b'a',b't'] => Ok(Weekday::Sat),
-            [b's',b'u',b'n'] => Ok(Weekday::Sun),
-            _ => Err(INVALID)
-        }
-    }
-
-    // tries to consume `\s*[-+]\d\d[\s:]*\d\d` and return an offset in seconds
-    fn parse_timezone_offset(mut s: &str, allow_zulu: bool) -> ParseResult<(&str, i32)> {
-        s = s.trim_left();
-
-        // + or -, or Z/z if `allow_zulu` is true
-        let negative = match s.as_bytes().first() {
-            Some(&b'+') => false,
-            Some(&b'-') => true,
-            Some(&b'z') | Some(&b'Z') if allow_zulu => return Ok((&s[1..], 0)),
-            Some(_) => return Err(INVALID),
-            None => return Err(TOO_SHORT),
-        };
-        s = &s[1..];
-
-        // hours (00--24, where 24 is allowed only with 24:00)
-        // the range check happens later for this reason.
-        let hours = match s.as_bytes() {
-            [h1 @ b'0'...b'2', h2 @ b'0'...b'9', ..] => ((h1 - b'0') * 10 + (h2 - b'0')) as i32,
-            [b'3'...b'9', b'0'...b'9', ..] => return Err(OUT_OF_RANGE),
-            [] | [_] => return Err(TOO_SHORT),
-            _ => return Err(INVALID),
-        };
-        s = &s[2..];
-
-        // optional colons and whitespaces
-        s = s.trim_left_matches(|&: c: char| c == ':' || c.is_whitespace());
-
-        // minutes (00--59)
-        let minutes = match s.as_bytes() {
-            [m1 @ b'0'...b'5', m2 @ b'0'...b'9', ..] => ((m1 - b'0') * 10 + (m2 - b'0')) as i32,
-            [b'6'...b'9', b'0'...b'9', ..] => return Err(OUT_OF_RANGE),
-            [] | [_] => return Err(TOO_SHORT),
-            _ => return Err(INVALID),
-        };
-        s = &s[2..];
-
-        let seconds = hours * 3600 + minutes * 60;
-        if seconds > 86400 { return Err(OUT_OF_RANGE); } // range check for hours
-        Ok((s, if negative {-seconds} else {seconds}))
-    }
-
-    // compares two slice case-insensitively (in ASCII).
-    // assumes the `pattern` is already converted to lower case.
-    fn equals_ascii_nocase(s: &str, pattern: &str) -> bool {
-        iter::order::equals(s.as_bytes().iter().map(|&: &c| match c { b'A'...b'Z' => c + 32,
-                                                                      _ => c }),
-                            pattern.as_bytes().iter().cloned())
+    macro_rules! try_consume {
+        ($e:expr) => ({ let (s_, v) = try!($e); s = s_; v })
     }
 
     for item in items {
@@ -483,45 +393,32 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                     })
                 }
 
-                let (width, set): (usize, fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
-                    Year           => (4, Parsed::set_year),
-                    YearDiv100     => (2, Parsed::set_year_div_100),
-                    YearMod100     => (2, Parsed::set_year_mod_100),
-                    IsoYear        => (4, Parsed::set_isoyear),
-                    IsoYearDiv100  => (2, Parsed::set_isoyear_div_100),
-                    IsoYearMod100  => (2, Parsed::set_isoyear_mod_100),
-                    Month          => (2, Parsed::set_month),
-                    Day            => (2, Parsed::set_day),
-                    WeekFromSun    => (2, Parsed::set_week_from_sun),
-                    WeekFromMon    => (2, Parsed::set_week_from_mon),
-                    IsoWeek        => (2, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, set_weekday_with_number_from_monday),
-                    Ordinal        => (3, Parsed::set_ordinal),
-                    Hour           => (2, Parsed::set_hour),
-                    Hour12         => (2, Parsed::set_hour12),
-                    Minute         => (2, Parsed::set_minute),
-                    Second         => (2, Parsed::set_second),
-                    Nanosecond     => (9, Parsed::set_nanosecond),
-                    Timestamp      => (usize::MAX, Parsed::set_timestamp),
+                let (width, frac, set): (usize, bool,
+                                         fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
+                    Year           => (4, false, Parsed::set_year),
+                    YearDiv100     => (2, false, Parsed::set_year_div_100),
+                    YearMod100     => (2, false, Parsed::set_year_mod_100),
+                    IsoYear        => (4, false, Parsed::set_isoyear),
+                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
+                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
+                    Month          => (2, false, Parsed::set_month),
+                    Day            => (2, false, Parsed::set_day),
+                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
+                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
+                    IsoWeek        => (2, false, Parsed::set_isoweek),
+                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
+                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
+                    Ordinal        => (3, false, Parsed::set_ordinal),
+                    Hour           => (2, false, Parsed::set_hour),
+                    Hour12         => (2, false, Parsed::set_hour12),
+                    Minute         => (2, false, Parsed::set_minute),
+                    Second         => (2, false, Parsed::set_second),
+                    Nanosecond     => (9, true, Parsed::set_nanosecond),
+                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
                 };
 
-                // strip zero or more whitespaces
-                s = s.trim_left();
-
-                // scan digits
-                let mut win = s.as_bytes();
-                if win.len() > width { win = &win[..width]; }
-                let upto = win.iter().position(|&c| c < b'0' || b'9' < c).unwrap_or(win.len());
-                if upto == 0 { // no digits detected
-                    return Err(if win.is_empty() {TOO_SHORT} else {INVALID});
-                }
-
-                // overflow is possible with `Timestamp` for example
-                // we have no other error cause, and can safely replace the error to our version
-                let v = try!(s[..upto].parse().map_err(|_| OUT_OF_RANGE));
+                let v = try_consume!(scan::number(s.trim_left(), 1, width, frac));
                 try!(set(parsed, v));
-                s = &s[upto..];
             }
 
             Item::Fixed(spec) => {
@@ -529,42 +426,22 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                 match spec {
                     ShortMonthName => {
-                        let month0 = try!(parse_short_month(s));
+                        let month0 = try_consume!(scan::short_month0(s));
                         try!(parsed.set_month(month0 as i64 + 1));
-                        s = &s[3..];
                     }
 
                     LongMonthName => {
-                        let month0 = try!(parse_short_month(s));
-                        let long = LONG_MONTHS[month0 as usize];
-                        // three-letter abbreviation is a prefix of the corresponding long name
-                        if s.len() >= long.len() && equals_ascii_nocase(&s[3..long.len()],
-                                                                        &long[3..]) {
-                            // *optionally* consume the long form if possible
-                            s = &s[long.len()..];
-                        } else {
-                            s = &s[3..];
-                        }
+                        let month0 = try_consume!(scan::short_or_long_month0(s));
                         try!(parsed.set_month(month0 as i64 + 1));
                     }
 
                     ShortWeekdayName => {
-                        let weekday = try!(parse_short_weekday(s));
+                        let weekday = try_consume!(scan::short_weekday(s));
                         try!(parsed.set_weekday(weekday));
-                        s = &s[3..];
                     }
 
                     LongWeekdayName => {
-                        let weekday = try!(parse_short_weekday(s));
-                        let long = LONG_WEEKDAYS[weekday.num_days_from_monday() as usize];
-                        // three-letter abbreviation is a prefix of the corresponding long name
-                        if s.len() >= long.len() && equals_ascii_nocase(&s[3..long.len()],
-                                                                        &long[3..]) {
-                            // *optionally* consume the long form if possible
-                            s = &s[long.len()..];
-                        } else {
-                            s = &s[3..];
-                        }
+                        let weekday = try_consume!(scan::short_or_long_weekday(s));
                         try!(parsed.set_weekday(weekday));
                     }
 
@@ -581,10 +458,15 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                     TimezoneName => return Err(BAD_FORMAT),
 
-                    TimezoneOffset | TimezoneOffsetZ => {
-                        let allow_zulu = spec == TimezoneOffsetZ;
-                        let (s_, offset) = try!(parse_timezone_offset(s, allow_zulu));
-                        s = s_;
+                    TimezoneOffset => {
+                        let offset = try_consume!(scan::timezone_offset(s.trim_left(),
+                                                                        scan::colon_or_space));
+                        try!(parsed.set_offset(offset as i64));
+                    }
+
+                    TimezoneOffsetZ => {
+                        let offset = try_consume!(scan::timezone_offset_zulu(s.trim_left(),
+                                                                             scan::colon_or_space));
                         try!(parsed.set_offset(offset as i64));
                     }
                 }
@@ -639,6 +521,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<'a, 
     }
 }
 
+mod scan;
 pub mod parsed;
 
 pub mod strftime;
@@ -646,16 +529,20 @@ pub mod strftime;
 #[cfg(test)]
 #[test]
 fn test_parse() {
-    macro_rules! check {
-        ($fmt:expr, $items:expr; $err:expr) => ({
-            assert_eq!(parse(&mut Parsed::new(), $fmt, $items.iter().cloned()), Err($err));
-        });
+    // workaround for Rust issue #22255
+    fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, items.iter().cloned()));
+        Ok(parsed)
+    }
 
-        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => ({
-            let mut parsed = Parsed::new();
-            assert_eq!(parse(&mut parsed, $fmt, $items.iter().cloned()), Ok(()));
-            assert_eq!(parsed, Parsed { $($k: Some($v),)* ..Parsed::new() });
-        });
+    macro_rules! check {
+        ($fmt:expr, $items:expr; $err:expr) => (
+            assert_eq!(parse_all($fmt, &$items), Err($err))
+        );
+        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (
+            assert_eq!(parse_all($fmt, &$items), Ok(Parsed { $($k: Some($v),)* ..Parsed::new() }))
+        );
     }
 
     // empty string
@@ -724,7 +611,7 @@ fn test_parse() {
            weekday: Weekday::Sun, ordinal: 89, hour_mod_12: 1);
     check!("23 45 6 78901234 567890123",
            [num!(Hour), num!(Minute), num!(Second), num!(Nanosecond), num!(Timestamp)];
-           hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 78_901_234,
+           hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 789_012_340,
            timestamp: 567_890_123);
 
     // fixed: month and weekday names
@@ -788,12 +675,11 @@ fn test_parse() {
     check!("-04:56",    [fix!(TimezoneOffset)]; offset: -296 * 60);
     check!("+24:00",    [fix!(TimezoneOffset)]; offset: 24 * 60 * 60);
     check!("-24:00",    [fix!(TimezoneOffset)]; offset: -24 * 60 * 60);
-    check!("+24:01",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
-    check!("-24:01",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
+    check!("+99:59",    [fix!(TimezoneOffset)]; offset: (100 * 60 - 1) * 60);
+    check!("-99:59",    [fix!(TimezoneOffset)]; offset: -(100 * 60 - 1) * 60);
     check!("+00:59",    [fix!(TimezoneOffset)]; offset: 59 * 60);
     check!("+00:60",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
     check!("+00:99",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
-    check!("+99:00",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
     check!("#12:34",    [fix!(TimezoneOffset)]; INVALID);
     check!("12:34",     [fix!(TimezoneOffset)]; INVALID);
     check!("+12:34 ",   [fix!(TimezoneOffset)]; TOO_LONG);
@@ -839,6 +725,6 @@ fn test_parse() {
            hour_div_12: 1, hour_mod_12: 3, minute: 14);
     check!("12345678901234.56789",
            [num!(Timestamp), lit!("."), num!(Nanosecond)];
-           nanosecond: 56_789, timestamp: 12_345_678_901_234);
+           nanosecond: 567_890_000, timestamp: 12_345_678_901_234);
 }
 
