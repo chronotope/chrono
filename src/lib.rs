@@ -218,6 +218,11 @@ Advanced offset handling is not yet supported (but is planned in 0.3).
 #![feature(core, collections, hash, std_misc)] // lib stability features as per RFC #507
 #![cfg_attr(test, feature(test))] // ditto
 #![deny(missing_docs)]
+//  This is needed to allow compile-time regular expressions in this crate.
+#![feature(plugin)]
+#![plugin(regex_macros)]
+extern crate regex;
+
 
 extern crate "time" as stdtime;
 
@@ -259,6 +264,12 @@ pub mod date;
 pub mod time;
 pub mod datetime;
 pub mod format;
+
+/// Parsing functions for date/time strings.
+///
+/// Parsing functions are provided for RFC 2822 ("Tue, 20 Jan 2015 17:35:20 -0800")
+/// and RFC3339/ISO8601 ("2015-01-20T17:35:20.001-0800") date/time strings.
+pub mod parse;
 
 /// The day of week (DOW).
 ///
