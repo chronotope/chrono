@@ -14,7 +14,7 @@ use Timelike;
 use div::div_mod_floor;
 use offset::Offset;
 use duration::Duration;
-use format::{parse, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -126,11 +126,18 @@ impl NaiveTime {
         parsed.to_naive_time()
     }
 
-    /// Formats the time in the specified format string.
+    /// Formats the time with the specified formatting items.
+    #[inline]
+    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+            where I: Iterator<Item=Item<'a>> + Clone {
+        DelayedFormat::new(None, Some(self.clone()), items)
+    }
+
+    /// Formats the time with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
-        DelayedFormat::new(None, Some(self.clone()), StrftimeItems::new(fmt))
+        self.format_with_items(StrftimeItems::new(fmt))
     }
 
     /// Returns a triple of the hour, minute and second numbers.

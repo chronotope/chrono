@@ -15,7 +15,7 @@ use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::date::NaiveDate;
-use format::{parse, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time without timezone.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
@@ -133,12 +133,18 @@ impl NaiveDateTime {
         Some(NaiveDateTime { date: date, time: time })
     }
 
-    /// Formats the combined date and time in the specified format string.
+    /// Formats the combined date and time with the specified formatting items.
+    #[inline]
+    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+            where I: Iterator<Item=Item<'a>> + Clone {
+        DelayedFormat::new(Some(self.date.clone()), Some(self.time.clone()), items)
+    }
+
+    /// Formats the combined date and time with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
-        DelayedFormat::new(Some(self.date.clone()), Some(self.time.clone()),
-                           StrftimeItems::new(fmt))
+        self.format_with_items(StrftimeItems::new(fmt))
     }
 }
 

@@ -14,7 +14,7 @@ use Timelike;
 use offset::Offset;
 use duration::Duration;
 use naive::time::NaiveTime;
-use format::{DelayedFormat, StrftimeItems};
+use format::{Item, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 time with timezone.
 #[derive(Clone)]
@@ -51,12 +51,18 @@ impl<Off:Offset> Time<Off> {
 }
 
 impl<Off: Offset + fmt::Display> Time<Off> {
-    /// Formats the time in the specified format string.
+    /// Formats the time with the specified formatting items.
+    #[inline]
+    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+            where I: Iterator<Item=Item<'a>> + Clone {
+        DelayedFormat::new_with_offset(None, Some(self.local()), &self.offset, items)
+    }
+
+    /// Formats the time with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
-        DelayedFormat::new_with_offset(None, Some(self.local()), &self.offset,
-                                       StrftimeItems::new(fmt))
+        self.format_with_items(StrftimeItems::new(fmt))
     }
 }
 

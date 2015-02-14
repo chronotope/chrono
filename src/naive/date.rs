@@ -15,7 +15,7 @@ use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
-use format::{parse, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -366,11 +366,18 @@ impl NaiveDate {
                            Of::new(ordinal, flags))
     }
 
-    /// Formats the date in the specified format string.
+    /// Formats the date with the specified formatting items.
+    #[inline]
+    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+            where I: Iterator<Item=Item<'a>> + Clone {
+        DelayedFormat::new(Some(self.clone()), None, items)
+    }
+
+    /// Formats the date with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
-        DelayedFormat::new(Some(self.clone()), None, StrftimeItems::new(fmt))
+        self.format_with_items(StrftimeItems::new(fmt))
     }
 }
 

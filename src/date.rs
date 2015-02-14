@@ -17,7 +17,7 @@ use naive;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use datetime::DateTime;
-use format::{DelayedFormat, StrftimeItems};
+use format::{Item, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 calendar date with timezone.
 #[derive(Clone)]
@@ -200,12 +200,18 @@ impl<Off:Offset> Date<Off> {
 }
 
 impl<Off: Offset + fmt::Display> Date<Off> {
-    /// Formats the date in the specified format string.
+    /// Formats the date with the specified formatting items.
+    #[inline]
+    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+            where I: Iterator<Item=Item<'a>> + Clone {
+        DelayedFormat::new_with_offset(Some(self.local()), None, &self.offset, items)
+    }
+
+    /// Formats the date with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
-        DelayedFormat::new_with_offset(Some(self.local()), None, &self.offset,
-                                       StrftimeItems::new(fmt))
+        self.format_with_items(StrftimeItems::new(fmt))
     }
 }
 
