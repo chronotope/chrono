@@ -368,35 +368,35 @@ fn test_parse() {
     check!("x y", [lit!("x"), sp!(""), lit!("y")]; );
 
     // numeric
-    check!("1987",        [num!(Year)]; year_div_100: 19, year_mod_100: 87);
+    check!("1987",        [num!(Year)]; year: 1987);
     check!("1987 ",       [num!(Year)]; TOO_LONG);
     check!("0x12",        [num!(Year)]; TOO_LONG); // `0` is parsed
     check!("x123",        [num!(Year)]; INVALID);
-    check!("2015",        [num!(Year)]; year_div_100: 20, year_mod_100: 15);
-    check!("0000",        [num!(Year)]; year_div_100:  0, year_mod_100:  0);
-    check!("9999",        [num!(Year)]; year_div_100: 99, year_mod_100: 99);
-    check!(" \t987",      [num!(Year)]; year_div_100:  9, year_mod_100: 87);
-    check!("5",           [num!(Year)]; year_div_100:  0, year_mod_100:  5);
-    check!("-42",         [num!(Year)]; INVALID);
-    check!("+42",         [num!(Year)]; INVALID);
+    check!("2015",        [num!(Year)]; year: 2015);
+    check!("0000",        [num!(Year)]; year:    0);
+    check!("9999",        [num!(Year)]; year: 9999);
+    check!(" \t987",      [num!(Year)]; year:  987);
+    check!("5",           [num!(Year)]; year:    5);
+    check!("-42",         [num!(Year)]; INVALID); // while `year` supports the negative year,
+    check!("+42",         [num!(Year)]; INVALID); // the parser doesn't (for now).
     check!("5\0",         [num!(Year)]; TOO_LONG);
     check!("\05",         [num!(Year)]; INVALID);
     check!("",            [num!(Year)]; TOO_SHORT);
-    check!("12345",       [num!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12345",       [nums!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12345",       [num0!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12341234",    [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
-    check!("1234 1234",   [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
+    check!("12345",       [num!(Year), lit!("5")]; year: 1234);
+    check!("12345",       [nums!(Year), lit!("5")]; year: 1234);
+    check!("12345",       [num0!(Year), lit!("5")]; year: 1234);
+    check!("12341234",    [num!(Year), num!(Year)]; year: 1234);
+    check!("1234 1234",   [num!(Year), num!(Year)]; year: 1234);
     check!("1234 1235",   [num!(Year), num!(Year)]; IMPOSSIBLE);
     check!("1234 1234",   [num!(Year), lit!("x"), num!(Year)]; INVALID);
-    check!("1234x1234",   [num!(Year), lit!("x"), num!(Year)]; year_div_100: 12, year_mod_100: 34);
+    check!("1234x1234",   [num!(Year), lit!("x"), num!(Year)]; year: 1234);
     check!("1234xx1234",  [num!(Year), lit!("x"), num!(Year)]; INVALID);
     check!("1234 x 1234", [num!(Year), lit!("x"), num!(Year)]; INVALID);
 
     // various numeric fields
     check!("1234 5678",
            [num!(Year), num!(IsoYear)];
-           year_div_100: 12, year_mod_100: 34, isoyear_div_100: 56, isoyear_mod_100: 78);
+           year: 1234, isoyear: 5678);
     check!("12 34 56 78",
            [num!(YearDiv100), num!(YearMod100), num!(IsoYearDiv100), num!(IsoYearMod100)];
            year_div_100: 12, year_mod_100: 34, isoyear_div_100: 56, isoyear_mod_100: 78);
@@ -506,18 +506,17 @@ fn test_parse() {
     check!("2015-02-04T14:37:05+09:00",
            [num!(Year), lit!("-"), num!(Month), lit!("-"), num!(Day), lit!("T"),
             num!(Hour), lit!(":"), num!(Minute), lit!(":"), num!(Second), fix!(TimezoneOffset)];
-           year_div_100: 20, year_mod_100: 15, month: 2, day: 4,
-           hour_div_12: 1, hour_mod_12: 2, minute: 37, second: 5, offset: 32400);
+           year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
+           minute: 37, second: 5, offset: 32400);
     check!("Mon, 10 Jun 2013 09:32:37 GMT",
            [fix!(ShortWeekdayName), lit!(","), sp!(" "), num!(Day), sp!(" "),
             fix!(ShortMonthName), sp!(" "), num!(Year), sp!(" "), num!(Hour), lit!(":"),
             num!(Minute), lit!(":"), num!(Second), sp!(" "), lit!("GMT")];
-           year_div_100: 20, year_mod_100: 13, month: 6, day: 10, weekday: Weekday::Mon,
+           year: 2013, month: 6, day: 10, weekday: Weekday::Mon,
            hour_div_12: 0, hour_mod_12: 9, minute: 32, second: 37);
     check!("20060102150405",
            [num!(Year), num!(Month), num!(Day), num!(Hour), num!(Minute), num!(Second)];
-           year_div_100: 20, year_mod_100: 6, month: 1, day: 2,
-           hour_div_12: 1, hour_mod_12: 3, minute: 4, second: 5);
+           year: 2006, month: 1, day: 2, hour_div_12: 1, hour_mod_12: 3, minute: 4, second: 5);
     check!("3:14PM",
            [num!(Hour12), lit!(":"), num!(Minute), fix!(LowerAmPm)];
            hour_div_12: 1, hour_mod_12: 3, minute: 14);
