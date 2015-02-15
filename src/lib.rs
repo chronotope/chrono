@@ -21,6 +21,21 @@ which Chrono builts upon and should acknowledge:
 * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 
+## Usage
+
+Put this in your `Cargo.toml`:
+
+```toml
+[dependencies]
+chrono = "0.2"
+```
+
+And this in your crate root:
+
+```toml
+extern crate chrono;
+```
+
 ## Overview
 
 ### Duration
@@ -133,7 +148,8 @@ assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 
 Parsing can be done with two methods:
 
-- `DateTime::from_str` parses a date and time with offsets and returns `DateTime<FixedOffset>`.
+- `DateTime::parse_from_str` parses a date and time with offsets and
+  returns `DateTime<FixedOffset>`.
   This should be used when the offset is a part of input and the caller cannot guess that.
   It *cannot* be used when the offset can be missing.
 
@@ -149,8 +165,8 @@ use chrono::{UTC, Offset, DateTime};
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
 assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
-assert_eq!(DateTime::from_str("2014-11-28 21:00:09 +09:00",
-                              "%Y-%m-%d %H:%M:%S %z").map(|dt| dt.with_offset(UTC)), Ok(dt));
+assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00",
+                                    "%Y-%m-%d %H:%M:%S %z").map(|dt| dt.with_offset(UTC)), Ok(dt));
 
 // oops, the year is missing!
 assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());

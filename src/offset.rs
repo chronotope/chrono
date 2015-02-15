@@ -299,7 +299,8 @@ pub trait Offset: Clone + fmt::Debug {
     /// If the format does not include offsets, the current offset is assumed;
     /// otherwise the input should have a matching UTC offset.
     ///
-    /// See also `DateTime::from_str` which gives a local `DateTime` with parsed `FixedOffset`.
+    /// See also `DateTime::parse_from_str` which gives a local `DateTime`
+    /// with parsed `FixedOffset`.
     fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));

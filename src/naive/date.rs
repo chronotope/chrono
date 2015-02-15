@@ -182,7 +182,7 @@ impl NaiveDate {
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
     /// See the `format::strftime` module on the supported escape sequences.
-    pub fn from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
+    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
         parsed.to_naive_date()
@@ -846,17 +846,17 @@ mod tests {
     }
 
     #[test]
-    fn test_date_from_str() {
+    fn test_date_parse_from_str() {
         let ymd = |&: y,m,d| NaiveDate::from_ymd(y,m,d);
-        assert_eq!(NaiveDate::from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+        assert_eq!(NaiveDate::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(ymd(2014, 5, 7))); // ignore time and offset
-        assert_eq!(NaiveDate::from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),
+        assert_eq!(NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),
                    Ok(ymd(2015, 2, 2)));
-        assert_eq!(NaiveDate::from_str("Fri, 09 Aug 13", "%a, %d %b %y"),
+        assert_eq!(NaiveDate::parse_from_str("Fri, 09 Aug 13", "%a, %d %b %y"),
                    Ok(ymd(2013, 8, 9)));
-        assert!(NaiveDate::from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
-        assert!(NaiveDate::from_str("2014-57", "%Y-%m-%d").is_err());
-        assert!(NaiveDate::from_str("2014", "%Y").is_err()); // insufficient
+        assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
+        assert!(NaiveDate::parse_from_str("2014-57", "%Y-%m-%d").is_err());
+        assert!(NaiveDate::parse_from_str("2014", "%Y").is_err()); // insufficient
     }
 
     #[test]

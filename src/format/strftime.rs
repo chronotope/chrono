@@ -84,7 +84,7 @@ Spec.   Example         Description
 %c      Sun Jul  8 00:34:60 2001
                         `ctime` date & time format. Same to `%a %b %e %T %Y`. (No newline!)
 %+      2001-07-08T00:34:60+09:30
-                        ISO 8601 date & time format. Same to `%Y-%m-%dT%H:%M:%S%z`.
+                        ISO 8601 date & time format. Almost same to `%Y-%m-%dT%H:%M:%S%z`.
 
 %s      994485899       UNIX timestamp, the number of seconds since 1970-01-01 00:00 UTC.
                         This is not padded and can be negative.
@@ -207,9 +207,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                                         num0!(YearMod100)]),
                     'y' => Some(num0!(YearMod100)),
                     'z' => Some(fix!(TimezoneOffset)),
-                    '+' => Some(recons![num!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day),
-                                        lit!("T"), num0!(Hour), lit!(":"), num0!(Minute), lit!(":"),
-                                        num0!(Second), fix!(TimezoneOffset)]),
+                    '+' => Some(fix!(RFC3339)),
                     '%' => Some(lit!("%")),
                     _ => Some(Item::Error), // no such specifier
                 }

@@ -120,7 +120,7 @@ impl NaiveTime {
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
     /// See the `format::strftime` module on the supported escape sequences.
-    pub fn from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
+    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
         parsed.to_naive_time()
@@ -384,13 +384,13 @@ mod tests {
     }
 
     #[test]
-    fn test_time_from_str() {
+    fn test_time_parse_from_str() {
         let hms = |&: h,m,s| NaiveTime::from_hms(h,m,s);
-        assert_eq!(NaiveTime::from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+        assert_eq!(NaiveTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(hms(12, 34, 56))); // ignore date and offset
-        assert_eq!(NaiveTime::from_str("PM 12:59", "%P %H:%M"),
+        assert_eq!(NaiveTime::parse_from_str("PM 12:59", "%P %H:%M"),
                    Ok(hms(12, 59, 0)));
-        assert!(NaiveTime::from_str("12:3456", "%H:%M:%S").is_err());
+        assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
     }
 
     #[test]

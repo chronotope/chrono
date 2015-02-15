@@ -94,7 +94,7 @@ impl DateTime<FixedOffset> {
     /// See the `format::strftime` module on the supported escape sequences.
     ///
     /// See also `Offset::datetime_from_str` which gives a local `DateTime` on specific time zone.
-    pub fn from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
+    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
         parsed.to_datetime()
@@ -295,13 +295,13 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime_from_str() {
+    fn test_datetime_parse_from_str() {
         let ymdhms = |&: y,m,d,h,n,s,off| FixedOffset::east(off).ymd(y,m,d).and_hms(h,n,s);
-        assert_eq!(DateTime::from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+        assert_eq!(DateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570*60))); // ignore offset
-        assert!(DateTime::from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
-        assert!(DateTime::from_str("Fri, 09 Aug 2013 23:54:35 GMT",
-                                   "%a, %d %b %Y %H:%M:%S GMT").is_err());
+        assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
+        assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
+                                         "%a, %d %b %Y %H:%M:%S GMT").is_err());
         assert_eq!(UTC.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
                                          "%a, %d %b %Y %H:%M:%S GMT"),
                    Ok(UTC.ymd(2013, 8, 9).and_hms(23, 54, 35)));
