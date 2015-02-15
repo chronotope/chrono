@@ -467,7 +467,10 @@ impl Parsed {
             let time = try!(parsed.to_naive_time());
             Ok(date.and_time(time))
         } else {
-            Err(NOT_ENOUGH)
+            // reproduce the previous error(s)
+            try!(date);
+            try!(time);
+            unreachable!()
         }
     }
 
@@ -867,6 +870,11 @@ mod tests {
         assert_eq!(parse!(year_mod_100: 12, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
                           minute: 59, second: 60, timestamp: 1_341_100_801),
                    Err(IMPOSSIBLE));
+
+        // error codes
+        assert_eq!(parse!(year_div_100: 20, year_mod_100: 15, month: 1, day: 20, weekday: Tue,
+                          hour_div_12: 2, hour_mod_12: 1, minute: 35, second: 20),
+                   Err(OUT_OF_RANGE)); // `hour_div_12` is out of range
     }
 
     #[test]

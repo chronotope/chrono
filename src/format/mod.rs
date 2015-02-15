@@ -7,19 +7,18 @@
  */
 
 use std::fmt;
-use std::usize;
 use std::error::Error;
 
 use {Datelike, Timelike};
-use Weekday;
 use div::{div_floor, mod_floor};
 use duration::Duration;
 use offset::Offset;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 
-pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
+pub use self::parsed::Parsed;
+pub use self::parse::parse;
 
 /// Padding characters for numeric items.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -134,6 +133,10 @@ pub enum Fixed {
     /// and `Z` can be either in upper case or in lower case.
     /// The offset is limited from `-24:00` to `+24:00`, which is same to `FixedOffset`'s range.
     TimezoneOffsetZ,
+    /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
+    RFC2822,
+    /// RFC 3339 & ISO 8601 date and time syntax.
+    RFC3339,
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
@@ -158,6 +161,73 @@ macro_rules! num  { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::None)) }
 macro_rules! num0 { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::Zero)) }
 macro_rules! nums { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::Space)) }
 macro_rules! fix  { ($x:ident) => (Item::Fixed(Fixed::$x)) }
+
+/// An error from the `parse` function.
+#[derive(Debug, Clone, PartialEq, Copy)]
+pub struct ParseError(ParseErrorKind);
+
+#[derive(Debug, Clone, PartialEq, Copy)]
+enum ParseErrorKind {
+    /// Given field is out of permitted range.
+    OutOfRange,
+
+    /// There is no possible date and time value with given set of fields.
+    ///
+    /// This does not include the out-of-range conditions, which are trivially invalid.
+    /// It includes the case that there are one or more fields that are inconsistent to each other.
+    Impossible,
+
+    /// Given set of fields is not enough to make a requested date and time value.
+    ///
+    /// Note that there *may* be a case that given fields constrain the possible values so much
+    /// that there is a unique possible value. Chrono only tries to be correct for
+    /// most useful sets of fields however, as such constraint solving can be expensive.
+    NotEnough,
+
+    /// The input string has some invalid character sequence for given formatting items.
+    Invalid,
+
+    /// The input string has been prematurely ended.
+    TooShort,
+
+    /// All formatting items have been read but there is a remaining input.
+    TooLong,
+
+    /// There was an error on the formatting string, or there were non-supported formating items.
+    BadFormat,
+}
+
+/// Same to `Result<T, ParseError>`.
+pub type ParseResult<T> = Result<T, ParseError>;
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        match self.0 {
+            ParseErrorKind::OutOfRange => "input is out of range",
+            ParseErrorKind::Impossible => "no possible date and time matching input",
+            ParseErrorKind::NotEnough => "input is not enough for unique date and time",
+            ParseErrorKind::Invalid => "input contains invalid characters",
+            ParseErrorKind::TooShort => "premature end of input",
+            ParseErrorKind::TooLong => "trailing input",
+            ParseErrorKind::BadFormat => "bad or unsupported format string",
+        }
+    }
+}
+
+// to be used in this module and submodules
+const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
+const IMPOSSIBLE:   ParseError = ParseError(ParseErrorKind::Impossible);
+const NOT_ENOUGH:   ParseError = ParseError(ParseErrorKind::NotEnough);
+const INVALID:      ParseError = ParseError(ParseErrorKind::Invalid);
+const TOO_SHORT:    ParseError = ParseError(ParseErrorKind::TooShort);
+const TOO_LONG:     ParseError = ParseError(ParseErrorKind::TooLong);
+const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
@@ -228,17 +298,22 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
             Item::Fixed(spec) => {
                 use self::Fixed::*;
 
+                /// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
+                /// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
                 fn write_local_minus_utc(w: &mut fmt::Formatter, off: Duration,
-                                         allow_zulu: bool) -> fmt::Result {
+                                         allow_zulu: bool, use_colon: bool) -> fmt::Result {
                     let off = off.num_minutes();
                     if !allow_zulu || off != 0 {
                         let (sign, off) = if off < 0 {('-', -off)} else {('+', off)};
-                        write!(w, "{}{:02}{:02}", sign, off / 60, off % 60)
+                        if use_colon {
+                            write!(w, "{}{:02}:{:02}", sign, off / 60, off % 60)
+                        } else {
+                            write!(w, "{}{:02}{:02}", sign, off / 60, off % 60)
+                        }
                     } else {
                         write!(w, "Z")
                     }
                 }
-
 
                 let ret = match spec {
                     ShortMonthName =>
@@ -258,9 +333,28 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     TimezoneName =>
                         off.map(|&(ref name, _)| write!(w, "{}", *name)),
                     TimezoneOffset =>
-                        off.map(|&(_, off)| write_local_minus_utc(w, off, false)),
+                        off.map(|&(_, off)| write_local_minus_utc(w, off, false, false)),
                     TimezoneOffsetZ =>
-                        off.map(|&(_, off)| write_local_minus_utc(w, off, true)),
+                        off.map(|&(_, off)| write_local_minus_utc(w, off, true, false)),
+                    RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
+                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                            try!(write!(w, "{}, {:2} {} {:04} {:02}:{:02}:{:02} ",
+                                        SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                                        d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
+                                        t.hour(), t.minute(), t.second()));
+                            Some(write_local_minus_utc(w, off, false, false))
+                        } else {
+                            None
+                        },
+                    RFC3339 => // (almost) same to `%Y-%m-%dT%H:%M:%S.%f%z`
+                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                            // reuse `Debug` impls which already prints ISO 8601 format.
+                            // this is faster in this way.
+                            try!(write!(w, "{:?}T{:?}", d, t));
+                            Some(write_local_minus_utc(w, off, false, true))
+                        } else {
+                            None
+                        },
                 };
 
                 match ret {
@@ -276,215 +370,13 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
     Ok(())
 }
 
-/// An error from the `parse` function.
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub struct ParseError(ParseErrorKind);
+pub mod parsed;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
-enum ParseErrorKind {
-    /// Given field is out of permitted range.
-    OutOfRange,
+// due to the size of parsing routines, they are in separate modules.
+mod scan;
+mod parse;
 
-    /// There is no possible date and time value with given set of fields.
-    ///
-    /// This does not include the out-of-range conditions, which are trivially invalid.
-    /// It includes the case that there are one or more fields that are inconsistent to each other.
-    Impossible,
-
-    /// Given set of fields is not enough to make a requested date and time value.
-    ///
-    /// Note that there *may* be a case that given fields constrain the possible values so much
-    /// that there is a unique possible value. Chrono only tries to be correct for
-    /// most useful sets of fields however, as such constraint solving can be expensive.
-    NotEnough,
-
-    /// The input string has some invalid character sequence for given formatting items.
-    Invalid,
-
-    /// The input string has been prematurely ended.
-    TooShort,
-
-    /// All formatting items have been read but there is a remaining input.
-    TooLong,
-
-    /// There was an error on the formatting string, or there were non-supported formating items.
-    BadFormat,
-}
-
-/// Same to `Result<T, ParseError>`.
-pub type ParseResult<T> = Result<T, ParseError>;
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl Error for ParseError {
-    fn description(&self) -> &str {
-        match self.0 {
-            ParseErrorKind::OutOfRange => "input is out of range",
-            ParseErrorKind::Impossible => "no possible date and time matching input",
-            ParseErrorKind::NotEnough => "input is not enough for unique date and time",
-            ParseErrorKind::Invalid => "input contains invalid characters",
-            ParseErrorKind::TooShort => "premature end of input",
-            ParseErrorKind::TooLong => "trailing input",
-            ParseErrorKind::BadFormat => "bad or unsupported format string",
-        }
-    }
-}
-
-// to be used in this module and submodules
-const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
-const IMPOSSIBLE:   ParseError = ParseError(ParseErrorKind::Impossible);
-const NOT_ENOUGH:   ParseError = ParseError(ParseErrorKind::NotEnough);
-const INVALID:      ParseError = ParseError(ParseErrorKind::Invalid);
-const TOO_SHORT:    ParseError = ParseError(ParseErrorKind::TooShort);
-const TOO_LONG:     ParseError = ParseError(ParseErrorKind::TooLong);
-const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
-
-/// Tries to parse given string into `parsed` with given formatting items.
-/// Returns `Ok` when the entire string has been parsed (otherwise `parsed` should not be used).
-/// There should be no trailing string after parsing; use a stray `Item::Space` to trim whitespaces.
-///
-/// This particular date and time parser is:
-///
-/// - Greedy. It will consume the longest possible prefix.
-///   For example, `April` is always consumed entirely when the long month name is requested;
-///   it equally accepts `Apr`, but prefers the longer prefix in this case.
-/// - Padding-agnostic (for numeric items). The `Pad` field is completely ignored,
-///   so one can prepend any number of whitespace then any number of zeroes before numbers.
-/// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
-pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
-        where I: Iterator<Item=Item<'a>> {
-    macro_rules! try_consume {
-        ($e:expr) => ({ let (s_, v) = try!($e); s = s_; v })
-    }
-
-    for item in items {
-        match item {
-            Item::Literal(prefix) => {
-                if s.len() < prefix.len() { return Err(TOO_SHORT); }
-                if !s.starts_with(prefix) { return Err(INVALID); }
-                s = &s[prefix.len()..];
-            }
-
-            Item::Space(_) => {
-                s = s.trim_left();
-            }
-
-            Item::Numeric(spec, _pad) => {
-                use self::Numeric::*;
-
-                fn set_weekday_with_num_days_from_sunday(p: &mut Parsed,
-                                                         v: i64) -> ParseResult<()> {
-                    p.set_weekday(match v {
-                        0 => Weekday::Sun, 1 => Weekday::Mon, 2 => Weekday::Tue,
-                        3 => Weekday::Wed, 4 => Weekday::Thu, 5 => Weekday::Fri,
-                        6 => Weekday::Sat, _ => return Err(OUT_OF_RANGE)
-                    })
-                }
-
-                fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<()> {
-                    p.set_weekday(match v {
-                        1 => Weekday::Mon, 2 => Weekday::Tue, 3 => Weekday::Wed,
-                        4 => Weekday::Thu, 5 => Weekday::Fri, 6 => Weekday::Sat,
-                        7 => Weekday::Sun, _ => return Err(OUT_OF_RANGE)
-                    })
-                }
-
-                let (width, frac, set): (usize, bool,
-                                         fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
-                    Year           => (4, false, Parsed::set_year),
-                    YearDiv100     => (2, false, Parsed::set_year_div_100),
-                    YearMod100     => (2, false, Parsed::set_year_mod_100),
-                    IsoYear        => (4, false, Parsed::set_isoyear),
-                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
-                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
-                    Month          => (2, false, Parsed::set_month),
-                    Day            => (2, false, Parsed::set_day),
-                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
-                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
-                    IsoWeek        => (2, false, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    Ordinal        => (3, false, Parsed::set_ordinal),
-                    Hour           => (2, false, Parsed::set_hour),
-                    Hour12         => (2, false, Parsed::set_hour12),
-                    Minute         => (2, false, Parsed::set_minute),
-                    Second         => (2, false, Parsed::set_second),
-                    Nanosecond     => (9, true, Parsed::set_nanosecond),
-                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
-                };
-
-                let v = try_consume!(scan::number(s.trim_left(), 1, width, frac));
-                try!(set(parsed, v));
-            }
-
-            Item::Fixed(spec) => {
-                use self::Fixed::*;
-
-                match spec {
-                    ShortMonthName => {
-                        let month0 = try_consume!(scan::short_month0(s));
-                        try!(parsed.set_month(month0 as i64 + 1));
-                    }
-
-                    LongMonthName => {
-                        let month0 = try_consume!(scan::short_or_long_month0(s));
-                        try!(parsed.set_month(month0 as i64 + 1));
-                    }
-
-                    ShortWeekdayName => {
-                        let weekday = try_consume!(scan::short_weekday(s));
-                        try!(parsed.set_weekday(weekday));
-                    }
-
-                    LongWeekdayName => {
-                        let weekday = try_consume!(scan::short_or_long_weekday(s));
-                        try!(parsed.set_weekday(weekday));
-                    }
-
-                    LowerAmPm | UpperAmPm => {
-                        if s.len() < 2 { return Err(TOO_SHORT); }
-                        let ampm = match [s.as_bytes()[0] | 32, s.as_bytes()[1] | 32] {
-                            [b'a',b'm'] => false,
-                            [b'p',b'm'] => true,
-                            _ => return Err(INVALID)
-                        };
-                        try!(parsed.set_ampm(ampm));
-                        s = &s[2..];
-                    }
-
-                    TimezoneName => return Err(BAD_FORMAT),
-
-                    TimezoneOffset => {
-                        let offset = try_consume!(scan::timezone_offset(s.trim_left(),
-                                                                        scan::colon_or_space));
-                        try!(parsed.set_offset(offset as i64));
-                    }
-
-                    TimezoneOffsetZ => {
-                        let offset = try_consume!(scan::timezone_offset_zulu(s.trim_left(),
-                                                                             scan::colon_or_space));
-                        try!(parsed.set_offset(offset as i64));
-                    }
-                }
-            }
-
-            Item::Error => {
-                return Err(BAD_FORMAT);
-            }
-        }
-    }
-
-    // if there are trailling chars, it is an error
-    if !s.is_empty() {
-        Err(TOO_LONG)
-    } else {
-        Ok(())
-    }
-}
+pub mod strftime;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
@@ -519,212 +411,5 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<'a, 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
     }
-}
-
-mod scan;
-pub mod parsed;
-
-pub mod strftime;
-
-#[cfg(test)]
-#[test]
-fn test_parse() {
-    // workaround for Rust issue #22255
-    fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
-        let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, items.iter().cloned()));
-        Ok(parsed)
-    }
-
-    macro_rules! check {
-        ($fmt:expr, $items:expr; $err:expr) => (
-            assert_eq!(parse_all($fmt, &$items), Err($err))
-        );
-        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (
-            assert_eq!(parse_all($fmt, &$items), Ok(Parsed { $($k: Some($v),)* ..Parsed::new() }))
-        );
-    }
-
-    // empty string
-    check!("",  []; );
-    check!(" ", []; TOO_LONG);
-    check!("a", []; TOO_LONG);
-
-    // whitespaces
-    check!("",          [sp!("")]; );
-    check!(" ",         [sp!("")]; );
-    check!("\t",        [sp!("")]; );
-    check!(" \n\r  \n", [sp!("")]; );
-    check!("a",         [sp!("")]; TOO_LONG);
-
-    // literal
-    check!("",    [lit!("a")]; TOO_SHORT);
-    check!(" ",   [lit!("a")]; INVALID);
-    check!("a",   [lit!("a")]; );
-    check!("aa",  [lit!("a")]; TOO_LONG);
-    check!("A",   [lit!("a")]; INVALID);
-    check!("xy",  [lit!("xy")]; );
-    check!("xy",  [lit!("x"), lit!("y")]; );
-    check!("x y", [lit!("x"), lit!("y")]; INVALID);
-    check!("xy",  [lit!("x"), sp!(""), lit!("y")]; );
-    check!("x y", [lit!("x"), sp!(""), lit!("y")]; );
-
-    // numeric
-    check!("1987",        [num!(Year)]; year_div_100: 19, year_mod_100: 87);
-    check!("1987 ",       [num!(Year)]; TOO_LONG);
-    check!("0x12",        [num!(Year)]; TOO_LONG); // `0` is parsed
-    check!("x123",        [num!(Year)]; INVALID);
-    check!("2015",        [num!(Year)]; year_div_100: 20, year_mod_100: 15);
-    check!("0000",        [num!(Year)]; year_div_100:  0, year_mod_100:  0);
-    check!("9999",        [num!(Year)]; year_div_100: 99, year_mod_100: 99);
-    check!(" \t987",      [num!(Year)]; year_div_100:  9, year_mod_100: 87);
-    check!("5",           [num!(Year)]; year_div_100:  0, year_mod_100:  5);
-    check!("-42",         [num!(Year)]; INVALID);
-    check!("+42",         [num!(Year)]; INVALID);
-    check!("5\0",         [num!(Year)]; TOO_LONG);
-    check!("\05",         [num!(Year)]; INVALID);
-    check!("",            [num!(Year)]; TOO_SHORT);
-    check!("12345",       [num!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12345",       [nums!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12345",       [num0!(Year), lit!("5")]; year_div_100: 12, year_mod_100: 34);
-    check!("12341234",    [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
-    check!("1234 1234",   [num!(Year), num!(Year)]; year_div_100: 12, year_mod_100: 34);
-    check!("1234 1235",   [num!(Year), num!(Year)]; IMPOSSIBLE);
-    check!("1234 1234",   [num!(Year), lit!("x"), num!(Year)]; INVALID);
-    check!("1234x1234",   [num!(Year), lit!("x"), num!(Year)]; year_div_100: 12, year_mod_100: 34);
-    check!("1234xx1234",  [num!(Year), lit!("x"), num!(Year)]; INVALID);
-    check!("1234 x 1234", [num!(Year), lit!("x"), num!(Year)]; INVALID);
-
-    // various numeric fields
-    check!("1234 5678",
-           [num!(Year), num!(IsoYear)];
-           year_div_100: 12, year_mod_100: 34, isoyear_div_100: 56, isoyear_mod_100: 78);
-    check!("12 34 56 78",
-           [num!(YearDiv100), num!(YearMod100), num!(IsoYearDiv100), num!(IsoYearMod100)];
-           year_div_100: 12, year_mod_100: 34, isoyear_div_100: 56, isoyear_mod_100: 78);
-    check!("1 2 3 4 5 6",
-           [num!(Month), num!(Day), num!(WeekFromSun), num!(WeekFromMon), num!(IsoWeek),
-            num!(NumDaysFromSun)];
-           month: 1, day: 2, week_from_sun: 3, week_from_mon: 4, isoweek: 5, weekday: Weekday::Sat);
-    check!("7 89 01",
-           [num!(WeekdayFromMon), num!(Ordinal), num!(Hour12)];
-           weekday: Weekday::Sun, ordinal: 89, hour_mod_12: 1);
-    check!("23 45 6 78901234 567890123",
-           [num!(Hour), num!(Minute), num!(Second), num!(Nanosecond), num!(Timestamp)];
-           hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 789_012_340,
-           timestamp: 567_890_123);
-
-    // fixed: month and weekday names
-    check!("apr",       [fix!(ShortMonthName)]; month: 4);
-    check!("Apr",       [fix!(ShortMonthName)]; month: 4);
-    check!("APR",       [fix!(ShortMonthName)]; month: 4);
-    check!("ApR",       [fix!(ShortMonthName)]; month: 4);
-    check!("April",     [fix!(ShortMonthName)]; TOO_LONG); // `Apr` is parsed
-    check!("A",         [fix!(ShortMonthName)]; TOO_SHORT);
-    check!("Sol",       [fix!(ShortMonthName)]; INVALID);
-    check!("Apr",       [fix!(LongMonthName)]; month: 4);
-    check!("Apri",      [fix!(LongMonthName)]; TOO_LONG); // `Apr` is parsed
-    check!("April",     [fix!(LongMonthName)]; month: 4);
-    check!("Aprill",    [fix!(LongMonthName)]; TOO_LONG);
-    check!("Aprill",    [fix!(LongMonthName), lit!("l")]; month: 4);
-    check!("Aprl",      [fix!(LongMonthName), lit!("l")]; month: 4);
-    check!("April",     [fix!(LongMonthName), lit!("il")]; TOO_SHORT); // do not backtrack
-    check!("thu",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thu",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
-    check!("THU",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
-    check!("tHu",       [fix!(ShortWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thursday",  [fix!(ShortWeekdayName)]; TOO_LONG); // `Thu` is parsed
-    check!("T",         [fix!(ShortWeekdayName)]; TOO_SHORT);
-    check!("The",       [fix!(ShortWeekdayName)]; INVALID);
-    check!("Nop",       [fix!(ShortWeekdayName)]; INVALID);
-    check!("Thu",       [fix!(LongWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thur",      [fix!(LongWeekdayName)]; TOO_LONG); // `Thu` is parsed
-    check!("Thurs",     [fix!(LongWeekdayName)]; TOO_LONG); // ditto
-    check!("Thursday",  [fix!(LongWeekdayName)]; weekday: Weekday::Thu);
-    check!("Thursdays", [fix!(LongWeekdayName)]; TOO_LONG);
-    check!("Thursdays", [fix!(LongWeekdayName), lit!("s")]; weekday: Weekday::Thu);
-    check!("Thus",      [fix!(LongWeekdayName), lit!("s")]; weekday: Weekday::Thu);
-    check!("Thursday",  [fix!(LongWeekdayName), lit!("rsday")]; TOO_SHORT); // do not backtrack
-
-    // fixed: am/pm
-    check!("am",  [fix!(LowerAmPm)]; hour_div_12: 0);
-    check!("pm",  [fix!(LowerAmPm)]; hour_div_12: 1);
-    check!("AM",  [fix!(LowerAmPm)]; hour_div_12: 0);
-    check!("PM",  [fix!(LowerAmPm)]; hour_div_12: 1);
-    check!("am",  [fix!(UpperAmPm)]; hour_div_12: 0);
-    check!("pm",  [fix!(UpperAmPm)]; hour_div_12: 1);
-    check!("AM",  [fix!(UpperAmPm)]; hour_div_12: 0);
-    check!("PM",  [fix!(UpperAmPm)]; hour_div_12: 1);
-    check!("Am",  [fix!(LowerAmPm)]; hour_div_12: 0);
-    check!(" Am", [fix!(LowerAmPm)]; INVALID);
-    check!("ame", [fix!(LowerAmPm)]; TOO_LONG); // `am` is parsed
-    check!("a",   [fix!(LowerAmPm)]; TOO_SHORT);
-    check!("p",   [fix!(LowerAmPm)]; TOO_SHORT);
-    check!("x",   [fix!(LowerAmPm)]; TOO_SHORT);
-    check!("xx",  [fix!(LowerAmPm)]; INVALID);
-    check!("",    [fix!(LowerAmPm)]; TOO_SHORT);
-
-    // fixed: timezone offsets
-    check!("+00:00",    [fix!(TimezoneOffset)]; offset: 0);
-    check!("-00:00",    [fix!(TimezoneOffset)]; offset: 0);
-    check!("+00:01",    [fix!(TimezoneOffset)]; offset: 60);
-    check!("-00:01",    [fix!(TimezoneOffset)]; offset: -60);
-    check!("+00:30",    [fix!(TimezoneOffset)]; offset: 30 * 60);
-    check!("-00:30",    [fix!(TimezoneOffset)]; offset: -30 * 60);
-    check!("+04:56",    [fix!(TimezoneOffset)]; offset: 296 * 60);
-    check!("-04:56",    [fix!(TimezoneOffset)]; offset: -296 * 60);
-    check!("+24:00",    [fix!(TimezoneOffset)]; offset: 24 * 60 * 60);
-    check!("-24:00",    [fix!(TimezoneOffset)]; offset: -24 * 60 * 60);
-    check!("+99:59",    [fix!(TimezoneOffset)]; offset: (100 * 60 - 1) * 60);
-    check!("-99:59",    [fix!(TimezoneOffset)]; offset: -(100 * 60 - 1) * 60);
-    check!("+00:59",    [fix!(TimezoneOffset)]; offset: 59 * 60);
-    check!("+00:60",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
-    check!("+00:99",    [fix!(TimezoneOffset)]; OUT_OF_RANGE);
-    check!("#12:34",    [fix!(TimezoneOffset)]; INVALID);
-    check!("12:34",     [fix!(TimezoneOffset)]; INVALID);
-    check!("+12:34 ",   [fix!(TimezoneOffset)]; TOO_LONG);
-    check!(" +12:34",   [fix!(TimezoneOffset)]; offset: 754 * 60);
-    check!("\t -12:34", [fix!(TimezoneOffset)]; offset: -754 * 60);
-    check!("",          [fix!(TimezoneOffset)]; TOO_SHORT);
-    check!("+",         [fix!(TimezoneOffset)]; TOO_SHORT);
-    check!("+1",        [fix!(TimezoneOffset)]; TOO_SHORT);
-    check!("+12",       [fix!(TimezoneOffset)]; TOO_SHORT);
-    check!("+123",      [fix!(TimezoneOffset)]; TOO_SHORT);
-    check!("+1234",     [fix!(TimezoneOffset)]; offset: 754 * 60);
-    check!("+12345",    [fix!(TimezoneOffset)]; TOO_LONG);
-    check!("+12345",    [fix!(TimezoneOffset), num!(Day)]; offset: 754 * 60, day: 5);
-    check!("Z",         [fix!(TimezoneOffset)]; INVALID);
-    check!("z",         [fix!(TimezoneOffset)]; INVALID);
-    check!("Z",         [fix!(TimezoneOffsetZ)]; offset: 0);
-    check!("z",         [fix!(TimezoneOffsetZ)]; offset: 0);
-    check!("Y",         [fix!(TimezoneOffsetZ)]; INVALID);
-    check!("Zulu",      [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 0);
-    check!("zulu",      [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 0);
-    check!("+1234ulu",  [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
-    check!("+12:34ulu", [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
-    check!("???",       [fix!(TimezoneName)]; BAD_FORMAT); // not allowed
-
-    // some practical examples
-    check!("2015-02-04T14:37:05+09:00",
-           [num!(Year), lit!("-"), num!(Month), lit!("-"), num!(Day), lit!("T"),
-            num!(Hour), lit!(":"), num!(Minute), lit!(":"), num!(Second), fix!(TimezoneOffset)];
-           year_div_100: 20, year_mod_100: 15, month: 2, day: 4,
-           hour_div_12: 1, hour_mod_12: 2, minute: 37, second: 5, offset: 32400);
-    check!("Mon, 10 Jun 2013 09:32:37 GMT",
-           [fix!(ShortWeekdayName), lit!(","), sp!(" "), num!(Day), sp!(" "),
-            fix!(ShortMonthName), sp!(" "), num!(Year), sp!(" "), num!(Hour), lit!(":"),
-            num!(Minute), lit!(":"), num!(Second), sp!(" "), lit!("GMT")];
-           year_div_100: 20, year_mod_100: 13, month: 6, day: 10, weekday: Weekday::Mon,
-           hour_div_12: 0, hour_mod_12: 9, minute: 32, second: 37);
-    check!("20060102150405",
-           [num!(Year), num!(Month), num!(Day), num!(Hour), num!(Minute), num!(Second)];
-           year_div_100: 20, year_mod_100: 6, month: 1, day: 2,
-           hour_div_12: 1, hour_mod_12: 3, minute: 4, second: 5);
-    check!("3:14PM",
-           [num!(Hour12), lit!(":"), num!(Minute), fix!(LowerAmPm)];
-           hour_div_12: 1, hour_mod_12: 3, minute: 14);
-    check!("12345678901234.56789",
-           [num!(Timestamp), lit!("."), num!(Nanosecond)];
-           nanosecond: 567_890_000, timestamp: 12_345_678_901_234);
 }
 

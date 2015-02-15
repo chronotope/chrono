@@ -130,6 +130,27 @@ pub fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
     Ok((s, weekday))
 }
 
+/// Tries to consume exactly one given character.
+pub fn char(s: &str, c1: u8) -> ParseResult<&str> {
+    match s.as_bytes().first() {
+        Some(&c) if c == c1 => Ok(&s[1..]),
+        Some(_) => Err(INVALID),
+        None => Err(TOO_SHORT),
+    }
+}
+
+/// Tries to consume one or more whitespace.
+pub fn space(s: &str) -> ParseResult<&str> {
+    let s_ = s.trim_left();
+    if s_.len() < s.len() {
+        Ok(s_)
+    } else if s.is_empty() {
+        Err(TOO_SHORT)
+    } else {
+        Err(INVALID)
+    }
+}
+
 /// Consumes any number (including zero) of colon or spaces.
 pub fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_left_matches(|c: char| c == ':' || c.is_whitespace()))
@@ -138,7 +159,7 @@ pub fn colon_or_space(s: &str) -> ParseResult<&str> {
 /// Tries to parse `[-+]\d\d` continued by `\d\d`. Return an offset in seconds if possible.
 ///
 /// The additional `colon` may be used to parse a mandatory or optional `:`
-/// between hours and minutes, and should return either a new suffix or `None` when parsing fails.
+/// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
 pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
         where F: FnMut(&str) -> ParseResult<&str> {
     let negative = match s.as_bytes().first() {
@@ -179,6 +200,46 @@ pub fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
     match s.as_bytes().first() {
         Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
         _ => timezone_offset(s, colon),
+    }
+}
+
+/// Same to `timezone_offset` but also allows for RFC 2822 legacy timezones.
+/// May return `None` which indicates an insufficient offset data (i.e. `-0000`).
+pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
+    // tries to parse legacy time zone names
+    let upto = s.as_bytes().iter().position(|&c| match c { b'a'...b'z' | b'A'...b'Z' => false,
+                                                           _ => true }).unwrap_or(s.len());
+    if upto > 0 {
+        let name = &s[..upto];
+        let s = &s[upto..];
+        if equals(name, "gmt") || equals(name, "ut") {
+            Ok((s, Some(0)))
+        } else if equals(name, "est") {
+            Ok((s, Some(-5 * 3600)))
+        } else if equals(name, "edt") {
+            Ok((s, Some(-4 * 3600)))
+        } else if equals(name, "cst") {
+            Ok((s, Some(-6 * 3600)))
+        } else if equals(name, "cdt") {
+            Ok((s, Some(-5 * 3600)))
+        } else if equals(name, "mst") {
+            Ok((s, Some(-7 * 3600)))
+        } else if equals(name, "mdt") {
+            Ok((s, Some(-6 * 3600)))
+        } else if equals(name, "pst") {
+            Ok((s, Some(-8 * 3600)))
+        } else if equals(name, "pdt") {
+            Ok((s, Some(-7 * 3600)))
+        } else {
+            Ok((s, None)) // recommended by RFC 2822: consume but treat it as -0000
+        }
+    } else {
+        let (s_, offset) = try!(timezone_offset(s, |s| Ok(s)));
+        if offset == 0 && s.starts_with("-") { // -0000 is not same to +0000
+            Ok((s_, None))
+        } else {
+            Ok((s_, Some(offset)))
+        }
     }
 }
 
