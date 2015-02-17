@@ -873,6 +873,19 @@ mod tests {
         assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
         assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
+        // non-four-digit years
+        assert_eq!(NaiveDate::from_ymd(12345,  1, 1).format("%Y").to_string(), "+12345");
+        assert_eq!(NaiveDate::from_ymd(1234,   1, 1).format("%Y").to_string(), "1234");
+        assert_eq!(NaiveDate::from_ymd(123,    1, 1).format("%Y").to_string(), "0123");
+        assert_eq!(NaiveDate::from_ymd(12,     1, 1).format("%Y").to_string(), "0012");
+        assert_eq!(NaiveDate::from_ymd(1,      1, 1).format("%Y").to_string(), "0001");
+        assert_eq!(NaiveDate::from_ymd(0,      1, 1).format("%Y").to_string(), "0000");
+        assert_eq!(NaiveDate::from_ymd(-1,     1, 1).format("%Y").to_string(), "-0001");
+        assert_eq!(NaiveDate::from_ymd(-12,    1, 1).format("%Y").to_string(), "-0012");
+        assert_eq!(NaiveDate::from_ymd(-123,   1, 1).format("%Y").to_string(), "-0123");
+        assert_eq!(NaiveDate::from_ymd(-1234,  1, 1).format("%Y").to_string(), "-1234");
+        assert_eq!(NaiveDate::from_ymd(-12345, 1, 1).format("%Y").to_string(), "-12345");
+
         // corner cases
         assert_eq!(NaiveDate::from_ymd(2007, 12, 31).format("%G,%g,%U,%W,%V").to_string(),
                    "2008,08,53,53,01");

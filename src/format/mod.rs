@@ -290,8 +290,8 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         // non-four-digit years require an explicit sign as per ISO 8601
                         match pad {
                             Pad::None => try!(write!(w, "{:+}", v)),
-                            Pad::Zero => try!(write!(w, "{:+01$}", v, width)),
-                            Pad::Space => try!(write!(w, "{:+1$}", v, width)),
+                            Pad::Zero => try!(write!(w, "{:+01$}", v, width + 1)),
+                            Pad::Space => try!(write!(w, "{:+1$}", v, width + 1)),
                         }
                     } else {
                         match pad {

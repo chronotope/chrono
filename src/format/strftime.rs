@@ -160,9 +160,9 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'C' => Some(num0!(YearDiv100)),
                     'D' => Some(recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
                                         num0!(YearMod100)]),
-                    'F' => Some(recons![num!(Year), lit!("-"), num0!(Month), lit!("-"),
+                    'F' => Some(recons![num0!(Year), lit!("-"), num0!(Month), lit!("-"),
                                         num0!(Day)]),
-                    'G' => Some(num!(IsoYear)),
+                    'G' => Some(num0!(IsoYear)),
                     'H' => Some(num0!(Hour)),
                     'I' => Some(num0!(Hour12)),
                     'M' => Some(num0!(Minute)),
@@ -176,14 +176,14 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'W' => Some(num0!(WeekFromMon)),
                     'X' => Some(recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"),
                                         num0!(Second)]),
-                    'Y' => Some(num!(Year)),
+                    'Y' => Some(num0!(Year)),
                     'Z' => Some(fix!(TimezoneName)),
                     'a' => Some(fix!(ShortWeekdayName)),
                     'b' => Some(fix!(ShortMonthName)),
                     'c' => Some(recons![fix!(ShortWeekdayName), sp!(" "), fix!(ShortMonthName),
                                         sp!(" "), nums!(Day), sp!(" "), num0!(Hour), lit!(":"),
                                         num0!(Minute), lit!(":"), num0!(Second), sp!(" "),
-                                        num!(Year)]),
+                                        num0!(Year)]),
                     'd' => Some(num0!(Day)),
                     'e' => Some(nums!(Day)),
                     'f' => Some(num0!(Nanosecond)),
@@ -201,7 +201,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     't' => Some(sp!("\t")),
                     'u' => Some(num!(WeekdayFromMon)),
                     'v' => Some(recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"),
-                                        num!(Year)]),
+                                        num0!(Year)]),
                     'w' => Some(num!(NumDaysFromSun)),
                     'x' => Some(recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
                                         num0!(YearMod100)]),
@@ -255,7 +255,7 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("100%%"), [lit!("100"), lit!("%")]);
     assert_eq!(parse_and_collect("100%% ok"), [lit!("100"), lit!("%"), sp!(" "), lit!("ok")]);
     assert_eq!(parse_and_collect("%%PDF-1.0"), [lit!("%"), lit!("PDF-1.0")]);
-    assert_eq!(parse_and_collect("%Y-%m-%d"), [num!(Year), lit!("-"), num0!(Month), lit!("-"),
+    assert_eq!(parse_and_collect("%Y-%m-%d"), [num0!(Year), lit!("-"), num0!(Month), lit!("-"),
                                                num0!(Day)]);
     assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
     assert_eq!(parse_and_collect("%m %d"), [num0!(Month), sp!(" "), num0!(Day)]);
