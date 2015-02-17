@@ -8,6 +8,7 @@
  */
 
 use std::usize;
+use std::num::Int;
 
 use Weekday;
 
@@ -225,31 +226,48 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
             Item::Numeric(spec, _pad) => {
                 use super::Numeric::*;
 
-                let (width, frac, set): (usize, bool,
+                enum Mode { Right, Left, SignedRight }
+
+                let (width, mode, set): (usize, Mode,
                                          fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
-                    Year           => (4, false, Parsed::set_year),
-                    YearDiv100     => (2, false, Parsed::set_year_div_100),
-                    YearMod100     => (2, false, Parsed::set_year_mod_100),
-                    IsoYear        => (4, false, Parsed::set_isoyear),
-                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
-                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
-                    Month          => (2, false, Parsed::set_month),
-                    Day            => (2, false, Parsed::set_day),
-                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
-                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
-                    IsoWeek        => (2, false, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    Ordinal        => (3, false, Parsed::set_ordinal),
-                    Hour           => (2, false, Parsed::set_hour),
-                    Hour12         => (2, false, Parsed::set_hour12),
-                    Minute         => (2, false, Parsed::set_minute),
-                    Second         => (2, false, Parsed::set_second),
-                    Nanosecond     => (9, true, Parsed::set_nanosecond),
-                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
+                    Year           => (4, Mode::SignedRight, Parsed::set_year),
+                    YearDiv100     => (2, Mode::Right, Parsed::set_year_div_100),
+                    YearMod100     => (2, Mode::Right, Parsed::set_year_mod_100),
+                    IsoYear        => (4, Mode::SignedRight, Parsed::set_isoyear),
+                    IsoYearDiv100  => (2, Mode::Right, Parsed::set_isoyear_div_100),
+                    IsoYearMod100  => (2, Mode::Right, Parsed::set_isoyear_mod_100),
+                    Month          => (2, Mode::Right, Parsed::set_month),
+                    Day            => (2, Mode::Right, Parsed::set_day),
+                    WeekFromSun    => (2, Mode::Right, Parsed::set_week_from_sun),
+                    WeekFromMon    => (2, Mode::Right, Parsed::set_week_from_mon),
+                    IsoWeek        => (2, Mode::Right, Parsed::set_isoweek),
+                    NumDaysFromSun => (1, Mode::Right, set_weekday_with_num_days_from_sunday),
+                    WeekdayFromMon => (1, Mode::Right, set_weekday_with_number_from_monday),
+                    Ordinal        => (3, Mode::Right, Parsed::set_ordinal),
+                    Hour           => (2, Mode::Right, Parsed::set_hour),
+                    Hour12         => (2, Mode::Right, Parsed::set_hour12),
+                    Minute         => (2, Mode::Right, Parsed::set_minute),
+                    Second         => (2, Mode::Right, Parsed::set_second),
+                    Nanosecond     => (9, Mode::Left, Parsed::set_nanosecond),
+                    Timestamp      => (usize::MAX, Mode::Right, Parsed::set_timestamp),
                 };
 
-                let v = try_consume!(scan::number(s.trim_left(), 1, width, frac));
+                s = s.trim_left();
+                let v = match mode {
+                    Mode::Right => try_consume!(scan::number(s, 1, width, false)),
+                    Mode::Left => try_consume!(scan::number(s, 1, width, true)),
+                    Mode::SignedRight => {
+                        if s.starts_with("-") {
+                            let v = try_consume!(scan::number(&s[1..], 1, usize::MAX, false));
+                            try!(0i64.checked_sub(v).ok_or(OUT_OF_RANGE))
+                        } else if s.starts_with("+") {
+                            try_consume!(scan::number(&s[1..], 1, usize::MAX, false))
+                        } else {
+                            // if there is no explicit sign, we respect the original `width`
+                            try_consume!(scan::number(s, 1, width, false))
+                        }
+                    },
+                };
                 try!(set(parsed, v));
             }
 
@@ -377,8 +395,6 @@ fn test_parse() {
     check!("9999",        [num!(Year)]; year: 9999);
     check!(" \t987",      [num!(Year)]; year:  987);
     check!("5",           [num!(Year)]; year:    5);
-    check!("-42",         [num!(Year)]; INVALID); // while `year` supports the negative year,
-    check!("+42",         [num!(Year)]; INVALID); // the parser doesn't (for now).
     check!("5\0",         [num!(Year)]; TOO_LONG);
     check!("\05",         [num!(Year)]; INVALID);
     check!("",            [num!(Year)]; TOO_SHORT);
@@ -392,6 +408,28 @@ fn test_parse() {
     check!("1234x1234",   [num!(Year), lit!("x"), num!(Year)]; year: 1234);
     check!("1234xx1234",  [num!(Year), lit!("x"), num!(Year)]; INVALID);
     check!("1234 x 1234", [num!(Year), lit!("x"), num!(Year)]; INVALID);
+
+    // signed numeric
+    check!("-42",         [num!(Year)]; year: -42);
+    check!("+42",         [num!(Year)]; year: 42);
+    check!("-0042",       [num!(Year)]; year: -42);
+    check!("+0042",       [num!(Year)]; year: 42);
+    check!("-42195",      [num!(Year)]; year: -42195);
+    check!("+42195",      [num!(Year)]; year: 42195);
+    check!("  -42195",    [num!(Year)]; year: -42195);
+    check!("  +42195",    [num!(Year)]; year: 42195);
+    check!("  -   42",    [num!(Year)]; INVALID);
+    check!("  +   42",    [num!(Year)]; INVALID);
+    check!("-",           [num!(Year)]; TOO_SHORT);
+    check!("+",           [num!(Year)]; TOO_SHORT);
+
+    // unsigned numeric
+    check!("345",   [num!(Ordinal)]; ordinal: 345);
+    check!("+345",  [num!(Ordinal)]; INVALID);
+    check!("-345",  [num!(Ordinal)]; INVALID);
+    check!(" 345",  [num!(Ordinal)]; ordinal: 345);
+    check!(" +345", [num!(Ordinal)]; INVALID);
+    check!(" -345", [num!(Ordinal)]; INVALID);
 
     // various numeric fields
     check!("1234 5678",

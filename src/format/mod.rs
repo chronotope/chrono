@@ -45,16 +45,17 @@ pub enum Pad {
 /// parsed with the same formatting items.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Numeric {
-    /// Full Gregorian year (FW=PW=4).
+    /// Full Gregorian year (FW=4, PW=infinity).
+    /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     Year,
-    /// Gregorian year divided by 100 (century number; FW=PW=2).
-    /// Always rounds towards minus infinity.
+    /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
     YearDiv100,
     /// Gregorian year modulo 100 (FW=PW=2). Cannot be negative.
     YearMod100,
-    /// Year in the ISO week date (FW=PW=4).
+    /// Year in the ISO week date (FW=4, PW=infinity).
+    /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     IsoYear,
-    /// Year in the ISO week date, divided by 100 (FW=PW=2). Always rounds towards minus infinity.
+    /// Year in the ISO week date, divided by 100 (FW=PW=2). Implies the non-negative year.
     IsoYearDiv100,
     /// Year in the ISO week date, modulo 100 (FW=PW=2). Cannot be negative.
     IsoYearMod100,
@@ -285,10 +286,19 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                 };
 
                 if let Some(v) = v {
-                    match pad {
-                        Pad::None => try!(write!(w, "{}", v)),
-                        Pad::Zero => try!(write!(w, "{:01$}", v, width)),
-                        Pad::Space => try!(write!(w, "{:1$}", v, width)),
+                    if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10000) {
+                        // non-four-digit years require an explicit sign as per ISO 8601
+                        match pad {
+                            Pad::None => try!(write!(w, "{:+}", v)),
+                            Pad::Zero => try!(write!(w, "{:+01$}", v, width)),
+                            Pad::Space => try!(write!(w, "{:+1$}", v, width)),
+                        }
+                    } else {
+                        match pad {
+                            Pad::None => try!(write!(w, "{}", v)),
+                            Pad::Zero => try!(write!(w, "{:01$}", v, width)),
+                            Pad::Space => try!(write!(w, "{:1$}", v, width)),
+                        }
                     }
                 } else {
                     return Err(fmt::Error); // insufficient arguments for given format
@@ -348,7 +358,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         },
                     RFC3339 => // (almost) same to `%Y-%m-%dT%H:%M:%S.%f%z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                            // reuse `Debug` impls which already prints ISO 8601 format.
+                            // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
                             try!(write!(w, "{:?}T{:?}", d, t));
                             Some(write_local_minus_utc(w, off, false, true))
