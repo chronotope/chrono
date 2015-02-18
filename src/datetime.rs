@@ -49,7 +49,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Unlike `date`, this is not associated to the time zone.
     #[inline]
     pub fn time(&self) -> NaiveTime {
-        self.datetime.time().clone()
+        self.datetime.time() + self.offset.local_minus_utc()
     }
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
@@ -331,6 +331,7 @@ impl str::FromStr for DateTime<Local> {
 mod tests {
     use super::DateTime;
     use Datelike;
+    use naive::time::NaiveTime;
     use duration::Duration;
     use offset::TimeZone;
     use offset::utc::UTC;
@@ -361,6 +362,12 @@ mod tests {
         assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);
         assert_eq!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), EDT);
         assert!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != EST);
+    }
+
+    #[test]
+    fn test_datetime_time() {
+        assert_eq!(FixedOffset::east(5*60*60).ymd(2014, 5, 6).and_hms(7, 8, 9).time(),
+                   NaiveTime::from_hms(7, 8, 9));
     }
 
     #[test]
