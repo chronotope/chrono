@@ -3,7 +3,7 @@
 // See README.md and LICENSE.txt for details.
 
 /*!
- * ISO 8601 date and time.
+ * ISO 8601 date and time with time zone.
  */
 
 use std::{str, fmt, hash};
@@ -11,7 +11,9 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 
 use {Weekday, Timelike, Datelike};
-use offset::{Offset, FixedOffset, UTC};
+use offset::{TimeZone, Offset};
+use offset::utc::UTC;
+use offset::fixed::FixedOffset;
 use duration::Duration;
 use naive::datetime::NaiveDateTime;
 use time::Time;
@@ -19,30 +21,32 @@ use date::Date;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
-/// ISO 8601 combined date and time with timezone.
+/// ISO 8601 combined date and time with time zone.
 #[derive(Clone)]
-pub struct DateTime<Off> {
+pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
-    offset: Off,
+    offset: Tz::Offset,
 }
 
-impl<Off:Offset> DateTime<Off> {
+impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
-    /// The local datetime should be constructed via the `Offset` trait.
+    /// The local datetime should be constructed via the `TimeZone` trait.
+    //
+    // note: this constructor is purposedly not named to `new` to discourage the direct usage.
     #[inline]
-    pub fn from_utc(datetime: NaiveDateTime, offset: Off) -> DateTime<Off> {
+    pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         DateTime { datetime: datetime, offset: offset }
     }
 
     /// Retrieves a date component.
     #[inline]
-    pub fn date(&self) -> Date<Off> {
+    pub fn date(&self) -> Date<Tz> {
         Date::from_utc(self.datetime.date().clone(), self.offset.clone())
     }
 
     /// Retrieves a time component.
     #[inline]
-    pub fn time(&self) -> Time<Off> {
+    pub fn time(&self) -> Time<Tz> {
         Time::from_utc(self.datetime.time().clone(), self.offset.clone())
     }
 
@@ -52,24 +56,30 @@ impl<Off:Offset> DateTime<Off> {
         self.datetime.num_seconds_from_unix_epoch()
     }
 
-    /// Retrieves an associated offset.
+    /// Retrieves an associated offset from UTC.
     #[inline]
-    pub fn offset<'a>(&'a self) -> &'a Off {
+    pub fn offset<'a>(&'a self) -> &'a Tz::Offset {
         &self.offset
     }
 
-    /// Changes the associated offset.
+    /// Retrieves an associated time zone.
+    #[inline]
+    pub fn timezone(&self) -> Tz {
+        TimeZone::from_offset(&self.offset)
+    }
+
+    /// Changes the associated time zone.
     /// This does not change the actual `DateTime` (but will change the string representation).
     #[inline]
-    pub fn with_offset<Off2:Offset>(&self, offset: Off2) -> DateTime<Off2> {
-        DateTime::from_utc(self.datetime, offset)
+    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
+        tz.from_utc_datetime(&self.datetime)
     }
 
     /// Adds given `Duration` to the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add(self, rhs: Duration) -> Option<DateTime<Off>> {
+    pub fn checked_add(self, rhs: Duration) -> Option<DateTime<Tz>> {
         let datetime = try_opt!(self.datetime.checked_add(rhs));
         Some(DateTime { datetime: datetime, offset: self.offset })
     }
@@ -78,15 +88,28 @@ impl<Off:Offset> DateTime<Off> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub(self, rhs: Duration) -> Option<DateTime<Off>> {
+    pub fn checked_sub(self, rhs: Duration) -> Option<DateTime<Tz>> {
         let datetime = try_opt!(self.datetime.checked_sub(rhs));
         Some(DateTime { datetime: datetime, offset: self.offset })
     }
 
-    /// Returns a view to the local datetime.
-    fn local(&self) -> NaiveDateTime {
-        self.offset.to_local_datetime(&self.datetime)
+    /// Returns a view to the naive UTC datetime.
+    #[inline]
+    pub fn naive_utc(&self) -> NaiveDateTime {
+        self.datetime
     }
+
+    /// Returns a view to the naive local datetime.
+    #[inline]
+    pub fn naive_local(&self) -> NaiveDateTime {
+        self.datetime + self.offset.local_minus_utc()
+    }
+}
+
+/// Maps the local datetime to other datetime with given conversion function.
+fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz>>
+        where F: FnMut(NaiveDateTime) -> Option<NaiveDateTime> {
+    f(dt.naive_local()).and_then(|datetime| dt.timezone().from_local_datetime(&datetime).single())
 }
 
 impl DateTime<FixedOffset> {
@@ -102,12 +125,12 @@ impl DateTime<FixedOffset> {
     }
 }
 
-impl<Off: Offset + fmt::Display> DateTime<Off> {
+impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Formats the combined date and time with the specified formatting items.
     #[inline]
     pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
             where I: Iterator<Item=Item<'a>> + Clone {
-        let local = self.local();
+        let local = self.naive_local();
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
 
@@ -119,146 +142,135 @@ impl<Off: Offset + fmt::Display> DateTime<Off> {
     }
 }
 
-impl<Off:Offset> Datelike for DateTime<Off> {
-    #[inline] fn year(&self) -> i32 { self.local().year() }
-    #[inline] fn month(&self) -> u32 { self.local().month() }
-    #[inline] fn month0(&self) -> u32 { self.local().month0() }
-    #[inline] fn day(&self) -> u32 { self.local().day() }
-    #[inline] fn day0(&self) -> u32 { self.local().day0() }
-    #[inline] fn ordinal(&self) -> u32 { self.local().ordinal() }
-    #[inline] fn ordinal0(&self) -> u32 { self.local().ordinal0() }
-    #[inline] fn weekday(&self) -> Weekday { self.local().weekday() }
-    #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.local().isoweekdate() }
+impl<Tz: TimeZone> Datelike for DateTime<Tz> {
+    #[inline] fn year(&self) -> i32 { self.naive_local().year() }
+    #[inline] fn month(&self) -> u32 { self.naive_local().month() }
+    #[inline] fn month0(&self) -> u32 { self.naive_local().month0() }
+    #[inline] fn day(&self) -> u32 { self.naive_local().day() }
+    #[inline] fn day0(&self) -> u32 { self.naive_local().day0() }
+    #[inline] fn ordinal(&self) -> u32 { self.naive_local().ordinal() }
+    #[inline] fn ordinal0(&self) -> u32 { self.naive_local().ordinal0() }
+    #[inline] fn weekday(&self) -> Weekday { self.naive_local().weekday() }
+    #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.naive_local().isoweekdate() }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Option<DateTime<Off>> {
-        self.local().with_year(year)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_year(year))
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Option<DateTime<Off>> {
-        self.local().with_month(month)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_month(&self, month: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_month(month))
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<DateTime<Off>> {
-        self.local().with_month0(month0)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_month0(&self, month0: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_month0(month0))
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Option<DateTime<Off>> {
-        self.local().with_day(day)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_day(&self, day: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_day(day))
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<DateTime<Off>> {
-        self.local().with_day0(day0)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_day0(&self, day0: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_day0(day0))
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Off>> {
-        self.local().with_ordinal(ordinal)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_ordinal(ordinal))
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Off>> {
-        self.local().with_ordinal0(ordinal0)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
 }
 
-impl<Off:Offset> Timelike for DateTime<Off> {
-    #[inline] fn hour(&self) -> u32 { self.local().hour() }
-    #[inline] fn minute(&self) -> u32 { self.local().minute() }
-    #[inline] fn second(&self) -> u32 { self.local().second() }
-    #[inline] fn nanosecond(&self) -> u32 { self.local().nanosecond() }
+impl<Tz: TimeZone> Timelike for DateTime<Tz> {
+    #[inline] fn hour(&self) -> u32 { self.naive_local().hour() }
+    #[inline] fn minute(&self) -> u32 { self.naive_local().minute() }
+    #[inline] fn second(&self) -> u32 { self.naive_local().second() }
+    #[inline] fn nanosecond(&self) -> u32 { self.naive_local().nanosecond() }
 
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<DateTime<Off>> {
-        self.local().with_hour(hour)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_hour(hour))
     }
 
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<DateTime<Off>> {
-        self.local().with_minute(min)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_minute(&self, min: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_minute(min))
     }
 
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<DateTime<Off>> {
-        self.local().with_second(sec)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_second(sec))
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Off>> {
-        self.local().with_nanosecond(nano)
-            .and_then(|datetime| self.offset.from_local_datetime(&datetime).single())
+    fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
 }
 
-impl<Off:Offset, Off2:Offset> PartialEq<DateTime<Off2>> for DateTime<Off> {
-    fn eq(&self, other: &DateTime<Off2>) -> bool { self.datetime == other.datetime }
+impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<DateTime<Tz2>> for DateTime<Tz> {
+    fn eq(&self, other: &DateTime<Tz2>) -> bool { self.datetime == other.datetime }
 }
 
-impl<Off:Offset> Eq for DateTime<Off> {
+impl<Tz: TimeZone> Eq for DateTime<Tz> {
 }
 
-impl<Off:Offset> PartialOrd for DateTime<Off> {
-    fn partial_cmp(&self, other: &DateTime<Off>) -> Option<Ordering> {
+impl<Tz: TimeZone> PartialOrd for DateTime<Tz> {
+    fn partial_cmp(&self, other: &DateTime<Tz>) -> Option<Ordering> {
         self.datetime.partial_cmp(&other.datetime)
     }
 }
 
-impl<Off:Offset> Ord for DateTime<Off> {
-    fn cmp(&self, other: &DateTime<Off>) -> Ordering { self.datetime.cmp(&other.datetime) }
+impl<Tz: TimeZone> Ord for DateTime<Tz> {
+    fn cmp(&self, other: &DateTime<Tz>) -> Ordering { self.datetime.cmp(&other.datetime) }
 }
 
-impl<Off: Offset, H: hash::Hasher + hash::Writer> hash::Hash<H> for DateTime<Off> {
+impl<Tz: TimeZone, H: hash::Hasher + hash::Writer> hash::Hash<H> for DateTime<Tz> {
     fn hash(&self, state: &mut H) { self.datetime.hash(state) }
 }
 
-impl<Off:Offset> Add<Duration> for DateTime<Off> {
-    type Output = DateTime<Off>;
+impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: Duration) -> DateTime<Off> {
+    fn add(self, rhs: Duration) -> DateTime<Tz> {
         self.checked_add(rhs).expect("`DateTime + Duration` overflowed")
     }
 }
 
-impl<Off:Offset, Off2:Offset> Sub<DateTime<Off2>> for DateTime<Off> {
+impl<Tz: TimeZone, Tz2: TimeZone> Sub<DateTime<Tz2>> for DateTime<Tz> {
     type Output = Duration;
 
     #[inline]
-    fn sub(self, rhs: DateTime<Off2>) -> Duration { self.datetime - rhs.datetime }
+    fn sub(self, rhs: DateTime<Tz2>) -> Duration { self.datetime - rhs.datetime }
 }
 
-impl<Off:Offset> Sub<Duration> for DateTime<Off> {
-    type Output = DateTime<Off>;
+impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> DateTime<Off> {
+    fn sub(self, rhs: Duration) -> DateTime<Tz> {
         self.checked_sub(rhs).expect("`DateTime - Duration` overflowed")
     }
 }
 
-impl<Off: Offset> fmt::Debug for DateTime<Off> {
+impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.local(), self.offset)
+        write!(f, "{:?}{:?}", self.naive_local(), self.offset)
     }
 }
 
-impl<Off: Offset + fmt::Display> fmt::Display for DateTime<Off> {
+impl<Tz: TimeZone> fmt::Display for DateTime<Tz> where Tz::Offset: fmt::Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.local(), self.offset)
+        write!(f, "{} {}", self.naive_local(), self.offset)
     }
 }
 
@@ -295,7 +307,7 @@ impl str::FromStr for DateTime<UTC> {
     fn from_str(s: &str) -> ParseResult<DateTime<UTC>> {
         // we parse non-UTC time zones then convert them into UTC
         let dt: DateTime<FixedOffset> = try!(s.parse());
-        Ok(dt.with_offset(UTC))
+        Ok(dt.with_timezone(&UTC))
     }
 }
 
@@ -306,7 +318,10 @@ mod tests {
     use super::DateTime;
     use Datelike;
     use duration::Duration;
-    use offset::{Offset, UTC, Local, FixedOffset};
+    use offset::TimeZone;
+    use offset::utc::UTC;
+    use offset::local::Local;
+    use offset::fixed::FixedOffset;
 
     #[test]
     #[allow(non_snake_case)]
@@ -366,7 +381,7 @@ mod tests {
     fn test_datetime_format_with_local() {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
-        assert_eq!(dt.format("%Y").to_string(), dt.with_offset(UTC).format("%Y").to_string());
+        assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&UTC).format("%Y").to_string());
     }
 }
 

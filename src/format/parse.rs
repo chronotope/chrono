@@ -590,7 +590,7 @@ fn test_parse() {
 #[test]
 fn test_rfc2822() {
     use datetime::DateTime;
-    use offset::FixedOffset;
+    use offset::fixed::FixedOffset;
     use super::*;
     use super::NOT_ENOUGH;
 
@@ -640,7 +640,7 @@ fn test_rfc2822() {
 #[test]
 fn test_rfc3339() {
     use datetime::DateTime;
-    use offset::FixedOffset;
+    use offset::fixed::FixedOffset;
     use super::*;
 
     // Test data - (input, Ok(expected result after parse and format) or Err(error code))

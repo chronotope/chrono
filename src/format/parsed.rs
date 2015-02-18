@@ -13,7 +13,8 @@ use {Datelike, Timelike};
 use Weekday;
 use div::div_rem;
 use duration::Duration;
-use offset::{Offset, FixedOffset, LocalResult};
+use offset::{TimeZone, Offset, LocalResult};
+use offset::fixed::FixedOffset;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
@@ -537,21 +538,55 @@ impl Parsed {
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields,
-    /// with an additional `Offset` used to interpret and validate the local date.
+    /// with an additional `TimeZone` used to interpret and validate the local date.
     ///
     /// This method is able to determine the combined date and time
     /// from date and time fields or a single `timestamp` field, plus a time zone offset.
     /// Either way those fields have to be consistent to each other.
     /// If parsed fields include an UTC offset, it also has to be consistent to `offset`.
-    pub fn to_datetime_with_offset<Off: Offset>(&self, offset: Off) -> ParseResult<DateTime<Off>> {
-        let delta = offset.local_minus_utc().num_seconds();
-        let delta = try!(delta.to_i32().ok_or(OUT_OF_RANGE));
-        if self.offset.unwrap_or(delta) != delta { return Err(IMPOSSIBLE); }
-        let datetime = try!(self.to_naive_datetime_with_offset(delta));
-        match offset.from_local_datetime(&datetime) {
+    pub fn to_datetime_with_timezone<Tz: TimeZone>(&self, tz: &Tz) -> ParseResult<DateTime<Tz>> {
+        // if we have `timestamp` specified, guess an offset from that.
+        let mut guessed_offset = 0;
+        if let Some(timestamp) = self.timestamp {
+            // make a naive `DateTime` from given timestamp and (if any) nanosecond.
+            // an empty `nanosecond` is always equal to zero, so missing nanosecond is fine.
+            let nanosecond = self.nanosecond.unwrap_or(0);
+            let dt = NaiveDateTime::from_num_seconds_from_unix_epoch_opt(timestamp, nanosecond);
+            let dt = try!(dt.ok_or(OUT_OF_RANGE));
+
+            // we cannot handle offsets larger than i32 at all. give up if so.
+            // we can instead make `to_naive_datetime_with_offset` to accept i64, but this makes
+            // the algorithm too complex and tons of edge cases. i32 should be enough for all.
+            let offset = tz.offset_from_utc_datetime(&dt).local_minus_utc().num_seconds();
+            guessed_offset = try!(offset.to_i32().ok_or(OUT_OF_RANGE));
+        }
+
+        // checks if the given `DateTime` has a consistent `Offset` with given `self.offset`.
+        let check_offset = |dt: &DateTime<Tz>| {
+            if let Some(offset) = self.offset {
+                let delta = dt.offset().local_minus_utc().num_seconds();
+                // if `delta` does not fit in `i32`, it cannot equal to `self.offset` anyway.
+                delta.to_i32() == Some(offset)
+            } else {
+                true
+            }
+        };
+
+        // `guessed_offset` should be correct when `self.timestamp` is given.
+        // it will be 0 otherwise, but this is fine as the algorithm ignores offset for that case.
+        let datetime = try!(self.to_naive_datetime_with_offset(guessed_offset));
+        match tz.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
-            LocalResult::Single(t) => Ok(t),
-            LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
+            LocalResult::Single(t) => if check_offset(&t) {Ok(t)} else {Err(IMPOSSIBLE)},
+            LocalResult::Ambiguous(min, max) => {
+                // try to disambiguate two possible local dates by offset.
+                match (check_offset(&min), check_offset(&max)) {
+                    (false, false) => Err(IMPOSSIBLE),
+                    (false, true) => Ok(max),
+                    (true, false) => Ok(min),
+                    (true, true) => Err(NOT_ENOUGH),
+                }
+            }
         }
     }
 }
@@ -564,7 +599,9 @@ mod tests {
     use Weekday::*;
     use naive::date::{self, NaiveDate};
     use naive::time::NaiveTime;
-    use offset::{Offset, FixedOffset};
+    use offset::TimeZone;
+    use offset::utc::UTC;
+    use offset::fixed::FixedOffset;
 
     #[test]
     fn test_parsed_set_fields() {
@@ -963,6 +1000,46 @@ mod tests {
         assert_eq!(parse!(year: 2015, ordinal: 1, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 86400),
                    Err(OUT_OF_RANGE)); // `FixedOffset` does not support such huge offset
+    }
+
+    #[test]
+    fn test_parsed_to_datetime_with_timezone() {
+        macro_rules! parse {
+            ($tz:expr; $($k:ident: $v:expr),*) => (
+                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime_with_timezone(&$tz)
+            )
+        }
+
+        // single result from ymdhms
+        assert_eq!(parse!(UTC;
+                          year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
+                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
+                   Ok(UTC.ymd(2014, 12, 31).and_hms_nano(4, 26, 40, 12_345_678)));
+        assert_eq!(parse!(UTC;
+                          year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
+                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
+                   Err(IMPOSSIBLE));
+        assert_eq!(parse!(FixedOffset::east(32400);
+                          year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
+                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
+                   Err(IMPOSSIBLE));
+        assert_eq!(parse!(FixedOffset::east(32400);
+                          year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
+                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
+                   Ok(FixedOffset::east(32400).ymd(2014, 12, 31)
+                                              .and_hms_nano(13, 26, 40, 12_345_678)));
+
+        // single result from timestamp
+        assert_eq!(parse!(UTC; timestamp: 1_420_000_000, offset: 0),
+                   Ok(UTC.ymd(2014, 12, 31).and_hms(4, 26, 40)));
+        assert_eq!(parse!(UTC; timestamp: 1_420_000_000, offset: 32400),
+                   Err(IMPOSSIBLE));
+        assert_eq!(parse!(FixedOffset::east(32400); timestamp: 1_420_000_000, offset: 0),
+                   Err(IMPOSSIBLE));
+        assert_eq!(parse!(FixedOffset::east(32400); timestamp: 1_420_000_000, offset: 32400),
+                   Ok(FixedOffset::east(32400).ymd(2014, 12, 31).and_hms(13, 26, 40)));
+
+        // TODO test with a variable time zone (for None and Ambiguous cases)
     }
 }
 

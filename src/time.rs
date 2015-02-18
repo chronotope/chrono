@@ -3,7 +3,7 @@
 // See README.md and LICENSE.txt for details.
 
 /*!
- * ISO 8601 time with timezone.
+ * ISO 8601 time with time zone.
  */
 
 use std::{fmt, hash};
@@ -11,51 +11,72 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 
 use Timelike;
-use offset::Offset;
+use offset::{TimeZone, Offset};
 use duration::Duration;
 use naive::time::NaiveTime;
 use format::{Item, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 time with timezone.
 #[derive(Clone)]
-pub struct Time<Off> {
+pub struct Time<Tz: TimeZone> {
     time: NaiveTime,
-    offset: Off,
+    offset: Tz::Offset,
 }
 
-impl<Off:Offset> Time<Off> {
+impl<Tz: TimeZone> Time<Tz> {
     /// Makes a new `Time` with given *UTC* time and offset.
-    /// The local time should be constructed via the `Offset` trait.
+    /// The local time should be constructed via the `TimeZone` trait.
+    //
+    // note: this constructor is purposedly not named to `new` to discourage the direct usage.
     #[inline]
-    pub fn from_utc(time: NaiveTime, offset: Off) -> Time<Off> {
+    pub fn from_utc(time: NaiveTime, offset: Tz::Offset) -> Time<Tz> {
         Time { time: time, offset: offset }
     }
 
-    /// Retrieves an associated offset.
+    /// Retrieves an associated offset from UTC.
     #[inline]
-    pub fn offset<'a>(&'a self) -> &'a Off {
+    pub fn offset<'a>(&'a self) -> &'a Tz::Offset {
         &self.offset
     }
 
-    /// Changes the associated offset.
-    /// This does not change the actual `Time` (but will change the string representation).
+    /// Retrieves an associated time zone.
     #[inline]
-    pub fn with_offset<Off2:Offset>(&self, offset: Off2) -> Time<Off2> {
-        Time::from_utc(self.time, offset)
+    pub fn timezone(&self) -> Tz {
+        TimeZone::from_offset(&self.offset)
     }
 
-    /// Returns a view to the local time.
-    fn local(&self) -> NaiveTime {
-        self.offset.to_local_time(&self.time)
+    /// Changes the associated time zone.
+    /// This does not change the actual `Time` (but will change the string representation).
+    #[inline]
+    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Time<Tz2> {
+        tz.from_utc_time(&self.time)
+    }
+
+    /// Returns a view to the naive UTC time.
+    #[inline]
+    pub fn naive_utc(&self) -> NaiveTime {
+        self.time
+    }
+
+    /// Returns a view to the naive local time.
+    #[inline]
+    pub fn naive_local(&self) -> NaiveTime {
+        self.time + self.offset.local_minus_utc()
     }
 }
 
-impl<Off: Offset + fmt::Display> Time<Off> {
+/// Maps the local time to other time with given conversion function.
+fn map_local<Tz: TimeZone, F>(t: &Time<Tz>, mut f: F) -> Option<Time<Tz>>
+        where F: FnMut(NaiveTime) -> Option<NaiveTime> {
+    f(t.naive_local()).and_then(|time| t.timezone().from_local_time(&time).single())
+}
+
+impl<Tz: TimeZone> Time<Tz> where Tz::Offset: fmt::Display {
     /// Formats the time with the specified formatting items.
     #[inline]
     pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
             where I: Iterator<Item=Item<'a>> + Clone {
-        DelayedFormat::new_with_offset(None, Some(self.local()), &self.offset, items)
+        DelayedFormat::new_with_offset(None, Some(self.naive_local()), &self.offset, items)
     }
 
     /// Formats the time with the specified format string.
@@ -66,91 +87,87 @@ impl<Off: Offset + fmt::Display> Time<Off> {
     }
 }
 
-impl<Off:Offset> Timelike for Time<Off> {
-    #[inline] fn hour(&self) -> u32 { self.local().hour() }
-    #[inline] fn minute(&self) -> u32 { self.local().minute() }
-    #[inline] fn second(&self) -> u32 { self.local().second() }
-    #[inline] fn nanosecond(&self) -> u32 { self.local().nanosecond() }
+impl<Tz: TimeZone> Timelike for Time<Tz> {
+    #[inline] fn hour(&self) -> u32 { self.naive_local().hour() }
+    #[inline] fn minute(&self) -> u32 { self.naive_local().minute() }
+    #[inline] fn second(&self) -> u32 { self.naive_local().second() }
+    #[inline] fn nanosecond(&self) -> u32 { self.naive_local().nanosecond() }
 
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<Time<Off>> {
-        self.local().with_hour(hour)
-            .and_then(|time| self.offset.from_local_time(&time).single())
+    fn with_hour(&self, hour: u32) -> Option<Time<Tz>> {
+        map_local(self, |time| time.with_hour(hour))
     }
 
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<Time<Off>> {
-        self.local().with_minute(min)
-            .and_then(|time| self.offset.from_local_time(&time).single())
+    fn with_minute(&self, min: u32) -> Option<Time<Tz>> {
+        map_local(self, |time| time.with_minute(min))
     }
 
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<Time<Off>> {
-        self.local().with_second(sec)
-            .and_then(|time| self.offset.from_local_time(&time).single())
+    fn with_second(&self, sec: u32) -> Option<Time<Tz>> {
+        map_local(self, |time| time.with_second(sec))
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<Time<Off>> {
-        self.local().with_nanosecond(nano)
-            .and_then(|time| self.offset.from_local_time(&time).single())
+    fn with_nanosecond(&self, nano: u32) -> Option<Time<Tz>> {
+        map_local(self, |time| time.with_nanosecond(nano))
     }
 
     #[inline]
-    fn num_seconds_from_midnight(&self) -> u32 { self.local().num_seconds_from_midnight() }
+    fn num_seconds_from_midnight(&self) -> u32 { self.naive_local().num_seconds_from_midnight() }
 }
 
-impl<Off:Offset, Off2:Offset> PartialEq<Time<Off2>> for Time<Off> {
-    fn eq(&self, other: &Time<Off2>) -> bool { self.time == other.time }
+impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<Time<Tz2>> for Time<Tz> {
+    fn eq(&self, other: &Time<Tz2>) -> bool { self.time == other.time }
 }
 
-impl<Off:Offset> Eq for Time<Off> {
+impl<Tz: TimeZone> Eq for Time<Tz> {
 }
 
-impl<Off:Offset> PartialOrd for Time<Off> {
-    fn partial_cmp(&self, other: &Time<Off>) -> Option<Ordering> {
+impl<Tz: TimeZone> PartialOrd for Time<Tz> {
+    fn partial_cmp(&self, other: &Time<Tz>) -> Option<Ordering> {
         self.time.partial_cmp(&other.time)
     }
 }
 
-impl<Off:Offset> Ord for Time<Off> {
-    fn cmp(&self, other: &Time<Off>) -> Ordering { self.time.cmp(&other.time) }
+impl<Tz: TimeZone> Ord for Time<Tz> {
+    fn cmp(&self, other: &Time<Tz>) -> Ordering { self.time.cmp(&other.time) }
 }
 
-impl<Off: Offset, H: hash::Hasher + hash::Writer> hash::Hash<H> for Time<Off> {
+impl<Tz: TimeZone, H: hash::Hasher + hash::Writer> hash::Hash<H> for Time<Tz> {
     fn hash(&self, state: &mut H) { self.time.hash(state) }
 }
 
-impl<Off:Offset> Add<Duration> for Time<Off> {
-    type Output = Time<Off>;
+impl<Tz: TimeZone> Add<Duration> for Time<Tz> {
+    type Output = Time<Tz>;
 
-    fn add(self, rhs: Duration) -> Time<Off> {
+    fn add(self, rhs: Duration) -> Time<Tz> {
         Time { time: self.time + rhs, offset: self.offset }
     }
 }
 
-impl<Off:Offset, Off2:Offset> Sub<Time<Off2>> for Time<Off> {
+impl<Tz: TimeZone, Tz2: TimeZone> Sub<Time<Tz2>> for Time<Tz> {
     type Output = Duration;
 
-    fn sub(self, rhs: Time<Off2>) -> Duration { self.time - rhs.time }
+    fn sub(self, rhs: Time<Tz2>) -> Duration { self.time - rhs.time }
 }
 
-impl<Off:Offset> Sub<Duration> for Time<Off> {
-    type Output = Time<Off>;
+impl<Tz: TimeZone> Sub<Duration> for Time<Tz> {
+    type Output = Time<Tz>;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> Time<Off> { self.add(-rhs) }
+    fn sub(self, rhs: Duration) -> Time<Tz> { self.add(-rhs) }
 }
 
-impl<Off: Offset> fmt::Debug for Time<Off> {
+impl<Tz: TimeZone> fmt::Debug for Time<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.local(), self.offset)
+        write!(f, "{:?}{:?}", self.naive_local(), self.offset)
     }
 }
 
-impl<Off: Offset + fmt::Display> fmt::Display for Time<Off> {
+impl<Tz: TimeZone> fmt::Display for Time<Tz> where Tz::Offset: fmt::Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.local(), self.offset)
+        write!(f, "{}{}", self.naive_local(), self.offset)
     }
 }
 

@@ -32,7 +32,7 @@ chrono = "0.2"
 
 And this in your crate root:
 
-```toml
+```rust
 extern crate chrono;
 ```
 
@@ -49,14 +49,14 @@ Chrono simply reexports it.
 Chrono provides a `DateTime` type for the combined date and time.
 
 `DateTime`, among others, is timezone-aware and
-must be constructed from the timezone object (`Offset`).
-`DateTime`s with different offsets do not mix, but can be converted to each other.
+must be constructed from the `TimeZone` object.
+`DateTime`s with different time zones do not mix, but can be converted to each other.
 
 You can get the current date and time in the UTC timezone (`UTC::now()`)
 or in the local timezone (`Local::now()`).
 
 ~~~~ {.rust}
-use chrono::{UTC, Local, DateTime};
+use chrono::*;
 
 let utc: DateTime<UTC> = UTC::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
@@ -68,7 +68,7 @@ This is a bit verbose due to Rust's lack of function and method overloading,
 but in turn we get a rich combination of initialization methods.
 
 ~~~~ {.rust}
-use chrono::{UTC, Offset, Weekday, LocalResult};
+use chrono::*;
 
 let dt = UTC.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
 // July 8 is 188th day of the year 2014 (`o` for "ordinal")
@@ -93,13 +93,12 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
-# /* we intentionally fake the datetime...
-use chrono::{UTC, Local, Datelike, Timelike, Weekday, Duration};
+use chrono::*;
 
+# /* we intentionally fake the datetime...
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = Local::now();
 # */ // up to here. we now define a fixed datetime for the illustrative purpose.
-# use chrono::{UTC, FixedOffset, Offset, Datelike, Timelike, Weekday, Duration};
 # let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
 
 // property accessors
@@ -111,9 +110,10 @@ assert_eq!(dt.weekday().number_from_monday(), 5); // Mon=1, ..., Sat=7
 assert_eq!(dt.ordinal(), 332); // the day of year
 assert_eq!(dt.num_days_from_ce(), 735565); // the number of days from and including Jan 1, 1
 
-// offset accessor and manipulation
+// time zone accessor and manipulation
 assert_eq!(dt.offset().local_minus_utc(), Duration::hours(9));
-assert_eq!(dt.with_offset(UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
+assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600));
+assert_eq!(dt.with_timezone(&UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
 
 // a sample of property manipulations (validates dynamically)
 assert_eq!(dt.with_day(29).unwrap().weekday(), Weekday::Sat); // 2014-11-29 is Saturday
@@ -135,7 +135,7 @@ which format is equivalent to the familiar `strftime` format.
 The default `to_string` method and `{:?}` specifier also give a reasonable representation.
 
 ~~~~ {.rust}
-use chrono::{UTC, Offset};
+use chrono::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
@@ -165,7 +165,7 @@ Parsing can be done with three methods:
 More detailed control over the parsing process is available via `format` module.
 
 ~~~~ {.rust}
-use chrono::{UTC, Offset, DateTime};
+use chrono::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 
@@ -178,8 +178,8 @@ assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok
 assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
 
 // method 3
-assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00",
-                                    "%Y-%m-%d %H:%M:%S %z").map(|dt| dt.with_offset(UTC)), Ok(dt));
+assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
+           Ok(dt.with_timezone(&FixedOffset::east(9*3600))));
 
 // oops, the year is missing!
 assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
@@ -192,12 +192,12 @@ assert!(UTC.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_e
 ### Individual date and time
 
 Chrono also provides an individual date type (`Date`) and time type (`Time`).
-They also have offsets attached, and have to be constructed via offsets.
+They also have time zones attached, and have to be constructed via time zones.
 Most operations available to `DateTime` are also available to `Date` and `Time`
 whenever appropriate.
 
 ~~~~ {.rust}
-use chrono::{UTC, Local, Offset, LocalResult, Datelike, Weekday};
+use chrono::*;
 
 # // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
 assert_eq!(UTC::today(), UTC::now().date());
@@ -217,7 +217,7 @@ Chrono provides naive counterparts to `Date`, `Time` and `DateTime`
 as `NaiveDate`, `NaiveTime` and `NaiveDateTime` respectively.
 
 They have almost equivalent interfaces as their timezone-aware twins,
-but are not associated to offsets obviously and can be quite low-level.
+but are not associated to time zones obviously and can be quite low-level.
 They are mostly useful for building blocks for higher-level types.
 
 ## Limitations
@@ -238,7 +238,7 @@ Any operation that can be ambiguous will return `None` in such cases.
 For example, "a month later" of 2014-01-30 is not well-defined
 and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
 
-Advanced offset handling is not yet supported (but is planned in 0.3).
+Advanced time zone handling is not yet supported (but is planned in 0.3).
 
 */
 
@@ -251,8 +251,10 @@ Advanced offset handling is not yet supported (but is planned in 0.3).
 extern crate "time" as stdtime;
 
 pub use duration::Duration;
-pub use offset::{Offset, LocalResult};
-pub use offset::{UTC, FixedOffset, Local};
+pub use offset::{TimeZone, Offset, LocalResult};
+pub use offset::utc::UTC;
+pub use offset::fixed::FixedOffset;
+pub use offset::local::Local;
 pub use naive::date::NaiveDate;
 pub use naive::time::NaiveTime;
 pub use naive::datetime::NaiveDateTime;
@@ -278,7 +280,7 @@ pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.
     //!
-    //! They are primarily building blocks for other types (e.g. `Offset`),
+    //! They are primarily building blocks for other types (e.g. `TimeZone`),
     //! but can be also used for the simpler date and time handling.
     pub mod date;
     pub mod time;
