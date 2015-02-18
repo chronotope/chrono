@@ -13,6 +13,7 @@ use std::ops::{Add, Sub};
 use {Weekday, Timelike, Datelike};
 use offset::{TimeZone, Offset};
 use offset::utc::UTC;
+use offset::local::Local;
 use offset::fixed::FixedOffset;
 use duration::Duration;
 use naive::datetime::NaiveDateTime;
@@ -305,13 +306,17 @@ impl str::FromStr for DateTime<UTC> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<UTC>> {
-        // we parse non-UTC time zones then convert them into UTC
-        let dt: DateTime<FixedOffset> = try!(s.parse());
-        Ok(dt.with_timezone(&UTC))
+        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&UTC))
     }
 }
 
-// TODO: FromStr for DateTime<Local> is quite hard without a new offset design
+impl str::FromStr for DateTime<Local> {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> ParseResult<DateTime<Local>> {
+        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Local))
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -362,6 +367,8 @@ mod tests {
         assert_eq!("2015-2-18T13:16:9.15-10:00".parse::<DateTime<UTC>>(),
                    Ok(UTC.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
         assert!("2015-2-18T23:16:9.15".parse::<DateTime<UTC>>().is_err());
+
+        // no test for `DateTime<Local>`, we cannot verify that much.
     }
 
     #[test]

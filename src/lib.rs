@@ -52,8 +52,8 @@ Chrono provides a `DateTime` type for the combined date and time.
 must be constructed from the `TimeZone` object.
 `DateTime`s with different time zones do not mix, but can be converted to each other.
 
-You can get the current date and time in the UTC timezone (`UTC::now()`)
-or in the local timezone (`Local::now()`).
+You can get the current date and time in the UTC time zone (`UTC::now()`)
+or in the local time zone (`Local::now()`).
 
 ~~~~ {.rust}
 use chrono::*;
@@ -85,6 +85,13 @@ assert_eq!(UTC.ymd_opt(2014, 7, 8).and_hms_opt(21, 15, 33),
            LocalResult::Single(UTC.ymd(2014, 7, 8).and_hms(21, 15, 33)));
 assert_eq!(UTC.ymd_opt(2014, 7, 8).and_hms_opt(80, 15, 33), LocalResult::None);
 assert_eq!(UTC.ymd_opt(2014, 7, 38).and_hms_opt(21, 15, 33), LocalResult::None);
+
+// other time zone objects can be used to construct a local datetime.
+// obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
+let local_dt = Local.ymd(2014, 7, 8).and_hms_milli(9, 10, 11, 12);
+let fixed_dt = FixedOffset::east(9 * 3600).ymd(2014, 7, 8).and_hms_milli(18, 10, 11, 12);
+assert_eq!(dt, fixed_dt);
+# let _ = local_dt;
 ~~~~
 
 Various properties are available to the date and time, and can be altered individually.
@@ -149,7 +156,7 @@ assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 Parsing can be done with three methods:
 
 1. The standard `FromStr` trait (and `parse` method on a string) can be used for
-   parsing `DateTime<FixedOffset>` and `DateTime<UTC>` values.
+   parsing `DateTime<FixedOffset>`, `DateTime<UTC>` and `DateTime<Local>` values.
    This parses what the `{:?}` (`std::fmt::Debug`) format specifier prints,
    and requires the offset to be present.
 
@@ -168,10 +175,12 @@ More detailed control over the parsing process is available via `format` module.
 use chrono::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
+let fixed_dt = dt.with_timezone(&FixedOffset::east(9*3600));
 
 // method 1
 assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<UTC>>(), Ok(dt.clone()));
 assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<UTC>>(), Ok(dt.clone()));
+assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixed_dt.clone()));
 
 // method 2
 assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
@@ -179,7 +188,7 @@ assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), 
 
 // method 3
 assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
-           Ok(dt.with_timezone(&FixedOffset::east(9*3600))));
+           Ok(fixed_dt.clone()));
 
 // oops, the year is missing!
 assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
