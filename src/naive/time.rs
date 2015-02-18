@@ -6,7 +6,7 @@
  * ISO 8601 time without timezone.
  */
 
-use std::{fmt, hash};
+use std::{str, fmt, hash};
 use std::num::Int;
 use std::ops::{Add, Sub};
 
@@ -14,7 +14,8 @@ use Timelike;
 use div::div_mod_floor;
 use offset::Offset;
 use duration::Duration;
-use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{Item, Numeric, Pad, Fixed};
+use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -264,6 +265,25 @@ impl fmt::Display for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
+impl str::FromStr for NaiveTime {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> ParseResult<NaiveTime> {
+        const ITEMS: &'static [Item<'static>] = &[
+            Item::Space(""), Item::Numeric(Numeric::Hour, Pad::Zero),
+            Item::Space(""), Item::Literal(":"),
+            Item::Space(""), Item::Numeric(Numeric::Minute, Pad::Zero),
+            Item::Space(""), Item::Literal(":"),
+            Item::Space(""), Item::Numeric(Numeric::Second, Pad::Zero),
+            Item::Fixed(Fixed::Nanosecond), Item::Space(""),
+        ];
+
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_naive_time()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveTime;
@@ -381,6 +401,47 @@ mod tests {
 
         // the format specifier should have no effect on `NaiveTime`
         assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)), "03:05:07.009");
+    }
+
+    #[test]
+    fn test_date_from_str() {
+        // valid cases
+        let valid = [
+            "0:0:0",
+            "0:0:0.0000000",
+            "0:0:0.0000003",
+            " 4 : 3 : 2.1 ",
+            " 09:08:07 ",
+            " 9:8:07 ",
+            "23:59:60.373929310237",
+        ];
+        for &s in &valid {
+            let d = match s.parse::<NaiveTime>() {
+                Ok(d) => d,
+                Err(e) => panic!("parsing `{}` has failed: {}", s, e)
+            };
+            let s_ = format!("{:?}", d);
+            // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
+            let d_ = match s_.parse::<NaiveTime>() {
+                Ok(d) => d,
+                Err(e) => panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}",
+                                 s, d, e)
+            };
+            assert!(d == d_, "`{}` is parsed into `{:?}`, but reparsed result \
+                              `{:?}` does not match", s, d, d_);
+        }
+
+        // some invalid cases
+        // since `ParseErrorKind` is private, all we can do is to check if there was an error
+        assert!("".parse::<NaiveTime>().is_err());
+        assert!("x".parse::<NaiveTime>().is_err());
+        assert!("15".parse::<NaiveTime>().is_err());
+        assert!("15:8".parse::<NaiveTime>().is_err());
+        assert!("15:8:x".parse::<NaiveTime>().is_err());
+        assert!("15:8:9x".parse::<NaiveTime>().is_err());
+        assert!("23:59:61".parse::<NaiveTime>().is_err());
+        assert!("12:34:56.x".parse::<NaiveTime>().is_err());
+        assert!("12:34:56. 0".parse::<NaiveTime>().is_err());
     }
 
     #[test]

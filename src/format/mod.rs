@@ -84,6 +84,7 @@ pub enum Numeric {
     /// The number of seconds since the last whole minute (FW=PW=2).
     Second,
     /// The number of nanoseconds since the last whole second (FW=PW=9).
+    /// Note that this is *not* left-aligned; see also `Fixed::Nanosecond`.
     Nanosecond,
     /// The number of non-leap seconds since January 1, 1970 0:00:00 UTC (FW=1, PW=infinity).
     Timestamp,
@@ -119,6 +120,10 @@ pub enum Fixed {
     ///
     /// Prints in upper case, reads in any case.
     UpperAmPm,
+    /// An optional dot plus one or more digits for left-aligned nanoseconds.
+    /// May print nothing, 3, 6 or 9 digits according to the available accuracy.
+    /// See also `Numeric::Nanosecond`.
+    Nanosecond,
     /// Timezone name.
     ///
     /// It does not support parsing, its use in the parser is an immediate failure.
@@ -340,6 +345,19 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         time.map(|t| write!(w, "{}", if t.hour12().0 {"pm"} else {"am"})),
                     UpperAmPm =>
                         time.map(|t| write!(w, "{}", if t.hour12().0 {"PM"} else {"AM"})),
+                    Nanosecond =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            if nano == 0 {
+                                Ok(())
+                            } else if nano % 1_000_000 == 0 {
+                                write!(w, ".{:03}", nano / 1_000_000)
+                            } else if nano % 1_000 == 0 {
+                                write!(w, ".{:06}", nano / 1_000)
+                            } else {
+                                write!(w, ".{:09}", nano)
+                            }
+                        }),
                     TimezoneName =>
                         off.map(|&(ref name, _)| write!(w, "{}", *name)),
                     TimezoneOffset =>

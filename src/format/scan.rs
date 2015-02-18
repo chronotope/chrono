@@ -21,15 +21,10 @@ fn equals(s: &str, pattern: &str) -> bool {
 
 /// Tries to parse the non-negative number from `min` to `max` digits.
 ///
-/// If `left_aligned` is true, the number is assumed to be followed by zero digits
-/// so that the padded digits are exactly `max` digits long (like fractions).
-/// For example, given `max` of 8, `123` is parsed as 123 when right-aligned
-/// and 12300000 when left-aligned.
-///
 /// The absence of digits at all is an unconditional error.
 /// More than `max` digits are consumed up to the first `max` digits.
 /// Any number that does not fit in `i64` is an error.
-pub fn number(s: &str, min: usize, max: usize, left_aligned: bool) -> ParseResult<(&str, i64)> {
+pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     assert!(min <= max);
 
     // limit `s` to given number of digits
@@ -43,16 +38,27 @@ pub fn number(s: &str, min: usize, max: usize, left_aligned: bool) -> ParseResul
     }
 
     // we can overflow here, which is the only possible cause of error from `parse`.
-    let mut v: i64 = try!(s[..upto].parse().map_err(|_| OUT_OF_RANGE));
-
-    // scale the number if it is left-aligned. this can also overflow.
-    if left_aligned {
-        for _ in upto..max {
-            v = try!(v.checked_mul(10).ok_or(OUT_OF_RANGE));
-        }
-    }
-
+    let v: i64 = try!(s[..upto].parse().map_err(|_| OUT_OF_RANGE));
     Ok((&s[upto..], v))
+}
+
+/// Tries to consume at least one digits as a fractional second.
+/// Returns the number of whole nanoseconds (0--999,999,999).
+pub fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
+    // record the number of digits consumed for later scaling.
+    let origlen = s.len();
+    let (s, v) = try!(number(s, 1, 9));
+    let consumed = origlen - s.len();
+
+    // scale the number accordingly.
+    static SCALE: [i64; 10] = [0, 100_000_000, 10_000_000, 1_000_000, 100_000, 10_000,
+                               1_000, 100, 10, 1];
+    let v = try!(v.checked_mul(SCALE[consumed]).ok_or(OUT_OF_RANGE));
+
+    // if there are more than 9 digits, skip next digits.
+    let s = s.trim_left_matches(|c: char| '0' <= c && c <= '9');
+
+    Ok((s, v))
 }
 
 /// Tries to parse the month index (0 through 11) with the first three ASCII letters.

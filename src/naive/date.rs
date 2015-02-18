@@ -6,7 +6,7 @@
  * ISO 8601 calendar date without timezone.
  */
 
-use std::{fmt, hash};
+use std::{str, fmt, hash};
 use std::num::{Int, ToPrimitive};
 use std::ops::{Add, Sub};
 
@@ -15,7 +15,8 @@ use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
-use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{Item, Numeric, Pad};
+use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 use self::internals::{DateImpl, Of, Mdf, YearFlags};
 
@@ -501,14 +502,25 @@ impl fmt::Debug for NaiveDate {
 }
 
 impl fmt::Display for NaiveDate {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let year = self.year();
-        let mdf = self.mdf();
-        if year >= 0 {
-            write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
-        } else {
-            write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
-        }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
+}
+
+impl str::FromStr for NaiveDate {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> ParseResult<NaiveDate> {
+        const ITEMS: &'static [Item<'static>] = &[
+            Item::Space(""), Item::Numeric(Numeric::Year, Pad::Zero),
+            Item::Space(""), Item::Literal("-"),
+            Item::Space(""), Item::Numeric(Numeric::Month, Pad::Zero),
+            Item::Space(""), Item::Literal("-"),
+            Item::Space(""), Item::Numeric(Numeric::Day, Pad::Zero),
+            Item::Space(""),
+        ];
+
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_naive_date()
     }
 }
 
@@ -835,14 +847,58 @@ mod tests {
         assert_eq!(format!("{:?}", NaiveDate::from_ymd(-307,  3, 4)),  "-0307-03-04");
         assert_eq!(format!("{:?}", NaiveDate::from_ymd(12345, 3, 4)), "+12345-03-04");
 
-        assert_eq!(NaiveDate::from_ymd(2012,  3, 4).to_string(),  "2012-03-04");
-        assert_eq!(NaiveDate::from_ymd(0,     3, 4).to_string(),  "0000-03-04");
-        assert_eq!(NaiveDate::from_ymd(-307,  3, 4).to_string(), "-0307-03-04");
-        assert_eq!(NaiveDate::from_ymd(12345, 3, 4).to_string(), "12345-03-04");
+        assert_eq!(NaiveDate::from_ymd(2012,  3, 4).to_string(),   "2012-03-04");
+        assert_eq!(NaiveDate::from_ymd(0,     3, 4).to_string(),   "0000-03-04");
+        assert_eq!(NaiveDate::from_ymd(-307,  3, 4).to_string(),  "-0307-03-04");
+        assert_eq!(NaiveDate::from_ymd(12345, 3, 4).to_string(), "+12345-03-04");
 
         // the format specifier should have no effect on `NaiveTime`
         assert_eq!(format!("{:+30?}", NaiveDate::from_ymd(1234, 5, 6)), "1234-05-06");
         assert_eq!(format!("{:30?}", NaiveDate::from_ymd(12345, 6, 7)), "+12345-06-07");
+    }
+
+    #[test]
+    fn test_date_from_str() {
+        // valid cases
+        let valid = [
+            "-0000000123456-1-2",
+            "    -123456 - 1 - 2    ",
+            "-12345-1-2",
+            "-1234-12-31",
+            "-7-6-5",
+            "350-2-28",
+            "360-02-29",
+            "0360-02-29",
+            "2015-2 -18",
+            "+70-2-18",
+            "+70000-2-18",
+            "+00007-2-18",
+        ];
+        for &s in &valid {
+            let d = match s.parse::<NaiveDate>() {
+                Ok(d) => d,
+                Err(e) => panic!("parsing `{}` has failed: {}", s, e)
+            };
+            let s_ = format!("{:?}", d);
+            // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
+            let d_ = match s_.parse::<NaiveDate>() {
+                Ok(d) => d,
+                Err(e) => panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}",
+                                 s, d, e)
+            };
+            assert!(d == d_, "`{}` is parsed into `{:?}`, but reparsed result \
+                              `{:?}` does not match", s, d, d_);
+        }
+
+        // some invalid cases
+        // since `ParseErrorKind` is private, all we can do is to check if there was an error
+        assert!("".parse::<NaiveDate>().is_err());
+        assert!("x".parse::<NaiveDate>().is_err());
+        assert!("2014".parse::<NaiveDate>().is_err());
+        assert!("2014-01".parse::<NaiveDate>().is_err());
+        assert!("2014-01-00".parse::<NaiveDate>().is_err());
+        assert!("2014-13-57".parse::<NaiveDate>().is_err());
+        assert!("9999999-9-9".parse::<NaiveDate>().is_err()); // out-of-bounds
     }
 
     #[test]

@@ -6,7 +6,7 @@
  * ISO 8601 date and time without timezone.
  */
 
-use std::{fmt, hash};
+use std::{str, fmt, hash};
 use std::num::{Int, ToPrimitive};
 use std::ops::{Add, Sub};
 
@@ -15,7 +15,8 @@ use div::div_mod_floor;
 use duration::Duration;
 use naive::time::NaiveTime;
 use naive::date::NaiveDate;
-use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{Item, Numeric, Pad, Fixed};
+use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time without timezone.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
@@ -264,6 +265,31 @@ impl fmt::Display for NaiveDateTime {
     }
 }
 
+impl str::FromStr for NaiveDateTime {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
+        const ITEMS: &'static [Item<'static>] = &[
+            Item::Space(""), Item::Numeric(Numeric::Year, Pad::Zero),
+            Item::Space(""), Item::Literal("-"),
+            Item::Space(""), Item::Numeric(Numeric::Month, Pad::Zero),
+            Item::Space(""), Item::Literal("-"),
+            Item::Space(""), Item::Numeric(Numeric::Day, Pad::Zero),
+            Item::Space(""), Item::Literal("T"), // XXX shouldn't this be case-insensitive?
+            Item::Space(""), Item::Numeric(Numeric::Hour, Pad::Zero),
+            Item::Space(""), Item::Literal(":"),
+            Item::Space(""), Item::Numeric(Numeric::Minute, Pad::Zero),
+            Item::Space(""), Item::Literal(":"),
+            Item::Space(""), Item::Numeric(Numeric::Second, Pad::Zero),
+            Item::Fixed(Fixed::Nanosecond), Item::Space(""),
+        ];
+
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_naive_datetime_with_offset(0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
@@ -342,6 +368,44 @@ mod tests {
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
         assert_eq!(to_timestamp(2001, 9, 9, 1, 46, 40), 1_000_000_000);
         assert_eq!(to_timestamp(2038, 1, 19, 3, 14, 7), 0x7fffffff);
+    }
+
+    #[test]
+    fn test_datetime_from_str() {
+        // valid cases
+        let valid = [
+            "2015-2-18T23:16:9.15",
+            "-77-02-18T23:16:09",
+            "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ",
+        ];
+        for &s in &valid {
+            let d = match s.parse::<NaiveDateTime>() {
+                Ok(d) => d,
+                Err(e) => panic!("parsing `{}` has failed: {}", s, e)
+            };
+            let s_ = format!("{:?}", d);
+            // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
+            let d_ = match s_.parse::<NaiveDateTime>() {
+                Ok(d) => d,
+                Err(e) => panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}",
+                                 s, d, e)
+            };
+            assert!(d == d_, "`{}` is parsed into `{:?}`, but reparsed result \
+                              `{:?}` does not match", s, d, d_);
+        }
+
+        // some invalid cases
+        // since `ParseErrorKind` is private, all we can do is to check if there was an error
+        assert!("".parse::<NaiveDateTime>().is_err());
+        assert!("x".parse::<NaiveDateTime>().is_err());
+        assert!("15".parse::<NaiveDateTime>().is_err());
+        assert!("15:8:9".parse::<NaiveDateTime>().is_err());
+        assert!("15-8-9".parse::<NaiveDateTime>().is_err());
+        assert!("2015-15-15T15:15:15".parse::<NaiveDateTime>().is_err());
+        assert!("2012-12-12T12:12:12x".parse::<NaiveDateTime>().is_err());
+        assert!("2012-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
+        assert!("+ 82701-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
+        assert!("+802701-123-12T12:12:12".parse::<NaiveDateTime>().is_err()); // out-of-bound
     }
 
     #[test]

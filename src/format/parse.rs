@@ -95,14 +95,14 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     s = s.trim_left();
-    try!(parsed.set_day(try_consume!(scan::number(s, 1, 2, false))));
+    try!(parsed.set_day(try_consume!(scan::number(s, 1, 2))));
     s = try!(scan::space(s)); // mandatory
     try!(parsed.set_month(1 + try_consume!(scan::short_month0(s)) as i64));
     s = try!(scan::space(s)); // mandatory
 
     // distinguish two- and three-digit years from four-digit years
     let prevlen = s.len();
-    let mut year = try_consume!(scan::number(s, 2, usize::MAX, false));
+    let mut year = try_consume!(scan::number(s, 2, usize::MAX));
     let yearlen = prevlen - s.len();
     match (yearlen, year) {
         (2,  0...49) => { year += 2000; } //   47 -> 2047,   05 -> 2005
@@ -113,13 +113,13 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     try!(parsed.set_year(year));
 
     s = try!(scan::space(s)); // mandatory
-    try!(parsed.set_hour(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_hour(try_consume!(scan::number(s, 2, 2))));
     s = try!(scan::char(s.trim_left(), b':')).trim_left(); // *S ":" *S
-    try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2))));
     s = s.trim_left();
     if !s.is_empty() { // [ ":" *S 2DIGIT ]
         s = try!(scan::char(s, b':')).trim_left();
-        try!(parsed.set_second(try_consume!(scan::number(s, 2, 2, false))));
+        try!(parsed.set_second(try_consume!(scan::number(s, 2, 2))));
     }
 
     s = try!(scan::space(s)); // mandatory
@@ -163,11 +163,11 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     //   note that this restriction is unique to RFC 3339 and not ISO 8601.
     //   since this is not a typical Chrono behavior, we check it earlier.
 
-    try!(parsed.set_year(try_consume!(scan::number(s, 4, 4, false))));
+    try!(parsed.set_year(try_consume!(scan::number(s, 4, 4))));
     s = try!(scan::char(s, b'-'));
-    try!(parsed.set_month(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_month(try_consume!(scan::number(s, 2, 2))));
     s = try!(scan::char(s, b'-'));
-    try!(parsed.set_day(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_day(try_consume!(scan::number(s, 2, 2))));
 
     s = match s.as_bytes().first() {
         Some(&b't') | Some(&b'T') => &s[1..],
@@ -175,14 +175,13 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
         None => return Err(TOO_SHORT),
     };
 
-    try!(parsed.set_hour(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_hour(try_consume!(scan::number(s, 2, 2))));
     s = try!(scan::char(s, b':'));
-    try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2))));
     s = try!(scan::char(s, b':'));
-    try!(parsed.set_second(try_consume!(scan::number(s, 2, 2, false))));
+    try!(parsed.set_second(try_consume!(scan::number(s, 2, 2))));
     if s.starts_with(".") {
-        let nanosecond = try_consume!(scan::number(&s[1..], 1, 9, true));
-        s = s.trim_left_matches(|c: char| '0' <= c && c <= '9');
+        let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
         try!(parsed.set_nanosecond(nanosecond));
     }
 
@@ -226,47 +225,43 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
             Item::Numeric(spec, _pad) => {
                 use super::Numeric::*;
 
-                enum Mode { Right, Left, SignedRight }
-
-                let (width, mode, set): (usize, Mode,
-                                         fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
-                    Year           => (4, Mode::SignedRight, Parsed::set_year),
-                    YearDiv100     => (2, Mode::Right, Parsed::set_year_div_100),
-                    YearMod100     => (2, Mode::Right, Parsed::set_year_mod_100),
-                    IsoYear        => (4, Mode::SignedRight, Parsed::set_isoyear),
-                    IsoYearDiv100  => (2, Mode::Right, Parsed::set_isoyear_div_100),
-                    IsoYearMod100  => (2, Mode::Right, Parsed::set_isoyear_mod_100),
-                    Month          => (2, Mode::Right, Parsed::set_month),
-                    Day            => (2, Mode::Right, Parsed::set_day),
-                    WeekFromSun    => (2, Mode::Right, Parsed::set_week_from_sun),
-                    WeekFromMon    => (2, Mode::Right, Parsed::set_week_from_mon),
-                    IsoWeek        => (2, Mode::Right, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, Mode::Right, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, Mode::Right, set_weekday_with_number_from_monday),
-                    Ordinal        => (3, Mode::Right, Parsed::set_ordinal),
-                    Hour           => (2, Mode::Right, Parsed::set_hour),
-                    Hour12         => (2, Mode::Right, Parsed::set_hour12),
-                    Minute         => (2, Mode::Right, Parsed::set_minute),
-                    Second         => (2, Mode::Right, Parsed::set_second),
-                    Nanosecond     => (9, Mode::Left, Parsed::set_nanosecond),
-                    Timestamp      => (usize::MAX, Mode::Right, Parsed::set_timestamp),
+                let (width, signed, set): (usize, bool,
+                                           fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
+                    Year           => (4, true, Parsed::set_year),
+                    YearDiv100     => (2, false, Parsed::set_year_div_100),
+                    YearMod100     => (2, false, Parsed::set_year_mod_100),
+                    IsoYear        => (4, true, Parsed::set_isoyear),
+                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
+                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
+                    Month          => (2, false, Parsed::set_month),
+                    Day            => (2, false, Parsed::set_day),
+                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
+                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
+                    IsoWeek        => (2, false, Parsed::set_isoweek),
+                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
+                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
+                    Ordinal        => (3, false, Parsed::set_ordinal),
+                    Hour           => (2, false, Parsed::set_hour),
+                    Hour12         => (2, false, Parsed::set_hour12),
+                    Minute         => (2, false, Parsed::set_minute),
+                    Second         => (2, false, Parsed::set_second),
+                    Nanosecond     => (9, false, Parsed::set_nanosecond),
+                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
                 };
 
                 s = s.trim_left();
-                let v = match mode {
-                    Mode::Right => try_consume!(scan::number(s, 1, width, false)),
-                    Mode::Left => try_consume!(scan::number(s, 1, width, true)),
-                    Mode::SignedRight => {
-                        if s.starts_with("-") {
-                            let v = try_consume!(scan::number(&s[1..], 1, usize::MAX, false));
-                            try!(0i64.checked_sub(v).ok_or(OUT_OF_RANGE))
-                        } else if s.starts_with("+") {
-                            try_consume!(scan::number(&s[1..], 1, usize::MAX, false))
-                        } else {
-                            // if there is no explicit sign, we respect the original `width`
-                            try_consume!(scan::number(s, 1, width, false))
-                        }
-                    },
+                let v = if signed {
+                    if s.starts_with("-") {
+                        let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
+                        try!(0i64.checked_sub(v).ok_or(OUT_OF_RANGE))
+                    } else if s.starts_with("+") {
+                        try_consume!(scan::number(&s[1..], 1, usize::MAX))
+                    } else {
+                        // if there is no explicit sign, we respect the original `width`
+                        try_consume!(scan::number(s, 1, width))
+                    }
+                } else {
+                    try_consume!(scan::number(s, 1, width))
                 };
                 try!(set(parsed, v));
             }
@@ -304,6 +299,13 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         };
                         try!(parsed.set_ampm(ampm));
                         s = &s[2..];
+                    }
+
+                    Nanosecond => {
+                        if s.starts_with(".") {
+                            let nano = try_consume!(scan::nanosecond(&s[1..]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
                     }
 
                     TimezoneName => return Err(BAD_FORMAT),
@@ -447,7 +449,7 @@ fn test_parse() {
            weekday: Weekday::Sun, ordinal: 89, hour_mod_12: 1);
     check!("23 45 6 78901234 567890123",
            [num!(Hour), num!(Minute), num!(Second), num!(Nanosecond), num!(Timestamp)];
-           hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 789_012_340,
+           hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 78_901_234,
            timestamp: 567_890_123);
 
     // fixed: month and weekday names
@@ -499,6 +501,24 @@ fn test_parse() {
     check!("x",   [fix!(LowerAmPm)]; TOO_SHORT);
     check!("xx",  [fix!(LowerAmPm)]; INVALID);
     check!("",    [fix!(LowerAmPm)]; TOO_SHORT);
+
+    // fixed: dot plus nanoseconds
+    check!("",              [fix!(Nanosecond)]; ); // no field set, but not an error
+    check!("4",             [fix!(Nanosecond)]; TOO_LONG); // never consumes `4`
+    check!("4",             [fix!(Nanosecond), num!(Second)]; second: 4);
+    check!(".0",            [fix!(Nanosecond)]; nanosecond: 0);
+    check!(".4",            [fix!(Nanosecond)]; nanosecond: 400_000_000);
+    check!(".42",           [fix!(Nanosecond)]; nanosecond: 420_000_000);
+    check!(".421",          [fix!(Nanosecond)]; nanosecond: 421_000_000);
+    check!(".42195",        [fix!(Nanosecond)]; nanosecond: 421_950_000);
+    check!(".421950803",    [fix!(Nanosecond)]; nanosecond: 421_950_803);
+    check!(".421950803547", [fix!(Nanosecond)]; nanosecond: 421_950_803);
+    check!(".000000003547", [fix!(Nanosecond)]; nanosecond: 3);
+    check!(".000000000547", [fix!(Nanosecond)]; nanosecond: 0);
+    check!(".",             [fix!(Nanosecond)]; TOO_SHORT);
+    check!(".4x",           [fix!(Nanosecond)]; TOO_LONG);
+    check!(".  4",          [fix!(Nanosecond)]; INVALID);
+    check!("  .4",          [fix!(Nanosecond)]; TOO_LONG); // no automatic trimming
 
     // fixed: timezone offsets
     check!("+00:00",    [fix!(TimezoneOffset)]; offset: 0);
@@ -560,6 +580,9 @@ fn test_parse() {
            hour_div_12: 1, hour_mod_12: 3, minute: 14);
     check!("12345678901234.56789",
            [num!(Timestamp), lit!("."), num!(Nanosecond)];
+           nanosecond: 56_789, timestamp: 12_345_678_901_234);
+    check!("12345678901234.56789",
+           [num!(Timestamp), fix!(Nanosecond)];
            nanosecond: 567_890_000, timestamp: 12_345_678_901_234);
 }
 
