@@ -138,7 +138,9 @@ assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_00
 Formatting is done via the `format` method,
 which format is equivalent to the familiar `strftime` format.
 (See the `format::strftime` module documentation for full syntax.)
+
 The default `to_string` method and `{:?}` specifier also give a reasonable representation.
+Chrono also provides `to_rfc{2822,3339}` methods for well-known formats.
 
 ~~~~ {.rust}
 use chrono::*;
@@ -149,6 +151,8 @@ assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
 assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 
 assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
+assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
+assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
 assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 ~~~~
 
@@ -163,6 +167,7 @@ Parsing can be done with three methods:
    returns `DateTime<FixedOffset>`.
    This should be used when the offset is a part of input and the caller cannot guess that.
    It *cannot* be used when the offset can be missing.
+   `DateTime::parse_from_rfc{2822,3339}` are similar but for well-known formats.
 
 3. `Offset::datetime_from_str` is similar but returns `DateTime` of given offset.
    When the explicit offset is missing from the input, it simply uses given offset.
@@ -182,12 +187,14 @@ assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<UTC>>(), Ok(dt.clone()))
 assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixed_dt.clone()));
 
 // method 2
-assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
-assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
-
-// method 3
 assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
            Ok(fixed_dt.clone()));
+assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"), Ok(fixed_dt.clone()));
+assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
+
+// method 3
+assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
+assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
 
 // oops, the year is missing!
 assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
@@ -212,7 +219,8 @@ assert_eq!(Local::today(), Local::now().date());
 
 assert_eq!(UTC.ymd(2014, 11, 28).weekday(), Weekday::Fri);
 assert_eq!(UTC.ymd_opt(2014, 11, 31), LocalResult::None);
-assert_eq!(UTC.hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(), "070809");
+assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(),
+           "070809");
 ~~~~
 
 `DateTime` has two methods, `date` and `time`,
