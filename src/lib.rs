@@ -205,12 +205,11 @@ assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
 assert!(UTC.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 ~~~~
 
-### Individual date and time
+### Individual date
 
-Chrono also provides an individual date type (`Date`) and time type (`Time`).
-They also have time zones attached, and have to be constructed via time zones.
-Most operations available to `DateTime` are also available to `Date` and `Time`
-whenever appropriate.
+Chrono also provides an individual date type (`Date`).
+It also has time zones attached, and have to be constructed via time zones.
+Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 
 ~~~~ {.rust}
 use chrono::*;
@@ -225,17 +224,23 @@ assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_
            "070809");
 ~~~~
 
-`DateTime` has two methods, `date` and `time`,
-which return narrow views to its date and time components respectively.
+There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
+
+`DateTime` has `date` method which returns a narrow view to its date component.
+There is also a `time` method, which simply returns a naive local time described below.
 
 ### Naive date and time
 
-Chrono provides naive counterparts to `Date`, `Time` and `DateTime`
+Chrono provides naive counterparts to `Date`, (non-existent) `Time` and `DateTime`
 as `NaiveDate`, `NaiveTime` and `NaiveDateTime` respectively.
 
 They have almost equivalent interfaces as their timezone-aware twins,
 but are not associated to time zones obviously and can be quite low-level.
 They are mostly useful for building blocks for higher-level types.
+
+Timezone-aware `DateTime` and `Date` types have two methods returning naive versions:
+`naive_local` returns a view to the naive local time,
+and `naive_utc` returns a view to the naive UTC time.
 
 ## Limitations
 
