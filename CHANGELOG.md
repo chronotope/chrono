@@ -8,7 +8,7 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
-## 0.2.0 (UNRELEASED)
+## 0.2.0 (2015-02-19)
 
 ### Added
 
