@@ -29,7 +29,7 @@ impl UTC {
     /// Returns a `DateTime` which corresponds to the current date.
     pub fn now() -> DateTime<UTC> {
         let spec = stdtime::get_time();
-        let naive = NaiveDateTime::from_num_seconds_from_unix_epoch(spec.sec, spec.nsec as u32);
+        let naive = NaiveDateTime::from_timestamp(spec.sec, spec.nsec as u32);
         DateTime::from_utc(naive, UTC)
     }
 }

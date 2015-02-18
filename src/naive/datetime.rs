@@ -34,23 +34,23 @@ impl NaiveDateTime {
     }
 
     /// Makes a new `NaiveDateTime` from the number of non-leap seconds
-    /// since January 1, 1970 0:00:00 UTC and the number of nanoseconds
-    /// since the last whole non-leap second.
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// Fails on the out-of-range number of seconds and/or invalid nanosecond.
     #[inline]
-    pub fn from_num_seconds_from_unix_epoch(secs: i64, nsecs: u32) -> NaiveDateTime {
-        let datetime = NaiveDateTime::from_num_seconds_from_unix_epoch_opt(secs, nsecs);
+    pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
+        let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
         datetime.expect("invalid or out-of-range datetime")
     }
 
     /// Makes a new `NaiveDateTime` from the number of non-leap seconds
-    /// since January 1, 1970 0:00:00 UTC and the number of nanoseconds
-    /// since the last whole non-leap second.
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
     #[inline]
-    pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+    pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = div_mod_floor(secs, 86400);
         let date = days.to_i32().and_then(|days| days.checked_add(719163))
                                 .and_then(|days_ce| NaiveDate::from_num_days_from_ce_opt(days_ce));
@@ -59,6 +59,20 @@ impl NaiveDateTime {
             (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
             (_, _) => None,
         }
+    }
+
+    /// Same to `NaiveDateTime::from_timestamp`.
+    #[inline]
+    #[deprecated = "Use `NaiveDateTime::from_timestamp` instead."]
+    pub fn from_num_seconds_from_unix_epoch(secs: i64, nsecs: u32) -> NaiveDateTime {
+        NaiveDateTime::from_timestamp(secs, nsecs)
+    }
+
+    /// Same to `NaiveDateTime::from_timestamp_opt`.
+    #[inline]
+    #[deprecated = "Use `NaiveDateTime::from_timestamp` instead."]
+    pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
@@ -81,13 +95,21 @@ impl NaiveDateTime {
         self.time
     }
 
-    /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC.
+    /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
+    /// (aka "UNIX timestamp").
     /// Note that this does *not* account for the timezone!
     #[inline]
-    pub fn num_seconds_from_unix_epoch(&self) -> i64 {
+    pub fn timestamp(&self) -> i64 {
         let ndays = self.date.num_days_from_ce() as i64;
         let nseconds = self.time.num_seconds_from_midnight() as i64;
         (ndays - 719163) * 86400 + nseconds
+    }
+
+    /// Same to `NaiveDateTime::timestamp`.
+    #[inline]
+    #[deprecated = "Use `NaiveDateTime::timestamp` instead."]
+    pub fn num_seconds_from_unix_epoch(&self) -> i64 {
+        self.timestamp()
     }
 
     /// Adds given `Duration` to the current date and time.
@@ -300,9 +322,9 @@ mod tests {
     use std::i64;
 
     #[test]
-    fn test_datetime_from_num_seconds_from_unix_epoch() {
-        let from_timestamp = |&: secs| NaiveDateTime::from_num_seconds_from_unix_epoch_opt(secs, 0);
-        let ymdhms = |&: y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+    fn test_datetime_from_timestamp() {
+        let from_timestamp = |secs| NaiveDateTime::from_timestamp_opt(secs, 0);
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
         assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
         assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
@@ -360,9 +382,8 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime_num_seconds_from_unix_epoch() {
-        let to_timestamp = |&: y,m,d,h,n,s|
-            NaiveDate::from_ymd(y,m,d).and_hms(h,n,s).num_seconds_from_unix_epoch();
+    fn test_datetime_timestamp() {
+        let to_timestamp = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s).timestamp();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);

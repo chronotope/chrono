@@ -321,6 +321,27 @@ pub trait TimeZone: Sized {
         }
     }
 
+    /// Makes a new `DateTime` from the number of non-leap seconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
+    ///
+    /// Fails on the out-of-range number of seconds and/or invalid nanosecond.
+    fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
+        self.timestamp_opt(secs, nsecs).unwrap()
+    }
+
+    /// Makes a new `DateTime` from the number of non-leap seconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
+    ///
+    /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
+    fn timestamp_opt(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
+        match NaiveDateTime::from_timestamp_opt(secs, nsecs) {
+            Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
+            None => LocalResult::None,
+        }
+    }
+
     /// Parses a string with the specified format string and
     /// returns a `DateTime` with the current offset.
     /// See the `format::strftime` module on the supported escape sequences.

@@ -285,7 +285,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                                                         t.nanosecond() / 1_000_000_000) as i64)),
                     Nanosecond     => (9, time.map(|t| (t.nanosecond() % 1_000_000_000) as i64)),
                     Timestamp      => (1, match (date, time) {
-                        (Some(d), Some(t)) => Some(d.and_time(*t).num_seconds_from_unix_epoch()),
+                        (Some(d), Some(t)) => Some(d.and_time(*t).timestamp()),
                         (_, _) => None
                     }),
                 };

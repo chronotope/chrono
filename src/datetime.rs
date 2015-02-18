@@ -51,10 +51,18 @@ impl<Tz: TimeZone> DateTime<Tz> {
         Time::from_utc(self.datetime.time().clone(), self.offset.clone())
     }
 
-    /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC.
+    /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
+    /// (aka "UNIX timestamp").
     #[inline]
+    pub fn timestamp(&self) -> i64 {
+        self.datetime.timestamp()
+    }
+
+    /// Same to `DateTime::timestamp`.
+    #[inline]
+    #[deprecated = "Use `DateTime::timestamp` instead."]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
-        self.datetime.num_seconds_from_unix_epoch()
+        self.timestamp()
     }
 
     /// Retrieves an associated offset from UTC.

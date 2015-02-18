@@ -456,8 +456,8 @@ impl Parsed {
             let datetime = date.and_time(time);
 
             // verify the timestamp field if any
-            // the following is safe, `num_seconds_from_unix_epoch` is very limited in range
-            let timestamp = datetime.num_seconds_from_unix_epoch() - offset as i64;
+            // the following is safe, `timestamp` is very limited in range
+            let timestamp = datetime.timestamp() - offset as i64;
             if let Some(given_timestamp) = self.timestamp {
                 // if `datetime` represents a leap second, it might be off by one second.
                 if given_timestamp != timestamp &&
@@ -478,7 +478,7 @@ impl Parsed {
 
             // reconstruct date and time fields from timestamp
             let ts = try!(timestamp.checked_add(offset as i64).ok_or(OUT_OF_RANGE));
-            let datetime = NaiveDateTime::from_num_seconds_from_unix_epoch_opt(ts, 0);
+            let datetime = NaiveDateTime::from_timestamp_opt(ts, 0);
             let mut datetime = try!(datetime.ok_or(OUT_OF_RANGE));
 
             // fill year, ordinal, hour, minute and second fields from timestamp.
@@ -551,7 +551,7 @@ impl Parsed {
             // make a naive `DateTime` from given timestamp and (if any) nanosecond.
             // an empty `nanosecond` is always equal to zero, so missing nanosecond is fine.
             let nanosecond = self.nanosecond.unwrap_or(0);
-            let dt = NaiveDateTime::from_num_seconds_from_unix_epoch_opt(timestamp, nanosecond);
+            let dt = NaiveDateTime::from_timestamp_opt(timestamp, nanosecond);
             let dt = try!(dt.ok_or(OUT_OF_RANGE));
 
             // we cannot handle offsets larger than i32 at all. give up if so.
