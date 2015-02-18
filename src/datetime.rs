@@ -123,6 +123,27 @@ fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz
 }
 
 impl DateTime<FixedOffset> {
+    /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
+    /// then returns a new `DateTime` with a parsed `FixedOffset`.
+    pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_datetime()
+    }
+
+    /// Parses an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`,
+    /// then returns a new `DateTime` with a parsed `FixedOffset`.
+    ///
+    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows some freedom
+    /// over the syntax and RFC 3339 exercises that freedom to rigidly define a fixed format.
+    pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_datetime()
+    }
+
     /// Parses a string with the specified format string and
     /// returns a new `DateTime` with a parsed `FixedOffset`.
     /// See the `format::strftime` module on the supported escape sequences.
@@ -136,6 +157,18 @@ impl DateTime<FixedOffset> {
 }
 
 impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    pub fn to_rfc2822(&self) -> String {
+        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
+        self.format_with_items(ITEMS.iter().cloned()).to_string()
+    }
+
+    /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
+    pub fn to_rfc3339(&self) -> String {
+        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
+        self.format_with_items(ITEMS.iter().cloned()).to_string()
+    }
+
     /// Formats the combined date and time with the specified formatting items.
     #[inline]
     pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
@@ -368,6 +401,33 @@ mod tests {
     fn test_datetime_time() {
         assert_eq!(FixedOffset::east(5*60*60).ymd(2014, 5, 6).and_hms(7, 8, 9).time(),
                    NaiveTime::from_hms(7, 8, 9));
+    }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_datetime_rfc2822_and_rfc3339() {
+        let EDT = FixedOffset::east(5*60*60);
+        assert_eq!(UTC.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc2822(),
+                   "Wed, 18 Feb 2015 23:16:09 +0000");
+        assert_eq!(UTC.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc3339(),
+                   "2015-02-18T23:16:09+00:00");
+        assert_eq!(EDT.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc2822(),
+                   "Wed, 18 Feb 2015 23:16:09 +0500");
+        assert_eq!(EDT.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc3339(),
+                   "2015-02-18T23:16:09.150+05:00");
+        assert_eq!(EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc2822(),
+                   "Wed, 18 Feb 2015 23:59:60 +0500");
+        assert_eq!(EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc3339(),
+                   "2015-02-18T23:59:60.234567+05:00");
+
+        assert_eq!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
+                   Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)));
+        assert_eq!(DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
+                   Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)));
+        assert_eq!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
+                   Ok(EDT.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000)));
+        assert_eq!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
+                   Ok(EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567)));
     }
 
     #[test]
