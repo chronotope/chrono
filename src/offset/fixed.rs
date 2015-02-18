@@ -11,7 +11,6 @@ use std::fmt;
 use div::div_mod_floor;
 use duration::Duration;
 use naive::date::NaiveDate;
-use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use super::{TimeZone, Offset, LocalResult};
 
@@ -71,15 +70,11 @@ impl TimeZone for FixedOffset {
     fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
         LocalResult::Single(self.clone())
     }
-    fn offset_from_local_time(&self, _local: &NaiveTime) -> LocalResult<FixedOffset> {
-        LocalResult::Single(self.clone())
-    }
     fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         LocalResult::Single(self.clone())
     }
 
     fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset { self.clone() }
-    fn offset_from_utc_time(&self, _utc: &NaiveTime) -> FixedOffset { self.clone() }
     fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset { self.clone() }
 }
 

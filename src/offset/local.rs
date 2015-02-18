@@ -14,7 +14,6 @@ use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use date::Date;
-use time::Time;
 use datetime::DateTime;
 use super::{TimeZone, LocalResult};
 use super::fixed::FixedOffset;
@@ -79,18 +78,12 @@ impl TimeZone for Local {
     fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
         self.from_local_date(local).map(|&: date| *date.offset())
     }
-    fn offset_from_local_time(&self, local: &NaiveTime) -> LocalResult<FixedOffset> {
-        self.from_local_time(local).map(|&: time| *time.offset())
-    }
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         self.from_local_datetime(local).map(|&: datetime| *datetime.offset())
     }
 
     fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
         *self.from_utc_date(utc).offset()
-    }
-    fn offset_from_utc_time(&self, utc: &NaiveTime) -> FixedOffset {
-        *self.from_utc_time(utc).offset()
     }
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
         *self.from_utc_datetime(utc).offset()
@@ -100,9 +93,6 @@ impl TimeZone for Local {
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
         self.from_local_datetime(&local.and_hms(0, 0, 0)).map(|datetime| datetime.date())
     }
-    fn from_local_time(&self, _local: &NaiveTime) -> LocalResult<Time<Local>> {
-        LocalResult::None // we have no information about this time
-    }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let timespec = datetime_to_timespec(local);
         LocalResult::Single(tm_to_datetime(stdtime::at(timespec)))
@@ -110,9 +100,6 @@ impl TimeZone for Local {
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
         self.from_utc_datetime(&utc.and_hms(0, 0, 0)).date()
-    }
-    fn from_utc_time(&self, _utc: &NaiveTime) -> Time<Local> {
-        unimplemented!() // we have no information about this time
     }
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         let timespec = datetime_to_timespec(utc);

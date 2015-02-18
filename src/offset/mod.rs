@@ -28,7 +28,6 @@ use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use date::Date;
-use time::Time;
 use datetime::DateTime;
 use format::{parse, Parsed, ParseResult, StrftimeItems};
 
@@ -247,80 +246,6 @@ pub trait TimeZone: Sized {
         }
     }
 
-    /// Makes a new `Time` from hour, minute, second and the current time zone.
-    ///
-    /// Fails on invalid hour, minute and/or second.
-    fn hms(&self, hour: u32, min: u32, sec: u32) -> Time<Self> {
-        self.hms_opt(hour, min, sec).unwrap()
-    }
-
-    /// Makes a new `Time` from hour, minute, second and the current time zone.
-    ///
-    /// Returns `None` on invalid hour, minute and/or second.
-    fn hms_opt(&self, hour: u32, min: u32, sec: u32) -> LocalResult<Time<Self>> {
-        match NaiveTime::from_hms_opt(hour, min, sec) {
-            Some(t) => self.from_local_time(&t),
-            None => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `Time` from hour, minute, second, millisecond and the current time zone.
-    /// The millisecond part can exceed 1,000 in order to represent the leap second.
-    ///
-    /// Fails on invalid hour, minute, second and/or millisecond.
-    fn hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> Time<Self> {
-        self.hms_milli_opt(hour, min, sec, milli).unwrap()
-    }
-
-    /// Makes a new `Time` from hour, minute, second, millisecond and the current time zone.
-    /// The millisecond part can exceed 1,000 in order to represent the leap second.
-    ///
-    /// Returns `None` on invalid hour, minute, second and/or millisecond.
-    fn hms_milli_opt(&self, hour: u32, min: u32, sec: u32, milli: u32) -> LocalResult<Time<Self>> {
-        match NaiveTime::from_hms_milli_opt(hour, min, sec, milli) {
-            Some(t) => self.from_local_time(&t),
-            None => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `Time` from hour, minute, second, microsecond and the current time zone.
-    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
-    ///
-    /// Fails on invalid hour, minute, second and/or microsecond.
-    fn hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> Time<Self> {
-        self.hms_micro_opt(hour, min, sec, micro).unwrap()
-    }
-
-    /// Makes a new `Time` from hour, minute, second, microsecond and the current time zone.
-    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
-    ///
-    /// Returns `None` on invalid hour, minute, second and/or microsecond.
-    fn hms_micro_opt(&self, hour: u32, min: u32, sec: u32, micro: u32) -> LocalResult<Time<Self>> {
-        match NaiveTime::from_hms_micro_opt(hour, min, sec, micro) {
-            Some(t) => self.from_local_time(&t),
-            None => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `Time` from hour, minute, second, nanosecond and the current time zone.
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
-    ///
-    /// Fails on invalid hour, minute, second and/or nanosecond.
-    fn hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> Time<Self> {
-        self.hms_nano_opt(hour, min, sec, nano).unwrap()
-    }
-
-    /// Makes a new `Time` from hour, minute, second, nanosecond and the current time zone.
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
-    ///
-    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
-    fn hms_nano_opt(&self, hour: u32, min: u32, sec: u32, nano: u32) -> LocalResult<Time<Self>> {
-        match NaiveTime::from_hms_nano_opt(hour, min, sec, nano) {
-            Some(t) => self.from_local_time(&t),
-            None => LocalResult::None,
-        }
-    }
-
     /// Makes a new `DateTime` from the number of non-leap seconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
@@ -363,9 +288,6 @@ pub trait TimeZone: Sized {
     /// Creates the offset(s) for given local `NaiveDate` if possible.
     fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<Self::Offset>;
 
-    /// Creates the offset(s) for given local `NaiveTime` if possible.
-    fn offset_from_local_time(&self, local: &NaiveTime) -> LocalResult<Self::Offset>;
-
     /// Creates the offset(s) for given local `NaiveDateTime` if possible.
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<Self::Offset>;
 
@@ -373,13 +295,6 @@ pub trait TimeZone: Sized {
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>> {
         self.offset_from_local_date(local).map(|offset| {
             Date::from_utc(*local - offset.local_minus_utc(), offset)
-        })
-    }
-
-    /// Converts the local `NaiveTime` to the timezone-aware `Time` if possible.
-    fn from_local_time(&self, local: &NaiveTime) -> LocalResult<Time<Self>> {
-        self.offset_from_local_time(local).map(|offset| {
-            Time::from_utc(*local - offset.local_minus_utc(), offset)
         })
     }
 
@@ -393,9 +308,6 @@ pub trait TimeZone: Sized {
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
     fn offset_from_utc_date(&self, utc: &NaiveDate) -> Self::Offset;
 
-    /// Creates the offset for given UTC `NaiveTime`. This cannot fail.
-    fn offset_from_utc_time(&self, utc: &NaiveTime) -> Self::Offset;
-
     /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset;
 
@@ -403,12 +315,6 @@ pub trait TimeZone: Sized {
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Self> {
         Date::from_utc(utc.clone(), self.offset_from_utc_date(utc))
-    }
-
-    /// Converts the UTC `NaiveTime` to the local time.
-    /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    fn from_utc_time(&self, utc: &NaiveTime) -> Time<Self> {
-        Time::from_utc(utc.clone(), self.offset_from_utc_time(utc))
     }
 
     /// Converts the UTC `NaiveDateTime` to the local time.

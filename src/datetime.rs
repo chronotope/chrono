@@ -16,8 +16,8 @@ use offset::utc::UTC;
 use offset::local::Local;
 use offset::fixed::FixedOffset;
 use duration::Duration;
+use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
-use time::Time;
 use date::Date;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
@@ -46,9 +46,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Retrieves a time component.
+    /// Unlike `date`, this is not associated to the time zone.
     #[inline]
-    pub fn time(&self) -> Time<Tz> {
-        Time::from_utc(self.datetime.time().clone(), self.offset.clone())
+    pub fn time(&self) -> NaiveTime {
+        self.datetime.time().clone()
     }
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC

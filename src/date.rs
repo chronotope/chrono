@@ -348,7 +348,6 @@ mod tests {
 
     use duration::Duration;
     use naive::date::NaiveDate;
-    use naive::time::NaiveTime;
     use naive::datetime::NaiveDateTime;
     use offset::{TimeZone, Offset, LocalResult};
 
@@ -366,15 +365,11 @@ mod tests {
         fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<OneYear> {
             LocalResult::Single(OneYear)
         }
-        fn offset_from_local_time(&self, _local: &NaiveTime) -> LocalResult<OneYear> {
-            LocalResult::Single(OneYear)
-        }
         fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<OneYear> {
             LocalResult::Single(OneYear)
         }
 
         fn offset_from_utc_date(&self, _utc: &NaiveDate) -> OneYear { OneYear }
-        fn offset_from_utc_time(&self, _utc: &NaiveTime) -> OneYear { OneYear }
         fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> OneYear { OneYear }
     }
 

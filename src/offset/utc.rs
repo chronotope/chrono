@@ -11,7 +11,6 @@ use stdtime;
 
 use duration::Duration;
 use naive::date::NaiveDate;
-use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use date::Date;
 use datetime::DateTime;
@@ -42,15 +41,11 @@ impl TimeZone for UTC {
     fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<UTC> {
         LocalResult::Single(UTC)
     }
-    fn offset_from_local_time(&self, _local: &NaiveTime) -> LocalResult<UTC> {
-        LocalResult::Single(UTC)
-    }
     fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<UTC> {
         LocalResult::Single(UTC)
     }
 
     fn offset_from_utc_date(&self, _utc: &NaiveDate) -> UTC { UTC }
-    fn offset_from_utc_time(&self, _utc: &NaiveTime) -> UTC { UTC }
     fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> UTC { UTC}
 }
 

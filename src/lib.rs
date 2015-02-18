@@ -214,7 +214,8 @@ assert_eq!(Local::today(), Local::now().date());
 
 assert_eq!(UTC.ymd(2014, 11, 28).weekday(), Weekday::Fri);
 assert_eq!(UTC.ymd_opt(2014, 11, 31), LocalResult::None);
-assert_eq!(UTC.hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(), "070809");
+assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(),
+           "070809");
 ~~~~
 
 `DateTime` has two methods, `date` and `time`,
@@ -268,7 +269,6 @@ pub use naive::date::NaiveDate;
 pub use naive::time::NaiveTime;
 pub use naive::datetime::NaiveDateTime;
 pub use date::Date;
-pub use time::Time;
 pub use datetime::DateTime;
 pub use format::{ParseError, ParseResult};
 
@@ -296,7 +296,6 @@ pub mod naive {
     pub mod datetime;
 }
 pub mod date;
-pub mod time;
 pub mod datetime;
 pub mod format;
 
