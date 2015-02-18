@@ -146,16 +146,21 @@ assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
 assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 ~~~~
 
-Parsing can be done with two methods:
+Parsing can be done with three methods:
 
-- `DateTime::parse_from_str` parses a date and time with offsets and
-  returns `DateTime<FixedOffset>`.
-  This should be used when the offset is a part of input and the caller cannot guess that.
-  It *cannot* be used when the offset can be missing.
+1. The standard `FromStr` trait (and `parse` method on a string) can be used for
+   parsing `DateTime<FixedOffset>` and `DateTime<UTC>` values.
+   This parses what the `{:?}` (`std::fmt::Debug`) format specifier prints,
+   and requires the offset to be present.
 
-- `Offset::datetime_from_str` is similar but returns `DateTime` of given offset.
-  When the explicit offset is missing from the input, it simply uses given offset.
-  It issues an error when the input contains an explicit offset different from the current offset.
+2. `DateTime::parse_from_str` parses a date and time with offsets and
+   returns `DateTime<FixedOffset>`.
+   This should be used when the offset is a part of input and the caller cannot guess that.
+   It *cannot* be used when the offset can be missing.
+
+3. `Offset::datetime_from_str` is similar but returns `DateTime` of given offset.
+   When the explicit offset is missing from the input, it simply uses given offset.
+   It issues an error when the input contains an explicit offset different from the current offset.
 
 More detailed control over the parsing process is available via `format` module.
 
@@ -163,8 +168,16 @@ More detailed control over the parsing process is available via `format` module.
 use chrono::{UTC, Offset, DateTime};
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
+
+// method 1
+assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<UTC>>(), Ok(dt.clone()));
+assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<UTC>>(), Ok(dt.clone()));
+
+// method 2
 assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
 assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
+
+// method 3
 assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00",
                                     "%Y-%m-%d %H:%M:%S %z").map(|dt| dt.with_offset(UTC)), Ok(dt));
 

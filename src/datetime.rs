@@ -6,17 +6,18 @@
  * ISO 8601 date and time.
  */
 
-use std::{fmt, hash};
+use std::{str, fmt, hash};
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 
 use {Weekday, Timelike, Datelike};
-use offset::{Offset, FixedOffset};
+use offset::{Offset, FixedOffset, UTC};
 use duration::Duration;
 use naive::datetime::NaiveDateTime;
 use time::Time;
 use date::Date;
-use format::{parse, Item, Parsed, ParseResult, DelayedFormat, StrftimeItems};
+use format::{Item, Numeric, Pad, Fixed};
+use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time with timezone.
 #[derive(Clone)]
@@ -261,6 +262,45 @@ impl<Off: Offset + fmt::Display> fmt::Display for DateTime<Off> {
     }
 }
 
+impl str::FromStr for DateTime<FixedOffset> {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+        const ITEMS: &'static [Item<'static>] = &[
+            Item::Space(""), Item::Numeric(Numeric::Year, Pad::Zero),
+            Item::Space(""), Item::Literal("-"),
+            Item::Space(""), Item::Numeric(Numeric::Month, Pad::Zero),
+            Item::Space(""), Item::Literal("-"),
+            Item::Space(""), Item::Numeric(Numeric::Day, Pad::Zero),
+            Item::Space(""), Item::Literal("T"), // XXX shouldn't this be case-insensitive?
+            Item::Space(""), Item::Numeric(Numeric::Hour, Pad::Zero),
+            Item::Space(""), Item::Literal(":"),
+            Item::Space(""), Item::Numeric(Numeric::Minute, Pad::Zero),
+            Item::Space(""), Item::Literal(":"),
+            Item::Space(""), Item::Numeric(Numeric::Second, Pad::Zero),
+                             Item::Fixed(Fixed::Nanosecond),
+            Item::Space(""), Item::Fixed(Fixed::TimezoneOffsetZ),
+            Item::Space(""),
+        ];
+
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_datetime()
+    }
+}
+
+impl str::FromStr for DateTime<UTC> {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> ParseResult<DateTime<UTC>> {
+        // we parse non-UTC time zones then convert them into UTC
+        let dt: DateTime<FixedOffset> = try!(s.parse());
+        Ok(dt.with_offset(UTC))
+    }
+}
+
+// TODO: FromStr for DateTime<Local> is quite hard without a new offset design
+
 #[cfg(test)]
 mod tests {
     use super::DateTime;
@@ -292,6 +332,21 @@ mod tests {
         assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);
         assert_eq!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), EDT);
         assert!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != EST);
+    }
+
+    #[test]
+    fn test_datetime_from_str() {
+        assert_eq!("2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
+                   Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert_eq!("2015-2-18T13:16:9.15-10:00".parse::<DateTime<FixedOffset>>(),
+                   Ok(FixedOffset::west(10 * 3600).ymd(2015, 2, 18).and_hms_milli(13, 16, 9, 150)));
+        assert!("2015-2-18T23:16:9.15".parse::<DateTime<FixedOffset>>().is_err());
+
+        assert_eq!("2015-2-18T23:16:9.15Z".parse::<DateTime<UTC>>(),
+                   Ok(UTC.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert_eq!("2015-2-18T13:16:9.15-10:00".parse::<DateTime<UTC>>(),
+                   Ok(UTC.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert!("2015-2-18T23:16:9.15".parse::<DateTime<UTC>>().is_err());
     }
 
     #[test]
