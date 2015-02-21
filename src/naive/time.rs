@@ -128,7 +128,7 @@ impl NaiveTime {
 
     /// Formats the time with the specified formatting items.
     #[inline]
-    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
         DelayedFormat::new(None, Some(self.clone()), items)
     }
@@ -136,7 +136,7 @@ impl NaiveTime {
     /// Formats the time with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
+    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
@@ -187,8 +187,11 @@ impl Timelike for NaiveTime {
     }
 }
 
-impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveTime {
-    fn hash(&self, state: &mut H) { self.secs.hash(state); self.frac.hash(state) }
+impl hash::Hash for NaiveTime {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.secs.hash(state);
+        self.frac.hash(state);
+    }
 }
 
 impl Add<Duration> for NaiveTime {

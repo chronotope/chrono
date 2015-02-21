@@ -158,7 +158,7 @@ impl NaiveDateTime {
 
     /// Formats the combined date and time with the specified formatting items.
     #[inline]
-    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
         DelayedFormat::new(Some(self.date.clone()), Some(self.time.clone()), items)
     }
@@ -166,7 +166,7 @@ impl NaiveDateTime {
     /// Formats the combined date and time with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
+    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 }
@@ -245,8 +245,11 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveDateTime {
-    fn hash(&self, state: &mut H) { self.date.hash(state); self.time.hash(state) }
+impl hash::Hash for NaiveDateTime {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.date.hash(state);
+        self.time.hash(state);
+    }
 }
 
 impl Add<Duration> for NaiveDateTime {

@@ -4,7 +4,7 @@
 
 /*!
 
-# Chrono 0.2.0
+# Chrono 0.2.1
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
@@ -266,7 +266,7 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
-#![feature(core, collections, hash, std_misc)] // lib stability features as per RFC #507
+#![feature(core, collections, std_misc)] // lib stability features as per RFC #507
 #![cfg_attr(test, feature(test))] // ditto
 #![deny(missing_docs)]
 

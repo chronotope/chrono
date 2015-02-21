@@ -171,7 +171,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
 
     /// Formats the combined date and time with the specified formatting items.
     #[inline]
-    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
         let local = self.naive_local();
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
@@ -180,7 +180,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Formats the combined date and time with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
+    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 }
@@ -276,8 +276,8 @@ impl<Tz: TimeZone> Ord for DateTime<Tz> {
     fn cmp(&self, other: &DateTime<Tz>) -> Ordering { self.datetime.cmp(&other.datetime) }
 }
 
-impl<Tz: TimeZone, H: hash::Hasher + hash::Writer> hash::Hash<H> for DateTime<Tz> {
-    fn hash(&self, state: &mut H) { self.datetime.hash(state) }
+impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) { self.datetime.hash(state) }
 }
 
 impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {

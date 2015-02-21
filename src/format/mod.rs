@@ -410,7 +410,7 @@ pub mod strftime;
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
 #[derive(Debug)]
-pub struct DelayedFormat<'a, I: Iterator<Item=Item<'a>> + Clone> {
+pub struct DelayedFormat<I> {
     /// The date view, if any.
     date: Option<NaiveDate>,
     /// The time view, if any.
@@ -421,22 +421,22 @@ pub struct DelayedFormat<'a, I: Iterator<Item=Item<'a>> + Clone> {
     items: I,
 }
 
-impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<'a, I> {
+impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
-    pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<'a, I> {
+    pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
         DelayedFormat { date: date, time: time, off: None, items: items }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
     pub fn new_with_offset<Off>(date: Option<NaiveDate>, time: Option<NaiveTime>,
-                                offset: &Off, items: I) -> DelayedFormat<'a, I>
+                                offset: &Off, items: I) -> DelayedFormat<I>
             where Off: Offset + fmt::Display {
         let name_and_diff = (offset.to_string(), offset.local_minus_utc());
         DelayedFormat { date: date, time: time, off: Some(name_and_diff), items: items }
     }
 }
 
-impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<'a, I> {
+impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
     }

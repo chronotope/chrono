@@ -369,7 +369,7 @@ impl NaiveDate {
 
     /// Formats the date with the specified formatting items.
     #[inline]
-    pub fn format_with_items<'a, I>(&'a self, items: I) -> DelayedFormat<'a, I>
+    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
         DelayedFormat::new(Some(self.clone()), None, items)
     }
@@ -377,7 +377,7 @@ impl NaiveDate {
     /// Formats the date with the specified format string.
     /// See the `format::strftime` module on the supported escape sequences.
     #[inline]
-    pub fn format<'a>(&'a self, fmt: &'a str) -> DelayedFormat<'a, StrftimeItems<'a>> {
+    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 }
@@ -452,8 +452,8 @@ impl Datelike for NaiveDate {
     }
 }
 
-impl<H: hash::Hasher + hash::Writer> hash::Hash<H> for NaiveDate {
-    fn hash(&self, state: &mut H) { self.ymdf.hash(state) }
+impl hash::Hash for NaiveDate {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) { self.ymdf.hash(state) }
 }
 
 impl Add<Duration> for NaiveDate {
@@ -1112,7 +1112,7 @@ mod internals {
     pub const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
     const XX: i8 = -128;
-    static MDL_TO_OL: [i8; (MAX_MDL as usize + 1us)] = [
+    static MDL_TO_OL: [i8; (MAX_MDL as usize + 1)] = [
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
          XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -1167,7 +1167,7 @@ mod internals {
          98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, // 12
     ];
 
-    static OL_TO_MDL: [u8; (MAX_OL as usize + 1us)] = [
+    static OL_TO_MDL: [u8; (MAX_OL as usize + 1)] = [
           0,  0,                                                         // 0
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
          64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
