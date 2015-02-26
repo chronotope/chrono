@@ -1,4 +1,4 @@
-[Chrono][doc] 0.2.1
+[Chrono][doc] 0.2.2
 ===================
 
 [![Chrono on Travis CI][travis-image]][travis]
@@ -224,7 +224,7 @@ assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_
 
 There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
 
-`DateTime` has `date` method which returns a narrow view to its date component.
+`DateTime` has `date` method which returns a `Date` which represents its date component.
 There is also a `time` method, which simply returns a naive local time described below.
 
 ### Naive date and time
