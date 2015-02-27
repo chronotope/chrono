@@ -35,7 +35,12 @@ fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-fn datetime_to_timespec(d: &NaiveDateTime) -> stdtime::Timespec {
+fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> stdtime::Timespec {
+    // well, this exploits an undocumented `Tm::to_timespec` behavior
+    // to get the exact function we want (either `timegm` or `mktime`).
+    // the number 1 is arbitrary but should be non-zero to trigger `mktime`.
+    let tm_utcoff = if local {1} else {0};
+
     let tm = stdtime::Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -46,8 +51,7 @@ fn datetime_to_timespec(d: &NaiveDateTime) -> stdtime::Timespec {
         tm_wday: 0, // to_local ignores this
         tm_yday: 0, // and this
         tm_isdst: -1,
-        tm_utcoff: 1, // this is arbitrary but should be nonzero
-                      // in order to make `to_timespec` use `rust_mktime` internally.
+        tm_utcoff: tm_utcoff,
         tm_nsec: d.nanosecond() as i32,
     };
     tm.to_timespec()
@@ -94,7 +98,7 @@ impl TimeZone for Local {
         self.from_local_datetime(&local.and_hms(0, 0, 0)).map(|datetime| datetime.date())
     }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
-        let timespec = datetime_to_timespec(local);
+        let timespec = datetime_to_timespec(local, true);
         LocalResult::Single(tm_to_datetime(stdtime::at(timespec)))
     }
 
@@ -102,8 +106,8 @@ impl TimeZone for Local {
         self.from_utc_datetime(&utc.and_hms(0, 0, 0)).date()
     }
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
-        let timespec = datetime_to_timespec(utc);
-        tm_to_datetime(stdtime::at_utc(timespec))
+        let timespec = datetime_to_timespec(utc, false);
+        tm_to_datetime(stdtime::at(timespec))
     }
 }
 

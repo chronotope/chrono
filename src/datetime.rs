@@ -259,6 +259,10 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     }
 }
 
+// we need them as automatic impls cannot handle associated types
+impl<Tz: TimeZone> Copy for DateTime<Tz> where <Tz as TimeZone>::Offset: Copy {}
+unsafe impl<Tz: TimeZone> Send for DateTime<Tz> where <Tz as TimeZone>::Offset: Send {}
+
 impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<DateTime<Tz2>> for DateTime<Tz> {
     fn eq(&self, other: &DateTime<Tz2>) -> bool { self.datetime == other.datetime }
 }
@@ -404,6 +408,14 @@ mod tests {
     }
 
     #[test]
+    fn test_datetime_with_timezone() {
+        let local_now = Local::now();
+        let utc_now = local_now.with_timezone(&UTC);
+        let local_now2 = utc_now.with_timezone(&Local);
+        assert_eq!(local_now, local_now2);
+    }
+
+    #[test]
     #[allow(non_snake_case)]
     fn test_datetime_rfc2822_and_rfc3339() {
         let EDT = FixedOffset::east(5*60*60);
@@ -465,6 +477,26 @@ mod tests {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
         assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&UTC).format("%Y").to_string());
+    }
+
+    #[test]
+    #[ignore] // XXX Rust issue #22818
+    fn test_datetime_is_copy() {
+        // UTC is known to be `Copy`.
+        let a = UTC::now();
+        let b = a;
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn test_datetime_is_send() {
+        use std::thread;
+
+        // UTC is known to be `Send`.
+        let a = UTC::now();
+        thread::scoped(move || {
+            let _ = a;
+        }).join();
     }
 }
 

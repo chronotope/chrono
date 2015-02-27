@@ -8,6 +8,17 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.3 (2015-02-27)
+
+### Added
+
+- `DateTime<Tz>` and `Date<Tz>` is now `Copy`/`Send` when `Tz::Offset` is `Copy`/`Send`.
+  The implementations for them were mistakenly omitted. (#25)
+
+### Fixed
+
+- `Local::from_utc_datetime` didn't set a correct offset. (#26)
+
 ## 0.2.1 (2015-02-21)
 
 ### Changed

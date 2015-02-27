@@ -284,6 +284,10 @@ impl<Tz: TimeZone> Datelike for Date<Tz> {
     }
 }
 
+// we need them as automatic impls cannot handle associated types
+impl<Tz: TimeZone> Copy for Date<Tz> where <Tz as TimeZone>::Offset: Copy {}
+unsafe impl<Tz: TimeZone> Send for Date<Tz> where <Tz as TimeZone>::Offset: Send {}
+
 impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<Date<Tz2>> for Date<Tz> {
     fn eq(&self, other: &Date<Tz2>) -> bool { self.date == other.date }
 }
