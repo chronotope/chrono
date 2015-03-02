@@ -378,23 +378,42 @@ mod tests {
     #[test]
     #[allow(non_snake_case)]
     fn test_datetime_offset() {
-        let EST = FixedOffset::east(5*60*60);
-        let EDT = FixedOffset::east(4*60*60);
+        let EST = FixedOffset::west(5*60*60);
+        let EDT = FixedOffset::west(4*60*60);
+        let KST = FixedOffset::east(9*60*60);
 
         assert_eq!(format!("{}", UTC.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06 07:08:09 UTC");
         assert_eq!(format!("{}", EDT.ymd(2014, 5, 6).and_hms(7, 8, 9)),
-                   "2014-05-06 07:08:09 +04:00");
+                   "2014-05-06 07:08:09 -04:00");
+        assert_eq!(format!("{}", KST.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+                   "2014-05-06 07:08:09 +09:00");
         assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06T07:08:09Z");
         assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(7, 8, 9)),
-                   "2014-05-06T07:08:09+04:00");
+                   "2014-05-06T07:08:09-04:00");
+        assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+                   "2014-05-06T07:08:09+09:00");
 
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9), EDT.ymd(2014, 5, 6).and_hms(11, 8, 9));
+        // edge cases
+        assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(0, 0, 0)),
+                   "2014-05-06T00:00:00Z");
+        assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(0, 0, 0)),
+                   "2014-05-06T00:00:00-04:00");
+        assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(0, 0, 0)),
+                   "2014-05-06T00:00:00+09:00");
+        assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+                   "2014-05-06T23:59:59Z");
+        assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+                   "2014-05-06T23:59:59-04:00");
+        assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+                   "2014-05-06T23:59:59+09:00");
+
+        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9), EDT.ymd(2014, 5, 6).and_hms(3, 8, 9));
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) + Duration::seconds(3600 + 60 + 1),
                    UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));
         assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) - EDT.ymd(2014, 5, 6).and_hms(10, 11, 12),
-                   Duration::seconds(3600 - 3*60 - 3));
+                   Duration::seconds(-7*3600 - 3*60 - 3));
 
         assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);
         assert_eq!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), EDT);

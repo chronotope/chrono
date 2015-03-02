@@ -350,10 +350,12 @@ impl<Tz: TimeZone> fmt::Display for Date<Tz> where Tz::Offset: fmt::Display {
 mod tests {
     use std::fmt;
 
+    use Datelike;
     use duration::Duration;
     use naive::date::NaiveDate;
     use naive::datetime::NaiveDateTime;
     use offset::{TimeZone, Offset, LocalResult};
+    use offset::local::Local;
 
     #[derive(Copy, Clone, PartialEq, Eq)]
     struct UTC1y; // same to UTC but with an offset of 365 days
@@ -395,6 +397,11 @@ mod tests {
                    "2012-03-04+8760:00".to_string());
         assert_eq!(format!("{:?}", UTC1y.ymd(2012, 3, 4).and_hms(5, 6, 7)),
                    "2012-03-04T05:06:07+8760:00".to_string());
+    }
+
+    #[test]
+    fn test_local_date_sanity_check() { // issue #27
+        assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
     }
 }
 
