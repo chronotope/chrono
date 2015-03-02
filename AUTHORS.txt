@@ -2,6 +2,7 @@ Chrono is mainly written by Kang Seonghoon <public+rust@mearie.org>,
 and also the following people (in ascending order):
 
 Colin Ray <r.colinray@gmail.com>
+Dan <dan@ebip.co.uk>
 David Ross <daboross@daboross.net>
 Eunchong Yu <kroisse@gmail.com>
 John Nagle <nagle@sitetruth.com>
