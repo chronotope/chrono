@@ -461,7 +461,7 @@ mod tests {
 
     #[test]
     fn test_datetime_parse_from_str() {
-        let ymdhms = |&: y,m,d,h,n,s,off| FixedOffset::east(off).ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |y,m,d,h,n,s,off| FixedOffset::east(off).ymd(y,m,d).and_hms(h,n,s);
         assert_eq!(DateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570*60))); // ignore offset
         assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset

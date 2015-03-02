@@ -536,7 +536,7 @@ mod tests {
 
     #[test]
     fn test_date_from_ymd() {
-        let ymd_opt = |&: y,m,d| NaiveDate::from_ymd_opt(y, m, d);
+        let ymd_opt = |y,m,d| NaiveDate::from_ymd_opt(y, m, d);
 
         assert!(ymd_opt(2012, 0, 1).is_none());
         assert!(ymd_opt(2012, 1, 1).is_some());
@@ -552,8 +552,8 @@ mod tests {
 
     #[test]
     fn test_date_from_yo() {
-        let yo_opt = |&: y,o| NaiveDate::from_yo_opt(y, o);
-        let ymd = |&: y,m,d| NaiveDate::from_ymd(y, m, d);
+        let yo_opt = |y,o| NaiveDate::from_yo_opt(y, o);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
 
         assert_eq!(yo_opt(2012, 0), None);
         assert_eq!(yo_opt(2012, 1), Some(ymd(2012, 1, 1)));
@@ -582,8 +582,8 @@ mod tests {
 
     #[test]
     fn test_date_from_isoywd() {
-        let isoywd_opt = |&: y,w,d| NaiveDate::from_isoywd_opt(y, w, d);
-        let ymd = |&: y,m,d| NaiveDate::from_ymd(y, m, d);
+        let isoywd_opt = |y,w,d| NaiveDate::from_isoywd_opt(y, w, d);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
 
         assert_eq!(isoywd_opt(2004, 0, Weekday::Sun), None);
         assert_eq!(isoywd_opt(2004, 1, Weekday::Mon), Some(ymd(2003, 12, 29)));
@@ -645,7 +645,7 @@ mod tests {
 
     #[test]
     fn test_date_from_num_days_from_ce() {
-        let from_ndays_from_ce = |&: days| NaiveDate::from_num_days_from_ce_opt(days);
+        let from_ndays_from_ce = |days| NaiveDate::from_num_days_from_ce_opt(days);
         assert_eq!(from_ndays_from_ce(1), Some(NaiveDate::from_ymd(1, 1, 1)));
         assert_eq!(from_ndays_from_ce(2), Some(NaiveDate::from_ymd(1, 1, 2)));
         assert_eq!(from_ndays_from_ce(31), Some(NaiveDate::from_ymd(1, 1, 31)));
@@ -772,7 +772,7 @@ mod tests {
 
     #[test]
     fn test_date_succ() {
-        let ymd = |&: y,m,d| NaiveDate::from_ymd(y, m, d);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
         assert_eq!(ymd(2014, 5, 6).succ_opt(), Some(ymd(2014, 5, 7)));
         assert_eq!(ymd(2014, 5, 31).succ_opt(), Some(ymd(2014, 6, 1)));
         assert_eq!(ymd(2014, 12, 31).succ_opt(), Some(ymd(2015, 1, 1)));
@@ -782,7 +782,7 @@ mod tests {
 
     #[test]
     fn test_date_pred() {
-        let ymd = |&: y,m,d| NaiveDate::from_ymd(y, m, d);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
         assert_eq!(ymd(2016, 3, 1).pred_opt(), Some(ymd(2016, 2, 29)));
         assert_eq!(ymd(2015, 1, 1).pred_opt(), Some(ymd(2014, 12, 31)));
         assert_eq!(ymd(2014, 6, 1).pred_opt(), Some(ymd(2014, 5, 31)));
@@ -903,7 +903,7 @@ mod tests {
 
     #[test]
     fn test_date_parse_from_str() {
-        let ymd = |&: y,m,d| NaiveDate::from_ymd(y,m,d);
+        let ymd = |y,m,d| NaiveDate::from_ymd(y,m,d);
         assert_eq!(NaiveDate::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(ymd(2014, 5, 7))); // ignore time and offset
         assert_eq!(NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),

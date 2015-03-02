@@ -80,10 +80,10 @@ impl TimeZone for Local {
 
     // they are easier to define in terms of the finished date and time unlike other offsets
     fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
-        self.from_local_date(local).map(|&: date| *date.offset())
+        self.from_local_date(local).map(|date| *date.offset())
     }
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
-        self.from_local_datetime(local).map(|&: datetime| *datetime.offset())
+        self.from_local_datetime(local).map(|datetime| *datetime.offset())
     }
 
     fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
