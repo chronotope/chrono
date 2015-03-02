@@ -259,9 +259,9 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                 use self::Numeric::*;
 
                 let week_from_sun =
-                    |&: d: &NaiveDate| (d.ordinal() - d.weekday().num_days_from_sunday() + 7) / 7;
+                    |d: &NaiveDate| (d.ordinal() - d.weekday().num_days_from_sunday() + 7) / 7;
                 let week_from_mon =
-                    |&: d: &NaiveDate| (d.ordinal() - d.weekday().num_days_from_monday() + 7) / 7;
+                    |d: &NaiveDate| (d.ordinal() - d.weekday().num_days_from_monday() + 7) / 7;
 
                 let (width, v) = match spec {
                     Year           => (4, date.map(|d| d.year() as i64)),

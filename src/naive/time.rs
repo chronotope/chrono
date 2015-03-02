@@ -355,7 +355,7 @@ mod tests {
             //assert_eq!(rhs + lhs, sum);
         }
 
-        let hmsm = |&: h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
+        let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
         check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
@@ -373,7 +373,7 @@ mod tests {
             assert_eq!(rhs - lhs, -diff);
         }
 
-        let hmsm = |&: h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
+        let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
         check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
@@ -448,7 +448,7 @@ mod tests {
 
     #[test]
     fn test_time_parse_from_str() {
-        let hms = |&: h,m,s| NaiveTime::from_hms(h,m,s);
+        let hms = |h,m,s| NaiveTime::from_hms(h,m,s);
         assert_eq!(NaiveTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(hms(12, 34, 56))); // ignore date and offset
         assert_eq!(NaiveTime::parse_from_str("PM 12:59", "%P %H:%M"),
