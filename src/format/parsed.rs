@@ -310,11 +310,11 @@ impl Parsed {
         let verify_ordinal = |date: NaiveDate| {
             let ordinal = date.ordinal();
             let weekday = date.weekday();
-            let week_from_sun = (ordinal - weekday.num_days_from_sunday() + 7) / 7;
-            let week_from_mon = (ordinal - weekday.num_days_from_monday() + 7) / 7;
+            let week_from_sun = (ordinal as i32 - weekday.num_days_from_sunday() as i32 + 7) / 7;
+            let week_from_mon = (ordinal as i32 - weekday.num_days_from_monday() as i32 + 7) / 7;
             (self.ordinal.unwrap_or(ordinal) == ordinal &&
-             self.week_from_sun.unwrap_or(week_from_sun) == week_from_sun &&
-             self.week_from_mon.unwrap_or(week_from_mon) == week_from_mon)
+             self.week_from_sun.map_or(week_from_sun, |v| v as i32) == week_from_sun &&
+             self.week_from_mon.map_or(week_from_mon, |v| v as i32) == week_from_mon)
         };
 
         // test several possibilities.
@@ -349,7 +349,8 @@ impl Parsed {
 
                 // `firstweek+1`-th day of January is the beginning of the week 1.
                 if week_from_sun > 53 { return Err(OUT_OF_RANGE); } // can it overflow?
-                let ndays = firstweek + (week_from_sun - 1) * 7 + weekday.num_days_from_sunday();
+                let ndays = firstweek + (week_from_sun as i32 - 1) * 7 +
+                            weekday.num_days_from_sunday() as i32;
                 let date = try!(newyear.checked_add(Duration::days(ndays as i64))
                                        .ok_or(OUT_OF_RANGE));
                 if date.year() != year { return Err(OUT_OF_RANGE); } // early exit for correct error
@@ -373,7 +374,8 @@ impl Parsed {
 
                 // `firstweek+1`-th day of January is the beginning of the week 1.
                 if week_from_mon > 53 { return Err(OUT_OF_RANGE); } // can it overflow?
-                let ndays = firstweek + (week_from_mon - 1) * 7 + weekday.num_days_from_monday();
+                let ndays = firstweek + (week_from_mon as i32 - 1) * 7 +
+                            weekday.num_days_from_monday() as i32;
                 let date = try!(newyear.checked_add(Duration::days(ndays as i64))
                                        .ok_or(OUT_OF_RANGE));
                 if date.year() != year { return Err(OUT_OF_RANGE); } // early exit for correct error

@@ -1242,7 +1242,7 @@ mod internals {
         pub fn from_mdf(Mdf(mdf): Mdf) -> Of {
             let mdl = mdf >> 3;
             match MDL_TO_OL.get(mdl as usize) {
-                Some(&v) => Of(mdf - ((v as i32 as u32 & 0x3ff) << 3)),
+                Some(&v) => Of(mdf.wrapping_sub((v as i32 as u32 & 0x3ff) << 3)),
                 None => Of(0)
             }
         }
@@ -1251,7 +1251,7 @@ mod internals {
         pub fn valid(&self) -> bool {
             let Of(of) = *self;
             let ol = of >> 3;
-            ol - MIN_OL <= MAX_OL - MIN_OL
+            MIN_OL <= ol && ol <= MAX_OL
         }
 
         #[inline]
@@ -1289,7 +1289,7 @@ mod internals {
         pub fn isoweekdate_raw(&self) -> (u32, Weekday) {
             // week ordinal = ordinal + delta
             let Of(of) = *self;
-            let weekord = (of >> 4) + self.flags().isoweek_delta();
+            let weekord = (of >> 4).wrapping_add(self.flags().isoweek_delta());
             (weekord / 7, num::from_u32(weekord % 7).unwrap())
         }
 

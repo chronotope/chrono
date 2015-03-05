@@ -258,10 +258,10 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
             Item::Numeric(spec, pad) => {
                 use self::Numeric::*;
 
-                let week_from_sun =
-                    |d: &NaiveDate| (d.ordinal() - d.weekday().num_days_from_sunday() + 7) / 7;
-                let week_from_mon =
-                    |d: &NaiveDate| (d.ordinal() - d.weekday().num_days_from_monday() + 7) / 7;
+                let week_from_sun = |d: &NaiveDate|
+                    (d.ordinal() as i32 - d.weekday().num_days_from_sunday() as i32 + 7) / 7;
+                let week_from_mon = |d: &NaiveDate|
+                    (d.ordinal() as i32 - d.weekday().num_days_from_monday() as i32 + 7) / 7;
 
                 let (width, v) = match spec {
                     Year           => (4, date.map(|d| d.year() as i64)),
