@@ -89,6 +89,20 @@ impl NaiveDate {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Fails on the out-of-range date, invalid month and/or day.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 3, 14);
+    /// assert_eq!(d.year(), 2015);
+    /// assert_eq!(d.month(), 3);
+    /// assert_eq!(d.day(), 14);
+    /// assert_eq!(d.ordinal(), 73); // day of year
+    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
+    /// ~~~~
     pub fn from_ymd(year: i32, month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
     }
@@ -97,6 +111,19 @@ impl NaiveDate {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// assert!(NaiveDate::from_ymd_opt(2015, 3, 14).is_some());
+    /// assert!(NaiveDate::from_ymd_opt(2015, 0, 14).is_none());
+    /// assert!(NaiveDate::from_ymd_opt(2015, 2, 29).is_none());
+    /// assert!(NaiveDate::from_ymd_opt(-4, 2, 29).is_some()); // 5 BCE is a leap year
+    /// assert!(NaiveDate::from_ymd_opt(400000, 1, 1).is_none());
+    /// assert!(NaiveDate::from_ymd_opt(-400000, 1, 1).is_none());
+    /// ~~~~
     pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
@@ -106,6 +133,20 @@ impl NaiveDate {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Fails on the out-of-range date and/or invalid DOY.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_yo(2015, 73);
+    /// assert_eq!(d.ordinal(), 73);
+    /// assert_eq!(d.year(), 2015);
+    /// assert_eq!(d.month(), 3);
+    /// assert_eq!(d.day(), 14);
+    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
+    /// ~~~~
     pub fn from_yo(year: i32, ordinal: u32) -> NaiveDate {
         NaiveDate::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
     }
@@ -124,6 +165,20 @@ impl NaiveDate {
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Fails on the out-of-range date and/or invalid week number.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_isoywd(2015, 11, Weekday::Sat);
+    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat));
+    /// assert_eq!(d.year(), 2015);
+    /// assert_eq!(d.month(), 3);
+    /// assert_eq!(d.day(), 14);
+    /// assert_eq!(d.ordinal(), 73); // day of year
+    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
+    /// ~~~~
     pub fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> NaiveDate {
         NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
@@ -163,6 +218,20 @@ impl NaiveDate {
     /// in the proleptic Gregorian calendar.
     ///
     /// Fails on the out-of-range date.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_num_days_from_ce(735671);
+    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
+    /// assert_eq!(d.year(), 2015);
+    /// assert_eq!(d.month(), 3);
+    /// assert_eq!(d.day(), 14);
+    /// assert_eq!(d.ordinal(), 73); // day of year
+    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// ~~~~
     #[inline]
     pub fn from_num_days_from_ce(days: i32) -> NaiveDate {
         NaiveDate::from_num_days_from_ce_opt(days).expect("out-of-range date")
