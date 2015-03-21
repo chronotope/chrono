@@ -1537,7 +1537,7 @@ mod internals {
         #[bench]
         fn bench_year_flags_from_year(bh: &mut test::Bencher) {
             bh.iter(|| {
-                for year in range(-999i32, 1000) {
+                for year in -999i32..1000 {
                     YearFlags::from_year(year);
                 }
             });
