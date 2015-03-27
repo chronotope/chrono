@@ -723,11 +723,11 @@ mod tests {
         assert_eq!(parse!(year_div_100: -1, year_mod_100: 42, month: 1, day: 1),
                    Err(OUT_OF_RANGE));
         let max_year = date::MAX.year();
-        assert_eq!(parse!(year_div_100: max_year as i32 / 100,
-                          year_mod_100: max_year as i32 % 100, month: 1, day: 1),
+        assert_eq!(parse!(year_div_100: max_year / 100,
+                          year_mod_100: max_year % 100, month: 1, day: 1),
                    ymd(max_year, 1, 1));
-        assert_eq!(parse!(year_div_100: (max_year + 1) as i32 / 100,
-                          year_mod_100: (max_year + 1) as i32 % 100, month: 1, day: 1),
+        assert_eq!(parse!(year_div_100: (max_year + 1) / 100,
+                          year_mod_100: (max_year + 1) % 100, month: 1, day: 1),
                    Err(OUT_OF_RANGE));
 
         // ymd: conflicting inputs

@@ -4,7 +4,7 @@
 
 /*!
 
-# Chrono 0.2.6
+# Chrono 0.2.7
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
@@ -100,6 +100,7 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
+# #![feature(std_misc)]
 use chrono::*;
 
 # /* we intentionally fake the datetime...
@@ -270,7 +271,7 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 #![cfg_attr(test, feature(test))] // ditto
 #![deny(missing_docs)]
 
-extern crate "time" as stdtime;
+extern crate time as stdtime;
 
 pub use duration::Duration;
 pub use offset::{TimeZone, Offset, LocalResult};
