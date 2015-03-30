@@ -267,6 +267,7 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
+#![feature(slice_patterns)]
 #![feature(core, str_char, std_misc)] // lib stability features as per RFC #507
 #![cfg_attr(test, feature(test))] // ditto
 #![deny(missing_docs)]
@@ -591,4 +592,3 @@ fn test_readme_doomsday() {
         assert!(other_dates.iter().all(|d| d.weekday() == weekday));
     }
 }
-
