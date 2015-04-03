@@ -7,7 +7,6 @@
  */
 
 use std::iter;
-use std::num::Int;
 
 use Weekday;
 use super::{ParseResult, TOO_SHORT, INVALID, OUT_OF_RANGE};

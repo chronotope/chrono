@@ -8,7 +8,6 @@
  */
 
 use std::usize;
-use std::num::Int;
 
 use Weekday;
 

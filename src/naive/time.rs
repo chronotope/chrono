@@ -7,7 +7,6 @@
  */
 
 use std::{str, fmt, hash};
-use std::num::Int;
 use std::ops::{Add, Sub};
 
 use Timelike;

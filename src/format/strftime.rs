@@ -134,19 +134,19 @@ impl<'a> Iterator for StrftimeItems<'a> {
             return Some(item);
         }
 
-        match self.remainder.slice_shift_char() {
+        match self.remainder.chars().next() {
             // we are done
             None => return None,
 
             // the next item is a specifier
-            Some(('%', remainder)) => {
-                self.remainder = remainder;
+            Some('%') => {
+                self.remainder = &self.remainder[1..];
 
-                let (spec, remainder) = match self.remainder.slice_shift_char() {
+                let spec = match self.remainder.chars().next() {
                     Some(x) => x,
                     None => return Some(Item::Error), // premature end of string
                 };
-                self.remainder = remainder;
+                self.remainder = &self.remainder[spec.len_utf8()..];
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
@@ -216,7 +216,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
             },
 
             // the next item is space
-            Some((c, _)) if c.is_whitespace() => {
+            Some(c) if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
                 let nextspec = self.remainder.find(|c: char| !c.is_whitespace())
                                              .unwrap_or(self.remainder.len());
