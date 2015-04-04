@@ -6,6 +6,7 @@ Dan <dan@ebip.co.uk>
 David Ross <daboross@daboross.net>
 Eunchong Yu <kroisse@gmail.com>
 Huon Wilson <dbau.pp+github@gmail.com>
+Jisoo Park <xxxyel@gmail.com>
 John Nagle <nagle@sitetruth.com>
 Ken Tossell <ken@tossell.net>
 Steve Klabnik <steve@steveklabnik.com>
