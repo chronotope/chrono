@@ -1022,7 +1022,7 @@ mod tests {
 /**
  * The internal implementation of the calendar and ordinal date.
  *
- * The current implementation is optimized for determining year, month, day and day of week. 
+ * The current implementation is optimized for determining year, month, day and day of week.
  * 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
  * which are included in every packed `NaiveDate` instance.
  * The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
@@ -1047,12 +1047,12 @@ mod internals {
     /// The year flags (aka the dominical letter).
     ///
     /// There are 14 possible classes of year in the Gregorian calendar:
-    /// common and leap years starting with Monday through Sunday. 
+    /// common and leap years starting with Monday through Sunday.
     /// The `YearFlags` stores this information into 4 bits `abbb`,
     /// where `a` is `1` for the common year (simplifies the `Of` validation)
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
-    #[derive(PartialEq, Eq, Copy)]
+    #[derive(PartialEq, Eq, Copy, Clone)]
     pub struct YearFlags(pub u8);
 
     pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
@@ -1292,7 +1292,7 @@ mod internals {
     ///
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
-    #[derive(PartialEq, PartialOrd, Copy)]
+    #[derive(PartialEq, PartialOrd, Copy, Clone)]
     pub struct Of(pub u32);
 
     impl Of {
@@ -1393,7 +1393,7 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Mdl`
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
-    #[derive(PartialEq, PartialOrd, Copy)]
+    #[derive(PartialEq, PartialOrd, Copy, Clone)]
     pub struct Mdf(pub u32);
 
     impl Mdf {

@@ -164,7 +164,7 @@ pub trait Offset: Sized + Clone + fmt::Debug {
 }
 
 /// The time zone.
-pub trait TimeZone: Sized {
+pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
     /// The original `TimeZone` value can be recovered via `TimeZone::from_offset`.
