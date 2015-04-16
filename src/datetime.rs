@@ -59,9 +59,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp()
     }
 
-    /// Same to `DateTime::timestamp`.
+    /// *Deprecated*: Same to `DateTime::timestamp`.
     #[inline]
-    #[deprecated = "Use `DateTime::timestamp` instead."]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
         self.timestamp()
     }
@@ -499,7 +498,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // XXX Rust issue #22818
     fn test_datetime_is_copy() {
         // UTC is known to be `Copy`.
         let a = UTC::now();
@@ -513,9 +511,9 @@ mod tests {
 
         // UTC is known to be `Send`.
         let a = UTC::now();
-        thread::scoped(move || {
+        thread::spawn(move || {
             let _ = a;
-        }).join();
+        }).join().unwrap();
     }
 }
 

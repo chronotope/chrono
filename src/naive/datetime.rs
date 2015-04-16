@@ -61,16 +61,14 @@ impl NaiveDateTime {
         }
     }
 
-    /// Same to `NaiveDateTime::from_timestamp`.
+    /// *Deprecated:* Same to `NaiveDateTime::from_timestamp`.
     #[inline]
-    #[deprecated = "Use `NaiveDateTime::from_timestamp` instead."]
     pub fn from_num_seconds_from_unix_epoch(secs: i64, nsecs: u32) -> NaiveDateTime {
         NaiveDateTime::from_timestamp(secs, nsecs)
     }
 
-    /// Same to `NaiveDateTime::from_timestamp_opt`.
+    /// *Deprecated:* Same to `NaiveDateTime::from_timestamp_opt`.
     #[inline]
-    #[deprecated = "Use `NaiveDateTime::from_timestamp` instead."]
     pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
@@ -105,9 +103,8 @@ impl NaiveDateTime {
         (ndays - 719163) * 86400 + nseconds
     }
 
-    /// Same to `NaiveDateTime::timestamp`.
+    /// *Deprecated:* Same to `NaiveDateTime::timestamp`.
     #[inline]
-    #[deprecated = "Use `NaiveDateTime::timestamp` instead."]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
         self.timestamp()
     }

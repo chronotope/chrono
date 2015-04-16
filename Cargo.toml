@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.2.10"
+version = "0.2.11"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
