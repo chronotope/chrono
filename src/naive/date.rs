@@ -7,8 +7,8 @@
  */
 
 use std::{str, fmt, hash};
-use std::num::{Int, ToPrimitive};
 use std::ops::{Add, Sub};
+use num::traits::ToPrimitive;
 
 use {Weekday, Datelike};
 use div::div_mod_floor;
@@ -601,7 +601,9 @@ mod tests {
     use {Datelike, Weekday};
     use duration::Duration;
     use std::{i32, u32};
-    use std::iter::{range_inclusive, range_step_inclusive};
+
+     // TODO replace with range notion and adapters
+    use num::iter::{range_inclusive, range_step_inclusive};
 
     #[test]
     fn test_date_from_ymd() {
@@ -1034,7 +1036,8 @@ mod tests {
  */
 #[allow(dead_code)] // some internal methods have been left for consistency
 mod internals {
-    use std::{i32, num, fmt};
+    use std::{i32, fmt};
+    use num::traits::FromPrimitive;
     use Weekday;
     use div::{div_rem, mod_floor};
 
@@ -1351,7 +1354,7 @@ mod internals {
         #[inline]
         pub fn weekday(&self) -> Weekday {
             let Of(of) = *self;
-            num::from_u32(((of >> 4) + (of & 0b111)) % 7).unwrap()
+            Weekday::from_u32(((of >> 4) + (of & 0b111)) % 7).unwrap()
         }
 
         #[inline]
@@ -1359,7 +1362,7 @@ mod internals {
             // week ordinal = ordinal + delta
             let Of(of) = *self;
             let weekord = (of >> 4).wrapping_add(self.flags().isoweek_delta());
-            (weekord / 7, num::from_u32(weekord % 7).unwrap())
+            (weekord / 7, Weekday::from_u32(weekord % 7).unwrap())
         }
 
         #[inline]

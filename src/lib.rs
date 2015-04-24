@@ -273,6 +273,7 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 #![deny(missing_docs)]
 
 extern crate time as stdtime;
+extern crate num;
 
 pub use duration::Duration;
 pub use offset::{TimeZone, Offset, LocalResult};
@@ -317,7 +318,7 @@ pub mod format;
 ///
 /// The order of the days of week depends on the context.
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
-#[derive(PartialEq, Eq, Copy, Clone, FromPrimitive, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 pub enum Weekday {
     /// Monday.
     Mon = 0,
@@ -420,6 +421,38 @@ impl Weekday {
         }
     }
 }
+
+impl num::traits::FromPrimitive for Weekday {
+
+    #[inline]
+    fn from_i64(n: i64) -> Option<Weekday> {
+        match n {
+            0 => Some(Weekday::Mon),
+            1 => Some(Weekday::Tue),
+            2 => Some(Weekday::Wed),
+            3 => Some(Weekday::Thu),
+            4 => Some(Weekday::Fri),
+            5 => Some(Weekday::Sat),
+            6 => Some(Weekday::Sun),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    fn from_u64(n: u64) -> Option<Weekday> {
+        match n {
+            0 => Some(Weekday::Mon),
+            1 => Some(Weekday::Tue),
+            2 => Some(Weekday::Wed),
+            3 => Some(Weekday::Thu),
+            4 => Some(Weekday::Fri),
+            5 => Some(Weekday::Sat),
+            6 => Some(Weekday::Sun),
+            _ => None,
+        }
+    }
+}
+
 
 /// The common set of methods for date component.
 pub trait Datelike {

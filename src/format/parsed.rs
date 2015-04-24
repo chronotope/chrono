@@ -7,7 +7,7 @@
  * They can be constructed incrementally while being checked for consistency.
  */
 
-use std::num::{Int, ToPrimitive};
+use num::traits::ToPrimitive;
 
 use {Datelike, Timelike};
 use Weekday;

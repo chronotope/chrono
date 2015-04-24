@@ -7,8 +7,8 @@
  */
 
 use std::{str, fmt, hash};
-use std::num::{Int, ToPrimitive};
 use std::ops::{Add, Sub};
+use num::traits::ToPrimitive;
 
 use {Weekday, Timelike, Datelike};
 use div::div_mod_floor;

@@ -16,4 +16,4 @@ name = "chrono"
 
 [dependencies]
 time = "*"
-
+num = "*"
