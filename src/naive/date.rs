@@ -1495,7 +1495,7 @@ mod internals {
         use Weekday;
         use super::{Of, Mdf};
         use super::{YearFlags, A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
-        use std::iter::range_inclusive;
+        use num::iter::range_inclusive;
         use std::u32;
 
         const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
