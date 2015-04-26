@@ -1490,7 +1490,7 @@ mod internals {
 
     #[cfg(test)]
     mod tests {
-        extern crate test;
+        #[cfg(bench)] extern crate test;
 
         use Weekday;
         use super::{Of, Mdf};
@@ -1537,6 +1537,7 @@ mod internals {
             assert_eq!(GF.nisoweeks(), 52);
         }
 
+        #[cfg(bench)]
         #[bench]
         fn bench_year_flags_from_year(bh: &mut test::Bencher) {
             bh.iter(|| {
