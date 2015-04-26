@@ -6,16 +6,22 @@
  * Various scanning routines for the parser.
  */
 
-use std::iter;
-
 use Weekday;
 use super::{ParseResult, TOO_SHORT, INVALID, OUT_OF_RANGE};
 
 /// Returns true when two slices are equal case-insensitively (in ASCII).
 /// Assumes that the `pattern` is already converted to lower case.
 fn equals(s: &str, pattern: &str) -> bool {
-    iter::order::equals(s.as_bytes().iter().map(|&c| match c { b'A'...b'Z' => c + 32, _ => c }),
-                        pattern.as_bytes().iter().cloned())
+    let mut xs = s.as_bytes().iter().map(|&c| match c { b'A'...b'Z' => c + 32, _ => c });
+    let mut ys = pattern.as_bytes().iter().cloned();
+    loop {
+        match (xs.next(), ys.next()) {
+            (None, None) => return true,
+            (None, _) | (_, None) => return false,
+            (Some(x), Some(y)) if x != y => return false,
+            _ => (),
+        }
+    }
 }
 
 /// Tries to parse the non-negative number from `min` to `max` digits.
@@ -64,19 +70,19 @@ pub fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
 pub fn short_month0(s: &str) -> ParseResult<(&str, u8)> {
     if s.len() < 3 { return Err(TOO_SHORT); }
     let buf = s.as_bytes();
-    let month0 = match [buf[0] | 32, buf[1] | 32, buf[2] | 32] {
-        [b'j',b'a',b'n'] => 0,
-        [b'f',b'e',b'b'] => 1,
-        [b'm',b'a',b'r'] => 2,
-        [b'a',b'p',b'r'] => 3,
-        [b'm',b'a',b'y'] => 4,
-        [b'j',b'u',b'n'] => 5,
-        [b'j',b'u',b'l'] => 6,
-        [b'a',b'u',b'g'] => 7,
-        [b's',b'e',b'p'] => 8,
-        [b'o',b'c',b't'] => 9,
-        [b'n',b'o',b'v'] => 10,
-        [b'd',b'e',b'c'] => 11,
+    let month0 = match (buf[0] | 32, buf[1] | 32, buf[2] | 32) {
+        (b'j',b'a',b'n') => 0,
+        (b'f',b'e',b'b') => 1,
+        (b'm',b'a',b'r') => 2,
+        (b'a',b'p',b'r') => 3,
+        (b'm',b'a',b'y') => 4,
+        (b'j',b'u',b'n') => 5,
+        (b'j',b'u',b'l') => 6,
+        (b'a',b'u',b'g') => 7,
+        (b's',b'e',b'p') => 8,
+        (b'o',b'c',b't') => 9,
+        (b'n',b'o',b'v') => 10,
+        (b'd',b'e',b'c') => 11,
         _ => return Err(INVALID)
     };
     Ok((&s[3..], month0))
@@ -86,14 +92,14 @@ pub fn short_month0(s: &str) -> ParseResult<(&str, u8)> {
 pub fn short_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
     if s.len() < 3 { return Err(TOO_SHORT); }
     let buf = s.as_bytes();
-    let weekday = match [buf[0] | 32, buf[1] | 32, buf[2] | 32] {
-        [b'm',b'o',b'n'] => Weekday::Mon,
-        [b't',b'u',b'e'] => Weekday::Tue,
-        [b'w',b'e',b'd'] => Weekday::Wed,
-        [b't',b'h',b'u'] => Weekday::Thu,
-        [b'f',b'r',b'i'] => Weekday::Fri,
-        [b's',b'a',b't'] => Weekday::Sat,
-        [b's',b'u',b'n'] => Weekday::Sun,
+    let weekday = match (buf[0] | 32, buf[1] | 32, buf[2] | 32) {
+        (b'm',b'o',b'n') => Weekday::Mon,
+        (b't',b'u',b'e') => Weekday::Tue,
+        (b'w',b'e',b'd') => Weekday::Wed,
+        (b't',b'h',b'u') => Weekday::Thu,
+        (b'f',b'r',b'i') => Weekday::Fri,
+        (b's',b'a',b't') => Weekday::Sat,
+        (b's',b'u',b'n') => Weekday::Sun,
         _ => return Err(INVALID)
     };
     Ok((&s[3..], weekday))
@@ -167,6 +173,14 @@ pub fn colon_or_space(s: &str) -> ParseResult<&str> {
 /// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
 pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
         where F: FnMut(&str) -> ParseResult<&str> {
+    fn digits(s: &str) -> ParseResult<(u8, u8)> {
+        let b = s.as_bytes();
+        if b.len() < 2 {
+            Err(TOO_SHORT)
+        } else {
+            Ok((b[0], b[1]))
+        }
+    }
     let negative = match s.as_bytes().first() {
         Some(&b'+') => false,
         Some(&b'-') => true,
@@ -176,9 +190,8 @@ pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
     s = &s[1..];
 
     // hours (00--99)
-    let hours = match s.as_bytes() {
-        [h1 @ b'0'...b'9', h2 @ b'0'...b'9', ..] => ((h1 - b'0') * 10 + (h2 - b'0')) as i32,
-        [] | [_] => return Err(TOO_SHORT),
+    let hours = match try!(digits(s)) {
+        (h1 @ b'0'...b'9', h2 @ b'0'...b'9') => ((h1 - b'0') * 10 + (h2 - b'0')) as i32,
         _ => return Err(INVALID),
     };
     s = &s[2..];
@@ -187,10 +200,9 @@ pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
     s = try!(colon(s));
 
     // minutes (00--59)
-    let minutes = match s.as_bytes() {
-        [m1 @ b'0'...b'5', m2 @ b'0'...b'9', ..] => ((m1 - b'0') * 10 + (m2 - b'0')) as i32,
-        [b'6'...b'9', b'0'...b'9', ..] => return Err(OUT_OF_RANGE),
-        [] | [_] => return Err(TOO_SHORT),
+    let minutes = match try!(digits(s)) {
+        (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => ((m1 - b'0') * 10 + (m2 - b'0')) as i32,
+        (b'6'...b'9', b'0'...b'9') => return Err(OUT_OF_RANGE),
         _ => return Err(INVALID),
     };
     s = &s[2..];

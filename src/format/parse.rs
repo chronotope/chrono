@@ -291,9 +291,9 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                     LowerAmPm | UpperAmPm => {
                         if s.len() < 2 { return Err(TOO_SHORT); }
-                        let ampm = match [s.as_bytes()[0] | 32, s.as_bytes()[1] | 32] {
-                            [b'a',b'm'] => false,
-                            [b'p',b'm'] => true,
+                        let ampm = match (s.as_bytes()[0] | 32, s.as_bytes()[1] | 32) {
+                            (b'a',b'm') => false,
+                            (b'p',b'm') => true,
                             _ => return Err(INVALID)
                         };
                         try!(parsed.set_ampm(ampm));

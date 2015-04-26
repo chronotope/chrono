@@ -1490,12 +1490,12 @@ mod internals {
 
     #[cfg(test)]
     mod tests {
-        extern crate test;
+        #[cfg(bench)] extern crate test;
 
         use Weekday;
         use super::{Of, Mdf};
         use super::{YearFlags, A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
-        use std::iter::range_inclusive;
+        use num::iter::range_inclusive;
         use std::u32;
 
         const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
@@ -1537,6 +1537,7 @@ mod internals {
             assert_eq!(GF.nisoweeks(), 52);
         }
 
+        #[cfg(bench)]
         #[bench]
         fn bench_year_flags_from_year(bh: &mut test::Bencher) {
             bh.iter(|| {
