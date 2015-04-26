@@ -267,7 +267,7 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
-#![feature(core, std_misc, zero_one)] // lib stability features as per RFC #507
+#![feature(std_misc, zero_one)] // lib stability features as per RFC #507
 #![cfg_attr(test, feature(test))] // ditto
 #![deny(missing_docs)]
 

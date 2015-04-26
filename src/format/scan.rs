@@ -6,16 +6,22 @@
  * Various scanning routines for the parser.
  */
 
-use std::iter;
-
 use Weekday;
 use super::{ParseResult, TOO_SHORT, INVALID, OUT_OF_RANGE};
 
 /// Returns true when two slices are equal case-insensitively (in ASCII).
 /// Assumes that the `pattern` is already converted to lower case.
 fn equals(s: &str, pattern: &str) -> bool {
-    iter::order::equals(s.as_bytes().iter().map(|&c| match c { b'A'...b'Z' => c + 32, _ => c }),
-                        pattern.as_bytes().iter().cloned())
+    let mut xs = s.as_bytes().iter().map(|&c| match c { b'A'...b'Z' => c + 32, _ => c });
+    let mut ys = pattern.as_bytes().iter().cloned();
+    loop {
+        match (xs.next(), ys.next()) {
+            (None, None) => return true,
+            (None, _) | (_, None) => return false,
+            (Some(x), Some(y)) if x != y => return false,
+            _ => (),
+        }
+    }
 }
 
 /// Tries to parse the non-negative number from `min` to `max` digits.
