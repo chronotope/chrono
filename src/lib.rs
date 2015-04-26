@@ -100,7 +100,6 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
-# #![feature(std_misc)]
 use chrono::*;
 
 # /* we intentionally fake the datetime...
@@ -267,8 +266,7 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
-#![feature(std_misc)] // lib stability features as per RFC #507
-#![cfg_attr(test, feature(test))] // ditto
+#![cfg_attr(test, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 
 extern crate time as stdtime;
@@ -297,7 +295,7 @@ pub mod duration {
     //!
     //! This used to be a part of rust-chrono,
     //! but has been subsequently merged into Rust's standard library.
-    pub use std::time::duration::{MIN, MAX, Duration};
+    pub use stdtime::Duration;
 }
 pub mod offset;
 pub mod naive {
