@@ -8,6 +8,19 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.13 (2015-04-29)
+
+### Added
+
+- The optional dependency on `rustc_serialize` and
+  relevant `Rustc{En,De}codable` implementations for supported types has been added.
+  This is enabled by the `rustc-serialize` Cargo feature. (#34)
+
+### Changed
+
+- `chrono::Duration` reexport is changed to that of crates.io `time` crate.
+  This enables Rust 1.0 beta compatibility.
+
 ## 0.2.4 (2015-03-03)
 
 ### Fixed

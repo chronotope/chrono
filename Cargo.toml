@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.2.12"
+version = "0.2.13"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
@@ -18,3 +18,4 @@ name = "chrono"
 time = "*"
 num = "*"
 rustc-serialize = { version = "0.3", optional = true }
+
