@@ -48,8 +48,9 @@ extern crate chrono;
 ### Duration
 
 Chrono used to have a `Duration` type, which represents the time span.
-Now Rust standard library includes it as `std::time::duration::Duration` and
-Chrono simply reexports it.
+This is a simple reexport of
+[`time::Duration`](http://doc.rust-lang.org/time/time/struct.Duration.html) type
+provided by crates.io `time` crate (which originally comes from Chrono).
 
 ### Date and Time
 
