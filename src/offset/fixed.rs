@@ -16,6 +16,7 @@ use super::{TimeZone, Offset, LocalResult};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }

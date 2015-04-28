@@ -271,6 +271,8 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 
 extern crate time as stdtime;
 extern crate num;
+#[cfg(feature = "rustc-serialize")]
+extern crate rustc_serialize;
 
 pub use duration::Duration;
 pub use offset::{TimeZone, Offset, LocalResult};
@@ -316,6 +318,7 @@ pub mod format;
 /// The order of the days of week depends on the context.
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

@@ -49,6 +49,7 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
 /// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -1056,6 +1057,7 @@ mod internals {
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
     #[derive(PartialEq, Eq, Copy, Clone)]
+    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
     pub struct YearFlags(pub u8);
 
     pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
@@ -1296,6 +1298,7 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
+    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
     pub struct Of(pub u32);
 
     impl Of {
@@ -1397,6 +1400,7 @@ mod internals {
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
+    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
     pub struct Mdf(pub u32);
 
     impl Mdf {
