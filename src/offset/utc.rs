@@ -19,6 +19,7 @@ use super::{TimeZone, Offset, LocalResult};
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct UTC;
 
 impl UTC {

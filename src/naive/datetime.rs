@@ -20,6 +20,7 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 
 /// ISO 8601 combined date and time without timezone.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,

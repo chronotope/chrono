@@ -22,6 +22,7 @@ use format::{Item, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 calendar date with time zone.
 #[derive(Clone)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,
