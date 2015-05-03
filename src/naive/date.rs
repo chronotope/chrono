@@ -156,6 +156,20 @@ impl NaiveDate {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// assert!(NaiveDate::from_yo_opt(2015, 100).is_some());
+    /// assert!(NaiveDate::from_yo_opt(2015, 0).is_none());
+    /// assert!(NaiveDate::from_yo_opt(2015, 365).is_some());
+    /// assert!(NaiveDate::from_yo_opt(2015, 366).is_none());
+    /// assert!(NaiveDate::from_yo_opt(-4, 366).is_some()); // 5 BCE is a leap year
+    /// assert!(NaiveDate::from_yo_opt(400000, 1).is_none());
+    /// assert!(NaiveDate::from_yo_opt(-400000, 1).is_none());
+    /// ~~~~
     pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_of(year, Of::new(ordinal, flags))
@@ -242,8 +256,23 @@ impl NaiveDate {
     /// in the proleptic Gregorian calendar.
     ///
     /// Returns `None` on the out-of-range date.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(730000),
+    ///            Some(NaiveDate::from_ymd(1999, 9, 3)));
+    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(1),
+    ///            Some(NaiveDate::from_ymd(1, 1, 1)));
+    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(0),
+    ///            Some(NaiveDate::from_ymd(0, 12, 31)));
+    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(100000000), None);
+    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(-100000000), None);
+    /// ~~~~
     pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
-        let days = days + 365; // make January 1, 1 BCE equal to day 0
+        let days = days + 365; // make December 31, 1 BCE equal to day 0
         let (year_div_400, cycle) = div_mod_floor(days, 146097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
