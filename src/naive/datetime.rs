@@ -458,5 +458,13 @@ mod tests {
         assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
         assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
     }
+
+    #[test]
+    fn test_datetime_add_sub_invariant() { // issue #37
+        let base = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+        let t = -946684799990000;
+        let time = base + Duration::microseconds(t);
+        assert_eq!(t, (time - base).num_microseconds().unwrap());
+    }
 }
 

@@ -200,8 +200,14 @@ impl Add<Duration> for NaiveTime {
     fn add(self, rhs: Duration) -> NaiveTime {
         // there is no direct interface in `Duration` to get only the nanosecond part,
         // so we need to do the additional calculation here.
-        let rhs2 = rhs - Duration::seconds(rhs.num_seconds());
-        let mut secs = self.secs + (rhs.num_seconds() % 86400 + 86400) as u32;
+        let mut rhssecs = rhs.num_seconds();
+        let mut rhs2 = rhs - Duration::seconds(rhssecs);
+        if rhs2 < Duration::zero() { // possible when rhs < 0
+            rhssecs -= 1;
+            rhs2 = rhs2 + Duration::seconds(1);
+        }
+        debug_assert!(rhs2 >= Duration::zero());
+        let mut secs = self.secs + (rhssecs % 86400 + 86400) as u32;
         let mut nanos = self.frac + rhs2.num_nanoseconds().unwrap() as u32;
 
         // always ignore leap seconds after the current whole second
@@ -363,6 +369,10 @@ mod tests {
         check(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
         check(hmsm(3, 5, 7, 900), Duration::seconds(-86399), hmsm(3, 5, 8, 900));
         check(hmsm(3, 5, 7, 900), Duration::days(12345), hmsm(3, 5, 7, 900));
+
+        // regression tests for #37
+        check(hmsm(0, 0, 0, 0), Duration::milliseconds(-990), hmsm(23, 59, 59, 10));
+        check(hmsm(0, 0, 0, 0), Duration::milliseconds(-9990), hmsm(23, 59, 50, 10));
     }
 
     #[test]
