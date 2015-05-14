@@ -4,7 +4,7 @@
 
 /*!
 
-# Chrono 0.2.13
+# Chrono 0.2.14
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
@@ -34,7 +34,7 @@ Or in the case you are using Rust 1.0 beta, pin the exact version:
 
 ```toml
 [dependencies]
-chrono = "=0.2.13"
+chrono = "=0.2.14"
 ```
 
 And put this in your crate root:

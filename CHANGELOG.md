@@ -8,6 +8,15 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.14 (2015-05-15)
+
+### Fixed
+
+- `NaiveDateTime +/- Duration` or `NaiveTime +/- Duration` could have gone wrong
+  when the `Duration` to be added is negative and has a fractional second part.
+  This was caused by an underflow in the conversion from `Duration` to the parts;
+  the lack of tests for this case allowed a bug. (#37)
+
 ## 0.2.13 (2015-04-29)
 
 ### Added

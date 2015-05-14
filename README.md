@@ -1,4 +1,4 @@
-[Chrono][doc] 0.2.13
+[Chrono][doc] 0.2.14
 ====================
 
 [![Chrono on Travis CI][travis-image]][travis]
@@ -38,7 +38,7 @@ Or in the case you are using Rust 1.0 beta, pin the exact version:
 
 ```toml
 [dependencies]
-chrono = "=0.2.13"
+chrono = "=0.2.14"
 ```
 
 And put this in your crate root:
