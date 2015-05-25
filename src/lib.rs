@@ -30,13 +30,6 @@ Put this in your `Cargo.toml`:
 chrono = "0.2"
 ```
 
-Or in the case you are using Rust 1.0 beta, pin the exact version:
-
-```toml
-[dependencies]
-chrono = "=0.2.14"
-```
-
 And put this in your crate root:
 
 ```rust

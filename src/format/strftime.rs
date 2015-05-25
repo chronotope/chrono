@@ -62,7 +62,7 @@ Spec. | Example       | Description
 `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same to `%I:%M:%S %p`.
       |               |
       |               | **TIME ZONE SPECIFIERS:**
-`%Z`  | `ACST`        | Local time zone name.
+`%Z`  | `ACST`        | *Formatting only:* Local time zone name.
 `%z`  | `+09:30`      | Offset from the local time to UTC (with UTC being `+00:00`).
       |               |
       |               | **DATE & TIME SPECIFIERS:**
