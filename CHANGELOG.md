@@ -8,6 +8,12 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.15 (in development)
+
+### Fixed
+
+- `Numeric::Timestamp` specifier (`%s`) was ignoring the time zone offset when provided.
+
 ## 0.2.14 (2015-05-15)
 
 ### Fixed

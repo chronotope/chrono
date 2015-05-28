@@ -38,10 +38,10 @@ Spec. | Example       | Description
       |               |
 `%j`  | `189`         | Day of the year (001--366), zero-padded to 3 digits.
       |               |
-`%D`  | `08/07/2001`  | Month-day-year format. Same to `%m/%d/%Y`.
-`%x`  | `08/07/2001`  | Same to `%D`.
+`%D`  | `07/08/01`    | Month-day-year format. Same to `%m/%d/%y`.
+`%x`  | `07/08/01`    | Same to `%D`.
 `%F`  | `2001-07-08`  | Year-month-day format (ISO 8601). Same to `%Y-%m-%d`.
-`%v`  | ` 7-Jul-2001` | Day-month-year format. Same to `%e-%b-%Y`.
+`%v`  | ` 8-Jul-2001` | Day-month-year format. Same to `%e-%b-%Y`.
       |               |
       |               | **TIME SPECIFIERS:**
 `%H`  | `00`          | Hour number (00--23), zero-padded to 2 digits.
@@ -54,22 +54,22 @@ Spec. | Example       | Description
       |               |
 `%M`  | `34`          | Minute number (00--59), zero-padded to 2 digits.
 `%S`  | `60`          | Second number (00--60), zero-padded to 2 digits. [5]
-`%f`  | `026413966`   | The number of nanoseconds since last whole second, zero-padded to 9 digits.
+`%f`  | `026490000`   | The number of nanoseconds since last whole second, zero-padded to 9 digits.
       |               |
 `%R`  | `00:34`       | Hour-minute format. Same to `%H:%M`.
 `%T`  | `00:34:60`    | Hour-minute-second format. Same to `%H:%M:%S`.
-`%x`  | `00:34:60`    | Same to `%T`.
+`%X`  | `00:34:60`    | Same to `%T`.
 `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same to `%I:%M:%S %p`.
       |               |
       |               | **TIME ZONE SPECIFIERS:**
 `%Z`  | `ACST`        | *Formatting only:* Local time zone name.
-`%z`  | `+09:30`      | Offset from the local time to UTC (with UTC being `+00:00`).
+`%z`  | `+0930`       | Offset from the local time to UTC (with UTC being `+0000`).
       |               |
       |               | **DATE & TIME SPECIFIERS:**
 `%c`  | `Sun Jul  8 00:34:60 2001` | `ctime` date & time format. Same to `%a %b %e %T %Y` sans `\n`.
-`%+`  | `2001-07-08T00:34:60+09:30` | ISO 8601 date & time format. Close to `%Y-%m-%dT%H:%M:%S%z`.
+`%+`  | `2001-07-08T00:34:60.026490+09:30` | ISO 8601 / RFC 3339 date & time format. [6]
       |               |
-`%s`  | `994485899`   | UNIX timestamp, the number of seconds since 1970-01-01 00:00 UTC. [6]
+`%s`  | `994518299`   | UNIX timestamp, the number of seconds since 1970-01-01 00:00 UTC. [7]
       |               |
       |               | **SPECIAL SPECIFIERS:**
 `%t`  |               | Literal tab (`\t`).
@@ -95,7 +95,12 @@ Notes:
 5. `%S`:
    It accounts for leap seconds, so `60` is possible.
 
-6. `%s`:
+6. `%+`:
+   This one is close to, but not identical to, `%Y-%m-%dT%H:%M:%S%z`.
+   The main differences are a colon in `%z` and fractional seconds (which width adapts
+   accordingly to the number of trailing zeroes).
+
+7. `%s`:
    This is not padded and can be negative.
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
@@ -270,3 +275,64 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("quux% +"), [Item::Error]);
 }
 
+#[cfg(test)]
+#[test]
+fn test_strftime_docs() {
+    use {FixedOffset, TimeZone};
+
+    let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_000);
+
+    // date specifiers
+    assert_eq!(dt.format("%Y").to_string(), "2001");
+    assert_eq!(dt.format("%C").to_string(), "20");
+    assert_eq!(dt.format("%y").to_string(), "01");
+    assert_eq!(dt.format("%m").to_string(), "07");
+    assert_eq!(dt.format("%b").to_string(), "Jul");
+    assert_eq!(dt.format("%B").to_string(), "July");
+    assert_eq!(dt.format("%h").to_string(), "Jul");
+    assert_eq!(dt.format("%d").to_string(), "08");
+    assert_eq!(dt.format("%e").to_string(), " 8");
+    assert_eq!(dt.format("%a").to_string(), "Sun");
+    assert_eq!(dt.format("%A").to_string(), "Sunday");
+    assert_eq!(dt.format("%w").to_string(), "0");
+    assert_eq!(dt.format("%u").to_string(), "7");
+    assert_eq!(dt.format("%U").to_string(), "28");
+    assert_eq!(dt.format("%W").to_string(), "27");
+    assert_eq!(dt.format("%G").to_string(), "2001");
+    assert_eq!(dt.format("%g").to_string(), "01");
+    assert_eq!(dt.format("%V").to_string(), "27");
+    assert_eq!(dt.format("%j").to_string(), "189");
+    assert_eq!(dt.format("%D").to_string(), "07/08/01");
+    assert_eq!(dt.format("%x").to_string(), "07/08/01");
+    assert_eq!(dt.format("%F").to_string(), "2001-07-08");
+    assert_eq!(dt.format("%v").to_string(), " 8-Jul-2001");
+
+    // time specifiers
+    assert_eq!(dt.format("%H").to_string(), "00");
+    assert_eq!(dt.format("%k").to_string(), " 0");
+    assert_eq!(dt.format("%I").to_string(), "12");
+    assert_eq!(dt.format("%l").to_string(), "12");
+    assert_eq!(dt.format("%P").to_string(), "am");
+    assert_eq!(dt.format("%p").to_string(), "AM");
+    assert_eq!(dt.format("%M").to_string(), "34");
+    assert_eq!(dt.format("%S").to_string(), "60");
+    assert_eq!(dt.format("%f").to_string(), "026490000");
+    assert_eq!(dt.format("%R").to_string(), "00:34");
+    assert_eq!(dt.format("%T").to_string(), "00:34:60");
+    assert_eq!(dt.format("%X").to_string(), "00:34:60");
+    assert_eq!(dt.format("%r").to_string(), "12:34:60 AM");
+
+    // time zone specifiers
+    //assert_eq!(dt.format("%Z").to_string(), "ACST");
+    assert_eq!(dt.format("%z").to_string(), "+0930");
+
+    // date & time specifiers
+    assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
+    assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490+09:30");
+    assert_eq!(dt.format("%s").to_string(), "994518299");
+
+    // special specifiers
+    assert_eq!(dt.format("%t").to_string(), "\t");
+    assert_eq!(dt.format("%n").to_string(), "\n");
+    assert_eq!(dt.format("%%").to_string(), "%");
+}

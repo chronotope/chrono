@@ -87,6 +87,7 @@ pub enum Numeric {
     /// Note that this is *not* left-aligned; see also `Fixed::Nanosecond`.
     Nanosecond,
     /// The number of non-leap seconds since January 1, 1970 0:00:00 UTC (FW=1, PW=infinity).
+    /// For formatting, it assumes UTC upon the absence of time zone offset.
     Timestamp,
 }
 
@@ -284,9 +285,12 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     Second         => (2, time.map(|t| (t.second() +
                                                         t.nanosecond() / 1_000_000_000) as i64)),
                     Nanosecond     => (9, time.map(|t| (t.nanosecond() % 1_000_000_000) as i64)),
-                    Timestamp      => (1, match (date, time) {
-                        (Some(d), Some(t)) => Some(d.and_time(*t).timestamp()),
-                        (_, _) => None
+                    Timestamp      => (1, match (date, time, off) {
+                        (Some(d), Some(t), None) =>
+                            Some(d.and_time(*t).timestamp()),
+                        (Some(d), Some(t), Some(&(_, off))) =>
+                            Some((d.and_time(*t) - off).timestamp()),
+                        (_, _, _) => None
                     }),
                 };
 
