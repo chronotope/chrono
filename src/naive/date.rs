@@ -203,6 +203,45 @@ impl NaiveDate {
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 0, Weekday::Sun), None);
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 10, Weekday::Sun),
+    ///            Some(NaiveDate::from_ymd(2015, 3, 8)));
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 30, Weekday::Mon),
+    ///            Some(NaiveDate::from_ymd(2015, 7, 20)));
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 60, Weekday::Mon), None);
+    ///
+    /// // out-of-range dates
+    /// assert_eq!(NaiveDate::from_isoywd_opt(400000, 10, Weekday::Fri), None);
+    /// assert_eq!(NaiveDate::from_isoywd_opt(-400000, 10, Weekday::Sat), None);
+    ///
+    /// // year boundary behaviors
+    /// //
+    /// //           Mo Tu We Th Fr Sa Su
+    /// // 2014-W52  22 23 24 25 26 27 28    has 4+ days of new year,
+    /// // 2015-W01  29 30 31  1  2  3  4 <- so this is the first week
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2014, 52, Weekday::Sun),
+    ///            Some(NaiveDate::from_ymd(2014, 12, 28)));
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2014, 53, Weekday::Mon), None);
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 1, Weekday::Mon),
+    ///            Some(NaiveDate::from_ymd(2014, 12, 29)));
+    ///
+    /// // 2015-W52  21 22 23 24 25 26 27    has 4+ days of old year,
+    /// // 2015-W53  28 29 30 31  1  2  3 <- so this is the last week
+    /// // 2016-W01   4  5  6  7  8  9 10
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 52, Weekday::Sun),
+    ///            Some(NaiveDate::from_ymd(2015, 12, 27)));
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 53, Weekday::Sun),
+    ///            Some(NaiveDate::from_ymd(2016, 1, 3)));
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 54, Weekday::Mon), None);
+    /// assert_eq!(NaiveDate::from_isoywd_opt(2016, 1, Weekday::Mon),
+    ///            Some(NaiveDate::from_ymd(2016, 1, 4)));
+    /// ~~~~
     pub fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         let nweeks = flags.nisoweeks();
@@ -268,6 +307,8 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(1, 1, 1)));
     /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(0),
     ///            Some(NaiveDate::from_ymd(0, 12, 31)));
+    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(-1),
+    ///            Some(NaiveDate::from_ymd(0, 12, 30)));
     /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(100000000), None);
     /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(-100000000), None);
     /// ~~~~
@@ -289,6 +330,19 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveTime, NaiveDateTime};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    /// let t = NaiveTime::from_hms_milli(12, 34, 56, 789);
+    ///
+    /// let dt: NaiveDateTime = d.and_time(t);
+    /// assert_eq!(dt.date(), d);
+    /// assert_eq!(dt.time(), t);
+    /// ~~~~
     #[inline]
     pub fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime::new(self.clone(), time)
@@ -297,6 +351,19 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
     /// Fails on invalid hour, minute and/or second.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    ///
+    /// let dt: NaiveDateTime = d.and_hms(12, 34, 56);
+    /// assert_eq!(dt.year(), 2015);
+    /// assert_eq!(dt.weekday(), Weekday::Wed);
+    /// assert_eq!(dt.second(), 56);
+    /// ~~~~
     #[inline]
     pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> NaiveDateTime {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
@@ -305,6 +372,18 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    /// assert!(d.and_hms_opt(12, 34, 56).is_some());
+    /// assert!(d.and_hms_opt(12, 34, 60).is_none()); // use `and_hms_milli_opt` instead
+    /// assert!(d.and_hms_opt(12, 60, 56).is_none());
+    /// assert!(d.and_hms_opt(24, 34, 56).is_none());
+    /// ~~~~
     #[inline]
     pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
         NaiveTime::from_hms_opt(hour, min, sec).map(|time| self.and_time(time))
@@ -314,6 +393,20 @@ impl NaiveDate {
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or millisecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    ///
+    /// let dt: NaiveDateTime = d.and_hms_milli(12, 34, 56, 789);
+    /// assert_eq!(dt.year(), 2015);
+    /// assert_eq!(dt.weekday(), Weekday::Wed);
+    /// assert_eq!(dt.second(), 56);
+    /// assert_eq!(dt.nanosecond(), 789_000_000);
+    /// ~~~~
     #[inline]
     pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> NaiveDateTime {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
@@ -323,6 +416,20 @@ impl NaiveDate {
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    /// assert!(d.and_hms_milli_opt(12, 34, 56,   789).is_some());
+    /// assert!(d.and_hms_milli_opt(12, 34, 59, 1_789).is_some()); // leap second
+    /// assert!(d.and_hms_milli_opt(12, 34, 59, 2_789).is_none());
+    /// assert!(d.and_hms_milli_opt(12, 34, 60,   789).is_none());
+    /// assert!(d.and_hms_milli_opt(12, 60, 56,   789).is_none());
+    /// assert!(d.and_hms_milli_opt(24, 34, 56,   789).is_none());
+    /// ~~~~
     #[inline]
     pub fn and_hms_milli_opt(&self, hour: u32, min: u32, sec: u32,
                              milli: u32) -> Option<NaiveDateTime> {
@@ -333,6 +440,20 @@ impl NaiveDate {
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or microsecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    ///
+    /// let dt: NaiveDateTime = d.and_hms_micro(12, 34, 56, 789_012);
+    /// assert_eq!(dt.year(), 2015);
+    /// assert_eq!(dt.weekday(), Weekday::Wed);
+    /// assert_eq!(dt.second(), 56);
+    /// assert_eq!(dt.nanosecond(), 789_012_000);
+    /// ~~~~
     #[inline]
     pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> NaiveDateTime {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
@@ -342,6 +463,20 @@ impl NaiveDate {
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    /// assert!(d.and_hms_micro_opt(12, 34, 56,   789_012).is_some());
+    /// assert!(d.and_hms_micro_opt(12, 34, 59, 1_789_012).is_some()); // leap second
+    /// assert!(d.and_hms_micro_opt(12, 34, 59, 2_789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(12, 34, 60,   789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(12, 60, 56,   789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(24, 34, 56,   789_012).is_none());
+    /// ~~~~
     #[inline]
     pub fn and_hms_micro_opt(&self, hour: u32, min: u32, sec: u32,
                              micro: u32) -> Option<NaiveDateTime> {
@@ -352,6 +487,20 @@ impl NaiveDate {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Fails on invalid hour, minute, second and/or nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike, Weekday};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    ///
+    /// let dt: NaiveDateTime = d.and_hms_nano(12, 34, 56, 789_012_345);
+    /// assert_eq!(dt.year(), 2015);
+    /// assert_eq!(dt.weekday(), Weekday::Wed);
+    /// assert_eq!(dt.second(), 56);
+    /// assert_eq!(dt.nanosecond(), 789_012_345);
+    /// ~~~~
     #[inline]
     pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> NaiveDateTime {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
@@ -361,6 +510,20 @@ impl NaiveDate {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    /// assert!(d.and_hms_nano_opt(12, 34, 56,   789_012_345).is_some());
+    /// assert!(d.and_hms_nano_opt(12, 34, 59, 1_789_012_345).is_some()); // leap second
+    /// assert!(d.and_hms_nano_opt(12, 34, 59, 2_789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(12, 34, 60,   789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(12, 60, 56,   789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(24, 34, 56,   789_012_345).is_none());
+    /// ~~~~
     #[inline]
     pub fn and_hms_nano_opt(&self, hour: u32, min: u32, sec: u32,
                             nano: u32) -> Option<NaiveDateTime> {
@@ -403,6 +566,16 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` for the next date.
     ///
     /// Fails when `self` is the last representable date.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).succ(), NaiveDate::from_ymd(2015, 6, 4));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 30).succ(), NaiveDate::from_ymd(2015, 7, 1));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 12, 31).succ(), NaiveDate::from_ymd(2016, 1, 1));
+    /// ~~~~
     #[inline]
     pub fn succ(&self) -> NaiveDate {
         self.succ_opt().expect("out of bound")
@@ -411,6 +584,17 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` for the next date.
     ///
     /// Returns `None` when `self` is the last representable date.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    /// use chrono::naive::date::MAX;
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).succ_opt(),
+    ///            Some(NaiveDate::from_ymd(2015, 6, 4)));
+    /// assert_eq!(MAX.succ_opt(), None);
+    /// ~~~~
     #[inline]
     pub fn succ_opt(&self) -> Option<NaiveDate> {
         self.with_of(self.of().succ()).or_else(|| NaiveDate::from_ymd_opt(self.year() + 1, 1, 1))
@@ -419,6 +603,16 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` for the prior date.
     ///
     /// Fails when `self` is the first representable date.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).pred(), NaiveDate::from_ymd(2015, 6, 2));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 1).pred(), NaiveDate::from_ymd(2015, 5, 31));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).pred(), NaiveDate::from_ymd(2014, 12, 31));
+    /// ~~~~
     #[inline]
     pub fn pred(&self) -> NaiveDate {
         self.pred_opt().expect("out of bound")
@@ -427,6 +621,17 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` for the prior date.
     ///
     /// Returns `None` when `self` is the first representable date.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    /// use chrono::naive::date::MIN;
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).pred_opt(),
+    ///            Some(NaiveDate::from_ymd(2015, 6, 2)));
+    /// assert_eq!(MIN.pred_opt(), None);
+    /// ~~~~
     #[inline]
     pub fn pred_opt(&self) -> Option<NaiveDate> {
         self.with_of(self.of().pred()).or_else(|| NaiveDate::from_ymd_opt(self.year() - 1, 12, 31))
