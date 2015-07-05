@@ -10,9 +10,22 @@ Versions with only mechnical changes will be omitted from the following list.
 
 ## 0.2.15 (in development)
 
+### Added
+
+- Padding modifiers `%_?`, `%-?` and `%0?` are implemented.
+  They are glibc extensions which seem to be reasonably widespread (e.g. Ruby).
+
+- Added `%:z` specifier and corresponding formatting items
+  which is essentially same to `%z` but with a colon.
+
+- Added a new specifier `%.f` which precision adapts from the input.
+  This was added as a response to the UX problems in the original nanosecond specifier `%f`.
+
 ### Fixed
 
 - `Numeric::Timestamp` specifier (`%s`) was ignoring the time zone offset when provided.
+
+- Improved the documentation and associated tests for `strftime`.
 
 ## 0.2.14 (2015-05-15)
 
