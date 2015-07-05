@@ -309,13 +309,13 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                     TimezoneName => return Err(BAD_FORMAT),
 
-                    TimezoneOffset => {
+                    TimezoneOffsetColon | TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(s.trim_left(),
                                                                         scan::colon_or_space));
                         try!(parsed.set_offset(offset as i64));
                     }
 
-                    TimezoneOffsetZ => {
+                    TimezoneOffsetColonZ | TimezoneOffsetZ => {
                         let offset = try_consume!(scan::timezone_offset_zulu(s.trim_left(),
                                                                              scan::colon_or_space));
                         try!(parsed.set_offset(offset as i64));

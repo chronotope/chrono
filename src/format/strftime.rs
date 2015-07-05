@@ -22,7 +22,7 @@ Spec. | Example       | Description
 `%h`  | `Jul`         | Same to `%b`.
       |               |
 `%d`  | `08`          | Day number (01--31), zero-padded to 2 digits.
-`%e`  | ` 8`          | Same to `%d` but space-padded.
+`%e`  | ` 8`          | Same to `%d` but space-padded. Same to `%_d`.
       |               |
 `%a`  | `Sun`         | Abbreviated weekday name. Always 3 letters.
 `%A`  | `Sunday`      | Full weekday name. Also accepts corresponding abbreviation in parsing.
@@ -45,16 +45,17 @@ Spec. | Example       | Description
       |               |
       |               | **TIME SPECIFIERS:**
 `%H`  | `00`          | Hour number (00--23), zero-padded to 2 digits.
-`%k`  | ` 0`          | Same to `%H` but space-padded.
+`%k`  | ` 0`          | Same to `%H` but space-padded. Same to `%_H`.
 `%I`  | `12`          | Hour number in 12-hour clocks (01--12), zero-padded to 2 digits.
-`%l`  | `12`          | Same to `%I` but space-padded.
+`%l`  | `12`          | Same to `%I` but space-padded. Same to `%_I`.
       |               |
 `%P`  | `am`          | `am` or `pm` in 12-hour clocks.
 `%p`  | `AM`          | `AM` or `PM` in 12-hour clocks.
       |               |
 `%M`  | `34`          | Minute number (00--59), zero-padded to 2 digits.
 `%S`  | `60`          | Second number (00--60), zero-padded to 2 digits. [5]
-`%f`  | `026490000`   | The number of nanoseconds since last whole second, zero-padded to 9 digits.
+`%f`  | `026490000`   | The fractional seconds (in nanoseconds) since last whole second. [8]
+`%.f` | `.026490`     | Similar to `.%f` but left-aligned. [8]
       |               |
 `%R`  | `00:34`       | Hour-minute format. Same to `%H:%M`.
 `%T`  | `00:34:60`    | Hour-minute-second format. Same to `%H:%M:%S`.
@@ -64,6 +65,7 @@ Spec. | Example       | Description
       |               | **TIME ZONE SPECIFIERS:**
 `%Z`  | `ACST`        | *Formatting only:* Local time zone name.
 `%z`  | `+0930`       | Offset from the local time to UTC (with UTC being `+0000`).
+`%:z` | `+09:30`      | Same to `%z` but with a colon.
       |               |
       |               | **DATE & TIME SPECIFIERS:**
 `%c`  | `Sun Jul  8 00:34:60 2001` | `ctime` date & time format. Same to `%a %b %e %T %Y` sans `\n`.
@@ -75,6 +77,15 @@ Spec. | Example       | Description
 `%t`  |               | Literal tab (`\t`).
 `%n`  |               | Literal newline (`\n`).
 `%%`  |               | Literal percent sign.
+
+It is possible to override the default padding behavior of numeric specifiers `%?`.
+This is not allowed for other specifiers and will result in the `BAD_FORMAT` error.
+
+Modifier | Description
+-------- | -----------
+`%-?`    | Suppresses any padding including spaces and zeroes. (e.g. `%j` = `012`, `%-j` = `12`)
+`%_?`    | Uses spaces as a padding. (e.g. `%j` = `012`, `%_j` = ` 12`)
+`%0?`    | Uses zeroes as a padding. (e.g. `%e` = ` 9`, `%0e` = `09`)
 
 Notes:
 
@@ -96,14 +107,26 @@ Notes:
    It accounts for leap seconds, so `60` is possible.
 
 6. `%+`:
-   This one is close to, but not identical to, `%Y-%m-%dT%H:%M:%S%z`.
-   The main differences are a colon in `%z` and fractional seconds (which width adapts
-   accordingly to the number of trailing zeroes).
+   This one is close to, but not identical to, `%Y-%m-%dT%H:%M:%S%.f%z`.
+   The main differences are a colon in `%z`.
 
 7. `%s`:
    This is not padded and can be negative.
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
+
+8. `%f`, `%.f`:
+
+   The default `%f` is right-aligned and always zero-padded to 9 digits
+   for the compatibility with glibc and others,
+   so it always counts the number of nanoseconds since the last whole second.
+   E.g. 7ms after the last second will print `007000000`, and parsing `7000000` will yield the same.
+
+   The variant `%.f` is left-aligned and print 0, 3, 6 or 9 fractional digits
+   according to the precision. E.g. 70ms after the last second under `%.f` will print `.070`
+   (note: not `.07`), and parsing `.07`, `.070000` etc. will yield the same.
+   Note that they can print or read nothing if the fractional part is zero or
+   the next character is not `.`.
 
 */
 
@@ -147,11 +170,26 @@ impl<'a> Iterator for StrftimeItems<'a> {
             Some('%') => {
                 self.remainder = &self.remainder[1..];
 
-                let spec = match self.remainder.chars().next() {
-                    Some(x) => x,
-                    None => return Some(Item::Error), // premature end of string
+                macro_rules! next {
+                    () => (
+                        match self.remainder.chars().next() {
+                            Some(x) => {
+                                self.remainder = &self.remainder[x.len_utf8()..];
+                                x
+                            },
+                            None => return Some(Item::Error), // premature end of string
+                        }
+                    )
+                }
+
+                let spec = next!();
+                let pad_override = match spec {
+                    '-' => Some(Pad::None),
+                    '0' => Some(Pad::Zero),
+                    '_' => Some(Pad::Space),
+                    _ => None,
                 };
-                self.remainder = &self.remainder[spec.len_utf8()..];
+                let spec = if pad_override.is_some() { next!() } else { spec };
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
@@ -161,62 +199,77 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     })
                 }
 
-                match spec {
-                    'A' => Some(fix!(LongWeekdayName)),
-                    'B' => Some(fix!(LongMonthName)),
-                    'C' => Some(num0!(YearDiv100)),
-                    'D' => Some(recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
-                                        num0!(YearMod100)]),
-                    'F' => Some(recons![num0!(Year), lit!("-"), num0!(Month), lit!("-"),
-                                        num0!(Day)]),
-                    'G' => Some(num0!(IsoYear)),
-                    'H' => Some(num0!(Hour)),
-                    'I' => Some(num0!(Hour12)),
-                    'M' => Some(num0!(Minute)),
-                    'P' => Some(fix!(LowerAmPm)),
-                    'R' => Some(recons![num0!(Hour), lit!(":"), num0!(Minute)]),
-                    'S' => Some(num0!(Second)),
-                    'T' => Some(recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"),
-                                        num0!(Second)]),
-                    'U' => Some(num0!(WeekFromSun)),
-                    'V' => Some(num0!(IsoWeek)),
-                    'W' => Some(num0!(WeekFromMon)),
-                    'X' => Some(recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"),
-                                        num0!(Second)]),
-                    'Y' => Some(num0!(Year)),
-                    'Z' => Some(fix!(TimezoneName)),
-                    'a' => Some(fix!(ShortWeekdayName)),
-                    'b' => Some(fix!(ShortMonthName)),
-                    'c' => Some(recons![fix!(ShortWeekdayName), sp!(" "), fix!(ShortMonthName),
-                                        sp!(" "), nums!(Day), sp!(" "), num0!(Hour), lit!(":"),
-                                        num0!(Minute), lit!(":"), num0!(Second), sp!(" "),
-                                        num0!(Year)]),
-                    'd' => Some(num0!(Day)),
-                    'e' => Some(nums!(Day)),
-                    'f' => Some(num0!(Nanosecond)),
-                    'g' => Some(num0!(IsoYearMod100)),
-                    'h' => Some(fix!(ShortMonthName)),
-                    'j' => Some(num0!(Ordinal)),
-                    'k' => Some(nums!(Hour)),
-                    'l' => Some(nums!(Hour12)),
-                    'm' => Some(num0!(Month)),
-                    'n' => Some(sp!("\n")),
-                    'p' => Some(fix!(UpperAmPm)),
-                    'r' => Some(recons![num0!(Hour12), lit!(":"), num0!(Minute), lit!(":"),
-                                        num0!(Second), sp!(" "), fix!(UpperAmPm)]),
-                    's' => Some(num!(Timestamp)),
-                    't' => Some(sp!("\t")),
-                    'u' => Some(num!(WeekdayFromMon)),
-                    'v' => Some(recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"),
-                                        num0!(Year)]),
-                    'w' => Some(num!(NumDaysFromSun)),
-                    'x' => Some(recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
-                                        num0!(YearMod100)]),
-                    'y' => Some(num0!(YearMod100)),
-                    'z' => Some(fix!(TimezoneOffset)),
-                    '+' => Some(fix!(RFC3339)),
-                    '%' => Some(lit!("%")),
-                    _ => Some(Item::Error), // no such specifier
+                let item = match spec {
+                    'A' => fix!(LongWeekdayName),
+                    'B' => fix!(LongMonthName),
+                    'C' => num0!(YearDiv100),
+                    'D' => recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
+                                   num0!(YearMod100)],
+                    'F' => recons![num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)],
+                    'G' => num0!(IsoYear),
+                    'H' => num0!(Hour),
+                    'I' => num0!(Hour12),
+                    'M' => num0!(Minute),
+                    'P' => fix!(LowerAmPm),
+                    'R' => recons![num0!(Hour), lit!(":"), num0!(Minute)],
+                    'S' => num0!(Second),
+                    'T' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
+                    'U' => num0!(WeekFromSun),
+                    'V' => num0!(IsoWeek),
+                    'W' => num0!(WeekFromMon),
+                    'X' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
+                    'Y' => num0!(Year),
+                    'Z' => fix!(TimezoneName),
+                    'a' => fix!(ShortWeekdayName),
+                    'b' => fix!(ShortMonthName),
+                    'c' => recons![fix!(ShortWeekdayName), sp!(" "), fix!(ShortMonthName),
+                                   sp!(" "), nums!(Day), sp!(" "), num0!(Hour), lit!(":"),
+                                   num0!(Minute), lit!(":"), num0!(Second), sp!(" "), num0!(Year)],
+                    'd' => num0!(Day),
+                    'e' => nums!(Day),
+                    'f' => num0!(Nanosecond),
+                    'g' => num0!(IsoYearMod100),
+                    'h' => fix!(ShortMonthName),
+                    'j' => num0!(Ordinal),
+                    'k' => nums!(Hour),
+                    'l' => nums!(Hour12),
+                    'm' => num0!(Month),
+                    'n' => sp!("\n"),
+                    'p' => fix!(UpperAmPm),
+                    'r' => recons![num0!(Hour12), lit!(":"), num0!(Minute), lit!(":"),
+                                   num0!(Second), sp!(" "), fix!(UpperAmPm)],
+                    's' => num!(Timestamp),
+                    't' => sp!("\t"),
+                    'u' => num!(WeekdayFromMon),
+                    'v' => recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"),
+                                   num0!(Year)],
+                    'w' => num!(NumDaysFromSun),
+                    'x' => recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
+                                   num0!(YearMod100)],
+                    'y' => num0!(YearMod100),
+                    'z' => fix!(TimezoneOffset),
+                    '+' => fix!(RFC3339),
+                    ':' => match next!() {
+                        'z' => fix!(TimezoneOffsetColon),
+                        _ => Item::Error,
+                    },
+                    '.' => match next!() {
+                        'f' => fix!(Nanosecond),
+                        _ => Item::Error,
+                    },
+                    '%' => lit!("%"),
+                    _ => Item::Error, // no such specifier
+                };
+
+                // adjust `item` if we have any padding modifier
+                if let Some(new_pad) = pad_override {
+                    match item {
+                        Item::Numeric(kind, _pad) if self.recons.is_empty() =>
+                            Some(Item::Numeric(kind, new_pad)),
+                        _ => Some(Item::Error), // no reconstructed or non-numeric item allowed
+                    }
+                } else {
+                    Some(item)
                 }
             },
 
@@ -273,6 +326,21 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("foo%?"), [Item::Error]);
     assert_eq!(parse_and_collect("bar%42"), [Item::Error]);
     assert_eq!(parse_and_collect("quux% +"), [Item::Error]);
+    assert_eq!(parse_and_collect("%.Z"), [Item::Error]);
+    assert_eq!(parse_and_collect("%:Z"), [Item::Error]);
+    assert_eq!(parse_and_collect("%-Z"), [Item::Error]);
+    assert_eq!(parse_and_collect("%0Z"), [Item::Error]);
+    assert_eq!(parse_and_collect("%_Z"), [Item::Error]);
+    assert_eq!(parse_and_collect("%.j"), [Item::Error]);
+    assert_eq!(parse_and_collect("%:j"), [Item::Error]);
+    assert_eq!(parse_and_collect("%-j"), [num!(Ordinal)]);
+    assert_eq!(parse_and_collect("%0j"), [num0!(Ordinal)]);
+    assert_eq!(parse_and_collect("%_j"), [nums!(Ordinal)]);
+    assert_eq!(parse_and_collect("%.e"), [Item::Error]);
+    assert_eq!(parse_and_collect("%:e"), [Item::Error]);
+    assert_eq!(parse_and_collect("%-e"), [num!(Day)]);
+    assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
+    assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
 }
 
 #[cfg(test)]
@@ -292,6 +360,7 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%h").to_string(), "Jul");
     assert_eq!(dt.format("%d").to_string(), "08");
     assert_eq!(dt.format("%e").to_string(), " 8");
+    assert_eq!(dt.format("%e").to_string(), dt.format("%_d").to_string());
     assert_eq!(dt.format("%a").to_string(), "Sun");
     assert_eq!(dt.format("%A").to_string(), "Sunday");
     assert_eq!(dt.format("%w").to_string(), "0");
@@ -310,13 +379,16 @@ fn test_strftime_docs() {
     // time specifiers
     assert_eq!(dt.format("%H").to_string(), "00");
     assert_eq!(dt.format("%k").to_string(), " 0");
+    assert_eq!(dt.format("%k").to_string(), dt.format("%_H").to_string());
     assert_eq!(dt.format("%I").to_string(), "12");
     assert_eq!(dt.format("%l").to_string(), "12");
+    assert_eq!(dt.format("%l").to_string(), dt.format("%_I").to_string());
     assert_eq!(dt.format("%P").to_string(), "am");
     assert_eq!(dt.format("%p").to_string(), "AM");
     assert_eq!(dt.format("%M").to_string(), "34");
     assert_eq!(dt.format("%S").to_string(), "60");
     assert_eq!(dt.format("%f").to_string(), "026490000");
+    assert_eq!(dt.format("%.f").to_string(), ".026490");
     assert_eq!(dt.format("%R").to_string(), "00:34");
     assert_eq!(dt.format("%T").to_string(), "00:34:60");
     assert_eq!(dt.format("%X").to_string(), "00:34:60");
@@ -325,6 +397,7 @@ fn test_strftime_docs() {
     // time zone specifiers
     //assert_eq!(dt.format("%Z").to_string(), "ACST");
     assert_eq!(dt.format("%z").to_string(), "+0930");
+    assert_eq!(dt.format("%:z").to_string(), "+09:30");
 
     // date & time specifiers
     assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
