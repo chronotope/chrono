@@ -1,4 +1,4 @@
-[Chrono][doc] 0.2.14
+[Chrono][doc] 0.2.15
 ====================
 
 [![Chrono on Travis CI][travis-image]][travis]
@@ -260,3 +260,4 @@ For example, "a month later" of 2014-01-30 is not well-defined
 and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
 
 Advanced time zone handling is not yet supported (but is planned in 0.3).
+

@@ -21,11 +21,11 @@ README.md: src/lib.rs
 	echo >> $@
 	echo '[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.png' >> $@
 	echo '[travis]: https://travis-ci.org/lifthrasiir/rust-chrono' >> $@
-	awk '/^# Chrono /,/^## /' $< | tail -n +2 | head -n -2 >> $@
+	awk '/^# Chrono /,/^## /' $< | tail -n +2 | sed '$$d' | sed '$$d' >> $@
 	echo >> $@
 	echo '[Complete Documentation][doc]' >> $@
 	echo >> $@
 	echo '[doc]: https://lifthrasiir.github.io/rust-chrono/' >> $@
 	echo >> $@
-	awk '/^## /,/^\*\/$$/' $< | grep -v '^# ' | head -n -2 >> $@
+	awk '/^## /,/^\*\/$$/' $< | grep -v '^# ' | sed '$$d' >> $@
 
