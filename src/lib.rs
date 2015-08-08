@@ -17,7 +17,8 @@ In particular,
 There were several previous attempts to bring a good date and time library to Rust,
 which Chrono builts upon and should acknowledge:
 
-* [Initial research on the wiki](https://github.com/rust-lang/rust/wiki/Lib-datetime)
+* [Initial research on
+   the wiki](https://github.com/rust-lang/rust-wiki-backup/blob/master/Lib-datetime.md)
 * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 
