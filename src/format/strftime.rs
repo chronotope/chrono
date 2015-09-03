@@ -254,6 +254,18 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         _ => Item::Error,
                     },
                     '.' => match next!() {
+                        '3' => match next!() {
+                            'f' => fix!(Nanosecond3),
+                            _ => Item::Error,
+                        },
+                        '6' => match next!() {
+                            'f' => fix!(Nanosecond6),
+                            _ => Item::Error,
+                        },
+                        '9' => match next!() {
+                            'f' => fix!(Nanosecond9),
+                            _ => Item::Error,
+                        },
                         'f' => fix!(Nanosecond),
                         _ => Item::Error,
                     },
@@ -389,6 +401,9 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%S").to_string(), "60");
     assert_eq!(dt.format("%f").to_string(), "026490000");
     assert_eq!(dt.format("%.f").to_string(), ".026490");
+    assert_eq!(dt.format("%.3f").to_string(), ".026");
+    assert_eq!(dt.format("%.6f").to_string(), ".026490");
+    assert_eq!(dt.format("%.9f").to_string(), ".026490000");
     assert_eq!(dt.format("%R").to_string(), "00:34");
     assert_eq!(dt.format("%T").to_string(), "00:34:60");
     assert_eq!(dt.format("%X").to_string(), "00:34:60");

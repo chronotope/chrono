@@ -307,6 +307,27 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         }
                     }
 
+                    Nanosecond3 => {
+                        if s.starts_with(".") {
+                            let nano = try_consume!(scan::nanosecond(&s[1..]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
+                    }
+
+                    Nanosecond6 => {
+                        if s.starts_with(".") {
+                            let nano = try_consume!(scan::nanosecond(&s[1..]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
+                    }
+
+                    Nanosecond9 => {
+                        if s.starts_with(".") {
+                            let nano = try_consume!(scan::nanosecond(&s[1..]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
+                    }
+
                     TimezoneName => return Err(BAD_FORMAT),
 
                     TimezoneOffsetColon | TimezoneOffset => {
