@@ -56,6 +56,9 @@ Spec. | Example       | Description
 `%S`  | `60`          | Second number (00--60), zero-padded to 2 digits. [5]
 `%f`  | `026490000`   | The fractional seconds (in nanoseconds) since last whole second. [8]
 `%.f` | `.026490`     | Similar to `.%f` but left-aligned. [8]
+`%.3f`| `.026`        | Similar to `.%f` but left-aligned but fixed to a length of 3. [8]
+`%.6f`| `.026490`     | Similar to `.%f` but left-aligned but fixed to a length of 6. [8]
+`%.9f`| `.026490000`  | Similar to `.%f` but left-aligned but fixed to a length of 9. [8]
       |               |
 `%R`  | `00:34`       | Hour-minute format. Same to `%H:%M`.
 `%T`  | `00:34:60`    | Hour-minute-second format. Same to `%H:%M:%S`.
@@ -115,7 +118,7 @@ Notes:
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
 
-8. `%f`, `%.f`:
+8. `%f`, `%.f`, `%.3f`, `%.6f`, `%.9f`:
 
    The default `%f` is right-aligned and always zero-padded to 9 digits
    for the compatibility with glibc and others,
@@ -127,6 +130,12 @@ Notes:
    (note: not `.07`), and parsing `.07`, `.070000` etc. will yield the same.
    Note that they can print or read nothing if the fractional part is zero or
    the next character is not `.`.
+
+   The variant `%.3f`, `%.3f` and `%.3f` are left-aligned and print 3, 6 or 9 fractional digits
+   according to the number preceding `f`. E.g. 70ms after the last second under `%.3f` will print `.070`
+   (note: not `.07`), and parsing `.07`, `.070000` etc. will yield the same.
+   Note that they can read nothing if the fractional part is zero or
+   the next character is not `.` however will print with the specified length.
 
 */
 
@@ -254,6 +263,18 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         _ => Item::Error,
                     },
                     '.' => match next!() {
+                        '3' => match next!() {
+                            'f' => fix!(Nanosecond3),
+                            _ => Item::Error,
+                        },
+                        '6' => match next!() {
+                            'f' => fix!(Nanosecond6),
+                            _ => Item::Error,
+                        },
+                        '9' => match next!() {
+                            'f' => fix!(Nanosecond9),
+                            _ => Item::Error,
+                        },
                         'f' => fix!(Nanosecond),
                         _ => Item::Error,
                     },
@@ -389,6 +410,9 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%S").to_string(), "60");
     assert_eq!(dt.format("%f").to_string(), "026490000");
     assert_eq!(dt.format("%.f").to_string(), ".026490");
+    assert_eq!(dt.format("%.3f").to_string(), ".026");
+    assert_eq!(dt.format("%.6f").to_string(), ".026490");
+    assert_eq!(dt.format("%.9f").to_string(), ".026490000");
     assert_eq!(dt.format("%R").to_string(), "00:34");
     assert_eq!(dt.format("%T").to_string(), "00:34:60");
     assert_eq!(dt.format("%X").to_string(), "00:34:60");

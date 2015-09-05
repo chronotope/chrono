@@ -300,7 +300,7 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         s = &s[2..];
                     }
 
-                    Nanosecond => {
+                    Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9=> {
                         if s.starts_with(".") {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             try!(parsed.set_nanosecond(nano));
