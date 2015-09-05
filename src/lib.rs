@@ -457,7 +457,7 @@ impl num::traits::FromPrimitive for Weekday {
 
 
 /// The common set of methods for date component.
-pub trait Datelike {
+pub trait Datelike: Sized {
     /// Returns the year number.
     fn year(&self) -> i32;
 
@@ -550,7 +550,7 @@ pub trait Datelike {
 }
 
 /// The common set of methods for time component.
-pub trait Timelike {
+pub trait Timelike: Sized {
     /// Returns the hour number from 0 to 23.
     fn hour(&self) -> u32;
 
