@@ -8,6 +8,24 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.16 (2015-09-06)
+
+### Added
+
+- Added `%.3f`, `%.6f` and `%.9f` specifier for formatting fractional seconds
+  up to 3, 6 or 9 decimal digits. This is a natural extension to the existing `%f`.
+  Note that this is (not yet) generic, no other value of precision is supported. (#45)
+
+### Changed
+
+- Forbade unsized types from implementing `Datelike` and `Timelike`.
+  This does not make a big harm as any type implementing them should be already sized
+  to be practical, but this change still can break highly generic codes. (#46)
+
+### Fixed
+
+- Fixed a broken link in the `README.md`. (#41)
+
 ## 0.2.15 (2015-07-05)
 
 ### Added
