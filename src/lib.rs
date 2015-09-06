@@ -424,6 +424,9 @@ impl Weekday {
     }
 }
 
+/// Any weekday can be represented as an integer from 0 to 6,
+/// which equals to `Weekday::num_days_from_monday` in this implementation.
+/// Do not heavily depend on this though; use explicit methods whenever possible.
 impl num::traits::FromPrimitive for Weekday {
 
     #[inline]

@@ -75,7 +75,8 @@ impl NaiveDateTime {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
-    /// See the `format::strftime` module on the supported escape sequences.
+    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// on the supported escape sequences.
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
@@ -162,7 +163,8 @@ impl NaiveDateTime {
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the `format::strftime` module on the supported escape sequences.
+    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))

@@ -118,12 +118,13 @@ impl NaiveDate {
     /// ~~~~
     /// use chrono::NaiveDate;
     ///
-    /// assert!(NaiveDate::from_ymd_opt(2015, 3, 14).is_some());
-    /// assert!(NaiveDate::from_ymd_opt(2015, 0, 14).is_none());
-    /// assert!(NaiveDate::from_ymd_opt(2015, 2, 29).is_none());
-    /// assert!(NaiveDate::from_ymd_opt(-4, 2, 29).is_some()); // 5 BCE is a leap year
-    /// assert!(NaiveDate::from_ymd_opt(400000, 1, 1).is_none());
-    /// assert!(NaiveDate::from_ymd_opt(-400000, 1, 1).is_none());
+    /// let ymd = |y,m,d| NaiveDate::from_ymd_opt(y, m, d);
+    /// assert!(ymd(2015, 3, 14).is_some());
+    /// assert!(ymd(2015, 0, 14).is_none());
+    /// assert!(ymd(2015, 2, 29).is_none());
+    /// assert!(ymd(-4, 2, 29).is_some()); // 5 BCE is a leap year
+    /// assert!(ymd(400000, 1, 1).is_none());
+    /// assert!(ymd(-400000, 1, 1).is_none());
     /// ~~~~
     pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
@@ -162,13 +163,14 @@ impl NaiveDate {
     /// ~~~~
     /// use chrono::NaiveDate;
     ///
-    /// assert!(NaiveDate::from_yo_opt(2015, 100).is_some());
-    /// assert!(NaiveDate::from_yo_opt(2015, 0).is_none());
-    /// assert!(NaiveDate::from_yo_opt(2015, 365).is_some());
-    /// assert!(NaiveDate::from_yo_opt(2015, 366).is_none());
-    /// assert!(NaiveDate::from_yo_opt(-4, 366).is_some()); // 5 BCE is a leap year
-    /// assert!(NaiveDate::from_yo_opt(400000, 1).is_none());
-    /// assert!(NaiveDate::from_yo_opt(-400000, 1).is_none());
+    /// let yo = |y,o| NaiveDate::from_yo_opt(y, o);
+    /// assert!(yo(2015, 100).is_some());
+    /// assert!(yo(2015, 0).is_none());
+    /// assert!(yo(2015, 365).is_some());
+    /// assert!(yo(2015, 366).is_none());
+    /// assert!(yo(-4, 366).is_some()); // 5 BCE is a leap year
+    /// assert!(yo(400000, 1).is_none());
+    /// assert!(yo(-400000, 1).is_none());
     /// ~~~~
     pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
@@ -209,38 +211,34 @@ impl NaiveDate {
     /// ~~~~
     /// use chrono::{NaiveDate, Weekday};
     ///
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 0, Weekday::Sun), None);
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 10, Weekday::Sun),
-    ///            Some(NaiveDate::from_ymd(2015, 3, 8)));
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 30, Weekday::Mon),
-    ///            Some(NaiveDate::from_ymd(2015, 7, 20)));
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 60, Weekday::Mon), None);
+    /// let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+    /// let isoywd = |y,w,d| NaiveDate::from_isoywd_opt(y, w, d);
+    ///
+    /// assert_eq!(isoywd(2015, 0, Weekday::Sun), None);
+    /// assert_eq!(isoywd(2015, 10, Weekday::Sun), Some(ymd(2015, 3, 8)));
+    /// assert_eq!(isoywd(2015, 30, Weekday::Mon), Some(ymd(2015, 7, 20)));
+    /// assert_eq!(isoywd(2015, 60, Weekday::Mon), None);
     ///
     /// // out-of-range dates
-    /// assert_eq!(NaiveDate::from_isoywd_opt(400000, 10, Weekday::Fri), None);
-    /// assert_eq!(NaiveDate::from_isoywd_opt(-400000, 10, Weekday::Sat), None);
+    /// assert_eq!(isoywd(400000, 10, Weekday::Fri), None);
+    /// assert_eq!(isoywd(-400000, 10, Weekday::Sat), None);
     ///
     /// // year boundary behaviors
     /// //
     /// //           Mo Tu We Th Fr Sa Su
     /// // 2014-W52  22 23 24 25 26 27 28    has 4+ days of new year,
     /// // 2015-W01  29 30 31  1  2  3  4 <- so this is the first week
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2014, 52, Weekday::Sun),
-    ///            Some(NaiveDate::from_ymd(2014, 12, 28)));
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2014, 53, Weekday::Mon), None);
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 1, Weekday::Mon),
-    ///            Some(NaiveDate::from_ymd(2014, 12, 29)));
+    /// assert_eq!(isoywd(2014, 52, Weekday::Sun), Some(ymd(2014, 12, 28)));
+    /// assert_eq!(isoywd(2014, 53, Weekday::Mon), None);
+    /// assert_eq!(isoywd(2015, 1, Weekday::Mon), Some(ymd(2014, 12, 29)));
     ///
     /// // 2015-W52  21 22 23 24 25 26 27    has 4+ days of old year,
     /// // 2015-W53  28 29 30 31  1  2  3 <- so this is the last week
     /// // 2016-W01   4  5  6  7  8  9 10
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 52, Weekday::Sun),
-    ///            Some(NaiveDate::from_ymd(2015, 12, 27)));
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 53, Weekday::Sun),
-    ///            Some(NaiveDate::from_ymd(2016, 1, 3)));
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2015, 54, Weekday::Mon), None);
-    /// assert_eq!(NaiveDate::from_isoywd_opt(2016, 1, Weekday::Mon),
-    ///            Some(NaiveDate::from_ymd(2016, 1, 4)));
+    /// assert_eq!(isoywd(2015, 52, Weekday::Sun), Some(ymd(2015, 12, 27)));
+    /// assert_eq!(isoywd(2015, 53, Weekday::Sun), Some(ymd(2016, 1, 3)));
+    /// assert_eq!(isoywd(2015, 54, Weekday::Mon), None);
+    /// assert_eq!(isoywd(2016, 1, Weekday::Mon), Some(ymd(2016, 1, 4)));
     /// ~~~~
     pub fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
@@ -301,16 +299,13 @@ impl NaiveDate {
     /// ~~~~
     /// use chrono::NaiveDate;
     ///
-    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(730000),
-    ///            Some(NaiveDate::from_ymd(1999, 9, 3)));
-    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(1),
-    ///            Some(NaiveDate::from_ymd(1, 1, 1)));
-    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(0),
-    ///            Some(NaiveDate::from_ymd(0, 12, 31)));
-    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(-1),
-    ///            Some(NaiveDate::from_ymd(0, 12, 30)));
-    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(100000000), None);
-    /// assert_eq!(NaiveDate::from_num_days_from_ce_opt(-100000000), None);
+    /// let days = |ndays| NaiveDate::from_num_days_from_ce_opt(ndays);
+    /// assert_eq!(days(730000),     Some(NaiveDate::from_ymd(1999, 9, 3)));
+    /// assert_eq!(days(1),          Some(NaiveDate::from_ymd(1, 1, 1)));
+    /// assert_eq!(days(0),          Some(NaiveDate::from_ymd(0, 12, 31)));
+    /// assert_eq!(days(-1),         Some(NaiveDate::from_ymd(0, 12, 30)));
+    /// assert_eq!(days(100000000),  None);
+    /// assert_eq!(days(-100000000), None);
     /// ~~~~
     pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
         let days = days + 365; // make December 31, 1 BCE equal to day 0
@@ -322,7 +317,30 @@ impl NaiveDate {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
-    /// See the `format::strftime` module on the supported escape sequences.
+    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// on the supported escape sequences.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(NaiveDate::parse_from_str("2015-09-05", "%Y-%m-%d"),
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5)));
+    /// assert_eq!(NaiveDate::parse_from_str("5sep2015", "%d%b%Y"),
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5)));
+    ///
+    /// // time and offset is ignored for the purpose of parsing
+    /// assert_eq!(NaiveDate::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+    ///            Ok(NaiveDate::from_ymd(2014, 5, 17)));
+    ///
+    /// // either out-of-bound dates or insufficient fields are errors
+    /// assert!(NaiveDate::parse_from_str("2015/9", "%Y/%m").is_err());
+    /// assert!(NaiveDate::parse_from_str("2015/9/31", "%Y/%m/%d").is_err());
+    ///
+    /// // all parsed fields should be consistent to each other, otherwise it's an error
+    /// assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
+    /// ~~~~
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
@@ -572,8 +590,8 @@ impl NaiveDate {
     /// ~~~~
     /// use chrono::NaiveDate;
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).succ(), NaiveDate::from_ymd(2015, 6, 4));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 30).succ(), NaiveDate::from_ymd(2015, 7, 1));
+    /// assert_eq!(NaiveDate::from_ymd(2015,  6,  3).succ(), NaiveDate::from_ymd(2015, 6, 4));
+    /// assert_eq!(NaiveDate::from_ymd(2015,  6, 30).succ(), NaiveDate::from_ymd(2015, 7, 1));
     /// assert_eq!(NaiveDate::from_ymd(2015, 12, 31).succ(), NaiveDate::from_ymd(2016, 1, 1));
     /// ~~~~
     #[inline]
@@ -609,8 +627,8 @@ impl NaiveDate {
     /// ~~~~
     /// use chrono::NaiveDate;
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).pred(), NaiveDate::from_ymd(2015, 6, 2));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 1).pred(), NaiveDate::from_ymd(2015, 5, 31));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).pred(), NaiveDate::from_ymd(2015,  6,  2));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 1).pred(), NaiveDate::from_ymd(2015,  5, 31));
     /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).pred(), NaiveDate::from_ymd(2014, 12, 31));
     /// ~~~~
     #[inline]
@@ -640,6 +658,20 @@ impl NaiveDate {
     /// Adds the `days` part of given `Duration` to the current date.
     ///
     /// Returns `None` when it will result in overflow.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Duration};
+    /// use chrono::naive::date::MAX;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(d.checked_add(Duration::days(40)), Some(NaiveDate::from_ymd(2015, 10, 15)));
+    /// assert_eq!(d.checked_add(Duration::days(-40)), Some(NaiveDate::from_ymd(2015, 7, 27)));
+    /// assert_eq!(d.checked_add(Duration::days(1000_000_000)), None);
+    /// assert_eq!(d.checked_add(Duration::days(-1000_000_000)), None);
+    /// assert_eq!(MAX.checked_add(Duration::days(1)), None);
+    /// ~~~~
     pub fn checked_add(self, rhs: Duration) -> Option<NaiveDate> {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
@@ -657,6 +689,20 @@ impl NaiveDate {
     /// Subtracts the `days` part of given `Duration` from the current date.
     ///
     /// Returns `None` when it will result in overflow.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Duration};
+    /// use chrono::naive::date::MIN;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(d.checked_sub(Duration::days(40)), Some(NaiveDate::from_ymd(2015, 7, 27)));
+    /// assert_eq!(d.checked_sub(Duration::days(-40)), Some(NaiveDate::from_ymd(2015, 10, 15)));
+    /// assert_eq!(d.checked_sub(Duration::days(1000_000_000)), None);
+    /// assert_eq!(d.checked_sub(Duration::days(-1000_000_000)), None);
+    /// assert_eq!(MIN.checked_sub(Duration::days(1)), None);
+    /// ~~~~
     pub fn checked_sub(self, rhs: Duration) -> Option<NaiveDate> {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
@@ -672,6 +718,22 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified formatting items.
+    /// Otherwise it is same to the ordinary `format` method.
+    ///
+    /// The `Iterator` of items should be `Clone`able,
+    /// since the resulting `DelayedFormat` value may be formatted multiple times.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    /// use chrono::format::strftime::StrftimeItems;
+    ///
+    /// let fmt = StrftimeItems::new("%Y-%m-%d");
+    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(d.format_with_items(fmt.clone()).to_string(), "2015-09-05");
+    /// assert_eq!(d.format("%Y-%m-%d").to_string(), "2015-09-05");
+    /// ~~~~
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -679,7 +741,28 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified format string.
-    /// See the `format::strftime` module on the supported escape sequences.
+    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// on the supported escape sequences.
+    ///
+    /// This returns a `DelayedFormat`,
+    /// which gets converted to a string only when actual formatting happens.
+    /// You may use the `to_string` method to get a `String`,
+    /// or just feed it into `print!` and other formatting macros.
+    /// (In this way it avoids the excees memory allocation.)
+    ///
+    /// A wrong format string does *not* issue an error immediately.
+    /// Rather, converting or formatting the `DelayedFormat` fails.
+    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(d.format("%Y-%m-%d").to_string(), "2015-09-05");
+    /// assert_eq!(d.format("%A, %-d %B, %C%y").to_string(), "Saturday, 5 September, 2015");
+    /// ~~~~
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -760,6 +843,27 @@ impl hash::Hash for NaiveDate {
     fn hash<H: hash::Hasher>(&self, state: &mut H) { self.ymdf.hash(state) }
 }
 
+/// An addition of `Duration` to `NaiveDate` discards the fractional days,
+/// rounding to the closest integral number of days towards `Duration::zero()`.
+///
+/// Fails on underflow or overflow.
+/// Use `NaiveDate::checked_add` for detecting that.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+/// assert_eq!(ymd(2014, 1, 1) + Duration::zero(),             ymd(2014, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::seconds(86399),     ymd(2014, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::seconds(-86399),    ymd(2014, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::days(1),            ymd(2014, 1, 2));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::days(-1),           ymd(2013, 12, 31));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::days(364),          ymd(2014, 12, 31));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::days(365*4 + 1),    ymd(2018, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) + Duration::days(365*400 + 97), ymd(2414, 1, 1));
+/// ~~~~
 impl Add<Duration> for NaiveDate {
     type Output = NaiveDate;
 
@@ -769,6 +873,23 @@ impl Add<Duration> for NaiveDate {
     }
 }
 
+/// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers,
+/// and does not overflow or underflow at all.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+/// assert_eq!(ymd(2014, 1, 1) - ymd(2014, 1, 1),   Duration::zero());
+/// assert_eq!(ymd(2014, 1, 1) - ymd(2013, 12, 31), Duration::days(1));
+/// assert_eq!(ymd(2014, 1, 1) - ymd(2014, 1, 2),   Duration::days(-1));
+/// assert_eq!(ymd(2014, 1, 1) - ymd(2013, 9, 23),  Duration::days(100));
+/// assert_eq!(ymd(2014, 1, 1) - ymd(2013, 1, 1),   Duration::days(365));
+/// assert_eq!(ymd(2014, 1, 1) - ymd(2010, 1, 1),   Duration::days(365*4 + 1));
+/// assert_eq!(ymd(2014, 1, 1) - ymd(1614, 1, 1),   Duration::days(365*400 + 97));
+/// ~~~~
 impl Sub<NaiveDate> for NaiveDate {
     type Output = Duration;
 
@@ -783,6 +904,27 @@ impl Sub<NaiveDate> for NaiveDate {
     }
 }
 
+/// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
+/// rounding to the closest integral number of days towards `Duration::zero()`.
+///
+/// Fails on underflow or overflow.
+/// Use `NaiveDate::checked_sub` for detecting that.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+/// assert_eq!(ymd(2014, 1, 1) - Duration::zero(),             ymd(2014, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::seconds(86399),     ymd(2014, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::seconds(-86399),    ymd(2014, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::days(1),            ymd(2013, 12, 31));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::days(-1),           ymd(2014, 1, 2));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::days(364),          ymd(2013, 1, 2));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::days(365*4 + 1),    ymd(2010, 1, 1));
+/// assert_eq!(ymd(2014, 1, 1) - Duration::days(365*400 + 97), ymd(1614, 1, 1));
+/// ~~~~
 impl Sub<Duration> for NaiveDate {
     type Output = NaiveDate;
 
@@ -792,6 +934,24 @@ impl Sub<Duration> for NaiveDate {
     }
 }
 
+/// The `Debug` output of the naive date `d` is same to `d.format("%Y-%m-%d")`.
+/// Note that ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
+///
+/// The string printed can be readily parsed via the `parse` method on `str`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveDate;
+///
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(2015,  9,  5)), "2015-09-05");
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(   0,  1,  1)), "0000-01-01");
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(9999, 12, 31)), "9999-12-31");
+///
+/// // examples of an explicit year sign
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(   -1,  1,  1)),  "-0001-01-01");
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(10000, 12, 31)), "+10000-12-31");
+/// ~~~~
 impl fmt::Debug for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
@@ -805,10 +965,43 @@ impl fmt::Debug for NaiveDate {
     }
 }
 
+/// The `Display` output of the naive date `d` is same to `d.format("%Y-%m-%d")`.
+/// Note that ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
+///
+/// The string printed can be readily parsed via the `parse` method on `str`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveDate;
+///
+/// assert_eq!(format!("{}", NaiveDate::from_ymd(2015,  9,  5)), "2015-09-05");
+/// assert_eq!(format!("{}", NaiveDate::from_ymd(   0,  1,  1)), "0000-01-01");
+/// assert_eq!(format!("{}", NaiveDate::from_ymd(9999, 12, 31)), "9999-12-31");
+///
+/// // examples of an explicit year sign
+/// assert_eq!(format!("{}", NaiveDate::from_ymd(   -1,  1,  1)),  "-0001-01-01");
+/// assert_eq!(format!("{}", NaiveDate::from_ymd(10000, 12, 31)), "+10000-12-31");
+/// ~~~~
 impl fmt::Display for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
+/// Parsing a str into a `NaiveDate` uses the same format, `%Y-%m-%d`, as `Debug` and `Display`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveDate;
+///
+/// let d = NaiveDate::from_ymd(2015, 9, 18);
+/// assert_eq!(format!("{}", d).parse::<NaiveDate>(), Ok(d));
+///
+/// let d = NaiveDate::from_ymd(12345, 6, 7);
+/// assert_eq!(format!("{}", d).parse::<NaiveDate>(), Ok(d));
+///
+/// assert!("foo".parse::<NaiveDate>().is_err());
+/// ~~~~
 impl str::FromStr for NaiveDate {
     type Err = ParseError;
 
