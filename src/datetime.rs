@@ -25,6 +25,7 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// ISO 8601 combined date and time with time zone.
 #[derive(Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
@@ -519,4 +520,3 @@ mod tests {
         }).join().unwrap();
     }
 }
-

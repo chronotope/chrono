@@ -23,6 +23,7 @@ use format::{Item, DelayedFormat, StrftimeItems};
 /// ISO 8601 calendar date with time zone.
 #[derive(Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,
@@ -363,6 +364,7 @@ mod tests {
     struct UTC1y; // same to UTC but with an offset of 365 days
 
     #[derive(Copy, Clone, PartialEq, Eq)]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     struct OneYear;
 
     impl TimeZone for UTC1y {
@@ -406,4 +408,3 @@ mod tests {
         assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
     }
 }
-

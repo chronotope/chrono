@@ -17,6 +17,7 @@ use super::{TimeZone, Offset, LocalResult};
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
@@ -100,4 +101,3 @@ impl fmt::Debug for FixedOffset {
 impl fmt::Display for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
-

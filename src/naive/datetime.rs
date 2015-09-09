@@ -21,6 +21,7 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// ISO 8601 combined date and time without timezone.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
@@ -469,4 +470,3 @@ mod tests {
         assert_eq!(t, (time - base).num_microseconds().unwrap());
     }
 }
-

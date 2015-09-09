@@ -60,6 +60,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> stdtime::Timespec {
 /// The local timescale. This is implemented via the standard `time` crate.
 #[derive(Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct Local;
 
 impl Local {
@@ -116,4 +117,3 @@ impl TimeZone for Local {
         tm_to_datetime(stdtime::at(timespec))
     }
 }
-

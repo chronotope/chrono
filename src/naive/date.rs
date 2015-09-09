@@ -50,6 +50,7 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -1485,6 +1486,7 @@ mod internals {
     /// (simplifies the day of week calculation from the 1-based ordinal).
     #[derive(PartialEq, Eq, Copy, Clone)]
     #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     pub struct YearFlags(pub u8);
 
     pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
@@ -1726,6 +1728,7 @@ mod internals {
     /// which is an index to the `OL_TO_MDL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
     #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     pub struct Of(pub u32);
 
     impl Of {
@@ -1828,6 +1831,7 @@ mod internals {
     /// which is an index to the `MDL_TO_OL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
     #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     pub struct Mdf(pub u32);
 
     impl Mdf {
@@ -2228,4 +2232,3 @@ mod internals {
         }
     }
 }
-

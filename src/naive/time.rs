@@ -19,6 +19,7 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// Allows for the nanosecond precision and optional leap second representation.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
@@ -485,4 +486,3 @@ mod tests {
                    "23:59:60");
     }
 }
-

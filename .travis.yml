@@ -9,8 +9,10 @@ env:
 script:
   - cargo build -v
   - cargo build -v --features rustc-serialize
+  - cargo build -v --features serde_support
   - cargo test -v
   - cargo test -v --features rustc-serialize
+  - cargo test -v --features serde_support
   - cargo doc
 after_script:
   - cd target && curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh

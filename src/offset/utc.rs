@@ -20,6 +20,7 @@ use super::{TimeZone, Offset, LocalResult};
 /// It is also used as an offset (which is also a dummy type).
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct UTC;
 
 impl UTC {
@@ -61,4 +62,3 @@ impl fmt::Debug for UTC {
 impl fmt::Display for UTC {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "UTC") }
 }
-

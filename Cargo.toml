@@ -11,6 +11,11 @@ keywords = ["date", "time", "calendar"]
 readme = "README.md"
 license = "MIT/Apache-2.0"
 
+[features]
+default = []
+
+serde_support = ["serde", "serde_macros"]
+
 [lib]
 name = "chrono"
 
@@ -19,3 +24,11 @@ time = "*"
 num = "*"
 rustc-serialize = { version = "0.3", optional = true }
 
+[dependencies.serde]
+version = "0.5"
+optional = true
+features = ["nightly"]
+
+[dependencies.serde_macros]
+version = "*"
+optional = true
