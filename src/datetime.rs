@@ -519,4 +519,24 @@ mod tests {
             let _ = a;
         }).join().unwrap();
     }
+
+    #[cfg(feature = "serde_support")] extern crate bincode;
+    #[cfg(feature = "serde_support")] use self::bincode::serde::{serialize, serialized_size, deserialize, DeserializeResult};
+    #[cfg(feature = "serde_support")] use self::bincode::SizeLimit::{Bounded};
+
+    #[cfg(feature = "serde_support")]
+    #[test]
+    fn test_serde() {
+
+        let d: ::DateTime<::UTC> = ::UTC.ymd(2014, 7, 8).and_hms(9, 10, 11);
+        let size = serialized_size(&d);
+        let serialized = serialize(&d, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<::DateTime<::UTC>> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(format!("{:?}", deserialized), "2014-07-08T09:10:11Z".to_string());
+    }
 }

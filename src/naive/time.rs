@@ -485,4 +485,54 @@ mod tests {
         assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(),
                    "23:59:60");
     }
+
+    #[cfg(feature = "serde_support")] extern crate bincode;
+    #[cfg(feature = "serde_support")] use self::bincode::serde::{serialize, serialized_size, deserialize, DeserializeResult};
+    #[cfg(feature = "serde_support")] use self::bincode::SizeLimit::{Bounded};
+
+    #[cfg(feature = "serde_support")]
+    #[test]
+    fn test_serde() {
+
+        let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
+        let size = serialized_size(&t);
+        let serialized = serialize(&t, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<NaiveTime> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(deserialized.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
+        assert_eq!(deserialized.format("%M").to_string(), "05");
+        assert_eq!(deserialized.format("%S,%f").to_string(), "07,098765432");
+        assert_eq!(deserialized.format("%R").to_string(), "03:05");
+        assert_eq!(deserialized.format("%T,%X").to_string(), "03:05:07,03:05:07");
+        assert_eq!(deserialized.format("%r").to_string(), "03:05:07 AM");
+        assert_eq!(deserialized.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+
+
+        let t = NaiveTime::from_hms(13, 57, 9);
+        let size = serialized_size(&t);
+        let serialized = serialize(&t, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<NaiveTime> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(deserialized.format("%r").to_string(), "01:57:09 PM");
+
+
+        let t = NaiveTime::from_hms_milli(23, 59, 59, 1_000);
+        let size = serialized_size(&t);
+        let serialized = serialize(&t, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<NaiveTime> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(deserialized.format("%X").to_string(), "23:59:60");
+    }
 }

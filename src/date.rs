@@ -407,4 +407,24 @@ mod tests {
     fn test_local_date_sanity_check() { // issue #27
         assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
     }
+
+    #[cfg(feature = "serde_support")] extern crate bincode;
+    #[cfg(feature = "serde_support")] use self::bincode::serde::{serialize, serialized_size, deserialize, DeserializeResult};
+    #[cfg(feature = "serde_support")] use self::bincode::SizeLimit::{Bounded};
+
+    #[cfg(feature = "serde_support")]
+    #[test]
+    fn test_serde() {
+
+        let d: ::Date<::UTC> = ::UTC.ymd(2014, 7, 8);
+        let size = serialized_size(&d);
+        let serialized = serialize(&d, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<::Date<::UTC>> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(format!("{:?}", deserialized), "2014-07-08Z".to_string());
+    }
 }

@@ -469,4 +469,40 @@ mod tests {
         let time = base + Duration::microseconds(t);
         assert_eq!(t, (time - base).num_microseconds().unwrap());
     }
+
+    #[cfg(feature = "serde_support")] extern crate bincode;
+    #[cfg(feature = "serde_support")] use self::bincode::serde::{serialize, serialized_size, deserialize, DeserializeResult};
+    #[cfg(feature = "serde_support")] use self::bincode::SizeLimit::{Bounded};
+
+    #[cfg(feature = "serde_support")]
+    #[test]
+    fn test_serde() {
+
+        let dt = NaiveDate::from_ymd(2010, 9, 8).and_hms_milli(7, 6, 54, 321);
+        let size = serialized_size(&dt);
+        let serialized = serialize(&dt, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<NaiveDateTime> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(deserialized.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
+        assert_eq!(deserialized.format("%s").to_string(), "1283929614");
+        assert_eq!(deserialized.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+
+
+        // leap second
+        let dt = NaiveDate::from_ymd(2012, 6, 30).and_hms_milli(23, 59, 59, 1_000);
+        let size = serialized_size(&dt);
+        let serialized = serialize(&dt, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<NaiveDateTime> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(deserialized.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
+        assert_eq!(deserialized.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
+    }
 }

@@ -32,3 +32,6 @@ features = ["nightly"]
 [dependencies.serde_macros]
 version = "*"
 optional = true
+
+[dev-dependencies]
+bincode = "*"
