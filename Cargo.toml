@@ -34,4 +34,4 @@ version = "*"
 optional = true
 
 [dev-dependencies]
-bincode = "*"
+bincode = { version = "*", features = ["serde"] }
