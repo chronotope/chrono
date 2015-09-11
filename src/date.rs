@@ -46,7 +46,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
     ///
-    /// Fails on invalid datetime.
+    /// Panics on invalid datetime.
     #[inline]
     pub fn and_time(&self, time: NaiveTime) -> Option<DateTime<Tz>> {
         let localdt = self.naive_local().and_time(time);
@@ -56,7 +56,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `DateTime` from the current date, hour, minute and second.
     /// The offset in the current date is preserved.
     ///
-    /// Fails on invalid hour, minute and/or second.
+    /// Panics on invalid hour, minute and/or second.
     #[inline]
     pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTime<Tz> {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
@@ -75,7 +75,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
-    /// Fails on invalid hour, minute, second and/or millisecond.
+    /// Panics on invalid hour, minute, second and/or millisecond.
     #[inline]
     pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTime<Tz> {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
@@ -96,7 +96,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
-    /// Fails on invalid hour, minute, second and/or microsecond.
+    /// Panics on invalid hour, minute, second and/or microsecond.
     #[inline]
     pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTime<Tz> {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
@@ -117,7 +117,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
-    /// Fails on invalid hour, minute, second and/or nanosecond.
+    /// Panics on invalid hour, minute, second and/or nanosecond.
     #[inline]
     pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTime<Tz> {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
@@ -136,7 +136,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Makes a new `Date` for the next date.
     ///
-    /// Fails when `self` is the last representable date.
+    /// Panics when `self` is the last representable date.
     #[inline]
     pub fn succ(&self) -> Date<Tz> {
         self.succ_opt().expect("out of bound")
@@ -152,7 +152,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Makes a new `Date` for the prior date.
     ///
-    /// Fails when `self` is the first representable date.
+    /// Panics when `self` is the first representable date.
     #[inline]
     pub fn pred(&self) -> Date<Tz> {
         self.pred_opt().expect("out of bound")

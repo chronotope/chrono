@@ -38,7 +38,7 @@ impl NaiveDateTime {
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// Fails on the out-of-range number of seconds and/or invalid nanosecond.
+    /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
     #[inline]
     pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);

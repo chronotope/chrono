@@ -89,7 +89,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from year, month and day.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
-    /// Fails on the out-of-range date, invalid month and/or day.
+    /// Panics on the out-of-range date, invalid month and/or day.
     ///
     /// # Example
     ///
@@ -134,7 +134,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from year and day of year (DOY or "ordinal").
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
-    /// Fails on the out-of-range date and/or invalid DOY.
+    /// Panics on the out-of-range date and/or invalid DOY.
     ///
     /// # Example
     ///
@@ -181,7 +181,7 @@ impl NaiveDate {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
-    /// Fails on the out-of-range date and/or invalid week number.
+    /// Panics on the out-of-range date and/or invalid week number.
     ///
     /// # Example
     ///
@@ -269,7 +269,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from the number of days since January 1, 1 (Day 1)
     /// in the proleptic Gregorian calendar.
     ///
-    /// Fails on the out-of-range date.
+    /// Panics on the out-of-range date.
     ///
     /// # Example
     ///
@@ -329,16 +329,28 @@ impl NaiveDate {
     ///            Ok(NaiveDate::from_ymd(2015, 9, 5)));
     /// assert_eq!(NaiveDate::parse_from_str("5sep2015", "%d%b%Y"),
     ///            Ok(NaiveDate::from_ymd(2015, 9, 5)));
+    /// ~~~~
     ///
-    /// // time and offset is ignored for the purpose of parsing
+    /// Time and offset is ignored for the purpose of parsing.
+    ///
+    /// ~~~~
+    /// # use chrono::NaiveDate;
     /// assert_eq!(NaiveDate::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
     ///            Ok(NaiveDate::from_ymd(2014, 5, 17)));
+    /// ~~~~
     ///
-    /// // either out-of-bound dates or insufficient fields are errors
+    /// Out-of-bound dates or insufficient fields are errors.
+    ///
+    /// ~~~~
+    /// # use chrono::NaiveDate;
     /// assert!(NaiveDate::parse_from_str("2015/9", "%Y/%m").is_err());
     /// assert!(NaiveDate::parse_from_str("2015/9/31", "%Y/%m/%d").is_err());
+    /// ~~~~
     ///
-    /// // all parsed fields should be consistent to each other, otherwise it's an error
+    /// All parsed fields should be consistent to each other, otherwise it's an error.
+    ///
+    /// ~~~~
+    /// # use chrono::NaiveDate;
     /// assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
     /// ~~~~
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
@@ -368,7 +380,10 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
-    /// Fails on invalid hour, minute and/or second.
+    /// No [leap second](../time/struct.NaiveTime.html#leap-second-what?) is allowed here;
+    /// use `NaiveDate::and_hms_*` methods with a subsecond parameter instead.
+    ///
+    /// Panics on invalid hour, minute and/or second.
     ///
     /// # Example
     ///
@@ -389,6 +404,9 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
+    /// No [leap second](../time/struct.NaiveTime.html#leap-second-what?) is allowed here;
+    /// use `NaiveDate::and_hms_*_opt` methods with a subsecond parameter instead.
+    ///
     /// Returns `None` on invalid hour, minute and/or second.
     ///
     /// # Example
@@ -408,9 +426,11 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
-    /// The millisecond part can exceed 1,000 in order to represent the leap second.
     ///
-    /// Fails on invalid hour, minute, second and/or millisecond.
+    /// The millisecond part can exceed 1,000
+    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    ///
+    /// Panics on invalid hour, minute, second and/or millisecond.
     ///
     /// # Example
     ///
@@ -431,7 +451,9 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
-    /// The millisecond part can exceed 1,000 in order to represent the leap second.
+    ///
+    /// The millisecond part can exceed 1,000
+    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     ///
@@ -455,9 +477,11 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
-    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     ///
-    /// Fails on invalid hour, minute, second and/or microsecond.
+    /// The microsecond part can exceed 1,000,000
+    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    ///
+    /// Panics on invalid hour, minute, second and/or microsecond.
     ///
     /// # Example
     ///
@@ -478,7 +502,9 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
-    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
+    ///
+    /// The microsecond part can exceed 1,000,000
+    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     ///
@@ -502,9 +528,11 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     ///
-    /// Fails on invalid hour, minute, second and/or nanosecond.
+    /// The nanosecond part can exceed 1,000,000,000
+    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    ///
+    /// Panics on invalid hour, minute, second and/or nanosecond.
     ///
     /// # Example
     ///
@@ -525,7 +553,9 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
+    ///
+    /// The nanosecond part can exceed 1,000,000,000
+    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     ///
@@ -583,7 +613,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` for the next date.
     ///
-    /// Fails when `self` is the last representable date.
+    /// Panics when `self` is the last representable date.
     ///
     /// # Example
     ///
@@ -620,7 +650,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` for the prior date.
     ///
-    /// Fails when `self` is the first representable date.
+    /// Panics when `self` is the first representable date.
     ///
     /// # Example
     ///
@@ -748,7 +778,7 @@ impl NaiveDate {
     /// which gets converted to a string only when actual formatting happens.
     /// You may use the `to_string` method to get a `String`,
     /// or just feed it into `print!` and other formatting macros.
-    /// (In this way it avoids the excees memory allocation.)
+    /// (In this way it avoids the redundant memory allocation.)
     ///
     /// A wrong format string does *not* issue an error immediately.
     /// Rather, converting or formatting the `DelayedFormat` fails.
@@ -846,7 +876,7 @@ impl hash::Hash for NaiveDate {
 /// An addition of `Duration` to `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 ///
-/// Fails on underflow or overflow.
+/// Panics on underflow or overflow.
 /// Use `NaiveDate::checked_add` for detecting that.
 ///
 /// # Example
@@ -907,7 +937,7 @@ impl Sub<NaiveDate> for NaiveDate {
 /// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 ///
-/// Fails on underflow or overflow.
+/// Panics on underflow or overflow.
 /// Use `NaiveDate::checked_sub` for detecting that.
 ///
 /// # Example

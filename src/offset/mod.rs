@@ -145,7 +145,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
 }
 
 impl<T: fmt::Debug> LocalResult<T> {
-    /// Returns the single unique conversion result, or fails accordingly.
+    /// Returns the single unique conversion result, or panics accordingly.
     pub fn unwrap(self) -> T {
         match self {
             LocalResult::None => panic!("No such local time"),
@@ -176,7 +176,7 @@ pub trait TimeZone: Sized + Clone {
     /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
-    /// Fails on the out-of-range date, invalid month and/or day.
+    /// Panics on the out-of-range date, invalid month and/or day.
     fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
         self.ymd_opt(year, month, day).unwrap()
     }
@@ -201,7 +201,7 @@ pub trait TimeZone: Sized + Clone {
     /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
-    /// Fails on the out-of-range date and/or invalid DOY.
+    /// Panics on the out-of-range date and/or invalid DOY.
     fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
         self.yo_opt(year, ordinal).unwrap()
     }
@@ -228,7 +228,7 @@ pub trait TimeZone: Sized + Clone {
     /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
-    /// Fails on the out-of-range date and/or invalid week number.
+    /// Panics on the out-of-range date and/or invalid week number.
     fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
     }
@@ -253,7 +253,7 @@ pub trait TimeZone: Sized + Clone {
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// Fails on the out-of-range number of seconds and/or invalid nanosecond.
+    /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
     fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
         self.timestamp_opt(secs, nsecs).unwrap()
     }
