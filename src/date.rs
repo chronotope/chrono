@@ -23,6 +23,7 @@ use format::{Item, DelayedFormat, StrftimeItems};
 /// ISO 8601 calendar date with time zone.
 #[derive(Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,
@@ -363,6 +364,7 @@ mod tests {
     struct UTC1y; // same to UTC but with an offset of 365 days
 
     #[derive(Copy, Clone, PartialEq, Eq)]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     struct OneYear;
 
     impl TimeZone for UTC1y {
@@ -405,5 +407,24 @@ mod tests {
     fn test_local_date_sanity_check() { // issue #27
         assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
     }
-}
 
+    #[cfg(feature = "serde_support")] extern crate bincode;
+    #[cfg(feature = "serde_support")] use self::bincode::serde::{serialize, serialized_size, deserialize, DeserializeResult};
+    #[cfg(feature = "serde_support")] use self::bincode::SizeLimit::{Bounded};
+
+    #[cfg(feature = "serde_support")]
+    #[test]
+    fn test_serde() {
+
+        let d: ::Date<::UTC> = ::UTC.ymd(2014, 7, 8);
+        let size = serialized_size(&d);
+        let serialized = serialize(&d, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<::Date<::UTC>> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+        assert_eq!(format!("{:?}", deserialized), "2014-07-08Z".to_string());
+    }
+}

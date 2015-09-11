@@ -1,4 +1,7 @@
 language: rust
+rust:
+    - stable
+    - nightly
 os:
   - linux
   - osx
@@ -11,6 +14,10 @@ script:
   - cargo build -v --features rustc-serialize
   - cargo test -v
   - cargo test -v --features rustc-serialize
+  - if [ "$TRAVIS_RUST_VERSION" = "nightly" ]; then
+      cargo build -v --features serde_support;
+      cargo test -v --features serde_support;
+    fi
   - cargo doc
 after_script:
   - cd target && curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh

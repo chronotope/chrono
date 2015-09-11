@@ -269,12 +269,18 @@ Advanced time zone handling is not yet supported (but is planned in 0.3).
 #![doc(html_root_url = "https://lifthrasiir.github.io/rust-chrono/")]
 
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
+#![cfg_attr(feature = "serde_support", feature(custom_derive, plugin))]
+#![cfg_attr(feature = "serde_support", plugin(serde_macros))]
+
 #![deny(missing_docs)]
 
 extern crate time as stdtime;
 extern crate num;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
+
+#[cfg(feature = "serde_support")]
+extern crate serde;
 
 pub use duration::Duration;
 pub use offset::{TimeZone, Offset, LocalResult};
@@ -321,6 +327,7 @@ pub mod format;
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

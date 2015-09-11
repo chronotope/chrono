@@ -31,6 +31,9 @@ use date::Date;
 use datetime::DateTime;
 use format::{parse, Parsed, ParseResult, StrftimeItems};
 
+#[cfg(feature = "serde_support")]
+use serde::{Serialize, Deserialize};
+
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug)]
 pub enum LocalResult<T> {
@@ -157,8 +160,16 @@ impl<T: fmt::Debug> LocalResult<T> {
     }
 }
 
+#[cfg(not(feature = "serde_support"))]
 /// The offset from the local time to UTC.
 pub trait Offset: Sized + Clone + fmt::Debug {
+    /// Returns the offset from UTC to the local time stored.
+    fn local_minus_utc(&self) -> Duration;
+}
+
+#[cfg(feature = "serde_support")]
+/// The offset from the local time to UTC.
+pub trait Offset: Sized + Clone + fmt::Debug + Serialize + Deserialize {
     /// Returns the offset from UTC to the local time stored.
     fn local_minus_utc(&self) -> Duration;
 }
@@ -331,4 +342,3 @@ pub trait TimeZone: Sized + Clone {
 pub mod utc;
 pub mod fixed;
 pub mod local;
-

@@ -50,6 +50,7 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -1477,6 +1478,36 @@ mod tests {
         assert_eq!(NaiveDate::from_ymd(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(),
                    "2009,09,01,00,53");
     }
+
+    #[cfg(feature = "serde_support")] extern crate bincode;
+    #[cfg(feature = "serde_support")] use self::bincode::serde::{serialize, serialized_size, deserialize, DeserializeResult};
+    #[cfg(feature = "serde_support")] use self::bincode::SizeLimit::{Bounded};
+
+    #[cfg(feature = "serde_support")]
+    #[test]
+    fn test_serde() {
+
+        let d = NaiveDate::from_ymd(2012, 3, 4);
+        let size = serialized_size(&d);
+        let serialized = serialize(&d, Bounded(size));
+        assert!(serialized.is_ok());
+
+        let deserialized: DeserializeResult<NaiveDate> = deserialize(&serialized.unwrap());
+        assert!(deserialized.is_ok());
+
+        let deserialized = deserialized.unwrap();
+
+        assert_eq!(deserialized.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
+        assert_eq!(deserialized.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
+        assert_eq!(deserialized.format("%d,%e").to_string(), "04, 4");
+        assert_eq!(deserialized.format("%U,%W,%V").to_string(), "10,09,09");
+        assert_eq!(deserialized.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
+        assert_eq!(deserialized.format("%j").to_string(), "064"); // since 2012 is a leap year
+        assert_eq!(deserialized.format("%D,%x").to_string(), "03/04/12,03/04/12");
+        assert_eq!(deserialized.format("%F").to_string(), "2012-03-04");
+        assert_eq!(deserialized.format("%v").to_string(), " 4-Mar-2012");
+        assert_eq!(deserialized.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+    }
 }
 
 /**
@@ -1756,6 +1787,7 @@ mod internals {
     /// which is an index to the `OL_TO_MDL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
     #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     pub struct Of(pub u32);
 
     impl Of {
@@ -1858,6 +1890,7 @@ mod internals {
     /// which is an index to the `MDL_TO_OL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
     #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+    #[cfg_attr(feature = "serde_support", derive(Serialize, Deserialize))]
     pub struct Mdf(pub u32);
 
     impl Mdf {
@@ -2258,4 +2291,3 @@ mod internals {
         }
     }
 }
-
