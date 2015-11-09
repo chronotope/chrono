@@ -574,6 +574,40 @@ impl str::FromStr for NaiveTime {
     }
 }
 
+#[cfg(feature = "serde")]
+mod serde {
+    use super::NaiveTime;
+    use serde::{ser, de};
+
+    impl ser::Serialize for NaiveTime {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            serializer.visit_str(&format!("{:?}", self))
+        }
+    }
+    
+    struct NaiveTimeVisitor;
+    
+    impl de::Visitor for NaiveTimeVisitor {
+        type Value = NaiveTime;
+
+        fn visit_str<E>(&mut self, value: &str) -> Result<NaiveTime, E>
+            where E: de::Error
+        {
+            value.parse().map_err(|err| E::syntax(&format!("{}", err)))
+        }
+    }
+    
+    impl de::Deserialize for NaiveTime {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.visit(NaiveTimeVisitor)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveTime;
@@ -763,6 +797,31 @@ mod tests {
         assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(), "01:57:09 PM");
         assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(),
                    "23:59:60");
+    }
+
+    #[cfg(feature = "serde")]
+    extern crate serde_json;
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_serialize() {
+        use self::serde_json::to_string;
+        
+        let time = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
+        let serialized = to_string(&time).unwrap();
+
+        assert_eq!(serialized, "\"03:05:07.098765432\"");
+    }
+    
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_deserialize() {
+        use self::serde_json::from_str;
+        
+        let time = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
+        let deserialized: NaiveTime = from_str("\"03:05:07.098765432\"").unwrap();
+
+        assert_eq!(deserialized, time);
     }
 }
 

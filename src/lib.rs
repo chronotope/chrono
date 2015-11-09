@@ -275,6 +275,8 @@ extern crate time as stdtime;
 extern crate num;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
+#[cfg(feature = "serde")]
+extern crate serde;
 
 pub use duration::Duration;
 pub use offset::{TimeZone, Offset, LocalResult};
