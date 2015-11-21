@@ -315,6 +315,40 @@ impl str::FromStr for NaiveDateTime {
     }
 }
 
+#[cfg(feature = "serde")]
+mod serde {
+    use super::NaiveDateTime;
+    use serde::{ser, de};
+
+    impl ser::Serialize for NaiveDateTime {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            serializer.visit_str(&format!("{:?}", self))
+        }
+    }
+    
+    struct NaiveDateTimeVisitor;
+    
+    impl de::Visitor for NaiveDateTimeVisitor {
+        type Value = NaiveDateTime;
+
+        fn visit_str<E>(&mut self, value: &str) -> Result<NaiveDateTime, E>
+            where E: de::Error
+        {
+            value.parse().map_err(|err| E::syntax(&format!("{}", err)))
+        }
+    }
+    
+    impl de::Deserialize for NaiveDateTime {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.visit(NaiveDateTimeVisitor)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
@@ -467,6 +501,31 @@ mod tests {
         let t = -946684799990000;
         let time = base + Duration::microseconds(t);
         assert_eq!(t, (time - base).num_microseconds().unwrap());
+    }
+
+    #[cfg(feature = "serde")]
+    extern crate serde_json;
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_serialize() {
+        use self::serde_json::to_string;
+        
+        let date = NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let serialized = to_string(&date).unwrap();
+
+        assert_eq!(serialized, "\"2014-07-24T12:34:06\"");
+    }
+    
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_deserialize() {
+        use self::serde_json::from_str;
+        
+        let date = NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let deserialized: NaiveDateTime = from_str("\"2014-07-24T12:34:06\"").unwrap();
+
+        assert_eq!(deserialized, date);
     }
 }
 

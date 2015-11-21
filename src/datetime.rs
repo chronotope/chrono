@@ -366,6 +366,64 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
+#[cfg(feature = "serde")]
+mod serde {
+    use super::DateTime;
+    use offset::TimeZone;
+    use offset::utc::UTC;
+    use offset::local::Local;
+    use offset::fixed::FixedOffset;
+    use std::fmt::Display;
+    use serde::{ser, de};
+
+    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz>
+        where Tz::Offset: Display
+    {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            // Debug formatting is correct RFC3339, and it allows Zulu.
+            serializer.visit_str(&format!("{:?}", self))
+        }
+    }
+    
+    struct DateTimeVisitor;
+    
+    impl de::Visitor for DateTimeVisitor {
+        type Value = DateTime<FixedOffset>;
+
+        fn visit_str<E>(&mut self, value: &str) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
+        {
+            value.parse().map_err(|err| E::syntax(&format!("{}", err)))
+        }
+    }
+    
+    impl de::Deserialize for DateTime<FixedOffset> {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.visit(DateTimeVisitor)
+        }
+    }
+    
+    impl de::Deserialize for DateTime<UTC> {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.visit(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
+        }
+    }
+    
+    impl de::Deserialize for DateTime<Local> {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.visit(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::DateTime;
@@ -517,6 +575,31 @@ mod tests {
         thread::spawn(move || {
             let _ = a;
         }).join().unwrap();
+    }
+
+    #[cfg(feature = "serde")]
+    extern crate serde_json;
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_serialize() {
+        use self::serde_json::to_string;
+        
+        let date = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let serialized = to_string(&date).unwrap();
+
+        assert_eq!(serialized, "\"2014-07-24T12:34:06Z\"");
+    }
+    
+    #[cfg(feature = "serde")]
+    #[test]
+    fn test_serde_deserialize() {
+        use self::serde_json::from_str;
+        
+        let date = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let deserialized: DateTime<UTC> = from_str("\"2014-07-24T12:34:06Z\"").unwrap();
+
+        assert_eq!(deserialized, date);
     }
 }
 
