@@ -8,6 +8,13 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.17 (2015-11-22)
+
+### Added
+
+- Naive date and time types and `DateTime` now have a `serde` support.
+  They serialize as an ISO 8601 / RFC 3339 string just like `Debug`. (#51)
+
 ## 0.2.16 (2015-09-06)
 
 ### Added
