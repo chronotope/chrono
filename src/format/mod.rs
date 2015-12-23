@@ -184,7 +184,7 @@ macro_rules! fix  { ($x:ident) => (Item::Fixed(Fixed::$x)) }
 pub struct ParseError(ParseErrorKind);
 
 #[derive(Debug, Clone, PartialEq, Copy)]
-enum ParseErrorKind {
+pub enum ParseErrorKind {
     /// Given field is out of permitted range.
     OutOfRange,
 
