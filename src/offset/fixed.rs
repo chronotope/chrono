@@ -22,6 +22,16 @@ pub struct FixedOffset {
 }
 
 impl FixedOffset {
+    /// Makes a new `FixedOffset` using a relative hour value from UTC
+    ///
+    /// For example America/Chicago would be -6 hours from UTC (CST) and could
+    /// be created using FixedOffset::hours(-6).
+    ///
+    /// Panics when out-of-bound `hours`.
+    pub fn hours(hours: i32) -> FixedOffset {
+        FixedOffset::east_opt(hours*60*60).expect("FixedOffset::hours out of bound, min -12, max 12")
+    }
+
     /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
     /// The negative `secs` means the Western Hemisphere.
     ///
