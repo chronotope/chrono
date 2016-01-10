@@ -16,7 +16,7 @@ name = "chrono"
 
 [dependencies]
 time = "0.1"
-num = "0.1"
+num = { version = "0.1", default-features = false }
 rustc-serialize = { version = "0.3", optional = true }
 serde = { version = "^0.6.0", optional = true }
 
