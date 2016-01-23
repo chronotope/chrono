@@ -8,6 +8,12 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.18 (2016-01-23)
+
+### Fixed
+
+- Chrono no longer pulls a superfluous `rand` dependency. (#57)
+
 ## 0.2.17 (2015-11-22)
 
 ### Added
