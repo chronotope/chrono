@@ -4,6 +4,7 @@ and also the following people (in ascending order):
 Colin Ray <r.colinray@gmail.com>
 Corey Farwell <coreyf@rwell.org>
 Dan <dan@ebip.co.uk>
+David Hewson <dev@daveid.co.uk>
 David Ross <daboross@daboross.net>
 Eunchong Yu <kroisse@gmail.com>
 Huon Wilson <dbau.pp+github@gmail.com>

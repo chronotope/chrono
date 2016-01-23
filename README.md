@@ -7,7 +7,8 @@
 [travis]: https://travis-ci.org/lifthrasiir/rust-chrono
 
 Date and time handling for Rust. (also known as `rust-chrono`)
-It aims to be a feature-complete superset of the [time](https://github.com/rust-lang/time) library.
+It aims to be a feature-complete superset of
+the [time](https://github.com/rust-lang/time) library.
 In particular,
 
 * Chrono strictly adheres to ISO 8601.
@@ -173,7 +174,8 @@ Parsing can be done with three methods:
 
 3. `Offset::datetime_from_str` is similar but returns `DateTime` of given offset.
    When the explicit offset is missing from the input, it simply uses given offset.
-   It issues an error when the input contains an explicit offset different from the current offset.
+   It issues an error when the input contains an explicit offset different
+   from the current offset.
 
 More detailed control over the parsing process is available via `format` module.
 
@@ -191,7 +193,8 @@ assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixe
 // method 2
 assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
            Ok(fixed_dt.clone()));
-assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"), Ok(fixed_dt.clone()));
+assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
+           Ok(fixed_dt.clone()));
 assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
 
 // method 3
@@ -253,7 +256,8 @@ Time types are limited in the nanosecond accuracy.
 Leap seconds are supported in the representation but Chrono doesn't try to make use of them.
 (The main reason is that leap seconds are not really predictable.)
 Almost *every* operation over the possible leap seconds will ignore them.
-Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale if you want.
+Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
+if you want.
 
 Chrono inherently does not support an inaccurate or partial date and time representation.
 Any operation that can be ambiguous will return `None` in such cases.

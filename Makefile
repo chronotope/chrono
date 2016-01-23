@@ -14,18 +14,17 @@ readme: README.md
 
 README.md: src/lib.rs
 	# really, really sorry for this mess.
-	awk '/^# Chrono /{print "[Chrono][doc]",$$3}' $< > $@
-	awk '/^# Chrono /{print "[Chrono][doc]",$$3}' $< | sed 's/./=/g' >> $@
+	awk '/^\/\/! # Chrono /{print "[Chrono][doc]",$$4}' $< > $@
+	awk '/^\/\/! # Chrono /{print "[Chrono][doc]",$$4}' $< | sed 's/./=/g' >> $@
 	echo >> $@
 	echo '[![Chrono on Travis CI][travis-image]][travis]' >> $@
 	echo >> $@
 	echo '[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.png' >> $@
 	echo '[travis]: https://travis-ci.org/lifthrasiir/rust-chrono' >> $@
-	awk '/^# Chrono /,/^## /' $< | tail -n +2 | sed '$$d' | sed '$$d' >> $@
-	echo >> $@
+	awk '/^\/\/! # Chrono /,/^\/\/! ## /' $< | cut -b 5- | grep -v '^#' >> $@
 	echo '[Complete Documentation][doc]' >> $@
 	echo >> $@
 	echo '[doc]: https://lifthrasiir.github.io/rust-chrono/' >> $@
 	echo >> $@
-	awk '/^## /,/^\*\/$$/' $< | grep -v '^# ' | sed '$$d' >> $@
+	awk '/^\/\/! ## /,!/^\/\/!/' $< | cut -b 5- | grep -v '^# ' >> $@
 
