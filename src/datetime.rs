@@ -43,7 +43,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Retrieves a date component.
     #[inline]
     pub fn date(&self) -> Date<Tz> {
-        Date::from_utc(self.datetime.date().clone(), self.offset.clone())
+        Date::from_utc(self.naive_local().date(), self.offset.clone())
     }
 
     /// Retrieves a time component.
@@ -429,6 +429,7 @@ mod tests {
     use super::DateTime;
     use Datelike;
     use naive::time::NaiveTime;
+    use naive::date::NaiveDate;
     use duration::Duration;
     use offset::TimeZone;
     use offset::utc::UTC;
@@ -481,9 +482,27 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime_time() {
-        assert_eq!(FixedOffset::east(5*60*60).ymd(2014, 5, 6).and_hms(7, 8, 9).time(),
-                   NaiveTime::from_hms(7, 8, 9));
+    fn test_datetime_date_and_time() {
+        let tz = FixedOffset::east(5*60*60);
+        let d = tz.ymd(2014, 5, 6).and_hms(7, 8, 9);
+        assert_eq!(d.time(), NaiveTime::from_hms(7, 8, 9));
+        assert_eq!(d.date(), tz.ymd(2014, 5, 6));
+        assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2014, 5, 6));
+        assert_eq!(d.date().and_time(d.time()), Some(d));
+
+        let tz = FixedOffset::east(4*60*60);
+        let d = tz.ymd(2016, 5, 4).and_hms(3, 2, 1);
+        assert_eq!(d.time(), NaiveTime::from_hms(3, 2, 1));
+        assert_eq!(d.date(), tz.ymd(2016, 5, 4));
+        assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2016, 5, 4));
+        assert_eq!(d.date().and_time(d.time()), Some(d));
+
+        let tz = FixedOffset::west(13*60*60);
+        let d = tz.ymd(2017, 8, 9).and_hms(12, 34, 56);
+        assert_eq!(d.time(), NaiveTime::from_hms(12, 34, 56));
+        assert_eq!(d.date(), tz.ymd(2017, 8, 9));
+        assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2017, 8, 9));
+        assert_eq!(d.date().and_time(d.time()), Some(d));
     }
 
     #[test]
