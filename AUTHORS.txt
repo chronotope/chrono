@@ -15,3 +15,4 @@ Martin Risell Lilja <martin.risell.lilja@gmail.com>
 Steve Klabnik <steve@steveklabnik.com>
 Tom Gallacher <tomgallacher23@gmail.com>
 klutzy <klutzytheklutzy@gmail.com>
+kud1ing <github@kudling.de>

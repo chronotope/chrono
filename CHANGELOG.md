@@ -8,6 +8,16 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.19 (2016-02-05)
+
+### Added
+
+- The documentation for `Date` is made clear about its ambiguity and guarantees.
+
+### Fixed
+
+- `DateTime::date` had been wrong when the local date and the UTC date is in disagreement. (#61)
+
 ## 0.2.18 (2016-01-23)
 
 ### Fixed
