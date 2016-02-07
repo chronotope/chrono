@@ -144,6 +144,25 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
+    /// Parses an W3C date and time string then returns a new `DateTime` with a parsed `FixedOffset`.
+    ///
+    /// W3C note: https://www.w3.org/TR/NOTE-datetime
+    ///
+    /// Valid formats: `YYYY-MM-DD`, 
+    /// `YYYY-MM-DDThh:mmTZD`, 
+    /// `YYYY-MM-DDThh:mm:ssTZD`, 
+    /// `YYYY-MM-DDThh:mm:ss.sTZD`
+    ///
+    /// Invalid formats: 
+    /// `YYYY`,
+    /// `YYYY-MM`
+    pub fn parse_from_w3c(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::W3C)];
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        parsed.to_w3c_datetime()
+    }
+
     /// Parses a string with the specified format string and
     /// returns a new `DateTime` with a parsed `FixedOffset`.
     /// See the [`format::strftime` module](../format/strftime/index.html)
@@ -167,6 +186,12 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     pub fn to_rfc3339(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
+        self.format_with_items(ITEMS.iter().cloned()).to_string()
+    }
+
+    /// Returns an W3C date and time string such as `1996-12-19T16:39:57Z`.
+    pub fn to_w3c(&self) -> String {
+        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::W3C)];
         self.format_with_items(ITEMS.iter().cloned()).to_string()
     }
 

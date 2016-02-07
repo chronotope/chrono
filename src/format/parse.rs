@@ -130,6 +130,122 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     Ok((s, ()))
 }
 
+fn parse_w3c<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
+    // https://www.w3.org/TR/NOTE-datetime
+    // Year:
+    //   YYYY (eg 1997)
+    // Year and month:
+    //   YYYY-MM (eg 1997-07)
+    // Complete date:
+    //   YYYY-MM-DD (eg 1997-07-16)
+    // Complete date plus hours and minutes:
+    //   YYYY-MM-DDThh:mmTZD (eg 1997-07-16T19:20+01:00)
+    // Complete date plus hours, minutes and seconds:
+    //   YYYY-MM-DDThh:mm:ssTZD (eg 1997-07-16T19:20:30+01:00)
+    // Complete date plus hours, minutes, seconds and a decimal fraction of a second
+    //   YYYY-MM-DDThh:mm:ss.sTZD (eg 1997-07-16T19:20:30.45+01:00)
+    // 
+    // where:
+    // YYYY = four-digit year
+    // MM   = two-digit month (01=January, etc.)
+    // DD   = two-digit day of month (01 through 31)
+    // hh   = two digits of hour (00 through 23) (am/pm NOT allowed)
+    // mm   = two digits of minute (00 through 59)
+    // ss   = two digits of second (00 through 59)
+    // s    = one or more digits representing a decimal fraction of a second
+    // TZD  = time zone designator (Z or +hh:mm or -hh:mm)
+    macro_rules! try_consume {
+        ($e:expr) => ({ let (s_, v) = try!($e); s = s_; v })
+    }
+    let l = s.len();
+    let mut step = 0; 
+    if l <= 3 {
+        // YYY = 3
+        return Err(INVALID);
+    } else if l == 4 {
+        // YYYY = 4
+        step = 1;
+    } else if l <= 6 {
+        // YYYY- = 5        
+        // YYYY-M = 6
+        return Err(INVALID);
+    } else if l == 7 {  
+        // YYYY-MM = 7
+        step = 2;
+    } else if l <= 9 {
+        // YYYY-MM-D = 9
+        return Err(INVALID);
+    } else if l == 10 {
+        // YYYY-MM-DD = 10
+        step = 3;
+    } else if l <= 12 {
+        // YYYY-MM-DDT = 11
+        // YYYY-MM-DDTH = 12
+        return Err(INVALID);
+    } else if l == 13 {
+        // YYYY-MM-DDTHH = 13
+        return Err(INVALID);
+    } else if l <= 15 {
+        // YYYY-MM-DDTHH: = 14
+        // YYYY-MM-DDTHH:M = 15
+        return Err(INVALID);
+    } else if l == 16 {
+        // YYYY-MM-DDTHH:MM = 16
+        // step = 5;        
+        return Err(INVALID);
+    } else if l >= 17 {
+        // Process later.
+        step = 6;
+    }
+    try!(parsed.set_year(try_consume!(scan::number(s, 4, 4))));        
+    if step == 1 {
+        return Ok((s, ()));
+    }
+    s = try!(scan::char(s, b'-'));
+    try!(parsed.set_month(try_consume!(scan::number(s, 2, 2))));
+    if step == 2 {
+        return Ok((s, ()));
+    }
+    s = try!(scan::char(s, b'-'));
+    try!(parsed.set_day(try_consume!(scan::number(s, 2, 2))));
+    if step == 3 {
+        return Ok((s, ()));
+    }
+    s = match s.as_bytes().first() {
+        Some(&b'T') => &s[1..],
+        Some(_) => return Err(INVALID),
+        None => return Err(TOO_SHORT),
+    };
+
+    try!(parsed.set_hour(try_consume!(scan::number(s, 2, 2))));
+    if step == 4 {
+        return Ok((s, ()));
+    }
+    s = try!(scan::char(s, b':'));
+    try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2))));
+    if step == 5 {
+        return Ok((s, ()));
+    }
+    if step == 6 {        
+        if s.starts_with(":") {
+            s = try!(scan::char(s, b':'));
+            try!(parsed.set_second(try_consume!(scan::number(s, 2, 2))));            
+        }
+        if s.starts_with(".") {
+            let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
+            try!(parsed.set_nanosecond(nanosecond));
+        }
+        if s.starts_with("Z") || s.starts_with("+") || s.starts_with("-") {            
+            let offset = try_consume!(scan::timezone_offset_zulu(s, |s| scan::char(s, b':')));
+            if offset <= -86400 || offset >= 86400 { return Err(OUT_OF_RANGE); }
+            try!(parsed.set_offset(offset as i64));
+        } else {
+            return Err(INVALID);
+        }
+    }
+    return Ok((s, ()));
+}
+
 fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     macro_rules! try_consume {
         ($e:expr) => ({ let (s_, v) = try!($e); s = s_; v })
@@ -323,6 +439,7 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                     RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
                     RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                    W3C => try_consume!(parse_w3c(parsed, s)),
                 }
             }
 
@@ -682,3 +799,71 @@ fn test_rfc3339() {
     };
 }
 
+#[cfg(test)]
+#[test]
+fn test_w3c() {
+    use datetime::DateTime;
+    use offset::fixed::FixedOffset;
+    use super::*;
+
+    // Test data - (input, Ok(expected result after parse and format) or Err(error code))
+    let testdates = [
+        ("2015-01-20T17:35:20-08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case
+        ("1944-06-06T04:04:00Z", Ok("1944-06-06T04:04:00Z")),      // D-day
+        ("2001-09-11T09:45:00-08:00", Ok("2001-09-11T09:45:00-08:00")),
+        ("2015-01-20T17:35:20.001-08:00", Ok("2015-01-20T17:35:20.001-08:00")),
+        ("2015-01-20T17:35:20.000031-08:00", Ok("2015-01-20T17:35:20.000031-08:00")),
+        ("2015-01-20T17:35:20.000000004-08:00", Ok("2015-01-20T17:35:20.000000004-08:00")),
+        ("2015-01-20T17:35:20.000000000452-08:00", Ok("2015-01-20T17:35:20-08:00")), // too small
+        ("2015-02-30T17:35:20-08:00", Err(OUT_OF_RANGE)),               // bad day of month
+        ("2015-01-20T25:35:20-08:00", Err(OUT_OF_RANGE)),               // bad hour
+        ("2015-01-20T17:65:20-08:00", Err(OUT_OF_RANGE)),               // bad minute
+        ("2015-01-20T17:35:90-08:00", Err(OUT_OF_RANGE)),               // bad second
+        ("2015-01-20T17:35:20-24:00", Err(OUT_OF_RANGE)),               // bad offset
+        ("2015", Err(INVALID)),
+        ("2015-", Err(INVALID)),
+        ("2015-03", Err(INVALID)),
+        ("2015-03-", Err(INVALID)),
+        ("2015-03-04", Ok("2015-03-04T00:00:00Z")),
+        ("2015-03-04T", Err(INVALID)),
+        ("2015-03-04T15", Err(INVALID)),
+        ("2015-03-04T15:", Err(INVALID)),
+        ("2015-03-04T15:34", Err(INVALID)),
+        ("2015-03-04T15:34:45", Err(INVALID)),
+        ("2015-03-04T15:34:", Err(TOO_SHORT)),
+        ("2015-03-04T15:34:45Z", Ok("2015-03-04T15:34:45Z")),
+        ("2015-03-04T15:34:45.008", Err(INVALID)),
+        ("2015-03-04T15:34:45", Err(INVALID)),
+        ("2015-03-04T15:34:45.008Z", Ok("2015-03-04T15:34:45.008Z")),
+        ("2015-03-04T15:34:45.008+05:00", Ok("2015-03-04T15:34:45.008+05:00")),
+        ("2015-03-04Z", Err(INVALID)),
+        ("2015-3-04", Err(INVALID)),
+        ("2015-3-4", Err(INVALID)),
+        ("2015-03-04T5:34:45Z", Err(INVALID)),
+        ("2015-03-04T15:4:45Z", Err(INVALID)),
+        ("2015-03-04T15:34:4Z", Err(INVALID)),
+    ];
+
+    fn w3c_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
+        let mut parsed = Parsed::new();
+        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::W3C)].iter().cloned()));
+        parsed.to_w3c_datetime()
+    }
+
+    fn fmt_w3c_datetime(dt: DateTime<FixedOffset>) -> String {
+        dt.format_with_items([Item::Fixed(Fixed::W3C)].iter().cloned()).to_string()
+    }
+
+    // Test against test data above
+    for &(date, checkdate) in testdates.iter() {
+        let d = w3c_to_datetime(date);          // parse a date
+        let dt = match d {                          // did we get a value?
+            Ok(dt) => Ok(fmt_w3c_datetime(dt)), // yes, go on
+            Err(e) => Err(e),                       // otherwise keep an error for the comparison
+        };
+        if dt != checkdate.map(|s| s.to_string()) { // check for expected result
+            panic!("Date conversion failed for {}\nReceived: {:?}\nExpected: {:?}",
+                   date, dt, checkdate);
+        }
+    };
+}

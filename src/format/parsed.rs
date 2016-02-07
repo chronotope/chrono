@@ -19,7 +19,7 @@ use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use datetime::DateTime;
-use super::{ParseResult, OUT_OF_RANGE, IMPOSSIBLE, NOT_ENOUGH};
+use super::{ParseResult, OUT_OF_RANGE, IMPOSSIBLE, NOT_ENOUGH, INVALID};
 
 /// Parsed parts of date and time. There are two classes of methods:
 ///
@@ -531,6 +531,58 @@ impl Parsed {
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
         let offset = try!(self.offset.ok_or(NOT_ENOUGH));
         let datetime = try!(self.to_naive_datetime_with_offset(offset));
+        let offset = try!(FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE));
+        match offset.from_local_datetime(&datetime) {
+            LocalResult::None => Err(IMPOSSIBLE),
+            LocalResult::Single(t) => Ok(t),
+            LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
+        }
+    }
+
+    /// Returns a parsed timezone-aware date and time out of given fields.
+    ///
+    /// This method is able to determine the combined date and time
+    /// from date and time fields or a single `timestamp` field, plus a time zone offset.
+    /// Either way those fields have to be consistent to each other.
+    pub fn to_w3c_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
+        if self.year.is_none() || self.month.is_none() || self.day.is_none() {
+            return Err(INVALID);
+        }
+        let offset = self.offset.unwrap_or(0);
+        let date = try!(self.to_naive_date());
+        let hour_div_12 = match self.hour_div_12 {
+            Some(v @ 0...1) => v,
+            Some(_) => return Err(OUT_OF_RANGE),
+            None => 0,
+        };
+        let hour_mod_12 = match self.hour_mod_12 {
+            Some(v @ 0...11) => v,
+            Some(_) => return Err(OUT_OF_RANGE),
+            None => 0,
+        };
+        let hour = hour_div_12 * 12 + hour_mod_12;
+
+        let minute = match self.minute {
+            Some(v @ 0...59) => v,
+            Some(_) => return Err(OUT_OF_RANGE),
+            None => 0,
+        };
+
+        // we allow omitting seconds or nanoseconds, but they should be in the range.
+        let (second, mut nano) = match self.second.unwrap_or(0) {
+            v @ 0...59 => (v, 0),
+            60 => (59, 1_000_000_000),
+            _ => return Err(OUT_OF_RANGE),
+        };
+        nano += match self.nanosecond {
+            Some(v @ 0...999_999_999) if self.second.is_some() => v,
+            Some(0...999_999_999) => return Err(NOT_ENOUGH), // second is missing
+            Some(_) => return Err(OUT_OF_RANGE),
+            None => 0,
+        };
+
+        let time = try!(NaiveTime::from_hms_nano_opt(hour, minute, second, nano).ok_or(OUT_OF_RANGE));
+        let datetime = date.and_time(time);
         let offset = try!(FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE));
         match offset.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
