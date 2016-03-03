@@ -324,7 +324,7 @@ mod serde {
         fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
             where S: ser::Serializer
         {
-            serializer.visit_str(&format!("{:?}", self))
+            serializer.serialize_str(&format!("{:?}", self))
         }
     }
     
@@ -336,7 +336,7 @@ mod serde {
         fn visit_str<E>(&mut self, value: &str) -> Result<NaiveDateTime, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::syntax(&format!("{}", err)))
+            value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
     
@@ -344,7 +344,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.visit(NaiveDateTimeVisitor)
+            deserializer.deserialize(NaiveDateTimeVisitor)
         }
     }
 }
