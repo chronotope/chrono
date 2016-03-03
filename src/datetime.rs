@@ -383,7 +383,7 @@ mod serde {
             where S: ser::Serializer
         {
             // Debug formatting is correct RFC3339, and it allows Zulu.
-            serializer.visit_str(&format!("{:?}", self))
+            serializer.serialize_str(&format!("{:?}", self))
         }
     }
     
@@ -395,7 +395,7 @@ mod serde {
         fn visit_str<E>(&mut self, value: &str) -> Result<DateTime<FixedOffset>, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::syntax(&format!("{}", err)))
+            value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
     
@@ -403,7 +403,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.visit(DateTimeVisitor)
+            deserializer.deserialize(DateTimeVisitor)
         }
     }
     
@@ -411,7 +411,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.visit(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
+            deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
         }
     }
     
@@ -419,7 +419,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.visit(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+            deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
         }
     }
 }
