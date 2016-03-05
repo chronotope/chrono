@@ -354,7 +354,7 @@ fn test_parse() {
     }
 
     macro_rules! check {
-        ($fmt:expr, $items:expr; $err:expr) => (
+        ($fmt:expr, $items:expr; $err:tt) => (
             assert_eq!(parse_all($fmt, &$items), Err($err))
         );
         ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (
