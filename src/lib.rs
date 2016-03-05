@@ -2,7 +2,7 @@
 // Copyright (c) 2014-2015, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
-//! # Chrono 0.2.19
+//! # Chrono 0.2.20
 //!
 //! Date and time handling for Rust. (also known as `rust-chrono`)
 //! It aims to be a feature-complete superset of

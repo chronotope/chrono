@@ -8,6 +8,12 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.20 (2016-03-06)
+
+### Changed
+
+- `serde` dependency has been updated to 0.7. (#63, #64)
+
 ## 0.2.19 (2016-02-05)
 
 ### Added

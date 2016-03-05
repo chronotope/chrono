@@ -12,6 +12,7 @@ Jisoo Park <xxxyel@gmail.com>
 John Nagle <nagle@sitetruth.com>
 Ken Tossell <ken@tossell.net>
 Martin Risell Lilja <martin.risell.lilja@gmail.com>
+Ryan Lewis <ryansname@gmail.com>
 Steve Klabnik <steve@steveklabnik.com>
 Tom Gallacher <tomgallacher23@gmail.com>
 klutzy <klutzytheklutzy@gmail.com>
