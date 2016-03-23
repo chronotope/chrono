@@ -49,9 +49,10 @@
 //!
 //! Chrono provides a `DateTime` type for the combined date and time.
 //!
-//! `DateTime`, among others, is timezone-aware and
-//! must be constructed from the `TimeZone` object.
-//! `DateTime`s with different time zones do not mix, but can be converted to each other.
+//! `DateTime`, among others, is timezone-aware and must be constructed from
+//! the `TimeZone` object.
+//! `DateTime`s with different time zones do not mix, but can be converted to
+//! each other using the `DateTime::with_timezone` method.
 //!
 //! You can get the current date and time in the UTC time zone (`UTC::now()`)
 //! or in the local time zone (`Local::now()`).
