@@ -635,6 +635,25 @@ fn test_rfc2822() {
     };
 }
 
+
+
+#[cfg(test)]
+#[test]
+fn parse_rfc850() {
+    use ::{UTC, TimeZone};
+
+    static RFC850_FMT: &'static str =  "%A, %d-%b-%y %T GMT";
+
+    let dt_str = "Sunday, 06-Nov-94 08:49:37 GMT";
+    let dt = UTC.ymd(1994, 11, 6).and_hms(8, 49, 37);
+
+    // Check that the format is what we expect
+    assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
+
+    // Check that it parses correctly
+    assert_eq!(Ok(dt), UTC.datetime_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT));
+}
+
 #[cfg(test)]
 #[test]
 fn test_rfc3339() {
