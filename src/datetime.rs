@@ -9,6 +9,7 @@
 use std::{str, fmt, hash};
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
+use std::convert::From;
 
 use {Weekday, Timelike, Datelike};
 use offset::{TimeZone, Offset};
@@ -366,6 +367,18 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
+impl<'a, Tz: TimeZone> From<&'a DateTime<Tz>> for DateTime<UTC> {
+    fn from(other: &DateTime<Tz>) -> Self {
+        other.with_timezone(&UTC)
+    }
+}
+
+impl<'a, Tz: TimeZone> From<&'a DateTime<Tz>> for DateTime<Local> {
+    fn from(other: &DateTime<Tz>) -> Self {
+        other.with_timezone(&Local)
+    }
+}
+
 #[cfg(feature = "serde")]
 mod serde {
     use super::DateTime;
@@ -575,6 +588,15 @@ mod tests {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
         assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&UTC).format("%Y").to_string());
+    }
+
+    #[test]
+    fn test_datetime_fixedoffset_to_utc() {
+        let dt_est = FixedOffset::west(5*60*60).ymd(2012, 12, 12).and_hms(12, 12, 12);
+        let dt_utc_expected = dt_est.with_timezone(&UTC);
+        let dt_utc_actual = DateTime::<UTC>::from(&dt_est);
+        assert!(dt_est.to_string() != dt_utc_expected.to_string());
+        assert!(dt_utc_expected.to_string() == dt_utc_actual.to_string());
     }
 
     #[test]
