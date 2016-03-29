@@ -1,4 +1,4 @@
-[Chrono][doc] 0.2.20
+[Chrono][doc] 0.2.21
 ====================
 
 [![Chrono on Travis CI][travis-image]][travis]
@@ -55,9 +55,10 @@ provided by crates.io `time` crate (which originally comes from Chrono).
 
 Chrono provides a `DateTime` type for the combined date and time.
 
-`DateTime`, among others, is timezone-aware and
-must be constructed from the `TimeZone` object.
-`DateTime`s with different time zones do not mix, but can be converted to each other.
+`DateTime`, among others, is timezone-aware and must be constructed from
+the `TimeZone` object.
+`DateTime`s with different time zones do not mix, but can be converted to
+each other using the `DateTime::with_timezone` method.
 
 You can get the current date and time in the UTC time zone (`UTC::now()`)
 or in the local time zone (`Local::now()`).

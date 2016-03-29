@@ -8,6 +8,12 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.21 (2016-03-29)
+
+### Fixed
+
+- `Fixed::LongWeekdayName` was unable to recognize `"sunday"` (whoops). (#66)
+
 ## 0.2.20 (2016-03-06)
 
 ### Changed
