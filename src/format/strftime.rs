@@ -110,8 +110,13 @@ Notes:
    It accounts for leap seconds, so `60` is possible.
 
 6. `%+`:
-   This one is close to, but not identical to, `%Y-%m-%dT%H:%M:%S%.f%z`.
-   The main differences are a colon in `%z`.
+   Same to `%Y-%m-%dT%H:%M:%S%.f%:z`,
+   i.e. 0, 3, 6 or 9 fractional digits for seconds and colons in the time zone offset.
+
+   The typical `strftime` implementations have
+   different (and locale-dependent) formats for this specifier.
+   While Chrono's format for `%+` is far more stable,
+   it is best to avoid this specifier if you want to control the exact output.
 
 7. `%s`:
    This is not padded and can be negative.
@@ -123,17 +128,20 @@ Notes:
    The default `%f` is right-aligned and always zero-padded to 9 digits
    for the compatibility with glibc and others,
    so it always counts the number of nanoseconds since the last whole second.
-   E.g. 7ms after the last second will print `007000000`, and parsing `7000000` will yield the same.
+   E.g. 7ms after the last second will print `007000000`,
+   and parsing `7000000` will yield the same.
 
    The variant `%.f` is left-aligned and print 0, 3, 6 or 9 fractional digits
-   according to the precision. E.g. 70ms after the last second under `%.f` will print `.070`
-   (note: not `.07`), and parsing `.07`, `.070000` etc. will yield the same.
+   according to the precision.
+   E.g. 70ms after the last second under `%.f` will print `.070` (note: not `.07`),
+   and parsing `.07`, `.070000` etc. will yield the same.
    Note that they can print or read nothing if the fractional part is zero or
    the next character is not `.`.
 
-   The variant `%.3f`, `%.3f` and `%.3f` are left-aligned and print 3, 6 or 9 fractional digits
-   according to the number preceding `f`. E.g. 70ms after the last second under `%.3f` will print `.070`
-   (note: not `.07`), and parsing `.07`, `.070000` etc. will yield the same.
+   The variant `%.3f`, `%.6f` and `%.9f` are left-aligned and print 3, 6 or 9 fractional digits
+   according to the number preceding `f`.
+   E.g. 70ms after the last second under `%.3f` will print `.070` (note: not `.07`),
+   and parsing `.07`, `.070000` etc. will yield the same.
    Note that they can read nothing if the fractional part is zero or
    the next character is not `.` however will print with the specified length.
 

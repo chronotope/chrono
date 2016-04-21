@@ -375,29 +375,17 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     Nanosecond3 =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            if nano == 0 {
-                                write!(w, ".000")
-                            } else {
-                                write!(w, ".{:03}", nano / 1_000_000)
-                            }
+                            write!(w, ".{:03}", nano / 1_000_000)
                         }),
                     Nanosecond6 =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            if nano == 0 {
-                                write!(w, ".000")
-                            } else {
-                                write!(w, ".{:06}", nano / 1_000)
-                            }
+                            write!(w, ".{:06}", nano / 1_000)
                         }),
                     Nanosecond9 =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            if nano == 0 {
-                                write!(w, ".000")
-                            } else {
-                                write!(w, ".{:09}", nano)
-                            }
+                            write!(w, ".{:09}", nano)
                         }),
                     TimezoneName =>
                         off.map(|&(ref name, _)| write!(w, "{}", *name)),
@@ -420,7 +408,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         } else {
                             None
                         },
-                    RFC3339 => // (almost) same to `%Y-%m-%dT%H:%M:%S.%f%z`
+                    RFC3339 => // same to `%Y-%m-%dT%H:%M:%S%.f%:z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
