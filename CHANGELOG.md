@@ -8,6 +8,13 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.22 (2016-04-22)
+
+### Fixed
+
+- `%.6f` and `%.9f` used to print only three digits when the nanosecond part is zero. (#71)
+- The documentation for `%+` has been updated to reflect the current status. (#71)
+
 ## 0.2.21 (2016-03-29)
 
 ### Fixed
