@@ -54,9 +54,18 @@ still re-exported from Chrono.
 
 ### Date and Time
 
-Chrono provides a `DateTime` type for the combined date and time.
+Chrono provides a
+[`DateTime`](https://lifthrasiir.github.io/rust-chrono/chrono/datetime/struct.DateTime.html)
+type to represent a date and a time in a timezone.
 
-`DateTime`, among others, is timezone-aware and must be constructed from
+For more abstract moment-in-time tracking such as internal timekeeping
+that is unconcerned with timezones, consider
+[`time::SystemTime`](https://doc.rust-lang.org/std/time/struct.SystemTime.html),
+which tracks your system clock, or
+[`time::Instant`](https://doc.rust-lang.org/std/time/struct.Instant.html), which
+is an opaque but monotonically-increasing representation of a moment in time.
+
+`DateTime` is timezone-aware and must be constructed from
 the `TimeZone` object.
 `DateTime`s with different time zones do not mix, but can be converted to
 each other using the `DateTime::with_timezone` method.
