@@ -46,10 +46,11 @@ extern crate chrono;
 
 ### Duration
 
-Chrono used to have a `Duration` type, which represents the time span.
-This is a simple reexport of
-[`time::Duration`](http://doc.rust-lang.org/time/time/struct.Duration.html) type
-provided by crates.io `time` crate (which originally comes from Chrono).
+[`chrono::Duration`](https://lifthrasiir.github.io/rust-chrono/chrono/struct.Duration.html)
+represents the magnitude of a time span. `Duration` used to be provided by Chrono. 
+It has been moved to the `time` crate as the
+[`time::Duration`](http://doc.rust-lang.org/time/time/struct.Duration.html) type, but is
+still re-exported from Chrono.
 
 ### Date and Time
 
