@@ -36,6 +36,12 @@ Put this in your `Cargo.toml`:
 chrono = "0.2"
 ```
 
+Or, if you want [Serde](http://github.com/serde-rs/serde) support, include it like this:
+```toml
+[dependencies]
+chrono = { version = "0.2", features = ["serde"] }
+```
+
 And put this in your crate root:
 
 ```rust
