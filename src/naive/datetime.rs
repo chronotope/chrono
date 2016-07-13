@@ -105,6 +105,30 @@ impl NaiveDateTime {
         (ndays - 719163) * 86400 + nseconds
     }
 
+    /// Returns the number of milliseconds since the last second boundary
+    ///
+    /// note: this is not the number of milliseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_milliseconds_part(&self) -> u32 {
+        self.timestamp_nanoseconds_part() / 1_000_000
+    }
+
+    /// Returns the number of microseconds since the last second boundary
+    ///
+    /// note: this is not the number of microseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_microseconds_part(&self) -> u32 {
+        self.timestamp_nanoseconds_part() / 1_000
+    }
+
+    /// Returns the number of nanoseconds since the last second boundary
+    ///
+    /// note: this is not the number of nanoseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_nanoseconds_part(&self) -> u32 {
+        self.time.nanosecond()
+    }
+
     /// *Deprecated:* Same to `NaiveDateTime::timestamp`.
     #[inline]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
@@ -327,9 +351,9 @@ mod serde {
             serializer.serialize_str(&format!("{:?}", self))
         }
     }
-    
+
     struct NaiveDateTimeVisitor;
-    
+
     impl de::Visitor for NaiveDateTimeVisitor {
         type Value = NaiveDateTime;
 
@@ -339,7 +363,7 @@ mod serde {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
-    
+
     impl de::Deserialize for NaiveDateTime {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -510,22 +534,21 @@ mod tests {
     #[test]
     fn test_serde_serialize() {
         use self::serde_json::to_string;
-        
+
         let date = NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6);
         let serialized = to_string(&date).unwrap();
 
         assert_eq!(serialized, "\"2014-07-24T12:34:06\"");
     }
-    
+
     #[cfg(feature = "serde")]
     #[test]
     fn test_serde_deserialize() {
         use self::serde_json::from_str;
-        
+
         let date = NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6);
         let deserialized: NaiveDateTime = from_str("\"2014-07-24T12:34:06\"").unwrap();
 
         assert_eq!(deserialized, date);
     }
 }
-

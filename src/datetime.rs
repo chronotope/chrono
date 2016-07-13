@@ -60,6 +60,30 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp()
     }
 
+    /// Returns the number of milliseconds since the last second boundary
+    ///
+    /// note: this is not the number of milliseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_milliseconds_part(&self) -> u32 {
+        self.datetime.timestamp_milliseconds_part()
+    }
+
+    /// Returns the number of microseconds since the last second boundary
+    ///
+    /// note: this is not the number of microseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_microseconds_part(&self) -> u32 {
+        self.datetime.timestamp_microseconds_part()
+    }
+
+    /// Returns the number of nanoseconds since the last second boundary
+    ///
+    /// note: this is not the number of nanoseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_nanoseconds_part(&self) -> u32 {
+        self.datetime.timestamp_nanoseconds_part()
+    }
+
     /// *Deprecated*: Same to `DateTime::timestamp`.
     #[inline]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
@@ -386,7 +410,7 @@ mod serde {
             serializer.serialize_str(&format!("{:?}", self))
         }
     }
-    
+
     struct DateTimeVisitor;
     
     impl de::Visitor for DateTimeVisitor {
@@ -398,7 +422,7 @@ mod serde {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
-    
+
     impl de::Deserialize for DateTime<FixedOffset> {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -406,7 +430,7 @@ mod serde {
             deserializer.deserialize(DateTimeVisitor)
         }
     }
-    
+
     impl de::Deserialize for DateTime<UTC> {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -414,7 +438,7 @@ mod serde {
             deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
         }
     }
-    
+
     impl de::Deserialize for DateTime<Local> {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -603,22 +627,31 @@ mod tests {
     #[test]
     fn test_serde_serialize() {
         use self::serde_json::to_string;
-        
+
         let date = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
         let serialized = to_string(&date).unwrap();
 
         assert_eq!(serialized, "\"2014-07-24T12:34:06Z\"");
     }
-    
+
     #[cfg(feature = "serde")]
     #[test]
     fn test_serde_deserialize() {
         use self::serde_json::from_str;
-        
+
         let date = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
         let deserialized: DateTime<UTC> = from_str("\"2014-07-24T12:34:06Z\"").unwrap();
 
         assert_eq!(deserialized, date);
     }
-}
 
+    #[test]
+    fn test_subsecond_part() {
+        let datetime = UTC.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 1234567);
+
+        assert_eq!(1,       datetime.timestamp_milliseconds_part());
+        assert_eq!(1234,    datetime.timestamp_microseconds_part());
+        assert_eq!(1234567, datetime.timestamp_nanoseconds_part());
+    }
+
+}
