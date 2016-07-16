@@ -105,6 +105,36 @@ impl NaiveDateTime {
         (ndays - 719163) * 86400 + nseconds
     }
 
+    /// Returns the number of milliseconds since the last second boundary
+    ///
+    /// warning: in event of a leap second, this may exceed 999
+    ///
+    /// note: this is not the number of milliseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_subsec_millis(&self) -> u32 {
+        self.timestamp_subsec_nanos() / 1_000_000
+    }
+
+    /// Returns the number of microseconds since the last second boundary
+    ///
+    /// warning: in event of a leap second, this may exceed 999_999
+    ///
+    /// note: this is not the number of microseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_subsec_micros(&self) -> u32 {
+        self.timestamp_subsec_nanos() / 1_000
+    }
+
+    /// Returns the number of nanoseconds since the last second boundary
+    ///
+    /// warning: in event of a leap second, this may exceed 999_999_999
+    ///
+    /// note: this is not the number of nanoseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_subsec_nanos(&self) -> u32 {
+        self.time.nanosecond()
+    }
+
     /// *Deprecated:* Same to `NaiveDateTime::timestamp`.
     #[inline]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
@@ -528,4 +558,3 @@ mod tests {
         assert_eq!(deserialized, date);
     }
 }
-

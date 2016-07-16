@@ -60,6 +60,36 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp()
     }
 
+    /// Returns the number of milliseconds since the last second boundary
+    ///
+    /// warning: in event of a leap second, this may exceed 999
+    ///
+    /// note: this is not the number of milliseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_subsec_millis(&self) -> u32 {
+        self.datetime.timestamp_subsec_millis()
+    }
+
+    /// Returns the number of microseconds since the last second boundary
+    ///
+    /// warning: in event of a leap second, this may exceed 999_999
+    ///
+    /// note: this is not the number of microseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_subsec_micros(&self) -> u32 {
+        self.datetime.timestamp_subsec_micros()
+    }
+
+    /// Returns the number of nanoseconds since the last second boundary
+    ///
+    /// warning: in event of a leap second, this may exceed 999_999_999
+    ///
+    /// note: this is not the number of nanoseconds since January 1, 1970 0:00:00 UTC
+    #[inline]
+    pub fn timestamp_subsec_nanos(&self) -> u32 {
+        self.datetime.timestamp_subsec_nanos()
+    }
+
     /// *Deprecated*: Same to `DateTime::timestamp`.
     #[inline]
     pub fn num_seconds_from_unix_epoch(&self) -> i64 {
@@ -620,5 +650,14 @@ mod tests {
 
         assert_eq!(deserialized, date);
     }
-}
 
+    #[test]
+    fn test_subsecond_part() {
+        let datetime = UTC.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 1234567);
+
+        assert_eq!(1,       datetime.timestamp_subsec_millis());
+        assert_eq!(1234,    datetime.timestamp_subsec_micros());
+        assert_eq!(1234567, datetime.timestamp_subsec_nanos());
+    }
+
+}
