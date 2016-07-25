@@ -470,11 +470,14 @@ impl Parsed {
 
             Ok(datetime)
         } else if let Some(timestamp) = self.timestamp {
+            use super::ParseError as PE;
+            use super::ParseErrorKind::{OutOfRange, Impossible};
+
             // if date and time is problematic already, there is no point proceeding.
             // we at least try to give a correct error though.
             match (date, time) {
-                (Err(OUT_OF_RANGE), _) | (_, Err(OUT_OF_RANGE)) => return Err(OUT_OF_RANGE),
-                (Err(IMPOSSIBLE), _) | (_, Err(IMPOSSIBLE)) => return Err(IMPOSSIBLE),
+                (Err(PE(OutOfRange)), _) | (_, Err(PE(OutOfRange))) => return Err(OUT_OF_RANGE),
+                (Err(PE(Impossible)), _) | (_, Err(PE(Impossible))) => return Err(IMPOSSIBLE),
                 (_, _) => {} // one of them is insufficient
             }
 
