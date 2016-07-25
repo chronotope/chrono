@@ -21,10 +21,12 @@ README.md: src/lib.rs
 	echo >> $@
 	echo '[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.png' >> $@
 	echo '[travis]: https://travis-ci.org/lifthrasiir/rust-chrono' >> $@
-	awk '/^\/\/! # Chrono /,/^\/\/! ## /' $< | cut -b 5- | grep -v '^#' >> $@
+	awk '/^\/\/! # Chrono /,/^\/\/! ## /' $< | cut -b 5- | grep -v '^#' | \
+		sed 's/](\.\//](https:\/\/lifthrasiir.github.io\/rust-chrono\/chrono\//g' >> $@
 	echo '[Complete Documentation][doc]' >> $@
 	echo >> $@
 	echo '[doc]: https://lifthrasiir.github.io/rust-chrono/' >> $@
 	echo >> $@
-	awk '/^\/\/! ## /,!/^\/\/!/' $< | cut -b 5- | grep -v '^# ' >> $@
+	awk '/^\/\/! ## /,!/^\/\/!/' $< | cut -b 5- | grep -v '^# ' | \
+		sed 's/](\.\//](https:\/\/lifthrasiir.github.io\/rust-chrono\/chrono\//g' >> $@
 
