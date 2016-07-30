@@ -22,8 +22,8 @@ use super::fixed::FixedOffset;
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
 fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
     if tm.tm_sec >= 60 {
-        tm.tm_sec = 59;
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
+        tm.tm_sec = 59;
     }
 
     // from_yo is more efficient than from_ymd (since it's the internal representation).
