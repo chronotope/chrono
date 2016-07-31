@@ -361,7 +361,8 @@ pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.
     //!
-    //! They are primarily building blocks for other types (e.g. `TimeZone`),
+    //! They are primarily building blocks for other types
+    //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
     pub mod date;
     pub mod time;

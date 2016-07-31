@@ -1184,10 +1184,13 @@ impl Datelike for NaiveDate {
     ///
     /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal(60),
     ///            Some(NaiveDate::from_ymd(2015, 3, 1)));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29)));
     /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal(366),
     ///            None); // 2015 had only 365 days
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal(60),
+    ///            Some(NaiveDate::from_ymd(2016, 2, 29)));
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal(366),
+    ///            Some(NaiveDate::from_ymd(2016, 12, 31)));
     /// ~~~~
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
@@ -1205,10 +1208,13 @@ impl Datelike for NaiveDate {
     ///
     /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal0(59),
     ///            Some(NaiveDate::from_ymd(2015, 3, 1)));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29)));
     /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal0(365),
     ///            None); // 2015 had only 365 days
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal0(59),
+    ///            Some(NaiveDate::from_ymd(2016, 2, 29)));
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal0(365),
+    ///            Some(NaiveDate::from_ymd(2016, 12, 31)));
     /// ~~~~
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {

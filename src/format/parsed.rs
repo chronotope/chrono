@@ -2,10 +2,8 @@
 // Copyright (c) 2015, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * A collection of parsed date and time items.
- * They can be constructed incrementally while being checked for consistency.
- */
+//! A collection of parsed date and time items.
+//! They can be constructed incrementally while being checked for consistency.
 
 use num::traits::ToPrimitive;
 
@@ -25,59 +23,90 @@ use super::{ParseResult, OUT_OF_RANGE, IMPOSSIBLE, NOT_ENOUGH};
 ///
 /// - `set_*` methods try to set given field(s) while checking for the consistency.
 ///   It may or may not check for the range constraint immediately (for efficiency reasons).
+///
 /// - `to_*` methods try to make a concrete date and time value out of set fields.
-///   It fully checks any remaining out-of-range conditions and inconsistent/impossible fields,
+///   It fully checks any remaining out-of-range conditions and inconsistent/impossible fields.
 #[allow(missing_copy_implementations)]
 #[derive(Clone, PartialEq, Debug)]
 pub struct Parsed {
-    /// Year. This can be negative unlike `year_{div,mod}_100` fields.
+    /// Year.
+    ///
+    /// This can be negative unlike [`year_div_100`](#structfield.year_div_100)
+    /// and [`year_mod_100`](#structfield.year_mod_100) fields.
     pub year: Option<i32>,
+
     /// Year divided by 100. Implies that the year is >= 1 BCE when set.
     ///
-    /// Due to the common usage, if this field is missing but `year_mod_100` is present,
+    /// Due to the common usage, if this field is missing but
+    /// [`year_mod_100`](#structfield.year_mod_100) is present,
     /// it is inferred to 19 when `year_mod_100 >= 70` and 20 otherwise.
     pub year_div_100: Option<i32>,
+
     /// Year modulo 100. Implies that the year is >= 1 BCE when set.
     pub year_mod_100: Option<i32>,
-    /// Year in the ISO week date. This can be negative unlike `isoyear_{div,mod}_100` fields.
-    pub isoyear: Option<i32>,
-    /// Year in the ISO week date, divided by 100. Implies that the year is >= 1 BCE when set.
+
+    /// Year in the [ISO week date](../../naive/date/index.html#week-date).
     ///
-    /// Due to the common usage, if this field is missing but `isoyear_mod_100` is present,
+    /// This can be negative unlike [`isoyear_div_100`](#structfield.isoyear_div_100) and
+    /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) fields.
+    pub isoyear: Option<i32>,
+
+    /// Year in the [ISO week date](../../naive/date/index.html#week-date), divided by 100.
+    /// Implies that the year is >= 1 BCE when set.
+    ///
+    /// Due to the common usage, if this field is missing but
+    /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) is present,
     /// it is inferred to 19 when `isoyear_mod_100 >= 70` and 20 otherwise.
     pub isoyear_div_100: Option<i32>,
-    /// Year in the ISO week date, modulo 100. Implies that the year is >= 1 BCE when set.
+
+    /// Year in the [ISO week date](../../naive/date/index.html#week-date), modulo 100.
+    /// Implies that the year is >= 1 BCE when set.
     pub isoyear_mod_100: Option<i32>,
+
     /// Month (1--12).
     pub month: Option<u32>,
-    /// Week number, where the week 1 starts at the first Sunday of January.
+
+    /// Week number, where the week 1 starts at the first Sunday of January
     /// (0--53, 1--53 or 1--52 depending on the year).
     pub week_from_sun: Option<u32>,
-    /// Week number, where the week 1 starts at the first Monday of January.
+
+    /// Week number, where the week 1 starts at the first Monday of January
     /// (0--53, 1--53 or 1--52 depending on the year).
     pub week_from_mon: Option<u32>,
-    /// ISO week number (1--52 or 1--53 depending on the year).
+
+    /// [ISO week number](../../naive/date/index.html#week-date)
+    /// (1--52 or 1--53 depending on the year).
     pub isoweek: Option<u32>,
+
     /// Day of the week.
     pub weekday: Option<Weekday>,
+
     /// Day of the year (1--365 or 1--366 depending on the year).
     pub ordinal: Option<u32>,
+
     /// Day of the month (1--28, 1--29, 1--30 or 1--31 depending on the month).
     pub day: Option<u32>,
+
     /// Hour number divided by 12 (0--1). 0 indicates AM and 1 indicates PM.
     pub hour_div_12: Option<u32>,
+
     /// Hour number modulo 12 (0--11).
     pub hour_mod_12: Option<u32>,
+
     /// Minute number (0--59).
     pub minute: Option<u32>,
+
     /// Second number (0--60, accounting for leap seconds).
     pub second: Option<u32>,
+
     /// The number of nanoseconds since the whole second (0--999,999,999).
     pub nanosecond: Option<u32>,
-    /// The number of non-leap seconds since January 1, 1970 0:00:00 UTC.
+
+    /// The number of non-leap seconds since the midnight UTC on January 1, 1970.
     ///
-    /// This can be off by one if `second` is 60 (a leap second).
+    /// This can be off by one if [`second`](#structfield.second) is 60 (a leap second).
     pub timestamp: Option<i64>,
+
     /// Offset from the local time to UTC, in seconds.
     pub offset: Option<i32>,
 }
@@ -103,87 +132,90 @@ impl Parsed {
                  second: None, nanosecond: None, timestamp: None, offset: None }
     }
 
-    /// Tries to set the `year` field from given value.
+    /// Tries to set the [`year`](#structfield.year) field from given value.
     pub fn set_year(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.year, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `year_div_100` field from given value.
+    /// Tries to set the [`year_div_100`](#structfield.year_div_100) field from given value.
     pub fn set_year_div_100(&mut self, value: i64) -> ParseResult<()> {
         if value < 0 { return Err(OUT_OF_RANGE); }
         set_if_consistent(&mut self.year_div_100, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `year_mod_100` field from given value.
+    /// Tries to set the [`year_mod_100`](#structfield.year_mod_100) field from given value.
     pub fn set_year_mod_100(&mut self, value: i64) -> ParseResult<()> {
         if value < 0 { return Err(OUT_OF_RANGE); }
         set_if_consistent(&mut self.year_mod_100, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `isoyear` field from given value.
+    /// Tries to set the [`isoyear`](#structfield.isoyear) field from given value.
     pub fn set_isoyear(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.isoyear, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `isoyear_div_100` field from given value.
+    /// Tries to set the [`isoyear_div_100`](#structfield.isoyear_div_100) field from given value.
     pub fn set_isoyear_div_100(&mut self, value: i64) -> ParseResult<()> {
         if value < 0 { return Err(OUT_OF_RANGE); }
         set_if_consistent(&mut self.isoyear_div_100, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `isoyear_mod_100` field from given value.
+    /// Tries to set the [`isoyear_mod_100`](#structfield.isoyear_mod_100) field from given value.
     pub fn set_isoyear_mod_100(&mut self, value: i64) -> ParseResult<()> {
         if value < 0 { return Err(OUT_OF_RANGE); }
         set_if_consistent(&mut self.isoyear_mod_100, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `month` field from given value.
+    /// Tries to set the [`month`](#structfield.month) field from given value.
     pub fn set_month(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.month, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `week_from_sun` field from given value.
+    /// Tries to set the [`week_from_sun`](#structfield.week_from_sun) field from given value.
     pub fn set_week_from_sun(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.week_from_sun, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `week_from_mon` field from given value.
+    /// Tries to set the [`week_from_mon`](#structfield.week_from_mon) field from given value.
     pub fn set_week_from_mon(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.week_from_mon, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `isoweek` field from given value.
+    /// Tries to set the [`isoweek`](#structfield.isoweek) field from given value.
     pub fn set_isoweek(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.isoweek, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `weekday` field from given value.
+    /// Tries to set the [`weekday`](#structfield.weekday) field from given value.
     pub fn set_weekday(&mut self, value: Weekday) -> ParseResult<()> {
         set_if_consistent(&mut self.weekday, value)
     }
 
-    /// Tries to set the `ordinal` field from given value.
+    /// Tries to set the [`ordinal`](#structfield.ordinal) field from given value.
     pub fn set_ordinal(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.ordinal, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `day` field from given value.
+    /// Tries to set the [`day`](#structfield.day) field from given value.
     pub fn set_day(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.day, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `hour_div_12` field from given value. (`false` for AM, `true` for PM)
+    /// Tries to set the [`hour_div_12`](#structfield.hour_div_12) field from given value.
+    /// (`false` for AM, `true` for PM)
     pub fn set_ampm(&mut self, value: bool) -> ParseResult<()> {
         set_if_consistent(&mut self.hour_div_12, if value {1} else {0})
     }
 
-    /// Tries to set the `hour_mod_12` field from given hour number in 12-hour clocks.
+    /// Tries to set the [`hour_mod_12`](#structfield.hour_mod_12) field from
+    /// given hour number in 12-hour clocks.
     pub fn set_hour12(&mut self, value: i64) -> ParseResult<()> {
         if value < 1 || value > 12 { return Err(OUT_OF_RANGE); }
         set_if_consistent(&mut self.hour_mod_12, value as u32 % 12)
     }
 
-    /// Tries to set both `hour_div_12` and `hour_mod_12` fields from given value.
+    /// Tries to set both [`hour_div_12`](#structfield.hour_div_12) and
+    /// [`hour_mod_12`](#structfield.hour_mod_12) fields from given value.
     pub fn set_hour(&mut self, value: i64) -> ParseResult<()> {
         let v = try!(value.to_u32().ok_or(OUT_OF_RANGE));
         try!(set_if_consistent(&mut self.hour_div_12, v / 12));
@@ -191,27 +223,27 @@ impl Parsed {
         Ok(())
     }
 
-    /// Tries to set the `minute` field from given value.
+    /// Tries to set the [`minute`](#structfield.minute) field from given value.
     pub fn set_minute(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.minute, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `second` field from given value.
+    /// Tries to set the [`second`](#structfield.second) field from given value.
     pub fn set_second(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.second, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `nanosecond` field from given value.
+    /// Tries to set the [`nanosecond`](#structfield.nanosecond) field from given value.
     pub fn set_nanosecond(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.nanosecond, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
-    /// Tries to set the `timestamp` field from given value.
+    /// Tries to set the [`timestamp`](#structfield.timestamp) field from given value.
     pub fn set_timestamp(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.timestamp, value)
     }
 
-    /// Tries to set the `offset` field from given value.
+    /// Tries to set the [`offset`](#structfield.offset) field from given value.
     pub fn set_offset(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.offset, try!(value.to_i32().ok_or(OUT_OF_RANGE)))
     }
@@ -445,11 +477,11 @@ impl Parsed {
     }
 
     /// Returns a parsed naive date and time out of given fields,
-    /// except for the `offset` field (assumed to have a given value).
+    /// except for the [`offset`](#structfield.offset) field (assumed to have a given value).
     /// This is required for parsing a local time or other known-timezone inputs.
     ///
     /// This method is able to determine the combined date and time
-    /// from date and time fields or a single `timestamp` field.
+    /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field.
     /// Either way those fields have to be consistent to each other.
     pub fn to_naive_datetime_with_offset(&self, offset: i32) -> ParseResult<NaiveDateTime> {
         let date = self.to_naive_date();
@@ -529,7 +561,8 @@ impl Parsed {
     /// Returns a parsed timezone-aware date and time out of given fields.
     ///
     /// This method is able to determine the combined date and time
-    /// from date and time fields or a single `timestamp` field, plus a time zone offset.
+    /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field,
+    /// plus a time zone offset.
     /// Either way those fields have to be consistent to each other.
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
         let offset = try!(self.offset.ok_or(NOT_ENOUGH));
@@ -546,9 +579,11 @@ impl Parsed {
     /// with an additional `TimeZone` used to interpret and validate the local date.
     ///
     /// This method is able to determine the combined date and time
-    /// from date and time fields or a single `timestamp` field, plus a time zone offset.
+    /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field,
+    /// plus a time zone offset.
     /// Either way those fields have to be consistent to each other.
-    /// If parsed fields include an UTC offset, it also has to be consistent to `offset`.
+    /// If parsed fields include an UTC offset, it also has to be consistent to
+    /// [`offset`](#structfield.offset).
     pub fn to_datetime_with_timezone<Tz: TimeZone>(&self, tz: &Tz) -> ParseResult<DateTime<Tz>> {
         // if we have `timestamp` specified, guess an offset from that.
         let mut guessed_offset = 0;

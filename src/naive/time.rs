@@ -560,7 +560,7 @@ impl Timelike for NaiveTime {
     /// Makes a new `NaiveTime` with the second number changed.
     ///
     /// Returns `None` when the resulting `NaiveTime` would be invalid.
-    /// As with the [`second`](#tymethod.second) method,
+    /// As with the [`second`](#method.second) method,
     /// the input range is restricted to 0 through 59.
     ///
     /// # Example
@@ -582,7 +582,7 @@ impl Timelike for NaiveTime {
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
     ///
     /// Returns `None` when the resulting `NaiveTime` would be invalid.
-    /// As with the [`nanosecond`](#tymethod.nanosecond) method,
+    /// As with the [`nanosecond`](#method.nanosecond) method,
     /// the input range can exceed 1,000,000,000 for leap seconds.
     ///
     /// # Example
