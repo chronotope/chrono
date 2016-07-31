@@ -2,9 +2,50 @@
 // Copyright (c) 2014-2015, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * ISO 8601 calendar date without timezone.
- */
+//! ISO 8601 calendar date without timezone.
+//!
+//! # Calendar Date
+//!
+//! The ISO 8601 **calendar date** follows the proleptic Gregorian calendar.
+//! It is like a normal civil calendar but note some slight differences:
+//!
+//! * Dates before the Gregorian calendar's inception in 1582 are defined via the extrapolation.
+//!   Be careful, as historical dates are often noted in the Julian calendar and others
+//!   and the transition to Gregorian may differ across countries (as late as early 20C).
+//!
+//!   (Some example: Both Shakespeare from Britain and Cervantes from Spain seemingly died
+//!   on the same calendar date---April 23, 1616---but in the different calendar.
+//!   Britain used the Julian calendar at that time, so Shakespeare's death is later.)
+//!
+//! * ISO 8601 calendars has the year 0, which is 1 BCE (a year before 1 CE).
+//!   If you need a typical BCE/BC and CE/AD notation for year numbers,
+//!   use the [`Datelike::year_ce`](../../trait.Datelike.html#method.year_ce) method.
+//!
+//! # Week Date
+//!
+//! The ISO 8601 **week date** is a triple of year number, week number
+//! and [day of the week](../../enum.Weekday.html) with the following rules:
+//!
+//! * A week consists of Monday through Sunday, and is always numbered within some year.
+//!   The week number ranges from 1 to 52 or 53 depending on the year.
+//!
+//! * The week 1 of given year is defined as the first week containing January 4 of that year,
+//!   or equivalently, the first week containing four or more days in that year.
+//!
+//! * The year number in the week date may *not* correspond to the actual Gregorian year.
+//!   For example, January 3, 2016 (Sunday) was on the last (53rd) week of 2015.
+//!
+//! Chrono's date types default to the ISO 8601 [calendar date](#calendar-date),
+//! but the [`Datelike::isoweekdate`](../../trait.Datelike.html#tymethod.isoweekdate) method
+//! can be used to get the corresponding week date.
+//!
+//! # Ordinal Date
+//!
+//! The ISO 8601 **ordinal date** is a pair of year number and day of the year ("ordinal").
+//! The ordinal number ranges from 1 to 365 or 366 depending on the year.
+//! The year number is same to that of the [calendar date](#calendar-date).
+//!
+//! This is currently the internal format of Chrono's date types.
 
 use std::{str, fmt, hash};
 use std::ops::{Add, Sub};
@@ -46,7 +87,8 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
                                   (MIN_YEAR + 400_000) / 400 - 146097_000;
 
 /// ISO 8601 calendar date without timezone.
-/// Allows for every proleptic Gregorian date from Jan 1, 262145 BCE to Dec 31, 262143 CE.
+/// Allows for every [proleptic Gregorian date](./index.html#calendar-date)
+/// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
@@ -54,9 +96,9 @@ pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
 
-/// The minimum possible `NaiveDate`.
+/// The minimum possible `NaiveDate` (January 1, 262145 BCE).
 pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
-/// The maximum possible `NaiveDate`.
+/// The maximum possible `NaiveDate` (December 31, 262143 CE).
 pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
 
 // as it is hard to verify year flags in `MIN` and `MAX`, we use a separate run-time test.
@@ -86,8 +128,8 @@ impl NaiveDate {
         NaiveDate::from_of(year, mdf.to_of())
     }
 
-    /// Makes a new `NaiveDate` from year, month and day.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Makes a new `NaiveDate` from the [calendar date](./index.html#calendar-date)
+    /// (year, month and day).
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
     ///
@@ -108,8 +150,8 @@ impl NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from year, month and day.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Makes a new `NaiveDate` from the [calendar date](./index.html#calendar-date)
+    /// (year, month and day).
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
     ///
@@ -131,10 +173,10 @@ impl NaiveDate {
         NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
     }
 
-    /// Makes a new `NaiveDate` from year and day of year (DOY or "ordinal").
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Makes a new `NaiveDate` from the [ordinal date](./index.html#ordinal-date)
+    /// (year and day of the year).
     ///
-    /// Panics on the out-of-range date and/or invalid DOY.
+    /// Panics on the out-of-range date and/or invalid day of year.
     ///
     /// # Example
     ///
@@ -153,10 +195,10 @@ impl NaiveDate {
         NaiveDate::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from year and day of year (DOY or "ordinal").
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Makes a new `NaiveDate` from the [ordinal date](./index.html#ordinal-date)
+    /// (year and day of the year).
     ///
-    /// Returns `None` on the out-of-range date and/or invalid DOY.
+    /// Returns `None` on the out-of-range date and/or invalid day of year.
     ///
     /// # Example
     ///
@@ -177,8 +219,8 @@ impl NaiveDate {
         NaiveDate::from_of(year, Of::new(ordinal, flags))
     }
 
-    /// Makes a new `NaiveDate` from ISO week date (year and week number) and day of the week (DOW).
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Makes a new `NaiveDate` from the [ISO week date](./index.html#week-date)
+    /// (year, week number and day of the week).
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Panics on the out-of-range date and/or invalid week number.
@@ -200,8 +242,8 @@ impl NaiveDate {
         NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from ISO week date (year and week number) and day of the week (DOW).
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Makes a new `NaiveDate` from the [ISO week date](./index.html#week-date)
+    /// (year, week number and day of the week).
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
@@ -219,12 +261,16 @@ impl NaiveDate {
     /// assert_eq!(isoywd(2015, 30, Weekday::Mon), Some(ymd(2015, 7, 20)));
     /// assert_eq!(isoywd(2015, 60, Weekday::Mon), None);
     ///
-    /// // out-of-range dates
     /// assert_eq!(isoywd(400000, 10, Weekday::Fri), None);
     /// assert_eq!(isoywd(-400000, 10, Weekday::Sat), None);
+    /// ~~~~
     ///
-    /// // year boundary behaviors
-    /// //
+    /// The year number of ISO week date may differ from that of the calendar date.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDate, Weekday};
+    /// # let ymd = |y,m,d| NaiveDate::from_ymd(y, m, d);
+    /// # let isoywd = |y,w,d| NaiveDate::from_isoywd_opt(y, w, d);
     /// //           Mo Tu We Th Fr Sa Su
     /// // 2014-W52  22 23 24 25 26 27 28    has 4+ days of new year,
     /// // 2015-W01  29 30 31  1  2  3  4 <- so this is the first week
@@ -283,6 +329,29 @@ impl NaiveDate {
     /// assert_eq!(d.day(), 14);
     /// assert_eq!(d.ordinal(), 73); // day of year
     /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// ~~~~
+    ///
+    /// While not directly supported by Chrono,
+    /// it is easy to convert from the Julian day number
+    /// (January 1, 4713 BCE in the *Julian* calendar being Day 0)
+    /// to Gregorian with this method.
+    /// (Note that this panics when `jd` is out of range.)
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// fn jd_to_date(jd: i32) -> NaiveDate {
+    ///     // keep in mind that the Julian day number is 0-based
+    ///     // while this method requires an 1-based number.
+    ///     NaiveDate::from_num_days_from_ce(jd - 1721425)
+    /// }
+    ///
+    /// // January 1, 4713 BCE in Julian = November 24, 4714 BCE in Gregorian
+    /// assert_eq!(jd_to_date(0), NaiveDate::from_ymd(-4713, 11, 24));
+    ///
+    /// assert_eq!(jd_to_date(1721426), NaiveDate::from_ymd(1, 1, 1));
+    /// assert_eq!(jd_to_date(2450000), NaiveDate::from_ymd(1995, 10, 9));
+    /// assert_eq!(jd_to_date(2451545), NaiveDate::from_ymd(2000, 1, 1));
     /// ~~~~
     #[inline]
     pub fn from_num_days_from_ce(days: i32) -> NaiveDate {
@@ -380,7 +449,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
-    /// No [leap second](../time/struct.NaiveTime.html#leap-second-what?) is allowed here;
+    /// No [leap second](../time/index.html#leap-second-handling) is allowed here;
     /// use `NaiveDate::and_hms_*` methods with a subsecond parameter instead.
     ///
     /// Panics on invalid hour, minute and/or second.
@@ -404,7 +473,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
-    /// No [leap second](../time/struct.NaiveTime.html#leap-second-what?) is allowed here;
+    /// No [leap second](../time/index.html#leap-second-handling) is allowed here;
     /// use `NaiveDate::and_hms_*_opt` methods with a subsecond parameter instead.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
@@ -428,7 +497,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
     ///
@@ -453,7 +522,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     ///
@@ -479,7 +548,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
     ///
@@ -504,7 +573,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     ///
@@ -530,7 +599,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
     ///
@@ -555,7 +624,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](../time/struct.NaiveTime.html#leap-second-what?).
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     ///
@@ -611,7 +680,7 @@ impl NaiveDate {
         }
     }
 
-    /// Makes a new `NaiveDate` for the next date.
+    /// Makes a new `NaiveDate` for the next calendar date.
     ///
     /// Panics when `self` is the last representable date.
     ///
@@ -629,7 +698,7 @@ impl NaiveDate {
         self.succ_opt().expect("out of bound")
     }
 
-    /// Makes a new `NaiveDate` for the next date.
+    /// Makes a new `NaiveDate` for the next calendar date.
     ///
     /// Returns `None` when `self` is the last representable date.
     ///
@@ -648,7 +717,7 @@ impl NaiveDate {
         self.with_of(self.of().succ()).or_else(|| NaiveDate::from_ymd_opt(self.year() + 1, 1, 1))
     }
 
-    /// Makes a new `NaiveDate` for the prior date.
+    /// Makes a new `NaiveDate` for the previous calendar date.
     ///
     /// Panics when `self` is the first representable date.
     ///
@@ -666,7 +735,7 @@ impl NaiveDate {
         self.pred_opt().expect("out of bound")
     }
 
-    /// Makes a new `NaiveDate` for the prior date.
+    /// Makes a new `NaiveDate` for the previous calendar date.
     ///
     /// Returns `None` when `self` is the first representable date.
     ///
@@ -800,14 +869,182 @@ impl NaiveDate {
 }
 
 impl Datelike for NaiveDate {
-    #[inline] fn year(&self) -> i32 { self.ymdf >> 13 }
-    #[inline] fn month(&self) -> u32 { self.mdf().month() }
-    #[inline] fn month0(&self) -> u32 { self.mdf().month() - 1 }
-    #[inline] fn day(&self) -> u32 { self.mdf().day() }
-    #[inline] fn day0(&self) -> u32 { self.mdf().day() - 1 }
-    #[inline] fn ordinal(&self) -> u32 { self.of().ordinal() }
-    #[inline] fn ordinal0(&self) -> u32 { self.of().ordinal() - 1 }
-    #[inline] fn weekday(&self) -> Weekday { self.of().weekday() }
+    /// Returns the year number in the [calendar date](./index.html#calendar-date).
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).year(), 2015);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).year(), -308); // 309 BCE
+    /// ~~~~
+    #[inline]
+    fn year(&self) -> i32 {
+        self.ymdf >> 13
+    }
+
+    /// Returns the month number starting from 1.
+    ///
+    /// The return value ranges from 1 to 12.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).month(), 9);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).month(), 3);
+    /// ~~~~
+    #[inline]
+    fn month(&self) -> u32 {
+        self.mdf().month()
+    }
+
+    /// Returns the month number starting from 0.
+    ///
+    /// The return value ranges from 0 to 11.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).month0(), 8);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).month0(), 2);
+    /// ~~~~
+    #[inline]
+    fn month0(&self) -> u32 {
+        self.mdf().month() - 1
+    }
+
+    /// Returns the day of month starting from 1.
+    ///
+    /// The return value ranges from 1 to 31. (The last day of month differs by months.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).day(), 8);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).day(), 14);
+    /// ~~~~
+    ///
+    /// Combined with [`NaiveDate::pred`](./struct.NaiveDate.html#method.pred),
+    /// one can determine the number of days in a particular month.
+    /// (Note that this panics when `year` is out of range.)
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// fn ndays_in_month(year: i32, month: u32) -> u32 {
+    ///     // the first day of the next month...
+    ///     let (y, m) = if month == 12 { (year + 1, 1) } else { (year, month + 1) };
+    ///     let d = NaiveDate::from_ymd(y, m, 1);
+    ///
+    ///     // ...is preceded by the last day of the original month
+    ///     d.pred().day()
+    /// }
+    ///
+    /// assert_eq!(ndays_in_month(2015, 8), 31);
+    /// assert_eq!(ndays_in_month(2015, 9), 30);
+    /// assert_eq!(ndays_in_month(2015, 12), 31);
+    /// assert_eq!(ndays_in_month(2016, 2), 29);
+    /// assert_eq!(ndays_in_month(2017, 2), 28);
+    /// ~~~~
+    #[inline]
+    fn day(&self) -> u32 {
+        self.mdf().day()
+    }
+
+    /// Returns the day of month starting from 0.
+    ///
+    /// The return value ranges from 0 to 30. (The last day of month differs by months.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).day0(), 7);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).day0(), 13);
+    /// ~~~~
+    #[inline]
+    fn day0(&self) -> u32 {
+        self.mdf().day() - 1
+    }
+
+    /// Returns the day of year starting from 1.
+    ///
+    /// The return value ranges from 1 to 366. (The last day of year differs by years.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).ordinal(), 251);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).ordinal(), 74);
+    /// ~~~~
+    ///
+    /// Combined with [`NaiveDate::pred`](./struct.NaiveDate.html#method.pred),
+    /// one can determine the number of days in a particular year.
+    /// (Note that this panics when `year` is out of range.)
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// fn ndays_in_year(year: i32) -> u32 {
+    ///     // the first day of the next year...
+    ///     let d = NaiveDate::from_ymd(year + 1, 1, 1);
+    ///
+    ///     // ...is preceded by the last day of the original year
+    ///     d.pred().ordinal()
+    /// }
+    ///
+    /// assert_eq!(ndays_in_year(2015), 365);
+    /// assert_eq!(ndays_in_year(2016), 366);
+    /// assert_eq!(ndays_in_year(2017), 365);
+    /// assert_eq!(ndays_in_year(2000), 366);
+    /// assert_eq!(ndays_in_year(2100), 365);
+    /// ~~~~
+    #[inline]
+    fn ordinal(&self) -> u32 {
+        self.of().ordinal()
+    }
+
+    /// Returns the day of year starting from 0.
+    ///
+    /// The return value ranges from 0 to 365. (The last day of year differs by years.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).ordinal0(), 250);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).ordinal0(), 73);
+    /// ~~~~
+    #[inline]
+    fn ordinal0(&self) -> u32 {
+        self.of().ordinal() - 1
+    }
+
+    /// Returns the day of week.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike, Weekday};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).weekday(), Weekday::Tue);
+    /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).weekday(), Weekday::Fri);
+    /// ~~~~
+    #[inline]
+    fn weekday(&self) -> Weekday {
+        self.of().weekday()
+    }
 
     fn isoweekdate(&self) -> (i32, u32, Weekday) {
         let of = self.of();
@@ -826,6 +1063,28 @@ impl Datelike for NaiveDate {
         }
     }
 
+    /// Makes a new `NaiveDate` with the year number changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_year(2016),
+    ///            Some(NaiveDate::from_ymd(2016, 9, 8)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_year(-308),
+    ///            Some(NaiveDate::from_ymd(-308, 9, 8)));
+    /// ~~~~
+    ///
+    /// A leap day (February 29) is a good example that this method can return `None`.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDate, Datelike};
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29).with_year(2015).is_none());
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29).with_year(2020).is_some());
+    /// ~~~~
     #[inline]
     fn with_year(&self, year: i32) -> Option<NaiveDate> {
         // we need to operate with `mdf` since we should keep the month and day number as is
@@ -838,46 +1097,138 @@ impl Datelike for NaiveDate {
         NaiveDate::from_mdf(year, mdf)
     }
 
+    /// Makes a new `NaiveDate` with the month number (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_month(10),
+    ///            Some(NaiveDate::from_ymd(2015, 10, 8)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_month(13), None); // no month 13
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).with_month(2), None); // no February 30
+    /// ~~~~
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_month(month))
     }
 
+    /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_month0(9),
+    ///            Some(NaiveDate::from_ymd(2015, 10, 8)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_month0(12), None); // no month 13
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).with_month0(1), None); // no February 30
+    /// ~~~~
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_month(month0 + 1))
     }
 
+    /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_day(30),
+    ///            Some(NaiveDate::from_ymd(2015, 9, 30)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_day(31),
+    ///            None); // no September 31
+    /// ~~~~
     #[inline]
     fn with_day(&self, day: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_day(day))
     }
 
+    /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_day0(29),
+    ///            Some(NaiveDate::from_ymd(2015, 9, 30)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).with_day0(30),
+    ///            None); // no September 31
+    /// ~~~~
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
         self.with_mdf(self.mdf().with_day(day0 + 1))
     }
 
+    /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal(60),
+    ///            Some(NaiveDate::from_ymd(2015, 3, 1)));
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal(60),
+    ///            Some(NaiveDate::from_ymd(2016, 2, 29)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal(366),
+    ///            None); // 2015 had only 365 days
+    /// ~~~~
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
         self.with_of(self.of().with_ordinal(ordinal))
     }
 
+    /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal0(59),
+    ///            Some(NaiveDate::from_ymd(2015, 3, 1)));
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).with_ordinal0(59),
+    ///            Some(NaiveDate::from_ymd(2016, 2, 29)));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).with_ordinal0(365),
+    ///            None); // 2015 had only 365 days
+    /// ~~~~
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
         self.with_of(self.of().with_ordinal(ordinal0 + 1))
     }
 }
 
+/// `NaiveDate` can be used as a key to the hash maps.
 impl hash::Hash for NaiveDate {
-    fn hash<H: hash::Hasher>(&self, state: &mut H) { self.ymdf.hash(state) }
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        // don't need to strip flags, as we can safely assume that it is correct
+        self.ymdf.hash(state);
+    }
 }
 
 /// An addition of `Duration` to `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 ///
 /// Panics on underflow or overflow.
-/// Use `NaiveDate::checked_add` for detecting that.
+/// Use [`NaiveDate::checked_add`](#method.checked_add) to detect that.
 ///
 /// # Example
 ///
@@ -903,8 +1254,10 @@ impl Add<Duration> for NaiveDate {
     }
 }
 
-/// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers,
-/// and does not overflow or underflow at all.
+/// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers.
+///
+/// This does not overflow or underflow at all,
+/// as all possible output fits in the range of `Duration`.
 ///
 /// # Example
 ///
@@ -938,7 +1291,7 @@ impl Sub<NaiveDate> for NaiveDate {
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 ///
 /// Panics on underflow or overflow.
-/// Use `NaiveDate::checked_sub` for detecting that.
+/// Use [`NaiveDate::checked_sub`](#method.checked_sub) to detect that.
 ///
 /// # Example
 ///
@@ -965,7 +1318,6 @@ impl Sub<Duration> for NaiveDate {
 }
 
 /// The `Debug` output of the naive date `d` is same to `d.format("%Y-%m-%d")`.
-/// Note that ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -977,8 +1329,12 @@ impl Sub<Duration> for NaiveDate {
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(2015,  9,  5)), "2015-09-05");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(   0,  1,  1)), "0000-01-01");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(9999, 12, 31)), "9999-12-31");
+/// ~~~~
 ///
-/// // examples of an explicit year sign
+/// ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
+///
+/// ~~~~
+/// # use chrono::NaiveDate;
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(   -1,  1,  1)),  "-0001-01-01");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(10000, 12, 31)), "+10000-12-31");
 /// ~~~~
@@ -996,7 +1352,6 @@ impl fmt::Debug for NaiveDate {
 }
 
 /// The `Display` output of the naive date `d` is same to `d.format("%Y-%m-%d")`.
-/// Note that ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1008,8 +1363,12 @@ impl fmt::Debug for NaiveDate {
 /// assert_eq!(format!("{}", NaiveDate::from_ymd(2015,  9,  5)), "2015-09-05");
 /// assert_eq!(format!("{}", NaiveDate::from_ymd(   0,  1,  1)), "0000-01-01");
 /// assert_eq!(format!("{}", NaiveDate::from_ymd(9999, 12, 31)), "9999-12-31");
+/// ~~~~
 ///
-/// // examples of an explicit year sign
+/// ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
+///
+/// ~~~~
+/// # use chrono::NaiveDate;
 /// assert_eq!(format!("{}", NaiveDate::from_ymd(   -1,  1,  1)),  "-0001-01-01");
 /// assert_eq!(format!("{}", NaiveDate::from_ymd(10000, 12, 31)), "+10000-12-31");
 /// ~~~~
@@ -1095,9 +1454,6 @@ mod tests {
     use duration::Duration;
     use std::{i32, u32};
 
-     // TODO replace with range notion and adapters
-    use num::iter::{range_inclusive, range_step_inclusive};
-
     #[test]
     fn test_date_from_ymd() {
         let ymd_opt = |y,m,d| NaiveDate::from_ymd_opt(y, m, d);
@@ -1175,8 +1531,8 @@ mod tests {
 
     #[test]
     fn test_date_from_isoymd_and_isoweekdate() {
-        for year in range_inclusive(2000i32, 2400) {
-            for week in range_inclusive(1u32, 53) {
+        for year in 2000..2401 {
+            for week in 1..54 {
                 for &weekday in [Weekday::Mon, Weekday::Tue, Weekday::Wed, Weekday::Thu,
                                  Weekday::Fri, Weekday::Sat, Weekday::Sun].iter() {
                     let d = NaiveDate::from_isoywd_opt(year, week, weekday);
@@ -1192,9 +1548,9 @@ mod tests {
             }
         }
 
-        for year in range_inclusive(2000i32, 2400) {
-            for month in range_inclusive(1u32, 12) {
-                for day in range_inclusive(1u32, 31) {
+        for year in 2000..2401 {
+            for month in 1..13 {
+                for day in 1..32 {
                     let d = NaiveDate::from_ymd_opt(year, month, day);
                     if d.is_some() {
                         let d = d.unwrap();
@@ -1228,7 +1584,7 @@ mod tests {
         assert_eq!(from_ndays_from_ce(-365), Some(NaiveDate::from_ymd(0, 1, 1)));
         assert_eq!(from_ndays_from_ce(-366), Some(NaiveDate::from_ymd(-1, 12, 31))); // 2 BCE
 
-        for days in range_step_inclusive(-999900i32, 1000000, 100) {
+        for days in (-9999..10001).map(|x| x * 100) {
             assert_eq!(from_ndays_from_ce(days).map(|d| d.num_days_from_ce()), Some(days));
         }
 
@@ -1328,7 +1684,7 @@ mod tests {
     fn test_date_num_days_from_ce() {
         assert_eq!(NaiveDate::from_ymd(1, 1, 1).num_days_from_ce(), 1);
 
-        for year in range_inclusive(-9999i32, 10000) {
+        for year in -9999..10001 {
             assert_eq!(NaiveDate::from_ymd(year, 1, 1).num_days_from_ce(),
                        NaiveDate::from_ymd(year - 1, 12, 31).num_days_from_ce() + 1);
         }
@@ -1539,19 +1895,17 @@ mod tests {
     }
 }
 
-/**
- * The internal implementation of the calendar and ordinal date.
- *
- * The current implementation is optimized for determining year, month, day and day of week.
- * 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
- * which are included in every packed `NaiveDate` instance.
- * The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
- * based on the moderately-sized lookup table (~1.5KB)
- * and the packed representation is chosen for the efficient lookup.
- * Every internal data structure does not validate its input,
- * but the conversion keeps the valid value valid and the invalid value invalid
- * so that the user-facing `NaiveDate` can validate the input as late as possible.
- */
+/// The internal implementation of the calendar and ordinal date.
+///
+/// The current implementation is optimized for determining year, month, day and day of week.
+/// 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
+/// which are included in every packed `NaiveDate` instance.
+/// The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
+/// based on the moderately-sized lookup table (~1.5KB)
+/// and the packed representation is chosen for the efficient lookup.
+/// Every internal data structure does not validate its input,
+/// but the conversion keeps the valid value valid and the invalid value invalid
+/// so that the user-facing `NaiveDate` can validate the input as late as possible.
 #[allow(dead_code)] // some internal methods have been left for consistency
 mod internals {
     use std::{i32, fmt};

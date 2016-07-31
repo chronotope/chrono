@@ -307,7 +307,7 @@ Date types are limited in about +/- 262,000 years from the common epoch.
 Time types are limited in the nanosecond accuracy.
 
 [Leap seconds are supported in the representation but
-Chrono doesn't try to make use of them](https://lifthrasiir.github.io/rust-chrono/chrono/naive/time/struct.NaiveTime.html#leap-second-what).
+Chrono doesn't try to make use of them](https://lifthrasiir.github.io/rust-chrono/chrono/naive/time/index.html#leap-second-handling).
 (The main reason is that leap seconds are not really predictable.)
 Almost *every* operation over the possible leap seconds will ignore them.
 Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale

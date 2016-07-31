@@ -307,7 +307,7 @@
 //! Time types are limited in the nanosecond accuracy.
 //!
 //! [Leap seconds are supported in the representation but
-//! Chrono doesn't try to make use of them](./naive/time/struct.NaiveTime.html#leap-second-what).
+//! Chrono doesn't try to make use of them](./naive/time/index.html#leap-second-handling).
 //! (The main reason is that leap seconds are not really predictable.)
 //! Almost *every* operation over the possible leap seconds will ignore them.
 //! Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
@@ -516,7 +516,7 @@ impl num::traits::FromPrimitive for Weekday {
 
 /// The common set of methods for date component.
 pub trait Datelike: Sized {
-    /// Returns the year number.
+    /// Returns the year number in the [calendar date](./naive/date/index.html#calendar-date).
     fn year(&self) -> i32;
 
     /// Returns the absolute year number starting from 1 with a boolean flag,
@@ -532,21 +532,33 @@ pub trait Datelike: Sized {
     }
 
     /// Returns the month number starting from 1.
+    ///
+    /// The return value ranges from 1 to 12.
     fn month(&self) -> u32;
 
     /// Returns the month number starting from 0.
+    ///
+    /// The return value ranges from 0 to 11.
     fn month0(&self) -> u32;
 
     /// Returns the day of month starting from 1.
+    ///
+    /// The return value ranges from 1 to 31. (The last day of month differs by months.)
     fn day(&self) -> u32;
 
     /// Returns the day of month starting from 0.
+    ///
+    /// The return value ranges from 0 to 30. (The last day of month differs by months.)
     fn day0(&self) -> u32;
 
     /// Returns the day of year starting from 1.
+    ///
+    /// The return value ranges from 1 to 366. (The last day of year differs by years.)
     fn ordinal(&self) -> u32;
 
     /// Returns the day of year starting from 0.
+    ///
+    /// The return value ranges from 0 to 365. (The last day of year differs by years.)
     fn ordinal0(&self) -> u32;
 
     /// Returns the day of week.
@@ -631,7 +643,8 @@ pub trait Timelike: Sized {
     fn second(&self) -> u32;
 
     /// Returns the number of nanoseconds since the whole non-leap second.
-    /// The range from 1,000,000,000 to 1,999,999,999 represents the leap second.
+    /// The range from 1,000,000,000 to 1,999,999,999 represents
+    /// the [leap second](./naive/time/index.html#leap-second-handling).
     fn nanosecond(&self) -> u32;
 
     /// Makes a new value with the hour number changed.
@@ -647,11 +660,15 @@ pub trait Timelike: Sized {
     /// Makes a new value with the second number changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
+    /// As with the [`second`](#tymethod.second) method,
+    /// the input range is restricted to 0 through 59.
     fn with_second(&self, sec: u32) -> Option<Self>;
 
     /// Makes a new value with nanoseconds since the whole non-leap second changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
+    /// As with the [`nanosecond`](#tymethod.nanosecond) method,
+    /// the input range can exceed 1,000,000,000 for leap seconds.
     fn with_nanosecond(&self, nano: u32) -> Option<Self>;
 
     /// Returns the number of non-leap seconds past the last midnight.

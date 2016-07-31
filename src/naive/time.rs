@@ -2,9 +2,45 @@
 // Copyright (c) 2014-2015, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * ISO 8601 time without timezone.
- */
+//! ISO 8601 time without timezone.
+//!
+//! # Leap Second Handling
+//!
+//! Since 1960s, the manmade atomic clock has been so accurate that
+//! it is much more accurate than Earth's own motion.
+//! It became desirable to define the civil time in terms of the atomic clock,
+//! but that risks the desynchronization of the civil time from Earth.
+//! To account for this, the designers of the Coordinated Universal Time (UTC)
+//! made that the UTC should be kept within 0.9 seconds of the observed Earth-bound time.
+//! When the mean solar day is longer than the ideal (86,400 seconds),
+//! the error slowly accumulates and it is necessary to add a **leap second**
+//! to slow the UTC down a bit.
+//! (We may also remove a second to speed the UTC up a bit, but it never happened.)
+//! The leap second, if any, follows 23:59:59 of June 30 or December 31 in the UTC.
+//!
+//! Fast forward to the 21st century,
+//! we have seen 26 leap seconds from January 1972 to December 2015.
+//! Yes, 26 seconds. Probably you can read this paragraph within 26 seconds.
+//! But those 26 seconds, and possibly more in the future, are never predictable,
+//! and whether to add a leap second or not is known only before 6 months.
+//! Internet-based clocks (via NTP) do account for known leap seconds,
+//! but the system API normally doesn't (and often can't, with no network connection)
+//! and there is no reliable way to retrieve leap second information.
+//!
+//! Chrono does not try to accurately implement leap seconds; it is impossible.
+//! Rather, **it allows for leap seconds but behaves as if there are *no other* leap seconds.**
+//! Various time arithmetics will ignore any possible leap second(s)
+//! except when the operand were actually a leap second.
+//! The leap second is indicated via fractional seconds more than 1 second,
+//! so values like `NaiveTime::from_hms_milli(23, 56, 4, 1_005)` are allowed;
+//! that value would mean 5ms after the beginning of a leap second following 23:56:04.
+//! Parsing and formatting will correctly handle times that look like leap seconds,
+//! and you can then conveniently ignore leap seconds if you are not prepared for them.
+//!
+//! If you cannot tolerate this behavior,
+//! you must use a separate `TimeZone` for the International Atomic Time (TAI).
+//! TAI is like UTC but has no leap seconds, and thus slightly differs from UTC.
+//! Chrono 0.2 does not provide such implementation, but it is planned for 0.3.
 
 use std::{str, fmt, hash};
 use std::ops::{Add, Sub};
@@ -18,43 +54,9 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
 ///
-/// # Leap second WHAT?
-///
-/// Since 1960s, the manmade atomic clock has been so accurate that
-/// it is much more accurate than Earth's own motion.
-/// It became desirable to define the civil time in terms of the atomic clock,
-/// but that risks the desynchronization of the civil time from Earth.
-/// To account for this, the designers of the Coordinated Universal Time (UTC)
-/// made that the UTC should be kept within 0.9 seconds of the observed Earth-bound time.
-/// When the mean solar day is longer than the ideal (86,400 seconds),
-/// the error slowly accumulates and it is necessary to add a **leap second**
-/// to slow the UTC down a bit.
-/// (We may also remove a second to speed the UTC up a bit, but it never happened.)
-/// The leap second, if any, follows 23:59:59 of June 30 or December 31 in the UTC.
-///
-/// Fast forward to the 21st century,
-/// we have seen 26 leap seconds from January 1972 to December 2015.
-/// Yes, 26 seconds. Probably you can read this paragraph within 26 seconds.
-/// But those 26 seconds, and possibly more in the future, are never predictable,
-/// and whether to add a leap second or not is known only before 6 months.
-/// Internet-based clocks (via NTP) do account for known leap seconds,
-/// but the system API normally doesn't (and often can't, with no network connection)
-/// and there is no reliable way to retrieve leap second information.
-///
-/// Chrono does not try to accurately implement leap seconds; it is impossible.
-/// Rather, **it allows for leap seconds but behaves as if there are *no other* leap seconds.**
-/// Various time arithmetics will ignore any possible leap second(s)
-/// except when the operand were actually a leap second.
-/// The leap second is indicated via fractional seconds more than 1 second,
-/// so values like `NaiveTime::from_hms_milli(23, 56, 4, 1_005)` are allowed;
-/// that value would mean 5ms after the beginning of a leap second following 23:56:04.
-/// Parsing and formatting will correctly handle times that look like leap seconds,
-/// and you can then conveniently ignore leap seconds if you are not prepared for them.
-///
-/// If you cannot tolerate this behavior,
-/// you must use a separate `TimeZone` for the International Atomic Time (TAI).
-/// TAI is like UTC but has no leap seconds, and thus slightly differs from UTC.
-/// Chrono 0.2 does not provide such implementation, but it is planned for 0.3.
+/// <a name="leap-second-what?"></a>
+/// Chrono has a notable policy on the [leap second handling](./index.html#leap-second-handling),
+/// designed to be maximally useful for typical users.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct NaiveTime {
@@ -65,7 +67,7 @@ pub struct NaiveTime {
 impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
-    /// No [leap second](#leap-second-what?) is allowed here;
+    /// No [leap second](./index.html#leap-second-handling) is allowed here;
     /// use `NaiveTime::from_hms_*` methods with a subsecond parameter instead.
     ///
     /// Panics on invalid hour, minute and/or second.
@@ -88,7 +90,7 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
-    /// No [leap second](#leap-second-what?) is allowed here;
+    /// No [leap second](./index.html#leap-second-handling) is allowed here;
     /// use `NaiveTime::from_hms_*_opt` methods with a subsecond parameter instead.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
@@ -113,7 +115,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
     ///
@@ -136,7 +138,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     ///
@@ -163,7 +165,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
     ///
@@ -186,7 +188,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     ///
@@ -213,7 +215,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
     ///
@@ -236,7 +238,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     ///
@@ -264,7 +266,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Panics on invalid number of seconds and/or nanosecond.
     ///
@@ -287,7 +289,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-what?).
+    /// in order to represent the [leap second](./index.html#leap-second-handling).
     ///
     /// Returns `None` on invalid number of seconds and/or nanosecond.
     ///
@@ -332,7 +334,7 @@ impl NaiveTime {
     ///            Ok(NaiveTime::from_hms(12, 34, 56)));
     /// ~~~~
     ///
-    /// [Leap seconds](#leap-second-what?) are correctly handled by
+    /// [Leap seconds](./index.html#leap-second-handling) are correctly handled by
     /// treating any time of the form `hh:mm:60` as a leap second.
     /// (This equally applies to the formatting, so the round trip is possible.)
     ///
@@ -371,7 +373,7 @@ impl NaiveTime {
     }
 
     /// Formats the time with the specified formatting items.
-    /// Otherwise it is same to the ordinary `format` method.
+    /// Otherwise it is same to the ordinary [`format`](#method.format) method.
     ///
     /// The `Iterator` of items should be `Clone`able,
     /// since the resulting `DelayedFormat` value may be formatted multiple times.
@@ -431,11 +433,103 @@ impl NaiveTime {
 }
 
 impl Timelike for NaiveTime {
-    #[inline] fn hour(&self) -> u32 { self.hms().0 }
-    #[inline] fn minute(&self) -> u32 { self.hms().1 }
-    #[inline] fn second(&self) -> u32 { self.hms().2 }
-    #[inline] fn nanosecond(&self) -> u32 { self.frac }
+    /// Returns the hour number from 0 to 23.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms(0, 0, 0).hour(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).hour(), 23);
+    /// ~~~~
+    #[inline]
+    fn hour(&self) -> u32 {
+        self.hms().0
+    }
 
+    /// Returns the minute number from 0 to 59.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms(0, 0, 0).minute(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).minute(), 56);
+    /// ~~~~
+    #[inline]
+    fn minute(&self) -> u32 {
+        self.hms().1
+    }
+
+    /// Returns the second number from 0 to 59.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms(0, 0, 0).second(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).second(), 4);
+    /// ~~~~
+    ///
+    /// This method never returns 60 even when it is a leap second.
+    /// ([Why?](./index.html#leap-second-handling))
+    /// Use the proper [formatting method](#method.format) to get a human-readable representation.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveTime, Timelike};
+    /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000);
+    /// assert_eq!(leap.second(), 59);
+    /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
+    /// ~~~~
+    #[inline]
+    fn second(&self) -> u32 {
+        self.hms().2
+    }
+
+    /// Returns the number of nanoseconds since the whole non-leap second.
+    /// The range from 1,000,000,000 to 1,999,999,999 represents
+    /// the [leap second](./naive/time/index.html#leap-second-handling).
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms(0, 0, 0).nanosecond(), 0);
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).nanosecond(), 12_345_678);
+    /// ~~~~
+    ///
+    /// Leap seconds may have seemingly out-of-range return values.
+    /// You can reduce the range with `time.nanosecond() % 1_000_000_000`, or
+    /// use the proper [formatting method](#method.format) to get a human-readable representation.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveTime, Timelike};
+    /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000);
+    /// assert_eq!(leap.nanosecond(), 1_000_000_000);
+    /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
+    /// ~~~~
+    #[inline]
+    fn nanosecond(&self) -> u32 {
+        self.frac
+    }
+
+    /// Makes a new `NaiveTime` with the hour number changed.
+    ///
+    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// assert_eq!(dt.with_hour(7), Some(NaiveTime::from_hms_nano(7, 56, 4, 12_345_678)));
+    /// assert_eq!(dt.with_hour(24), None);
+    /// ~~~~
     #[inline]
     fn with_hour(&self, hour: u32) -> Option<NaiveTime> {
         if hour >= 24 { return None; }
@@ -443,6 +537,19 @@ impl Timelike for NaiveTime {
         Some(NaiveTime { secs: secs, ..*self })
     }
 
+    /// Makes a new `NaiveTime` with the minute number changed.
+    ///
+    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// assert_eq!(dt.with_minute(45), Some(NaiveTime::from_hms_nano(23, 45, 4, 12_345_678)));
+    /// assert_eq!(dt.with_minute(60), None);
+    /// ~~~~
     #[inline]
     fn with_minute(&self, min: u32) -> Option<NaiveTime> {
         if min >= 60 { return None; }
@@ -450,6 +557,21 @@ impl Timelike for NaiveTime {
         Some(NaiveTime { secs: secs, ..*self })
     }
 
+    /// Makes a new `NaiveTime` with the second number changed.
+    ///
+    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    /// As with the [`second`](#tymethod.second) method,
+    /// the input range is restricted to 0 through 59.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// assert_eq!(dt.with_second(17), Some(NaiveTime::from_hms_nano(23, 56, 17, 12_345_678)));
+    /// assert_eq!(dt.with_second(60), None);
+    /// ~~~~
     #[inline]
     fn with_second(&self, sec: u32) -> Option<NaiveTime> {
         if sec >= 60 { return None; }
@@ -457,18 +579,64 @@ impl Timelike for NaiveTime {
         Some(NaiveTime { secs: secs, ..*self })
     }
 
+    /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
+    ///
+    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    /// As with the [`nanosecond`](#tymethod.nanosecond) method,
+    /// the input range can exceed 1,000,000,000 for leap seconds.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// assert_eq!(dt.with_nanosecond(333_333_333),
+    ///            Some(NaiveTime::from_hms_nano(23, 56, 4, 333_333_333)));
+    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
+    /// ~~~~
+    ///
+    /// Leap seconds can theoretically follow *any* whole second.
+    /// The following would be a proper leap second at the time zone offset of UTC-00:03:57
+    /// (there are several historical examples comparable to this "non-sense" offset),
+    /// and therefore is allowed.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveTime, Timelike};
+    /// # let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// assert_eq!(dt.with_nanosecond(1_333_333_333),
+    ///            Some(NaiveTime::from_hms_nano(23, 56, 4, 1_333_333_333)));
+    /// ~~~~
     #[inline]
     fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
         if nano >= 2_000_000_000 { return None; }
         Some(NaiveTime { frac: nano, ..*self })
     }
 
+    /// Returns the number of non-leap seconds past the last midnight.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Timelike};
+    ///
+    /// assert_eq!(NaiveTime::from_hms(1, 2, 3).num_seconds_from_midnight(),
+    ///            3723);
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).num_seconds_from_midnight(),
+    ///            86164);
+    /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).num_seconds_from_midnight(),
+    ///            86399);
+    /// ~~~~
     #[inline]
     fn num_seconds_from_midnight(&self) -> u32 {
         self.secs // do not repeat the calculation!
     }
 }
 
+/// `NaiveTime` can be used as a key to the hash maps (in principle).
+///
+/// Practically this also takes account of fractional seconds, so it is not recommended.
+/// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
 impl hash::Hash for NaiveTime {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.secs.hash(state);

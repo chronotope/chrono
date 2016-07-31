@@ -1,3 +1,6 @@
+# this Makefile is mostly for the packaging convenience.
+# casual users should use `cargo` to retrieve the appropriate version of Chrono.
+
 .PHONY: all
 all:
 	@echo 'Try `cargo build` instead.'
@@ -29,4 +32,29 @@ README.md: src/lib.rs
 	echo >> $@
 	awk '/^\/\/! ## /,!/^\/\/!/' $< | cut -b 5- | grep -v '^# ' | \
 		sed 's/](\.\//](https:\/\/lifthrasiir.github.io\/rust-chrono\/chrono\//g' >> $@
+
+.PHONY: test
+test:
+	cargo test --features 'serde rustc-serialize'
+
+.PHONY: doc
+doc: authors readme
+	cargo doc --features 'serde rustc-serialize'
+
+.PHONY: doc-publish
+doc-publish: doc
+	( \
+		PKGID="$$(cargo pkgid)"; \
+		PKGNAMEVER="$${PKGID#*#}"; \
+		PKGNAME="$${PKGNAMEVER%:*}"; \
+		REMOTE="$$(git config --get remote.origin.url)"; \
+		cd target/doc && \
+		rm -rf .git && \
+		git init && \
+		git checkout --orphan gh-pages && \
+		echo '<!doctype html><html><head><meta http-equiv="refresh" content="0;URL='$$PKGNAME'/"></head><body></body></html>' > index.html && \
+		git add . && \
+		git commit -m 'updated docs.' && \
+		git push "$$REMOTE" gh-pages -f; \
+	)
 
