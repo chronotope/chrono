@@ -2,9 +2,7 @@
 // Copyright (c) 2014-2015, Kang Seonghoon.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * Formatting utilities for date and time.
- */
+//! Formatting utilities for date and time.
 
 use std::fmt;
 use std::error::Error;
@@ -35,7 +33,8 @@ pub enum Pad {
 /// They have associated formatting width (FW) and parsing width (PW).
 ///
 /// The **formatting width** is the minimal width to be formatted.
-/// If the number is too short, and the padding is not `Pad::None`, then it is left-padded.
+/// If the number is too short, and the padding is not [`Pad::None`](./enum.Pad.html#variant.None),
+/// then it is left-padded.
 /// If the number is too long or (in some cases) negative, it is printed as is.
 ///
 /// The **parsing width** is the maximal width to be scanned.
@@ -45,14 +44,14 @@ pub enum Pad {
 /// parsed with the same formatting items.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Numeric {
-    /// Full Gregorian year (FW=4, PW=infinity).
+    /// Full Gregorian year (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     Year,
     /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
     YearDiv100,
     /// Gregorian year modulo 100 (FW=PW=2). Cannot be negative.
     YearMod100,
-    /// Year in the ISO week date (FW=4, PW=infinity).
+    /// Year in the ISO week date (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     IsoYear,
     /// Year in the ISO week date, divided by 100 (FW=PW=2). Implies the non-negative year.
@@ -84,9 +83,10 @@ pub enum Numeric {
     /// The number of seconds since the last whole minute (FW=PW=2).
     Second,
     /// The number of nanoseconds since the last whole second (FW=PW=9).
-    /// Note that this is *not* left-aligned; see also `Fixed::Nanosecond`.
+    /// Note that this is *not* left-aligned;
+    /// see also [`Fixed::Nanosecond`](./enum.Fixed.html#variant.Nanosecond).
     Nanosecond,
-    /// The number of non-leap seconds since January 1, 1970 0:00:00 UTC (FW=1, PW=infinity).
+    /// The number of non-leap seconds since the midnight UTC on January 1, 1970 (FW=1, PW=∞).
     /// For formatting, it assumes UTC upon the absence of time zone offset.
     Timestamp,
 }
@@ -123,13 +123,13 @@ pub enum Fixed {
     UpperAmPm,
     /// An optional dot plus one or more digits for left-aligned nanoseconds.
     /// May print nothing, 3, 6 or 9 digits according to the available accuracy.
-    /// See also `Numeric::Nanosecond`.
+    /// See also [`Numeric::Nanosecond`](./enum.Numeric.html#variant.Nanosecond).
     Nanosecond,
-    /// Fixed prescision at Nanosecond3 where 3 is the left aligned accuracy.
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3.
     Nanosecond3,
-    /// Fixed prescision at Nanosecond6 where 6 is the left aligned accuracy.
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6.
     Nanosecond6,
-    /// Fixed prescision at Nanosecond9 where 9 is the left aligned accuracy.
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9.
     Nanosecond9,
     /// Timezone name.
     ///
@@ -138,17 +138,21 @@ pub enum Fixed {
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `+00:00`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces.
-    /// The offset is limited from `-24:00` to `+24:00`, which is same to `FixedOffset`'s range.
+    /// The offset is limited from `-24:00` to `+24:00`,
+    /// which is same to [`FixedOffset`](../offset/fixed/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces,
     /// and `Z` can be either in upper case or in lower case.
-    /// The offset is limited from `-24:00` to `+24:00`, which is same to `FixedOffset`'s range.
+    /// The offset is limited from `-24:00` to `+24:00`,
+    /// which is same to [`FixedOffset`](../offset/fixed/struct.FixedOffset.html)'s range.
     TimezoneOffsetColonZ,
-    /// Same to `TimezoneOffsetColon` but prints no colon. Parsing allows an optional colon.
+    /// Same to [`TimezoneOffsetColon`](#variant.TimezoneOffsetColon) but prints no colon.
+    /// Parsing allows an optional colon.
     TimezoneOffset,
-    /// Same to `TimezoneOffsetColonZ` but prints no colon. Parsing allows an optional colon.
+    /// Same to [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ) but prints no colon.
+    /// Parsing allows an optional colon.
     TimezoneOffsetZ,
     /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
     RFC2822,

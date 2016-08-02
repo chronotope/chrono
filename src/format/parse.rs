@@ -3,9 +3,7 @@
 // Portions copyright (c) 2015, John Nagle.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * Date and time parsing routines.
- */
+//! Date and time parsing routines.
 
 use std::usize;
 
@@ -193,15 +191,19 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 
 /// Tries to parse given string into `parsed` with given formatting items.
 /// Returns `Ok` when the entire string has been parsed (otherwise `parsed` should not be used).
-/// There should be no trailing string after parsing; use a stray `Item::Space` to trim whitespaces.
+/// There should be no trailing string after parsing;
+/// use a stray [`Item::Space`](./enum.Item.html#variant.Space) to trim whitespaces.
 ///
 /// This particular date and time parser is:
 ///
 /// - Greedy. It will consume the longest possible prefix.
 ///   For example, `April` is always consumed entirely when the long month name is requested;
 ///   it equally accepts `Apr`, but prefers the longer prefix in this case.
-/// - Padding-agnostic (for numeric items). The `Pad` field is completely ignored,
+///
+/// - Padding-agnostic (for numeric items).
+///   The [`Pad`](./enum.Pad.html) field is completely ignored,
 ///   so one can prepend any number of whitespace then any number of zeroes before numbers.
+///
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
 pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
         where I: Iterator<Item=Item<'a>> {

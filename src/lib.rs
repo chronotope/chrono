@@ -372,9 +372,10 @@ pub mod date;
 pub mod datetime;
 pub mod format;
 
-/// The day of week (DOW).
+/// The day of week.
 ///
 /// The order of the days of week depends on the context.
+/// (This is why this type does *not* implement `PartialOrd` or `Ord` traits.)
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
@@ -397,6 +398,10 @@ pub enum Weekday {
 
 impl Weekday {
     /// The next day in the week.
+    ///
+    /// `w`:        | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
+    /// ----------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
+    /// `w.succ()`: | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun` | `Mon`
     #[inline]
     pub fn succ(&self) -> Weekday {
         match *self {
@@ -411,6 +416,10 @@ impl Weekday {
     }
 
     /// The previous day in the week.
+    ///
+    /// `w`:        | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
+    /// ----------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
+    /// `w.pred()`: | `Sun` | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat`
     #[inline]
     pub fn pred(&self) -> Weekday {
         match *self {
@@ -424,7 +433,11 @@ impl Weekday {
         }
     }
 
-    /// Returns a DOW number starting from Monday = 1. (ISO 8601 weekday number)
+    /// Returns a day-of-week number starting from Monday = 1. (ISO 8601 weekday number)
+    ///
+    /// `w`:                      | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
+    /// ------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
+    /// `w.number_from_monday()`: | 1     | 2     | 3     | 4     | 5     | 6     | 7
     #[inline]
     pub fn number_from_monday(&self) -> u32 {
         match *self {
@@ -438,7 +451,11 @@ impl Weekday {
         }
     }
 
-    /// Returns a DOW number starting from Sunday = 1.
+    /// Returns a day-of-week number starting from Sunday = 1.
+    ///
+    /// `w`:                      | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
+    /// ------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
+    /// `w.number_from_sunday()`: | 2     | 3     | 4     | 5     | 6     | 7     | 1
     #[inline]
     pub fn number_from_sunday(&self) -> u32 {
         match *self {
@@ -452,7 +469,11 @@ impl Weekday {
         }
     }
 
-    /// Returns a DOW number starting from Monday = 0.
+    /// Returns a day-of-week number starting from Monday = 0.
+    ///
+    /// `w`:                        | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
+    /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
+    /// `w.num_days_from_monday()`: | 0     | 1     | 2     | 3     | 4     | 5     | 6
     #[inline]
     pub fn num_days_from_monday(&self) -> u32 {
         match *self {
@@ -466,7 +487,11 @@ impl Weekday {
         }
     }
 
-    /// Returns a DOW number starting from Sunday = 0.
+    /// Returns a day-of-week number starting from Sunday = 0.
+    ///
+    /// `w`:                        | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
+    /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
+    /// `w.num_days_from_sunday()`: | 1     | 2     | 3     | 4     | 5     | 6     | 0
     #[inline]
     pub fn num_days_from_sunday(&self) -> u32 {
         match *self {
@@ -481,8 +506,8 @@ impl Weekday {
     }
 }
 
-/// Any weekday can be represented as an integer from 0 to 6,
-/// which equals to `Weekday::num_days_from_monday` in this implementation.
+/// Any weekday can be represented as an integer from 0 to 6, which equals to
+/// [`Weekday::num_days_from_monday`](#method.num_days_from_monday) in this implementation.
 /// Do not heavily depend on this though; use explicit methods whenever possible.
 impl num::traits::FromPrimitive for Weekday {
     #[inline]
