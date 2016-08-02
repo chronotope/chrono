@@ -52,7 +52,7 @@ doc-publish: doc
 		rm -rf .git && \
 		git init && \
 		git checkout --orphan gh-pages && \
-		echo '<!doctype html><html><head><meta http-equiv="refresh" content="0;URL='$$PKGNAME'/"></head><body></body></html>' > index.html && \
+		echo '<!doctype html><html><head><meta http-equiv="refresh" content="0;URL='$$PKGNAME'/index.html"></head><body></body></html>' > index.html && \
 		git add . && \
 		git commit -m 'updated docs.' && \
 		git push "$$REMOTE" gh-pages -f; \

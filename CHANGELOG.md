@@ -8,6 +8,24 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.23 (2016-08-03)
+
+### Added
+
+- The documentation was greatly improved for several types,
+  and tons of cross-references have been added. (#77, #78, #80, #82)
+
+- `DateTime::timestamp_subsec_{millis,micros,nanos}` methods have been added. (#81)
+
+### Fixed
+
+- When the system time records a leap second,
+  the nanosecond component was mistakenly reset to zero. (#84)
+
+- `Local` offset misbehaves in Windows for August and later,
+  due to the long-standing libtime bug (dates back to mid-2015).
+  Workaround has been implemented. (#85)
+
 ## 0.2.22 (2016-04-22)
 
 ### Fixed
