@@ -26,8 +26,19 @@ fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
         tm.tm_sec = 59;
     }
 
-    // from_yo is more efficient than from_ymd (since it's the internal representation).
-    let date = NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1);
+    #[cfg(not(windows))]
+    fn tm_to_naive_date(tm: &stdtime::Tm) -> NaiveDate {
+        // from_yo is more efficient than from_ymd (since it's the internal representation).
+        NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1)
+    }
+
+    #[cfg(windows)]
+    fn tm_to_naive_date(tm: &stdtime::Tm) -> NaiveDate {
+        // ...but tm_yday is broken in Windows (issue #85)
+        NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
+    }
+
+    let date = tm_to_naive_date(&tm);
     let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
                                         tm.tm_sec as u32, tm.tm_nsec as u32);
     let offset = FixedOffset::east(tm.tm_utcoff);
