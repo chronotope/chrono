@@ -23,6 +23,7 @@ pub struct FixedOffset {
 impl FixedOffset {
     /// Makes a new `FixedOffset` from the serialized representation.
     /// Used for serialization formats.
+    #[cfg(feature = "rustc-serialize")]
     fn from_serialized(secs: i32) -> Option<FixedOffset> {
         // check if the values are in the range
         if secs <= -86400 || 86400 <= secs { return None; }
@@ -32,6 +33,7 @@ impl FixedOffset {
     }
 
     /// Returns a serialized representation of this `FixedOffset`.
+    #[cfg(feature = "rustc-serialize")]
     fn to_serialized(&self) -> i32 {
         self.local_minus_utc
     }

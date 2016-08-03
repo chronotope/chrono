@@ -66,6 +66,7 @@ pub struct NaiveTime {
 impl NaiveTime {
     /// Makes a new `NaiveTime` from the serialized representation.
     /// Used for serialization formats.
+    #[cfg(feature = "rustc-serialize")]
     fn from_serialized(secs: u32, frac: u32) -> Option<NaiveTime> {
         // check if the values are in the range
         if secs >= 86400 { return None; }
@@ -76,6 +77,7 @@ impl NaiveTime {
     }
 
     /// Returns a serialized representation of this `NaiveDate`.
+    #[cfg(feature = "rustc-serialize")]
     fn to_serialized(&self) -> (u32, u32) {
         (self.secs, self.frac)
     }

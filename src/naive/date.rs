@@ -129,6 +129,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` from the serialized representation.
     /// Used for serialization formats.
+    #[cfg(feature = "rustc-serialize")]
     fn from_serialized(ymdf: i32) -> Option<NaiveDate> {
         // check if the year flag is correct
         if (ymdf & 0b1111) as u8 != YearFlags::from_year(ymdf >> 13).0 { return None; }
@@ -141,6 +142,7 @@ impl NaiveDate {
     }
 
     /// Returns a serialized representation of this `NaiveDate`.
+    #[cfg(feature = "rustc-serialize")]
     fn to_serialized(&self) -> i32 {
         self.ymdf
     }
