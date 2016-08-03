@@ -1,6 +1,7 @@
 Chrono is mainly written by Kang Seonghoon <public+rust@mearie.org>,
 and also the following people (in ascending order):
 
+Alexander Bulaev <alexbool@yandex-team.ru>
 Ben Eills <ben@beneills.com>
 Colin Ray <r.colinray@gmail.com>
 Corey Farwell <coreyf@rwell.org>

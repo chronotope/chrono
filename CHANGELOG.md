@@ -8,6 +8,17 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.2.24 (2016-08-04)
+
+### Added
+
+- Serde 0.8 is now supported. 0.7 also remains supported. (#86)
+
+### Fixed
+
+- The deserialization implementation for rustc-serialize now properly verifies the input.
+  All serialization codes are also now thoroughly tested. (#42)
+
 ## 0.2.23 (2016-08-03)
 
 ### Added
