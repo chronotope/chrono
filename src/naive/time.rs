@@ -58,13 +58,28 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// Chrono has a notable policy on the [leap second handling](./index.html#leap-second-handling),
 /// designed to be maximally useful for typical users.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
 }
 
 impl NaiveTime {
+    /// Makes a new `NaiveTime` from the serialized representation.
+    /// Used for serialization formats.
+    fn from_serialized(secs: u32, frac: u32) -> Option<NaiveTime> {
+        // check if the values are in the range
+        if secs >= 86400 { return None; }
+        if frac >= 2_000_000_000 { return None; }
+
+        let time = NaiveTime { secs: secs, frac: frac };
+        Some(time)
+    }
+
+    /// Returns a serialized representation of this `NaiveDate`.
+    fn to_serialized(&self) -> (u32, u32) {
+        (self.secs, self.frac)
+    }
+
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
     /// No [leap second](./index.html#leap-second-handling) is allowed here;
@@ -742,10 +757,105 @@ impl str::FromStr for NaiveTime {
     }
 }
 
+#[cfg(feature = "rustc-serialize")]
+mod rustc_serialize {
+    use super::NaiveTime;
+    use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
+
+    // TODO the current serialization format is NEVER intentionally defined.
+    // this basically follows the automatically generated implementation for those traits,
+    // plus manual verification steps for avoiding security problem.
+    // in the future it is likely to be redefined to more sane and reasonable format.
+
+    impl Encodable for NaiveTime {
+        fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+            let (secs, frac) = self.to_serialized();
+            s.emit_struct("NaiveTime", 2, |s| {
+                try!(s.emit_struct_field("secs", 0, |s| secs.encode(s)));
+                try!(s.emit_struct_field("frac", 1, |s| frac.encode(s)));
+                Ok(())
+            })
+        }
+    }
+
+    impl Decodable for NaiveTime {
+        fn decode<D: Decoder>(d: &mut D) -> Result<NaiveTime, D::Error> {
+            d.read_struct("NaiveTime", 2, |d| {
+                let secs = try!(d.read_struct_field("secs", 0, Decodable::decode));
+                let frac = try!(d.read_struct_field("frac", 1, Decodable::decode));
+                NaiveTime::from_serialized(secs, frac).ok_or_else(|| d.error("invalid time"))
+            })
+        }
+    }
+
+    #[test]
+    fn test_encodable() {
+        use rustc_serialize::json::encode;
+
+        assert_eq!(encode(&NaiveTime::from_hms(0, 0, 0)).ok(),
+                   Some(r#"{"secs":0,"frac":0}"#.into()));
+        assert_eq!(encode(&NaiveTime::from_hms_milli(0, 0, 0, 950)).ok(),
+                   Some(r#"{"secs":0,"frac":950000000}"#.into()));
+        assert_eq!(encode(&NaiveTime::from_hms_milli(0, 0, 59, 1_000)).ok(),
+                   Some(r#"{"secs":59,"frac":1000000000}"#.into()));
+        assert_eq!(encode(&NaiveTime::from_hms(0, 1, 2)).ok(),
+                   Some(r#"{"secs":62,"frac":0}"#.into()));
+        assert_eq!(encode(&NaiveTime::from_hms(7, 8, 9)).ok(),
+                   Some(r#"{"secs":25689,"frac":0}"#.into()));
+        assert_eq!(encode(&NaiveTime::from_hms_micro(12, 34, 56, 789)).ok(),
+                   Some(r#"{"secs":45296,"frac":789000}"#.into()));
+        assert_eq!(encode(&NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
+                   Some(r#"{"secs":86399,"frac":1999999999}"#.into()));
+    }
+
+    #[test]
+    fn test_decodable() {
+        use rustc_serialize::json;
+
+        let decode = |s: &str| json::decode::<NaiveTime>(s);
+
+        assert_eq!(decode(r#"{"secs":0,"frac":0}"#).ok(),
+                   Some(NaiveTime::from_hms(0, 0, 0)));
+        assert_eq!(decode(r#"{"frac":950000000,"secs":0}"#).ok(),
+                   Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
+        assert_eq!(decode(r#"{"secs":59,"frac":1000000000}"#).ok(),
+                   Some(NaiveTime::from_hms_milli(0, 0, 59, 1_000)));
+        assert_eq!(decode(r#"{"frac": 0,
+                              "secs": 62}"#).ok(),
+                   Some(NaiveTime::from_hms(0, 1, 2)));
+        assert_eq!(decode(r#"{"secs":25689,"frac":0}"#).ok(),
+                   Some(NaiveTime::from_hms(7, 8, 9)));
+        assert_eq!(decode(r#"{"secs":45296,"frac":789000}"#).ok(),
+                   Some(NaiveTime::from_hms_micro(12, 34, 56, 789)));
+        assert_eq!(decode(r#"{"secs":86399,"frac":1999999999}"#).ok(),
+                   Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
+
+        // bad formats
+        assert!(decode(r#"{"secs":0,"frac":-1}"#).is_err());
+        assert!(decode(r#"{"secs":-1,"frac":0}"#).is_err());
+        assert!(decode(r#"{"secs":86400,"frac":0}"#).is_err());
+        assert!(decode(r#"{"secs":0,"frac":2000000000}"#).is_err());
+        assert!(decode(r#"{"secs":0}"#).is_err());
+        assert!(decode(r#"{"frac":0}"#).is_err());
+        assert!(decode(r#"{"secs":0.3,"frac":0}"#).is_err());
+        assert!(decode(r#"{"secs":0,"frac":0.4}"#).is_err());
+        assert!(decode(r#"{}"#).is_err());
+        assert!(decode(r#"0"#).is_err());
+        assert!(decode(r#"86399"#).is_err());
+        assert!(decode(r#""string""#).is_err());
+        assert!(decode(r#""12:34:56""#).is_err()); // :(
+        assert!(decode(r#""12:34:56.789""#).is_err()); // :(
+        assert!(decode(r#"null"#).is_err());
+    }
+}
+
 #[cfg(feature = "serde")]
 mod serde {
     use super::NaiveTime;
     use serde::{ser, de};
+
+    // TODO not very optimized for space (binary formats would want something better)
+    // TODO round-trip for general leap seconds (not just those with second = 60)
 
     impl ser::Serialize for NaiveTime {
         fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
@@ -754,9 +864,9 @@ mod serde {
             serializer.serialize_str(&format!("{:?}", self))
         }
     }
-    
+
     struct NaiveTimeVisitor;
-    
+
     impl de::Visitor for NaiveTimeVisitor {
         type Value = NaiveTime;
 
@@ -766,13 +876,82 @@ mod serde {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
-    
+
     impl de::Deserialize for NaiveTime {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize(NaiveTimeVisitor)
         }
+    }
+
+    #[cfg(test)] extern crate serde_json;
+
+    #[test]
+    fn test_serde_serialize() {
+        use self::serde_json::to_string;
+
+        assert_eq!(to_string(&NaiveTime::from_hms(0, 0, 0)).ok(),
+                   Some(r#""00:00:00""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms_milli(0, 0, 0, 950)).ok(),
+                   Some(r#""00:00:00.950""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms_milli(0, 0, 59, 1_000)).ok(),
+                   Some(r#""00:00:60""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms(0, 1, 2)).ok(),
+                   Some(r#""00:01:02""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms_nano(3, 5, 7, 98765432)).ok(),
+                   Some(r#""03:05:07.098765432""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms(7, 8, 9)).ok(),
+                   Some(r#""07:08:09""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms_micro(12, 34, 56, 789)).ok(),
+                   Some(r#""12:34:56.000789""#.into()));
+        assert_eq!(to_string(&NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
+                   Some(r#""23:59:60.999999999""#.into()));
+    }
+
+    #[test]
+    fn test_serde_deserialize() {
+        use self::serde_json::from_str;
+
+        let from_str = |s: &str| serde_json::from_str::<NaiveTime>(s);
+
+        assert_eq!(from_str(r#""00:00:00""#).ok(),
+                   Some(NaiveTime::from_hms(0, 0, 0)));
+        assert_eq!(from_str(r#""0:0:0""#).ok(),
+                   Some(NaiveTime::from_hms(0, 0, 0)));
+        assert_eq!(from_str(r#""00:00:00.950""#).ok(),
+                   Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
+        assert_eq!(from_str(r#""0:0:0.95""#).ok(),
+                   Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
+        assert_eq!(from_str(r#""00:00:60""#).ok(),
+                   Some(NaiveTime::from_hms_milli(0, 0, 59, 1_000)));
+        assert_eq!(from_str(r#""00:01:02""#).ok(),
+                   Some(NaiveTime::from_hms(0, 1, 2)));
+        assert_eq!(from_str(r#""03:05:07.098765432""#).ok(),
+                   Some(NaiveTime::from_hms_nano(3, 5, 7, 98765432)));
+        assert_eq!(from_str(r#""07:08:09""#).ok(),
+                   Some(NaiveTime::from_hms(7, 8, 9)));
+        assert_eq!(from_str(r#""12:34:56.000789""#).ok(),
+                   Some(NaiveTime::from_hms_micro(12, 34, 56, 789)));
+        assert_eq!(from_str(r#""23:59:60.999999999""#).ok(),
+                   Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
+        assert_eq!(from_str(r#""23:59:60.9999999999997""#).ok(), // excess digits are ignored
+                   Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
+
+        // bad formats
+        assert!(from_str(r#""""#).is_err());
+        assert!(from_str(r#""000000""#).is_err());
+        assert!(from_str(r#""00:00:61""#).is_err());
+        assert!(from_str(r#""00:60:00""#).is_err());
+        assert!(from_str(r#""24:00:00""#).is_err());
+        assert!(from_str(r#""23:59:59,1""#).is_err());
+        assert!(from_str(r#""012:34:56""#).is_err());
+        assert!(from_str(r#""hh:mm:ss""#).is_err());
+        assert!(from_str(r#"0"#).is_err());
+        assert!(from_str(r#"86399"#).is_err());
+        assert!(from_str(r#"{}"#).is_err());
+        assert!(from_str(r#"{"secs":0,"frac":0}"#).is_err()); // :(
+        assert!(from_str(r#"null"#).is_err());
     }
 }
 
@@ -978,31 +1157,6 @@ mod tests {
         assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(), "01:57:09 PM");
         assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(),
                    "23:59:60");
-    }
-
-    #[cfg(feature = "serde")]
-    extern crate serde_json;
-
-    #[cfg(feature = "serde")]
-    #[test]
-    fn test_serde_serialize() {
-        use self::serde_json::to_string;
-        
-        let time = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
-        let serialized = to_string(&time).unwrap();
-
-        assert_eq!(serialized, "\"03:05:07.098765432\"");
-    }
-    
-    #[cfg(feature = "serde")]
-    #[test]
-    fn test_serde_deserialize() {
-        use self::serde_json::from_str;
-        
-        let time = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
-        let deserialized: NaiveTime = from_str("\"03:05:07.098765432\"").unwrap();
-
-        assert_eq!(deserialized, time);
     }
 }
 

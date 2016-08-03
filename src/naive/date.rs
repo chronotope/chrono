@@ -91,7 +91,6 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
 /// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -126,6 +125,24 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from year and packed month-day-flags, with a verification.
     fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
         NaiveDate::from_of(year, mdf.to_of())
+    }
+
+    /// Makes a new `NaiveDate` from the serialized representation.
+    /// Used for serialization formats.
+    fn from_serialized(ymdf: i32) -> Option<NaiveDate> {
+        // check if the year flag is correct
+        if (ymdf & 0b1111) as u8 != YearFlags::from_year(ymdf >> 13).0 { return None; }
+
+        // check if the ordinal is in the range
+        let date = NaiveDate { ymdf: ymdf };
+        if !date.of().valid() { return None; }
+
+        Some(date)
+    }
+
+    /// Returns a serialized representation of this `NaiveDate`.
+    fn to_serialized(&self) -> i32 {
+        self.ymdf
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](./index.html#calendar-date)
@@ -1416,11 +1433,92 @@ impl str::FromStr for NaiveDate {
     }
 }
 
+#[cfg(feature = "rustc-serialize")]
+mod rustc_serialize {
+    use super::NaiveDate;
+    use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
+
+    // TODO the current serialization format is NEVER intentionally defined.
+    // this basically follows the automatically generated implementation for those traits,
+    // plus manual verification steps for avoiding security problem.
+    // in the future it is likely to be redefined to more sane and reasonable format.
+
+    impl Encodable for NaiveDate {
+        fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+            let ymdf = self.to_serialized();
+            s.emit_struct("NaiveDate", 1, |s| {
+                try!(s.emit_struct_field("ymdf", 0, |s| ymdf.encode(s)));
+                Ok(())
+            })
+        }
+    }
+
+    impl Decodable for NaiveDate {
+        fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDate, D::Error> {
+            d.read_struct("NaiveDate", 1, |d| {
+                let ymdf = try!(d.read_struct_field("ymdf", 0, Decodable::decode));
+                NaiveDate::from_serialized(ymdf).ok_or_else(|| d.error("invalid date"))
+            })
+        }
+    }
+
+    #[test]
+    fn test_encodable() {
+        use rustc_serialize::json::encode;
+
+        assert_eq!(encode(&NaiveDate::from_ymd(2016, 7, 8)).ok(),
+                   Some(r#"{"ymdf":16518115}"#.into()));
+        assert_eq!(encode(&NaiveDate::from_ymd(0, 1, 1)).ok(),
+                   Some(r#"{"ymdf":20}"#.into()));
+        assert_eq!(encode(&NaiveDate::from_ymd(-1, 12, 31)).ok(),
+                   Some(r#"{"ymdf":-2341}"#.into()));
+        assert_eq!(encode(&super::MIN).ok(),
+                   Some(r#"{"ymdf":-2147483625}"#.into()));
+        assert_eq!(encode(&super::MAX).ok(),
+                   Some(r#"{"ymdf":2147481311}"#.into()));
+    }
+
+    #[test]
+    fn test_decodable() {
+        use rustc_serialize::json;
+        use std::{i32, i64};
+
+        let decode = |s: &str| json::decode::<NaiveDate>(s);
+
+        assert_eq!(decode(r#"{"ymdf":16518115}"#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+        assert_eq!(decode(r#"{"ymdf":20}"#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
+        assert_eq!(decode(r#"{"ymdf":-2341}"#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
+        assert_eq!(decode(r#"{"ymdf":-2147483625}"#).ok(), Some(super::MIN));
+        assert_eq!(decode(r#"{"ymdf":2147481311}"#).ok(), Some(super::MAX));
+
+        // some extreme values and zero are always invalid
+        assert!(decode(r#"{"ymdf":0}"#).is_err());
+        assert!(decode(r#"{"ymdf":1}"#).is_err());
+        assert!(decode(r#"{"ymdf":-1}"#).is_err());
+        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i32::MIN)).is_err());
+        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i32::MAX)).is_err());
+        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i64::MIN)).is_err());
+        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i64::MAX)).is_err());
+
+        // bad formats
+        assert!(decode(r#"{"ymdf":20.01}"#).is_err());
+        assert!(decode(r#"{"ymdf":"string"}"#).is_err());
+        assert!(decode(r#"{"ymdf":null}"#).is_err());
+        assert!(decode(r#"{}"#).is_err());
+        assert!(decode(r#"{"date":20}"#).is_err());
+        assert!(decode(r#"20"#).is_err());
+        assert!(decode(r#""string""#).is_err());
+        assert!(decode(r#""2016-07-08""#).is_err()); // :(
+        assert!(decode(r#"null"#).is_err());
+    }
+}
 
 #[cfg(feature = "serde")]
 mod serde {
     use super::NaiveDate;
     use serde::{ser, de};
+
+    // TODO not very optimized for space (binary formats would want something better)
 
     impl ser::Serialize for NaiveDate {
         fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
@@ -1429,9 +1527,9 @@ mod serde {
             serializer.serialize_str(&format!("{:?}", self))
         }
     }
-    
+
     struct NaiveDateVisitor;
-    
+
     impl de::Visitor for NaiveDateVisitor {
         type Value = NaiveDate;
 
@@ -1441,13 +1539,66 @@ mod serde {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
-    
+
     impl de::Deserialize for NaiveDate {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize(NaiveDateVisitor)
         }
+    }
+
+    #[cfg(test)] extern crate serde_json;
+
+    #[test]
+    fn test_serde_serialize() {
+        use self::serde_json::to_string;
+
+        assert_eq!(to_string(&NaiveDate::from_ymd(2014, 7, 24)).ok(),
+                   Some(r#""2014-07-24""#.into()));
+        assert_eq!(to_string(&NaiveDate::from_ymd(0, 1, 1)).ok(),
+                   Some(r#""0000-01-01""#.into()));
+        assert_eq!(to_string(&NaiveDate::from_ymd(-1, 12, 31)).ok(),
+                   Some(r#""-0001-12-31""#.into()));
+        assert_eq!(to_string(&super::MIN).ok(),
+                   Some(r#""-262144-01-01""#.into()));
+        assert_eq!(to_string(&super::MAX).ok(),
+                   Some(r#""+262143-12-31""#.into()));
+    }
+
+    #[test]
+    fn test_serde_deserialize() {
+        use self::serde_json;
+        use std::{i32, i64};
+
+        let from_str = |s: &str| serde_json::from_str::<NaiveDate>(s);
+
+        assert_eq!(from_str(r#""2016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+        assert_eq!(from_str(r#""2016-7-8""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+        assert_eq!(from_str(r#""+002016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+        assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
+        assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
+        assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
+        assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(super::MIN));
+        assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(super::MAX));
+
+        // bad formats
+        assert!(from_str(r#""""#).is_err());
+        assert!(from_str(r#""20001231""#).is_err());
+        assert!(from_str(r#""2000-00-00""#).is_err());
+        assert!(from_str(r#""2000-02-30""#).is_err());
+        assert!(from_str(r#""2001-02-29""#).is_err());
+        assert!(from_str(r#""2002-002-28""#).is_err());
+        assert!(from_str(r#""yyyy-mm-dd""#).is_err());
+        assert!(from_str(r#"0"#).is_err());
+        assert!(from_str(r#"20.01"#).is_err());
+        assert!(from_str(&i32::MIN.to_string()).is_err());
+        assert!(from_str(&i32::MAX.to_string()).is_err());
+        assert!(from_str(&i64::MIN.to_string()).is_err());
+        assert!(from_str(&i64::MAX.to_string()).is_err());
+        assert!(from_str(r#"{}"#).is_err());
+        assert!(from_str(r#"{"ymdf":20}"#).is_err()); // :(
+        assert!(from_str(r#"null"#).is_err());
     }
 }
 
@@ -1874,31 +2025,6 @@ mod tests {
         assert_eq!(NaiveDate::from_ymd(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(),
                    "2009,09,01,00,53");
     }
-
-    #[cfg(feature = "serde")]
-    extern crate serde_json;
-
-    #[cfg(feature = "serde")]
-    #[test]
-    fn test_serde_serialize() {
-        use self::serde_json::to_string;
-        
-        let date = NaiveDate::from_ymd(2014, 7, 24);
-        let serialized = to_string(&date).unwrap();
-
-        assert_eq!(serialized, "\"2014-07-24\"");
-    }
-    
-    #[cfg(feature = "serde")]
-    #[test]
-    fn test_serde_deserialize() {
-        use self::serde_json::from_str;
-        
-        let date = NaiveDate::from_ymd(2014, 7, 24);
-        let deserialized: NaiveDate = from_str("\"2014-07-24\"").unwrap();
-
-        assert_eq!(deserialized, date);
-    }
 }
 
 /// The internal implementation of the calendar and ordinal date.
@@ -1934,7 +2060,6 @@ mod internals {
     /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
     /// (simplifies the day of week calculation from the 1-based ordinal).
     #[derive(PartialEq, Eq, Copy, Clone)]
-    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
     pub struct YearFlags(pub u8);
 
     pub const A: YearFlags = YearFlags(0o15); pub const AG: YearFlags = YearFlags(0o05);
@@ -2175,7 +2300,6 @@ mod internals {
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
     /// which is an index to the `OL_TO_MDL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
-    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
     pub struct Of(pub u32);
 
     impl Of {
@@ -2277,7 +2401,6 @@ mod internals {
     /// (month, day of month and leap flag),
     /// which is an index to the `MDL_TO_OL` lookup table.
     #[derive(PartialEq, PartialOrd, Copy, Clone)]
-    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
     pub struct Mdf(pub u32);
 
     impl Mdf {
