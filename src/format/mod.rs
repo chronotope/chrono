@@ -10,7 +10,7 @@ use std::error::Error;
 use {Datelike, Timelike};
 use div::{div_floor, mod_floor};
 use duration::Duration;
-use offset::Offset;
+use offset::{Offset, add_with_leapsecond};
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 
@@ -303,7 +303,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         (Some(d), Some(t), None) =>
                             Some(d.and_time(*t).timestamp()),
                         (Some(d), Some(t), Some(&(_, off))) =>
-                            Some((d.and_time(*t) - off).timestamp()),
+                            Some(add_with_leapsecond(&d.and_time(*t), &-off).timestamp()),
                         (_, _, _) => None
                     }),
                 };

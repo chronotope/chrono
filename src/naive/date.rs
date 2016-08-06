@@ -852,6 +852,17 @@ impl NaiveDate {
     /// assert_eq!(d.format_with_items(fmt.clone()).to_string(), "2015-09-05");
     /// assert_eq!(d.format("%Y-%m-%d").to_string(), "2015-09-05");
     /// ~~~~
+    ///
+    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    /// use chrono::format::strftime::StrftimeItems;
+    ///
+    /// let fmt = StrftimeItems::new("%Y-%m-%d");
+    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(format!("{}", d.format_with_items(fmt.clone())), "2015-09-05");
+    /// ~~~~
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -880,6 +891,16 @@ impl NaiveDate {
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.format("%Y-%m-%d").to_string(), "2015-09-05");
     /// assert_eq!(d.format("%A, %-d %B, %C%y").to_string(), "Saturday, 5 September, 2015");
+    /// ~~~~
+    ///
+    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
+    /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ~~~~
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {

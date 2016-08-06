@@ -21,8 +21,10 @@
  */
 
 use std::fmt;
+use std::ops::Add;
 
 use Weekday;
+use Timelike;
 use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
@@ -30,6 +32,18 @@ use naive::datetime::NaiveDateTime;
 use date::Date;
 use datetime::DateTime;
 use format::{parse, Parsed, ParseResult, StrftimeItems};
+
+/// Same to `*lhs + *rhs`, but keeps the leap second information.
+/// `rhs` should *not* have a fractional second.
+// TODO this should be replaced by the addition with FixedOffset in 0.3!
+pub fn add_with_leapsecond<T: Timelike + Add<Duration, Output=T>>(lhs: &T, rhs: &Duration) -> T {
+    debug_assert!(*rhs == Duration::seconds(rhs.num_seconds()));
+
+    // extract and temporarily remove the fractional part and later recover it
+    let nanos = lhs.nanosecond();
+    let lhs = lhs.with_nanosecond(0).unwrap();
+    (lhs + *rhs).with_nanosecond(nanos).unwrap()
+}
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug)]
@@ -305,7 +319,8 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
         self.offset_from_local_datetime(local).map(|offset| {
-            DateTime::from_utc(*local - offset.local_minus_utc(), offset)
+            let utc = add_with_leapsecond(local, &-offset.local_minus_utc());
+            DateTime::from_utc(utc, offset)
         })
     }
 

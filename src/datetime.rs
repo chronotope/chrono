@@ -11,7 +11,7 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 
 use {Weekday, Timelike, Datelike};
-use offset::{TimeZone, Offset};
+use offset::{TimeZone, Offset, add_with_leapsecond};
 use offset::utc::UTC;
 use offset::local::Local;
 use offset::fixed::FixedOffset;
@@ -49,7 +49,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Unlike `date`, this is not associated to the time zone.
     #[inline]
     pub fn time(&self) -> NaiveTime {
-        self.datetime.time() + self.offset.local_minus_utc()
+        add_with_leapsecond(&self.datetime.time(), &self.offset.local_minus_utc())
     }
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
@@ -141,7 +141,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns a view to the naive local datetime.
     #[inline]
     pub fn naive_local(&self) -> NaiveDateTime {
-        self.datetime + self.offset.local_minus_utc()
+        add_with_leapsecond(&self.datetime, &self.offset.local_minus_utc())
     }
 }
 

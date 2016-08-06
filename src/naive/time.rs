@@ -406,6 +406,18 @@ impl NaiveTime {
     /// assert_eq!(t.format_with_items(fmt.clone()).to_string(), "23:56:04");
     /// assert_eq!(t.format("%H:%M:%S").to_string(), "23:56:04");
     /// ~~~~
+    ///
+    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    ///
+    /// ~~~~
+    /// use chrono::NaiveTime;
+    /// use chrono::format::strftime::StrftimeItems;
+    ///
+    /// let fmt = StrftimeItems::new("%H:%M:%S");
+    /// let t = NaiveTime::from_hms(23, 56, 4);
+    /// assert_eq!(format!("{}", t.format_with_items(fmt.clone())), "23:56:04");
+    /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
+    /// ~~~~
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -435,6 +447,17 @@ impl NaiveTime {
     /// assert_eq!(t.format("%H:%M:%S").to_string(), "23:56:04");
     /// assert_eq!(t.format("%H:%M:%S%.6f").to_string(), "23:56:04.012345");
     /// assert_eq!(t.format("%-I:%M %p").to_string(), "11:56 PM");
+    /// ~~~~
+    ///
+    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    ///
+    /// ~~~~
+    /// use chrono::NaiveTime;
+    ///
+    /// let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
+    /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f")), "23:56:04.012345");
+    /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
     /// ~~~~
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -661,30 +684,125 @@ impl hash::Hash for NaiveTime {
     }
 }
 
+/// An addition of `Duration` to `NaiveTime` wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
+///
+/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+/// the addition assumes that **there is no leap second ever**,
+/// except when the `NaiveTime` itself represents a leap second
+/// in which case the assumption becomes that **there is exactly single leap second ever**.
+///
+/// Therefore, assuming that `03:00:60` is a leap second:
+///
+/// - `03:00:00 + 1s = 03:00:01`.
+/// - `03:00:59 + 1s = 03:01:00`.
+/// - `03:00:59 + 60s = 03:02:00`.
+/// - `03:00:60 + 1s = 03:01:00`.
+///   Note that the sum is identical to the previous; the associativity would no longer hold.
+/// - `03:00:60 + 60s = 03:01:59`.
+/// - `03:00:60 + 61s = 03:02:00`.
+/// - `03:00:60.1 + 0.8s = 03:00:60.9`.
+///
+/// It can be thought that the clock *forgets* a leap second once it ticked any direction.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveTime, Duration};
+///
+/// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::zero(),                  hmsm(3, 5, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(1),              hmsm(3, 5, 8, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(-1),             hmsm(3, 5, 6, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(60 + 4),         hmsm(3, 6, 11, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(7*60*60 - 6*60), hmsm(9, 59, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::milliseconds(80),        hmsm(3, 5, 7, 80));
+/// assert_eq!(hmsm(3, 5, 7, 950) + Duration::milliseconds(280),     hmsm(3, 5, 8, 230));
+/// assert_eq!(hmsm(3, 5, 7, 950) + Duration::milliseconds(-980),    hmsm(3, 5, 6, 970));
+/// ~~~~
+///
+/// The addition wraps around.
+///
+/// ~~~~
+/// # use chrono::{NaiveTime, Duration};
+/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(22*60*60), hmsm(1, 5, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(-8*60*60), hmsm(19, 5, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::days(800),         hmsm(3, 5, 7, 0));
+/// ~~~~
+///
+/// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveTime, Duration};
+/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::zero(),             hmsm(3, 5, 59, 1_300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::milliseconds(-500), hmsm(3, 5, 59, 800));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::milliseconds(500),  hmsm(3, 5, 59, 1_800));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::milliseconds(800),  hmsm(3, 6, 0, 100));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::seconds(10),        hmsm(3, 6, 9, 300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::seconds(-10),       hmsm(3, 5, 50, 300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::days(1),            hmsm(3, 5, 59, 300));
+/// ~~~~
 impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
 
-    fn add(self, rhs: Duration) -> NaiveTime {
-        // there is no direct interface in `Duration` to get only the nanosecond part,
-        // so we need to do the additional calculation here.
-        let mut rhssecs = rhs.num_seconds();
-        let mut rhs2 = rhs - Duration::seconds(rhssecs);
-        if rhs2 < Duration::zero() { // possible when rhs < 0
-            rhssecs -= 1;
-            rhs2 = rhs2 + Duration::seconds(1);
+    fn add(self, mut rhs: Duration) -> NaiveTime {
+        let mut secs = self.secs;
+        let mut frac = self.frac;
+
+        if frac >= 1_000_000_000 {
+            let rfrac = 2_000_000_000 - frac;
+            if rhs >= Duration::nanoseconds(rfrac as i64) {
+                rhs = rhs - Duration::nanoseconds(rfrac as i64);
+                secs += 1;
+                frac = 0;
+            } else if rhs < Duration::nanoseconds(-(frac as i64)) {
+                rhs = rhs + Duration::nanoseconds(frac as i64);
+                frac = 0;
+            } else {
+                frac = (frac as i64 + rhs.num_nanoseconds().unwrap()) as u32;
+                debug_assert!(frac < 2_000_000_000);
+                return NaiveTime { secs: secs, frac: frac };
+            }
         }
-        debug_assert!(rhs2 >= Duration::zero());
-        let mut secs = self.secs + (rhssecs % 86400 + 86400) as u32;
-        let mut nanos = self.frac + rhs2.num_nanoseconds().unwrap() as u32;
+        debug_assert!(secs <= 86400);
+        debug_assert!(frac < 1_000_000_000);
 
-        // always ignore leap seconds after the current whole second
-        let maxnanos = if self.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
+        let rhssecs = rhs.num_seconds();
+        let rhsfrac = (rhs - Duration::seconds(rhssecs)).num_nanoseconds().unwrap();
+        debug_assert!(Duration::seconds(rhssecs) + Duration::nanoseconds(rhsfrac) == rhs);
+        let rhssecs = (rhssecs % 86400) as i32;
+        let rhsfrac = rhsfrac as i32;
+        debug_assert!(-86400 < rhssecs && rhssecs < 86400);
+        debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
 
-        if nanos >= maxnanos {
-            nanos -= maxnanos;
+        let mut secs = secs as i32 + rhssecs;
+        let mut frac = frac as i32 + rhsfrac;
+        debug_assert!(-86400 < secs && secs <= 2 * 86400 + 1);
+        debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
+
+        if frac < 0 {
+            frac += 1_000_000_000;
+            secs -= 1;
+        } else if frac >= 1_000_000_000 {
+            frac -= 1_000_000_000;
             secs += 1;
         }
-        NaiveTime { secs: secs % 86400, frac: nanos }
+        debug_assert!(-86400 <= secs && secs <= 2 * 86400 + 1);
+        debug_assert!(0 <= frac && frac < 1_000_000_000);
+
+        if secs < 0 {
+            secs += 86400 * 2;
+        }
+        if secs >= 86400 * 2 {
+            secs -= 86400 * 2;
+        } else if secs >= 86400 {
+            secs -= 86400;
+        }
+        debug_assert!(0 <= secs && secs < 86400);
+
+        NaiveTime { secs: secs as u32, frac: frac as u32 }
     }
 }
 
@@ -1031,6 +1149,7 @@ mod tests {
         check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
         check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
+        check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(1800), hmsm(3, 5, 9, 100));
         check(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
         check(hmsm(3, 5, 7, 900), Duration::seconds(-86399), hmsm(3, 5, 8, 900));
         check(hmsm(3, 5, 7, 900), Duration::days(12345), hmsm(3, 5, 7, 900));
