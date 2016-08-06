@@ -1335,6 +1335,7 @@ impl Sub<NaiveDate> for NaiveDate {
 
 /// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
+/// It is same to the addition with a negated `Duration`.
 ///
 /// Panics on underflow or overflow.
 /// Use [`NaiveDate::checked_sub`](#method.checked_sub) to detect that.

@@ -690,7 +690,7 @@ impl hash::Hash for NaiveTime {
 /// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
 /// except when the `NaiveTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly single leap second ever**.
+/// in which case the assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// Therefore, assuming that `03:00:60` is a leap second:
 ///
@@ -751,6 +751,9 @@ impl Add<Duration> for NaiveTime {
         let mut secs = self.secs;
         let mut frac = self.frac;
 
+        // check if `self` is a leap second and adding `rhs` would escape that leap second.
+        // if it's the case, update `self` and `rhs` to involve no leap second;
+        // otherwise the addition immediately finishes.
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
             if rhs >= Duration::nanoseconds(rfrac as i64) {
@@ -806,25 +809,144 @@ impl Add<Duration> for NaiveTime {
     }
 }
 
+/// A subtraction of `NaiveTime` from `NaiveTime` yields a `Duration` within +/- 1 day.
+/// This does not overflow or underflow at all.
+///
+/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+/// the addition assumes that **there is no leap second ever**,
+/// except when any of the `NaiveTime`s themselves represents a leap second
+/// in which case the assumption becomes that
+/// **there are exactly one (or two) leap second(s) ever**.
+///
+/// Therefore, assuming that `03:00:60` and `04:00:60` are leap seconds:
+///
+/// - `04:00:00 - 03:00:00 = 3600s`.
+/// - `03:01:00 - 03:00:00 = 60s`.
+/// - `03:00:60 - 03:00:00 = 60s`.
+///   Note that the difference is identical to the previous.
+/// - `03:00:60.6 - 03:00:59.4 = 1.2s`.
+/// - `03:01:00 - 03:00:59.8 = 0.2s`.
+/// - `03:01:00 - 03:00:60.5 = 0.5s`.
+///   Note that the difference is larger than the previous,
+///   even though the leap second clearly follows the previous whole second.
+/// - `04:00:60.9 - 03:00:60.1 =
+///   (04:00:60.9 - 04:00:00) + (04:00:00 - 03:01:00) + (03:01:00 - 03:00:60.1) =
+///   60.9s + 3540s + 0.9s = 3601.8s`.
+///
+/// Note that `a - b` and `-(b - a)` are still same even under this principle.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveTime, Duration};
+///
+/// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 7, 900), Duration::zero());
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 7, 875), Duration::milliseconds(25));
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 6, 925), Duration::milliseconds(975));
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 0, 900), Duration::seconds(7));
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 0, 7, 900), Duration::seconds(5 * 60));
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(0, 5, 7, 900), Duration::seconds(3 * 3600));
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(4, 5, 7, 900), Duration::seconds(-3600));
+/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(2, 4, 6, 800),
+///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that
+/// there were no other leap seconds happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveTime, Duration};
+/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 0, 59, 1_000) - hmsm(3, 0, 59, 0), Duration::seconds(1));
+/// assert_eq!(hmsm(3, 0, 59, 1_500) - hmsm(3, 0, 59, 0), Duration::milliseconds(1500));
+/// assert_eq!(hmsm(3, 0, 59, 1_000) - hmsm(3, 0, 0, 0), Duration::seconds(60));
+/// assert_eq!(hmsm(3, 0, 0, 0) - hmsm(2, 59, 59, 1_000), Duration::seconds(1));
+/// assert_eq!(hmsm(3, 0, 59, 1_000) - hmsm(2, 59, 59, 1_000), Duration::seconds(61));
+/// ~~~~
 impl Sub<NaiveTime> for NaiveTime {
     type Output = Duration;
 
     fn sub(self, rhs: NaiveTime) -> Duration {
-        // the number of whole non-leap seconds
-        let secs = self.secs as i64 - rhs.secs as i64 - 1;
+        //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
+        //     |    |    :    |    |    |    |    |    |    |    :    |    |
+        // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
+        //          |   `rhs` |                             |    `self`
+        //          |======================================>|       |
+        //          |     |  `self.secs - rhs.secs`         |`self.frac`
+        //          |====>|   |                             |======>|
+        //      `rhs.frac`|========================================>|
+        //          |     |   |        `self - rhs`         |       |
 
-        // the fractional second from the rhs to the next non-leap second
-        let maxnanos = if rhs.frac >= 1_000_000_000 {2_000_000_000} else {1_000_000_000};
-        let nanos1 = maxnanos - rhs.frac;
+        use std::cmp::Ordering;
 
-        // the fractional second from the last leap or non-leap second to the lhs
-        let lastfrac = if self.frac >= 1_000_000_000 {1_000_000_000} else {0};
-        let nanos2 = self.frac - lastfrac;
+        let secs = self.secs as i64 - rhs.secs as i64;
+        let frac = self.frac as i64 - rhs.frac as i64;
 
-        Duration::seconds(secs) + Duration::nanoseconds(nanos1 as i64 + nanos2 as i64)
+        // `secs` may contain a leap second yet to be counted
+        let adjust = match self.secs.cmp(&rhs.secs) {
+            Ordering::Greater => if rhs.frac >= 1_000_000_000 { 1 } else { 0 },
+            Ordering::Equal => 0,
+            Ordering::Less => if self.frac >= 1_000_000_000 { -1 } else { 0 },
+        };
+
+        Duration::seconds(secs + adjust) + Duration::nanoseconds(frac)
     }
 }
 
+/// A subtraction of `Duration` from `NaiveTime` wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
+/// It is same to the addition with a negated `Duration`.
+///
+/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+/// the addition assumes that **there is no leap second ever**,
+/// except when the `NaiveTime` itself represents a leap second
+/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// Therefore, assuming that `03:00:60` is a leap second:
+///
+/// - `03:00:00 - 1s = 02:59:59`.
+/// - `03:01:00 - 1s = 03:00:59`.
+/// - `03:01:00 - 60s = 03:00:00`.
+/// - `03:00:60 - 60s = 03:00:00`.
+///   Note that the result is identical to the previous; the associativity would no longer hold.
+/// - `03:00:60.7 - 0.4s = 03:00:60.3`.
+/// - `03:00:60.7 - 0.9s = 03:00:59.8`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveTime, Duration};
+///
+/// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::zero(),                  hmsm(3, 5, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(1),              hmsm(3, 5, 6, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(60 + 5),         hmsm(3, 4, 2, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(2*60*60 + 6*60), hmsm(0, 59, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::milliseconds(80),        hmsm(3, 5, 6, 920));
+/// assert_eq!(hmsm(3, 5, 7, 950) - Duration::milliseconds(280),     hmsm(3, 5, 7, 670));
+/// ~~~~
+///
+/// The subtraction wraps around.
+///
+/// ~~~~
+/// # use chrono::{NaiveTime, Duration};
+/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(8*60*60), hmsm(19, 5, 7, 0));
+/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::days(800),        hmsm(3, 5, 7, 0));
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveTime, Duration};
+/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::zero(),             hmsm(3, 5, 59, 1_300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(200),  hmsm(3, 5, 59, 1_100));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(500),  hmsm(3, 5, 59, 800));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::seconds(60),        hmsm(3, 5, 0, 300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::days(1),            hmsm(3, 6, 0, 300));
+/// ~~~~
 impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1139,47 +1261,53 @@ mod tests {
 
     #[test]
     fn test_time_add() {
-        fn check(lhs: NaiveTime, rhs: Duration, sum: NaiveTime) {
-            assert_eq!(lhs + rhs, sum);
-            //assert_eq!(rhs + lhs, sum);
+        macro_rules! check {
+            ($lhs:expr, $rhs:expr, $sum:expr) => ({
+                assert_eq!($lhs + $rhs, $sum);
+                //assert_eq!($rhs + $lhs, $sum);
+            })
         }
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
-        check(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
-        check(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
-        check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
-        check(hmsm(3, 5, 7, 1_300), Duration::milliseconds(1800), hmsm(3, 5, 9, 100));
-        check(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
-        check(hmsm(3, 5, 7, 900), Duration::seconds(-86399), hmsm(3, 5, 8, 900));
-        check(hmsm(3, 5, 7, 900), Duration::days(12345), hmsm(3, 5, 7, 900));
+        check!(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
+        check!(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
+        check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
+        check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(1800), hmsm(3, 5, 9, 100));
+        check!(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
+        check!(hmsm(3, 5, 7, 900), Duration::seconds(-86399), hmsm(3, 5, 8, 900));
+        check!(hmsm(3, 5, 7, 900), Duration::days(12345), hmsm(3, 5, 7, 900));
+        check!(hmsm(3, 5, 7, 1_300), Duration::days(1), hmsm(3, 5, 7, 300));
+        check!(hmsm(3, 5, 7, 1_300), Duration::days(-1), hmsm(3, 5, 8, 300));
 
         // regression tests for #37
-        check(hmsm(0, 0, 0, 0), Duration::milliseconds(-990), hmsm(23, 59, 59, 10));
-        check(hmsm(0, 0, 0, 0), Duration::milliseconds(-9990), hmsm(23, 59, 50, 10));
+        check!(hmsm(0, 0, 0, 0), Duration::milliseconds(-990), hmsm(23, 59, 59, 10));
+        check!(hmsm(0, 0, 0, 0), Duration::milliseconds(-9990), hmsm(23, 59, 50, 10));
     }
 
     #[test]
     fn test_time_sub() {
-        fn check(lhs: NaiveTime, rhs: NaiveTime, diff: Duration) {
-            // `time1 - time2 = duration` is equivalent to `time2 - time1 = -duration`
-            assert_eq!(lhs - rhs, diff);
-            assert_eq!(rhs - lhs, -diff);
+        macro_rules! check {
+            ($lhs:expr, $rhs:expr, $diff:expr) => ({
+                // `time1 - time2 = duration` is equivalent to `time2 - time1 = -duration`
+                assert_eq!($lhs - $rhs, $diff);
+                assert_eq!($rhs - $lhs, -$diff);
+            })
         }
 
         let hmsm = |h,m,s,mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
-        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
-        check(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
-        check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
-        check(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 300),
-                   Duration::seconds(3600 + 60) + Duration::milliseconds(900));
+        check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
+        check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
+        check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
+        check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 300),
+               Duration::seconds(3600 + 60) + Duration::milliseconds(900));
 
         // treats the leap second as if it coincides with the prior non-leap second,
         // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
-        check(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), Duration::milliseconds(400));
-        check(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), Duration::milliseconds(400));
-        check(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), Duration::milliseconds(400));
+        check!(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), Duration::milliseconds(400));
+        check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), Duration::milliseconds(1400));
+        check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), Duration::milliseconds(1400));
 
         // additional equality: `time1 + duration = time2` is equivalent to
         // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
