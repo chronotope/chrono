@@ -25,28 +25,78 @@ pub struct NaiveDateTime {
 
 impl NaiveDateTime {
     /// Makes a new `NaiveDateTime` from date and time components.
-    /// Equivalent to `date.and_time(time)` and many other helper constructors on `NaiveDate`.
+    /// Equivalent to [`date.and_time(time)`](../date/struct.NaiveDate.html#method.and_time)
+    /// and many other helper constructors on `NaiveDate`.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveTime, NaiveDateTime};
+    ///
+    /// let d = NaiveDate::from_ymd(2015, 6, 3);
+    /// let t = NaiveTime::from_hms_milli(12, 34, 56, 789);
+    ///
+    /// let dt = NaiveDateTime::new(d, t);
+    /// assert_eq!(dt.date(), d);
+    /// assert_eq!(dt.time(), t);
+    /// ~~~~
     #[inline]
     pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime { date: date, time: time }
     }
 
-    /// Makes a new `NaiveDateTime` from the number of non-leap seconds
+    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
+    /// from the number of non-leap seconds
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
+    /// The nanosecond part can exceed 1,000,000,000
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDateTime, NaiveDate};
+    ///
+    /// let dt = NaiveDateTime::from_timestamp(0, 42_000_000);
+    /// assert_eq!(dt, NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 0, 42));
+    ///
+    /// let dt = NaiveDateTime::from_timestamp(1_000_000_000, 0);
+    /// assert_eq!(dt, NaiveDate::from_ymd(2001, 9, 9).and_hms(1, 46, 40));
+    /// ~~~~
     #[inline]
     pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
         datetime.expect("invalid or out-of-range datetime")
     }
 
-    /// Makes a new `NaiveDateTime` from the number of non-leap seconds
+    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
+    /// from the number of non-leap seconds
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
+    /// The nanosecond part can exceed 1,000,000,000
+    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
     /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDateTime, NaiveDate};
+    /// use std::i64;
+    ///
+    /// let from_timestamp_opt = NaiveDateTime::from_timestamp_opt;
+    /// assert!(from_timestamp_opt(0, 0).is_some());
+    /// assert!(from_timestamp_opt(0, 999_999_999).is_some());
+    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_some()); // leap second
+    /// assert!(from_timestamp_opt(0, 2_000_000_000).is_none());
+    /// assert!(from_timestamp_opt(i64::MAX, 0).is_none());
+    /// ~~~~
     #[inline]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = div_mod_floor(secs, 86400);
@@ -74,6 +124,64 @@ impl NaiveDateTime {
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
     /// See the [`format::strftime` module](../../format/strftime/index.html)
     /// on the supported escape sequences.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDateTime, NaiveDate};
+    ///
+    /// let parse_from_str = NaiveDateTime::parse_from_str;
+    ///
+    /// assert_eq!(parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S"),
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4)));
+    /// assert_eq!(parse_from_str("5sep2015pm012345.6789", "%d%b%Y%p%I%M%S%.f"),
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5).and_hms_micro(13, 23, 45, 678_900)));
+    /// ~~~~
+    ///
+    /// Offset is ignored for the purpose of parsing.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDateTime, NaiveDate};
+    /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    /// assert_eq!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+    ///            Ok(NaiveDate::from_ymd(2014, 5, 17).and_hms(12, 34, 56)));
+    /// ~~~~
+    ///
+    /// [Leap seconds](./index.html#leap-second-handling) are correctly handled by
+    /// treating any time of the form `hh:mm:60` as a leap second.
+    /// (This equally applies to the formatting, so the round trip is possible.)
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDateTime, NaiveDate};
+    /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    /// assert_eq!(parse_from_str("2015-07-01 08:59:60.123", "%Y-%m-%d %H:%M:%S%.f"),
+    ///            Ok(NaiveDate::from_ymd(2015, 7, 1).and_hms_milli(8, 59, 59, 1_123)));
+    /// ~~~~
+    ///
+    /// Missing seconds are assumed to be zero,
+    /// but out-of-bound times or insufficient fields are errors otherwise.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDateTime, NaiveDate};
+    /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    /// assert_eq!(parse_from_str("94/9/4 7:15", "%y/%m/%d %H:%M"),
+    ///            Ok(NaiveDate::from_ymd(1994, 9, 4).and_hms(7, 15, 0)));
+    ///
+    /// assert!(parse_from_str("04m33s", "%Mm%Ss").is_err());
+    /// assert!(parse_from_str("94/9/4 12", "%y/%m/%d %H").is_err());
+    /// assert!(parse_from_str("94/9/4 17:60", "%y/%m/%d %H:%M").is_err());
+    /// assert!(parse_from_str("94/9/4 24:00:00", "%y/%m/%d %H:%M:%S").is_err());
+    /// ~~~~
+    ///
+    /// All parsed fields should be consistent to each other, otherwise it's an error.
+    ///
+    /// ~~~~
+    /// # use chrono::NaiveDateTime;
+    /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    /// let fmt = "%Y-%m-%d %H:%M:%S = UNIX timestamp %s";
+    /// assert!(parse_from_str("2001-09-09 01:46:39 = UNIX timestamp 999999999", fmt).is_ok());
+    /// assert!(parse_from_str("1970-01-01 00:00:00 = UNIX timestamp 1", fmt).is_err());
+    /// ~~~~
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
@@ -181,6 +289,32 @@ impl NaiveDateTime {
     }
 
     /// Formats the combined date and time with the specified formatting items.
+    /// Otherwise it is same to the ordinary [`format`](#method.format) method.
+    ///
+    /// The `Iterator` of items should be `Clone`able,
+    /// since the resulting `DelayedFormat` value may be formatted multiple times.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    /// use chrono::format::strftime::StrftimeItems;
+    ///
+    /// let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S");
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4);
+    /// assert_eq!(dt.format_with_items(fmt.clone()).to_string(), "2015-09-05 23:56:04");
+    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(),    "2015-09-05 23:56:04");
+    /// ~~~~
+    ///
+    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    ///
+    /// ~~~~
+    /// # use chrono::NaiveDate;
+    /// # use chrono::format::strftime::StrftimeItems;
+    /// # let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
+    /// # let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4);
+    /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
+    /// ~~~~
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -190,6 +324,35 @@ impl NaiveDateTime {
     /// Formats the combined date and time with the specified format string.
     /// See the [`format::strftime` module](../../format/strftime/index.html)
     /// on the supported escape sequences.
+    ///
+    /// This returns a `DelayedFormat`,
+    /// which gets converted to a string only when actual formatting happens.
+    /// You may use the `to_string` method to get a `String`,
+    /// or just feed it into `print!` and other formatting macros.
+    /// (In this way it avoids the redundant memory allocation.)
+    ///
+    /// A wrong format string does *not* issue an error immediately.
+    /// Rather, converting or formatting the `DelayedFormat` fails.
+    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4);
+    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
+    /// assert_eq!(dt.format("around %l %p on %b %-d").to_string(), "around 11 PM on Sep 5");
+    /// ~~~~
+    ///
+    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    ///
+    /// ~~~~
+    /// # use chrono::NaiveDate;
+    /// # let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4);
+    /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
+    /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
+    /// ~~~~
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))

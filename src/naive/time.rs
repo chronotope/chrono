@@ -404,19 +404,17 @@ impl NaiveTime {
     /// let fmt = StrftimeItems::new("%H:%M:%S");
     /// let t = NaiveTime::from_hms(23, 56, 4);
     /// assert_eq!(t.format_with_items(fmt.clone()).to_string(), "23:56:04");
-    /// assert_eq!(t.format("%H:%M:%S").to_string(), "23:56:04");
+    /// assert_eq!(t.format("%H:%M:%S").to_string(),             "23:56:04");
     /// ~~~~
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
     ///
     /// ~~~~
-    /// use chrono::NaiveTime;
-    /// use chrono::format::strftime::StrftimeItems;
-    ///
-    /// let fmt = StrftimeItems::new("%H:%M:%S");
-    /// let t = NaiveTime::from_hms(23, 56, 4);
-    /// assert_eq!(format!("{}", t.format_with_items(fmt.clone())), "23:56:04");
-    /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
+    /// # use chrono::NaiveTime;
+    /// # use chrono::format::strftime::StrftimeItems;
+    /// # let fmt = StrftimeItems::new("%H:%M:%S").clone();
+    /// # let t = NaiveTime::from_hms(23, 56, 4);
+    /// assert_eq!(format!("{}", t.format_with_items(fmt)), "23:56:04");
     /// ~~~~
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
@@ -452,9 +450,8 @@ impl NaiveTime {
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
     ///
     /// ~~~~
-    /// use chrono::NaiveTime;
-    ///
-    /// let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+    /// # use chrono::NaiveTime;
+    /// # let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
     /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
     /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f")), "23:56:04.012345");
     /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
@@ -941,11 +938,11 @@ impl Sub<NaiveTime> for NaiveTime {
 /// ~~~~
 /// # use chrono::{NaiveTime, Duration};
 /// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::zero(),             hmsm(3, 5, 59, 1_300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(200),  hmsm(3, 5, 59, 1_100));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(500),  hmsm(3, 5, 59, 800));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::seconds(60),        hmsm(3, 5, 0, 300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::days(1),            hmsm(3, 6, 0, 300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::zero(),            hmsm(3, 5, 59, 1_300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(200), hmsm(3, 5, 59, 1_100));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(500), hmsm(3, 5, 59, 800));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::seconds(60),       hmsm(3, 5, 0, 300));
+/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::days(1),           hmsm(3, 6, 0, 300));
 /// ~~~~
 impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
@@ -954,6 +951,34 @@ impl Sub<Duration> for NaiveTime {
     fn sub(self, rhs: Duration) -> NaiveTime { self.add(-rhs) }
 }
 
+/// The `Debug` output of the naive time `t` is same to
+/// [`t.format("%H:%M:%S%.f")`](../../format/strftime/index.html).
+///
+/// The string printed can be readily parsed via the `parse` method on `str`.
+///
+/// It should be noted that, for leap seconds not on the minute boundary,
+/// it may print a representation not distinguishable from non-leap seconds.
+/// This doesn't matter in practice, since such leap seconds never happened.
+/// (By the time of the first leap second on 1972-06-30,
+/// every time zone offset around the world has standardized to the 5-minute alignment.)
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveTime;
+///
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms(23, 56, 4)),              "23:56:04");
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(23, 56, 4, 12)),    "23:56:04.012");
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_micro(23, 56, 4, 1234)),  "23:56:04.001234");
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_nano(23, 56, 4, 123456)), "23:56:04.000123456");
+/// ~~~~
+///
+/// Leap seconds may also be used.
+///
+/// ~~~~
+/// # use chrono::NaiveTime;
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(6, 59, 59, 1_500)), "06:59:60.500");
+/// ~~~~
 impl fmt::Debug for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (hour, min, sec) = self.hms();
@@ -976,10 +1001,57 @@ impl fmt::Debug for NaiveTime {
     }
 }
 
+/// The `Display` output of the naive time `t` is same to
+/// [`t.format("%H:%M:%S%.f")`](../../format/strftime/index.html).
+///
+/// The string printed can be readily parsed via the `parse` method on `str`.
+///
+/// It should be noted that, for leap seconds not on the minute boundary,
+/// it may print a representation not distinguishable from non-leap seconds.
+/// This doesn't matter in practice, since such leap seconds never happened.
+/// (By the time of the first leap second on 1972-06-30,
+/// every time zone offset around the world has standardized to the 5-minute alignment.)
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveTime;
+///
+/// assert_eq!(format!("{}", NaiveTime::from_hms(23, 56, 4)),              "23:56:04");
+/// assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 56, 4, 12)),    "23:56:04.012");
+/// assert_eq!(format!("{}", NaiveTime::from_hms_micro(23, 56, 4, 1234)),  "23:56:04.001234");
+/// assert_eq!(format!("{}", NaiveTime::from_hms_nano(23, 56, 4, 123456)), "23:56:04.000123456");
+/// ~~~~
+///
+/// Leap seconds may also be used.
+///
+/// ~~~~
+/// # use chrono::NaiveTime;
+/// assert_eq!(format!("{}", NaiveTime::from_hms_milli(6, 59, 59, 1_500)), "06:59:60.500");
+/// ~~~~
 impl fmt::Display for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
+/// Parsing a `str` into a `NaiveTime` uses the same format,
+/// [`%H:%M:%S%.f`](../../format/strftime/index.html), as in `Debug` and `Display`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveTime;
+///
+/// let t = NaiveTime::from_hms(23, 56, 4);
+/// assert_eq!("23:56:04".parse::<NaiveTime>(), Ok(t));
+///
+/// let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
+/// assert_eq!("23:56:4.012345678".parse::<NaiveTime>(), Ok(t));
+///
+/// let t = NaiveTime::from_hms_nano(23, 59, 59, 1_234_567_890); // leap second
+/// assert_eq!("23:59:60.23456789".parse::<NaiveTime>(), Ok(t));
+///
+/// assert!("foo".parse::<NaiveTime>().is_err());
+/// ~~~~
 impl str::FromStr for NaiveTime {
     type Err = ParseError;
 

@@ -850,18 +850,17 @@ impl NaiveDate {
     /// let fmt = StrftimeItems::new("%Y-%m-%d");
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.format_with_items(fmt.clone()).to_string(), "2015-09-05");
-    /// assert_eq!(d.format("%Y-%m-%d").to_string(), "2015-09-05");
+    /// assert_eq!(d.format("%Y-%m-%d").to_string(),             "2015-09-05");
     /// ~~~~
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
     ///
     /// ~~~~
-    /// use chrono::NaiveDate;
-    /// use chrono::format::strftime::StrftimeItems;
-    ///
-    /// let fmt = StrftimeItems::new("%Y-%m-%d");
-    /// let d = NaiveDate::from_ymd(2015, 9, 5);
-    /// assert_eq!(format!("{}", d.format_with_items(fmt.clone())), "2015-09-05");
+    /// # use chrono::NaiveDate;
+    /// # use chrono::format::strftime::StrftimeItems;
+    /// # let fmt = StrftimeItems::new("%Y-%m-%d").clone();
+    /// # let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ~~~~
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
@@ -896,9 +895,8 @@ impl NaiveDate {
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
     ///
     /// ~~~~
-    /// use chrono::NaiveDate;
-    ///
-    /// let d = NaiveDate::from_ymd(2015, 9, 5);
+    /// # use chrono::NaiveDate;
+    /// # let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
     /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ~~~~
@@ -1364,7 +1362,8 @@ impl Sub<Duration> for NaiveDate {
     }
 }
 
-/// The `Debug` output of the naive date `d` is same to `d.format("%Y-%m-%d")`.
+/// The `Debug` output of the naive date `d` is same to
+/// [`d.format("%Y-%m-%d")`](../../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1398,7 +1397,8 @@ impl fmt::Debug for NaiveDate {
     }
 }
 
-/// The `Display` output of the naive date `d` is same to `d.format("%Y-%m-%d")`.
+/// The `Display` output of the naive date `d` is same to
+/// [`d.format("%Y-%m-%d")`](../../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1423,7 +1423,8 @@ impl fmt::Display for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
-/// Parsing a str into a `NaiveDate` uses the same format, `%Y-%m-%d`, as `Debug` and `Display`.
+/// Parsing a `str` into a `NaiveDate` uses the same format,
+/// [`%Y-%m-%d`](../../format/strftime/index.html), as in `Debug` and `Display`.
 ///
 /// # Example
 ///
@@ -1431,10 +1432,10 @@ impl fmt::Display for NaiveDate {
 /// use chrono::NaiveDate;
 ///
 /// let d = NaiveDate::from_ymd(2015, 9, 18);
-/// assert_eq!(format!("{}", d).parse::<NaiveDate>(), Ok(d));
+/// assert_eq!("2015-09-18".parse::<NaiveDate>(), Ok(d));
 ///
 /// let d = NaiveDate::from_ymd(12345, 6, 7);
-/// assert_eq!(format!("{}", d).parse::<NaiveDate>(), Ok(d));
+/// assert_eq!("+12345-6-7".parse::<NaiveDate>(), Ok(d));
 ///
 /// assert!("foo".parse::<NaiveDate>().is_err());
 /// ~~~~
