@@ -91,6 +91,7 @@ impl NaiveDateTime {
     /// use std::i64;
     ///
     /// let from_timestamp_opt = NaiveDateTime::from_timestamp_opt;
+    ///
     /// assert!(from_timestamp_opt(0, 0).is_some());
     /// assert!(from_timestamp_opt(0, 999_999_999).is_some());
     /// assert!(from_timestamp_opt(0, 1_500_000_000).is_some()); // leap second

@@ -117,12 +117,13 @@ impl NaiveTime {
     /// ~~~~
     /// use chrono::NaiveTime;
     ///
-    /// let hms = |h,m,s| NaiveTime::from_hms_opt(h, m, s);
-    /// assert!(hms(0, 0, 0).is_some());
-    /// assert!(hms(23, 59, 59).is_some());
-    /// assert!(hms(24, 0, 0).is_none());
-    /// assert!(hms(23, 60, 0).is_none());
-    /// assert!(hms(23, 59, 60).is_none());
+    /// let from_hms_opt = NaiveTime::from_hms_opt;
+    ///
+    /// assert!(from_hms_opt(0, 0, 0).is_some());
+    /// assert!(from_hms_opt(23, 59, 59).is_some());
+    /// assert!(from_hms_opt(24, 0, 0).is_none());
+    /// assert!(from_hms_opt(23, 60, 0).is_none());
+    /// assert!(from_hms_opt(23, 59, 60).is_none());
     /// ~~~~
     #[inline]
     pub fn from_hms_opt(hour: u32, min: u32, sec: u32) -> Option<NaiveTime> {
@@ -164,14 +165,15 @@ impl NaiveTime {
     /// ~~~~
     /// use chrono::NaiveTime;
     ///
-    /// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli_opt(h, m, s, milli);
-    /// assert!(hmsm(0, 0, 0, 0).is_some());
-    /// assert!(hmsm(23, 59, 59, 999).is_some());
-    /// assert!(hmsm(23, 59, 59, 1_999).is_some()); // a leap second following 23:59:59
-    /// assert!(hmsm(24, 0, 0, 0).is_none());
-    /// assert!(hmsm(23, 60, 0, 0).is_none());
-    /// assert!(hmsm(23, 59, 60, 0).is_none());
-    /// assert!(hmsm(23, 59, 59, 2_000).is_none());
+    /// let from_hmsm_opt = NaiveTime::from_hms_milli_opt;
+    ///
+    /// assert!(from_hmsm_opt(0, 0, 0, 0).is_some());
+    /// assert!(from_hmsm_opt(23, 59, 59, 999).is_some());
+    /// assert!(from_hmsm_opt(23, 59, 59, 1_999).is_some()); // a leap second after 23:59:59
+    /// assert!(from_hmsm_opt(24, 0, 0, 0).is_none());
+    /// assert!(from_hmsm_opt(23, 60, 0, 0).is_none());
+    /// assert!(from_hmsm_opt(23, 59, 60, 0).is_none());
+    /// assert!(from_hmsm_opt(23, 59, 59, 2_000).is_none());
     /// ~~~~
     #[inline]
     pub fn from_hms_milli_opt(hour: u32, min: u32, sec: u32, milli: u32) -> Option<NaiveTime> {
@@ -214,14 +216,15 @@ impl NaiveTime {
     /// ~~~~
     /// use chrono::NaiveTime;
     ///
-    /// let hmsu = |h,m,s,micro| NaiveTime::from_hms_micro_opt(h, m, s, micro);
-    /// assert!(hmsu(0, 0, 0, 0).is_some());
-    /// assert!(hmsu(23, 59, 59, 999_999).is_some());
-    /// assert!(hmsu(23, 59, 59, 1_999_999).is_some()); // a leap second following 23:59:59
-    /// assert!(hmsu(24, 0, 0, 0).is_none());
-    /// assert!(hmsu(23, 60, 0, 0).is_none());
-    /// assert!(hmsu(23, 59, 60, 0).is_none());
-    /// assert!(hmsu(23, 59, 59, 2_000_000).is_none());
+    /// let from_hmsu_opt = NaiveTime::from_hms_micro_opt;
+    ///
+    /// assert!(from_hmsu_opt(0, 0, 0, 0).is_some());
+    /// assert!(from_hmsu_opt(23, 59, 59, 999_999).is_some());
+    /// assert!(from_hmsu_opt(23, 59, 59, 1_999_999).is_some()); // a leap second after 23:59:59
+    /// assert!(from_hmsu_opt(24, 0, 0, 0).is_none());
+    /// assert!(from_hmsu_opt(23, 60, 0, 0).is_none());
+    /// assert!(from_hmsu_opt(23, 59, 60, 0).is_none());
+    /// assert!(from_hmsu_opt(23, 59, 59, 2_000_000).is_none());
     /// ~~~~
     #[inline]
     pub fn from_hms_micro_opt(hour: u32, min: u32, sec: u32, micro: u32) -> Option<NaiveTime> {
@@ -264,14 +267,15 @@ impl NaiveTime {
     /// ~~~~
     /// use chrono::NaiveTime;
     ///
-    /// let hmsn = |h,m,s,nano| NaiveTime::from_hms_nano_opt(h, m, s, nano);
-    /// assert!(hmsn(0, 0, 0, 0).is_some());
-    /// assert!(hmsn(23, 59, 59, 999_999_999).is_some());
-    /// assert!(hmsn(23, 59, 59, 1_999_999_999).is_some()); // a leap second following 23:59:59
-    /// assert!(hmsn(24, 0, 0, 0).is_none());
-    /// assert!(hmsn(23, 60, 0, 0).is_none());
-    /// assert!(hmsn(23, 59, 60, 0).is_none());
-    /// assert!(hmsn(23, 59, 59, 2_000_000_000).is_none());
+    /// let from_hmsn_opt = NaiveTime::from_hms_nano_opt;
+    ///
+    /// assert!(from_hmsn_opt(0, 0, 0, 0).is_some());
+    /// assert!(from_hmsn_opt(23, 59, 59, 999_999_999).is_some());
+    /// assert!(from_hmsn_opt(23, 59, 59, 1_999_999_999).is_some()); // a leap second after 23:59:59
+    /// assert!(from_hmsn_opt(24, 0, 0, 0).is_none());
+    /// assert!(from_hmsn_opt(23, 60, 0, 0).is_none());
+    /// assert!(from_hmsn_opt(23, 59, 60, 0).is_none());
+    /// assert!(from_hmsn_opt(23, 59, 59, 2_000_000_000).is_none());
     /// ~~~~
     #[inline]
     pub fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
@@ -315,12 +319,13 @@ impl NaiveTime {
     /// ~~~~
     /// use chrono::NaiveTime;
     ///
-    /// let secs = |secs,nano| NaiveTime::from_num_seconds_from_midnight_opt(secs, nano);
-    /// assert!(secs(0, 0).is_some());
-    /// assert!(secs(86399, 999_999_999).is_some());
-    /// assert!(secs(86399, 1_999_999_999).is_some()); // a leap second following 23:59:59
-    /// assert!(secs(86400, 0).is_none());
-    /// assert!(secs(86399, 2_000_000_000).is_none());
+    /// let from_nsecs_opt = NaiveTime::from_num_seconds_from_midnight_opt;
+    ///
+    /// assert!(from_nsecs_opt(0, 0).is_some());
+    /// assert!(from_nsecs_opt(86399, 999_999_999).is_some());
+    /// assert!(from_nsecs_opt(86399, 1_999_999_999).is_some()); // a leap second after 23:59:59
+    /// assert!(from_nsecs_opt(86400, 0).is_none());
+    /// assert!(from_nsecs_opt(86399, 2_000_000_000).is_none());
     /// ~~~~
     #[inline]
     pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
@@ -337,9 +342,11 @@ impl NaiveTime {
     /// ~~~~
     /// use chrono::NaiveTime;
     ///
-    /// assert_eq!(NaiveTime::parse_from_str("23:56:04", "%H:%M:%S"),
+    /// let parse_from_str = NaiveTime::parse_from_str;
+    ///
+    /// assert_eq!(parse_from_str("23:56:04", "%H:%M:%S"),
     ///            Ok(NaiveTime::from_hms(23, 56, 4)));
-    /// assert_eq!(NaiveTime::parse_from_str("pm012345.6789", "%p%I%M%S%.f"),
+    /// assert_eq!(parse_from_str("pm012345.6789", "%p%I%M%S%.f"),
     ///            Ok(NaiveTime::from_hms_micro(13, 23, 45, 678_900)));
     /// ~~~~
     ///
@@ -347,7 +354,8 @@ impl NaiveTime {
     ///
     /// ~~~~
     /// # use chrono::NaiveTime;
-    /// assert_eq!(NaiveTime::parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+    /// # let parse_from_str = NaiveTime::parse_from_str;
+    /// assert_eq!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
     ///            Ok(NaiveTime::from_hms(12, 34, 56)));
     /// ~~~~
     ///
@@ -357,7 +365,8 @@ impl NaiveTime {
     ///
     /// ~~~~
     /// # use chrono::NaiveTime;
-    /// assert_eq!(NaiveTime::parse_from_str("08:59:60.123", "%H:%M:%S%.f"),
+    /// # let parse_from_str = NaiveTime::parse_from_str;
+    /// assert_eq!(parse_from_str("08:59:60.123", "%H:%M:%S%.f"),
     ///            Ok(NaiveTime::from_hms_milli(8, 59, 59, 1_123)));
     /// ~~~~
     ///
@@ -366,13 +375,14 @@ impl NaiveTime {
     ///
     /// ~~~~
     /// # use chrono::NaiveTime;
-    /// assert_eq!(NaiveTime::parse_from_str("7:15", "%H:%M"),
+    /// # let parse_from_str = NaiveTime::parse_from_str;
+    /// assert_eq!(parse_from_str("7:15", "%H:%M"),
     ///            Ok(NaiveTime::from_hms(7, 15, 0)));
     ///
-    /// assert!(NaiveTime::parse_from_str("04m33s", "%Mm%Ss").is_err());
-    /// assert!(NaiveTime::parse_from_str("12", "%H").is_err());
-    /// assert!(NaiveTime::parse_from_str("17:60", "%H:%M").is_err());
-    /// assert!(NaiveTime::parse_from_str("24:00:00", "%H:%M:%S").is_err());
+    /// assert!(parse_from_str("04m33s", "%Mm%Ss").is_err());
+    /// assert!(parse_from_str("12", "%H").is_err());
+    /// assert!(parse_from_str("17:60", "%H:%M").is_err());
+    /// assert!(parse_from_str("24:00:00", "%H:%M:%S").is_err());
     /// ~~~~
     ///
     /// All parsed fields should be consistent to each other, otherwise it's an error.
@@ -381,7 +391,8 @@ impl NaiveTime {
     ///
     /// ~~~~
     /// # use chrono::NaiveTime;
-    /// assert!(NaiveTime::parse_from_str("13:07 AM", "%H:%M %p").is_err());
+    /// # let parse_from_str = NaiveTime::parse_from_str;
+    /// assert!(parse_from_str("13:07 AM", "%H:%M %p").is_err());
     /// ~~~~
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
         let mut parsed = Parsed::new();
@@ -707,39 +718,41 @@ impl hash::Hash for NaiveTime {
 /// ~~~~
 /// use chrono::{NaiveTime, Duration};
 ///
-/// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::zero(),                  hmsm(3, 5, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(1),              hmsm(3, 5, 8, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(-1),             hmsm(3, 5, 6, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(60 + 4),         hmsm(3, 6, 11, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(7*60*60 - 6*60), hmsm(9, 59, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::milliseconds(80),        hmsm(3, 5, 7, 80));
-/// assert_eq!(hmsm(3, 5, 7, 950) + Duration::milliseconds(280),     hmsm(3, 5, 8, 230));
-/// assert_eq!(hmsm(3, 5, 7, 950) + Duration::milliseconds(-980),    hmsm(3, 5, 6, 970));
+/// let from_hmsm = NaiveTime::from_hms_milli;
+///
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::zero(),                  from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(1),              from_hmsm(3, 5, 8, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(-1),             from_hmsm(3, 5, 6, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(60 + 4),         from_hmsm(3, 6, 11, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(7*60*60 - 6*60), from_hmsm(9, 59, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::milliseconds(80),        from_hmsm(3, 5, 7, 80));
+/// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::milliseconds(280),     from_hmsm(3, 5, 8, 230));
+/// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::milliseconds(-980),    from_hmsm(3, 5, 6, 970));
 /// ~~~~
 ///
 /// The addition wraps around.
 ///
 /// ~~~~
 /// # use chrono::{NaiveTime, Duration};
-/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(22*60*60), hmsm(1, 5, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::seconds(-8*60*60), hmsm(19, 5, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) + Duration::days(800),         hmsm(3, 5, 7, 0));
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(22*60*60), from_hmsm(1, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(-8*60*60), from_hmsm(19, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::days(800),         from_hmsm(3, 5, 7, 0));
 /// ~~~~
 ///
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
 ///
 /// ~~~~
 /// # use chrono::{NaiveTime, Duration};
-/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::zero(),             hmsm(3, 5, 59, 1_300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::milliseconds(-500), hmsm(3, 5, 59, 800));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::milliseconds(500),  hmsm(3, 5, 59, 1_800));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::milliseconds(800),  hmsm(3, 6, 0, 100));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::seconds(10),        hmsm(3, 6, 9, 300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::seconds(-10),       hmsm(3, 5, 50, 300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) + Duration::days(1),            hmsm(3, 5, 59, 300));
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// let leap = from_hmsm(3, 5, 59, 1_300);
+/// assert_eq!(leap + Duration::zero(),             from_hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap + Duration::milliseconds(-500), from_hmsm(3, 5, 59, 800));
+/// assert_eq!(leap + Duration::milliseconds(500),  from_hmsm(3, 5, 59, 1_800));
+/// assert_eq!(leap + Duration::milliseconds(800),  from_hmsm(3, 6, 0, 100));
+/// assert_eq!(leap + Duration::seconds(10),        from_hmsm(3, 6, 9, 300));
+/// assert_eq!(leap + Duration::seconds(-10),       from_hmsm(3, 5, 50, 300));
+/// assert_eq!(leap + Duration::days(1),            from_hmsm(3, 5, 59, 300));
 /// ~~~~
 impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
@@ -837,15 +850,16 @@ impl Add<Duration> for NaiveTime {
 /// ~~~~
 /// use chrono::{NaiveTime, Duration};
 ///
-/// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 7, 900), Duration::zero());
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 7, 875), Duration::milliseconds(25));
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 6, 925), Duration::milliseconds(975));
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 5, 0, 900), Duration::seconds(7));
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(3, 0, 7, 900), Duration::seconds(5 * 60));
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(0, 5, 7, 900), Duration::seconds(3 * 3600));
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(4, 5, 7, 900), Duration::seconds(-3600));
-/// assert_eq!(hmsm(3, 5, 7, 900) - hmsm(2, 4, 6, 800),
+/// let from_hmsm = NaiveTime::from_hms_milli;
+///
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), Duration::zero());
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), Duration::milliseconds(25));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), Duration::milliseconds(975));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), Duration::seconds(7));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 0, 7, 900), Duration::seconds(5 * 60));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(0, 5, 7, 900), Duration::seconds(3 * 3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), Duration::seconds(-3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(2, 4, 6, 800),
 ///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
 /// ~~~~
 ///
@@ -854,12 +868,12 @@ impl Add<Duration> for NaiveTime {
 ///
 /// ~~~~
 /// # use chrono::{NaiveTime, Duration};
-/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 0, 59, 1_000) - hmsm(3, 0, 59, 0), Duration::seconds(1));
-/// assert_eq!(hmsm(3, 0, 59, 1_500) - hmsm(3, 0, 59, 0), Duration::milliseconds(1500));
-/// assert_eq!(hmsm(3, 0, 59, 1_000) - hmsm(3, 0, 0, 0), Duration::seconds(60));
-/// assert_eq!(hmsm(3, 0, 0, 0) - hmsm(2, 59, 59, 1_000), Duration::seconds(1));
-/// assert_eq!(hmsm(3, 0, 59, 1_000) - hmsm(2, 59, 59, 1_000), Duration::seconds(61));
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), Duration::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0), Duration::milliseconds(1500));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 0, 0), Duration::seconds(60));
+/// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(61));
 /// ~~~~
 impl Sub<NaiveTime> for NaiveTime {
     type Output = Duration;
@@ -915,34 +929,36 @@ impl Sub<NaiveTime> for NaiveTime {
 /// ~~~~
 /// use chrono::{NaiveTime, Duration};
 ///
-/// let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::zero(),                  hmsm(3, 5, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(1),              hmsm(3, 5, 6, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(60 + 5),         hmsm(3, 4, 2, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(2*60*60 + 6*60), hmsm(0, 59, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::milliseconds(80),        hmsm(3, 5, 6, 920));
-/// assert_eq!(hmsm(3, 5, 7, 950) - Duration::milliseconds(280),     hmsm(3, 5, 7, 670));
+/// let from_hmsm = NaiveTime::from_hms_milli;
+///
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::zero(),                  from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(1),              from_hmsm(3, 5, 6, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(60 + 5),         from_hmsm(3, 4, 2, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::milliseconds(80),        from_hmsm(3, 5, 6, 920));
+/// assert_eq!(from_hmsm(3, 5, 7, 950) - Duration::milliseconds(280),     from_hmsm(3, 5, 7, 670));
 /// ~~~~
 ///
 /// The subtraction wraps around.
 ///
 /// ~~~~
 /// # use chrono::{NaiveTime, Duration};
-/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::seconds(8*60*60), hmsm(19, 5, 7, 0));
-/// assert_eq!(hmsm(3, 5, 7, 0) - Duration::days(800),        hmsm(3, 5, 7, 0));
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(8*60*60), from_hmsm(19, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::days(800),        from_hmsm(3, 5, 7, 0));
 /// ~~~~
 ///
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
 ///
 /// ~~~~
 /// # use chrono::{NaiveTime, Duration};
-/// # let hmsm = |h,m,s,milli| NaiveTime::from_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::zero(),            hmsm(3, 5, 59, 1_300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(200), hmsm(3, 5, 59, 1_100));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::milliseconds(500), hmsm(3, 5, 59, 800));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::seconds(60),       hmsm(3, 5, 0, 300));
-/// assert_eq!(hmsm(3, 5, 59, 1_300) - Duration::days(1),           hmsm(3, 6, 0, 300));
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// let leap = from_hmsm(3, 5, 59, 1_300);
+/// assert_eq!(leap - Duration::zero(),            from_hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap - Duration::milliseconds(200), from_hmsm(3, 5, 59, 1_100));
+/// assert_eq!(leap - Duration::milliseconds(500), from_hmsm(3, 5, 59, 800));
+/// assert_eq!(leap - Duration::seconds(60),       from_hmsm(3, 5, 0, 300));
+/// assert_eq!(leap - Duration::days(1),           from_hmsm(3, 6, 0, 300));
 /// ~~~~
 impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
