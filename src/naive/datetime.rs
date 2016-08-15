@@ -17,6 +17,30 @@ use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time without timezone.
+///
+/// # Example
+///
+/// `NaiveDateTime` is commonly created from [`NaiveDate`](../date/struct.NaiveDate.html).
+///
+/// ~~~~
+/// use chrono::{NaiveDate, NaiveDateTime};
+///
+/// let dt: NaiveDateTime = NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11);
+/// # let _ = dt;
+/// ~~~~
+///
+/// You can use typical [date-like](../../trait.Datelike.html) and
+/// [time-like](../../trait.Timelike.html) methods,
+/// provided that relevant traits are in the scope.
+///
+/// ~~~~
+/// # use chrono::{NaiveDate, NaiveDateTime};
+/// # let dt: NaiveDateTime = NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11);
+/// use chrono::{Datelike, Timelike, Weekday};
+///
+/// assert_eq!(dt.weekday(), Weekday::Fri);
+/// assert_eq!(dt.num_seconds_from_midnight(), 33011);
+/// ~~~~
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDateTime {
     date: NaiveDate,
@@ -190,12 +214,30 @@ impl NaiveDateTime {
     }
 
     /// Retrieves a date component.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11);
+    /// assert_eq!(dt.date(), NaiveDate::from_ymd(2016, 7, 8));
+    /// ~~~~
     #[inline]
     pub fn date(&self) -> NaiveDate {
         self.date
     }
 
     /// Retrieves a time component.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, NaiveTime};
+    ///
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms(9, 10, 11);
+    /// assert_eq!(dt.time(), NaiveTime::from_hms(9, 10, 11));
+    /// ~~~~
     #[inline]
     pub fn time(&self) -> NaiveTime {
         self.time
@@ -205,6 +247,18 @@ impl NaiveDateTime {
     ///
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 1, 980);
+    /// assert_eq!(dt.timestamp(), 1);
+    ///
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9).and_hms(1, 46, 40);
+    /// assert_eq!(dt.timestamp(), 1_000_000_000);
+    /// ~~~~
     #[inline]
     pub fn timestamp(&self) -> i64 {
         let ndays = self.date.num_days_from_ce() as i64;
@@ -216,6 +270,18 @@ impl NaiveDateTime {
     ///
     /// The return value ranges from 0 to 999,
     /// or for [leap seconds](../time/index.html#leap-second-handling), to 1,999.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_nano(9, 10, 11, 123_456_789);
+    /// assert_eq!(dt.timestamp_subsec_millis(), 123);
+    ///
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1).and_hms_nano(8, 59, 59, 1_234_567_890);
+    /// assert_eq!(dt.timestamp_subsec_millis(), 1_234);
+    /// ~~~~
     #[inline]
     pub fn timestamp_subsec_millis(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000_000
@@ -225,6 +291,18 @@ impl NaiveDateTime {
     ///
     /// The return value ranges from 0 to 999,999,
     /// or for [leap seconds](../time/index.html#leap-second-handling), to 1,999,999.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_nano(9, 10, 11, 123_456_789);
+    /// assert_eq!(dt.timestamp_subsec_micros(), 123_456);
+    ///
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1).and_hms_nano(8, 59, 59, 1_234_567_890);
+    /// assert_eq!(dt.timestamp_subsec_micros(), 1_234_567);
+    /// ~~~~
     #[inline]
     pub fn timestamp_subsec_micros(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000
@@ -234,6 +312,18 @@ impl NaiveDateTime {
     ///
     /// The return value ranges from 0 to 999,999,999,
     /// or for [leap seconds](../time/index.html#leap-second-handling), to 1,999,999,999.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_nano(9, 10, 11, 123_456_789);
+    /// assert_eq!(dt.timestamp_subsec_nanos(), 123_456_789);
+    ///
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1).and_hms_nano(8, 59, 59, 1_234_567_890);
+    /// assert_eq!(dt.timestamp_subsec_nanos(), 1_234_567_890);
+    /// ~~~~
     #[inline]
     pub fn timestamp_subsec_nanos(&self) -> u32 {
         self.time.nanosecond()
