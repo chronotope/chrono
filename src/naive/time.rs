@@ -1268,7 +1268,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(NaiveTimeVisitor)
+            deserializer.deserialize_str(NaiveTimeVisitor)
         }
     }
 

@@ -496,7 +496,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(DateTimeVisitor)
+            deserializer.deserialize_str(DateTimeVisitor)
         }
     }
 
@@ -504,7 +504,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
         }
     }
 
@@ -512,7 +512,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
         }
     }
 
