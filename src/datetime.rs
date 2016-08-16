@@ -517,6 +517,7 @@ mod serde {
     }
 
     #[cfg(test)] extern crate serde_json;
+    #[cfg(test)] extern crate bincode;
 
     #[test]
     fn test_serde_serialize() {
@@ -536,6 +537,20 @@ mod serde {
                    Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
 
         assert!(from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+    }
+
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use self::bincode::SizeLimit;
+        use self::bincode::serde::{serialize, deserialize};
+
+        let dt = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let encoded = serialize(&dt, SizeLimit::Infinite).unwrap();
+        let decoded: DateTime<UTC> = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
+        assert_eq!(dt.offset(), decoded.offset());
     }
 }
 

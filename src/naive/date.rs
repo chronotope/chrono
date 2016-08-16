@@ -1586,6 +1586,7 @@ mod serde {
     }
 
     #[cfg(test)] extern crate serde_json;
+    #[cfg(test)] extern crate bincode;
 
     #[test]
     fn test_serde_serialize() {
@@ -1636,6 +1637,19 @@ mod serde {
         assert!(from_str(r#"{}"#).is_err());
         assert!(from_str(r#"{"ymdf":20}"#).is_err()); // :(
         assert!(from_str(r#"null"#).is_err());
+    }
+
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use self::bincode::SizeLimit;
+        use self::bincode::serde::{serialize, deserialize};
+
+        let d = NaiveDate::from_ymd(2014, 7, 24);
+        let encoded = serialize(&d, SizeLimit::Infinite).unwrap();
+        let decoded: NaiveDate = deserialize(&encoded).unwrap();
+        assert_eq!(d, decoded);
     }
 }
 
