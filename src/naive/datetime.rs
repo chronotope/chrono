@@ -16,6 +16,14 @@ use naive::date::NaiveDate;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
+/// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
+/// will always overflow the addition with any date and time type.
+///
+/// So why is this needed? `Duration::seconds(rhs)` may overflow, and we don't have
+/// an alternative returning `Option` or `Result`. Thus we need some early bound to avoid
+/// touching that call when we are already sure that it WILL overflow...
+const MAX_SECS_BITS: usize = 44;
+
 /// ISO 8601 combined date and time without timezone.
 ///
 /// # Example
@@ -337,45 +345,133 @@ impl NaiveDateTime {
 
     /// Adds given `Duration` to the current date and time.
     ///
+    /// As a part of Chrono's [leap second handling](../time/index.html#leap-second-handling),
+    /// the addition assumes that **there is no leap second ever**,
+    /// except when the `NaiveDateTime` itself represents a leap second
+    /// in which case the assumption becomes that **there is exactly a single leap second ever**.
+    ///
     /// Returns `None` when it will result in overflow.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Duration};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// let d = from_ymd(2016, 7, 8);
+    /// let hms = |h, m, s| d.and_hms(h, m, s);
+    /// assert_eq!(hms(3, 5, 7).checked_add(Duration::zero()),             Some(hms(3, 5, 7)));
+    /// assert_eq!(hms(3, 5, 7).checked_add(Duration::seconds(1)),         Some(hms(3, 5, 8)));
+    /// assert_eq!(hms(3, 5, 7).checked_add(Duration::seconds(-1)),        Some(hms(3, 5, 6)));
+    /// assert_eq!(hms(3, 5, 7).checked_add(Duration::seconds(3600 + 60)), Some(hms(4, 6, 7)));
+    /// assert_eq!(hms(3, 5, 7).checked_add(Duration::seconds(86400)),
+    ///            Some(from_ymd(2016, 7, 9).and_hms(3, 5, 7)));
+    ///
+    /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+    /// assert_eq!(hmsm(3, 5, 7, 980).checked_add(Duration::milliseconds(450)),
+    ///            Some(hmsm(3, 5, 8, 430)));
+    /// ~~~~
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDate, Duration};
+    /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
+    /// assert_eq!(hms(3, 5, 7).checked_add(Duration::days(1_000_000_000)), None);
+    /// ~~~~
+    ///
+    /// Leap seconds are handled,
+    /// but the addition assumes that it is the only leap second happened.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDate, Duration};
+    /// # let from_ymd = NaiveDate::from_ymd;
+    /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
+    /// let leap = hmsm(3, 5, 59, 1_300);
+    /// assert_eq!(leap.checked_add(Duration::zero()),             Some(hmsm(3, 5, 59, 1_300)));
+    /// assert_eq!(leap.checked_add(Duration::milliseconds(-500)), Some(hmsm(3, 5, 59, 800)));
+    /// assert_eq!(leap.checked_add(Duration::milliseconds(500)),  Some(hmsm(3, 5, 59, 1_800)));
+    /// assert_eq!(leap.checked_add(Duration::milliseconds(800)),  Some(hmsm(3, 6, 0, 100)));
+    /// assert_eq!(leap.checked_add(Duration::seconds(10)),        Some(hmsm(3, 6, 9, 300)));
+    /// assert_eq!(leap.checked_add(Duration::seconds(-10)),       Some(hmsm(3, 5, 50, 300)));
+    /// assert_eq!(leap.checked_add(Duration::days(1)),
+    ///            Some(from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300)));
+    /// ~~~~
     pub fn checked_add(self, rhs: Duration) -> Option<NaiveDateTime> {
-        // Duration does not directly give its parts, so we need some additional calculations.
-        let days = rhs.num_days();
-        let nanos = (rhs - Duration::days(days)).num_nanoseconds().unwrap();
-        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == rhs);
-        debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
+        let (time, rhs) = self.time.overflowing_add(rhs);
 
-        let mut date = try_opt!(self.date.checked_add(Duration::days(days)));
-        let time = self.time + Duration::nanoseconds(nanos);
-
-        // time always wraps around, but date needs to be adjusted for overflow.
-        if nanos < 0 && time > self.time {
-            date = try_opt!(date.pred_opt());
-        } else if nanos > 0 && time < self.time {
-            date = try_opt!(date.succ_opt());
+        // early checking to avoid overflow in Duration::seconds
+        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
+            return None;
         }
+
+        let date = try_opt!(self.date.checked_add(Duration::seconds(rhs)));
         Some(NaiveDateTime { date: date, time: time })
     }
 
     /// Subtracts given `Duration` from the current date and time.
     ///
+    /// As a part of Chrono's [leap second handling](../time/index.html#leap-second-handling),
+    /// the subtraction assumes that **there is no leap second ever**,
+    /// except when the `NaiveDateTime` itself represents a leap second
+    /// in which case the assumption becomes that **there is exactly a single leap second ever**.
+    ///
     /// Returns `None` when it will result in overflow.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Duration};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// let d = from_ymd(2016, 7, 8);
+    /// let hms = |h, m, s| d.and_hms(h, m, s);
+    /// assert_eq!(hms(3, 5, 7).checked_sub(Duration::zero()),             Some(hms(3, 5, 7)));
+    /// assert_eq!(hms(3, 5, 7).checked_sub(Duration::seconds(1)),         Some(hms(3, 5, 6)));
+    /// assert_eq!(hms(3, 5, 7).checked_sub(Duration::seconds(-1)),        Some(hms(3, 5, 8)));
+    /// assert_eq!(hms(3, 5, 7).checked_sub(Duration::seconds(3600 + 60)), Some(hms(2, 4, 7)));
+    /// assert_eq!(hms(3, 5, 7).checked_sub(Duration::seconds(86400)),
+    ///            Some(from_ymd(2016, 7, 7).and_hms(3, 5, 7)));
+    ///
+    /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+    /// assert_eq!(hmsm(3, 5, 7, 450).checked_sub(Duration::milliseconds(670)),
+    ///            Some(hmsm(3, 5, 6, 780)));
+    /// ~~~~
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDate, Duration};
+    /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
+    /// assert_eq!(hms(3, 5, 7).checked_sub(Duration::days(1_000_000_000)), None);
+    /// ~~~~
+    ///
+    /// Leap seconds are handled,
+    /// but the subtraction assumes that it is the only leap second happened.
+    ///
+    /// ~~~~
+    /// # use chrono::{NaiveDate, Duration};
+    /// # let from_ymd = NaiveDate::from_ymd;
+    /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
+    /// let leap = hmsm(3, 5, 59, 1_300);
+    /// assert_eq!(leap.checked_sub(Duration::zero()),            Some(hmsm(3, 5, 59, 1_300)));
+    /// assert_eq!(leap.checked_sub(Duration::milliseconds(200)), Some(hmsm(3, 5, 59, 1_100)));
+    /// assert_eq!(leap.checked_sub(Duration::milliseconds(500)), Some(hmsm(3, 5, 59, 800)));
+    /// assert_eq!(leap.checked_sub(Duration::seconds(60)),       Some(hmsm(3, 5, 0, 300)));
+    /// assert_eq!(leap.checked_sub(Duration::days(1)),
+    ///            Some(from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300)));
+    /// ~~~~
     pub fn checked_sub(self, rhs: Duration) -> Option<NaiveDateTime> {
-        // Duration does not directly give its parts, so we need some additional calculations.
-        let days = rhs.num_days();
-        let nanos = (rhs - Duration::days(days)).num_nanoseconds().unwrap();
-        debug_assert!(Duration::days(days) + Duration::nanoseconds(nanos) == rhs);
-        debug_assert!(-86400_000_000_000 < nanos && nanos < 86400_000_000_000);
+        let (time, rhs) = self.time.overflowing_sub(rhs);
 
-        let mut date = try_opt!(self.date.checked_sub(Duration::days(days)));
-        let time = self.time - Duration::nanoseconds(nanos);
-
-        // time always wraps around, but date needs to be adjusted for overflow.
-        if nanos > 0 && time > self.time {
-            date = try_opt!(date.pred_opt());
-        } else if nanos < 0 && time < self.time {
-            date = try_opt!(date.succ_opt());
+        // early checking to avoid overflow in Duration::seconds
+        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
+            return None;
         }
+
+        let date = try_opt!(self.date.checked_sub(Duration::seconds(rhs)));
         Some(NaiveDateTime { date: date, time: time })
     }
 
@@ -947,6 +1043,55 @@ impl hash::Hash for NaiveDateTime {
     }
 }
 
+/// An addition of `Duration` to `NaiveDateTime` yields another `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling](../time/index.html#leap-second-handling),
+/// the addition assumes that **there is no leap second ever**,
+/// except when the `NaiveDateTime` itself represents a leap second
+/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// Panics on underflow or overflow.
+/// Use [`NaiveDateTime::checked_add`](#method.checked_add) to detect that.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// let d = from_ymd(2016, 7, 8);
+/// let hms = |h, m, s| d.and_hms(h, m, s);
+/// assert_eq!(hms(3, 5, 7) + Duration::zero(),             hms(3, 5, 7));
+/// assert_eq!(hms(3, 5, 7) + Duration::seconds(1),         hms(3, 5, 8));
+/// assert_eq!(hms(3, 5, 7) + Duration::seconds(-1),        hms(3, 5, 6));
+/// assert_eq!(hms(3, 5, 7) + Duration::seconds(3600 + 60), hms(4, 6, 7));
+/// assert_eq!(hms(3, 5, 7) + Duration::seconds(86400),
+///            from_ymd(2016, 7, 9).and_hms(3, 5, 7));
+/// assert_eq!(hms(3, 5, 7) + Duration::days(365),
+///            from_ymd(2017, 7, 8).and_hms(3, 5, 7));
+///
+/// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 980) + Duration::milliseconds(450), hmsm(3, 5, 8, 430));
+/// ~~~~
+///
+/// Leap seconds are handled,
+/// but the addition assumes that it is the only leap second happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveDate, Duration};
+/// # let from_ymd = NaiveDate::from_ymd;
+/// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
+/// let leap = hmsm(3, 5, 59, 1_300);
+/// assert_eq!(leap + Duration::zero(),             hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap + Duration::milliseconds(-500), hmsm(3, 5, 59, 800));
+/// assert_eq!(leap + Duration::milliseconds(500),  hmsm(3, 5, 59, 1_800));
+/// assert_eq!(leap + Duration::milliseconds(800),  hmsm(3, 6, 0, 100));
+/// assert_eq!(leap + Duration::seconds(10),        hmsm(3, 6, 9, 300));
+/// assert_eq!(leap + Duration::seconds(-10),       hmsm(3, 5, 50, 300));
+/// assert_eq!(leap + Duration::days(1),
+///            from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300));
+/// ~~~~
 impl Add<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -956,6 +1101,44 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
+/// A subtraction of `NaiveDateTime` from `NaiveDateTime` yields a `Duration`.
+/// This does not overflow or underflow at all.
+///
+/// As a part of Chrono's [leap second handling](../time/index.html#leap-second-handling),
+/// the subtraction assumes that **there is no leap second ever**,
+/// except when any of the `NaiveDateTime`s themselves represents a leap second
+/// in which case the assumption becomes that
+/// **there are exactly one (or two) leap second(s) ever**.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// let d = from_ymd(2016, 7, 8);
+/// assert_eq!(d.and_hms(3, 5, 7) - d.and_hms(2, 4, 6),
+///            Duration::seconds(3600 + 60 + 1));
+///
+/// // July 8 is 190th day in the year 2016
+/// let d0 = from_ymd(2016, 1, 1);
+/// assert_eq!(d.and_hms_milli(0, 7, 6, 500) - d0.and_hms(0, 0, 0),
+///            Duration::seconds(189 * 86400 + 7 * 60 + 6) + Duration::milliseconds(500));
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that
+/// there were no other leap seconds happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveDate, Duration};
+/// # let from_ymd = NaiveDate::from_ymd;
+/// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
+/// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms(23, 0, 0),
+///            Duration::seconds(3600) + Duration::milliseconds(500));
+/// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0) - leap,
+///            Duration::seconds(3600) - Duration::milliseconds(500));
+/// ~~~~
 impl Sub<NaiveDateTime> for NaiveDateTime {
     type Output = Duration;
 
@@ -964,6 +1147,54 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
     }
 }
 
+/// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
+/// It is same to the addition with a negated `Duration`.
+///
+/// As a part of Chrono's [leap second handling](../time/index.html#leap-second-handling),
+/// the addition assumes that **there is no leap second ever**,
+/// except when the `NaiveDateTime` itself represents a leap second
+/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// Panics on underflow or overflow.
+/// Use [`NaiveDateTime::checked_sub`](#method.checked_sub) to detect that.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// let d = from_ymd(2016, 7, 8);
+/// let hms = |h, m, s| d.and_hms(h, m, s);
+/// assert_eq!(hms(3, 5, 7) - Duration::zero(),             hms(3, 5, 7));
+/// assert_eq!(hms(3, 5, 7) - Duration::seconds(1),         hms(3, 5, 6));
+/// assert_eq!(hms(3, 5, 7) - Duration::seconds(-1),        hms(3, 5, 8));
+/// assert_eq!(hms(3, 5, 7) - Duration::seconds(3600 + 60), hms(2, 4, 7));
+/// assert_eq!(hms(3, 5, 7) - Duration::seconds(86400),
+///            from_ymd(2016, 7, 7).and_hms(3, 5, 7));
+/// assert_eq!(hms(3, 5, 7) - Duration::days(365),
+///            from_ymd(2015, 7, 9).and_hms(3, 5, 7));
+///
+/// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 450) - Duration::milliseconds(670), hmsm(3, 5, 6, 780));
+/// ~~~~
+///
+/// Leap seconds are handled,
+/// but the subtraction assumes that it is the only leap second happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveDate, Duration};
+/// # let from_ymd = NaiveDate::from_ymd;
+/// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
+/// let leap = hmsm(3, 5, 59, 1_300);
+/// assert_eq!(leap - Duration::zero(),            hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap - Duration::milliseconds(200), hmsm(3, 5, 59, 1_100));
+/// assert_eq!(leap - Duration::milliseconds(500), hmsm(3, 5, 59, 800));
+/// assert_eq!(leap - Duration::seconds(60),       hmsm(3, 5, 0, 300));
+/// assert_eq!(leap - Duration::days(1),
+///            from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300));
+/// ~~~~
 impl Sub<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -973,18 +1204,86 @@ impl Sub<Duration> for NaiveDateTime {
     }
 }
 
+/// The `Debug` output of the naive date and time `dt` is same to
+/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](../../format/strftime/index.html).
+///
+/// The string printed can be readily parsed via the `parse` method on `str`.
+///
+/// It should be noted that, for leap seconds not on the minute boundary,
+/// it may print a representation not distinguishable from non-leap seconds.
+/// This doesn't matter in practice, since such leap seconds never happened.
+/// (By the time of the first leap second on 1972-06-30,
+/// every time zone offset around the world has standardized to the 5-minute alignment.)
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveDate;
+///
+/// let dt = NaiveDate::from_ymd(2016, 11, 15).and_hms(7, 39, 24);
+/// assert_eq!(format!("{:?}", dt), "2016-11-15T07:39:24");
+/// ~~~~
+///
+/// Leap seconds may also be used.
+///
+/// ~~~~
+/// # use chrono::NaiveDate;
+/// let dt = NaiveDate::from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
+/// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60.500");
+/// ~~~~
 impl fmt::Debug for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}T{:?}", self.date, self.time)
     }
 }
 
+/// The `Debug` output of the naive date and time `dt` is same to
+/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](../../format/strftime/index.html).
+///
+/// It should be noted that, for leap seconds not on the minute boundary,
+/// it may print a representation not distinguishable from non-leap seconds.
+/// This doesn't matter in practice, since such leap seconds never happened.
+/// (By the time of the first leap second on 1972-06-30,
+/// every time zone offset around the world has standardized to the 5-minute alignment.)
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::NaiveDate;
+///
+/// let dt = NaiveDate::from_ymd(2016, 11, 15).and_hms(7, 39, 24);
+/// assert_eq!(format!("{}", dt), "2016-11-15 07:39:24");
+/// ~~~~
+///
+/// Leap seconds may also be used.
+///
+/// ~~~~
+/// # use chrono::NaiveDate;
+/// let dt = NaiveDate::from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
+/// assert_eq!(format!("{}", dt), "2015-06-30 23:59:60.500");
+/// ~~~~
 impl fmt::Display for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", self.date, self.time)
     }
 }
 
+/// Parsing a `str` into a `NaiveDateTime` uses the same format,
+/// [`%Y-%m-%dT%H:%M:%S%.f`](../../format/strftime/index.html), as in `Debug`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDateTime, NaiveDate};
+///
+/// let dt = NaiveDate::from_ymd(2015, 9, 18).and_hms(23, 56, 4);
+/// assert_eq!("2015-09-18T23:56:04".parse::<NaiveDateTime>(), Ok(dt));
+///
+/// let dt = NaiveDate::from_ymd(12345, 6, 7).and_hms_milli(7, 59, 59, 1_500); // leap second
+/// assert_eq!("+12345-6-7T7:59:60.5".parse::<NaiveDateTime>(), Ok(dt));
+///
+/// assert!("foo".parse::<NaiveDateTime>().is_err());
+/// ~~~~
 impl str::FromStr for NaiveDateTime {
     type Err = ParseError;
 

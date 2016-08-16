@@ -129,12 +129,30 @@
 //! The leap second in the human-readable representation
 //! will be represented as the second part being 60, as required by ISO 8601.
 //!
+//! ~~~~
+//! use chrono::{UTC, TimeZone};
+//!
+//! let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_000);
+//! assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
+//! ~~~~
+//!
 //! There are hypothetical leap seconds not on the minute boundary
 //! nevertheless supported by Chrono.
 //! They are allowed for the sake of completeness and consistency;
 //! there were several "exotic" time zone offsets with fractional minutes prior to UTC after all.
 //! For such cases the human-readable representation is ambiguous
 //! and would be read back to the next non-leap second.
+//!
+//! ~~~~
+//! use chrono::{DateTime, UTC, TimeZone};
+//!
+//! let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 56, 4, 1_000);
+//! assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
+//!
+//! let dt = UTC.ymd(2015, 6, 30).and_hms(23, 56, 5);
+//! assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
+//! assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
+//! ~~~~
 //!
 //! Since Chrono alone cannot determine any existence of leap seconds,
 //! **there is absolutely no guarantee that the leap second read has actually happened**.
@@ -497,6 +515,113 @@ impl NaiveTime {
         parsed.to_naive_time()
     }
 
+    /// Adds given `Duration` to the current time,
+    /// and also returns the number of *seconds*
+    /// in the integral number of days ignored from the addition.
+    /// (We cannot return `Duration` because it is subject to overflow or underflow.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Duration};
+    ///
+    /// let from_hms = NaiveTime::from_hms;
+    ///
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add(Duration::hours(11)),
+    ///            (from_hms(14, 4, 5), 0));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add(Duration::hours(23)),
+    ///            (from_hms(2, 4, 5), 86400));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add(Duration::hours(-7)),
+    ///            (from_hms(20, 4, 5), -86400));
+    /// ~~~~
+    pub fn overflowing_add(&self, mut rhs: Duration) -> (NaiveTime, i64) {
+        let mut secs = self.secs;
+        let mut frac = self.frac;
+
+        // check if `self` is a leap second and adding `rhs` would escape that leap second.
+        // if it's the case, update `self` and `rhs` to involve no leap second;
+        // otherwise the addition immediately finishes.
+        if frac >= 1_000_000_000 {
+            let rfrac = 2_000_000_000 - frac;
+            if rhs >= Duration::nanoseconds(rfrac as i64) {
+                rhs = rhs - Duration::nanoseconds(rfrac as i64);
+                secs += 1;
+                frac = 0;
+            } else if rhs < Duration::nanoseconds(-(frac as i64)) {
+                rhs = rhs + Duration::nanoseconds(frac as i64);
+                frac = 0;
+            } else {
+                frac = (frac as i64 + rhs.num_nanoseconds().unwrap()) as u32;
+                debug_assert!(frac < 2_000_000_000);
+                return (NaiveTime { secs: secs, frac: frac }, 0);
+            }
+        }
+        debug_assert!(secs <= 86400);
+        debug_assert!(frac < 1_000_000_000);
+
+        let rhssecs = rhs.num_seconds();
+        let rhsfrac = (rhs - Duration::seconds(rhssecs)).num_nanoseconds().unwrap();
+        debug_assert!(Duration::seconds(rhssecs) + Duration::nanoseconds(rhsfrac) == rhs);
+        let rhssecsinday = rhssecs % 86400;
+        let mut morerhssecs = rhssecs - rhssecsinday;
+        let rhssecs = rhssecsinday as i32;
+        let rhsfrac = rhsfrac as i32;
+        debug_assert!(-86400 < rhssecs && rhssecs < 86400);
+        debug_assert!(morerhssecs % 86400 == 0);
+        debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
+
+        let mut secs = secs as i32 + rhssecs;
+        let mut frac = frac as i32 + rhsfrac;
+        debug_assert!(-86400 < secs && secs < 2 * 86400);
+        debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
+
+        if frac < 0 {
+            frac += 1_000_000_000;
+            secs -= 1;
+        } else if frac >= 1_000_000_000 {
+            frac -= 1_000_000_000;
+            secs += 1;
+        }
+        debug_assert!(-86400 <= secs && secs < 2 * 86400);
+        debug_assert!(0 <= frac && frac < 1_000_000_000);
+
+        if secs < 0 {
+            secs += 86400;
+            morerhssecs -= 86400;
+        } else if secs >= 86400 {
+            secs -= 86400;
+            morerhssecs += 86400;
+        }
+        debug_assert!(0 <= secs && secs < 86400);
+
+        (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
+    }
+
+    /// Subtracts given `Duration` from the current time,
+    /// and also returns the number of *seconds*
+    /// in the integral number of days ignored from the subtraction.
+    /// (We cannot return `Duration` because it is subject to overflow or underflow.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveTime, Duration};
+    ///
+    /// let from_hms = NaiveTime::from_hms;
+    ///
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub(Duration::hours(2)),
+    ///            (from_hms(1, 4, 5), 0));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub(Duration::hours(17)),
+    ///            (from_hms(10, 4, 5), 86400));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub(Duration::hours(-22)),
+    ///            (from_hms(1, 4, 5), -86400));
+    /// ~~~~
+    #[inline]
+    pub fn overflowing_sub(&self, rhs: Duration) -> (NaiveTime, i64) {
+        let (time, rhs) = self.overflowing_add(-rhs);
+        (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
+    }
+
     /// Formats the time with the specified formatting items.
     /// Otherwise it is same to the ordinary [`format`](#method.format) method.
     ///
@@ -841,65 +966,9 @@ impl hash::Hash for NaiveTime {
 impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
 
-    fn add(self, mut rhs: Duration) -> NaiveTime {
-        let mut secs = self.secs;
-        let mut frac = self.frac;
-
-        // check if `self` is a leap second and adding `rhs` would escape that leap second.
-        // if it's the case, update `self` and `rhs` to involve no leap second;
-        // otherwise the addition immediately finishes.
-        if frac >= 1_000_000_000 {
-            let rfrac = 2_000_000_000 - frac;
-            if rhs >= Duration::nanoseconds(rfrac as i64) {
-                rhs = rhs - Duration::nanoseconds(rfrac as i64);
-                secs += 1;
-                frac = 0;
-            } else if rhs < Duration::nanoseconds(-(frac as i64)) {
-                rhs = rhs + Duration::nanoseconds(frac as i64);
-                frac = 0;
-            } else {
-                frac = (frac as i64 + rhs.num_nanoseconds().unwrap()) as u32;
-                debug_assert!(frac < 2_000_000_000);
-                return NaiveTime { secs: secs, frac: frac };
-            }
-        }
-        debug_assert!(secs <= 86400);
-        debug_assert!(frac < 1_000_000_000);
-
-        let rhssecs = rhs.num_seconds();
-        let rhsfrac = (rhs - Duration::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert!(Duration::seconds(rhssecs) + Duration::nanoseconds(rhsfrac) == rhs);
-        let rhssecs = (rhssecs % 86400) as i32;
-        let rhsfrac = rhsfrac as i32;
-        debug_assert!(-86400 < rhssecs && rhssecs < 86400);
-        debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
-
-        let mut secs = secs as i32 + rhssecs;
-        let mut frac = frac as i32 + rhsfrac;
-        debug_assert!(-86400 < secs && secs <= 2 * 86400 + 1);
-        debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
-
-        if frac < 0 {
-            frac += 1_000_000_000;
-            secs -= 1;
-        } else if frac >= 1_000_000_000 {
-            frac -= 1_000_000_000;
-            secs += 1;
-        }
-        debug_assert!(-86400 <= secs && secs <= 2 * 86400 + 1);
-        debug_assert!(0 <= frac && frac < 1_000_000_000);
-
-        if secs < 0 {
-            secs += 86400 * 2;
-        }
-        if secs >= 86400 * 2 {
-            secs -= 86400 * 2;
-        } else if secs >= 86400 {
-            secs -= 86400;
-        }
-        debug_assert!(0 <= secs && secs < 86400);
-
-        NaiveTime { secs: secs as u32, frac: frac as u32 }
+    #[inline]
+    fn add(self, rhs: Duration) -> NaiveTime {
+        self.overflowing_add(rhs).0
     }
 }
 
@@ -907,7 +976,7 @@ impl Add<Duration> for NaiveTime {
 /// This does not overflow or underflow at all.
 ///
 /// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
+/// the subtraction assumes that **there is no leap second ever**,
 /// except when any of the `NaiveTime`s themselves represents a leap second
 /// in which case the assumption becomes that
 /// **there are exactly one (or two) leap second(s) ever**.
@@ -1021,7 +1090,9 @@ impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> NaiveTime { self.add(-rhs) }
+    fn sub(self, rhs: Duration) -> NaiveTime {
+        self.overflowing_sub(rhs).0
+    }
 }
 
 /// The `Debug` output of the naive time `t` is same to
@@ -1417,6 +1488,10 @@ mod tests {
 
         check!(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check!(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
+        check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-1800), hmsm(3, 5, 6, 500));
+        check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-800), hmsm(3, 5, 7, 500));
+        check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-100), hmsm(3, 5, 7, 1_200));
+        check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(100), hmsm(3, 5, 7, 1_400));
         check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(800), hmsm(3, 5, 8, 100));
         check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(1800), hmsm(3, 5, 9, 100));
         check!(hmsm(3, 5, 7, 900), Duration::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
@@ -1428,6 +1503,24 @@ mod tests {
         // regression tests for #37
         check!(hmsm(0, 0, 0, 0), Duration::milliseconds(-990), hmsm(23, 59, 59, 10));
         check!(hmsm(0, 0, 0, 0), Duration::milliseconds(-9990), hmsm(23, 59, 50, 10));
+    }
+
+    #[test]
+    fn test_time_overflowing_add() {
+        let hmsm = NaiveTime::from_hms_milli;
+
+        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add(Duration::hours(11)),
+                   (hmsm(14, 4, 5, 678), 0));
+        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add(Duration::hours(23)),
+                   (hmsm(2, 4, 5, 678), 86400));
+        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add(Duration::hours(-7)),
+                   (hmsm(20, 4, 5, 678), -86400));
+
+        // overflowing_add with leap seconds may be counter-intuitive
+        assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add(Duration::days(1)),
+                   (hmsm(3, 4, 5, 678), 86400));
+        assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add(Duration::days(-1)),
+                   (hmsm(3, 4, 6, 678), -86400));
     }
 
     #[test]

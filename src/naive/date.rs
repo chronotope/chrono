@@ -86,6 +86,9 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
                                   (MIN_YEAR + 400_000) / 100 +
                                   (MIN_YEAR + 400_000) / 400 - 146097_000;
 
+#[cfg(test)] // only used for testing, but duplicated in naive::datetime
+const MAX_BITS: usize = 44;
+
 /// ISO 8601 calendar date without timezone.
 /// Allows for every [proleptic Gregorian date](./index.html#calendar-date)
 /// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
@@ -109,6 +112,13 @@ fn test_date_bounds() {
             "`MIN` should have a year flag {:?}", calculated_min.of().flags());
     assert!(MAX == calculated_max,
             "`MAX` should have a year flag {:?}", calculated_max.of().flags());
+
+    // let's also check that the entire range do not exceed 2^44 seconds
+    // (sometimes used for bounding `Duration` against overflow)
+    let maxsecs = (MAX - MIN).num_seconds();
+    let maxsecs = maxsecs + 86401; // also take care of DateTime
+    assert!(maxsecs < (1 << MAX_BITS),
+            "The entire `NaiveDate` range somehow exceeds 2^{} seconds", MAX_BITS);
 }
 
 impl NaiveDate {
@@ -795,8 +805,8 @@ impl NaiveDate {
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.checked_add(Duration::days(40)), Some(NaiveDate::from_ymd(2015, 10, 15)));
     /// assert_eq!(d.checked_add(Duration::days(-40)), Some(NaiveDate::from_ymd(2015, 7, 27)));
-    /// assert_eq!(d.checked_add(Duration::days(1000_000_000)), None);
-    /// assert_eq!(d.checked_add(Duration::days(-1000_000_000)), None);
+    /// assert_eq!(d.checked_add(Duration::days(1_000_000_000)), None);
+    /// assert_eq!(d.checked_add(Duration::days(-1_000_000_000)), None);
     /// assert_eq!(MAX.checked_add(Duration::days(1)), None);
     /// ~~~~
     pub fn checked_add(self, rhs: Duration) -> Option<NaiveDate> {
@@ -826,8 +836,8 @@ impl NaiveDate {
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.checked_sub(Duration::days(40)), Some(NaiveDate::from_ymd(2015, 7, 27)));
     /// assert_eq!(d.checked_sub(Duration::days(-40)), Some(NaiveDate::from_ymd(2015, 10, 15)));
-    /// assert_eq!(d.checked_sub(Duration::days(1000_000_000)), None);
-    /// assert_eq!(d.checked_sub(Duration::days(-1000_000_000)), None);
+    /// assert_eq!(d.checked_sub(Duration::days(1_000_000_000)), None);
+    /// assert_eq!(d.checked_sub(Duration::days(-1_000_000_000)), None);
     /// assert_eq!(MIN.checked_sub(Duration::days(1)), None);
     /// ~~~~
     pub fn checked_sub(self, rhs: Duration) -> Option<NaiveDate> {
