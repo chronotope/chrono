@@ -6,7 +6,7 @@
 [![Chrono on crates.io][cratesio-image]][cratesio]
 
 [travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.svg?branch=master
-[travis]: https://travis-ci.org/lifthrasiir/rust-chrono/branch/master
+[travis]: https://travis-ci.org/lifthrasiir/rust-chrono
 [appveyor-image]: https://ci.appveyor.com/api/projects/status/o83jn08389si56fy/branch/master?svg=true
 [appveyor]: https://ci.appveyor.com/project/lifthrasiir/rust-chrono/branch/master
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg

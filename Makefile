@@ -25,7 +25,7 @@ README.md: src/lib.rs
 	echo '[![Chrono on crates.io][cratesio-image]][cratesio]' >> $@
 	echo >> $@
 	echo '[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.svg?branch=master' >> $@
-	echo '[travis]: https://travis-ci.org/lifthrasiir/rust-chrono/branch/master' >> $@
+	echo '[travis]: https://travis-ci.org/lifthrasiir/rust-chrono' >> $@
 	echo '[appveyor-image]: https://ci.appveyor.com/api/projects/status/o83jn08389si56fy/branch/master?svg=true' >> $@
 	echo '[appveyor]: https://ci.appveyor.com/project/lifthrasiir/rust-chrono/branch/master' >> $@
 	echo '[cratesio-image]: https://img.shields.io/crates/v/chrono.svg' >> $@

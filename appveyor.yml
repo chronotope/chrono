@@ -20,6 +20,6 @@ install:
   - cargo -vV
 build_script:
   # do not test all combinations, Travis will handle that
-  - cargo build -v --features 'serde rustc-serialize'
+  - cargo build -v --features "serde rustc-serialize"
 test_script:
-  - cargo test -v --features 'serde rustc-serialize'
+  - cargo test -v --features "serde rustc-serialize"

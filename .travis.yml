@@ -18,12 +18,13 @@ env:
     - LD_LIBRARY_PATH: /usr/local/lib
 script:
   # interleave building and testing in hope that it saves time
+  # also avoid doc-testing multiple times---it takes a lot and rarely helps
   - cargo build -v
   - cargo test -v
   - cargo build -v --features rustc-serialize
-  - cargo test -v --features rustc-serialize
+  - cargo test -v --features rustc-serialize --lib
   - cargo build -v --features serde
-  - cargo test -v --features serde
+  - cargo test -v --features serde --lib
 notifications:
   email: false
   irc:
