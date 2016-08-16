@@ -2,9 +2,15 @@
 ====================
 
 [![Chrono on Travis CI][travis-image]][travis]
+[![Chrono on Appveyor][appveyor-image]][appveyor]
+[![Chrono on crates.io][cratesio-image]][cratesio]
 
-[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.png
-[travis]: https://travis-ci.org/lifthrasiir/rust-chrono
+[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.svg?branch=master
+[travis]: https://travis-ci.org/lifthrasiir/rust-chrono/branch/master
+[appveyor-image]: https://ci.appveyor.com/api/projects/status/o83jn08389si56fy/branch/master?svg=true
+[appveyor]: https://ci.appveyor.com/project/lifthrasiir/rust-chrono/branch/master
+[cratesio-image]: https://img.shields.io/crates/v/chrono.svg
+[cratesio]: https://crates.io/crates/chrono
 
 Date and time handling for Rust. (also known as `rust-chrono`)
 It aims to be a feature-complete superset of
@@ -23,7 +29,7 @@ which Chrono builts upon and should acknowledge:
 * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 
-[Complete Documentation][doc]
+***[Complete Documentation][doc]***
 
 [doc]: https://lifthrasiir.github.io/rust-chrono/
 

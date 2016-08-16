@@ -1,18 +1,34 @@
 language: rust
+sudo: false
+rust:
+  # 1.8.0 is the earliest known version that Cargo does work for the current crates.io-index repo.
+  # probably older versions work, but we are forced to use this as the minimum for Cargo...
+  - 1.8.0
+  - stable
+  - beta
+  - nightly
 os:
   - linux
   - osx
+matrix:
+  allow_failures:
+    - rust: nightly
 env:
   global:
     - LD_LIBRARY_PATH: /usr/local/lib
-    - secure: i8Ijk6g4/26e3e7+r2OeGAPSP8G8O9P50JibW1omJ0j0ixXhyhPoY2bch3CGhnOu44dI5O31IIbjJJ+iEMp29xQBvkv9YpxAI+hIzOP+XAH6GCYxUDiBVcDoWrXTj+wU6/veuvjLCunu4eRHlskrgJbZXhUVODYzJuLgsN8Ou0w=
 script:
+  # interleave building and testing in hope that it saves time
   - cargo build -v
-  - cargo build -v --features rustc-serialize
-  - cargo build -v --features serde
   - cargo test -v
+  - cargo build -v --features rustc-serialize
   - cargo test -v --features rustc-serialize
+  - cargo build -v --features serde
   - cargo test -v --features serde
-  - cargo doc
-after_script:
-  - cd target && curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+notifications:
+  email: false
+  irc:
+    channels:
+      - "irc.mozilla.org#chronotope"
+    template:
+      - "%{repository_slug}/%{branch} (%{commit} - %{author}): %{message}"
+    skip_join: true
