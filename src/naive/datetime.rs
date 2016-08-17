@@ -1442,11 +1442,12 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(NaiveDateTimeVisitor)
+            deserializer.deserialize_str(NaiveDateTimeVisitor)
         }
     }
 
     #[cfg(test)] extern crate serde_json;
+    #[cfg(test)] extern crate bincode;
 
     #[test]
     fn test_serde_serialize() {
@@ -1528,6 +1529,20 @@ mod serde {
         assert!(from_str(r#"{}"#).is_err());
         assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err()); // :(
         assert!(from_str(r#"null"#).is_err());
+    }
+
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use naive::date::NaiveDate;
+        use self::bincode::SizeLimit;
+        use self::bincode::serde::{serialize, deserialize};
+
+        let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
+        let encoded = serialize(&dt, SizeLimit::Infinite).unwrap();
+        let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
     }
 }
 

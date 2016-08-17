@@ -496,7 +496,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(DateTimeVisitor)
+            deserializer.deserialize_str(DateTimeVisitor)
         }
     }
 
@@ -504,7 +504,7 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
         }
     }
 
@@ -512,11 +512,12 @@ mod serde {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
-            deserializer.deserialize(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
         }
     }
 
     #[cfg(test)] extern crate serde_json;
+    #[cfg(test)] extern crate bincode;
 
     #[test]
     fn test_serde_serialize() {
@@ -536,6 +537,20 @@ mod serde {
                    Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
 
         assert!(from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+    }
+
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use self::bincode::SizeLimit;
+        use self::bincode::serde::{serialize, deserialize};
+
+        let dt = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let encoded = serialize(&dt, SizeLimit::Infinite).unwrap();
+        let decoded: DateTime<UTC> = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
+        assert_eq!(dt.offset(), decoded.offset());
     }
 }
 
