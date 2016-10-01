@@ -555,7 +555,7 @@ impl Parsed {
 
     /// Returns a parsed fixed time zone offset out of given fields.
     pub fn to_fixed_offset(&self) -> ParseResult<FixedOffset> {
-        self.offset.and_then(|offset| FixedOffset::east_opt(offset)).ok_or(OUT_OF_RANGE)
+        self.offset.and_then(FixedOffset::east_opt).ok_or(OUT_OF_RANGE)
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields.
