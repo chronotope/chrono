@@ -252,7 +252,7 @@ pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
         }
     } else {
         let (s_, offset) = try!(timezone_offset(s, |s| Ok(s)));
-        if offset == 0 && s.starts_with("-") { // -0000 is not same to +0000
+        if offset == 0 && s.starts_with('-') { // -0000 is not same to +0000
             Ok((s_, None))
         } else {
             Ok((s_, Some(offset)))
