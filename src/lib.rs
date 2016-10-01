@@ -172,6 +172,12 @@
 //!            UTC.ymd(2001, 9, 9).and_hms(1, 46, 40));
 //! assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
 //!            UTC.ymd(1938, 4, 24).and_hms(22, 13, 20));
+//!
+//! // assignment operators
+//! let mut date = UTC.ymd(1970, 1, 1).and_hms(0, 0, 0);
+//! date += Duration::seconds(1_000_000_000);
+//! date -= Duration::seconds(999_999_999);
+//! assert_eq!(date, UTC.ymd(1970, 1, 1).and_hms(0, 0, 1));
 //! ~~~~
 //!
 //! Formatting is done via the [`format`](./datetime/struct.DateTime.html#method.format) method,

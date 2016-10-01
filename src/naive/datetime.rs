@@ -5,7 +5,7 @@
 //! ISO 8601 date and time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 
 use {Weekday, Timelike, Datelike};
@@ -1101,6 +1101,13 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
+impl AddAssign<Duration> for NaiveDateTime {
+    fn add_assign(&mut self, rhs: Duration) {
+        self.add(rhs);
+    }
+}
+
+
 /// A subtraction of `NaiveDateTime` from `NaiveDateTime` yields a `Duration`.
 /// This does not overflow or underflow at all.
 ///
@@ -1201,6 +1208,12 @@ impl Sub<Duration> for NaiveDateTime {
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveDateTime {
         self.checked_sub(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    }
+}
+
+impl SubAssign<Duration> for NaiveDateTime {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
