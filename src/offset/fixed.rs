@@ -82,17 +82,17 @@ impl FixedOffset {
 impl TimeZone for FixedOffset {
     type Offset = FixedOffset;
 
-    fn from_offset(offset: &FixedOffset) -> FixedOffset { offset.clone() }
+    fn from_offset(offset: &FixedOffset) -> FixedOffset { *offset }
 
     fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
-        LocalResult::Single(self.clone())
+        LocalResult::Single(*self)
     }
     fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
-        LocalResult::Single(self.clone())
+        LocalResult::Single(*self)
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset { self.clone() }
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset { self.clone() }
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset { *self }
+    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset { *self }
 }
 
 impl Offset for FixedOffset {

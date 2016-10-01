@@ -652,7 +652,7 @@ impl NaiveTime {
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
-        DelayedFormat::new(None, Some(self.clone()), items)
+        DelayedFormat::new(None, Some(*self), items)
     }
 
     /// Formats the time with the specified format string.

@@ -482,7 +482,7 @@ impl NaiveDate {
     /// ~~~~
     #[inline]
     pub fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime::new(self.clone(), time)
+        NaiveDateTime::new(*self, time)
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
@@ -884,7 +884,7 @@ impl NaiveDate {
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
-        DelayedFormat::new(Some(self.clone()), None, items)
+        DelayedFormat::new(Some(*self), None, items)
     }
 
     /// Formats the date with the specified format string.

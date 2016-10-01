@@ -505,7 +505,7 @@ impl NaiveDateTime {
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
-        DelayedFormat::new(Some(self.date.clone()), Some(self.time.clone()), items)
+        DelayedFormat::new(Some(self.date), Some(self.time), items)
     }
 
     /// Formats the combined date and time with the specified format string.
