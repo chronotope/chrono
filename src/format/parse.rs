@@ -86,7 +86,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     s = s.trim_left();
 
     if let Ok((s_, weekday)) = scan::short_weekday(s) {
-        if !s_.starts_with(",") { return Err(INVALID); }
+        if !s_.starts_with(',') { return Err(INVALID); }
         s = &s_[1..];
         try!(parsed.set_weekday(weekday));
     }
@@ -177,7 +177,7 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2))));
     s = try!(scan::char(s, b':'));
     try!(parsed.set_second(try_consume!(scan::number(s, 2, 2))));
-    if s.starts_with(".") {
+    if s.starts_with('.') {
         let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
         try!(parsed.set_nanosecond(nanosecond));
     }
@@ -252,10 +252,10 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                 s = s.trim_left();
                 let v = if signed {
-                    if s.starts_with("-") {
+                    if s.starts_with('-') {
                         let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
                         try!(0i64.checked_sub(v).ok_or(OUT_OF_RANGE))
-                    } else if s.starts_with("+") {
+                    } else if s.starts_with('+') {
                         try_consume!(scan::number(&s[1..], 1, usize::MAX))
                     } else {
                         // if there is no explicit sign, we respect the original `width`
@@ -303,7 +303,7 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                     }
 
                     Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9=> {
-                        if s.starts_with(".") {
+                        if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             try!(parsed.set_nanosecond(nano));
                         }

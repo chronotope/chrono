@@ -333,13 +333,13 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Self> {
-        Date::from_utc(utc.clone(), self.offset_from_utc_date(utc))
+        Date::from_utc(*utc, self.offset_from_utc_date(utc))
     }
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
-        DateTime::from_utc(utc.clone(), self.offset_from_utc_datetime(utc))
+        DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc))
     }
 }
 

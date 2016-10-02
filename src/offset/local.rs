@@ -111,7 +111,7 @@ impl TimeZone for Local {
         // in the other words, we use the offset at the local midnight
         // but keep the actual date unaltered (much like `FixedOffset`).
         let midnight = self.from_local_datetime(&local.and_hms(0, 0, 0));
-        midnight.map(|datetime| Date::from_utc(*local, datetime.offset().clone()))
+        midnight.map(|datetime| Date::from_utc(*local, *datetime.offset()))
     }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let timespec = datetime_to_timespec(local, true);
@@ -120,7 +120,7 @@ impl TimeZone for Local {
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
         let midnight = self.from_utc_datetime(&utc.and_hms(0, 0, 0));
-        Date::from_utc(*utc, midnight.offset().clone())
+        Date::from_utc(*utc, *midnight.offset())
     }
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         let timespec = datetime_to_timespec(utc, false);
