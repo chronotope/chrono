@@ -5,7 +5,7 @@
 //! ISO 8601 date and time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 
 use {Weekday, Timelike, Datelike};
@@ -1101,6 +1101,12 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
+impl AddAssign<Duration> for NaiveDateTime {
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = self.add(rhs);
+    }
+}
+
 /// A subtraction of `NaiveDateTime` from `NaiveDateTime` yields a `Duration`.
 /// This does not overflow or underflow at all.
 ///
@@ -1201,6 +1207,12 @@ impl Sub<Duration> for NaiveDateTime {
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveDateTime {
         self.checked_sub(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    }
+}
+
+impl SubAssign<Duration> for NaiveDateTime {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
@@ -1613,6 +1625,26 @@ mod tests {
                    Duration::seconds(86399));
         assert_eq!(ymdhms(2001, 9, 9, 1, 46, 39) - ymdhms(1970, 1, 1, 0, 0, 0),
                    Duration::seconds(999_999_999));
+    }
+
+    #[test]
+    fn test_datetime_addassignment() {
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date += Duration::minutes(10_000_000);
+        assert_eq!(date,  ymdhms(2035, 10, 6, 20, 50, 10));
+        date += Duration::days(10);
+        assert_eq!(date,  ymdhms(2035, 10, 16, 20, 50, 10));
+    }
+
+    #[test]
+    fn test_datetime_subassignment() {
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date -= Duration::minutes(10_000_000);
+        assert_eq!(date,  ymdhms(1997, 9, 26, 23, 30, 10));
+        date -= Duration::days(10);
+        assert_eq!(date,  ymdhms(1997, 9, 16, 23, 30, 10));
     }
 
     #[test]

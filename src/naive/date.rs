@@ -48,7 +48,7 @@
 //! This is currently the internal format of Chrono's date types.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 
 use {Weekday, Datelike};
@@ -1318,6 +1318,12 @@ impl Add<Duration> for NaiveDate {
     }
 }
 
+impl AddAssign<Duration> for NaiveDate {
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = self.add(rhs);
+    }
+}
+
 /// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers.
 ///
 /// This does not overflow or underflow at all,
@@ -1381,6 +1387,12 @@ impl Sub<Duration> for NaiveDate {
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveDate {
         self.checked_sub(rhs).expect("`NaiveDate - Duration` overflowed")
+    }
+}
+
+impl SubAssign<Duration> for NaiveDate {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
@@ -1976,6 +1988,26 @@ mod tests {
 
         check((MAX_YEAR, 12, 31), (0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64));
         check((MIN_YEAR, 1, 1), (0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64));
+    }
+
+    #[test]
+    fn test_date_addassignment() {
+        let ymd = NaiveDate::from_ymd;
+        let mut date = ymd(2016, 10, 1);
+        date += Duration::days(10);
+        assert_eq!(date,  ymd(2016, 10, 11));
+        date += Duration::days(30);
+        assert_eq!(date, ymd(2016, 11, 10));
+    }
+
+    #[test]
+    fn test_date_subassignment() {
+        let ymd = NaiveDate::from_ymd;
+        let mut date = ymd(2016, 10, 11);
+        date -= Duration::days(10);
+        assert_eq!(date,  ymd(2016, 10, 1));
+        date -= Duration::days(2);
+        assert_eq!(date, ymd(2016, 9, 29));
     }
 
     #[test]

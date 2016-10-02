@@ -158,7 +158,7 @@
 //! **there is absolutely no guarantee that the leap second read has actually happened**.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 use Timelike;
 use div::div_mod_floor;
@@ -972,6 +972,12 @@ impl Add<Duration> for NaiveTime {
     }
 }
 
+impl AddAssign<Duration> for NaiveTime {
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = self.add(rhs);
+    }
+}
+
 /// A subtraction of `NaiveTime` from `NaiveTime` yields a `Duration` within +/- 1 day.
 /// This does not overflow or underflow at all.
 ///
@@ -1092,6 +1098,12 @@ impl Sub<Duration> for NaiveTime {
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveTime {
         self.overflowing_sub(rhs).0
+    }
+}
+
+impl SubAssign<Duration> for NaiveTime {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
@@ -1535,6 +1547,26 @@ mod tests {
                    (hmsm(3, 4, 5, 678), 86400));
         assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add(Duration::days(-1)),
                    (hmsm(3, 4, 6, 678), -86400));
+    }
+
+    #[test]
+    fn test_time_addassignment() {
+        let hms = NaiveTime::from_hms;
+        let mut time = hms(12, 12, 12);
+        time += Duration::hours(10);
+        assert_eq!(time, hms(22, 12, 12));
+        time += Duration::hours(10);
+        assert_eq!(time, hms(8, 12, 12));
+    }
+
+    #[test]
+    fn test_time_subassignment() {
+        let hms = NaiveTime::from_hms;
+        let mut time = hms(12, 12, 12);
+        time -= Duration::hours(10);
+        assert_eq!(time, hms(2, 12, 12));
+        time -= Duration::hours(10);
+        assert_eq!(time, hms(16, 12, 12));
     }
 
     #[test]
