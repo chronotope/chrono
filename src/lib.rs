@@ -49,11 +49,13 @@
 //!
 //! ### Duration
 //!
-//! [**`Duration`**](./struct.Duration.html)
-//! represents the magnitude of a time span. `Duration` used to be provided by Chrono.
-//! It has been moved to the `time` crate as the
-//! [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html) type, but is
-//! still re-exported from Chrono.
+//! [**`Duration`**](./struct.Duration.html) represents the magnitude of a time
+//! span. Note that this is an "accurate" duration represented as seconds and
+//! nanoseconds and does not represent "nominal" components such as days or
+//! months. `Duration` used to be provided by Chrono. It has been moved to the
+//! `time` crate as the
+//! [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html)
+//! type, but is still re-exported from Chrono.
 //!
 //! ### Date and Time
 //!
@@ -351,7 +353,12 @@ macro_rules! try_opt {
 
 mod div;
 pub mod duration {
-    //! ISO 8601 duration.
+    //! ISO 8601 accurate duration.
+    //!
+    //! Note that this is an "accurate" (i.e. "exact") duration represented as
+    //! seconds and nanoseconds. It does not include the "nominal" components
+    //! (years, months, weeks, and days) in the ISO 8601 duration format
+    //! because arithmetic with nominal components is not defined in ISO 8601.
     //!
     //! This used to be a part of rust-chrono,
     //! but has been subsequently merged into Rust's standard library.
