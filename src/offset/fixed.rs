@@ -15,6 +15,11 @@ use naive::datetime::NaiveDateTime;
 use super::{TimeZone, Offset, LocalResult};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
+///
+/// Using the [`TimeZone`](../../../chrono/offset/trait.TimeZone.html) methods
+/// on a `FixedOffset` struct is the preferred way to construct
+/// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
+/// [`west`](#method.west) methods for examples.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct FixedOffset {
     local_minus_utc: i32,
@@ -42,6 +47,16 @@ impl FixedOffset {
     /// The negative `secs` means the Western Hemisphere.
     ///
     /// Panics on the out-of-bound `secs`.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{FixedOffset, TimeZone};
+    /// let hour = 3600;
+    /// let datetime = FixedOffset::east(5 * hour).ymd(2016, 11, 08)
+    ///                                           .and_hms(0, 0, 0);
+    /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
+    /// ~~~~
     pub fn east(secs: i32) -> FixedOffset {
         FixedOffset::east_opt(secs).expect("FixedOffset::east out of bounds")
     }
@@ -62,6 +77,16 @@ impl FixedOffset {
     /// The negative `secs` means the Eastern Hemisphere.
     ///
     /// Panics on the out-of-bound `secs`.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{FixedOffset, TimeZone};
+    /// let hour = 3600;
+    /// let datetime = FixedOffset::west(5 * hour).ymd(2016, 11, 08)
+    ///                                           .and_hms(0, 0, 0);
+    /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
+    /// ~~~~
     pub fn west(secs: i32) -> FixedOffset {
         FixedOffset::west_opt(secs).expect("FixedOffset::west out of bounds")
     }

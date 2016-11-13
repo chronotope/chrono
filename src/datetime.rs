@@ -23,6 +23,10 @@ use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time with time zone.
+///
+/// There are some constructors implemented here (the `from_*` methods), but
+/// the general-purpose constructors are all via the methods on the
+/// [`TimeZone`](../trait.TimeZone.html) implementations.
 #[derive(Clone)]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
@@ -32,6 +36,15 @@ pub struct DateTime<Tz: TimeZone> {
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
     /// The local datetime should be constructed via the `TimeZone` trait.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{DateTime, TimeZone, NaiveDateTime, UTC};
+    ///
+    /// let dt = DateTime::<UTC>::from_utc(NaiveDateTime::from_timestamp(61, 0), UTC);
+    /// assert_eq!(UTC.timestamp(61, 0), dt);
+    /// ~~~~
     //
     // note: this constructor is purposedly not named to `new` to discourage the direct usage.
     #[inline]

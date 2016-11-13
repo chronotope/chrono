@@ -69,6 +69,19 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> stdtime::Timespec {
 }
 
 /// The local timescale. This is implemented via the standard `time` crate.
+///
+/// Using the [`TimeZone`](../../../chrono/offset/trait.TimeZone.html) methods
+/// on the Local struct is the preferred way to construct `DateTime<Local>`
+/// instances.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{Local, DateTime, TimeZone};
+///
+/// let dt: DateTime<Local> = Local::now();
+/// let dt: DateTime<Local> = Local.timestamp(0, 0);
+/// ~~~~
 #[derive(Copy, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct Local;

@@ -82,9 +82,12 @@ impl NaiveDateTime {
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    /// For a non-naive version of this function see
+    /// [`TimeZone::timestamp`](../../offset/trait.TimeZone.html#method.timestamp).
+    ///
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the
+    /// [leap second](../time/index.html#leap-second-handling). (The true "UNIX
+    /// timestamp" cannot represent a leap second unambiguously.)
     ///
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
     ///

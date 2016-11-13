@@ -5,11 +5,12 @@
 /*!
  * The time zone, which calculates offsets from the local time to UTC.
  *
- * There are three operations provided by the `TimeZone` trait:
+ * There are four operations provided by the `TimeZone` trait:
  *
  * 1. Converting the local `NaiveDateTime` to `DateTime<Tz>`
  * 2. Converting the UTC `NaiveDateTime` to `DateTime<Tz>`
  * 3. Converting `DateTime<Tz>` to the local `NaiveDateTime`
+ * 4. Constructing `DateTime<Tz>` objects from various offsets
  *
  * 1 is used for constructors. 2 is used for the `with_timezone` method of date and time types.
  * 3 is used for other methods, e.g. `year()` or `format()`, and provided by an associated type
@@ -178,6 +179,9 @@ pub trait Offset: Sized + Clone + fmt::Debug {
 }
 
 /// The time zone.
+///
+/// The methods here are the primarily constructors for [`Date`](../date/struct.Date.html) and
+/// [`DateTime`](../datetime/struct.DateTime.html) types.
 pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
@@ -191,6 +195,14 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{UTC, TimeZone};
+    ///
+    /// assert_eq!(UTC.ymd(2015, 5, 15).to_string(), "2015-05-15UTC");
+    /// ~~~~
     fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
         self.ymd_opt(year, month, day).unwrap()
     }
@@ -202,6 +214,15 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{UTC, LocalResult, TimeZone};
+    ///
+    /// assert_eq!(UTC.ymd_opt(2015, 5, 15).unwrap().to_string(), "2015-05-15UTC");
+    /// assert_eq!(UTC.ymd_opt(2000, 0, 0), LocalResult::None);
+    /// ~~~~
     fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_ymd_opt(year, month, day) {
             Some(d) => self.from_local_date(&d),
@@ -216,6 +237,14 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date and/or invalid DOY.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{UTC, TimeZone};
+    ///
+    /// assert_eq!(UTC.yo(2015, 135).to_string(), "2015-05-15UTC");
+    /// ~~~~
     fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
         self.yo_opt(year, ordinal).unwrap()
     }
@@ -243,6 +272,14 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date and/or invalid week number.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{UTC, Weekday, TimeZone};
+    ///
+    /// assert_eq!(UTC.isoywd(2015, 20, Weekday::Fri).to_string(), "2015-05-15UTC");
+    /// ~~~~
     fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
     }
@@ -268,6 +305,14 @@ pub trait TimeZone: Sized + Clone {
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{UTC, TimeZone};
+    ///
+    /// assert_eq!(UTC.timestamp(1431648000, 0).to_string(), "2015-05-15 00:00:00 UTC");
+    /// ~~~~
     fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
         self.timestamp_opt(secs, nsecs).unwrap()
     }

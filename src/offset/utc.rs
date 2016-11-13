@@ -18,6 +18,21 @@ use super::{TimeZone, Offset, LocalResult};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
+///
+/// Using the [`TimeZone`](../../../chrono/offset/trait.TimeZone.html) methods
+/// on the UTC struct is the preferred way to construct `DateTime<UTC>`
+/// instances.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{DateTime, TimeZone, NaiveDateTime, UTC};
+///
+/// let dt = DateTime::<UTC>::from_utc(NaiveDateTime::from_timestamp(61, 0), UTC);
+///
+/// assert_eq!(UTC.timestamp(61, 0), dt);
+/// assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
+/// ~~~~
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct UTC;
