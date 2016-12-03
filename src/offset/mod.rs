@@ -331,7 +331,7 @@ pub trait TimeZone: Sized + Clone {
 
     /// Parses a string with the specified format string and
     /// returns a `DateTime` with the current offset.
-    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// If the format does not include offsets, the current offset is assumed;
