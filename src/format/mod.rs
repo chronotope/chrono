@@ -184,10 +184,10 @@ macro_rules! nums { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::Space)) }
 macro_rules! fix  { ($x:ident) => (Item::Fixed(Fixed::$x)) }
 
 /// An error from the `parse` function.
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ParseError(ParseErrorKind);
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
 enum ParseErrorKind {
     /// Given field is out of permitted range.
     OutOfRange,
