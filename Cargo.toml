@@ -8,6 +8,7 @@ homepage = "https://github.com/lifthrasiir/rust-chrono"
 documentation = "https://lifthrasiir.github.io/rust-chrono/"
 repository = "https://github.com/lifthrasiir/rust-chrono"
 keywords = ["date", "time", "calendar"]
+categories = ["date-and-time"]
 readme = "README.md"
 license = "MIT/Apache-2.0"
 
