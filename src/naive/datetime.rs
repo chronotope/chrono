@@ -1416,13 +1416,14 @@ mod rustc_serialize {
 
 #[cfg(feature = "serde")]
 mod serde {
+    use std::fmt;
     use super::NaiveDateTime;
     use serde::{ser, de};
 
     // TODO not very optimized for space (binary formats would want something better)
 
     impl ser::Serialize for NaiveDateTime {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
             serializer.serialize_str(&format!("{:?}", self))
@@ -1434,7 +1435,12 @@ mod serde {
     impl de::Visitor for NaiveDateTimeVisitor {
         type Value = NaiveDateTime;
 
-        fn visit_str<E>(&mut self, value: &str) -> Result<NaiveDateTime, E>
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        {
+            write!(formatter, "a formatted date and time string")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
@@ -1442,7 +1448,7 @@ mod serde {
     }
 
     impl de::Deserialize for NaiveDateTime {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize_str(NaiveDateTimeVisitor)

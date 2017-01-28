@@ -1309,6 +1309,7 @@ mod rustc_serialize {
 
 #[cfg(feature = "serde")]
 mod serde {
+    use std::fmt;
     use super::NaiveTime;
     use serde::{ser, de};
 
@@ -1316,7 +1317,7 @@ mod serde {
     // TODO round-trip for general leap seconds (not just those with second = 60)
 
     impl ser::Serialize for NaiveTime {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
             serializer.serialize_str(&format!("{:?}", self))
@@ -1328,7 +1329,12 @@ mod serde {
     impl de::Visitor for NaiveTimeVisitor {
         type Value = NaiveTime;
 
-        fn visit_str<E>(&mut self, value: &str) -> Result<NaiveTime, E>
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        {
+            write!(formatter, "a formatted time string")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<NaiveTime, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
@@ -1336,7 +1342,7 @@ mod serde {
     }
 
     impl de::Deserialize for NaiveTime {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize_str(NaiveTimeVisitor)
