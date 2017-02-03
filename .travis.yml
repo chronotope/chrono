@@ -3,7 +3,7 @@ sudo: false
 rust:
   # 1.8.0 is the earliest known version that Cargo does work for the current crates.io-index repo.
   # probably older versions work, but we are forced to use this as the minimum for Cargo...
-  - 1.8.0
+  - 1.13.0
   - stable
   - beta
   - nightly
