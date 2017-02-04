@@ -432,11 +432,20 @@ fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
                norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
     assert_eq!(norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
                norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&utc_from_str("0").ok()),
+               norm(&Some(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&utc_from_str("-1").unwrap()),
+               norm(&UTC.ymd(1969, 12, 31).and_hms(23, 59, 59)));
+
 
     assert_eq!(norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
                norm(&Some(FixedOffset::east(0).ymd(2014, 7, 24).and_hms(12, 34, 6))));
     assert_eq!(norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
                norm(&Some(FixedOffset::east(60*60 + 23*60).ymd(2014, 7, 24).and_hms(13, 57, 6))));
+    assert_eq!(norm(&fixed_from_str("0").ok()),
+               norm(&Some(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&fixed_from_str("-1").unwrap()),
+               norm(&UTC.ymd(1969, 12, 31).and_hms(23, 59, 59)));
 
     // we don't know the exact local offset but we can check that
     // the conversion didn't change the instant itself
@@ -444,6 +453,10 @@ fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
                UTC.ymd(2014, 7, 24).and_hms(12, 34, 6));
     assert_eq!(local_from_str(r#""2014-07-24T13:57:06+01:23""#).unwrap(),
                UTC.ymd(2014, 7, 24).and_hms(12, 34, 6));
+    assert_eq!(fixed_from_str("0").unwrap(),
+               UTC.ymd(1970, 1, 1).and_hms(0, 0, 0));
+    assert_eq!(local_from_str("-1").unwrap(),
+               &UTC.ymd(1969, 12, 31).and_hms(23, 59, 59));
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
@@ -508,7 +521,7 @@ mod rustc_serialize {
 mod serde {
     use std::fmt;
     use super::DateTime;
-    use offset::TimeZone;
+    use offset::{TimeZone, LocalResult};
     use offset::utc::UTC;
     use offset::local::Local;
     use offset::fixed::FixedOffset;
@@ -535,14 +548,30 @@ mod serde {
         }
     }
 
+    // try!-like function to convert a LocalResult into a serde-ish Result
+    fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
+        where E: de::Error,
+              V: Display,
+              T: Display,
+    {
+        match me {
+            LocalResult::None => Err(E::custom(
+                format!("value is not a legal timestamp: {}", ts))),
+            LocalResult::Ambiguous(min, max) => Err(E::custom(
+                format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
+                        ts, min, max))),
+            LocalResult::Single(val) => Ok(val)
+        }
+    }
+
     struct DateTimeVisitor;
 
     impl<'de> de::Visitor<'de> for DateTimeVisitor {
         type Value = DateTime<FixedOffset>;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
         {
-            write!(formatter, "a formatted date and time string")
+            write!(formatter, "a formatted date and time string or a unix timestamp")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
@@ -550,8 +579,28 @@ mod serde {
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
+
+        // Deserialize a timestamp in seconds since the epoch
+        fn visit_i64<E>(self, value: i64) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
+        {
+            from(FixedOffset::east(0).timestamp_opt(value, 0), value)
+        }
+
+        // Deserialize a timestamp in seconds since the epoch
+        fn visit_u64<E>(self, value: u64) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
+        {
+            from(FixedOffset::east(0).timestamp_opt(value as i64, 0), value)
+        }
+
     }
 
+    /// Deserialize a value that optionally includes a timezone offset in its
+    /// string representation
+    ///
+    /// The serialized value can be either a string representation or a unix
+    /// timestamp
     impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
@@ -560,6 +609,10 @@ mod serde {
         }
     }
 
+    /// Deserialize into a UTC value
+    ///
+    /// The serialized value can be either a string representation or a unix
+    /// timestamp
     impl<'de> de::Deserialize<'de> for DateTime<UTC> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
@@ -568,6 +621,11 @@ mod serde {
         }
     }
 
+    /// Deserialize a value that includes no timezone in its string
+    /// representation
+    ///
+    /// The serialized value can be either a string representation or a unix
+    /// timestamp
     impl<'de> de::Deserialize<'de> for DateTime<Local> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
@@ -785,4 +843,3 @@ mod tests {
         assert_eq!(1234567, datetime.timestamp_subsec_nanos());
     }
 }
-
