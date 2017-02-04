@@ -1402,6 +1402,16 @@ fn test_decodable_json<F, E>(from_str: F)
     assert_eq!(
         from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
         Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
+    assert_eq!(
+        from_str("0").unwrap(),
+        NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0),
+        "should parse integers as timestamps"
+    );
+    assert_eq!(
+        from_str("-1").unwrap(),
+        NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59),
+        "should parse integers as timestamps"
+    );
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
@@ -1487,15 +1497,29 @@ mod serde {
     impl<'de> de::Visitor<'de> for NaiveDateTimeVisitor {
         type Value = NaiveDateTime;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
         {
-            write!(formatter, "a formatted date and time string")
+            write!(formatter, "a formatted date and time string or a unix timestamp")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
+            where E: de::Error
+        {
+            NaiveDateTime::from_timestamp_opt(value, 0)
+                .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
+            where E: de::Error
+        {
+            NaiveDateTime::from_timestamp_opt(value as i64, 0)
+                .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
         }
     }
 
