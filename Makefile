@@ -24,28 +24,28 @@ README.md: src/lib.rs
 	echo '[![Chrono on Appveyor][appveyor-image]][appveyor]' >> $@
 	echo '[![Chrono on crates.io][cratesio-image]][cratesio]' >> $@
 	echo >> $@
-	echo '[travis-image]: https://travis-ci.org/lifthrasiir/rust-chrono.svg?branch=master' >> $@
-	echo '[travis]: https://travis-ci.org/lifthrasiir/rust-chrono' >> $@
-	echo '[appveyor-image]: https://ci.appveyor.com/api/projects/status/o83jn08389si56fy/branch/master?svg=true' >> $@
-	echo '[appveyor]: https://ci.appveyor.com/project/lifthrasiir/rust-chrono/branch/master' >> $@
+	echo '[travis-image]: https://travis-ci.org/chronotope/chrono.svg?branch=master' >> $@
+	echo '[travis]: https://travis-ci.org/chronotope/chrono' >> $@
+	echo '[appveyor-image]: https://ci.appveyor.com/api/projects/status/2ia91ofww4w31m2w/branch/master?svg=true' >> $@
+	echo '[appveyor]: https://ci.appveyor.com/project/chronotope/chrono' >> $@
 	echo '[cratesio-image]: https://img.shields.io/crates/v/chrono.svg' >> $@
 	echo '[cratesio]: https://crates.io/crates/chrono' >> $@
 	awk '/^\/\/! # Chrono /,/^\/\/! ## /' $< | cut -b 5- | grep -v '^#' | \
-		sed 's/](\.\//](https:\/\/lifthrasiir.github.io\/rust-chrono\/chrono\//g' >> $@
+		sed 's/](\.\//](https:\/\/docs.rs\/chrono\/'"$$(cargo pkgid | cut -d: -f3)"'\/chrono\//g' >> $@
 	echo '***[Complete Documentation][doc]***' >> $@
 	echo >> $@
-	echo '[doc]: https://lifthrasiir.github.io/rust-chrono/' >> $@
+	echo '[doc]: https://docs.rs/chrono/'"$$(cargo pkgid | cut -d: -f3)"'/' >> $@
 	echo >> $@
 	awk '/^\/\/! ## /,!/^\/\/!/' $< | cut -b 5- | grep -v '^# ' | \
-		sed 's/](\.\//](https:\/\/lifthrasiir.github.io\/rust-chrono\/chrono\//g' >> $@
+		sed 's/](\.\//](https:\/\/docs.rs\/chrono\/'"$$(cargo pkgid | cut -d: -f3)"'\/chrono\//g' >> $@
 
 .PHONY: test
 test:
-	cargo test --features 'serde rustc-serialize'
+	cargo test --features 'serde rustc-serialize bincode'
 
 .PHONY: doc
 doc: authors readme
-	cargo doc --features 'serde rustc-serialize'
+	cargo doc --features 'serde rustc-serialize bincode'
 
 .PHONY: doc-publish
 doc-publish: doc
