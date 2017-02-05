@@ -157,6 +157,8 @@ pub enum Fixed {
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
     RFC3339,
+    /// W3C date and time syntax.
+    W3C
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
@@ -420,6 +422,14 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         } else {
                             None
                         },
+                    W3C => if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                            // reuse `Debug` impls which already print ISO 8601 format.
+                            // this is faster in this way.
+                            try!(write!(w, "{:?}T{:?}", d, t));
+                            Some(write_local_minus_utc(w, off, true, true))
+                        } else {
+                            None
+                        }, 
                 };
 
                 match ret {
