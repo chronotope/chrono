@@ -7,7 +7,7 @@
 
 use std::{str, fmt, hash};
 use std::cmp::Ordering;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 use {Weekday, Timelike, Datelike};
 use offset::{TimeZone, Offset, add_with_leapsecond};
@@ -336,6 +336,12 @@ impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = self.clone().add(rhs);
+    }
+}
+
 impl<Tz: TimeZone, Tz2: TimeZone> Sub<DateTime<Tz2>> for DateTime<Tz> {
     type Output = Duration;
 
@@ -349,6 +355,12 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
     #[inline]
     fn sub(self, rhs: Duration) -> DateTime<Tz> {
         self.checked_sub(rhs).expect("`DateTime - Duration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.clone().sub(rhs);
     }
 }
 

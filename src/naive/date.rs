@@ -47,7 +47,7 @@
 //! This is currently the internal format of Chrono's date types.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 
 use {Weekday, Datelike};
@@ -1317,6 +1317,12 @@ impl Add<Duration> for NaiveDate {
     }
 }
 
+impl AddAssign<Duration> for NaiveDate {
+    fn add_assign(&mut self, rhs: Duration) {
+        self.add(rhs);
+    }
+}
+
 /// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers.
 ///
 /// This does not overflow or underflow at all,
@@ -1382,6 +1388,13 @@ impl Sub<Duration> for NaiveDate {
         self.checked_sub(rhs).expect("`NaiveDate - Duration` overflowed")
     }
 }
+
+impl SubAssign<Duration> for NaiveDate {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
+    }
+}
+
 
 /// The `Debug` output of the naive date `d` is same to
 /// [`d.format("%Y-%m-%d")`](../../format/strftime/index.html).

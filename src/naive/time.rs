@@ -157,7 +157,7 @@
 //! **there is absolutely no guarantee that the leap second read has actually happened**.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 use Timelike;
 use div::div_mod_floor;
@@ -971,6 +971,13 @@ impl Add<Duration> for NaiveTime {
     }
 }
 
+impl AddAssign<Duration> for NaiveTime {
+    fn add_assign(&mut self, rhs: Duration) {
+                self.add(rhs);
+    }
+}
+
+
 /// A subtraction of `NaiveTime` from `NaiveTime` yields a `Duration` within +/- 1 day.
 /// This does not overflow or underflow at all.
 ///
@@ -1091,6 +1098,12 @@ impl Sub<Duration> for NaiveTime {
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveTime {
         self.overflowing_sub(rhs).0
+    }
+}
+
+impl SubAssign<Duration> for NaiveTime {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
