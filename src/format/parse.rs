@@ -358,9 +358,11 @@ fn test_parse() {
         ($fmt:expr, $items:expr; $err:tt) => (
             assert_eq!(parse_all($fmt, &$items), Err($err))
         );
-        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (
-            assert_eq!(parse_all($fmt, &$items), Ok(Parsed { $($k: Some($v),)* ..Parsed::new() }))
-        );
+        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (#[allow(unused_mut)] {
+            let mut expected = Parsed::new();
+            $(expected.$k = Some($v);)*
+            assert_eq!(parse_all($fmt, &$items), Ok(expected))
+        });
     }
 
     // empty string
