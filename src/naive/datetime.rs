@@ -1486,7 +1486,6 @@ mod serde {
     #[test]
     fn test_serde_deserialize() {
         use naive::date::{self, NaiveDate};
-        use self::serde_json::from_str;
 
         let from_str = |s: &str| serde_json::from_str::<NaiveDateTime>(s);
 

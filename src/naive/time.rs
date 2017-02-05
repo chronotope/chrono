@@ -1376,8 +1376,6 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        use self::serde_json::from_str;
-
         let from_str = |s: &str| serde_json::from_str::<NaiveTime>(s);
 
         assert_eq!(from_str(r#""00:00:00""#).ok(),

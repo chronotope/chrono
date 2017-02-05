@@ -1,8 +1,7 @@
 language: rust
 sudo: false
 rust:
-  # 1.8.0 is the earliest known version that Cargo does work for the current crates.io-index repo.
-  # probably older versions work, but we are forced to use this as the minimum for Cargo...
+  # 1.13.0 is the earliest version that Serde 0.9 tests, so we follow suit
   - 1.13.0
   - stable
   - beta
@@ -23,8 +22,8 @@ script:
   - cargo test -v
   - cargo build -v --features rustc-serialize
   - cargo test -v --features rustc-serialize --lib
-  - cargo build -v --features serde
-  - cargo test -v --features serde --lib
+  - cargo build -v --features 'serde bincode'
+  - cargo test -v --features 'serde bincode' --lib
 notifications:
   email: false
   irc:
