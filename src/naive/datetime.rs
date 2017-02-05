@@ -144,20 +144,6 @@ impl NaiveDateTime {
         }
     }
 
-    /// Same to [`NaiveDateTime::from_timestamp`](#method.from_timestamp).
-    #[inline]
-    #[deprecated(since = "0.2.0", note = "Renamed to `from_timestamp`")]
-    pub fn from_num_seconds_from_unix_epoch(secs: i64, nsecs: u32) -> NaiveDateTime {
-        NaiveDateTime::from_timestamp(secs, nsecs)
-    }
-
-    /// Same to [`NaiveDateTime::from_timestamp_opt`](#method.from_timestamp_opt).
-    #[inline]
-    #[deprecated(since = "0.2.0", note = "Renamed to `from_timestamp_opt`")]
-    pub fn from_num_seconds_from_unix_epoch_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
-    }
-
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
     /// See the [`format::strftime` module](../../format/strftime/index.html)
     /// on the supported escape sequences.
@@ -339,13 +325,6 @@ impl NaiveDateTime {
     #[inline]
     pub fn timestamp_subsec_nanos(&self) -> u32 {
         self.time.nanosecond()
-    }
-
-    /// Same to [`NaiveDateTime::timestamp`](#method.timestamp).
-    #[inline]
-    #[deprecated(since = "0.2.0", note = "Renamed to `timestamp`")]
-    pub fn num_seconds_from_unix_epoch(&self) -> i64 {
-        self.timestamp()
     }
 
     /// Adds given `Duration` to the current date and time.

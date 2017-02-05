@@ -99,12 +99,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp_subsec_nanos()
     }
 
-    /// *Deprecated*: Same to `DateTime::timestamp`.
-    #[inline]
-    pub fn num_seconds_from_unix_epoch(&self) -> i64 {
-        self.timestamp()
-    }
-
     /// Retrieves an associated offset from UTC.
     #[inline]
     pub fn offset<'a>(&'a self) -> &'a Tz::Offset {
