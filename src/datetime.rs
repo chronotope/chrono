@@ -472,6 +472,7 @@ mod rustc_serialize {
 
 #[cfg(feature = "serde")]
 mod serde {
+    use std::fmt;
     use super::DateTime;
     use offset::TimeZone;
     use offset::utc::UTC;
@@ -485,7 +486,7 @@ mod serde {
     impl<Tz: TimeZone> ser::Serialize for DateTime<Tz>
         where Tz::Offset: Display
     {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
             // Debug formatting is correct RFC3339, and it allows Zulu.
@@ -498,7 +499,12 @@ mod serde {
     impl de::Visitor for DateTimeVisitor {
         type Value = DateTime<FixedOffset>;
 
-        fn visit_str<E>(&mut self, value: &str) -> Result<DateTime<FixedOffset>, E>
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        {
+            write!(formatter, "a formatted date and time string")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
@@ -506,7 +512,7 @@ mod serde {
     }
 
     impl de::Deserialize for DateTime<FixedOffset> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize_str(DateTimeVisitor)
@@ -514,7 +520,7 @@ mod serde {
     }
 
     impl de::Deserialize for DateTime<UTC> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
@@ -522,7 +528,7 @@ mod serde {
     }
 
     impl de::Deserialize for DateTime<Local> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer
         {
             deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
