@@ -1439,6 +1439,20 @@ mod serde {
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
+
+        fn visit_i64<E>(&mut self, value: i64) -> Result<NaiveDateTime, E>
+            where E: de::Error
+        {
+            NaiveDateTime::from_timestamp_opt(value, 0)
+                .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+        }
+
+        fn visit_u64<E>(&mut self, value: u64) -> Result<NaiveDateTime, E>
+            where E: de::Error
+        {
+            NaiveDateTime::from_timestamp_opt(value as i64, 0)
+                .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+        }
     }
 
     impl de::Deserialize for NaiveDateTime {
@@ -1511,6 +1525,17 @@ mod serde {
         assert_eq!(
             from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
             Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
+        assert_eq!(
+            from_str("0").unwrap(),
+            NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0),
+            "should parse integers as timestamps"
+        );
+        assert_eq!(
+            from_str("-1").unwrap(),
+            NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59),
+            "should parse integers as timestamps"
+        );
+
 
         // bad formats
         assert!(from_str(r#""""#).is_err());
@@ -1527,7 +1552,6 @@ mod serde {
         assert!(from_str(r#""2016-07-08 09:10:48.090""#).is_err());
         assert!(from_str(r#""2016-007-08T09:10:48.090""#).is_err());
         assert!(from_str(r#""yyyy-mm-ddThh:mm:ss.fffffffff""#).is_err());
-        assert!(from_str(r#"0"#).is_err());
         assert!(from_str(r#"20160708000000"#).is_err());
         assert!(from_str(r#"{}"#).is_err());
         assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err()); // :(

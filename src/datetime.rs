@@ -473,7 +473,7 @@ mod rustc_serialize {
 #[cfg(feature = "serde")]
 mod serde {
     use super::DateTime;
-    use offset::TimeZone;
+    use offset::{TimeZone, LocalResult};
     use offset::utc::UTC;
     use offset::local::Local;
     use offset::fixed::FixedOffset;
@@ -493,6 +493,22 @@ mod serde {
         }
     }
 
+    // try!-like function to convert a LocalResult into a serde-ish Result
+    fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
+        where E: de::Error,
+              V: Display,
+              T: Display,
+    {
+        match me {
+            LocalResult::None => Err(E::custom(
+                format!("value is not a legal timestamp: {}", ts))),
+            LocalResult::Ambiguous(min, max) => Err(E::custom(
+                format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
+                        ts, min, max))),
+            LocalResult::Single(val) => Ok(val)
+        }
+    }
+
     struct DateTimeVisitor;
 
     impl de::Visitor for DateTimeVisitor {
@@ -503,16 +519,22 @@ mod serde {
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
-    }
 
-    impl de::Deserialize for DateTime<FixedOffset> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+        fn visit_i64<E>(&mut self, value: i64) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
         {
-            deserializer.deserialize_str(DateTimeVisitor)
+            from(FixedOffset::east(0).timestamp_opt(value, 0), value)
         }
+
+        fn visit_u64<E>(&mut self, value: u64) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
+        {
+            from(FixedOffset::east(0).timestamp_opt(value as i64, 0), value)
+        }
+
     }
 
+    /// Deserialize into a UTC value
     impl de::Deserialize for DateTime<UTC> {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -521,6 +543,18 @@ mod serde {
         }
     }
 
+    /// Deserialize a value that optionally includes a timezone offset in its
+    /// string representation
+    impl de::Deserialize for DateTime<FixedOffset> {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.deserialize_str(DateTimeVisitor)
+        }
+    }
+
+    /// Deserialize a value that includes no timezone in its string
+    /// representation
     impl de::Deserialize for DateTime<Local> {
         fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -548,6 +582,11 @@ mod serde {
 
         assert_eq!(from_str(r#""2014-07-24T12:34:06Z""#).ok(),
                    Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
+
+        assert_eq!(from_str("0").unwrap(),
+                   UTC.ymd(1970, 1, 1).and_hms(0, 0, 0));
+        assert_eq!(from_str("-1").unwrap(),
+                   UTC.ymd(1969, 12, 31).and_hms(23, 59, 59));
 
         assert!(from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     }
