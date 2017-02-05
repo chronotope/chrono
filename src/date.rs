@@ -1,16 +1,14 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * ISO 8601 calendar date with time zone.
- */
+//! ISO 8601 calendar date with time zone.
 
 use std::{fmt, hash};
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
+use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
-use duration::Duration;
 use offset::{TimeZone, Offset};
 use offset::utc::UTC;
 use naive;
@@ -209,8 +207,8 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add(self, rhs: Duration) -> Option<Date<Tz>> {
-        let date = try_opt!(self.date.checked_add(rhs));
+    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
+        let date = try_opt!(self.date.checked_add_signed(rhs));
         Some(Date { date: date, offset: self.offset })
     }
 
@@ -218,9 +216,37 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub(self, rhs: Duration) -> Option<Date<Tz>> {
-        let date = try_opt!(self.date.checked_sub(rhs));
+    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
+        let date = try_opt!(self.date.checked_sub_signed(rhs));
         Some(Date { date: date, offset: self.offset })
+    }
+
+    /// Subtracts another `Date` from the current date.
+    /// Returns a `Duration` of integral numbers.
+    ///
+    /// This does not overflow or underflow at all,
+    /// as all possible output fits in the range of `Duration`.
+    #[inline]
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: Date<Tz2>) -> OldDuration {
+        self.date.signed_duration_since(rhs.date)
+    }
+
+    /// Same to [`Date::checked_add_signed`](#method.checked_add_signed).
+    #[inline]
+    #[deprecated(since = "0.2.26",
+                 note = "Renamed to `checked_add_signed`, \
+                         will be replaced with a version with `std::time::Duration`")]
+    pub fn checked_add(self, rhs: OldDuration) -> Option<Date<Tz>> {
+        self.checked_add_signed(rhs)
+    }
+
+    /// Same to [`Date::checked_sub_signed`](#method.checked_sub_signed).
+    #[inline]
+    #[deprecated(since = "0.2.26",
+                 note = "Renamed to `checked_sub_signed`, \
+                         will be replaced with a version with `std::time::Duration`")]
+    pub fn checked_sub(self, rhs: OldDuration) -> Option<Date<Tz>> {
+        self.checked_sub_signed(rhs)
     }
 
     /// Returns a view to the naive UTC date.
@@ -331,28 +357,32 @@ impl<Tz: TimeZone> hash::Hash for Date<Tz> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) { self.date.hash(state) }
 }
 
-impl<Tz: TimeZone> Add<Duration> for Date<Tz> {
+impl<Tz: TimeZone> Add<OldDuration> for Date<Tz> {
     type Output = Date<Tz>;
 
     #[inline]
-    fn add(self, rhs: Duration) -> Date<Tz> {
-        self.checked_add(rhs).expect("`Date + Duration` overflowed")
+    fn add(self, rhs: OldDuration) -> Date<Tz> {
+        self.checked_add_signed(rhs).expect("`Date + Duration` overflowed")
     }
 }
 
+// XXX this does not really work yet
+#[deprecated(since = "0.2.26", note = "Use `signed_duration_since` method instead")]
 impl<Tz: TimeZone, Tz2: TimeZone> Sub<Date<Tz2>> for Date<Tz> {
-    type Output = Duration;
+    type Output = OldDuration;
 
     #[inline]
-    fn sub(self, rhs: Date<Tz2>) -> Duration { self.date - rhs.date }
+    fn sub(self, rhs: Date<Tz2>) -> OldDuration {
+        self.signed_duration_since(rhs)
+    }
 }
 
-impl<Tz: TimeZone> Sub<Duration> for Date<Tz> {
+impl<Tz: TimeZone> Sub<OldDuration> for Date<Tz> {
     type Output = Date<Tz>;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> Date<Tz> {
-        self.checked_sub(rhs).expect("`Date - Duration` overflowed")
+    fn sub(self, rhs: OldDuration) -> Date<Tz> {
+        self.checked_sub_signed(rhs).expect("`Date - Duration` overflowed")
     }
 }
 
@@ -423,9 +453,9 @@ mod rustc_serialize {
 #[cfg(test)]
 mod tests {
     use std::fmt;
+    use oldtime::Duration;
 
     use Datelike;
-    use duration::Duration;
     use naive::date::NaiveDate;
     use naive::datetime::NaiveDateTime;
     use offset::{TimeZone, Offset, LocalResult};

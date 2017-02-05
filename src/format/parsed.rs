@@ -5,11 +5,11 @@
 //! They can be constructed incrementally while being checked for consistency.
 
 use num::traits::ToPrimitive;
+use oldtime::Duration as OldDuration;
 
 use {Datelike, Timelike};
 use Weekday;
 use div::div_rem;
-use duration::Duration;
 use offset::{TimeZone, Offset, LocalResult};
 use offset::fixed::FixedOffset;
 use naive::date::NaiveDate;
@@ -382,7 +382,7 @@ impl Parsed {
                 if week_from_sun > 53 { return Err(OUT_OF_RANGE); } // can it overflow?
                 let ndays = firstweek + (week_from_sun as i32 - 1) * 7 +
                             weekday.num_days_from_sunday() as i32;
-                let date = try!(newyear.checked_add(Duration::days(ndays as i64))
+                let date = try!(newyear.checked_add_signed(OldDuration::days(ndays as i64))
                                        .ok_or(OUT_OF_RANGE));
                 if date.year() != year { return Err(OUT_OF_RANGE); } // early exit for correct error
 
@@ -407,7 +407,7 @@ impl Parsed {
                 if week_from_mon > 53 { return Err(OUT_OF_RANGE); } // can it overflow?
                 let ndays = firstweek + (week_from_mon as i32 - 1) * 7 +
                             weekday.num_days_from_monday() as i32;
-                let date = try!(newyear.checked_add(Duration::days(ndays as i64))
+                let date = try!(newyear.checked_add_signed(OldDuration::days(ndays as i64))
                                        .ok_or(OUT_OF_RANGE));
                 if date.year() != year { return Err(OUT_OF_RANGE); } // early exit for correct error
 
@@ -526,7 +526,7 @@ impl Parsed {
                     // it's okay, just do not try to overwrite the existing field.
                     59 => {}
                     // `datetime` is known to be off by one second.
-                    0 => { datetime = datetime - Duration::seconds(1); }
+                    0 => { datetime = datetime - OldDuration::seconds(1); }
                     // otherwise it is impossible.
                     _ => return Err(IMPOSSIBLE)
                 }
@@ -957,9 +957,12 @@ mod tests {
                    ymdhmsn(2014,12,31, 4,26,40,12_345_678));
 
         // more timestamps
-        let max_days_from_year_1970 = date::MAX - NaiveDate::from_ymd(1970,1,1);
-        let year_0_from_year_1970 = NaiveDate::from_ymd(0,1,1) - NaiveDate::from_ymd(1970,1,1);
-        let min_days_from_year_1970 = date::MIN - NaiveDate::from_ymd(1970,1,1);
+        let max_days_from_year_1970 =
+            date::MAX.signed_duration_since(NaiveDate::from_ymd(1970,1,1));
+        let year_0_from_year_1970 =
+            NaiveDate::from_ymd(0,1,1).signed_duration_since(NaiveDate::from_ymd(1970,1,1));
+        let min_days_from_year_1970 =
+            date::MIN.signed_duration_since(NaiveDate::from_ymd(1970,1,1));
         assert_eq!(parse!(timestamp: min_days_from_year_1970.num_seconds()),
                    ymdhms(date::MIN.year(),1,1, 0,0,0));
         assert_eq!(parse!(timestamp: year_0_from_year_1970.num_seconds()),

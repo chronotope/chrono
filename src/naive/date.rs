@@ -49,10 +49,10 @@
 use std::{str, fmt, hash};
 use std::ops::{Add, Sub};
 use num::traits::ToPrimitive;
+use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
 use div::div_mod_floor;
-use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use format::{Item, Numeric, Pad};
@@ -114,7 +114,7 @@ fn test_date_bounds() {
 
     // let's also check that the entire range do not exceed 2^44 seconds
     // (sometimes used for bounding `Duration` against overflow)
-    let maxsecs = (MAX - MIN).num_seconds();
+    let maxsecs = MAX.signed_duration_since(MIN).num_seconds();
     let maxsecs = maxsecs + 86401; // also take care of DateTime
     assert!(maxsecs < (1 << MAX_BITS),
             "The entire `NaiveDate` range somehow exceeds 2^{} seconds", MAX_BITS);
@@ -798,17 +798,22 @@ impl NaiveDate {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{NaiveDate, Duration};
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// use chrono::NaiveDate;
     /// use chrono::naive::date::MAX;
+    /// use time::Duration;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
-    /// assert_eq!(d.checked_add(Duration::days(40)), Some(NaiveDate::from_ymd(2015, 10, 15)));
-    /// assert_eq!(d.checked_add(Duration::days(-40)), Some(NaiveDate::from_ymd(2015, 7, 27)));
-    /// assert_eq!(d.checked_add(Duration::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_add(Duration::days(-1_000_000_000)), None);
-    /// assert_eq!(MAX.checked_add(Duration::days(1)), None);
+    /// assert_eq!(d.checked_add_signed(Duration::days(40)),
+    ///            Some(NaiveDate::from_ymd(2015, 10, 15)));
+    /// assert_eq!(d.checked_add_signed(Duration::days(-40)),
+    ///            Some(NaiveDate::from_ymd(2015, 7, 27)));
+    /// assert_eq!(d.checked_add_signed(Duration::days(1_000_000_000)), None);
+    /// assert_eq!(d.checked_add_signed(Duration::days(-1_000_000_000)), None);
+    /// assert_eq!(MAX.checked_add_signed(Duration::days(1)), None);
+    /// # }
     /// ~~~~
-    pub fn checked_add(self, rhs: Duration) -> Option<NaiveDate> {
+    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
@@ -829,17 +834,22 @@ impl NaiveDate {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{NaiveDate, Duration};
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// use chrono::NaiveDate;
     /// use chrono::naive::date::MIN;
+    /// use time::Duration;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
-    /// assert_eq!(d.checked_sub(Duration::days(40)), Some(NaiveDate::from_ymd(2015, 7, 27)));
-    /// assert_eq!(d.checked_sub(Duration::days(-40)), Some(NaiveDate::from_ymd(2015, 10, 15)));
-    /// assert_eq!(d.checked_sub(Duration::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_sub(Duration::days(-1_000_000_000)), None);
-    /// assert_eq!(MIN.checked_sub(Duration::days(1)), None);
+    /// assert_eq!(d.checked_sub_signed(Duration::days(40)),
+    ///            Some(NaiveDate::from_ymd(2015, 7, 27)));
+    /// assert_eq!(d.checked_sub_signed(Duration::days(-40)),
+    ///            Some(NaiveDate::from_ymd(2015, 10, 15)));
+    /// assert_eq!(d.checked_sub_signed(Duration::days(1_000_000_000)), None);
+    /// assert_eq!(d.checked_sub_signed(Duration::days(-1_000_000_000)), None);
+    /// assert_eq!(MIN.checked_sub_signed(Duration::days(1)), None);
+    /// # }
     /// ~~~~
-    pub fn checked_sub(self, rhs: Duration) -> Option<NaiveDate> {
+    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
@@ -851,6 +861,42 @@ impl NaiveDate {
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
                            Of::new(ordinal, flags))
+    }
+
+    /// Subtracts another `NaiveDate` from the current date.
+    /// Returns a `Duration` of integral numbers.
+    ///
+    /// This does not overflow or underflow at all,
+    /// as all possible output fits in the range of `Duration`.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// use chrono::NaiveDate;
+    /// use time::Duration;
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    /// let since = NaiveDate::signed_duration_since;
+    ///
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 1)), Duration::zero());
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 12, 31)), Duration::days(1));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 2)), Duration::days(-1));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 9, 23)), Duration::days(100));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)), Duration::days(365));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)), Duration::days(365*4 + 1));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), Duration::days(365*400 + 97));
+    /// # }
+    /// ~~~~
+    pub fn signed_duration_since(self, rhs: NaiveDate) -> OldDuration {
+        let year1 = self.year();
+        let year2 = rhs.year();
+        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
+        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
+        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
+        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
+        OldDuration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146097 +
+                          (cycle1 - cycle2))
     }
 
     /// Formats the date with the specified formatting items.
@@ -1290,12 +1336,14 @@ impl hash::Hash for NaiveDate {
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 ///
 /// Panics on underflow or overflow.
-/// Use [`NaiveDate::checked_add`](#method.checked_add) to detect that.
+/// Use [`NaiveDate::checked_add_signed`](#method.checked_add_signed) to detect that.
 ///
 /// # Example
 ///
 /// ~~~~
-/// use chrono::{NaiveDate, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveDate;
+/// use time::Duration;
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1307,47 +1355,14 @@ impl hash::Hash for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(364),          from_ymd(2014, 12, 31));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*4 + 1),    from_ymd(2018, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*400 + 97), from_ymd(2414, 1, 1));
+/// # }
 /// ~~~~
-impl Add<Duration> for NaiveDate {
+impl Add<OldDuration> for NaiveDate {
     type Output = NaiveDate;
 
     #[inline]
-    fn add(self, rhs: Duration) -> NaiveDate {
-        self.checked_add(rhs).expect("`NaiveDate + Duration` overflowed")
-    }
-}
-
-/// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers.
-///
-/// This does not overflow or underflow at all,
-/// as all possible output fits in the range of `Duration`.
-///
-/// # Example
-///
-/// ~~~~
-/// use chrono::{NaiveDate, Duration};
-///
-/// let from_ymd = NaiveDate::from_ymd;
-///
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1),   Duration::zero());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), Duration::days(1));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2),   Duration::days(-1));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23),  Duration::days(100));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1),   Duration::days(365));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1),   Duration::days(365*4 + 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1),   Duration::days(365*400 + 97));
-/// ~~~~
-impl Sub<NaiveDate> for NaiveDate {
-    type Output = Duration;
-
-    fn sub(self, rhs: NaiveDate) -> Duration {
-        let year1 = self.year();
-        let year2 = rhs.year();
-        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
-        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
-        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
-        Duration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146097 + (cycle1 - cycle2))
+    fn add(self, rhs: OldDuration) -> NaiveDate {
+        self.checked_add_signed(rhs).expect("`NaiveDate + Duration` overflowed")
     }
 }
 
@@ -1356,12 +1371,14 @@ impl Sub<NaiveDate> for NaiveDate {
 /// It is same to the addition with a negated `Duration`.
 ///
 /// Panics on underflow or overflow.
-/// Use [`NaiveDate::checked_sub`](#method.checked_sub) to detect that.
+/// Use [`NaiveDate::checked_sub_signed`](#method.checked_sub_signed) to detect that.
 ///
 /// # Example
 ///
 /// ~~~~
-/// use chrono::{NaiveDate, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveDate;
+/// use time::Duration;
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1373,13 +1390,14 @@ impl Sub<NaiveDate> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(364),          from_ymd(2013, 1, 2));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*4 + 1),    from_ymd(2010, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*400 + 97), from_ymd(1614, 1, 1));
+/// # }
 /// ~~~~
-impl Sub<Duration> for NaiveDate {
+impl Sub<OldDuration> for NaiveDate {
     type Output = NaiveDate;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> NaiveDate {
-        self.checked_sub(rhs).expect("`NaiveDate - Duration` overflowed")
+    fn sub(self, rhs: OldDuration) -> NaiveDate {
+        self.checked_sub_signed(rhs).expect("`NaiveDate - Duration` overflowed")
     }
 }
 
@@ -1674,8 +1692,8 @@ mod tests {
     use super::{MIN, MIN_YEAR, MIN_DAYS_FROM_YEAR_0};
     use super::{MAX, MAX_YEAR, MAX_DAYS_FROM_YEAR_0};
     use {Datelike, Weekday};
-    use duration::Duration;
     use std::{i32, u32};
+    use oldtime::Duration;
 
     #[test]
     fn test_date_from_ymd() {
@@ -1938,8 +1956,8 @@ mod tests {
         fn check((y1,m1,d1): (i32, u32, u32), rhs: Duration, ymd: Option<(i32, u32, u32)>) {
             let lhs = NaiveDate::from_ymd(y1, m1, d1);
             let sum = ymd.map(|(y,m,d)| NaiveDate::from_ymd(y, m, d));
-            assert_eq!(lhs.checked_add(rhs), sum);
-            assert_eq!(lhs.checked_sub(-rhs), sum);
+            assert_eq!(lhs.checked_add_signed(rhs), sum);
+            assert_eq!(lhs.checked_sub_signed(-rhs), sum);
         }
 
         check((2014, 1, 1), Duration::zero(), Some((2014, 1, 1)));
@@ -1968,8 +1986,8 @@ mod tests {
         fn check((y1,m1,d1): (i32, u32, u32), (y2,m2,d2): (i32, u32, u32), diff: Duration) {
             let lhs = NaiveDate::from_ymd(y1, m1, d1);
             let rhs = NaiveDate::from_ymd(y2, m2, d2);
-            assert_eq!(lhs - rhs, diff);
-            assert_eq!(rhs - lhs, -diff);
+            assert_eq!(lhs.signed_duration_since(rhs), diff);
+            assert_eq!(rhs.signed_duration_since(lhs), -diff);
         }
 
         check((2014, 1, 1), (2014, 1, 1), Duration::zero());

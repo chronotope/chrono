@@ -44,17 +44,34 @@
 //! extern crate chrono;
 //! ```
 //!
+//! Avoid using `use chrono::*;` as Chrono exports several modules other than types.
+//! If you prefer the glob imports, use the following instead:
+//!
+//! ```rust
+//! use chrono::prelude::*;
+//! ```
+//!
 //! ## Overview
 //!
 //! ### Duration
 //!
-//! [**`Duration`**](./struct.Duration.html) represents the magnitude of a time
-//! span. Note that this is an "accurate" duration represented as seconds and
+//! Chrono currently uses
+//! the [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html) type
+//! from the `time` crate to represent the magnitude of a time span.
+//! Since this has the same name to the newer, standard type for duration,
+//! the reference will refer this type as `OldDuration`.
+//! Note that this is an "accurate" duration represented as seconds and
 //! nanoseconds and does not represent "nominal" components such as days or
-//! months. `Duration` used to be provided by Chrono. It has been moved to the
-//! `time` crate as the
-//! [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html)
-//! type, but is still re-exported from Chrono.
+//! months.
+//!
+//! Chrono does not yet natively support
+//! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
+//! but it will be supported in the future.
+//! Meanwhile you can convert between two types with
+//! [`Duration::from_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.from_std)
+//! and
+//! [`Duration::to_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.to_std)
+//! methods.
 //!
 //! ### Date and Time
 //!
@@ -94,7 +111,7 @@
 //! ([`Local::now()`](./offset/local/struct.Local.html#method.now)).
 //!
 //! ~~~~ {.rust}
-//! use chrono::*;
+//! use chrono::prelude::*;
 //!
 //! let utc: DateTime<UTC> = UTC::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 //! let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
@@ -106,7 +123,8 @@
 //! but in turn we get a rich combination of initialization methods.
 //!
 //! ~~~~ {.rust}
-//! use chrono::*;
+//! use chrono::prelude::*;
+//! use chrono::offset::LocalResult;
 //!
 //! let dt = UTC.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
@@ -139,7 +157,9 @@
 //! The following illustrates most supported operations to the date and time:
 //!
 //! ~~~~ {.rust}
-//! use chrono::*;
+//! # extern crate chrono; extern crate time; fn main() {
+//! use chrono::prelude::*;
+//! use time::Duration;
 //!
 //! # /* we intentionally fake the datetime...
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
@@ -167,12 +187,15 @@
 //! assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November 29, 301 BCE
 //!
 //! // arithmetic operations
-//! assert_eq!(UTC.ymd(2014, 11, 14).and_hms(8, 9, 10) - UTC.ymd(2014, 11, 14).and_hms(10, 9, 8),
-//!            Duration::seconds(-2 * 3600 + 2));
+//! let dt1 = UTC.ymd(2014, 11, 14).and_hms(8, 9, 10);
+//! let dt2 = UTC.ymd(2014, 11, 14).and_hms(10, 9, 8);
+//! assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
+//! assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
 //! assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
 //!            UTC.ymd(2001, 9, 9).and_hms(1, 46, 40));
 //! assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
 //!            UTC.ymd(1938, 4, 24).and_hms(22, 13, 20));
+//! # }
 //! ~~~~
 //!
 //! Formatting is done via the [`format`](./datetime/struct.DateTime.html#method.format) method,
@@ -186,7 +209,7 @@
 //! for well-known formats.
 //!
 //! ~~~~ {.rust}
-//! use chrono::*;
+//! use chrono::prelude::*;
 //!
 //! let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
@@ -227,7 +250,7 @@
 //! [`format`](./format/index.html) module.
 //!
 //! ~~~~ {.rust}
-//! use chrono::*;
+//! use chrono::prelude::*;
 //!
 //! let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 //! let fixed_dt = dt.with_timezone(&FixedOffset::east(9*3600));
@@ -263,7 +286,8 @@
 //! Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 //!
 //! ~~~~ {.rust}
-//! use chrono::*;
+//! use chrono::prelude::*;
+//! use chrono::offset::LocalResult;
 //!
 //! # // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
 //! assert_eq!(UTC::today(), UTC::now().date());
@@ -326,14 +350,16 @@
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 
-extern crate time as stdtime;
+extern crate time as oldtime;
 extern crate num;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde;
 
-pub use duration::Duration;
+// this reexport is to aid the transition and should not be in the prelude!
+pub use oldtime::Duration;
+
 pub use offset::{TimeZone, Offset, LocalResult};
 pub use offset::utc::UTC;
 pub use offset::fixed::FixedOffset;
@@ -345,24 +371,26 @@ pub use date::Date;
 pub use datetime::DateTime;
 pub use format::{ParseError, ParseResult};
 
+/// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
+pub mod prelude {
+    pub use {Datelike, Timelike, Weekday};
+    pub use offset::{TimeZone, Offset};
+    pub use offset::utc::UTC;
+    pub use offset::fixed::FixedOffset;
+    pub use offset::local::Local;
+    pub use naive::date::NaiveDate;
+    pub use naive::time::NaiveTime;
+    pub use naive::datetime::NaiveDateTime;
+    pub use date::Date;
+    pub use datetime::DateTime;
+}
+
 // useful throughout the codebase
 macro_rules! try_opt {
     ($e:expr) => (match $e { Some(v) => v, None => return None })
 }
 
 mod div;
-pub mod duration {
-    //! ISO 8601 accurate duration.
-    //!
-    //! Note that this is an "accurate" (i.e. "exact") duration represented as
-    //! seconds and nanoseconds. It does not include the "nominal" components
-    //! (years, months, weeks, and days) in the ISO 8601 duration format
-    //! because arithmetic with nominal components is not defined in ISO 8601.
-    //!
-    //! This used to be a part of Chrono,
-    //! but has been subsequently merged into Rust's standard library.
-    pub use stdtime::Duration;
-}
 pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.

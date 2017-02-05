@@ -58,17 +58,34 @@ Then put this in your crate root:
 extern crate chrono;
 ```
 
+Avoid using `use chrono::*;` as Chrono exports several modules other than types.
+If you prefer the glob imports, use the following instead:
+
+```rust
+use chrono::prelude::*;
+```
+
 ## Overview
 
 ### Duration
 
-[**`Duration`**](https://docs.rs/chrono/0.2.25/chrono/struct.Duration.html) represents the magnitude of a time
-span. Note that this is an "accurate" duration represented as seconds and
+Chrono currently uses
+the [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html) type
+from the `time` crate to represent the magnitude of a time span.
+Since this has the same name to the newer, standard type for duration,
+the reference will refer this type as `OldDuration`.
+Note that this is an "accurate" duration represented as seconds and
 nanoseconds and does not represent "nominal" components such as days or
-months. `Duration` used to be provided by Chrono. It has been moved to the
-`time` crate as the
-[`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html)
-type, but is still re-exported from Chrono.
+months.
+
+Chrono does not yet natively support
+the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
+but it will be supported in the future.
+Meanwhile you can convert between two types with
+[`Duration::from_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.from_std)
+and
+[`Duration::to_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.to_std)
+methods.
 
 ### Date and Time
 
@@ -108,7 +125,7 @@ or in the local time zone
 ([`Local::now()`](https://docs.rs/chrono/0.2.25/chrono/offset/local/struct.Local.html#method.now)).
 
 ~~~~ {.rust}
-use chrono::*;
+use chrono::prelude::*;
 
 let utc: DateTime<UTC> = UTC::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
@@ -119,7 +136,8 @@ This is a bit verbose due to Rust's lack of function and method overloading,
 but in turn we get a rich combination of initialization methods.
 
 ~~~~ {.rust}
-use chrono::*;
+use chrono::prelude::*;
+use chrono::offset::LocalResult;
 
 let dt = UTC.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
 // July 8 is 188th day of the year 2014 (`o` for "ordinal")
@@ -151,7 +169,8 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ~~~~ {.rust}
-use chrono::*;
+use chrono::prelude::*;
+use time::Duration;
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = Local::now();
@@ -176,8 +195,10 @@ assert_eq!(dt.with_day(32), None);
 assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November 29, 301 BCE
 
 // arithmetic operations
-assert_eq!(UTC.ymd(2014, 11, 14).and_hms(8, 9, 10) - UTC.ymd(2014, 11, 14).and_hms(10, 9, 8),
-           Duration::seconds(-2 * 3600 + 2));
+let dt1 = UTC.ymd(2014, 11, 14).and_hms(8, 9, 10);
+let dt2 = UTC.ymd(2014, 11, 14).and_hms(10, 9, 8);
+assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
+assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
 assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
            UTC.ymd(2001, 9, 9).and_hms(1, 46, 40));
 assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
@@ -195,7 +216,7 @@ Chrono also provides [`to_rfc2822`](https://docs.rs/chrono/0.2.25/chrono/datetim
 for well-known formats.
 
 ~~~~ {.rust}
-use chrono::*;
+use chrono::prelude::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
@@ -236,7 +257,7 @@ More detailed control over the parsing process is available via
 [`format`](https://docs.rs/chrono/0.2.25/chrono/format/index.html) module.
 
 ~~~~ {.rust}
-use chrono::*;
+use chrono::prelude::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
 let fixed_dt = dt.with_timezone(&FixedOffset::east(9*3600));
@@ -272,7 +293,8 @@ It also has time zones attached, and have to be constructed via time zones.
 Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 
 ~~~~ {.rust}
-use chrono::*;
+use chrono::prelude::*;
+use chrono::offset::LocalResult;
 
 assert_eq!(UTC::today(), UTC::now().date());
 assert_eq!(Local::today(), Local::now().date());

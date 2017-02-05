@@ -1,14 +1,12 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * The time zone which has a fixed offset from UTC.
- */
+//! The time zone which has a fixed offset from UTC.
 
 use std::fmt;
+use oldtime::Duration as OldDuration;
 
 use div::div_mod_floor;
-use duration::Duration;
 use naive::date::NaiveDate;
 use naive::datetime::NaiveDateTime;
 use super::{TimeZone, Offset, LocalResult};
@@ -120,7 +118,7 @@ impl TimeZone for FixedOffset {
 }
 
 impl Offset for FixedOffset {
-    fn local_minus_utc(&self) -> Duration { Duration::seconds(self.local_minus_utc as i64) }
+    fn local_minus_utc(&self) -> OldDuration { OldDuration::seconds(self.local_minus_utc as i64) }
 }
 
 impl fmt::Debug for FixedOffset {

@@ -1,14 +1,12 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * The local (system) time zone.
- */
+//! The local (system) time zone.
 
-use stdtime;
+use oldtime;
+use oldtime::Duration as OldDuration;
 
 use {Datelike, Timelike};
-use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
@@ -19,20 +17,20 @@ use super::fixed::FixedOffset;
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
-fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
+fn tm_to_datetime(mut tm: oldtime::Tm) -> DateTime<Local> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
     }
 
     #[cfg(not(windows))]
-    fn tm_to_naive_date(tm: &stdtime::Tm) -> NaiveDate {
+    fn tm_to_naive_date(tm: &oldtime::Tm) -> NaiveDate {
         // from_yo is more efficient than from_ymd (since it's the internal representation).
         NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1)
     }
 
     #[cfg(windows)]
-    fn tm_to_naive_date(tm: &stdtime::Tm) -> NaiveDate {
+    fn tm_to_naive_date(tm: &oldtime::Tm) -> NaiveDate {
         // ...but tm_yday is broken in Windows (issue #85)
         NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
     }
@@ -41,17 +39,17 @@ fn tm_to_datetime(mut tm: stdtime::Tm) -> DateTime<Local> {
     let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
                                         tm.tm_sec as u32, tm.tm_nsec as u32);
     let offset = FixedOffset::east(tm.tm_utcoff);
-    DateTime::from_utc(date.and_time(time) + Duration::seconds(-tm.tm_utcoff as i64), offset)
+    DateTime::from_utc(date.and_time(time) + OldDuration::seconds(-tm.tm_utcoff as i64), offset)
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> stdtime::Timespec {
+fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
     // well, this exploits an undocumented `Tm::to_timespec` behavior
     // to get the exact function we want (either `timegm` or `mktime`).
     // the number 1 is arbitrary but should be non-zero to trigger `mktime`.
     let tm_utcoff = if local {1} else {0};
 
-    let tm = stdtime::Tm {
+    let tm = oldtime::Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
         tm_hour: d.hour() as i32,
@@ -93,7 +91,7 @@ impl Local {
 
     /// Returns a `DateTime` which corresponds to the current date.
     pub fn now() -> DateTime<Local> {
-        tm_to_datetime(stdtime::now())
+        tm_to_datetime(oldtime::now())
     }
 }
 
@@ -127,7 +125,7 @@ impl TimeZone for Local {
     }
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let timespec = datetime_to_timespec(local, true);
-        LocalResult::Single(tm_to_datetime(stdtime::at(timespec)))
+        LocalResult::Single(tm_to_datetime(oldtime::at(timespec)))
     }
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
@@ -136,7 +134,7 @@ impl TimeZone for Local {
     }
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         let timespec = datetime_to_timespec(utc, false);
-        tm_to_datetime(stdtime::at(timespec))
+        tm_to_datetime(oldtime::at(timespec))
     }
 }
 

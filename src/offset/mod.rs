@@ -22,10 +22,10 @@
 
 use std::fmt;
 use std::ops::Add;
+use oldtime::Duration as OldDuration;
 
 use Weekday;
 use Timelike;
-use duration::Duration;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
@@ -36,8 +36,10 @@ use format::{parse, Parsed, ParseResult, StrftimeItems};
 /// Same to `*lhs + *rhs`, but keeps the leap second information.
 /// `rhs` should *not* have a fractional second.
 // TODO this should be replaced by the addition with FixedOffset in 0.3!
-pub fn add_with_leapsecond<T: Timelike + Add<Duration, Output=T>>(lhs: &T, rhs: &Duration) -> T {
-    debug_assert!(*rhs == Duration::seconds(rhs.num_seconds()));
+pub fn add_with_leapsecond<T>(lhs: &T, rhs: &OldDuration) -> T
+    where T: Timelike + Add<OldDuration, Output=T>
+{
+    debug_assert!(*rhs == OldDuration::seconds(rhs.num_seconds()));
 
     // extract and temporarily remove the fractional part and later recover it
     let nanos = lhs.nanosecond();
@@ -174,7 +176,7 @@ impl<T: fmt::Debug> LocalResult<T> {
 /// The offset from the local time to UTC.
 pub trait Offset: Sized + Clone + fmt::Debug {
     /// Returns the offset from UTC to the local time stored.
-    fn local_minus_utc(&self) -> Duration;
+    fn local_minus_utc(&self) -> OldDuration;
 }
 
 /// The time zone.

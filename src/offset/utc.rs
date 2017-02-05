@@ -6,9 +6,9 @@
  */
 
 use std::fmt;
-use stdtime;
+use oldtime;
+use oldtime::Duration as OldDuration;
 
-use duration::Duration;
 use naive::date::NaiveDate;
 use naive::datetime::NaiveDateTime;
 use date::Date;
@@ -42,7 +42,7 @@ impl UTC {
 
     /// Returns a `DateTime` which corresponds to the current date.
     pub fn now() -> DateTime<UTC> {
-        let spec = stdtime::get_time();
+        let spec = oldtime::get_time();
         let naive = NaiveDateTime::from_timestamp(spec.sec, spec.nsec as u32);
         DateTime::from_utc(naive, UTC)
     }
@@ -65,7 +65,7 @@ impl TimeZone for UTC {
 }
 
 impl Offset for UTC {
-    fn local_minus_utc(&self) -> Duration { Duration::zero() }
+    fn local_minus_utc(&self) -> OldDuration { OldDuration::zero() }
 }
 
 impl fmt::Debug for UTC {

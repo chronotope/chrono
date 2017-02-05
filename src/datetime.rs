@@ -1,20 +1,18 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * ISO 8601 date and time with time zone.
- */
+//! ISO 8601 date and time with time zone.
 
 use std::{str, fmt, hash};
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
+use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
 use offset::{TimeZone, Offset, add_with_leapsecond};
 use offset::utc::UTC;
 use offset::local::Local;
 use offset::fixed::FixedOffset;
-use duration::Duration;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use date::Date;
@@ -130,8 +128,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add(self, rhs: Duration) -> Option<DateTime<Tz>> {
-        let datetime = try_opt!(self.datetime.checked_add(rhs));
+    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+        let datetime = try_opt!(self.datetime.checked_add_signed(rhs));
         Some(DateTime { datetime: datetime, offset: self.offset })
     }
 
@@ -139,9 +137,16 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub(self, rhs: Duration) -> Option<DateTime<Tz>> {
-        let datetime = try_opt!(self.datetime.checked_sub(rhs));
+    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+        let datetime = try_opt!(self.datetime.checked_sub_signed(rhs));
         Some(DateTime { datetime: datetime, offset: self.offset })
+    }
+
+    /// Subtracts another `DateTime` from the current date and time.
+    /// This does not overflow or underflow at all.
+    #[inline]
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
+        self.datetime.signed_duration_since(rhs.datetime)
     }
 
     /// Returns a view to the naive UTC datetime.
@@ -327,28 +332,21 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) { self.datetime.hash(state) }
 }
 
-impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: Duration) -> DateTime<Tz> {
-        self.checked_add(rhs).expect("`DateTime + Duration` overflowed")
+    fn add(self, rhs: OldDuration) -> DateTime<Tz> {
+        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone, Tz2: TimeZone> Sub<DateTime<Tz2>> for DateTime<Tz> {
-    type Output = Duration;
-
-    #[inline]
-    fn sub(self, rhs: DateTime<Tz2>) -> Duration { self.datetime - rhs.datetime }
-}
-
-impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> DateTime<Tz> {
-        self.checked_sub(rhs).expect("`DateTime - Duration` overflowed")
+    fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
+        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
     }
 }
 
@@ -578,11 +576,11 @@ mod tests {
     use Datelike;
     use naive::time::NaiveTime;
     use naive::date::NaiveDate;
-    use duration::Duration;
     use offset::TimeZone;
     use offset::utc::UTC;
     use offset::local::Local;
     use offset::fixed::FixedOffset;
+    use oldtime::Duration;
 
     #[test]
     #[allow(non_snake_case)]
@@ -618,10 +616,10 @@ mod tests {
         assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(23, 59, 59)),
                    "2014-05-06T23:59:59+09:00");
 
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9), EDT.ymd(2014, 5, 6).and_hms(3, 8, 9));
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) + Duration::seconds(3600 + 60 + 1),
-                   UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) - EDT.ymd(2014, 5, 6).and_hms(10, 11, 12),
+        let dt = UTC.ymd(2014, 5, 6).and_hms(7, 8, 9);
+        assert_eq!(dt, EDT.ymd(2014, 5, 6).and_hms(3, 8, 9));
+        assert_eq!(dt + Duration::seconds(3600 + 60 + 1), UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));
+        assert_eq!(dt.signed_duration_since(EDT.ymd(2014, 5, 6).and_hms(10, 11, 12)),
                    Duration::seconds(-7*3600 - 3*60 - 3));
 
         assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);

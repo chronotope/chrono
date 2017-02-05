@@ -158,10 +158,10 @@
 
 use std::{str, fmt, hash};
 use std::ops::{Add, Sub};
+use oldtime::Duration as OldDuration;
 
 use Timelike;
 use div::div_mod_floor;
-use duration::Duration;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
@@ -522,18 +522,21 @@ impl NaiveTime {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{NaiveTime, Duration};
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// use chrono::NaiveTime;
+    /// use time::Duration;
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_add(Duration::hours(11)),
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(11)),
     ///            (from_hms(14, 4, 5), 0));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_add(Duration::hours(23)),
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(23)),
     ///            (from_hms(2, 4, 5), 86400));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_add(Duration::hours(-7)),
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(-7)),
     ///            (from_hms(20, 4, 5), -86400));
+    /// # }
     /// ~~~~
-    pub fn overflowing_add(&self, mut rhs: Duration) -> (NaiveTime, i64) {
+    pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
         let mut secs = self.secs;
         let mut frac = self.frac;
 
@@ -542,12 +545,12 @@ impl NaiveTime {
         // otherwise the addition immediately finishes.
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
-            if rhs >= Duration::nanoseconds(rfrac as i64) {
-                rhs = rhs - Duration::nanoseconds(rfrac as i64);
+            if rhs >= OldDuration::nanoseconds(rfrac as i64) {
+                rhs = rhs - OldDuration::nanoseconds(rfrac as i64);
                 secs += 1;
                 frac = 0;
-            } else if rhs < Duration::nanoseconds(-(frac as i64)) {
-                rhs = rhs + Duration::nanoseconds(frac as i64);
+            } else if rhs < OldDuration::nanoseconds(-(frac as i64)) {
+                rhs = rhs + OldDuration::nanoseconds(frac as i64);
                 frac = 0;
             } else {
                 frac = (frac as i64 + rhs.num_nanoseconds().unwrap()) as u32;
@@ -559,8 +562,8 @@ impl NaiveTime {
         debug_assert!(frac < 1_000_000_000);
 
         let rhssecs = rhs.num_seconds();
-        let rhsfrac = (rhs - Duration::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert!(Duration::seconds(rhssecs) + Duration::nanoseconds(rhsfrac) == rhs);
+        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
+        debug_assert!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac) == rhs);
         let rhssecsinday = rhssecs % 86400;
         let mut morerhssecs = rhssecs - rhssecsinday;
         let rhssecs = rhssecsinday as i32;
@@ -604,21 +607,128 @@ impl NaiveTime {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{NaiveTime, Duration};
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// use chrono::NaiveTime;
+    /// use time::Duration;
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub(Duration::hours(2)),
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(2)),
     ///            (from_hms(1, 4, 5), 0));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub(Duration::hours(17)),
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(17)),
     ///            (from_hms(10, 4, 5), 86400));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub(Duration::hours(-22)),
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(-22)),
     ///            (from_hms(1, 4, 5), -86400));
+    /// # }
     /// ~~~~
     #[inline]
-    pub fn overflowing_sub(&self, rhs: Duration) -> (NaiveTime, i64) {
-        let (time, rhs) = self.overflowing_add(-rhs);
+    pub fn overflowing_sub_signed(&self, rhs: OldDuration) -> (NaiveTime, i64) {
+        let (time, rhs) = self.overflowing_add_signed(-rhs);
         (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
+    }
+
+    /// Subtracts another `NaiveTime` from the current time.
+    /// Returns a `Duration` within +/- 1 day.
+    /// This does not overflow or underflow at all.
+    ///
+    /// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+    /// the subtraction assumes that **there is no leap second ever**,
+    /// except when any of the `NaiveTime`s themselves represents a leap second
+    /// in which case the assumption becomes that
+    /// **there are exactly one (or two) leap second(s) ever**.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// use chrono::NaiveTime;
+    /// use time::Duration;
+    ///
+    /// let from_hmsm = NaiveTime::from_hms_milli;
+    /// let since = NaiveTime::signed_duration_since;
+    ///
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 900)),
+    ///            Duration::zero());
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 875)),
+    ///            Duration::milliseconds(25));
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 6, 925)),
+    ///            Duration::milliseconds(975));
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 0, 900)),
+    ///            Duration::seconds(7));
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 0, 7, 900)),
+    ///            Duration::seconds(5 * 60));
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(0, 5, 7, 900)),
+    ///            Duration::seconds(3 * 3600));
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(4, 5, 7, 900)),
+    ///            Duration::seconds(-3600));
+    /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(2, 4, 6, 800)),
+    ///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
+    /// # }
+    /// ~~~~
+    ///
+    /// Leap seconds are handled, but the subtraction assumes that
+    /// there were no other leap seconds happened.
+    ///
+    /// ~~~~
+    /// # extern crate chrono; extern crate time; fn main() {
+    /// # use chrono::NaiveTime;
+    /// # use time::Duration;
+    /// # let from_hmsm = NaiveTime::from_hms_milli;
+    /// # let since = NaiveTime::signed_duration_since;
+    /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(3, 0, 59, 0)),
+    ///            Duration::seconds(1));
+    /// assert_eq!(since(from_hmsm(3, 0, 59, 1_500), from_hmsm(3, 0, 59, 0)),
+    ///            Duration::milliseconds(1500));
+    /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(3, 0, 0, 0)),
+    ///            Duration::seconds(60));
+    /// assert_eq!(since(from_hmsm(3, 0, 0, 0), from_hmsm(2, 59, 59, 1_000)),
+    ///            Duration::seconds(1));
+    /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(2, 59, 59, 1_000)),
+    ///            Duration::seconds(61));
+    /// # }
+    /// ~~~~
+    pub fn signed_duration_since(self, rhs: NaiveTime) -> OldDuration {
+        //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
+        //     |    |    :    |    |    |    |    |    |    |    :    |    |
+        // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
+        //          |   `rhs` |                             |    `self`
+        //          |======================================>|       |
+        //          |     |  `self.secs - rhs.secs`         |`self.frac`
+        //          |====>|   |                             |======>|
+        //      `rhs.frac`|========================================>|
+        //          |     |   |        `self - rhs`         |       |
+
+        use std::cmp::Ordering;
+
+        let secs = self.secs as i64 - rhs.secs as i64;
+        let frac = self.frac as i64 - rhs.frac as i64;
+
+        // `secs` may contain a leap second yet to be counted
+        let adjust = match self.secs.cmp(&rhs.secs) {
+            Ordering::Greater => if rhs.frac >= 1_000_000_000 { 1 } else { 0 },
+            Ordering::Equal => 0,
+            Ordering::Less => if self.frac >= 1_000_000_000 { -1 } else { 0 },
+        };
+
+        OldDuration::seconds(secs + adjust) + OldDuration::nanoseconds(frac)
+    }
+
+    /// Same to [`NaiveTime::overflowing_add_signed`](#method.overflowing_add_signed).
+    #[inline]
+    #[deprecated(since = "0.2.26",
+                 note = "Renamed to `overflowing_add_signed`, \
+                         will be replaced with a version with `std::time::Duration`")]
+    pub fn overflowing_add(self, rhs: OldDuration) -> (NaiveTime, i64) {
+        self.overflowing_add_signed(rhs)
+    }
+
+    /// Same to [`NaiveTime::overflowing_sub_signed`](#method.overflowing_sub_signed).
+    #[inline]
+    #[deprecated(since = "0.2.26",
+                 note = "Renamed to `overflowing_sub_signed`, \
+                         will be replaced with a version with `std::time::Duration`")]
+    pub fn overflowing_sub(self, rhs: OldDuration) -> (NaiveTime, i64) {
+        self.overflowing_sub_signed(rhs)
     }
 
     /// Formats the time with the specified formatting items.
@@ -924,7 +1034,9 @@ impl hash::Hash for NaiveTime {
 /// # Example
 ///
 /// ~~~~
-/// use chrono::{NaiveTime, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveTime;
+/// use time::Duration;
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -936,22 +1048,28 @@ impl hash::Hash for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::milliseconds(80),        from_hmsm(3, 5, 7, 80));
 /// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::milliseconds(280),     from_hmsm(3, 5, 8, 230));
 /// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::milliseconds(-980),    from_hmsm(3, 5, 6, 970));
+/// # }
 /// ~~~~
 ///
 /// The addition wraps around.
 ///
 /// ~~~~
-/// # use chrono::{NaiveTime, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// # use chrono::NaiveTime;
+/// # use time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(22*60*60), from_hmsm(1, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(-8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::days(800),         from_hmsm(3, 5, 7, 0));
+/// # }
 /// ~~~~
 ///
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
 ///
 /// ~~~~
-/// # use chrono::{NaiveTime, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// # use chrono::NaiveTime;
+/// # use time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap + Duration::zero(),             from_hmsm(3, 5, 59, 1_300));
@@ -961,82 +1079,26 @@ impl hash::Hash for NaiveTime {
 /// assert_eq!(leap + Duration::seconds(10),        from_hmsm(3, 6, 9, 300));
 /// assert_eq!(leap + Duration::seconds(-10),       from_hmsm(3, 5, 50, 300));
 /// assert_eq!(leap + Duration::days(1),            from_hmsm(3, 5, 59, 300));
+/// # }
 /// ~~~~
-impl Add<Duration> for NaiveTime {
+impl Add<OldDuration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
-    fn add(self, rhs: Duration) -> NaiveTime {
-        self.overflowing_add(rhs).0
+    fn add(self, rhs: OldDuration) -> NaiveTime {
+        self.overflowing_add_signed(rhs).0
     }
 }
 
-/// A subtraction of `NaiveTime` from `NaiveTime` yields a `Duration` within +/- 1 day.
-/// This does not overflow or underflow at all.
-///
-/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
-/// the subtraction assumes that **there is no leap second ever**,
-/// except when any of the `NaiveTime`s themselves represents a leap second
-/// in which case the assumption becomes that
-/// **there are exactly one (or two) leap second(s) ever**.
-///
-/// # Example
-///
-/// ~~~~
-/// use chrono::{NaiveTime, Duration};
-///
-/// let from_hmsm = NaiveTime::from_hms_milli;
-///
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), Duration::zero());
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), Duration::milliseconds(25));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), Duration::milliseconds(975));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), Duration::seconds(7));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 0, 7, 900), Duration::seconds(5 * 60));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(0, 5, 7, 900), Duration::seconds(3 * 3600));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), Duration::seconds(-3600));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(2, 4, 6, 800),
-///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
-/// ~~~~
-///
-/// Leap seconds are handled, but the subtraction assumes that
-/// there were no other leap seconds happened.
-///
-/// ~~~~
-/// # use chrono::{NaiveTime, Duration};
-/// # let from_hmsm = NaiveTime::from_hms_milli;
-/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), Duration::seconds(1));
-/// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0), Duration::milliseconds(1500));
-/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 0, 0), Duration::seconds(60));
-/// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(1));
-/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(61));
-/// ~~~~
+/// Use [`NaiveTime::signed_duration_since`](#method.signed_duration_since) instead.
+// XXX this does not really work yet
+#[deprecated(since = "0.2.26", note = "Use `signed_duration_since` method instead")]
 impl Sub<NaiveTime> for NaiveTime {
-    type Output = Duration;
+    type Output = OldDuration;
 
-    fn sub(self, rhs: NaiveTime) -> Duration {
-        //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
-        //     |    |    :    |    |    |    |    |    |    |    :    |    |
-        // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
-        //          |   `rhs` |                             |    `self`
-        //          |======================================>|       |
-        //          |     |  `self.secs - rhs.secs`         |`self.frac`
-        //          |====>|   |                             |======>|
-        //      `rhs.frac`|========================================>|
-        //          |     |   |        `self - rhs`         |       |
-
-        use std::cmp::Ordering;
-
-        let secs = self.secs as i64 - rhs.secs as i64;
-        let frac = self.frac as i64 - rhs.frac as i64;
-
-        // `secs` may contain a leap second yet to be counted
-        let adjust = match self.secs.cmp(&rhs.secs) {
-            Ordering::Greater => if rhs.frac >= 1_000_000_000 { 1 } else { 0 },
-            Ordering::Equal => 0,
-            Ordering::Less => if self.frac >= 1_000_000_000 { -1 } else { 0 },
-        };
-
-        Duration::seconds(secs + adjust) + Duration::nanoseconds(frac)
+    #[inline]
+    fn sub(self, rhs: NaiveTime) -> OldDuration {
+        self.signed_duration_since(rhs)
     }
 }
 
@@ -1052,7 +1114,9 @@ impl Sub<NaiveTime> for NaiveTime {
 /// # Example
 ///
 /// ~~~~
-/// use chrono::{NaiveTime, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveTime;
+/// use time::Duration;
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -1062,21 +1126,27 @@ impl Sub<NaiveTime> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::milliseconds(80),        from_hmsm(3, 5, 6, 920));
 /// assert_eq!(from_hmsm(3, 5, 7, 950) - Duration::milliseconds(280),     from_hmsm(3, 5, 7, 670));
+/// # }
 /// ~~~~
 ///
 /// The subtraction wraps around.
 ///
 /// ~~~~
-/// # use chrono::{NaiveTime, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// # use chrono::NaiveTime;
+/// # use time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::days(800),        from_hmsm(3, 5, 7, 0));
+/// # }
 /// ~~~~
 ///
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
 ///
 /// ~~~~
-/// # use chrono::{NaiveTime, Duration};
+/// # extern crate chrono; extern crate time; fn main() {
+/// # use chrono::NaiveTime;
+/// # use time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap - Duration::zero(),            from_hmsm(3, 5, 59, 1_300));
@@ -1084,13 +1154,14 @@ impl Sub<NaiveTime> for NaiveTime {
 /// assert_eq!(leap - Duration::milliseconds(500), from_hmsm(3, 5, 59, 800));
 /// assert_eq!(leap - Duration::seconds(60),       from_hmsm(3, 5, 0, 300));
 /// assert_eq!(leap - Duration::days(1),           from_hmsm(3, 6, 0, 300));
+/// # }
 /// ~~~~
-impl Sub<Duration> for NaiveTime {
+impl Sub<OldDuration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> NaiveTime {
-        self.overflowing_sub(rhs).0
+    fn sub(self, rhs: OldDuration) -> NaiveTime {
+        self.overflowing_sub_signed(rhs).0
     }
 }
 
@@ -1434,8 +1505,8 @@ mod serde {
 mod tests {
     use super::NaiveTime;
     use Timelike;
-    use duration::Duration;
     use std::u32;
+    use oldtime::Duration;
 
     #[test]
     fn test_time_from_hms_milli() {
@@ -1526,17 +1597,17 @@ mod tests {
     fn test_time_overflowing_add() {
         let hmsm = NaiveTime::from_hms_milli;
 
-        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add(Duration::hours(11)),
+        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add_signed(Duration::hours(11)),
                    (hmsm(14, 4, 5, 678), 0));
-        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add(Duration::hours(23)),
+        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add_signed(Duration::hours(23)),
                    (hmsm(2, 4, 5, 678), 86400));
-        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add(Duration::hours(-7)),
+        assert_eq!(hmsm(3, 4, 5, 678).overflowing_add_signed(Duration::hours(-7)),
                    (hmsm(20, 4, 5, 678), -86400));
 
-        // overflowing_add with leap seconds may be counter-intuitive
-        assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add(Duration::days(1)),
+        // overflowing_add_signed with leap seconds may be counter-intuitive
+        assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add_signed(Duration::days(1)),
                    (hmsm(3, 4, 5, 678), 86400));
-        assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add(Duration::days(-1)),
+        assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add_signed(Duration::days(-1)),
                    (hmsm(3, 4, 6, 678), -86400));
     }
 
@@ -1545,8 +1616,8 @@ mod tests {
         macro_rules! check {
             ($lhs:expr, $rhs:expr, $diff:expr) => ({
                 // `time1 - time2 = duration` is equivalent to `time2 - time1 = -duration`
-                assert_eq!($lhs - $rhs, $diff);
-                assert_eq!($rhs - $lhs, -$diff);
+                assert_eq!($lhs.signed_duration_since($rhs), $diff);
+                assert_eq!($rhs.signed_duration_since($lhs), -$diff);
             })
         }
 
