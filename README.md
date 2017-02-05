@@ -1,9 +1,10 @@
-[Chrono][doc] 0.2.25
-====================
+[Chrono][docsrs] 0.2.25
+=======================
 
 [![Chrono on Travis CI][travis-image]][travis]
 [![Chrono on Appveyor][appveyor-image]][appveyor]
 [![Chrono on crates.io][cratesio-image]][cratesio]
+[![Chrono on docs.rs][docsrs-image]][docsrs]
 
 [travis-image]: https://travis-ci.org/chronotope/chrono.svg?branch=master
 [travis]: https://travis-ci.org/chronotope/chrono
@@ -11,8 +12,11 @@
 [appveyor]: https://ci.appveyor.com/project/chronotope/chrono
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
+[docsrs-image]: https://docs.rs/chrono/badge.svg?version=0.2.25
+[docsrs]: https://docs.rs/chrono/0.2.25/
 
-Date and time handling for Rust. (also known as `rust-chrono`)
+
+Date and time handling for Rust.
 It aims to be a feature-complete superset of
 the [time](https://github.com/rust-lang-deprecated/time) library.
 In particular,
@@ -29,9 +33,6 @@ which Chrono builts upon and should acknowledge:
 * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 
-***[Complete Documentation][doc]***
-
-[doc]: https://docs.rs/chrono/0.2.25/
 
 ## Usage
 

@@ -1,10 +1,9 @@
-// This is a part of rust-chrono.
-// Copyright (c) 2014-2015, Kang Seonghoon.
+// This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
 //! # Chrono 0.2.25
 //!
-//! Date and time handling for Rust. (also known as `rust-chrono`)
+//! Date and time handling for Rust.
 //! It aims to be a feature-complete superset of
 //! the [time](https://github.com/rust-lang-deprecated/time) library.
 //! In particular,
@@ -360,7 +359,7 @@ pub mod duration {
     //! (years, months, weeks, and days) in the ISO 8601 duration format
     //! because arithmetic with nominal components is not defined in ISO 8601.
     //!
-    //! This used to be a part of rust-chrono,
+    //! This used to be a part of Chrono,
     //! but has been subsequently merged into Rust's standard library.
     pub use stdtime::Duration;
 }

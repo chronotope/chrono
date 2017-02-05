@@ -1,7 +1,7 @@
 ChangeLog for Chrono
 ====================
 
-This documents all notable changes to [Chrono](https://github.com/lifthrasiir/rust-chrono).
+This documents all notable changes to [Chrono](https://github.com/chronotope/chrono).
 
 Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 

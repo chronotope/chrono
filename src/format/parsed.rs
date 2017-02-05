@@ -1,5 +1,4 @@
-// This is a part of rust-chrono.
-// Copyright (c) 2015, Kang Seonghoon.
+// This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
 //! A collection of parsed date and time items.

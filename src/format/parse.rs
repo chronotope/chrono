@@ -1,5 +1,4 @@
-// This is a part of rust-chrono.
-// Copyright (c) 2015, Kang Seonghoon.
+// This is a part of Chrono.
 // Portions copyright (c) 2015, John Nagle.
 // See README.md and LICENSE.txt for details.
 
