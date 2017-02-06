@@ -21,31 +21,15 @@
  */
 
 use std::fmt;
-use std::ops::Add;
-use oldtime::Duration as OldDuration;
 
 use Weekday;
-use Timelike;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 use naive::datetime::NaiveDateTime;
 use date::Date;
 use datetime::DateTime;
 use format::{parse, Parsed, ParseResult, StrftimeItems};
-
-/// Same to `*lhs + *rhs`, but keeps the leap second information.
-/// `rhs` should *not* have a fractional second.
-// TODO this should be replaced by the addition with FixedOffset in 0.3!
-pub fn add_with_leapsecond<T>(lhs: &T, rhs: &OldDuration) -> T
-    where T: Timelike + Add<OldDuration, Output=T>
-{
-    debug_assert!(*rhs == OldDuration::seconds(rhs.num_seconds()));
-
-    // extract and temporarily remove the fractional part and later recover it
-    let nanos = lhs.nanosecond();
-    let lhs = lhs.with_nanosecond(0).unwrap();
-    (lhs + *rhs).with_nanosecond(nanos).unwrap()
-}
+use self::fixed::FixedOffset;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug)]
@@ -175,8 +159,8 @@ impl<T: fmt::Debug> LocalResult<T> {
 
 /// The offset from the local time to UTC.
 pub trait Offset: Sized + Clone + fmt::Debug {
-    /// Returns the offset from UTC to the local time stored.
-    fn local_minus_utc(&self) -> OldDuration;
+    /// Returns the fixed offset from UTC to the local time stored.
+    fn fix(&self) -> FixedOffset;
 }
 
 /// The time zone.
@@ -358,15 +342,15 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>> {
         self.offset_from_local_date(local).map(|offset| {
-            Date::from_utc(*local - offset.local_minus_utc(), offset)
+            // since FixedOffset is within +/- 1 day, the date is never affected
+            Date::from_utc(*local, offset)
         })
     }
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
         self.offset_from_local_datetime(local).map(|offset| {
-            let utc = add_with_leapsecond(local, &-offset.local_minus_utc());
-            DateTime::from_utc(utc, offset)
+            DateTime::from_utc(*local - offset.fix(), offset)
         })
     }
 

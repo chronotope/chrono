@@ -137,3 +137,15 @@ impl TimeZone for Local {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use Datelike;
+    use offset::TimeZone;
+    use super::Local;
+
+    #[test]
+    fn test_local_date_sanity_check() { // issue #27
+        assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
+    }
+}
+

@@ -1,19 +1,17 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * The UTC (Coordinated Universal Time) time zone.
- */
+//! The UTC (Coordinated Universal Time) time zone.
 
 use std::fmt;
 use oldtime;
-use oldtime::Duration as OldDuration;
 
 use naive::date::NaiveDate;
 use naive::datetime::NaiveDateTime;
 use date::Date;
 use datetime::DateTime;
 use super::{TimeZone, Offset, LocalResult};
+use super::fixed::FixedOffset;
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -64,7 +62,7 @@ impl TimeZone for UTC {
 }
 
 impl Offset for UTC {
-    fn local_minus_utc(&self) -> OldDuration { OldDuration::zero() }
+    fn fix(&self) -> FixedOffset { FixedOffset::east(0) }
 }
 
 impl fmt::Debug for UTC {

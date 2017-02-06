@@ -3,12 +3,16 @@
 
 //! The time zone which has a fixed offset from UTC.
 
+use std::ops::{Add, Sub};
 use std::fmt;
 use oldtime::Duration as OldDuration;
 
+use Timelike;
 use div::div_mod_floor;
+use naive::time::NaiveTime;
 use naive::date::NaiveDate;
 use naive::datetime::NaiveDateTime;
+use datetime::DateTime;
 use super::{TimeZone, Offset, LocalResult};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -82,6 +86,16 @@ impl FixedOffset {
             None
         }
     }
+
+    /// Returns the number of seconds to add to convert from UTC to the local time.
+    pub fn local_minus_utc(&self) -> i32 {
+        self.local_minus_utc
+    }
+
+    /// Returns the number of seconds to add to convert from the local time to UTC.
+    pub fn utc_minus_local(&self) -> i32 {
+        -self.local_minus_utc
+    }
 }
 
 impl TimeZone for FixedOffset {
@@ -101,7 +115,7 @@ impl TimeZone for FixedOffset {
 }
 
 impl Offset for FixedOffset {
-    fn local_minus_utc(&self) -> OldDuration { OldDuration::seconds(self.local_minus_utc as i64) }
+    fn fix(&self) -> FixedOffset { *self }
 }
 
 impl fmt::Debug for FixedOffset {
@@ -120,5 +134,93 @@ impl fmt::Debug for FixedOffset {
 
 impl fmt::Display for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
+}
+
+// addition or subtraction of FixedOffset to/from Timelike values is same to
+// adding or subtracting the offset's local_minus_utc value
+// but keep keeps the leap second information.
+// this should be implemented more efficiently, but for the time being, this is generic right now.
+
+fn add_with_leapsecond<T>(lhs: &T, rhs: i32) -> T
+    where T: Timelike + Add<OldDuration, Output=T>
+{
+    // extract and temporarily remove the fractional part and later recover it
+    let nanos = lhs.nanosecond();
+    let lhs = lhs.with_nanosecond(0).unwrap();
+    (lhs + OldDuration::seconds(rhs as i64)).with_nanosecond(nanos).unwrap()
+}
+
+impl Add<FixedOffset> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> NaiveTime {
+        add_with_leapsecond(&self, rhs.local_minus_utc)
+    }
+}
+
+impl Sub<FixedOffset> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> NaiveTime {
+        add_with_leapsecond(&self, -rhs.local_minus_utc)
+    }
+}
+
+impl Add<FixedOffset> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> NaiveDateTime {
+        add_with_leapsecond(&self, rhs.local_minus_utc)
+    }
+}
+
+impl Sub<FixedOffset> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
+        add_with_leapsecond(&self, -rhs.local_minus_utc)
+    }
+}
+
+impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> DateTime<Tz> {
+        add_with_leapsecond(&self, rhs.local_minus_utc)
+    }
+}
+
+impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> DateTime<Tz> {
+        add_with_leapsecond(&self, -rhs.local_minus_utc)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use offset::TimeZone;
+    use super::FixedOffset;
+
+    #[test]
+    fn test_date_extreme_offset() {
+        // starting from 0.3 we don't have an offset exceeding one day.
+        // this makes everything easier!
+        assert_eq!(format!("{:?}", FixedOffset::east(86399).ymd(2012, 2, 29)),
+                   "2012-02-29+23:59:59".to_string());
+        assert_eq!(format!("{:?}", FixedOffset::east(86399).ymd(2012, 2, 29).and_hms(5, 6, 7)),
+                   "2012-02-29T05:06:07+23:59:59".to_string());
+        assert_eq!(format!("{:?}", FixedOffset::west(86399).ymd(2012, 3, 4)),
+                   "2012-03-04-23:59:59".to_string());
+        assert_eq!(format!("{:?}", FixedOffset::west(86399).ymd(2012, 3, 4).and_hms(5, 6, 7)),
+                   "2012-03-04T05:06:07-23:59:59".to_string());
+    }
 }
 

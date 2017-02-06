@@ -604,20 +604,13 @@ impl Parsed {
             let nanosecond = self.nanosecond.unwrap_or(0);
             let dt = NaiveDateTime::from_timestamp_opt(timestamp, nanosecond);
             let dt = try!(dt.ok_or(OUT_OF_RANGE));
-
-            // we cannot handle offsets larger than i32 at all. give up if so.
-            // we can instead make `to_naive_datetime_with_offset` to accept i64, but this makes
-            // the algorithm too complex and tons of edge cases. i32 should be enough for all.
-            let offset = tz.offset_from_utc_datetime(&dt).local_minus_utc().num_seconds();
-            guessed_offset = try!(offset.to_i32().ok_or(OUT_OF_RANGE));
+            guessed_offset = tz.offset_from_utc_datetime(&dt).fix().local_minus_utc();
         }
 
         // checks if the given `DateTime` has a consistent `Offset` with given `self.offset`.
         let check_offset = |dt: &DateTime<Tz>| {
             if let Some(offset) = self.offset {
-                let delta = dt.offset().local_minus_utc().num_seconds();
-                // if `delta` does not fit in `i32`, it cannot equal to `self.offset` anyway.
-                delta.to_i32() == Some(offset)
+                dt.offset().fix().local_minus_utc() == offset
             } else {
                 true
             }

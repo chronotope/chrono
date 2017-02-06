@@ -9,7 +9,7 @@ use std::ops::{Add, Sub};
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
-use offset::{TimeZone, Offset};
+use offset::TimeZone;
 use offset::utc::UTC;
 use naive;
 use naive::date::NaiveDate;
@@ -256,9 +256,13 @@ impl<Tz: TimeZone> Date<Tz> {
     }
 
     /// Returns a view to the naive local date.
+    ///
+    /// This is technically same to [`naive_utc`](#method.naive_utc)
+    /// because the offset is restricted to never exceed one day,
+    /// but provided for the consistency.
     #[inline]
     pub fn naive_local(&self) -> NaiveDate {
-        self.date + self.offset.local_minus_utc()
+        self.date
     }
 }
 
@@ -395,65 +399,6 @@ impl<Tz: TimeZone> fmt::Debug for Date<Tz> {
 impl<Tz: TimeZone> fmt::Display for Date<Tz> where Tz::Offset: fmt::Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.naive_local(), self.offset)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::fmt;
-    use oldtime::Duration;
-
-    use Datelike;
-    use naive::date::NaiveDate;
-    use naive::datetime::NaiveDateTime;
-    use offset::{TimeZone, Offset, LocalResult};
-    use offset::local::Local;
-
-    #[derive(Copy, Clone, PartialEq, Eq)]
-    struct UTC1y; // same to UTC but with an offset of 365 days
-
-    #[derive(Copy, Clone, PartialEq, Eq)]
-    struct OneYear;
-
-    impl TimeZone for UTC1y {
-        type Offset = OneYear;
-
-        fn from_offset(_offset: &OneYear) -> UTC1y { UTC1y }
-
-        fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<OneYear> {
-            LocalResult::Single(OneYear)
-        }
-        fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<OneYear> {
-            LocalResult::Single(OneYear)
-        }
-
-        fn offset_from_utc_date(&self, _utc: &NaiveDate) -> OneYear { OneYear }
-        fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> OneYear { OneYear }
-    }
-
-    impl Offset for OneYear {
-        fn local_minus_utc(&self) -> Duration { Duration::days(365) }
-    }
-
-    impl fmt::Debug for OneYear {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "+8760:00") }
-    }
-
-    #[test]
-    fn test_date_weird_offset() {
-        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 2, 29)),
-                   "2012-02-29+8760:00".to_string());
-        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 2, 29).and_hms(5, 6, 7)),
-                   "2012-02-29T05:06:07+8760:00".to_string());
-        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 3, 4)),
-                   "2012-03-04+8760:00".to_string());
-        assert_eq!(format!("{:?}", UTC1y.ymd(2012, 3, 4).and_hms(5, 6, 7)),
-                   "2012-03-04T05:06:07+8760:00".to_string());
-    }
-
-    #[test]
-    fn test_local_date_sanity_check() { // issue #27
-        assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
     }
 }
 

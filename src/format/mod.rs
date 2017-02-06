@@ -5,11 +5,11 @@
 
 use std::fmt;
 use std::error::Error;
-use oldtime::Duration as OldDuration;
 
 use {Datelike, Timelike};
 use div::{div_floor, mod_floor};
-use offset::{Offset, add_with_leapsecond};
+use offset::Offset;
+use offset::fixed::FixedOffset;
 use naive::date::NaiveDate;
 use naive::time::NaiveTime;
 
@@ -252,7 +252,7 @@ const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Option<&NaiveTime>,
-                     off: Option<&(String, OldDuration)>, items: I) -> fmt::Result
+                     off: Option<&(String, FixedOffset)>, items: I) -> fmt::Result
         where I: Iterator<Item=Item<'a>> {
     // full and abbreviated month and weekday names
     static SHORT_MONTHS: [&'static str; 12] =
@@ -302,7 +302,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         (Some(d), Some(t), None) =>
                             Some(d.and_time(*t).timestamp()),
                         (Some(d), Some(t), Some(&(_, off))) =>
-                            Some(add_with_leapsecond(&d.and_time(*t), &-off).timestamp()),
+                            Some((d.and_time(*t) - off).timestamp()),
                         (_, _, _) => None
                     }),
                 };
@@ -332,15 +332,15 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
 
                 /// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
                 /// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
-                fn write_local_minus_utc(w: &mut fmt::Formatter, off: OldDuration,
+                fn write_local_minus_utc(w: &mut fmt::Formatter, off: FixedOffset,
                                          allow_zulu: bool, use_colon: bool) -> fmt::Result {
-                    let off = off.num_minutes();
+                    let off = off.local_minus_utc();
                     if !allow_zulu || off != 0 {
                         let (sign, off) = if off < 0 {('-', -off)} else {('+', off)};
                         if use_colon {
-                            write!(w, "{}{:02}:{:02}", sign, off / 60, off % 60)
+                            write!(w, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
                         } else {
-                            write!(w, "{}{:02}{:02}", sign, off / 60, off % 60)
+                            write!(w, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
                         }
                     } else {
                         write!(w, "Z")
@@ -452,7 +452,7 @@ pub struct DelayedFormat<I> {
     /// The time view, if any.
     time: Option<NaiveTime>,
     /// The name and local-to-UTC difference for the offset (timezone), if any.
-    off: Option<(String, OldDuration)>,
+    off: Option<(String, FixedOffset)>,
     /// An iterator returning formatting items.
     items: I,
 }
@@ -467,7 +467,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
     pub fn new_with_offset<Off>(date: Option<NaiveDate>, time: Option<NaiveTime>,
                                 offset: &Off, items: I) -> DelayedFormat<I>
             where Off: Offset + fmt::Display {
-        let name_and_diff = (offset.to_string(), offset.local_minus_utc());
+        let name_and_diff = (offset.to_string(), offset.fix());
         DelayedFormat { date: date, time: time, off: Some(name_and_diff), items: items }
     }
 }
