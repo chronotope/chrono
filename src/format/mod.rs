@@ -101,9 +101,23 @@ pub enum Numeric {
 }
 
 /// An opaque type representing numeric item types for internal uses only.
-#[derive(Clone, PartialEq, Eq)]
 pub struct InternalNumeric {
     _dummy: Void,
+}
+
+impl Clone for InternalNumeric {
+    fn clone(&self) -> Self {
+        match self._dummy {}
+    }
+}
+
+impl PartialEq for InternalNumeric {
+    fn eq(&self, _other: &InternalNumeric) -> bool {
+        match self._dummy {}
+    }
+}
+
+impl Eq for InternalNumeric {
 }
 
 impl fmt::Debug for InternalNumeric {
@@ -188,9 +202,23 @@ pub enum Fixed {
 }
 
 /// An opaque type representing fixed-format item types for internal uses only.
-#[derive(Clone, PartialEq, Eq)]
 pub struct InternalFixed {
     _dummy: Void,
+}
+
+impl Clone for InternalFixed {
+    fn clone(&self) -> Self {
+        match self._dummy {}
+    }
+}
+
+impl PartialEq for InternalFixed {
+    fn eq(&self, _other: &InternalFixed) -> bool {
+        match self._dummy {}
+    }
+}
+
+impl Eq for InternalFixed {
 }
 
 impl fmt::Debug for InternalFixed {
