@@ -173,7 +173,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
     fn next(&mut self) -> Option<Item<'a>> {
         // we have some reconstructed items to return
         if !self.recons.is_empty() {
-            let item = self.recons[0];
+            let item = self.recons[0].clone();
             self.recons = &self.recons[1..];
             return Some(item);
         }
@@ -292,8 +292,8 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 // adjust `item` if we have any padding modifier
                 if let Some(new_pad) = pad_override {
                     match item {
-                        Item::Numeric(kind, _pad) if self.recons.is_empty() =>
-                            Some(Item::Numeric(kind, new_pad)),
+                        Item::Numeric(ref kind, _pad) if self.recons.is_empty() =>
+                            Some(Item::Numeric(kind.clone(), new_pad)),
                         _ => Some(Item::Error), // no reconstructed or non-numeric item allowed
                     }
                 } else {

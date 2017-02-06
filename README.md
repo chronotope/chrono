@@ -185,7 +185,7 @@ assert_eq!(dt.ordinal(), 332); // the day of year
 assert_eq!(dt.num_days_from_ce(), 735565); // the number of days from and including Jan 1, 1
 
 // time zone accessor and manipulation
-assert_eq!(dt.offset().local_minus_utc(), Duration::hours(9));
+assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600));
 assert_eq!(dt.with_timezone(&UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
 

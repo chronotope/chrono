@@ -218,7 +218,13 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
+            Item::OwnedLiteral(ref prefix) => {
+                if s.len() < prefix.len() { return Err(TOO_SHORT); }
+                if !s.starts_with(&prefix[..]) { return Err(INVALID); }
+                s = &s[prefix.len()..];
+            }
+
+            Item::Space(_) | Item::OwnedSpace(_) => {
                 s = s.trim_left();
             }
 
@@ -247,6 +253,9 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                     Second         => (2, false, Parsed::set_second),
                     Nanosecond     => (9, false, Parsed::set_nanosecond),
                     Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
+
+                    // for the future expansion
+                    Internal(ref int) => match int._dummy {},
                 };
 
                 s = s.trim_left();
@@ -324,6 +333,9 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                     RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
                     RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+
+                    // for the future expansion
+                    Internal(ref int) => match int._dummy {},
                 }
             }
 

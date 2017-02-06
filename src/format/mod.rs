@@ -17,6 +17,10 @@ pub use self::strftime::StrftimeItems;
 pub use self::parsed::Parsed;
 pub use self::parse::parse;
 
+/// An unhabitated type used for `InternalNumeric` and `InternalFixed` below.
+#[derive(Clone, PartialEq, Eq)]
+enum Void {}
+
 /// Padding characters for numeric items.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Pad {
@@ -41,7 +45,7 @@ pub enum Pad {
 /// It also trims the preceding whitespaces if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
@@ -88,13 +92,31 @@ pub enum Numeric {
     /// The number of non-leap seconds since the midnight UTC on January 1, 1970 (FW=1, PW=∞).
     /// For formatting, it assumes UTC upon the absence of time zone offset.
     Timestamp,
+
+    /// Internal uses only.
+    ///
+    /// This item exists so that one can add additional internal-only formatting
+    /// without breaking major compatibility (as enum variants cannot be selectively private).
+    Internal(InternalNumeric),
+}
+
+/// An opaque type representing numeric item types for internal uses only.
+#[derive(Clone, PartialEq, Eq)]
+pub struct InternalNumeric {
+    _dummy: Void,
+}
+
+impl fmt::Debug for InternalNumeric {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<InternalNumeric>")
+    }
 }
 
 /// Fixed-format item types.
 ///
 /// They have their own rules of formatting and parsing.
 /// Otherwise noted, they print in the specified cases but parse case-insensitively.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Fixed {
     /// Abbreviated month names.
     ///
@@ -157,15 +179,37 @@ pub enum Fixed {
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
     RFC3339,
+
+    /// Internal uses only.
+    ///
+    /// This item exists so that one can add additional internal-only formatting
+    /// without breaking major compatibility (as enum variants cannot be selectively private).
+    Internal(InternalFixed),
+}
+
+/// An opaque type representing fixed-format item types for internal uses only.
+#[derive(Clone, PartialEq, Eq)]
+pub struct InternalFixed {
+    _dummy: Void,
+}
+
+impl fmt::Debug for InternalFixed {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<InternalFixed>")
+    }
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Item<'a> {
     /// A literally printed and parsed text.
     Literal(&'a str),
+    /// Same to `Literal` but with the string owned by the item.
+    OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
+    /// Same to `Space` but with the string owned by the item.
+    OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
     /// the parser simply ignores any padded whitespace and zeroes.
     Numeric(Numeric, Pad),
@@ -268,6 +312,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
     for item in items {
         match item {
             Item::Literal(s) | Item::Space(s) => try!(write!(w, "{}", s)),
+            Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => try!(write!(w, "{}", s)),
 
             Item::Numeric(spec, pad) => {
                 use self::Numeric::*;
@@ -305,6 +350,9 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                             Some((d.and_time(*t) - off).timestamp()),
                         (_, _, _) => None
                     }),
+
+                    // for the future expansion
+                    Internal(ref int) => match int._dummy {},
                 };
 
                 if let Some(v) = v {
@@ -420,6 +468,9 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         } else {
                             None
                         },
+
+                    // for the future expansion
+                    Internal(ref int) => match int._dummy {},
                 };
 
                 match ret {
