@@ -49,7 +49,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
     // the number 1 is arbitrary but should be non-zero to trigger `mktime`.
     let tm_utcoff = if local {1} else {0};
 
-    let tm = oldtime::Tm {
+    let mut tm = oldtime::Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
         tm_hour: d.hour() as i32,
@@ -62,6 +62,13 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
         tm_utcoff: tm_utcoff,
         tm_nsec: d.nanosecond() as i32,
     };
+
+    // adjustment for the leap second
+    if tm.tm_nsec >= 1_000_000_000 {
+        tm.tm_sec += 1;
+        tm.tm_nsec -= 1_000_000_000;
+    }
+
     tm.to_timespec()
 }
 
@@ -146,6 +153,20 @@ mod tests {
     #[test]
     fn test_local_date_sanity_check() { // issue #27
         assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
+    }
+
+    #[test]
+    fn test_leap_second() { // issue #123
+        let today = Local::today();
+        let dt = today.and_hms_milli(1, 2, 59, 1000);
+        let timestr = dt.time().to_string();
+        // the OS API may or may not support the leap second,
+        // but there are only two sensible options.
+        assert!(timestr == "01:02:60" || timestr == "01:03:00",
+                "unexpected timestr {:?}", timestr);
+
+        // this case, while unsupported by most APIs, should *not* panic.
+        let _ = today.and_hms_milli_opt(1, 2, 3, 1000);
     }
 }
 
