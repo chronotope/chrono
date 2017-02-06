@@ -80,7 +80,6 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
 /// ~~~~
 #[derive(Copy, Clone)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct Local;
 
 impl Local {

@@ -23,23 +23,6 @@ pub struct FixedOffset {
 }
 
 impl FixedOffset {
-    /// Makes a new `FixedOffset` from the serialized representation.
-    /// Used for serialization formats.
-    #[cfg(feature = "rustc-serialize")]
-    fn from_serialized(secs: i32) -> Option<FixedOffset> {
-        // check if the values are in the range
-        if secs <= -86400 || 86400 <= secs { return None; }
-
-        let offset = FixedOffset { local_minus_utc: secs };
-        Some(offset)
-    }
-
-    /// Returns a serialized representation of this `FixedOffset`.
-    #[cfg(feature = "rustc-serialize")]
-    fn to_serialized(&self) -> i32 {
-        self.local_minus_utc
-    }
-
     /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
     /// The negative `secs` means the Western Hemisphere.
     ///
@@ -137,74 +120,5 @@ impl fmt::Debug for FixedOffset {
 
 impl fmt::Display for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
-}
-
-#[cfg(feature = "rustc-serialize")]
-mod rustc_serialize {
-    use super::FixedOffset;
-    use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
-
-    // TODO the current serialization format is NEVER intentionally defined.
-    // this basically follows the automatically generated implementation for those traits,
-    // plus manual verification steps for avoiding security problem.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
-    impl Encodable for FixedOffset {
-        fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            let secs = self.to_serialized();
-            s.emit_struct("FixedOffset", 1, |s| {
-                try!(s.emit_struct_field("local_minus_utc", 0, |s| secs.encode(s)));
-                Ok(())
-            })
-        }
-    }
-
-    impl Decodable for FixedOffset {
-        fn decode<D: Decoder>(d: &mut D) -> Result<FixedOffset, D::Error> {
-            d.read_struct("FixedOffset", 1, |d| {
-                let secs = try!(d.read_struct_field("local_minus_utc", 0, Decodable::decode));
-                FixedOffset::from_serialized(secs).ok_or_else(|| d.error("invalid offset"))
-            })
-        }
-    }
-
-    #[test]
-    fn test_encodable() {
-        use rustc_serialize::json::encode;
-
-        assert_eq!(encode(&FixedOffset::east(0)).ok(),
-                   Some(r#"{"local_minus_utc":0}"#.into()));
-        assert_eq!(encode(&FixedOffset::east(1234)).ok(),
-                   Some(r#"{"local_minus_utc":1234}"#.into()));
-        assert_eq!(encode(&FixedOffset::east(86399)).ok(),
-                   Some(r#"{"local_minus_utc":86399}"#.into()));
-        assert_eq!(encode(&FixedOffset::west(1234)).ok(),
-                   Some(r#"{"local_minus_utc":-1234}"#.into()));
-        assert_eq!(encode(&FixedOffset::west(86399)).ok(),
-                   Some(r#"{"local_minus_utc":-86399}"#.into()));
-    }
-
-    #[test]
-    fn test_decodable() {
-        use rustc_serialize::json;
-
-        let decode = |s: &str| json::decode::<FixedOffset>(s);
-
-        assert_eq!(decode(r#"{"local_minus_utc":0}"#).ok(), Some(FixedOffset::east(0)));
-        assert_eq!(decode(r#"{"local_minus_utc": 1234}"#).ok(), Some(FixedOffset::east(1234)));
-        assert_eq!(decode(r#"{"local_minus_utc":86399}"#).ok(), Some(FixedOffset::east(86399)));
-        assert_eq!(decode(r#"{"local_minus_utc":-1234}"#).ok(), Some(FixedOffset::west(1234)));
-        assert_eq!(decode(r#"{"local_minus_utc":-86399}"#).ok(), Some(FixedOffset::west(86399)));
-
-        assert!(decode(r#"{"local_minus_utc":86400}"#).is_err());
-        assert!(decode(r#"{"local_minus_utc":-86400}"#).is_err());
-        assert!(decode(r#"{"local_minus_utc":0.1}"#).is_err());
-        assert!(decode(r#"{"local_minus_utc":null}"#).is_err());
-        assert!(decode(r#"{}"#).is_err());
-        assert!(decode(r#"0"#).is_err());
-        assert!(decode(r#"1234"#).is_err());
-        assert!(decode(r#""string""#).is_err());
-        assert!(decode(r#"null"#).is_err());
-    }
 }
 

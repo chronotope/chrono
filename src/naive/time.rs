@@ -178,24 +178,6 @@ pub struct NaiveTime {
 }
 
 impl NaiveTime {
-    /// Makes a new `NaiveTime` from the serialized representation.
-    /// Used for serialization formats.
-    #[cfg(feature = "rustc-serialize")]
-    fn from_serialized(secs: u32, frac: u32) -> Option<NaiveTime> {
-        // check if the values are in the range
-        if secs >= 86400 { return None; }
-        if frac >= 2_000_000_000 { return None; }
-
-        let time = NaiveTime { secs: secs, frac: frac };
-        Some(time)
-    }
-
-    /// Returns a serialized representation of this `NaiveDate`.
-    #[cfg(feature = "rustc-serialize")]
-    fn to_serialized(&self) -> (u32, u32) {
-        (self.secs, self.frac)
-    }
-
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
     /// No [leap second](./index.html#leap-second-handling) is allowed here;
@@ -1285,95 +1267,99 @@ impl str::FromStr for NaiveTime {
     }
 }
 
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_encodable_json<F, E>(to_string: F)
+    where F: Fn(&NaiveTime) -> Result<String, E>, E: ::std::fmt::Debug
+{
+    assert_eq!(to_string(&NaiveTime::from_hms(0, 0, 0)).ok(),
+               Some(r#""00:00:00""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms_milli(0, 0, 0, 950)).ok(),
+               Some(r#""00:00:00.950""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms_milli(0, 0, 59, 1_000)).ok(),
+               Some(r#""00:00:60""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms(0, 1, 2)).ok(),
+               Some(r#""00:01:02""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms_nano(3, 5, 7, 98765432)).ok(),
+               Some(r#""03:05:07.098765432""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms(7, 8, 9)).ok(),
+               Some(r#""07:08:09""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms_micro(12, 34, 56, 789)).ok(),
+               Some(r#""12:34:56.000789""#.into()));
+    assert_eq!(to_string(&NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
+               Some(r#""23:59:60.999999999""#.into()));
+}
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json<F, E>(from_str: F)
+    where F: Fn(&str) -> Result<NaiveTime, E>, E: ::std::fmt::Debug
+{
+    assert_eq!(from_str(r#""00:00:00""#).ok(),
+               Some(NaiveTime::from_hms(0, 0, 0)));
+    assert_eq!(from_str(r#""0:0:0""#).ok(),
+               Some(NaiveTime::from_hms(0, 0, 0)));
+    assert_eq!(from_str(r#""00:00:00.950""#).ok(),
+               Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
+    assert_eq!(from_str(r#""0:0:0.95""#).ok(),
+               Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
+    assert_eq!(from_str(r#""00:00:60""#).ok(),
+               Some(NaiveTime::from_hms_milli(0, 0, 59, 1_000)));
+    assert_eq!(from_str(r#""00:01:02""#).ok(),
+               Some(NaiveTime::from_hms(0, 1, 2)));
+    assert_eq!(from_str(r#""03:05:07.098765432""#).ok(),
+               Some(NaiveTime::from_hms_nano(3, 5, 7, 98765432)));
+    assert_eq!(from_str(r#""07:08:09""#).ok(),
+               Some(NaiveTime::from_hms(7, 8, 9)));
+    assert_eq!(from_str(r#""12:34:56.000789""#).ok(),
+               Some(NaiveTime::from_hms_micro(12, 34, 56, 789)));
+    assert_eq!(from_str(r#""23:59:60.999999999""#).ok(),
+               Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
+    assert_eq!(from_str(r#""23:59:60.9999999999997""#).ok(), // excess digits are ignored
+               Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
+
+    // bad formats
+    assert!(from_str(r#""""#).is_err());
+    assert!(from_str(r#""000000""#).is_err());
+    assert!(from_str(r#""00:00:61""#).is_err());
+    assert!(from_str(r#""00:60:00""#).is_err());
+    assert!(from_str(r#""24:00:00""#).is_err());
+    assert!(from_str(r#""23:59:59,1""#).is_err());
+    assert!(from_str(r#""012:34:56""#).is_err());
+    assert!(from_str(r#""hh:mm:ss""#).is_err());
+    assert!(from_str(r#"0"#).is_err());
+    assert!(from_str(r#"86399"#).is_err());
+    assert!(from_str(r#"{}"#).is_err());
+    // pre-0.3.0 rustc-serialize format is now invalid
+    assert!(from_str(r#"{"secs":0,"frac":0}"#).is_err());
+    assert!(from_str(r#"null"#).is_err());
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use super::NaiveTime;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
-    // TODO the current serialization format is NEVER intentionally defined.
-    // this basically follows the automatically generated implementation for those traits,
-    // plus manual verification steps for avoiding security problem.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
     impl Encodable for NaiveTime {
         fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            let (secs, frac) = self.to_serialized();
-            s.emit_struct("NaiveTime", 2, |s| {
-                try!(s.emit_struct_field("secs", 0, |s| secs.encode(s)));
-                try!(s.emit_struct_field("frac", 1, |s| frac.encode(s)));
-                Ok(())
-            })
+            format!("{:?}", self).encode(s)
         }
     }
 
     impl Decodable for NaiveTime {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveTime, D::Error> {
-            d.read_struct("NaiveTime", 2, |d| {
-                let secs = try!(d.read_struct_field("secs", 0, Decodable::decode));
-                let frac = try!(d.read_struct_field("frac", 1, Decodable::decode));
-                NaiveTime::from_serialized(secs, frac).ok_or_else(|| d.error("invalid time"))
-            })
+            d.read_str()?.parse().map_err(|_| d.error("invalid time"))
         }
     }
 
+    #[cfg(test)] use rustc_serialize::json;
+
     #[test]
     fn test_encodable() {
-        use rustc_serialize::json::encode;
-
-        assert_eq!(encode(&NaiveTime::from_hms(0, 0, 0)).ok(),
-                   Some(r#"{"secs":0,"frac":0}"#.into()));
-        assert_eq!(encode(&NaiveTime::from_hms_milli(0, 0, 0, 950)).ok(),
-                   Some(r#"{"secs":0,"frac":950000000}"#.into()));
-        assert_eq!(encode(&NaiveTime::from_hms_milli(0, 0, 59, 1_000)).ok(),
-                   Some(r#"{"secs":59,"frac":1000000000}"#.into()));
-        assert_eq!(encode(&NaiveTime::from_hms(0, 1, 2)).ok(),
-                   Some(r#"{"secs":62,"frac":0}"#.into()));
-        assert_eq!(encode(&NaiveTime::from_hms(7, 8, 9)).ok(),
-                   Some(r#"{"secs":25689,"frac":0}"#.into()));
-        assert_eq!(encode(&NaiveTime::from_hms_micro(12, 34, 56, 789)).ok(),
-                   Some(r#"{"secs":45296,"frac":789000}"#.into()));
-        assert_eq!(encode(&NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
-                   Some(r#"{"secs":86399,"frac":1999999999}"#.into()));
+        super::test_encodable_json(json::encode);
     }
 
     #[test]
     fn test_decodable() {
-        use rustc_serialize::json;
-
-        let decode = |s: &str| json::decode::<NaiveTime>(s);
-
-        assert_eq!(decode(r#"{"secs":0,"frac":0}"#).ok(),
-                   Some(NaiveTime::from_hms(0, 0, 0)));
-        assert_eq!(decode(r#"{"frac":950000000,"secs":0}"#).ok(),
-                   Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
-        assert_eq!(decode(r#"{"secs":59,"frac":1000000000}"#).ok(),
-                   Some(NaiveTime::from_hms_milli(0, 0, 59, 1_000)));
-        assert_eq!(decode(r#"{"frac": 0,
-                              "secs": 62}"#).ok(),
-                   Some(NaiveTime::from_hms(0, 1, 2)));
-        assert_eq!(decode(r#"{"secs":25689,"frac":0}"#).ok(),
-                   Some(NaiveTime::from_hms(7, 8, 9)));
-        assert_eq!(decode(r#"{"secs":45296,"frac":789000}"#).ok(),
-                   Some(NaiveTime::from_hms_micro(12, 34, 56, 789)));
-        assert_eq!(decode(r#"{"secs":86399,"frac":1999999999}"#).ok(),
-                   Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
-
-        // bad formats
-        assert!(decode(r#"{"secs":0,"frac":-1}"#).is_err());
-        assert!(decode(r#"{"secs":-1,"frac":0}"#).is_err());
-        assert!(decode(r#"{"secs":86400,"frac":0}"#).is_err());
-        assert!(decode(r#"{"secs":0,"frac":2000000000}"#).is_err());
-        assert!(decode(r#"{"secs":0}"#).is_err());
-        assert!(decode(r#"{"frac":0}"#).is_err());
-        assert!(decode(r#"{"secs":0.3,"frac":0}"#).is_err());
-        assert!(decode(r#"{"secs":0,"frac":0.4}"#).is_err());
-        assert!(decode(r#"{}"#).is_err());
-        assert!(decode(r#"0"#).is_err());
-        assert!(decode(r#"86399"#).is_err());
-        assert!(decode(r#""string""#).is_err());
-        assert!(decode(r#""12:34:56""#).is_err()); // :(
-        assert!(decode(r#""12:34:56.789""#).is_err()); // :(
-        assert!(decode(r#"null"#).is_err());
+        super::test_decodable_json(json::decode);
     }
 }
 
@@ -1424,67 +1410,12 @@ mod serde {
 
     #[test]
     fn test_serde_serialize() {
-        use self::serde_json::to_string;
-
-        assert_eq!(to_string(&NaiveTime::from_hms(0, 0, 0)).ok(),
-                   Some(r#""00:00:00""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms_milli(0, 0, 0, 950)).ok(),
-                   Some(r#""00:00:00.950""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms_milli(0, 0, 59, 1_000)).ok(),
-                   Some(r#""00:00:60""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms(0, 1, 2)).ok(),
-                   Some(r#""00:01:02""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms_nano(3, 5, 7, 98765432)).ok(),
-                   Some(r#""03:05:07.098765432""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms(7, 8, 9)).ok(),
-                   Some(r#""07:08:09""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms_micro(12, 34, 56, 789)).ok(),
-                   Some(r#""12:34:56.000789""#.into()));
-        assert_eq!(to_string(&NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
-                   Some(r#""23:59:60.999999999""#.into()));
+        super::test_encodable_json(self::serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        let from_str = |s: &str| serde_json::from_str::<NaiveTime>(s);
-
-        assert_eq!(from_str(r#""00:00:00""#).ok(),
-                   Some(NaiveTime::from_hms(0, 0, 0)));
-        assert_eq!(from_str(r#""0:0:0""#).ok(),
-                   Some(NaiveTime::from_hms(0, 0, 0)));
-        assert_eq!(from_str(r#""00:00:00.950""#).ok(),
-                   Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
-        assert_eq!(from_str(r#""0:0:0.95""#).ok(),
-                   Some(NaiveTime::from_hms_milli(0, 0, 0, 950)));
-        assert_eq!(from_str(r#""00:00:60""#).ok(),
-                   Some(NaiveTime::from_hms_milli(0, 0, 59, 1_000)));
-        assert_eq!(from_str(r#""00:01:02""#).ok(),
-                   Some(NaiveTime::from_hms(0, 1, 2)));
-        assert_eq!(from_str(r#""03:05:07.098765432""#).ok(),
-                   Some(NaiveTime::from_hms_nano(3, 5, 7, 98765432)));
-        assert_eq!(from_str(r#""07:08:09""#).ok(),
-                   Some(NaiveTime::from_hms(7, 8, 9)));
-        assert_eq!(from_str(r#""12:34:56.000789""#).ok(),
-                   Some(NaiveTime::from_hms_micro(12, 34, 56, 789)));
-        assert_eq!(from_str(r#""23:59:60.999999999""#).ok(),
-                   Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
-        assert_eq!(from_str(r#""23:59:60.9999999999997""#).ok(), // excess digits are ignored
-                   Some(NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999)));
-
-        // bad formats
-        assert!(from_str(r#""""#).is_err());
-        assert!(from_str(r#""000000""#).is_err());
-        assert!(from_str(r#""00:00:61""#).is_err());
-        assert!(from_str(r#""00:60:00""#).is_err());
-        assert!(from_str(r#""24:00:00""#).is_err());
-        assert!(from_str(r#""23:59:59,1""#).is_err());
-        assert!(from_str(r#""012:34:56""#).is_err());
-        assert!(from_str(r#""hh:mm:ss""#).is_err());
-        assert!(from_str(r#"0"#).is_err());
-        assert!(from_str(r#"86399"#).is_err());
-        assert!(from_str(r#"{}"#).is_err());
-        assert!(from_str(r#"{"secs":0,"frac":0}"#).is_err()); // :(
-        assert!(from_str(r#"null"#).is_err());
+        super::test_decodable_json(self::serde_json::from_str);
     }
 
     #[test]

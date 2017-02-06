@@ -405,65 +405,108 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_encodable_json<FUTC, FFixed, E>(to_string_utc: FUTC, to_string_fixed: FFixed)
+    where FUTC: Fn(&DateTime<UTC>) -> Result<String, E>,
+          FFixed: Fn(&DateTime<FixedOffset>) -> Result<String, E>,
+          E: ::std::fmt::Debug
+{
+    assert_eq!(to_string_utc(&UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+               Some(r#""2014-07-24T12:34:06Z""#.into()));
+
+    assert_eq!(to_string_fixed(&FixedOffset::east(3660).ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+               Some(r#""2014-07-24T12:34:06+01:01""#.into()));
+    assert_eq!(to_string_fixed(&FixedOffset::east(3650).ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+               Some(r#""2014-07-24T12:34:06+01:00:50""#.into()));
+}
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
+                                                fixed_from_str: FFixed,
+                                                local_from_str: FLocal)
+    where FUTC: Fn(&str) -> Result<DateTime<UTC>, E>,
+          FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<DateTime<Local>, E>,
+          E: ::std::fmt::Debug
+{
+    // should check against the offset as well (the normal DateTime comparison will ignore them)
+    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
+        dt.as_ref().map(|dt| (dt, dt.offset()))
+    }
+
+    assert_eq!(norm(&utc_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
+               norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
+               norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+
+    assert_eq!(norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
+               norm(&Some(FixedOffset::east(0).ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
+               norm(&Some(FixedOffset::east(60*60 + 23*60).ymd(2014, 7, 24).and_hms(13, 57, 6))));
+
+    // we don't know the exact local offset but we can check that
+    // the conversion didn't change the instant itself
+    assert_eq!(local_from_str(r#""2014-07-24T12:34:06Z""#).unwrap(),
+               UTC.ymd(2014, 7, 24).and_hms(12, 34, 6));
+    assert_eq!(local_from_str(r#""2014-07-24T13:57:06+01:23""#).unwrap(),
+               UTC.ymd(2014, 7, 24).and_hms(12, 34, 6));
+
+    assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+    assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use super::DateTime;
     use offset::TimeZone;
+    use offset::utc::UTC;
+    use offset::local::Local;
+    use offset::fixed::FixedOffset;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
-    // TODO the current serialization format is NEVER intentionally defined.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
-    impl<Tz: TimeZone> Encodable for DateTime<Tz> where Tz::Offset: Encodable {
+    impl<Tz: TimeZone> Encodable for DateTime<Tz> {
         fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            s.emit_struct("DateTime", 2, |s| {
-                try!(s.emit_struct_field("datetime", 0, |s| self.datetime.encode(s)));
-                try!(s.emit_struct_field("offset", 1, |s| self.offset.encode(s)));
-                Ok(())
-            })
+            format!("{:?}", self).encode(s)
         }
     }
 
-    impl<Tz: TimeZone> Decodable for DateTime<Tz> where Tz::Offset: Decodable {
-        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Tz>, D::Error> {
-            d.read_struct("DateTime", 2, |d| {
-                let datetime = try!(d.read_struct_field("datetime", 0, Decodable::decode));
-                let offset = try!(d.read_struct_field("offset", 1, Decodable::decode));
-                Ok(DateTime::from_utc(datetime, offset))
-            })
+    impl Decodable for DateTime<FixedOffset> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<FixedOffset>, D::Error> {
+            match d.read_str()?.parse::<DateTime<FixedOffset>>() {
+                Ok(dt) => Ok(dt),
+                Err(_) => Err(d.error("invalid date and time")),
+            }
         }
     }
+
+    impl Decodable for DateTime<UTC> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<UTC>, D::Error> {
+            match d.read_str()?.parse::<DateTime<FixedOffset>>() {
+                Ok(dt) => Ok(dt.with_timezone(&UTC)),
+                Err(_) => Err(d.error("invalid date and time")),
+            }
+        }
+    }
+
+    impl Decodable for DateTime<Local> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Local>, D::Error> {
+            match d.read_str()?.parse::<DateTime<FixedOffset>>() {
+                Ok(dt) => Ok(dt.with_timezone(&Local)),
+                Err(_) => Err(d.error("invalid date and time")),
+            }
+        }
+    }
+
+    #[cfg(test)] use rustc_serialize::json;
 
     #[test]
     fn test_encodable() {
-        use offset::utc::UTC;
-        use rustc_serialize::json::encode;
-
-        assert_eq!(
-            encode(&UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-            Some(concat!(r#"{"datetime":{"date":{"ymdf":16501977},"#,
-                                      r#""time":{"secs":45246,"frac":0}},"#,
-                          r#""offset":{}}"#).into()));
+        super::test_encodable_json(json::encode, json::encode);
     }
 
     #[test]
     fn test_decodable() {
-        use offset::utc::UTC;
-        use rustc_serialize::json;
-
-        let decode = |s: &str| json::decode::<DateTime<UTC>>(s);
-
-        assert_eq!(
-            decode(r#"{"datetime":{"date":{"ymdf":16501977},
-                                   "time":{"secs":45246,"frac":0}},
-                       "offset":{}}"#).ok(),
-            Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
-
-        assert_eq!(
-            decode(r#"{"datetime":{"date":{"ymdf":0},
-                                   "time":{"secs":0,"frac":0}},
-                       "offset":{}}"#).ok(),
-            None);
+        super::test_decodable_json(json::decode, json::decode, json::decode);
     }
 }
 
@@ -475,14 +518,11 @@ mod serde {
     use offset::utc::UTC;
     use offset::local::Local;
     use offset::fixed::FixedOffset;
-    use std::fmt::Display;
     use serde::{ser, de};
 
     // TODO not very optimized for space (binary formats would want something better)
 
-    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz>
-        where Tz::Offset: Display
-    {
+    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
@@ -537,22 +577,13 @@ mod serde {
 
     #[test]
     fn test_serde_serialize() {
-        use self::serde_json::to_string;
-
-        assert_eq!(to_string(&UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-                   Some(r#""2014-07-24T12:34:06Z""#.into()));
+        super::test_encodable_json(self::serde_json::to_string, self::serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        use self::serde_json;
-
-        let from_str = |s: &str| serde_json::from_str::<DateTime<UTC>>(s);
-
-        assert_eq!(from_str(r#""2014-07-24T12:34:06Z""#).ok(),
-                   Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
-
-        assert!(from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+        super::test_decodable_json(self::serde_json::from_str, self::serde_json::from_str,
+                                   self::serde_json::from_str);
     }
 
     #[test]

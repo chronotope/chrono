@@ -33,7 +33,6 @@ use super::{TimeZone, Offset, LocalResult};
 /// assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
 /// ~~~~
 #[derive(Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 pub struct UTC;
 
 impl UTC {

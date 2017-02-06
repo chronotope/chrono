@@ -136,26 +136,6 @@ impl NaiveDate {
         NaiveDate::from_of(year, mdf.to_of())
     }
 
-    /// Makes a new `NaiveDate` from the serialized representation.
-    /// Used for serialization formats.
-    #[cfg(feature = "rustc-serialize")]
-    fn from_serialized(ymdf: i32) -> Option<NaiveDate> {
-        // check if the year flag is correct
-        if (ymdf & 0b1111) as u8 != YearFlags::from_year(ymdf >> 13).0 { return None; }
-
-        // check if the ordinal is in the range
-        let date = NaiveDate { ymdf: ymdf };
-        if !date.of().valid() { return None; }
-
-        Some(date)
-    }
-
-    /// Returns a serialized representation of this `NaiveDate`.
-    #[cfg(feature = "rustc-serialize")]
-    fn to_serialized(&self) -> i32 {
-        self.ymdf
-    }
-
     /// Makes a new `NaiveDate` from the [calendar date](./index.html#calendar-date)
     /// (year, month and day).
     ///
@@ -1497,83 +1477,84 @@ impl str::FromStr for NaiveDate {
     }
 }
 
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_encodable_json<F, E>(to_string: F)
+    where F: Fn(&NaiveDate) -> Result<String, E>, E: ::std::fmt::Debug
+{
+    assert_eq!(to_string(&NaiveDate::from_ymd(2014, 7, 24)).ok(),
+               Some(r#""2014-07-24""#.into()));
+    assert_eq!(to_string(&NaiveDate::from_ymd(0, 1, 1)).ok(),
+               Some(r#""0000-01-01""#.into()));
+    assert_eq!(to_string(&NaiveDate::from_ymd(-1, 12, 31)).ok(),
+               Some(r#""-0001-12-31""#.into()));
+    assert_eq!(to_string(&MIN).ok(),
+               Some(r#""-262144-01-01""#.into()));
+    assert_eq!(to_string(&MAX).ok(),
+               Some(r#""+262143-12-31""#.into()));
+}
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json<F, E>(from_str: F)
+    where F: Fn(&str) -> Result<NaiveDate, E>, E: ::std::fmt::Debug
+{
+    use std::{i32, i64};
+
+    assert_eq!(from_str(r#""2016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+    assert_eq!(from_str(r#""2016-7-8""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+    assert_eq!(from_str(r#""+002016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
+    assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
+    assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
+    assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
+    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(MIN));
+    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(MAX));
+
+    // bad formats
+    assert!(from_str(r#""""#).is_err());
+    assert!(from_str(r#""20001231""#).is_err());
+    assert!(from_str(r#""2000-00-00""#).is_err());
+    assert!(from_str(r#""2000-02-30""#).is_err());
+    assert!(from_str(r#""2001-02-29""#).is_err());
+    assert!(from_str(r#""2002-002-28""#).is_err());
+    assert!(from_str(r#""yyyy-mm-dd""#).is_err());
+    assert!(from_str(r#"0"#).is_err());
+    assert!(from_str(r#"20.01"#).is_err());
+    assert!(from_str(&i32::MIN.to_string()).is_err());
+    assert!(from_str(&i32::MAX.to_string()).is_err());
+    assert!(from_str(&i64::MIN.to_string()).is_err());
+    assert!(from_str(&i64::MAX.to_string()).is_err());
+    assert!(from_str(r#"{}"#).is_err());
+    // pre-0.3.0 rustc-serialize format is now invalid
+    assert!(from_str(r#"{"ymdf":20}"#).is_err());
+    assert!(from_str(r#"null"#).is_err());
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use super::NaiveDate;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
-    // TODO the current serialization format is NEVER intentionally defined.
-    // this basically follows the automatically generated implementation for those traits,
-    // plus manual verification steps for avoiding security problem.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
     impl Encodable for NaiveDate {
         fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            let ymdf = self.to_serialized();
-            s.emit_struct("NaiveDate", 1, |s| {
-                try!(s.emit_struct_field("ymdf", 0, |s| ymdf.encode(s)));
-                Ok(())
-            })
+            format!("{:?}", self).encode(s)
         }
     }
 
     impl Decodable for NaiveDate {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDate, D::Error> {
-            d.read_struct("NaiveDate", 1, |d| {
-                let ymdf = try!(d.read_struct_field("ymdf", 0, Decodable::decode));
-                NaiveDate::from_serialized(ymdf).ok_or_else(|| d.error("invalid date"))
-            })
+            d.read_str()?.parse().map_err(|_| d.error("invalid date"))
         }
     }
 
+    #[cfg(test)] use rustc_serialize::json;
+
     #[test]
     fn test_encodable() {
-        use rustc_serialize::json::encode;
-
-        assert_eq!(encode(&NaiveDate::from_ymd(2016, 7, 8)).ok(),
-                   Some(r#"{"ymdf":16518115}"#.into()));
-        assert_eq!(encode(&NaiveDate::from_ymd(0, 1, 1)).ok(),
-                   Some(r#"{"ymdf":20}"#.into()));
-        assert_eq!(encode(&NaiveDate::from_ymd(-1, 12, 31)).ok(),
-                   Some(r#"{"ymdf":-2341}"#.into()));
-        assert_eq!(encode(&super::MIN).ok(),
-                   Some(r#"{"ymdf":-2147483625}"#.into()));
-        assert_eq!(encode(&super::MAX).ok(),
-                   Some(r#"{"ymdf":2147481311}"#.into()));
+        super::test_encodable_json(json::encode);
     }
 
     #[test]
     fn test_decodable() {
-        use rustc_serialize::json;
-        use std::{i32, i64};
-
-        let decode = |s: &str| json::decode::<NaiveDate>(s);
-
-        assert_eq!(decode(r#"{"ymdf":16518115}"#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
-        assert_eq!(decode(r#"{"ymdf":20}"#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
-        assert_eq!(decode(r#"{"ymdf":-2341}"#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
-        assert_eq!(decode(r#"{"ymdf":-2147483625}"#).ok(), Some(super::MIN));
-        assert_eq!(decode(r#"{"ymdf":2147481311}"#).ok(), Some(super::MAX));
-
-        // some extreme values and zero are always invalid
-        assert!(decode(r#"{"ymdf":0}"#).is_err());
-        assert!(decode(r#"{"ymdf":1}"#).is_err());
-        assert!(decode(r#"{"ymdf":-1}"#).is_err());
-        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i32::MIN)).is_err());
-        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i32::MAX)).is_err());
-        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i64::MIN)).is_err());
-        assert!(decode(&format!(r#"{{"ymdf":{}}}"#, i64::MAX)).is_err());
-
-        // bad formats
-        assert!(decode(r#"{"ymdf":20.01}"#).is_err());
-        assert!(decode(r#"{"ymdf":"string"}"#).is_err());
-        assert!(decode(r#"{"ymdf":null}"#).is_err());
-        assert!(decode(r#"{}"#).is_err());
-        assert!(decode(r#"{"date":20}"#).is_err());
-        assert!(decode(r#"20"#).is_err());
-        assert!(decode(r#""string""#).is_err());
-        assert!(decode(r#""2016-07-08""#).is_err()); // :(
-        assert!(decode(r#"null"#).is_err());
+        super::test_decodable_json(json::decode);
     }
 }
 
@@ -1623,53 +1604,12 @@ mod serde {
 
     #[test]
     fn test_serde_serialize() {
-        use self::serde_json::to_string;
-
-        assert_eq!(to_string(&NaiveDate::from_ymd(2014, 7, 24)).ok(),
-                   Some(r#""2014-07-24""#.into()));
-        assert_eq!(to_string(&NaiveDate::from_ymd(0, 1, 1)).ok(),
-                   Some(r#""0000-01-01""#.into()));
-        assert_eq!(to_string(&NaiveDate::from_ymd(-1, 12, 31)).ok(),
-                   Some(r#""-0001-12-31""#.into()));
-        assert_eq!(to_string(&super::MIN).ok(),
-                   Some(r#""-262144-01-01""#.into()));
-        assert_eq!(to_string(&super::MAX).ok(),
-                   Some(r#""+262143-12-31""#.into()));
+        super::test_encodable_json(self::serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        use self::serde_json;
-        use std::{i32, i64};
-
-        let from_str = |s: &str| serde_json::from_str::<NaiveDate>(s);
-
-        assert_eq!(from_str(r#""2016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
-        assert_eq!(from_str(r#""2016-7-8""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
-        assert_eq!(from_str(r#""+002016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8)));
-        assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
-        assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
-        assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
-        assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(super::MIN));
-        assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(super::MAX));
-
-        // bad formats
-        assert!(from_str(r#""""#).is_err());
-        assert!(from_str(r#""20001231""#).is_err());
-        assert!(from_str(r#""2000-00-00""#).is_err());
-        assert!(from_str(r#""2000-02-30""#).is_err());
-        assert!(from_str(r#""2001-02-29""#).is_err());
-        assert!(from_str(r#""2002-002-28""#).is_err());
-        assert!(from_str(r#""yyyy-mm-dd""#).is_err());
-        assert!(from_str(r#"0"#).is_err());
-        assert!(from_str(r#"20.01"#).is_err());
-        assert!(from_str(&i32::MIN.to_string()).is_err());
-        assert!(from_str(&i32::MAX.to_string()).is_err());
-        assert!(from_str(&i64::MIN.to_string()).is_err());
-        assert!(from_str(&i64::MAX.to_string()).is_err());
-        assert!(from_str(r#"{}"#).is_err());
-        assert!(from_str(r#"{"ymdf":20}"#).is_err()); // :(
-        assert!(from_str(r#"null"#).is_err());
+        super::test_decodable_json(self::serde_json::from_str);
     }
 
     #[test]

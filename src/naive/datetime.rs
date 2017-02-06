@@ -1394,105 +1394,116 @@ impl str::FromStr for NaiveDateTime {
     }
 }
 
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_encodable_json<F, E>(to_string: F)
+    where F: Fn(&NaiveDateTime) -> Result<String, E>, E: ::std::fmt::Debug
+{
+    use naive::date;
+
+    assert_eq!(
+        to_string(&NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)).ok(),
+        Some(r#""2016-07-08T09:10:48.090""#.into()));
+    assert_eq!(
+        to_string(&NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+        Some(r#""2014-07-24T12:34:06""#.into()));
+    assert_eq!(
+        to_string(&NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)).ok(),
+        Some(r#""0000-01-01T00:00:60""#.into()));
+    assert_eq!(
+        to_string(&NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)).ok(),
+        Some(r#""-0001-12-31T23:59:59.000000007""#.into()));
+    assert_eq!(
+        to_string(&date::MIN.and_hms(0, 0, 0)).ok(),
+        Some(r#""-262144-01-01T00:00:00""#.into()));
+    assert_eq!(
+        to_string(&date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
+        Some(r#""+262143-12-31T23:59:60.999999999""#.into()));
+}
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json<F, E>(from_str: F)
+    where F: Fn(&str) -> Result<NaiveDateTime, E>, E: ::std::fmt::Debug
+{
+    use naive::date;
+
+    assert_eq!(
+        from_str(r#""2016-07-08T09:10:48.090""#).ok(),
+        Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
+    assert_eq!(
+        from_str(r#""2016-7-8T9:10:48.09""#).ok(),
+        Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
+    assert_eq!(
+        from_str(r#""2014-07-24T12:34:06""#).ok(),
+        Some(NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)));
+    assert_eq!(
+        from_str(r#""0000-01-01T00:00:60""#).ok(),
+        Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
+    assert_eq!(
+        from_str(r#""0-1-1T0:0:60""#).ok(),
+        Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
+    assert_eq!(
+        from_str(r#""-0001-12-31T23:59:59.000000007""#).ok(),
+        Some(NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)));
+    assert_eq!(
+        from_str(r#""-262144-01-01T00:00:00""#).ok(),
+        Some(date::MIN.and_hms(0, 0, 0)));
+    assert_eq!(
+        from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
+        Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
+    assert_eq!(
+        from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
+        Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
+
+    // bad formats
+    assert!(from_str(r#""""#).is_err());
+    assert!(from_str(r#""2016-07-08""#).is_err());
+    assert!(from_str(r#""09:10:48.090""#).is_err());
+    assert!(from_str(r#""20160708T091048.090""#).is_err());
+    assert!(from_str(r#""2000-00-00T00:00:00""#).is_err());
+    assert!(from_str(r#""2000-02-30T00:00:00""#).is_err());
+    assert!(from_str(r#""2001-02-29T00:00:00""#).is_err());
+    assert!(from_str(r#""2002-02-28T24:00:00""#).is_err());
+    assert!(from_str(r#""2002-02-28T23:60:00""#).is_err());
+    assert!(from_str(r#""2002-02-28T23:59:61""#).is_err());
+    assert!(from_str(r#""2016-07-08T09:10:48,090""#).is_err());
+    assert!(from_str(r#""2016-07-08 09:10:48.090""#).is_err());
+    assert!(from_str(r#""2016-007-08T09:10:48.090""#).is_err());
+    assert!(from_str(r#""yyyy-mm-ddThh:mm:ss.fffffffff""#).is_err());
+    assert!(from_str(r#"0"#).is_err());
+    assert!(from_str(r#"20160708000000"#).is_err());
+    assert!(from_str(r#"{}"#).is_err());
+    // pre-0.3.0 rustc-serialize format is now invalid
+    assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err());
+    assert!(from_str(r#"null"#).is_err());
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use super::NaiveDateTime;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
-    // TODO the current serialization format is NEVER intentionally defined.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
     impl Encodable for NaiveDateTime {
         fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            s.emit_struct("NaiveDateTime", 2, |s| {
-                try!(s.emit_struct_field("date", 0, |s| self.date.encode(s)));
-                try!(s.emit_struct_field("time", 1, |s| self.time.encode(s)));
-                Ok(())
-            })
+            format!("{:?}", self).encode(s)
         }
     }
 
     impl Decodable for NaiveDateTime {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDateTime, D::Error> {
-            d.read_struct("NaiveDateTime", 2, |d| {
-                let date = try!(d.read_struct_field("date", 0, Decodable::decode));
-                let time = try!(d.read_struct_field("time", 1, Decodable::decode));
-                Ok(NaiveDateTime::new(date, time))
-            })
+            d.read_str()?.parse().map_err(|_| d.error("invalid date and time"))
         }
     }
 
+    #[cfg(test)] use rustc_serialize::json;
+
     #[test]
     fn test_encodable() {
-        use naive::date::{self, NaiveDate};
-        use rustc_serialize::json::encode;
-
-        assert_eq!(
-            encode(&NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)).ok(),
-            Some(r#"{"date":{"ymdf":16518115},"time":{"secs":33048,"frac":90000000}}"#.into()));
-        assert_eq!(
-            encode(&NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-            Some(r#"{"date":{"ymdf":16501977},"time":{"secs":45246,"frac":0}}"#.into()));
-        assert_eq!(
-            encode(&NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)).ok(),
-            Some(r#"{"date":{"ymdf":20},"time":{"secs":59,"frac":1000000000}}"#.into()));
-        assert_eq!(
-            encode(&NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)).ok(),
-            Some(r#"{"date":{"ymdf":-2341},"time":{"secs":86399,"frac":7}}"#.into()));
-        assert_eq!(
-            encode(&date::MIN.and_hms(0, 0, 0)).ok(),
-            Some(r#"{"date":{"ymdf":-2147483625},"time":{"secs":0,"frac":0}}"#.into()));
-        assert_eq!(
-            encode(&date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
-            Some(r#"{"date":{"ymdf":2147481311},"time":{"secs":86399,"frac":1999999999}}"#.into()));
+        super::test_encodable_json(json::encode);
     }
 
     #[test]
     fn test_decodable() {
-        use naive::date::{self, NaiveDate};
-        use rustc_serialize::json;
-
-        let decode = |s: &str| json::decode::<NaiveDateTime>(s);
-
-        assert_eq!(
-            decode(r#"{"date":{"ymdf":16518115},"time":{"secs":33048,"frac":90000000}}"#).ok(),
-            Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
-        assert_eq!(
-            decode(r#"{"time":{"frac":0,"secs":45246},"date":{"ymdf":16501977}}"#).ok(),
-            Some(NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)));
-        assert_eq!(
-            decode(r#"{"date": {"ymdf": 20},
-                       "time": {"secs": 59,
-                                "frac": 1000000000}}"#).ok(),
-            Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
-        assert_eq!(
-            decode(r#"{"date":{"ymdf":-2341},"time":{"secs":86399,"frac":7}}"#).ok(),
-            Some(NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)));
-        assert_eq!(
-            decode(r#"{"date":{"ymdf":-2147483625},"time":{"secs":0,"frac":0}}"#).ok(),
-            Some(date::MIN.and_hms(0, 0, 0)));
-        assert_eq!(
-            decode(r#"{"date":{"ymdf":2147481311},"time":{"secs":86399,"frac":1999999999}}"#).ok(),
-            Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
-
-        // bad formats
-        assert!(decode(r#"{"date":{},"time":{}}"#).is_err());
-        assert!(decode(r#"{"date":{"ymdf":0},"time":{"secs":0,"frac":0}}"#).is_err());
-        assert!(decode(r#"{"date":{"ymdf":20},"time":{"secs":86400,"frac":0}}"#).is_err());
-        assert!(decode(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":-1}}"#).is_err());
-        assert!(decode(r#"{"date":20,"time":{"secs":0,"frac":0}}"#).is_err());
-        assert!(decode(r#"{"date":"2016-08-04","time":"01:02:03.456"}"#).is_err());
-        assert!(decode(r#"{"date":{"ymdf":20}}"#).is_err());
-        assert!(decode(r#"{"time":{"secs":0,"frac":0}}"#).is_err());
-        assert!(decode(r#"{"ymdf":20}"#).is_err());
-        assert!(decode(r#"{"secs":0,"frac":0}"#).is_err());
-        assert!(decode(r#"{}"#).is_err());
-        assert!(decode(r#"0"#).is_err());
-        assert!(decode(r#"-1"#).is_err());
-        assert!(decode(r#""string""#).is_err());
-        assert!(decode(r#""2016-08-04T12:34:56""#).is_err()); // :(
-        assert!(decode(r#""2016-08-04T12:34:56.789""#).is_err()); // :(
-        assert!(decode(r#"null"#).is_err());
+        super::test_decodable_json(json::decode);
     }
 }
 
@@ -1542,83 +1553,12 @@ mod serde {
 
     #[test]
     fn test_serde_serialize() {
-        use naive::date::{self, NaiveDate};
-        use self::serde_json::to_string;
-
-        assert_eq!(
-            to_string(&NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)).ok(),
-            Some(r#""2016-07-08T09:10:48.090""#.into()));
-        assert_eq!(
-            to_string(&NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-            Some(r#""2014-07-24T12:34:06""#.into()));
-        assert_eq!(
-            to_string(&NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)).ok(),
-            Some(r#""0000-01-01T00:00:60""#.into()));
-        assert_eq!(
-            to_string(&NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)).ok(),
-            Some(r#""-0001-12-31T23:59:59.000000007""#.into()));
-        assert_eq!(
-            to_string(&date::MIN.and_hms(0, 0, 0)).ok(),
-            Some(r#""-262144-01-01T00:00:00""#.into()));
-        assert_eq!(
-            to_string(&date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
-            Some(r#""+262143-12-31T23:59:60.999999999""#.into()));
+        super::test_encodable_json(self::serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        use naive::date::{self, NaiveDate};
-
-        let from_str = |s: &str| serde_json::from_str::<NaiveDateTime>(s);
-
-        assert_eq!(
-            from_str(r#""2016-07-08T09:10:48.090""#).ok(),
-            Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
-        assert_eq!(
-            from_str(r#""2016-7-8T9:10:48.09""#).ok(),
-            Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
-        assert_eq!(
-            from_str(r#""2014-07-24T12:34:06""#).ok(),
-            Some(NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)));
-        assert_eq!(
-            from_str(r#""0000-01-01T00:00:60""#).ok(),
-            Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
-        assert_eq!(
-            from_str(r#""0-1-1T0:0:60""#).ok(),
-            Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
-        assert_eq!(
-            from_str(r#""-0001-12-31T23:59:59.000000007""#).ok(),
-            Some(NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)));
-        assert_eq!(
-            from_str(r#""-262144-01-01T00:00:00""#).ok(),
-            Some(date::MIN.and_hms(0, 0, 0)));
-        assert_eq!(
-            from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
-            Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
-        assert_eq!(
-            from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
-            Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
-
-        // bad formats
-        assert!(from_str(r#""""#).is_err());
-        assert!(from_str(r#""2016-07-08""#).is_err());
-        assert!(from_str(r#""09:10:48.090""#).is_err());
-        assert!(from_str(r#""20160708T091048.090""#).is_err());
-        assert!(from_str(r#""2000-00-00T00:00:00""#).is_err());
-        assert!(from_str(r#""2000-02-30T00:00:00""#).is_err());
-        assert!(from_str(r#""2001-02-29T00:00:00""#).is_err());
-        assert!(from_str(r#""2002-02-28T24:00:00""#).is_err());
-        assert!(from_str(r#""2002-02-28T23:60:00""#).is_err());
-        assert!(from_str(r#""2002-02-28T23:59:61""#).is_err());
-        assert!(from_str(r#""2016-07-08T09:10:48,090""#).is_err());
-        assert!(from_str(r#""2016-07-08 09:10:48.090""#).is_err());
-        assert!(from_str(r#""2016-007-08T09:10:48.090""#).is_err());
-        assert!(from_str(r#""yyyy-mm-ddThh:mm:ss.fffffffff""#).is_err());
-        assert!(from_str(r#"0"#).is_err());
-        assert!(from_str(r#"20160708000000"#).is_err());
-        assert!(from_str(r#"{}"#).is_err());
-        assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err()); // :(
-        assert!(from_str(r#"null"#).is_err());
+        super::test_decodable_json(self::serde_json::from_str);
     }
 
     #[test]

@@ -398,58 +398,6 @@ impl<Tz: TimeZone> fmt::Display for Date<Tz> where Tz::Offset: fmt::Display {
     }
 }
 
-#[cfg(feature = "rustc-serialize")]
-mod rustc_serialize {
-    use super::Date;
-    use offset::TimeZone;
-    use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
-
-    // TODO the current serialization format is NEVER intentionally defined.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
-    impl<Tz: TimeZone> Encodable for Date<Tz> where Tz::Offset: Encodable {
-        fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            s.emit_struct("Date", 2, |s| {
-                try!(s.emit_struct_field("date", 0, |s| self.date.encode(s)));
-                try!(s.emit_struct_field("offset", 1, |s| self.offset.encode(s)));
-                Ok(())
-            })
-        }
-    }
-
-    impl<Tz: TimeZone> Decodable for Date<Tz> where Tz::Offset: Decodable {
-        fn decode<D: Decoder>(d: &mut D) -> Result<Date<Tz>, D::Error> {
-            d.read_struct("Date", 2, |d| {
-                let date = try!(d.read_struct_field("date", 0, Decodable::decode));
-                let offset = try!(d.read_struct_field("offset", 1, Decodable::decode));
-                Ok(Date::from_utc(date, offset))
-            })
-        }
-    }
-
-    #[test]
-    fn test_encodable() {
-        use offset::utc::UTC;
-        use rustc_serialize::json::encode;
-
-        assert_eq!(encode(&UTC.ymd(2014, 7, 24)).ok(),
-                   Some(r#"{"date":{"ymdf":16501977},"offset":{}}"#.into()));
-    }
-
-    #[test]
-    fn test_decodable() {
-        use offset::utc::UTC;
-        use rustc_serialize::json;
-
-        let decode = |s: &str| json::decode::<Date<UTC>>(s);
-
-        assert_eq!(decode(r#"{"date":{"ymdf":16501977},"offset":{}}"#).ok(),
-                   Some(UTC.ymd(2014, 7, 24)));
-
-        assert!(decode(r#"{"date":{"ymdf":0},"offset":{}}"#).is_err());
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::fmt;
