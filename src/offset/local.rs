@@ -49,7 +49,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
     // the number 1 is arbitrary but should be non-zero to trigger `mktime`.
     let tm_utcoff = if local {1} else {0};
 
-    let mut tm = oldtime::Tm {
+    let tm = oldtime::Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
         tm_hour: d.hour() as i32,
@@ -60,14 +60,9 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
         tm_yday: 0, // and this
         tm_isdst: -1,
         tm_utcoff: tm_utcoff,
-        tm_nsec: d.nanosecond() as i32,
+        // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
+        tm_nsec: 0,
     };
-
-    // adjustment for the leap second
-    if tm.tm_nsec >= 1_000_000_000 {
-        tm.tm_sec += 1;
-        tm.tm_nsec -= 1_000_000_000;
-    }
 
     tm.to_timespec()
 }
@@ -110,6 +105,7 @@ impl TimeZone for Local {
     fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
         self.from_local_date(local).map(|date| *date.offset())
     }
+
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         self.from_local_datetime(local).map(|datetime| *datetime.offset())
     }
@@ -117,6 +113,7 @@ impl TimeZone for Local {
     fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
         *self.from_utc_date(utc).offset()
     }
+
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
         *self.from_utc_datetime(utc).offset()
     }
@@ -129,18 +126,32 @@ impl TimeZone for Local {
         let midnight = self.from_local_datetime(&local.and_hms(0, 0, 0));
         midnight.map(|datetime| Date::from_utc(*local, *datetime.offset()))
     }
+
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let timespec = datetime_to_timespec(local, true);
-        LocalResult::Single(tm_to_datetime(oldtime::at(timespec)))
+
+        // datetime_to_timespec completely ignores leap seconds, so we need to adjust for them
+        let mut tm = oldtime::at(timespec);
+        assert_eq!(tm.tm_nsec, 0);
+        tm.tm_nsec = local.nanosecond() as i32;
+
+        LocalResult::Single(tm_to_datetime(tm))
     }
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
         let midnight = self.from_utc_datetime(&utc.and_hms(0, 0, 0));
         Date::from_utc(*utc, *midnight.offset())
     }
+
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         let timespec = datetime_to_timespec(utc, false);
-        tm_to_datetime(oldtime::at(timespec))
+
+        // datetime_to_timespec completely ignores leap seconds, so we need to adjust for them
+        let mut tm = oldtime::at(timespec);
+        assert_eq!(tm.tm_nsec, 0);
+        tm.tm_nsec = utc.nanosecond() as i32;
+
+        tm_to_datetime(tm)
     }
 }
 
@@ -158,6 +169,7 @@ mod tests {
     #[test]
     fn test_leap_second() { // issue #123
         let today = Local::today();
+
         let dt = today.and_hms_milli(1, 2, 59, 1000);
         let timestr = dt.time().to_string();
         // the OS API may or may not support the leap second,
@@ -165,8 +177,10 @@ mod tests {
         assert!(timestr == "01:02:60" || timestr == "01:03:00",
                 "unexpected timestr {:?}", timestr);
 
-        // this case, while unsupported by most APIs, should *not* panic.
-        let _ = today.and_hms_milli_opt(1, 2, 3, 1000);
+        let dt = today.and_hms_milli(1, 2, 3, 1234);
+        let timestr = dt.time().to_string();
+        assert!(timestr == "01:02:03.234" || timestr == "01:02:04.234",
+                "unexpected timestr {:?}", timestr);
     }
 }
 
