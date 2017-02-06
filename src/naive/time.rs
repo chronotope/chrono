@@ -695,24 +695,6 @@ impl NaiveTime {
         OldDuration::seconds(secs + adjust) + OldDuration::nanoseconds(frac)
     }
 
-    /// Same to [`NaiveTime::overflowing_add_signed`](#method.overflowing_add_signed).
-    #[inline]
-    #[deprecated(since = "0.2.26",
-                 note = "Renamed to `overflowing_add_signed`, \
-                         will be replaced with a version with `std::time::Duration`")]
-    pub fn overflowing_add(self, rhs: OldDuration) -> (NaiveTime, i64) {
-        self.overflowing_add_signed(rhs)
-    }
-
-    /// Same to [`NaiveTime::overflowing_sub_signed`](#method.overflowing_sub_signed).
-    #[inline]
-    #[deprecated(since = "0.2.26",
-                 note = "Renamed to `overflowing_sub_signed`, \
-                         will be replaced with a version with `std::time::Duration`")]
-    pub fn overflowing_sub(self, rhs: OldDuration) -> (NaiveTime, i64) {
-        self.overflowing_sub_signed(rhs)
-    }
-
     /// Formats the time with the specified formatting items.
     /// Otherwise it is same to the ordinary [`format`](#method.format) method.
     ///
@@ -1069,18 +1051,6 @@ impl Add<OldDuration> for NaiveTime {
     #[inline]
     fn add(self, rhs: OldDuration) -> NaiveTime {
         self.overflowing_add_signed(rhs).0
-    }
-}
-
-/// Use [`NaiveTime::signed_duration_since`](#method.signed_duration_since) instead.
-// XXX this does not really work yet
-#[deprecated(since = "0.2.26", note = "Use `signed_duration_since` method instead")]
-impl Sub<NaiveTime> for NaiveTime {
-    type Output = OldDuration;
-
-    #[inline]
-    fn sub(self, rhs: NaiveTime) -> OldDuration {
-        self.signed_duration_since(rhs)
     }
 }
 

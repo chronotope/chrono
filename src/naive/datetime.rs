@@ -543,24 +543,6 @@ impl NaiveDateTime {
         self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
     }
 
-    /// Same to [`NaiveDateTime::checked_add_signed`](#method.checked_add_signed).
-    #[inline]
-    #[deprecated(since = "0.2.26",
-                 note = "Renamed to `checked_add_signed`, \
-                         will be replaced with a version with `std::time::Duration`")]
-    pub fn checked_add(self, rhs: OldDuration) -> Option<NaiveDateTime> {
-        self.checked_add_signed(rhs)
-    }
-
-    /// Same to [`NaiveDateTime::checked_sub_signed`](#method.checked_sub_signed).
-    #[inline]
-    #[deprecated(since = "0.2.26",
-                 note = "Renamed to `checked_sub_signed`, \
-                         will be replaced with a version with `std::time::Duration`")]
-    pub fn checked_sub(self, rhs: OldDuration) -> Option<NaiveDateTime> {
-        self.checked_sub_signed(rhs)
-    }
-
     /// Formats the combined date and time with the specified formatting items.
     /// Otherwise it is same to the ordinary [`format`](#method.format) method.
     ///
@@ -1190,18 +1172,6 @@ impl Add<OldDuration> for NaiveDateTime {
     #[inline]
     fn add(self, rhs: OldDuration) -> NaiveDateTime {
         self.checked_add_signed(rhs).expect("`NaiveDateTime + Duration` overflowed")
-    }
-}
-
-/// Use [`NaiveDateTime::signed_duration_since`](#method.signed_duration_since) instead.
-// XXX this does not really work yet
-#[deprecated(since = "0.2.26", note = "Use `signed_duration_since` method instead")]
-impl Sub<NaiveDateTime> for NaiveDateTime {
-    type Output = OldDuration;
-
-    #[inline]
-    fn sub(self, rhs: NaiveDateTime) -> OldDuration {
-        self.signed_duration_since(rhs)
     }
 }
 

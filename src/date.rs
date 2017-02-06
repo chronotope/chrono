@@ -231,24 +231,6 @@ impl<Tz: TimeZone> Date<Tz> {
         self.date.signed_duration_since(rhs.date)
     }
 
-    /// Same to [`Date::checked_add_signed`](#method.checked_add_signed).
-    #[inline]
-    #[deprecated(since = "0.2.26",
-                 note = "Renamed to `checked_add_signed`, \
-                         will be replaced with a version with `std::time::Duration`")]
-    pub fn checked_add(self, rhs: OldDuration) -> Option<Date<Tz>> {
-        self.checked_add_signed(rhs)
-    }
-
-    /// Same to [`Date::checked_sub_signed`](#method.checked_sub_signed).
-    #[inline]
-    #[deprecated(since = "0.2.26",
-                 note = "Renamed to `checked_sub_signed`, \
-                         will be replaced with a version with `std::time::Duration`")]
-    pub fn checked_sub(self, rhs: OldDuration) -> Option<Date<Tz>> {
-        self.checked_sub_signed(rhs)
-    }
-
     /// Returns a view to the naive UTC date.
     #[inline]
     pub fn naive_utc(&self) -> NaiveDate {
@@ -367,17 +349,6 @@ impl<Tz: TimeZone> Add<OldDuration> for Date<Tz> {
     #[inline]
     fn add(self, rhs: OldDuration) -> Date<Tz> {
         self.checked_add_signed(rhs).expect("`Date + Duration` overflowed")
-    }
-}
-
-// XXX this does not really work yet
-#[deprecated(since = "0.2.26", note = "Use `signed_duration_since` method instead")]
-impl<Tz: TimeZone, Tz2: TimeZone> Sub<Date<Tz2>> for Date<Tz> {
-    type Output = OldDuration;
-
-    #[inline]
-    fn sub(self, rhs: Date<Tz2>) -> OldDuration {
-        self.signed_duration_since(rhs)
     }
 }
 
