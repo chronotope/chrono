@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.2.25"
+version = "0.3.0"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
@@ -20,7 +20,7 @@ appveyor = { repository = "chronotope/chrono" }
 name = "chrono"
 
 [dependencies]
-time = "0.1"
+time = "^0.1.36"
 num = { version = "0.1", default-features = false }
 rustc-serialize = { version = "0.3", optional = true }
 serde = { version = "0.9", optional = true }

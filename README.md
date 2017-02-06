@@ -1,5 +1,5 @@
-[Chrono][docsrs] 0.2.25
-=======================
+[Chrono][docsrs] 0.3.0
+======================
 
 [![Chrono on Travis CI][travis-image]][travis]
 [![Chrono on Appveyor][appveyor-image]][appveyor]
@@ -12,8 +12,8 @@
 [appveyor]: https://ci.appveyor.com/project/chronotope/chrono
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
-[docsrs-image]: https://docs.rs/chrono/badge.svg?version=0.2.25
-[docsrs]: https://docs.rs/chrono/0.2.25/
+[docsrs-image]: https://docs.rs/chrono/badge.svg?version=0.3.0
+[docsrs]: https://docs.rs/chrono/0.3.0/
 
 
 Date and time handling for Rust.
@@ -40,7 +40,7 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chrono = "0.2"
+chrono = "0.3"
 ```
 
 Or, if you want [Serde](https://github.com/serde-rs/serde) or
@@ -49,7 +49,7 @@ include the features like this:
 
 ```toml
 [dependencies]
-chrono = { version = "0.2", features = ["serde", "rustc-serialize"] }
+chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
 ```
 
 Then put this in your crate root:
@@ -90,7 +90,7 @@ methods.
 ### Date and Time
 
 Chrono provides a
-[**`DateTime`**](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html)
+[**`DateTime`**](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html)
 type to represent a date and a time in a timezone.
 
 For more abstract moment-in-time tracking such as internal timekeeping
@@ -101,15 +101,15 @@ which tracks your system clock, or
 is an opaque but monotonically-increasing representation of a moment in time.
 
 `DateTime` is timezone-aware and must be constructed from
-the [**`TimeZone`**](https://docs.rs/chrono/0.2.25/chrono/offset/trait.TimeZone.html) object,
+the [**`TimeZone`**](https://docs.rs/chrono/0.3.0/chrono/offset/trait.TimeZone.html) object,
 which defines how the local date is converted to and back from the UTC date.
 There are three well-known `TimeZone` implementations:
 
-* [**`UTC`**](https://docs.rs/chrono/0.2.25/chrono/offset/utc/struct.UTC.html) specifies the UTC time zone. It is most efficient.
+* [**`UTC`**](https://docs.rs/chrono/0.3.0/chrono/offset/utc/struct.UTC.html) specifies the UTC time zone. It is most efficient.
 
-* [**`Local`**](https://docs.rs/chrono/0.2.25/chrono/offset/local/struct.Local.html) specifies the system local time zone.
+* [**`Local`**](https://docs.rs/chrono/0.3.0/chrono/offset/local/struct.Local.html) specifies the system local time zone.
 
-* [**`FixedOffset`**](https://docs.rs/chrono/0.2.25/chrono/offset/fixed/struct.FixedOffset.html) specifies
+* [**`FixedOffset`**](https://docs.rs/chrono/0.3.0/chrono/offset/fixed/struct.FixedOffset.html) specifies
   an arbitrary, fixed time zone such as UTC+09:00 or UTC-10:30.
   This often results from the parsed textual date and time.
   Since it stores the most information and does not depend on the system environment,
@@ -117,12 +117,12 @@ There are three well-known `TimeZone` implementations:
 
 `DateTime`s with different `TimeZone` types are distinct and do not mix,
 but can be converted to each other using
-the [`DateTime::with_timezone`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.with_timezone) method.
+the [`DateTime::with_timezone`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.with_timezone) method.
 
 You can get the current date and time in the UTC time zone
-([`UTC::now()`](https://docs.rs/chrono/0.2.25/chrono/offset/utc/struct.UTC.html#method.now))
+([`UTC::now()`](https://docs.rs/chrono/0.3.0/chrono/offset/utc/struct.UTC.html#method.now))
 or in the local time zone
-([`Local::now()`](https://docs.rs/chrono/0.2.25/chrono/offset/local/struct.Local.html#method.now)).
+([`Local::now()`](https://docs.rs/chrono/0.3.0/chrono/offset/local/struct.Local.html#method.now)).
 
 ~~~~ {.rust}
 use chrono::prelude::*;
@@ -163,8 +163,8 @@ assert_eq!(dt, fixed_dt);
 ~~~~
 
 Various properties are available to the date and time, and can be altered individually.
-Most of them are defined in the traits [`Datelike`](https://docs.rs/chrono/0.2.25/chrono/trait.Datelike.html) and
-[`Timelike`](https://docs.rs/chrono/0.2.25/chrono/trait.Timelike.html) which you should `use` before.
+Most of them are defined in the traits [`Datelike`](https://docs.rs/chrono/0.3.0/chrono/trait.Datelike.html) and
+[`Timelike`](https://docs.rs/chrono/0.3.0/chrono/trait.Timelike.html) which you should `use` before.
 Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
@@ -205,14 +205,14 @@ assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_00
            UTC.ymd(1938, 4, 24).and_hms(22, 13, 20));
 ~~~~
 
-Formatting is done via the [`format`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.format) method,
+Formatting is done via the [`format`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.format) method,
 which format is equivalent to the familiar `strftime` format.
-(See the [`format::strftime` module documentation](https://docs.rs/chrono/0.2.25/chrono/format/strftime/index.html#specifiers)
+(See the [`format::strftime` module documentation](https://docs.rs/chrono/0.3.0/chrono/format/strftime/index.html#specifiers)
 for full syntax.)
 
 The default `to_string` method and `{:?}` specifier also give a reasonable representation.
-Chrono also provides [`to_rfc2822`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.to_rfc2822) and
-[`to_rfc3339`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.to_rfc3339) methods
+Chrono also provides [`to_rfc2822`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.to_rfc2822) and
+[`to_rfc3339`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.to_rfc3339) methods
 for well-known formats.
 
 ~~~~ {.rust}
@@ -238,23 +238,23 @@ Parsing can be done with three methods:
    ([`std::fmt::Debug`](https://doc.rust-lang.org/std/fmt/trait.Debug.html))
    format specifier prints, and requires the offset to be present.
 
-2. [`DateTime::parse_from_str`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.parse_from_str) parses
+2. [`DateTime::parse_from_str`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.parse_from_str) parses
    a date and time with offsets and returns `DateTime<FixedOffset>`.
    This should be used when the offset is a part of input and the caller cannot guess that.
    It *cannot* be used when the offset can be missing.
-   [`DateTime::parse_from_rfc2822`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.parse_from_rfc2822)
+   [`DateTime::parse_from_rfc2822`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.parse_from_rfc2822)
    and
-   [`DateTime::parse_from_rfc3339`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.parse_from_rfc3339)
+   [`DateTime::parse_from_rfc3339`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.parse_from_rfc3339)
    are similar but for well-known formats.
 
-3. [`Offset::datetime_from_str`](https://docs.rs/chrono/0.2.25/chrono/offset/trait.TimeZone.html#method.datetime_from_str) is
+3. [`Offset::datetime_from_str`](https://docs.rs/chrono/0.3.0/chrono/offset/trait.TimeZone.html#method.datetime_from_str) is
    similar but returns `DateTime` of given offset.
    When the explicit offset is missing from the input, it simply uses given offset.
    It issues an error when the input contains an explicit offset different
    from the current offset.
 
 More detailed control over the parsing process is available via
-[`format`](https://docs.rs/chrono/0.2.25/chrono/format/index.html) module.
+[`format`](https://docs.rs/chrono/0.3.0/chrono/format/index.html) module.
 
 ~~~~ {.rust}
 use chrono::prelude::*;
@@ -288,7 +288,7 @@ assert!(UTC.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_e
 
 ### Individual date
 
-Chrono also provides an individual date type ([**`Date`**](https://docs.rs/chrono/0.2.25/chrono/date/struct.Date.html)).
+Chrono also provides an individual date type ([**`Date`**](https://docs.rs/chrono/0.3.0/chrono/date/struct.Date.html)).
 It also has time zones attached, and have to be constructed via time zones.
 Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 
@@ -307,26 +307,26 @@ assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_
 
 There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
 
-`DateTime` has [`date`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.date) method
+`DateTime` has [`date`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.date) method
 which returns a `Date` which represents its date component.
-There is also a [`time`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.time) method,
+There is also a [`time`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.time) method,
 which simply returns a naive local time described below.
 
 ### Naive date and time
 
 Chrono provides naive counterparts to `Date`, (non-existent) `Time` and `DateTime`
-as [**`NaiveDate`**](https://docs.rs/chrono/0.2.25/chrono/naive/date/struct.NaiveDate.html),
-[**`NaiveTime`**](https://docs.rs/chrono/0.2.25/chrono/naive/time/struct.NaiveTime.html) and
-[**`NaiveDateTime`**](https://docs.rs/chrono/0.2.25/chrono/naive/datetime/struct.NaiveDateTime.html) respectively.
+as [**`NaiveDate`**](https://docs.rs/chrono/0.3.0/chrono/naive/date/struct.NaiveDate.html),
+[**`NaiveTime`**](https://docs.rs/chrono/0.3.0/chrono/naive/time/struct.NaiveTime.html) and
+[**`NaiveDateTime`**](https://docs.rs/chrono/0.3.0/chrono/naive/datetime/struct.NaiveDateTime.html) respectively.
 
 They have almost equivalent interfaces as their timezone-aware twins,
 but are not associated to time zones obviously and can be quite low-level.
 They are mostly useful for building blocks for higher-level types.
 
 Timezone-aware `DateTime` and `Date` types have two methods returning naive versions:
-[`naive_local`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.naive_local) returns
+[`naive_local`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.naive_local) returns
 a view to the naive local time,
-and [`naive_utc`](https://docs.rs/chrono/0.2.25/chrono/datetime/struct.DateTime.html#method.naive_utc) returns
+and [`naive_utc`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.naive_utc) returns
 a view to the naive UTC time.
 
 ## Limitations
@@ -338,7 +338,7 @@ Date types are limited in about +/- 262,000 years from the common epoch.
 Time types are limited in the nanosecond accuracy.
 
 [Leap seconds are supported in the representation but
-Chrono doesn't try to make use of them](https://docs.rs/chrono/0.2.25/chrono/naive/time/index.html#leap-second-handling).
+Chrono doesn't try to make use of them](https://docs.rs/chrono/0.3.0/chrono/naive/time/index.html#leap-second-handling).
 (The main reason is that leap seconds are not really predictable.)
 Almost *every* operation over the possible leap seconds will ignore them.
 Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
@@ -349,5 +349,5 @@ Any operation that can be ambiguous will return `None` in such cases.
 For example, "a month later" of 2014-01-30 is not well-defined
 and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
 
-Advanced time zone handling is not yet supported (but is planned in 0.3).
+Advanced time zone handling is not yet supported (but is planned in 0.4).
 
