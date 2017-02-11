@@ -4,7 +4,7 @@
 //! ISO 8601 date and time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, Deref};
 use num::traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -52,6 +52,24 @@ const MAX_SECS_BITS: usize = 44;
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
+}
+
+/// A DateTime that can be deserialized from a seconds-based timestamp
+pub struct TsSeconds(NaiveDateTime);
+
+impl From<TsSeconds> for NaiveDateTime {
+    /// Pull the internal NaiveDateTime out
+    fn from(obj: TsSeconds) -> NaiveDateTime {
+        obj.0
+    }
+}
+
+impl Deref for TsSeconds {
+    type Target = NaiveDateTime;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl NaiveDateTime {
@@ -1402,16 +1420,6 @@ fn test_decodable_json<F, E>(from_str: F)
     assert_eq!(
         from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
         Some(date::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)));
-    assert_eq!(
-        from_str("0").unwrap(),
-        NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0),
-        "should parse integers as timestamps"
-    );
-    assert_eq!(
-        from_str("-1").unwrap(),
-        NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59),
-        "should parse integers as timestamps"
-    );
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
@@ -1428,7 +1436,6 @@ fn test_decodable_json<F, E>(from_str: F)
     assert!(from_str(r#""2016-07-08 09:10:48.090""#).is_err());
     assert!(from_str(r#""2016-007-08T09:10:48.090""#).is_err());
     assert!(from_str(r#""yyyy-mm-ddThh:mm:ss.fffffffff""#).is_err());
-    assert!(from_str(r#"0"#).is_err());
     assert!(from_str(r#"20160708000000"#).is_err());
     assert!(from_str(r#"{}"#).is_err());
     // pre-0.3.0 rustc-serialize format is now invalid
@@ -1436,9 +1443,27 @@ fn test_decodable_json<F, E>(from_str: F)
     assert!(from_str(r#"null"#).is_err());
 }
 
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json_timestamp<F, E>(from_str: F)
+    where F: Fn(&str) -> Result<TsSeconds, E>, E: ::std::fmt::Debug
+{
+    assert_eq!(
+        *from_str("0").unwrap(),
+        NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0),
+        "should parse integers as timestamps"
+    );
+    assert_eq!(
+        *from_str("-1").unwrap(),
+        NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59),
+        "should parse integers as timestamps"
+    );
+}
+
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
-    use super::NaiveDateTime;
+    use super::{NaiveDateTime, TsSeconds};
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
     impl Encodable for NaiveDateTime {
@@ -1449,7 +1474,15 @@ mod rustc_serialize {
 
     impl Decodable for NaiveDateTime {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDateTime, D::Error> {
-            d.read_str()?.parse().map_err(|_| d.error("invalid date and time"))
+            d.read_str()?.parse().map_err(|_| d.error("invalid date time string"))
+        }
+    }
+
+    impl Decodable for TsSeconds {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds, D::Error> {
+            Ok(TsSeconds(
+                NaiveDateTime::from_timestamp_opt(d.read_i64()?, 0)
+                    .ok_or_else(|| d.error("invalid timestamp"))?))
         }
     }
 
@@ -1464,12 +1497,17 @@ mod rustc_serialize {
     fn test_decodable() {
         super::test_decodable_json(json::decode);
     }
+
+    #[test]
+    fn test_decodable_timestamps() {
+        super::test_decodable_json_timestamp(json::decode);
+    }
 }
 
 #[cfg(feature = "serde")]
 mod serde {
     use std::fmt;
-    use super::NaiveDateTime;
+    use super::{NaiveDateTime, TsSeconds};
     use serde::{ser, de};
 
     // TODO not very optimized for space (binary formats would want something better)
@@ -1499,13 +1537,32 @@ mod serde {
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
         {
-            write!(formatter, "a formatted date and time string or a unix timestamp")
+            write!(formatter, "a formatted date and time string")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
+        }
+    }
+
+    impl de::Deserialize for NaiveDateTime {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.deserialize_str(NaiveDateTimeVisitor)
+        }
+    }
+
+    struct NaiveDateTimeFromSecondsVisitor;
+
+    impl de::Visitor for NaiveDateTimeFromSecondsVisitor {
+        type Value = NaiveDateTime;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
+        {
+            write!(formatter, "a unix timestamp")
         }
 
         fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
@@ -1527,7 +1584,8 @@ mod serde {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
         {
-            deserializer.deserialize_str(NaiveDateTimeVisitor)
+            Ok(TsSeconds(try!(
+                deserializer.deserialize_str(NaiveDateTimeFromSecondsVisitor))))
         }
     }
 
@@ -1542,6 +1600,11 @@ mod serde {
     #[test]
     fn test_serde_deserialize() {
         super::test_decodable_json(|input| self::serde_json::from_str(&input));
+    }
+
+    #[test]
+    fn test_serde_deserialize_timestamp() {
+        super::test_decodable_json_timestamp(self::serde_json::from_str);
     }
 
     #[test]
