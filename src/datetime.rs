@@ -5,7 +5,7 @@
 
 use std::{str, fmt, hash};
 use std::cmp::Ordering;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, Deref};
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
@@ -28,6 +28,26 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
+}
+
+/// A DateTime that can be deserialized from a timestamp
+///
+/// A timestamp here is seconds since the epoch
+pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
+
+impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
+    /// Pull the inner DateTime<Tz> out
+    fn from(obj: TsSeconds<Tz>) -> DateTime<Tz> {
+        obj.0
+    }
+}
+
+impl<Tz: TimeZone> Deref for TsSeconds<Tz> {
+    type Target = DateTime<Tz>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl<Tz: TimeZone> DateTime<Tz> {
@@ -432,40 +452,61 @@ fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
                norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
     assert_eq!(norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
                norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
-    assert_eq!(norm(&utc_from_str("0").ok()),
-               norm(&Some(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0))));
-    assert_eq!(norm(&utc_from_str("-1").unwrap()),
-               norm(&UTC.ymd(1969, 12, 31).and_hms(23, 59, 59)));
-
 
     assert_eq!(norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
                norm(&Some(FixedOffset::east(0).ymd(2014, 7, 24).and_hms(12, 34, 6))));
     assert_eq!(norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
                norm(&Some(FixedOffset::east(60*60 + 23*60).ymd(2014, 7, 24).and_hms(13, 57, 6))));
-    assert_eq!(norm(&fixed_from_str("0").ok()),
-               norm(&Some(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0))));
-    assert_eq!(norm(&fixed_from_str("-1").unwrap()),
-               norm(&UTC.ymd(1969, 12, 31).and_hms(23, 59, 59)));
 
     // we don't know the exact local offset but we can check that
     // the conversion didn't change the instant itself
-    assert_eq!(local_from_str(r#""2014-07-24T12:34:06Z""#).unwrap(),
+    assert_eq!(local_from_str(r#""2014-07-24T12:34:06Z""#)
+                   .expect("local shouuld parse"),
                UTC.ymd(2014, 7, 24).and_hms(12, 34, 6));
-    assert_eq!(local_from_str(r#""2014-07-24T13:57:06+01:23""#).unwrap(),
+    assert_eq!(local_from_str(r#""2014-07-24T13:57:06+01:23""#)
+                   .expect("local should parse with offset"),
                UTC.ymd(2014, 7, 24).and_hms(12, 34, 6));
-    assert_eq!(fixed_from_str("0").unwrap(),
-               UTC.ymd(1970, 1, 1).and_hms(0, 0, 0));
-    assert_eq!(local_from_str("-1").unwrap(),
-               &UTC.ymd(1969, 12, 31).and_hms(23, 59, 59));
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
 }
 
+
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json_timestamps<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
+                                                           fixed_from_str: FFixed,
+                                                           local_from_str: FLocal)
+    where FUTC: Fn(&str) -> Result<TsSeconds<UTC>, E>,
+          FFixed: Fn(&str) -> Result<TsSeconds<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<TsSeconds<Local>, E>,
+          E: ::std::fmt::Debug
+{
+    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
+        dt.as_ref().map(|dt| (dt, dt.offset()))
+    }
+
+    assert_eq!(norm(&utc_from_str("0").ok().map(DateTime::from)),
+               norm(&Some(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&utc_from_str("-1").ok().map(DateTime::from)),
+               norm(&Some(UTC.ymd(1969, 12, 31).and_hms(23, 59, 59))));
+
+    assert_eq!(norm(&fixed_from_str("0").ok().map(DateTime::from)),
+               norm(&Some(FixedOffset::east(0).ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&fixed_from_str("-1").ok().map(DateTime::from)),
+               norm(&Some(FixedOffset::east(0).ymd(1969, 12, 31).and_hms(23, 59, 59))));
+
+    assert_eq!(*fixed_from_str("0").expect("0 timestamp should parse"),
+               UTC.ymd(1970, 1, 1).and_hms(0, 0, 0));
+    assert_eq!(*local_from_str("-1").expect("-1 timestamp should parse"),
+               UTC.ymd(1969, 12, 31).and_hms(23, 59, 59));
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
-    use super::DateTime;
-    use offset::TimeZone;
+    use std::fmt;
+    use super::{DateTime, TsSeconds};
+    use offset::{TimeZone, LocalResult};
     use offset::utc::UTC;
     use offset::local::Local;
     use offset::fixed::FixedOffset;
@@ -477,21 +518,47 @@ mod rustc_serialize {
         }
     }
 
+        // try!-like function to convert a LocalResult into a serde-ish Result
+    fn from<T, D>(me: LocalResult<T>, d: &mut D) -> Result<T, D::Error>
+        where D: Decoder,
+              T: fmt::Display,
+    {
+        match me {
+            LocalResult::None => Err(d.error(
+                "value is not a legal timestamp")),
+            LocalResult::Ambiguous(..) => Err(d.error(
+                "value is an ambiguous timestamp")),
+            LocalResult::Single(val) => Ok(val)
+        }
+    }
+
     impl Decodable for DateTime<FixedOffset> {
         fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<FixedOffset>, D::Error> {
-            match d.read_str()?.parse::<DateTime<FixedOffset>>() {
-                Ok(dt) => Ok(dt),
-                Err(_) => Err(d.error("invalid date and time")),
-            }
+            d.read_str()?.parse::<DateTime<FixedOffset>>()
+                    .map_err(|_| d.error("invalid date and time"))
+        }
+    }
+
+    impl Decodable for TsSeconds<FixedOffset> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<FixedOffset>, D::Error> {
+            from(FixedOffset::east(0).timestamp_opt(d.read_i64()?, 0), d)
+                .map(|dt| TsSeconds(dt))
         }
     }
 
     impl Decodable for DateTime<UTC> {
         fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<UTC>, D::Error> {
-            match d.read_str()?.parse::<DateTime<FixedOffset>>() {
-                Ok(dt) => Ok(dt.with_timezone(&UTC)),
-                Err(_) => Err(d.error("invalid date and time")),
-            }
+            d.read_str()?
+                .parse::<DateTime<FixedOffset>>()
+                .map(|dt| dt.with_timezone(&UTC))
+                .map_err(|_| d.error("invalid date and time"))
+        }
+    }
+
+    impl Decodable for TsSeconds<UTC> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<UTC>, D::Error> {
+            from(UTC.timestamp_opt(d.read_i64()?, 0), d)
+                .map(|dt| TsSeconds(dt))
         }
     }
 
@@ -501,6 +568,13 @@ mod rustc_serialize {
                 Ok(dt) => Ok(dt.with_timezone(&Local)),
                 Err(_) => Err(d.error("invalid date and time")),
             }
+        }
+    }
+
+    impl Decodable for TsSeconds<Local> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<Local>, D::Error> {
+            from(UTC.timestamp_opt(d.read_i64()?, 0), d)
+                .map(|dt| TsSeconds(dt.with_timezone(&Local)))
         }
     }
 
@@ -515,12 +589,18 @@ mod rustc_serialize {
     fn test_decodable() {
         super::test_decodable_json(json::decode, json::decode, json::decode);
     }
+
+    #[test]
+    fn test_decodable_timestamps() {
+        super::test_decodable_json_timestamps(json::decode, json::decode, json::decode);
+    }
+
 }
 
 #[cfg(feature = "serde")]
 mod serde {
     use std::fmt;
-    use super::DateTime;
+    use super::{DateTime, TsSeconds};
     use offset::{TimeZone, LocalResult};
     use offset::utc::UTC;
     use offset::local::Local;
@@ -551,8 +631,8 @@ mod serde {
     // try!-like function to convert a LocalResult into a serde-ish Result
     fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
         where E: de::Error,
-              V: Display,
-              T: Display,
+              V: fmt::Display,
+              T: fmt::Display,
     {
         match me {
             LocalResult::None => Err(E::custom(
@@ -579,21 +659,6 @@ mod serde {
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
-
-        // Deserialize a timestamp in seconds since the epoch
-        fn visit_i64<E>(self, value: i64) -> Result<DateTime<FixedOffset>, E>
-            where E: de::Error
-        {
-            from(FixedOffset::east(0).timestamp_opt(value, 0), value)
-        }
-
-        // Deserialize a timestamp in seconds since the epoch
-        fn visit_u64<E>(self, value: u64) -> Result<DateTime<FixedOffset>, E>
-            where E: de::Error
-        {
-            from(FixedOffset::east(0).timestamp_opt(value as i64, 0), value)
-        }
-
     }
 
     /// Deserialize a value that optionally includes a timezone offset in its
@@ -634,6 +699,65 @@ mod serde {
         }
     }
 
+    struct SecondsTimestampVisitor;
+
+    impl de::Visitor for SecondsTimestampVisitor {
+        type Value = DateTime<FixedOffset>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
+        {
+            write!(formatter, "a unix timestamp in seconds")
+        }
+
+        /// Deserialize a timestamp in seconds since the epoch
+        fn visit_i64<E>(self, value: i64) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
+        {
+            from(FixedOffset::east(0).timestamp_opt(value, 0), value)
+        }
+
+        /// Deserialize a timestamp in seconds since the epoch
+        fn visit_u64<E>(self, value: u64) -> Result<DateTime<FixedOffset>, E>
+            where E: de::Error
+        {
+            from(FixedOffset::east(0).timestamp_opt(value as i64, 0), value)
+        }
+    }
+
+    impl de::Deserialize for TsSeconds<Local> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            Ok(TsSeconds(try!(
+                deserializer
+                    .deserialize_str(SecondsTimestampVisitor)
+                    .map(|dt| dt.with_timezone(&Local)))))
+        }
+    }
+
+    /// Can deserialize a timestamp into a FixedOffset
+    ///
+    /// The offset will always be 0, because timestamps are defined as UTC.
+    impl de::Deserialize for TsSeconds<FixedOffset> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            Ok(TsSeconds(try!(
+                deserializer.deserialize_str(SecondsTimestampVisitor))))
+        }
+    }
+
+    /// Deserialize into a UTC value
+    impl de::Deserialize for TsSeconds<UTC> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            Ok(TsSeconds(try!(
+                deserializer.deserialize_str(SecondsTimestampVisitor)
+                    .map(|dt| dt.with_timezone(&UTC)))))
+        }
+    }
+
     #[cfg(test)] extern crate serde_json;
     #[cfg(test)] extern crate bincode;
 
@@ -646,6 +770,13 @@ mod serde {
     fn test_serde_deserialize() {
         super::test_decodable_json(|input| self::serde_json::from_str(&input), |input| self::serde_json::from_str(&input),
                                    |input| self::serde_json::from_str(&input));
+    }
+
+    #[test]
+    fn test_serde_deserialize_timestamps() {
+        super::test_decodable_json_timestamps(self::serde_json::from_str,
+                                              self::serde_json::from_str,
+                                              self::serde_json::from_str);
     }
 
     #[test]
