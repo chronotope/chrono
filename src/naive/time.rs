@@ -1392,8 +1392,7 @@ mod serde {
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use self::bincode::SizeLimit;
-        use self::bincode::serde::{serialize, deserialize};
+        use self::bincode::{SizeLimit, serialize, deserialize};
 
         let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
         let encoded = serialize(&t, SizeLimit::Infinite).unwrap();

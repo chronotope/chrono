@@ -1515,8 +1515,7 @@ mod serde {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
         use naive::date::NaiveDate;
-        use self::bincode::SizeLimit;
-        use self::bincode::serde::{serialize, deserialize};
+        use self::bincode::{SizeLimit, serialize, deserialize};
 
         let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
         let encoded = serialize(&dt, SizeLimit::Infinite).unwrap();
