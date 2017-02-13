@@ -4,7 +4,6 @@
 //! The local (system) time zone.
 
 use oldtime;
-use oldtime::Duration as OldDuration;
 
 use {Datelike, Timelike};
 use naive::date::NaiveDate;
@@ -39,7 +38,7 @@ fn tm_to_datetime(mut tm: oldtime::Tm) -> DateTime<Local> {
     let time = NaiveTime::from_hms_nano(tm.tm_hour as u32, tm.tm_min as u32,
                                         tm.tm_sec as u32, tm.tm_nsec as u32);
     let offset = FixedOffset::east(tm.tm_utcoff);
-    DateTime::from_utc(date.and_time(time) + OldDuration::seconds(-tm.tm_utcoff as i64), offset)
+    DateTime::from_utc(date.and_time(time) - offset, offset)
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
