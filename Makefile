@@ -45,7 +45,9 @@ README.md: src/lib.rs
 
 .PHONY: test
 test:
-	cargo test --features 'serde rustc-serialize bincode'
+	TZ=UTC0 cargo test --features 'serde rustc-serialize bincode' --lib
+	TZ=ACST-9:30 cargo test --features 'serde rustc-serialize bincode' --lib
+	TZ=EST4 cargo test --features 'serde rustc-serialize bincode'
 
 .PHONY: doc
 doc: authors readme

@@ -17,13 +17,14 @@ env:
     - LD_LIBRARY_PATH: /usr/local/lib
 script:
   # interleave building and testing in hope that it saves time
+  # also vary the local time zone to (hopefully) catch tz-dependent bugs
   # also avoid doc-testing multiple times---it takes a lot and rarely helps
   - cargo build -v
-  - cargo test -v
+  - TZ=ACST-9:30 cargo test -v
   - cargo build -v --features rustc-serialize
-  - cargo test -v --features rustc-serialize --lib
+  - TZ=EST4 cargo test -v --features rustc-serialize --lib
   - cargo build -v --features 'serde bincode'
-  - cargo test -v --features 'serde bincode' --lib
+  - TZ=UTC0 cargo test -v --features 'serde bincode' --lib
 notifications:
   email: false
   irc:
