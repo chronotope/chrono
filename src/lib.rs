@@ -13,7 +13,7 @@
 //! * Chrono is space-optimal and (while not being the primary goal) reasonably efficient.
 //!
 //! There were several previous attempts to bring a good date and time library to Rust,
-//! which Chrono builts upon and should acknowledge:
+//! which Chrono builds upon and should acknowledge:
 //!
 //! * [Initial research on
 //!    the wiki](https://github.com/rust-lang/rust-wiki-backup/blob/master/Lib-datetime.md)
