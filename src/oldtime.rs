@@ -12,7 +12,7 @@
 
 use std::{fmt, i64};
 use std::error::Error;
-use std::ops::{Add, Sub, Mul, Div, Neg, FnOnce};
+use std::ops::{Add, Sub, Mul, Div, Neg};
 use std::time::Duration as StdDuration;
 
 /// The number of nanoseconds in a microsecond.
@@ -129,14 +129,6 @@ impl Duration {
     pub fn nanoseconds(nanos: i64) -> Duration {
         let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
         Duration { secs: secs, nanos: nanos as i32 }
-    }
-
-    /// Runs a closure, returning the duration of time it took to run the
-    /// closure.
-    pub fn span<F>(f: F) -> Duration where F: FnOnce() {
-        let before = super::precise_time_ns();
-        f();
-        Duration::nanoseconds((super::precise_time_ns() - before) as i64)
     }
 
     /// Returns the total number of whole weeks in the duration.
