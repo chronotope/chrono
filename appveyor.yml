@@ -14,8 +14,8 @@ install:
   - ps: $env:PATH="$env:PATH;C:\rust\bin"
   - rustc -vV
   - cargo -vV
-build_script:
-  # do not test all combinations, Travis will handle that
-  - cargo build -v --features "serde rustc-serialize"
+
+build: false
+
 test_script:
-  - cargo test -v --features "serde rustc-serialize"
+  - sh -c 'PATH=`rustc --print sysroot`/bin:$PATH ./.travis.sh'
