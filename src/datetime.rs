@@ -477,6 +477,35 @@ fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
 }
 
+#[cfg(all(test, feature = "rustc-serialize"))]
+fn test_decodable_json_timestamps<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
+                                                           fixed_from_str: FFixed,
+                                                           local_from_str: FLocal)
+    where FUTC: Fn(&str) -> Result<TsSeconds<UTC>, E>,
+          FFixed: Fn(&str) -> Result<TsSeconds<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<TsSeconds<Local>, E>,
+          E: ::std::fmt::Debug
+{
+    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
+        dt.as_ref().map(|dt| (dt, dt.offset()))
+    }
+
+    assert_eq!(norm(&utc_from_str("0").ok().map(DateTime::from)),
+               norm(&Some(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&utc_from_str("-1").ok().map(DateTime::from)),
+               norm(&Some(UTC.ymd(1969, 12, 31).and_hms(23, 59, 59))));
+
+    assert_eq!(norm(&fixed_from_str("0").ok().map(DateTime::from)),
+               norm(&Some(FixedOffset::east(0).ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&fixed_from_str("-1").ok().map(DateTime::from)),
+               norm(&Some(FixedOffset::east(0).ymd(1969, 12, 31).and_hms(23, 59, 59))));
+
+    assert_eq!(*fixed_from_str("0").expect("0 timestamp should parse"),
+               UTC.ymd(1970, 1, 1).and_hms(0, 0, 0));
+    assert_eq!(*local_from_str("-1").expect("-1 timestamp should parse"),
+               UTC.ymd(1969, 12, 31).and_hms(23, 59, 59));
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use std::fmt;
@@ -563,6 +592,11 @@ mod rustc_serialize {
     #[test]
     fn test_decodable() {
         super::test_decodable_json(json::decode, json::decode, json::decode);
+    }
+
+    #[test]
+    fn test_decodable_timestamps() {
+        super::test_decodable_json_timestamps(json::decode, json::decode, json::decode);
     }
 
 }
