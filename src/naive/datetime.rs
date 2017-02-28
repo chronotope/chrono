@@ -1443,6 +1443,23 @@ fn test_decodable_json<F, E>(from_str: F)
     assert!(from_str(r#"null"#).is_err());
 }
 
+
+#[cfg(all(test, feature = "rustc-serialize"))]
+fn test_decodable_json_timestamp<F, E>(from_str: F)
+    where F: Fn(&str) -> Result<TsSeconds, E>, E: ::std::fmt::Debug
+{
+    assert_eq!(
+        *from_str("0").unwrap(),
+        NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0),
+        "should parse integers as timestamps"
+    );
+    assert_eq!(
+        *from_str("-1").unwrap(),
+        NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59),
+        "should parse integers as timestamps"
+    );
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use super::{NaiveDateTime, TsSeconds};
@@ -1478,6 +1495,12 @@ mod rustc_serialize {
     #[test]
     fn test_decodable() {
         super::test_decodable_json(json::decode);
+    }
+
+    #[test]
+    fn test_decodable_timestamps() {
+        super::test_decodable_json_timestamp(json::decode);
+
     }
 
 }
