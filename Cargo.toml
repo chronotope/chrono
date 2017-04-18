@@ -27,4 +27,4 @@ serde = { version = "0.9", optional = true }
 
 [dev-dependencies]
 serde_json = { version = ">=0.9.0" }
-bincode = { version = "1.0.0-alpha2", features = ["serde"], default-features = false }
+bincode = { version = "1.0.0-alpha6", features = ["serde"], default-features = false }
