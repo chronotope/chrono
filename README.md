@@ -124,18 +124,18 @@ You can get the current date and time in the UTC time zone
 or in the local time zone
 ([`Local::now()`](https://docs.rs/chrono/0.3.0/chrono/offset/local/struct.Local.html#method.now)).
 
-~~~~ {.rust}
+```rust
 use chrono::prelude::*;
 
 let utc: DateTime<UTC> = UTC::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
-~~~~
+```
 
 Alternatively, you can create your own date and time.
 This is a bit verbose due to Rust's lack of function and method overloading,
 but in turn we get a rich combination of initialization methods.
 
-~~~~ {.rust}
+```rust
 use chrono::prelude::*;
 use chrono::offset::LocalResult;
 
@@ -160,7 +160,7 @@ assert_eq!(UTC.ymd_opt(2014, 7, 38).and_hms_opt(21, 15, 33), LocalResult::None);
 let local_dt = Local.ymd(2014, 7, 8).and_hms_milli(9, 10, 11, 12);
 let fixed_dt = FixedOffset::east(9 * 3600).ymd(2014, 7, 8).and_hms_milli(18, 10, 11, 12);
 assert_eq!(dt, fixed_dt);
-~~~~
+```
 
 Various properties are available to the date and time, and can be altered individually.
 Most of them are defined in the traits [`Datelike`](https://docs.rs/chrono/0.3.0/chrono/trait.Datelike.html) and
@@ -168,7 +168,7 @@ Most of them are defined in the traits [`Datelike`](https://docs.rs/chrono/0.3.0
 Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
-~~~~ {.rust}
+```rust
 use chrono::prelude::*;
 use time::Duration;
 
@@ -203,7 +203,7 @@ assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_00
            UTC.ymd(2001, 9, 9).and_hms(1, 46, 40));
 assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
            UTC.ymd(1938, 4, 24).and_hms(22, 13, 20));
-~~~~
+```
 
 Formatting is done via the [`format`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.format) method,
 which format is equivalent to the familiar `strftime` format.
@@ -215,7 +215,7 @@ Chrono also provides [`to_rfc2822`](https://docs.rs/chrono/0.3.0/chrono/datetime
 [`to_rfc3339`](https://docs.rs/chrono/0.3.0/chrono/datetime/struct.DateTime.html#method.to_rfc3339) methods
 for well-known formats.
 
-~~~~ {.rust}
+```rust
 use chrono::prelude::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
@@ -227,7 +227,7 @@ assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
 assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
 assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
 assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
-~~~~
+```
 
 Parsing can be done with three methods:
 
@@ -256,7 +256,7 @@ Parsing can be done with three methods:
 More detailed control over the parsing process is available via
 [`format`](https://docs.rs/chrono/0.3.0/chrono/format/index.html) module.
 
-~~~~ {.rust}
+```rust
 use chrono::prelude::*;
 
 let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
@@ -284,7 +284,7 @@ assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err())
 assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
 // oops, the weekday is incorrect!
 assert!(UTC.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
-~~~~
+```
 
 ### Individual date
 
@@ -292,7 +292,7 @@ Chrono also provides an individual date type ([**`Date`**](https://docs.rs/chron
 It also has time zones attached, and have to be constructed via time zones.
 Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 
-~~~~ {.rust}
+```rust
 use chrono::prelude::*;
 use chrono::offset::LocalResult;
 
@@ -303,7 +303,7 @@ assert_eq!(UTC.ymd(2014, 11, 28).weekday(), Weekday::Fri);
 assert_eq!(UTC.ymd_opt(2014, 11, 31), LocalResult::None);
 assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(),
            "070809");
-~~~~
+```
 
 There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
 
