@@ -416,11 +416,11 @@ fn test_encodable_json<FUTC, FFixed, E>(to_string_utc: FUTC, to_string_fixed: FF
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
-                                                fixed_from_str: FFixed,
-                                                local_from_str: FLocal)
-    where FUTC: Fn(&str) -> Result<DateTime<UTC>, E>,
-          FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
-          FLocal: Fn(&str) -> Result<DateTime<Local>, E>,
+                                                     fixed_from_str: FFixed,
+                                                     local_from_str: FLocal)
+    where FUTC: for<'de> Fn(&'de str) -> Result<DateTime<UTC>, E>,
+          FFixed: for<'de> Fn(&'de str) -> Result<DateTime<FixedOffset>, E>,
+          FLocal: for<'de> Fn(&'de str) -> Result<DateTime<Local>, E>,
           E: ::std::fmt::Debug
 {
     // should check against the offset as well (the normal DateTime comparison will ignore them)
@@ -527,7 +527,7 @@ mod serde {
 
     struct DateTimeVisitor;
 
-    impl de::Visitor for DateTimeVisitor {
+    impl<'de> de::Visitor<'de> for DateTimeVisitor {
         type Value = DateTime<FixedOffset>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
@@ -542,25 +542,25 @@ mod serde {
         }
     }
 
-    impl de::Deserialize for DateTime<FixedOffset> {
+    impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(DateTimeVisitor)
         }
     }
 
-    impl de::Deserialize for DateTime<UTC> {
+    impl<'de> de::Deserialize<'de> for DateTime<UTC> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
         }
     }
 
-    impl de::Deserialize for DateTime<Local> {
+    impl<'de> de::Deserialize<'de> for DateTime<Local> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
         }
@@ -576,8 +576,8 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(self::serde_json::from_str, self::serde_json::from_str,
-                                   self::serde_json::from_str);
+        super::test_decodable_json(|input| self::serde_json::from_str(&input), |input| self::serde_json::from_str(&input),
+                                   |input| self::serde_json::from_str(&input));
     }
 
     #[test]

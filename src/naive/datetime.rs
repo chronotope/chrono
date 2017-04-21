@@ -1371,7 +1371,7 @@ fn test_encodable_json<F, E>(to_string: F)
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<F, E>(from_str: F)
-    where F: Fn(&str) -> Result<NaiveDateTime, E>, E: ::std::fmt::Debug
+    where F: for<'de> Fn(&'de str) -> Result<NaiveDateTime, E>, E: ::std::fmt::Debug
 {
     use naive::date;
 
@@ -1474,7 +1474,7 @@ mod serde {
 
     struct NaiveDateTimeVisitor;
 
-    impl de::Visitor for NaiveDateTimeVisitor {
+    impl<'de> de::Visitor<'de> for NaiveDateTimeVisitor {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
@@ -1489,9 +1489,9 @@ mod serde {
         }
     }
 
-    impl de::Deserialize for NaiveDateTime {
+    impl<'de> de::Deserialize<'de> for NaiveDateTime {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(NaiveDateTimeVisitor)
         }
@@ -1507,7 +1507,7 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(self::serde_json::from_str);
+        super::test_decodable_json(|input| self::serde_json::from_str(&input));
     }
 
     #[test]

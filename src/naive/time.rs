@@ -1261,7 +1261,7 @@ fn test_encodable_json<F, E>(to_string: F)
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<F, E>(from_str: F)
-    where F: Fn(&str) -> Result<NaiveTime, E>, E: ::std::fmt::Debug
+    where F: for<'de> Fn(&'de str) -> Result<NaiveTime, E>, E: ::std::fmt::Debug
 {
     assert_eq!(from_str(r#""00:00:00""#).ok(),
                Some(NaiveTime::from_hms(0, 0, 0)));
@@ -1352,7 +1352,7 @@ mod serde {
 
     struct NaiveTimeVisitor;
 
-    impl de::Visitor for NaiveTimeVisitor {
+    impl<'de> de::Visitor<'de> for NaiveTimeVisitor {
         type Value = NaiveTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
@@ -1367,9 +1367,9 @@ mod serde {
         }
     }
 
-    impl de::Deserialize for NaiveTime {
+    impl<'de> de::Deserialize<'de> for NaiveTime {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(NaiveTimeVisitor)
         }
@@ -1385,7 +1385,7 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(self::serde_json::from_str);
+        super::test_decodable_json(|input| self::serde_json::from_str(&input));
     }
 
     #[test]
