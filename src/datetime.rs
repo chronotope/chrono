@@ -520,8 +520,18 @@ mod serde {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
+            struct FormatWrapped<'a, D: 'a> {
+                inner: &'a D
+            }
+
+            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    self.inner.fmt(f)
+                }
+            }
+
             // Debug formatting is correct RFC3339, and it allows Zulu.
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(&FormatWrapped { inner: &self })
         }
     }
 

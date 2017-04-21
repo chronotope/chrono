@@ -1570,7 +1570,17 @@ mod serde {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            struct FormatWrapped<'a, D: 'a> {
+                inner: &'a D
+            }
+
+            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    self.inner.fmt(f)
+                }
+            }
+
+            serializer.collect_str(&FormatWrapped { inner: &self })
         }
     }
 

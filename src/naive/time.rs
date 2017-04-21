@@ -1346,7 +1346,7 @@ mod serde {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(&self)
         }
     }
 
