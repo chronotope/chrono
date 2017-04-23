@@ -1371,7 +1371,7 @@ fn test_encodable_json<F, E>(to_string: F)
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<F, E>(from_str: F)
-    where F: for<'de> Fn(&'de str) -> Result<NaiveDateTime, E>, E: ::std::fmt::Debug
+    where F: Fn(&str) -> Result<NaiveDateTime, E>, E: ::std::fmt::Debug
 {
     use naive::date;
 

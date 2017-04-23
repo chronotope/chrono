@@ -1261,7 +1261,7 @@ fn test_encodable_json<F, E>(to_string: F)
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<F, E>(from_str: F)
-    where F: for<'de> Fn(&'de str) -> Result<NaiveTime, E>, E: ::std::fmt::Debug
+    where F: Fn(&str) -> Result<NaiveTime, E>, E: ::std::fmt::Debug
 {
     assert_eq!(from_str(r#""00:00:00""#).ok(),
                Some(NaiveTime::from_hms(0, 0, 0)));

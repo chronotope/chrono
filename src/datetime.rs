@@ -418,9 +418,9 @@ fn test_encodable_json<FUTC, FFixed, E>(to_string_utc: FUTC, to_string_fixed: FF
 fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
                                                      fixed_from_str: FFixed,
                                                      local_from_str: FLocal)
-    where FUTC: for<'de> Fn(&'de str) -> Result<DateTime<UTC>, E>,
-          FFixed: for<'de> Fn(&'de str) -> Result<DateTime<FixedOffset>, E>,
-          FLocal: for<'de> Fn(&'de str) -> Result<DateTime<Local>, E>,
+    where FUTC: Fn(&str) -> Result<DateTime<UTC>, E>,
+          FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<DateTime<Local>, E>,
           E: ::std::fmt::Debug
 {
     // should check against the offset as well (the normal DateTime comparison will ignore them)
