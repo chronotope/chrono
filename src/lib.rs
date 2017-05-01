@@ -573,6 +573,124 @@ impl num::traits::FromPrimitive for Weekday {
     }
 }
 
+use std::str::FromStr;
+
+impl FromStr for Weekday {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_string().to_lowercase().as_ref() {
+            "mon" | "monday" => Ok(Weekday::Mon),
+            "tue" | "tuesday" => Ok(Weekday::Tue),
+            "wed" | "wednesday" => Ok(Weekday::Wed),
+            "thu" | "thur" | "thursday" => Ok(Weekday::Thu),
+            "fri" | "friday" => Ok(Weekday::Fri),
+            "sat" | "saturday" => Ok(Weekday::Sat),
+            "sun" | "sunday" => Ok(Weekday::Sun),
+            other => Err(format!("unknown Weekday {}", other)),
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+mod weekday_serde {
+    use super::Weekday;
+    use serde::{ser, de};
+
+    impl ser::Serialize for Weekday {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            serializer.serialize_str(&format!("{:?}", self))
+        }
+    }
+
+    struct WeekdayVisitor;
+
+    impl de::Visitor for WeekdayVisitor {
+        type Value = Weekday;
+
+        fn visit_str<E>(&mut self, value: &str) -> Result<Self::Value, E>
+            where E: de::Error
+        {
+            value.parse().map_err(|err| de::Error::custom(err))
+        }
+    }
+
+    impl de::Deserialize for Weekday {
+        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
+            where D: de::Deserializer
+        {
+            deserializer.deserialize_str(WeekdayVisitor)
+        }
+    }
+
+    #[cfg(test)]
+    extern crate serde_json;
+
+    #[test]
+    fn test_serde_serialize() {
+        use self::serde_json::to_string;
+        use Weekday::*;
+
+        let cases: Vec<(Weekday, &str)> = vec![
+            (Mon, "\"Mon\""),
+            (Tue, "\"Tue\""),
+            (Wed, "\"Wed\""),
+            (Thu, "\"Thu\""),
+            (Fri, "\"Fri\""),
+            (Sat, "\"Sat\""),
+            (Sun, "\"Sun\""),
+        ];
+
+        for (weekday, expected_str) in cases {
+            let string = to_string(&weekday).unwrap();
+            assert_eq!(string, expected_str);
+        }
+    }
+
+    #[test]
+    fn test_serde_deserialize() {
+        use self::serde_json::from_str;
+        use Weekday::*;
+
+        let cases: Vec<(&str, Weekday)> = vec![
+            ("\"mon\"", Mon),
+            ("\"MONDAY\"", Mon),
+            ("\"MonDay\"", Mon),
+            ("\"mOn\"", Mon),
+            ("\"tue\"", Tue),
+            ("\"tuesday\"", Tue),
+            ("\"wed\"", Wed),
+            ("\"wednesday\"", Wed),
+            ("\"thu\"", Thu),
+            ("\"thursday\"", Thu),
+            ("\"thur\"", Thu),
+            ("\"fri\"", Fri),
+            ("\"friday\"", Fri),
+            ("\"sat\"", Sat),
+            ("\"saturday\"", Sat),
+            ("\"sun\"", Sun),
+            ("\"sunday\"", Sun),
+        ];
+
+        for (str, expected_weekday) in cases {
+            let weekday = from_str::<Weekday>(str).unwrap();
+            assert_eq!(weekday, expected_weekday);
+        }
+
+        let errors: Vec<&str> = vec![
+            "\"not a weekday\"",
+            "\"monDAYs\"",
+            "\"mond\"",
+            "mon",
+        ];
+
+        for str in errors {
+            from_str::<Weekday>(str).unwrap_err();
+        }
+    }
+}
 
 /// The common set of methods for date component.
 pub trait Datelike: Sized {
