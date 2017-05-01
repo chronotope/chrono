@@ -1468,13 +1468,23 @@ mod serde {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            struct FormatWrapped<'a, D: 'a> {
+                inner: &'a D
+            }
+
+            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    self.inner.fmt(f)
+                }
+            }
+
+            serializer.collect_str(&FormatWrapped { inner: &self })
         }
     }
 
     struct NaiveDateTimeVisitor;
 
-    impl de::Visitor for NaiveDateTimeVisitor {
+    impl<'de> de::Visitor<'de> for NaiveDateTimeVisitor {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
@@ -1489,9 +1499,9 @@ mod serde {
         }
     }
 
-    impl de::Deserialize for NaiveDateTime {
+    impl<'de> de::Deserialize<'de> for NaiveDateTime {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(NaiveDateTimeVisitor)
         }
@@ -1507,7 +1517,7 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(self::serde_json::from_str);
+        super::test_decodable_json(|input| self::serde_json::from_str(&input));
     }
 
     #[test]

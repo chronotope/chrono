@@ -23,8 +23,8 @@ name = "chrono"
 time = "^0.1.36"
 num = { version = "0.1", default-features = false }
 rustc-serialize = { version = "0.3", optional = true }
-serde = { version = "0.9", optional = true }
+serde = { version = "1", optional = true }
 
 [dev-dependencies]
-serde_json = { version = ">=0.9.0" }
-bincode = { version = "1.0.0-alpha6", features = ["serde"], default-features = false }
+serde_json = { version = "1" }
+bincode = { version = "0.7.0", features = ["serde"], default-features = false, git = "https://github.com/TyOverby/bincode.git" }

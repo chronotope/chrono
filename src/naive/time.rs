@@ -1346,13 +1346,13 @@ mod serde {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(&self)
         }
     }
 
     struct NaiveTimeVisitor;
 
-    impl de::Visitor for NaiveTimeVisitor {
+    impl<'de> de::Visitor<'de> for NaiveTimeVisitor {
         type Value = NaiveTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
@@ -1367,9 +1367,9 @@ mod serde {
         }
     }
 
-    impl de::Deserialize for NaiveTime {
+    impl<'de> de::Deserialize<'de> for NaiveTime {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(NaiveTimeVisitor)
         }
@@ -1385,7 +1385,7 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(self::serde_json::from_str);
+        super::test_decodable_json(|input| self::serde_json::from_str(&input));
     }
 
     #[test]
