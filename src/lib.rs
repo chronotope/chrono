@@ -573,24 +573,21 @@ impl num::traits::FromPrimitive for Weekday {
     }
 }
 
-use std::str::FromStr;
+use std::fmt;
 
-impl FromStr for Weekday {
-    type Err = String;
+/// An error resulting from reading `Weekday` value with `FromStr`.
+#[derive(Clone, PartialEq)]
+pub struct ParseWeekdayError {
+    _dummy: (),
+}
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_string().to_lowercase().as_ref() {
-            "mon" | "monday" => Ok(Weekday::Mon),
-            "tue" | "tuesday" => Ok(Weekday::Tue),
-            "wed" | "wednesday" => Ok(Weekday::Wed),
-            "thu" | "thur" | "thursday" => Ok(Weekday::Thu),
-            "fri" | "friday" => Ok(Weekday::Fri),
-            "sat" | "saturday" => Ok(Weekday::Sat),
-            "sun" | "sunday" => Ok(Weekday::Sun),
-            other => Err(format!("unknown Weekday {}", other)),
-        }
+impl fmt::Debug for ParseWeekdayError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ParseWeekdayError {{ .. }}")
     }
 }
+
+// the actual `FromStr` implementation is in the `format` module to leverage the existing code
 
 #[cfg(feature = "serde")]
 mod weekday_serde {
@@ -665,7 +662,6 @@ mod weekday_serde {
             ("\"wednesday\"", Wed),
             ("\"thu\"", Thu),
             ("\"thursday\"", Thu),
-            ("\"thur\"", Thu),
             ("\"fri\"", Fri),
             ("\"friday\"", Fri),
             ("\"sat\"", Sat),
@@ -684,6 +680,8 @@ mod weekday_serde {
             "\"monDAYs\"",
             "\"mond\"",
             "mon",
+            "\"thur\"",
+            "\"thurs\"",
         ];
 
         for str in errors {
