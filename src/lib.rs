@@ -592,10 +592,11 @@ impl fmt::Debug for ParseWeekdayError {
 #[cfg(feature = "serde")]
 mod weekday_serde {
     use super::Weekday;
+    use std::fmt;
     use serde::{ser, de};
 
     impl ser::Serialize for Weekday {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
             serializer.serialize_str(&format!("{:?}", self))
@@ -604,19 +605,23 @@ mod weekday_serde {
 
     struct WeekdayVisitor;
 
-    impl de::Visitor for WeekdayVisitor {
+    impl<'de> de::Visitor<'de> for WeekdayVisitor {
         type Value = Weekday;
 
-        fn visit_str<E>(&mut self, value: &str) -> Result<Self::Value, E>
+        fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "Weekday")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| de::Error::custom(err))
+            value.parse().map_err(|_| E::custom("short or long weekday names expected"))
         }
     }
 
-    impl de::Deserialize for Weekday {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+    impl<'de> de::Deserialize<'de> for Weekday {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(WeekdayVisitor)
         }
