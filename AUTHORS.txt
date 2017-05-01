@@ -14,7 +14,9 @@ David Hewson <dev@daveid.co.uk>
 David Ross <daboross@daboross.net>
 David Tolnay <dtolnay@gmail.com>
 David Willie <david.willie.1@gmail.com>
+Eric Findlay <e.findlay@protonmail.ch>
 Eunchong Yu <kroisse@gmail.com>
+Frans Skarman <frans.skarman@gmail.com>
 Huon Wilson <dbau.pp+github@gmail.com>
 Jim Turner <jturner314@gmail.com>
 Jisoo Park <xxxyel@gmail.com>

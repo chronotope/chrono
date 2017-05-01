@@ -8,6 +8,28 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.3.1 (2017-05-02)
+
+### Added
+
+- `Weekday` now implements `FromStr`, `Serialize` and `Deserialize`. (#113)
+
+  The syntax is identical to `%A`, i.e. either the shortest or the longest form of English names.
+
+### Changed
+
+- Serde 1.0 is now supported. (#142)
+
+  This is technically a breaking change because Serde 0.9 and 1.0 are not compatible,
+  but this time we decided not to issue a minor version because
+  we have already seen Serde 0.8 and 0.9 compatibility problems even after 0.3.0 and
+  a new minor version turned out to be not very helpful for this kind of issues.
+
+### Fixed
+
+- Fixed a bug that the leap second can be mapped wrongly in the local time zone.
+  Only occurs when the local time zone is behind UTC. (#130)
+
 ## 0.3.0 (2017-02-07)
 
 The project has moved to the [Chronotope](https://github.com/chronotope/) organization.
