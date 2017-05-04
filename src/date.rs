@@ -21,6 +21,7 @@ use format::{Item, DelayedFormat, StrftimeItems};
 ///
 /// This type should be considered ambiguous at best,
 /// due to the inherent lack of precision required for the time zone resolution.
+/// For serialization and deserialization uses, it is best to use `NaiveDate` instead.
 /// There are some guarantees on the usage of `Date<Tz>`:
 ///
 /// - If properly constructed via `TimeZone::ymd` and others without an error,
