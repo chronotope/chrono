@@ -27,4 +27,4 @@ serde = { version = "1", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }
-bincode = { version = "0.7.0", features = ["serde"], default-features = false, git = "https://github.com/TyOverby/bincode.git" }
+bincode = { version = "0.8.0", features = ["serde"], default-features = false }
