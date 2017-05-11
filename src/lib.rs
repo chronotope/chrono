@@ -146,7 +146,7 @@
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
 //! let local_dt = Local.ymd(2014, 7, 8).and_hms_milli(9, 10, 11, 12);
 //! let fixed_dt = FixedOffset::east(9 * 3600).ymd(2014, 7, 8).and_hms_milli(18, 10, 11, 12);
-//! assert_eq!(dt, fixed_dt);
+//! assert_eq!(local_dt, fixed_dt);
 //! # let _ = local_dt;
 //! ```
 //!
