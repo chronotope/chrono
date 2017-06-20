@@ -1,7 +1,7 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-//! # Chrono 0.3.1
+//! # Chrono 0.4.0 (not yet released)
 //!
 //! Date and time handling for Rust.
 //! It aims to be a feature-complete superset of
@@ -26,7 +26,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! chrono = "0.3"
+//! chrono = "0.4"
 //! ```
 //!
 //! Or, if you want [Serde](https://github.com/serde-rs/serde) or
@@ -35,7 +35,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! chrono = { version = "0.3", features = ["serde", "rustc-serialize"] }
+//! chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
 //! ```
 //!
 //! Then put this in your crate root:
@@ -343,9 +343,10 @@
 //! For example, "a month later" of 2014-01-30 is not well-defined
 //! and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
 //!
-//! Advanced time zone handling is not yet supported (but is planned in 0.4).
+//! Advanced time zone handling is not yet supported.
+//! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
 
-#![doc(html_root_url = "https://docs.rs/chrono/0.3.1/")]
+#![doc(html_root_url = "https://docs.rs/chrono/0.4.0/")]
 
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]

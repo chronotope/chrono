@@ -4,6 +4,7 @@ and also the following people (in ascending order):
 Alex Mikhalev <alexmikhalevalex@gmail.com>
 Alexander Bulaev <alexbool@yandex-team.ru>
 Ashley Mannix <ashleymannix@live.com.au>
+Ben Boeckel <mathstuf@gmail.com>
 Ben Eills <ben@beneills.com>
 Brandon W Maister <bwm@knewton.com>
 Colin Ray <r.colinray@gmail.com>
