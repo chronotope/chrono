@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.3.1"
+version = "0.4.0"
 authors = ["Kang Seonghoon <public+rust@mearie.org>"]
 
 description = "Date and time library for Rust"
@@ -27,4 +27,5 @@ serde = { version = "1", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }
+serde_derive = { version = "1" }
 bincode = { version = "0.8.0" }
