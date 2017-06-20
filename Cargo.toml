@@ -28,4 +28,4 @@ serde = { version = "1", optional = true }
 [dev-dependencies]
 serde_json = { version = "1" }
 serde_derive = { version = "1" }
-bincode = { version = "0.8.0", features = ["serde"], default-features = false }
+bincode = { version = "0.8.0" }
