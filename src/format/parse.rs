@@ -1,5 +1,4 @@
-// This is a part of rust-chrono.
-// Copyright (c) 2015, Kang Seonghoon.
+// This is a part of Chrono.
 // Portions copyright (c) 2015, John Nagle.
 // See README.md and LICENSE.txt for details.
 
@@ -219,7 +218,13 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
+            Item::OwnedLiteral(ref prefix) => {
+                if s.len() < prefix.len() { return Err(TOO_SHORT); }
+                if !s.starts_with(&prefix[..]) { return Err(INVALID); }
+                s = &s[prefix.len()..];
+            }
+
+            Item::Space(_) | Item::OwnedSpace(_) => {
                 s = s.trim_left();
             }
 
@@ -248,6 +253,9 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                     Second         => (2, false, Parsed::set_second),
                     Nanosecond     => (9, false, Parsed::set_nanosecond),
                     Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
+
+                    // for the future expansion
+                    Internal(ref int) => match int._dummy {},
                 };
 
                 s = s.trim_left();
@@ -325,6 +333,9 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
                     RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
                     RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+
+                    // for the future expansion
+                    Internal(ref int) => match int._dummy {},
                 }
             }
 
@@ -359,9 +370,11 @@ fn test_parse() {
         ($fmt:expr, $items:expr; $err:tt) => (
             assert_eq!(parse_all($fmt, &$items), Err($err))
         );
-        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (
-            assert_eq!(parse_all($fmt, &$items), Ok(Parsed { $($k: Some($v),)* ..Parsed::new() }))
-        );
+        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (#[allow(unused_mut)] {
+            let mut expected = Parsed::new();
+            $(expected.$k = Some($v);)*
+            assert_eq!(parse_all($fmt, &$items), Ok(expected))
+        });
     }
 
     // empty string
@@ -590,8 +603,8 @@ fn test_parse() {
 #[cfg(test)]
 #[test]
 fn test_rfc2822() {
-    use datetime::DateTime;
-    use offset::fixed::FixedOffset;
+    use DateTime;
+    use offset::FixedOffset;
     use super::*;
     use super::NOT_ENOUGH;
 
@@ -642,40 +655,40 @@ fn test_rfc2822() {
 #[cfg(test)]
 #[test]
 fn parse_rfc850() {
-    use ::{UTC, TimeZone};
+    use ::{Utc, TimeZone};
 
     static RFC850_FMT: &'static str =  "%A, %d-%b-%y %T GMT";
 
     let dt_str = "Sunday, 06-Nov-94 08:49:37 GMT";
-    let dt = UTC.ymd(1994, 11, 6).and_hms(8, 49, 37);
+    let dt = Utc.ymd(1994, 11, 6).and_hms(8, 49, 37);
 
     // Check that the format is what we expect
     assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
 
     // Check that it parses correctly
-    assert_eq!(Ok(dt), UTC.datetime_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT));
+    assert_eq!(Ok(dt), Utc.datetime_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT));
 
     // Check that the rest of the weekdays parse correctly (this test originally failed because
     // Sunday parsed incorrectly).
     let testdates = [
-        (UTC.ymd(1994, 11, 7).and_hms(8, 49, 37),  "Monday, 07-Nov-94 08:49:37 GMT"),
-        (UTC.ymd(1994, 11, 8).and_hms(8, 49, 37),  "Tuesday, 08-Nov-94 08:49:37 GMT"),
-        (UTC.ymd(1994, 11, 9).and_hms(8, 49, 37),  "Wednesday, 09-Nov-94 08:49:37 GMT"),
-        (UTC.ymd(1994, 11, 10).and_hms(8, 49, 37), "Thursday, 10-Nov-94 08:49:37 GMT"),
-        (UTC.ymd(1994, 11, 11).and_hms(8, 49, 37), "Friday, 11-Nov-94 08:49:37 GMT"),
-        (UTC.ymd(1994, 11, 12).and_hms(8, 49, 37), "Saturday, 12-Nov-94 08:49:37 GMT"),
+        (Utc.ymd(1994, 11, 7).and_hms(8, 49, 37),  "Monday, 07-Nov-94 08:49:37 GMT"),
+        (Utc.ymd(1994, 11, 8).and_hms(8, 49, 37),  "Tuesday, 08-Nov-94 08:49:37 GMT"),
+        (Utc.ymd(1994, 11, 9).and_hms(8, 49, 37),  "Wednesday, 09-Nov-94 08:49:37 GMT"),
+        (Utc.ymd(1994, 11, 10).and_hms(8, 49, 37), "Thursday, 10-Nov-94 08:49:37 GMT"),
+        (Utc.ymd(1994, 11, 11).and_hms(8, 49, 37), "Friday, 11-Nov-94 08:49:37 GMT"),
+        (Utc.ymd(1994, 11, 12).and_hms(8, 49, 37), "Saturday, 12-Nov-94 08:49:37 GMT"),
     ];
 
     for val in &testdates {
-        assert_eq!(Ok(val.0), UTC.datetime_from_str(val.1, RFC850_FMT));
+        assert_eq!(Ok(val.0), Utc.datetime_from_str(val.1, RFC850_FMT));
     }
 }
 
 #[cfg(test)]
 #[test]
 fn test_rfc3339() {
-    use datetime::DateTime;
-    use offset::fixed::FixedOffset;
+    use DateTime;
+    use offset::FixedOffset;
     use super::*;
 
     // Test data - (input, Ok(expected result after parse and format) or Err(error code))

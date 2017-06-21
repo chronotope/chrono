@@ -1,14 +1,118 @@
 ChangeLog for Chrono
 ====================
 
-This documents all notable changes to [Chrono](https://github.com/lifthrasiir/rust-chrono).
+This documents all notable changes to [Chrono](https://github.com/chronotope/chrono).
 
 Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.3.1 (2017-05-02)
+
+### Added
+
+- `Weekday` now implements `FromStr`, `Serialize` and `Deserialize`. (#113)
+
+  The syntax is identical to `%A`, i.e. either the shortest or the longest form of English names.
+
+### Changed
+
+- Serde 1.0 is now supported. (#142)
+
+  This is technically a breaking change because Serde 0.9 and 1.0 are not compatible,
+  but this time we decided not to issue a minor version because
+  we have already seen Serde 0.8 and 0.9 compatibility problems even after 0.3.0 and
+  a new minor version turned out to be not very helpful for this kind of issues.
+
+### Fixed
+
+- Fixed a bug that the leap second can be mapped wrongly in the local time zone.
+  Only occurs when the local time zone is behind UTC. (#130)
+
+## 0.3.0 (2017-02-07)
+
+The project has moved to the [Chronotope](https://github.com/chronotope/) organization.
+
+### Added
+
+- `chrono::prelude` module has been added. All other glob imports are now discouraged.
+
+- `FixedOffset` can be added to or subtracted from any timelike types.
+
+    - `FixedOffset::local_minus_utc` and `FixedOffset::utc_minus_local` methods have been added.
+      Note that the old `Offset::local_minus_utc` method is gone; see below.
+
+- Serde support for non-self-describing formats like Bincode is added. (#89)
+
+- Added `Item::Owned{Literal,Space}` variants for owned formatting items. (#76)
+
+- Formatting items and the `Parsed` type have been slightly adjusted so that
+  they can be internally extended without breaking any compatibility.
+
+- `Weekday` is now `Hash`able. (#109)
+
+- `ParseError` now implements `Eq` as well as `PartialEq`. (#114)
+
+- More documentation improvements. (#101, #108, #112)
+
+### Changed
+
+- Chrono now only supports Rust 1.13.0 or later (previously: Rust 1.8.0 or later).
+
+- Serde 0.9 is now supported.
+  Due to the API difference, support for 0.8 or older is discontinued. (#122)
+
+- Rustc-serialize implementations are now on par with corresponding Serde implementations.
+  They both standardize on the `std::fmt::Debug` textual output.
+
+  **This is a silent breaking change (hopefully the last though).**
+  You should be prepared for the format change if you depended on rustc-serialize.
+
+- `Offset::local_minus_utc` is now `Offset::fix`, and returns `FixedOffset` instead of a duration.
+
+  This makes every time zone operation operate within a bias less than one day,
+  and vastly simplifies many logics.
+
+- `chrono::format::format` now receives `FixedOffset` instead of `time::Duration`.
+
+- The following methods and implementations have been renamed and older names have been *removed*.
+  The older names will be reused for the same methods with `std::time::Duration` in the future.
+
+    - `checked_*` → `checked_*_signed` in `Date`, `DateTime`, `NaiveDate` and `NaiveDateTime` types
+
+    - `overflowing_*` → `overflowing_*_signed` in the `NaiveTime` type
+
+    - All subtraction implementations between two time instants have been moved to
+      `signed_duration_since`, following the naming in `std::time`.
+
+### Fixed
+
+- Fixed a panic when the `Local` offset receives a leap second. (#123)
+
+### Removed
+
+- Rustc-serialize support for `Date<Tz>` types and all offset types has been dropped.
+
+  These implementations were automatically derived and never had been in a good shape.
+  Moreover there are no corresponding Serde implementations, limiting their usefulness.
+  In the future they may be revived with more complete implementations.
+
+- The following method aliases deprecated in the 0.2 branch have been removed.
+
+    - `DateTime::num_seconds_from_unix_epoch` (→ `DateTime::timestamp`)
+    - `NaiveDateTime::from_num_seconds_from_unix_epoch` (→ `NaiveDateTime::from_timestamp`)
+    - `NaiveDateTime::from_num_seconds_from_unix_epoch_opt` (→ `NaiveDateTime::from_timestamp_opt`)
+    - `NaiveDateTime::num_seconds_unix_epoch` (→ `NaiveDateTime::timestamp`)
+
+- Formatting items are no longer `Copy`, except for `chrono::format::Pad`.
+
+- `chrono::offset::add_with_leapsecond` has been removed.
+  Use a direct addition with `FixedOffset` instead.
+
 ## 0.2.25 (2016-08-04)
+
+This is the last version officially supports Rust 1.12.0 or older.
 
 (0.2.24 was accidentally uploaded without a proper check for warnings in the default state,
 and replaced by 0.2.25 very shortly. Duh.)

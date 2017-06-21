@@ -1,6 +1,5 @@
-// This is a part of rust-chrono.
-// Copyright (c) 2014, Kang Seonghoon.
-// Copyright 2013-2014 The Rust Project Developers.
+// This is a part of Chrono.
+// Portions Copyright 2013-2014 The Rust Project Developers.
 // See README.md and LICENSE.txt for details.
 
 //! Integer division utilities. (Shamelessly copied from [num](https://github.com/rust-lang/num/))

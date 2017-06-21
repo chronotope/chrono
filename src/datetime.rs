@@ -1,37 +1,69 @@
-// This is a part of rust-chrono.
-// Copyright (c) 2014-2015, Kang Seonghoon.
+// This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * ISO 8601 date and time with time zone.
- */
+//! ISO 8601 date and time with time zone.
 
 use std::{str, fmt, hash};
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
+#[cfg(feature = "rustc-serialize")]
+use std::ops::Deref;
+use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
-use offset::{TimeZone, Offset, add_with_leapsecond};
-use offset::utc::UTC;
-use offset::local::Local;
-use offset::fixed::FixedOffset;
-use duration::Duration;
-use naive::time::NaiveTime;
-use naive::datetime::NaiveDateTime;
-use date::Date;
+use offset::{TimeZone, Offset, Utc, Local, FixedOffset};
+use naive::{NaiveTime, NaiveDateTime, IsoWeek};
+use Date;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
 /// ISO 8601 combined date and time with time zone.
+///
+/// There are some constructors implemented here (the `from_*` methods), but
+/// the general-purpose constructors are all via the methods on the
+/// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
 }
 
+/// A DateTime that can be deserialized from a timestamp
+///
+/// A timestamp here is seconds since the epoch
+#[cfg(feature = "rustc-serialize")]
+pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
+
+#[cfg(feature = "rustc-serialize")]
+impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
+    /// Pull the inner DateTime<Tz> out
+    fn from(obj: TsSeconds<Tz>) -> DateTime<Tz> {
+        obj.0
+    }
+}
+
+#[cfg(feature = "rustc-serialize")]
+impl<Tz: TimeZone> Deref for TsSeconds<Tz> {
+    type Target = DateTime<Tz>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
     /// The local datetime should be constructed via the `TimeZone` trait.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
+    ///
+    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
+    /// assert_eq!(Utc.timestamp(61, 0), dt);
+    /// ~~~~
     //
     // note: this constructor is purposedly not named to `new` to discourage the direct usage.
     #[inline]
@@ -49,7 +81,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Unlike `date`, this is not associated to the time zone.
     #[inline]
     pub fn time(&self) -> NaiveTime {
-        add_with_leapsecond(&self.datetime.time(), &self.offset.local_minus_utc())
+        self.datetime.time() + self.offset.fix()
     }
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
@@ -89,12 +121,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp_subsec_nanos()
     }
 
-    /// *Deprecated*: Same to `DateTime::timestamp`.
-    #[inline]
-    pub fn num_seconds_from_unix_epoch(&self) -> i64 {
-        self.timestamp()
-    }
-
     /// Retrieves an associated offset from UTC.
     #[inline]
     pub fn offset<'a>(&'a self) -> &'a Tz::Offset {
@@ -118,8 +144,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add(self, rhs: Duration) -> Option<DateTime<Tz>> {
-        let datetime = try_opt!(self.datetime.checked_add(rhs));
+    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+        let datetime = try_opt!(self.datetime.checked_add_signed(rhs));
         Some(DateTime { datetime: datetime, offset: self.offset })
     }
 
@@ -127,9 +153,16 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub(self, rhs: Duration) -> Option<DateTime<Tz>> {
-        let datetime = try_opt!(self.datetime.checked_sub(rhs));
+    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+        let datetime = try_opt!(self.datetime.checked_sub_signed(rhs));
         Some(DateTime { datetime: datetime, offset: self.offset })
+    }
+
+    /// Subtracts another `DateTime` from the current date and time.
+    /// This does not overflow or underflow at all.
+    #[inline]
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
+        self.datetime.signed_duration_since(rhs.datetime)
     }
 
     /// Returns a view to the naive UTC datetime.
@@ -141,7 +174,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns a view to the naive local datetime.
     #[inline]
     pub fn naive_local(&self) -> NaiveDateTime {
-        add_with_leapsecond(&self.datetime, &self.offset.local_minus_utc())
+        self.datetime + self.offset.fix()
     }
 }
 
@@ -175,7 +208,7 @@ impl DateTime<FixedOffset> {
 
     /// Parses a string with the specified format string and
     /// returns a new `DateTime` with a parsed `FixedOffset`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// See also `Offset::datetime_from_str` which gives a local `DateTime` on specific time zone.
@@ -208,7 +241,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -225,7 +258,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     #[inline] fn ordinal(&self) -> u32 { self.naive_local().ordinal() }
     #[inline] fn ordinal0(&self) -> u32 { self.naive_local().ordinal0() }
     #[inline] fn weekday(&self) -> Weekday { self.naive_local().weekday() }
-    #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.naive_local().isoweekdate() }
+    #[inline] fn iso_week(&self) -> IsoWeek { self.naive_local().iso_week() }
 
     #[inline]
     fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
@@ -315,28 +348,21 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) { self.datetime.hash(state) }
 }
 
-impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: Duration) -> DateTime<Tz> {
-        self.checked_add(rhs).expect("`DateTime + Duration` overflowed")
+    fn add(self, rhs: OldDuration) -> DateTime<Tz> {
+        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone, Tz2: TimeZone> Sub<DateTime<Tz2>> for DateTime<Tz> {
-    type Output = Duration;
-
-    #[inline]
-    fn sub(self, rhs: DateTime<Tz2>) -> Duration { self.datetime - rhs.datetime }
-}
-
-impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn sub(self, rhs: Duration) -> DateTime<Tz> {
-        self.checked_sub(rhs).expect("`DateTime - Duration` overflowed")
+    fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
+        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
     }
 }
 
@@ -379,11 +405,11 @@ impl str::FromStr for DateTime<FixedOffset> {
     }
 }
 
-impl str::FromStr for DateTime<UTC> {
+impl str::FromStr for DateTime<Utc> {
     type Err = ParseError;
 
-    fn from_str(s: &str) -> ParseResult<DateTime<UTC>> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&UTC))
+    fn from_str(s: &str) -> ParseResult<DateTime<Utc>> {
+        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Utc))
     }
 }
 
@@ -395,122 +421,420 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
+    where FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
+          FFixed: Fn(&DateTime<FixedOffset>) -> Result<String, E>,
+          E: ::std::fmt::Debug
+{
+    assert_eq!(to_string_utc(&Utc.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+               Some(r#""2014-07-24T12:34:06Z""#.into()));
+
+    assert_eq!(to_string_fixed(&FixedOffset::east(3660).ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+               Some(r#""2014-07-24T12:34:06+01:01""#.into()));
+    assert_eq!(to_string_fixed(&FixedOffset::east(3650).ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
+               Some(r#""2014-07-24T12:34:06+01:00:50""#.into()));
+}
+
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
+                                                fixed_from_str: FFixed,
+                                                local_from_str: FLocal)
+    where FUtc: Fn(&str) -> Result<DateTime<Utc>, E>,
+          FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<DateTime<Local>, E>,
+          E: ::std::fmt::Debug
+{
+    // should check against the offset as well (the normal DateTime comparison will ignore them)
+    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
+        dt.as_ref().map(|dt| (dt, dt.offset()))
+    }
+
+    assert_eq!(norm(&utc_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
+               norm(&Some(Utc.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
+               norm(&Some(Utc.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+
+    assert_eq!(norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
+               norm(&Some(FixedOffset::east(0).ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
+               norm(&Some(FixedOffset::east(60*60 + 23*60).ymd(2014, 7, 24).and_hms(13, 57, 6))));
+
+    // we don't know the exact local offset but we can check that
+    // the conversion didn't change the instant itself
+    assert_eq!(local_from_str(r#""2014-07-24T12:34:06Z""#)
+                   .expect("local shouuld parse"),
+               Utc.ymd(2014, 7, 24).and_hms(12, 34, 6));
+    assert_eq!(local_from_str(r#""2014-07-24T13:57:06+01:23""#)
+                   .expect("local should parse with offset"),
+               Utc.ymd(2014, 7, 24).and_hms(12, 34, 6));
+
+    assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+    assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+}
+
+#[cfg(all(test, feature = "rustc-serialize"))]
+fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
+                                                           fixed_from_str: FFixed,
+                                                           local_from_str: FLocal)
+    where FUtc: Fn(&str) -> Result<TsSeconds<Utc>, E>,
+          FFixed: Fn(&str) -> Result<TsSeconds<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<TsSeconds<Local>, E>,
+          E: ::std::fmt::Debug
+{
+    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
+        dt.as_ref().map(|dt| (dt, dt.offset()))
+    }
+
+    assert_eq!(norm(&utc_from_str("0").ok().map(DateTime::from)),
+               norm(&Some(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&utc_from_str("-1").ok().map(DateTime::from)),
+               norm(&Some(Utc.ymd(1969, 12, 31).and_hms(23, 59, 59))));
+
+    assert_eq!(norm(&fixed_from_str("0").ok().map(DateTime::from)),
+               norm(&Some(FixedOffset::east(0).ymd(1970, 1, 1).and_hms(0, 0, 0))));
+    assert_eq!(norm(&fixed_from_str("-1").ok().map(DateTime::from)),
+               norm(&Some(FixedOffset::east(0).ymd(1969, 12, 31).and_hms(23, 59, 59))));
+
+    assert_eq!(*fixed_from_str("0").expect("0 timestamp should parse"),
+               Utc.ymd(1970, 1, 1).and_hms(0, 0, 0));
+    assert_eq!(*local_from_str("-1").expect("-1 timestamp should parse"),
+               Utc.ymd(1969, 12, 31).and_hms(23, 59, 59));
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
-    use super::DateTime;
-    use offset::TimeZone;
+    use std::fmt;
+    use super::{DateTime, TsSeconds};
+    use offset::{TimeZone, LocalResult, Utc, Local, FixedOffset};
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
-    // TODO the current serialization format is NEVER intentionally defined.
-    // in the future it is likely to be redefined to more sane and reasonable format.
-
-    impl<Tz: TimeZone> Encodable for DateTime<Tz> where Tz::Offset: Encodable {
+    impl<Tz: TimeZone> Encodable for DateTime<Tz> {
         fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            s.emit_struct("DateTime", 2, |s| {
-                try!(s.emit_struct_field("datetime", 0, |s| self.datetime.encode(s)));
-                try!(s.emit_struct_field("offset", 1, |s| self.offset.encode(s)));
-                Ok(())
-            })
+            format!("{:?}", self).encode(s)
         }
     }
 
-    impl<Tz: TimeZone> Decodable for DateTime<Tz> where Tz::Offset: Decodable {
-        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Tz>, D::Error> {
-            d.read_struct("DateTime", 2, |d| {
-                let datetime = try!(d.read_struct_field("datetime", 0, Decodable::decode));
-                let offset = try!(d.read_struct_field("offset", 1, Decodable::decode));
-                Ok(DateTime::from_utc(datetime, offset))
-            })
+    // try!-like function to convert a LocalResult into a serde-ish Result
+    fn from<T, D>(me: LocalResult<T>, d: &mut D) -> Result<T, D::Error>
+        where D: Decoder,
+              T: fmt::Display,
+    {
+        match me {
+            LocalResult::None => Err(d.error(
+                "value is not a legal timestamp")),
+            LocalResult::Ambiguous(..) => Err(d.error(
+                "value is an ambiguous timestamp")),
+            LocalResult::Single(val) => Ok(val)
         }
     }
+
+    impl Decodable for DateTime<FixedOffset> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<FixedOffset>, D::Error> {
+            d.read_str()?.parse::<DateTime<FixedOffset>>()
+                    .map_err(|_| d.error("invalid date and time"))
+        }
+    }
+
+    impl Decodable for TsSeconds<FixedOffset> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<FixedOffset>, D::Error> {
+            from(FixedOffset::east(0).timestamp_opt(d.read_i64()?, 0), d)
+                .map(|dt| TsSeconds(dt))
+        }
+    }
+
+    impl Decodable for DateTime<Utc> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Utc>, D::Error> {
+            d.read_str()?
+                .parse::<DateTime<FixedOffset>>()
+                .map(|dt| dt.with_timezone(&Utc))
+                .map_err(|_| d.error("invalid date and time"))
+        }
+    }
+
+    impl Decodable for TsSeconds<Utc> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<Utc>, D::Error> {
+            from(Utc.timestamp_opt(d.read_i64()?, 0), d)
+                .map(|dt| TsSeconds(dt))
+        }
+    }
+
+    impl Decodable for DateTime<Local> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Local>, D::Error> {
+            match d.read_str()?.parse::<DateTime<FixedOffset>>() {
+                Ok(dt) => Ok(dt.with_timezone(&Local)),
+                Err(_) => Err(d.error("invalid date and time")),
+            }
+        }
+    }
+
+    impl Decodable for TsSeconds<Local> {
+        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<Local>, D::Error> {
+            from(Utc.timestamp_opt(d.read_i64()?, 0), d)
+                .map(|dt| TsSeconds(dt.with_timezone(&Local)))
+        }
+    }
+
+    #[cfg(test)] use rustc_serialize::json;
 
     #[test]
     fn test_encodable() {
-        use offset::utc::UTC;
-        use rustc_serialize::json::encode;
-
-        assert_eq!(
-            encode(&UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-            Some(concat!(r#"{"datetime":{"date":{"ymdf":16501977},"#,
-                                      r#""time":{"secs":45246,"frac":0}},"#,
-                          r#""offset":{}}"#).into()));
+        super::test_encodable_json(json::encode, json::encode);
     }
 
     #[test]
     fn test_decodable() {
-        use offset::utc::UTC;
-        use rustc_serialize::json;
-
-        let decode = |s: &str| json::decode::<DateTime<UTC>>(s);
-
-        assert_eq!(
-            decode(r#"{"datetime":{"date":{"ymdf":16501977},
-                                   "time":{"secs":45246,"frac":0}},
-                       "offset":{}}"#).ok(),
-            Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
-
-        assert_eq!(
-            decode(r#"{"datetime":{"date":{"ymdf":0},
-                                   "time":{"secs":0,"frac":0}},
-                       "offset":{}}"#).ok(),
-            None);
+        super::test_decodable_json(json::decode, json::decode, json::decode);
     }
+
+    #[test]
+    fn test_decodable_timestamps() {
+        super::test_decodable_json_timestamps(json::decode, json::decode, json::decode);
+    }
+
 }
 
+/// Ser/de helpers
+///
+/// The various modules in here are intended to be used with serde's [`with`
+/// annotation](https://serde.rs/attributes.html#field-attributes).
 #[cfg(feature = "serde")]
-mod serde {
+pub mod serde {
+    use std::fmt;
     use super::DateTime;
-    use offset::TimeZone;
-    use offset::utc::UTC;
-    use offset::local::Local;
-    use offset::fixed::FixedOffset;
-    use std::fmt::Display;
-    use serde::{ser, de};
+    use offset::{TimeZone, LocalResult, Utc, Local, FixedOffset};
+    use serdelib::{ser, de};
+
+    /// Ser/de to/from timestamps in seconds
+    ///
+    /// Intended for use with `serde`'s `with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # // We mark this ignored so that we can test on 1.13 (which does not
+    /// # // support custom derive), and run tests with --ignored on beta and
+    /// # // nightly to actually trigger these.
+    /// #
+    /// # #[macro_use] extern crate serde_derive;
+    /// # #[macro_use] extern crate serde_json;
+    /// # extern crate chrono;
+    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// use chrono::serde::ts_seconds;
+    /// #[derive(Deserialize, Serialize)]
+    /// struct S {
+    ///     #[serde(with = "ts_seconds")]
+    ///     time: DateTime<Utc>
+    /// }
+    ///
+    /// # fn example() -> Result<S, serde_json::Error> {
+    /// let time = Utc.ymd(2015, 5, 15).and_hms(10, 0, 0);
+    /// let my_s = S {
+    ///     time: time.clone(),
+    /// };
+    ///
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":1431684000}"#);
+    /// let my_s: S = serde_json::from_str(&as_string)?;
+    /// assert_eq!(my_s.time, time);
+    /// # Ok(my_s)
+    /// # }
+    /// # fn main() { example().unwrap(); }
+    /// ```
+    pub mod ts_seconds {
+        use std::fmt;
+        use serdelib::{ser, de};
+
+        use {DateTime, Utc, FixedOffset};
+        use offset::TimeZone;
+        use super::from;
+
+        /// Deserialize a DateTime from a seconds timestamp
+        ///
+        /// Intended for use with `serde`s `deserialize_with` attribute.
+        ///
+        /// # Example:
+        ///
+        /// ```rust
+        /// # // We mark this ignored so that we can test on 1.13 (which does not
+        /// # // support custom derive), and run tests with --ignored on beta and
+        /// # // nightly to actually trigger these.
+        /// #
+        /// # #[macro_use] extern crate serde_derive;
+        /// # #[macro_use] extern crate serde_json;
+        /// # extern crate chrono;
+        /// # use chrono::{DateTime, Utc};
+        /// use chrono::serde::ts_seconds::deserialize as from_ts;
+        /// #[derive(Deserialize)]
+        /// struct S {
+        ///     #[serde(deserialize_with = "from_ts")]
+        ///     time: DateTime<Utc>
+        /// }
+        ///
+        /// # fn example() -> Result<S, serde_json::Error> {
+        /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
+        /// # Ok(my_s)
+        /// # }
+        /// # fn main() { example().unwrap(); }
+        /// ```
+        pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
+            where D: de::Deserializer<'de>
+        {
+            Ok(try!(d.deserialize_i64(SecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))))
+        }
+
+        /// Serialize a UTC datetime into an integer number of seconds since the epoch
+        ///
+        /// Intended for use with `serde`s `serialize_with` attribute.
+        ///
+        /// # Example:
+        ///
+        /// ```rust
+        /// # // We mark this ignored so that we can test on 1.13 (which does not
+        /// # // support custom derive), and run tests with --ignored on beta and
+        /// # // nightly to actually trigger these.
+        /// #
+        /// # #[macro_use] extern crate serde_derive;
+        /// # #[macro_use] extern crate serde_json;
+        /// # extern crate chrono;
+        /// # use chrono::{TimeZone, DateTime, Utc};
+        /// use chrono::serde::ts_seconds::serialize as to_ts;
+        /// #[derive(Serialize)]
+        /// struct S {
+        ///     #[serde(serialize_with = "to_ts")]
+        ///     time: DateTime<Utc>
+        /// }
+        ///
+        /// # fn example() -> Result<String, serde_json::Error> {
+        /// let my_s = S {
+        ///     time: Utc.ymd(2015, 5, 15).and_hms(10, 0, 0),
+        /// };
+        /// let as_string = serde_json::to_string(&my_s)?;
+        /// assert_eq!(as_string, r#"{"time":1431684000}"#);
+        /// # Ok(as_string)
+        /// # }
+        /// # fn main() { example().unwrap(); }
+        /// ```
+        pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+            where S: ser::Serializer
+        {
+            serializer.serialize_i64(dt.timestamp())
+        }
+
+        struct SecondsTimestampVisitor;
+
+        impl<'de> de::Visitor<'de> for SecondsTimestampVisitor {
+            type Value = DateTime<FixedOffset>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
+            {
+                write!(formatter, "a unix timestamp in seconds")
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_i64<E>(self, value: i64) -> Result<DateTime<FixedOffset>, E>
+                where E: de::Error
+            {
+                from(FixedOffset::east(0).timestamp_opt(value, 0), value)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_u64<E>(self, value: u64) -> Result<DateTime<FixedOffset>, E>
+                where E: de::Error
+            {
+                from(FixedOffset::east(0).timestamp_opt(value as i64, 0), value)
+            }
+        }
+
+    }
 
     // TODO not very optimized for space (binary formats would want something better)
 
-    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz>
-        where Tz::Offset: Display
-    {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
+            struct FormatWrapped<'a, D: 'a> {
+                inner: &'a D
+            }
+
+            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    self.inner.fmt(f)
+                }
+            }
+
             // Debug formatting is correct RFC3339, and it allows Zulu.
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(&FormatWrapped { inner: &self })
+        }
+    }
+
+    // try!-like function to convert a LocalResult into a serde-ish Result
+    fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
+        where E: de::Error,
+              V: fmt::Display,
+              T: fmt::Display,
+    {
+        match me {
+            LocalResult::None => Err(E::custom(
+                format!("value is not a legal timestamp: {}", ts))),
+            LocalResult::Ambiguous(min, max) => Err(E::custom(
+                format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
+                        ts, min, max))),
+            LocalResult::Single(val) => Ok(val)
         }
     }
 
     struct DateTimeVisitor;
 
-    impl de::Visitor for DateTimeVisitor {
+    impl<'de> de::Visitor<'de> for DateTimeVisitor {
         type Value = DateTime<FixedOffset>;
 
-        fn visit_str<E>(&mut self, value: &str) -> Result<DateTime<FixedOffset>, E>
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
+        {
+            write!(formatter, "a formatted date and time string or a unix timestamp")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
         }
     }
 
-    impl de::Deserialize for DateTime<FixedOffset> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+    /// Deserialize a value that optionally includes a timezone offset in its
+    /// string representation
+    ///
+    /// The serialized value can be either a string representation or a unix
+    /// timestamp
+    impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(DateTimeVisitor)
         }
     }
 
-    impl de::Deserialize for DateTime<UTC> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+    /// Deserialize into a UTC value
+    ///
+    /// The serialized value can be either a string representation or a unix
+    /// timestamp
+    impl<'de> de::Deserialize<'de> for DateTime<Utc> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer<'de>
         {
-            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&UTC))
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Utc))
         }
     }
 
-    impl de::Deserialize for DateTime<Local> {
-        fn deserialize<D>(deserializer: &mut D) -> Result<Self, D::Error>
-            where D: de::Deserializer
+    /// Deserialize a value that includes no timezone in its string
+    /// representation
+    ///
+    /// The serialized value can be either a string representation or a unix
+    /// timestamp
+    impl<'de> de::Deserialize<'de> for DateTime<Local> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where D: de::Deserializer<'de>
         {
             deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
         }
@@ -521,34 +845,24 @@ mod serde {
 
     #[test]
     fn test_serde_serialize() {
-        use self::serde_json::to_string;
-
-        assert_eq!(to_string(&UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-                   Some(r#""2014-07-24T12:34:06Z""#.into()));
+        super::test_encodable_json(self::serde_json::to_string, self::serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        use self::serde_json;
-
-        let from_str = |s: &str| serde_json::from_str::<DateTime<UTC>>(s);
-
-        assert_eq!(from_str(r#""2014-07-24T12:34:06Z""#).ok(),
-                   Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6)));
-
-        assert!(from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+        super::test_decodable_json(|input| self::serde_json::from_str(&input), |input| self::serde_json::from_str(&input),
+                                   |input| self::serde_json::from_str(&input));
     }
 
     #[test]
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use self::bincode::SizeLimit;
-        use self::bincode::serde::{serialize, deserialize};
+        use self::bincode::{Infinite, serialize, deserialize};
 
-        let dt = UTC.ymd(2014, 7, 24).and_hms(12, 34, 6);
-        let encoded = serialize(&dt, SizeLimit::Infinite).unwrap();
-        let decoded: DateTime<UTC> = deserialize(&encoded).unwrap();
+        let dt = Utc.ymd(2014, 7, 24).and_hms(12, 34, 6);
+        let encoded = serialize(&dt, Infinite).unwrap();
+        let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
         assert_eq!(dt, decoded);
         assert_eq!(dt.offset(), decoded.offset());
     }
@@ -558,57 +872,53 @@ mod serde {
 mod tests {
     use super::DateTime;
     use Datelike;
-    use naive::time::NaiveTime;
-    use naive::date::NaiveDate;
-    use duration::Duration;
-    use offset::TimeZone;
-    use offset::utc::UTC;
-    use offset::local::Local;
-    use offset::fixed::FixedOffset;
+    use naive::{NaiveTime, NaiveDate};
+    use offset::{TimeZone, Utc, Local, FixedOffset};
+    use oldtime::Duration;
 
     #[test]
     #[allow(non_snake_case)]
     fn test_datetime_offset() {
-        let EST = FixedOffset::west(5*60*60);
-        let EDT = FixedOffset::west(4*60*60);
-        let KST = FixedOffset::east(9*60*60);
+        let Est = FixedOffset::west(5*60*60);
+        let Edt = FixedOffset::west(4*60*60);
+        let Kst = FixedOffset::east(9*60*60);
 
-        assert_eq!(format!("{}", UTC.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+        assert_eq!(format!("{}", Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06 07:08:09 UTC");
-        assert_eq!(format!("{}", EDT.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+        assert_eq!(format!("{}", Edt.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06 07:08:09 -04:00");
-        assert_eq!(format!("{}", KST.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+        assert_eq!(format!("{}", Kst.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06 07:08:09 +09:00");
-        assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+        assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06T07:08:09Z");
-        assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+        assert_eq!(format!("{:?}", Edt.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06T07:08:09-04:00");
-        assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(7, 8, 9)),
+        assert_eq!(format!("{:?}", Kst.ymd(2014, 5, 6).and_hms(7, 8, 9)),
                    "2014-05-06T07:08:09+09:00");
 
         // edge cases
-        assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(0, 0, 0)),
+        assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(0, 0, 0)),
                    "2014-05-06T00:00:00Z");
-        assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(0, 0, 0)),
+        assert_eq!(format!("{:?}", Edt.ymd(2014, 5, 6).and_hms(0, 0, 0)),
                    "2014-05-06T00:00:00-04:00");
-        assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(0, 0, 0)),
+        assert_eq!(format!("{:?}", Kst.ymd(2014, 5, 6).and_hms(0, 0, 0)),
                    "2014-05-06T00:00:00+09:00");
-        assert_eq!(format!("{:?}", UTC.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(23, 59, 59)),
                    "2014-05-06T23:59:59Z");
-        assert_eq!(format!("{:?}", EDT.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        assert_eq!(format!("{:?}", Edt.ymd(2014, 5, 6).and_hms(23, 59, 59)),
                    "2014-05-06T23:59:59-04:00");
-        assert_eq!(format!("{:?}", KST.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        assert_eq!(format!("{:?}", Kst.ymd(2014, 5, 6).and_hms(23, 59, 59)),
                    "2014-05-06T23:59:59+09:00");
 
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9), EDT.ymd(2014, 5, 6).and_hms(3, 8, 9));
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) + Duration::seconds(3600 + 60 + 1),
-                   UTC.ymd(2014, 5, 6).and_hms(8, 9, 10));
-        assert_eq!(UTC.ymd(2014, 5, 6).and_hms(7, 8, 9) - EDT.ymd(2014, 5, 6).and_hms(10, 11, 12),
+        let dt = Utc.ymd(2014, 5, 6).and_hms(7, 8, 9);
+        assert_eq!(dt, Edt.ymd(2014, 5, 6).and_hms(3, 8, 9));
+        assert_eq!(dt + Duration::seconds(3600 + 60 + 1), Utc.ymd(2014, 5, 6).and_hms(8, 9, 10));
+        assert_eq!(dt.signed_duration_since(Edt.ymd(2014, 5, 6).and_hms(10, 11, 12)),
                    Duration::seconds(-7*3600 - 3*60 - 3));
 
-        assert_eq!(*UTC.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), UTC);
-        assert_eq!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), EDT);
-        assert!(*EDT.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != EST);
+        assert_eq!(*Utc.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), Utc);
+        assert_eq!(*Edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), Edt);
+        assert!(*Edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != Est);
     }
 
     #[test]
@@ -638,7 +948,7 @@ mod tests {
     #[test]
     fn test_datetime_with_timezone() {
         let local_now = Local::now();
-        let utc_now = local_now.with_timezone(&UTC);
+        let utc_now = local_now.with_timezone(&Utc);
         let local_now2 = utc_now.with_timezone(&Local);
         assert_eq!(local_now, local_now2);
     }
@@ -647,9 +957,9 @@ mod tests {
     #[allow(non_snake_case)]
     fn test_datetime_rfc2822_and_rfc3339() {
         let EDT = FixedOffset::east(5*60*60);
-        assert_eq!(UTC.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc2822(),
+        assert_eq!(Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc2822(),
                    "Wed, 18 Feb 2015 23:16:09 +0000");
-        assert_eq!(UTC.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc3339(),
+        assert_eq!(Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc3339(),
                    "2015-02-18T23:16:09+00:00");
         assert_eq!(EDT.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc2822(),
                    "Wed, 18 Feb 2015 23:16:09 +0500");
@@ -678,11 +988,11 @@ mod tests {
                    Ok(FixedOffset::west(10 * 3600).ymd(2015, 2, 18).and_hms_milli(13, 16, 9, 150)));
         assert!("2015-2-18T23:16:9.15".parse::<DateTime<FixedOffset>>().is_err());
 
-        assert_eq!("2015-2-18T23:16:9.15Z".parse::<DateTime<UTC>>(),
-                   Ok(UTC.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
-        assert_eq!("2015-2-18T13:16:9.15-10:00".parse::<DateTime<UTC>>(),
-                   Ok(UTC.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
-        assert!("2015-2-18T23:16:9.15".parse::<DateTime<UTC>>().is_err());
+        assert_eq!("2015-2-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
+                   Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert_eq!("2015-2-18T13:16:9.15-10:00".parse::<DateTime<Utc>>(),
+                   Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert!("2015-2-18T23:16:9.15".parse::<DateTime<Utc>>().is_err());
 
         // no test for `DateTime<Local>`, we cannot verify that much.
     }
@@ -695,22 +1005,22 @@ mod tests {
         assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
         assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
                                          "%a, %d %b %Y %H:%M:%S GMT").is_err());
-        assert_eq!(UTC.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
+        assert_eq!(Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
                                          "%a, %d %b %Y %H:%M:%S GMT"),
-                   Ok(UTC.ymd(2013, 8, 9).and_hms(23, 54, 35)));
+                   Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)));
     }
 
     #[test]
     fn test_datetime_format_with_local() {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
-        assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&UTC).format("%Y").to_string());
+        assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&Utc).format("%Y").to_string());
     }
 
     #[test]
     fn test_datetime_is_copy() {
         // UTC is known to be `Copy`.
-        let a = UTC::now();
+        let a = Utc::now();
         let b = a;
         assert_eq!(a, b);
     }
@@ -720,7 +1030,7 @@ mod tests {
         use std::thread;
 
         // UTC is known to be `Send`.
-        let a = UTC::now();
+        let a = Utc::now();
         thread::spawn(move || {
             let _ = a;
         }).join().unwrap();
@@ -728,11 +1038,10 @@ mod tests {
 
     #[test]
     fn test_subsecond_part() {
-        let datetime = UTC.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 1234567);
+        let datetime = Utc.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 1234567);
 
         assert_eq!(1,       datetime.timestamp_subsec_millis());
         assert_eq!(1234,    datetime.timestamp_subsec_micros());
         assert_eq!(1234567, datetime.timestamp_subsec_nanos());
     }
 }
-
