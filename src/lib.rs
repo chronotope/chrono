@@ -412,7 +412,14 @@ pub mod naive {
     pub use self::time::NaiveTime;
     pub use self::datetime::{NaiveDateTime, TsSeconds};
 
-    /// Tools to help serializing/deserializing naive types.
+    /// Serialization/Deserialization of naive types in alternate formats
+    ///
+    /// The various modules in here are intended to be used with serde's [`with`
+    /// annotation][1] to serialize as something other than the default [RFC
+    /// 3339][2] format.
+    ///
+    /// [1]: https://serde.rs/attributes.html#field-attributes
+    /// [2]: https://tools.ietf.org/html/rfc3339
     #[cfg(feature = "serde")]
     pub mod serde {
         pub use super::datetime::serde::*;
@@ -422,10 +429,14 @@ mod date;
 mod datetime;
 pub mod format;
 
-/// Ser/de helpers
+/// Serialization/Deserialization in alternate formats
 ///
 /// The various modules in here are intended to be used with serde's [`with`
-/// annotation](https://serde.rs/attributes.html#field-attributes).
+/// annotation][1] to serialize as something other than the default [RFC
+/// 3339][2] format.
+///
+/// [1]: https://serde.rs/attributes.html#field-attributes
+/// [2]: https://tools.ietf.org/html/rfc3339
 #[cfg(feature = "serde")]
 pub mod serde {
     pub use super::datetime::serde::*;
