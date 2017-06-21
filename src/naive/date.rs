@@ -4,7 +4,7 @@
 //! ISO 8601 calendar date without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -1344,6 +1344,46 @@ impl Add<OldDuration> for NaiveDate {
     }
 }
 
+impl AddAssign<OldDuration> for NaiveDate {
+    fn add_assign(&mut self, rhs: OldDuration) {
+        *self = self.add(rhs);
+    }
+}
+
+/// A subtraction of `NaiveDate` from `NaiveDate` yields a `Duration` of integral numbers.
+///
+/// This does not overflow or underflow at all,
+/// as all possible output fits in the range of `Duration`.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1),   Duration::zero());
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), Duration::days(1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2),   Duration::days(-1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23),  Duration::days(100));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1),   Duration::days(365));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1),   Duration::days(365*4 + 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1),   Duration::days(365*400 + 97));
+/// ~~~~
+impl Sub<NaiveDate> for NaiveDate {
+    type Output = Duration;
+
+    fn sub(self, rhs: NaiveDate) -> Duration {
+        let year1 = self.year();
+        let year2 = rhs.year();
+        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
+        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
+        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
+        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
+        Duration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146097 + (cycle1 - cycle2))
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 /// It is same to the addition with a negated `Duration`.
@@ -1376,6 +1416,12 @@ impl Sub<OldDuration> for NaiveDate {
     #[inline]
     fn sub(self, rhs: OldDuration) -> NaiveDate {
         self.checked_sub_signed(rhs).expect("`NaiveDate - Duration` overflowed")
+    }
+}
+
+impl SubAssign<OldDuration> for NaiveDate {
+    fn sub_assign(&mut self, rhs: OldDuration) {
+        *self = self.sub(rhs);
     }
 }
 
@@ -1945,6 +1991,26 @@ mod tests {
 
         check((MAX_YEAR, 12, 31), (0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64));
         check((MIN_YEAR, 1, 1), (0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64));
+    }
+
+    #[test]
+    fn test_date_addassignment() {
+        let ymd = NaiveDate::from_ymd;
+        let mut date = ymd(2016, 10, 1);
+        date += Duration::days(10);
+        assert_eq!(date,  ymd(2016, 10, 11));
+        date += Duration::days(30);
+        assert_eq!(date, ymd(2016, 11, 10));
+    }
+
+    #[test]
+    fn test_date_subassignment() {
+        let ymd = NaiveDate::from_ymd;
+        let mut date = ymd(2016, 10, 11);
+        date -= Duration::days(10);
+        assert_eq!(date,  ymd(2016, 10, 1));
+        date -= Duration::days(2);
+        assert_eq!(date, ymd(2016, 9, 29));
     }
 
     #[test]

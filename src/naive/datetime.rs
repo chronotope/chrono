@@ -4,7 +4,7 @@
 //! ISO 8601 date and time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub, Deref};
+use std::ops::{Add, Sub, Deref, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -1192,6 +1192,58 @@ impl Add<OldDuration> for NaiveDateTime {
     }
 }
 
+impl AddAssign<OldDuration> for NaiveDateTime {
+    fn add_assign(&mut self, rhs: OldDuration) {
+        *self = self.add(rhs);
+    }
+}
+
+/// A subtraction of `NaiveDateTime` from `NaiveDateTime` yields a `Duration`.
+/// This does not overflow or underflow at all.
+///
+/// As a part of Chrono's [leap second handling](../time/index.html#leap-second-handling),
+/// the subtraction assumes that **there is no leap second ever**,
+/// except when any of the `NaiveDateTime`s themselves represents a leap second
+/// in which case the assumption becomes that
+/// **there are exactly one (or two) leap second(s) ever**.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveDate, Duration};
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// let d = from_ymd(2016, 7, 8);
+/// assert_eq!(d.and_hms(3, 5, 7) - d.and_hms(2, 4, 6),
+///            Duration::seconds(3600 + 60 + 1));
+///
+/// // July 8 is 190th day in the year 2016
+/// let d0 = from_ymd(2016, 1, 1);
+/// assert_eq!(d.and_hms_milli(0, 7, 6, 500) - d0.and_hms(0, 0, 0),
+///            Duration::seconds(189 * 86400 + 7 * 60 + 6) + Duration::milliseconds(500));
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that
+/// there were no other leap seconds happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveDate, Duration};
+/// # let from_ymd = NaiveDate::from_ymd;
+/// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
+/// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms(23, 0, 0),
+///            Duration::seconds(3600) + Duration::milliseconds(500));
+/// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0) - leap,
+///            Duration::seconds(3600) - Duration::milliseconds(500));
+/// ~~~~
+impl Sub<NaiveDateTime> for NaiveDateTime {
+    type Output = Duration;
+
+    fn sub(self, rhs: NaiveDateTime) -> Duration {
+        (self.date - rhs.date) + (self.time - rhs.time)
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
 /// It is same to the addition with a negated `Duration`.
 ///
@@ -1252,6 +1304,12 @@ impl Sub<OldDuration> for NaiveDateTime {
     #[inline]
     fn sub(self, rhs: OldDuration) -> NaiveDateTime {
         self.checked_sub_signed(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    }
+}
+
+impl SubAssign<Duration> for NaiveDateTime {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
@@ -1797,6 +1855,26 @@ mod tests {
                    Duration::seconds(86399));
         assert_eq!(since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
                    Duration::seconds(999_999_999));
+    }
+
+    #[test]
+    fn test_datetime_addassignment() {
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date += Duration::minutes(10_000_000);
+        assert_eq!(date,  ymdhms(2035, 10, 6, 20, 50, 10));
+        date += Duration::days(10);
+        assert_eq!(date,  ymdhms(2035, 10, 16, 20, 50, 10));
+    }
+
+    #[test]
+    fn test_datetime_subassignment() {
+        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date -= Duration::minutes(10_000_000);
+        assert_eq!(date,  ymdhms(1997, 9, 26, 23, 30, 10));
+        date -= Duration::days(10);
+        assert_eq!(date,  ymdhms(1997, 9, 16, 23, 30, 10));
     }
 
     #[test]

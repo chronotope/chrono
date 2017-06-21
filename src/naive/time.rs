@@ -4,7 +4,7 @@
 //! ISO 8601 time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use oldtime::Duration as OldDuration;
 
 use Timelike;
@@ -1054,6 +1054,81 @@ impl Add<OldDuration> for NaiveTime {
     }
 }
 
+impl AddAssign<OldDuration> for NaiveTime {
+    fn add_assign(&mut self, rhs: OldDuration) {
+        *self = self.add(rhs);
+    }
+}
+
+/// A subtraction of `NaiveTime` from `NaiveTime` yields a `Duration` within +/- 1 day.
+/// This does not overflow or underflow at all.
+///
+/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+/// the subtraction assumes that **there is no leap second ever**,
+/// except when any of the `NaiveTime`s themselves represents a leap second
+/// in which case the assumption becomes that
+/// **there are exactly one (or two) leap second(s) ever**.
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::{NaiveTime, Duration};
+///
+/// let from_hmsm = NaiveTime::from_hms_milli;
+///
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), Duration::zero());
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), Duration::milliseconds(25));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), Duration::milliseconds(975));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), Duration::seconds(7));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 0, 7, 900), Duration::seconds(5 * 60));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(0, 5, 7, 900), Duration::seconds(3 * 3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), Duration::seconds(-3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(2, 4, 6, 800),
+///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that
+/// there were no other leap seconds happened.
+///
+/// ~~~~
+/// # use chrono::{NaiveTime, Duration};
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), Duration::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0), Duration::milliseconds(1500));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 0, 0), Duration::seconds(60));
+/// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(61));
+/// ~~~~
+impl Sub<NaiveTime> for NaiveTime {
+    type Output = Duration;
+
+    fn sub(self, rhs: NaiveTime) -> Duration {
+        //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
+        //     |    |    :    |    |    |    |    |    |    |    :    |    |
+        // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
+        //          |   `rhs` |                             |    `self`
+        //          |======================================>|       |
+        //          |     |  `self.secs - rhs.secs`         |`self.frac`
+        //          |====>|   |                             |======>|
+        //      `rhs.frac`|========================================>|
+        //          |     |   |        `self - rhs`         |       |
+
+        use std::cmp::Ordering;
+
+        let secs = self.secs as i64 - rhs.secs as i64;
+        let frac = self.frac as i64 - rhs.frac as i64;
+
+        // `secs` may contain a leap second yet to be counted
+        let adjust = match self.secs.cmp(&rhs.secs) {
+            Ordering::Greater => if rhs.frac >= 1_000_000_000 { 1 } else { 0 },
+            Ordering::Equal => 0,
+            Ordering::Less => if self.frac >= 1_000_000_000 { -1 } else { 0 },
+        };
+
+        Duration::seconds(secs + adjust) + Duration::nanoseconds(frac)
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 /// It is same to the addition with a negated `Duration`.
@@ -1114,6 +1189,12 @@ impl Sub<OldDuration> for NaiveTime {
     #[inline]
     fn sub(self, rhs: OldDuration) -> NaiveTime {
         self.overflowing_sub_signed(rhs).0
+    }
+}
+
+impl SubAssign<Duration> for NaiveTime {
+    fn sub_assign(&mut self, rhs: Duration) {
+        *self = self.sub(rhs);
     }
 }
 
@@ -1509,6 +1590,26 @@ mod tests {
                    (hmsm(3, 4, 5, 678), 86400));
         assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add_signed(Duration::days(-1)),
                    (hmsm(3, 4, 6, 678), -86400));
+    }
+
+    #[test]
+    fn test_time_addassignment() {
+        let hms = NaiveTime::from_hms;
+        let mut time = hms(12, 12, 12);
+        time += Duration::hours(10);
+        assert_eq!(time, hms(22, 12, 12));
+        time += Duration::hours(10);
+        assert_eq!(time, hms(8, 12, 12));
+    }
+
+    #[test]
+    fn test_time_subassignment() {
+        let hms = NaiveTime::from_hms;
+        let mut time = hms(12, 12, 12);
+        time -= Duration::hours(10);
+        assert_eq!(time, hms(2, 12, 12));
+        time -= Duration::hours(10);
+        assert_eq!(time, hms(16, 12, 12));
     }
 
     #[test]
