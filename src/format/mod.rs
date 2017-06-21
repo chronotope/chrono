@@ -1,7 +1,19 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-//! Formatting utilities for date and time.
+//! Formatting (and parsing) utilities for date and time.
+//!
+//! This module provides the common types and routines to implement,
+//! for example, [`DateTime::format`](../struct.DateTime.html#method.format) or
+//! [`DateTime::parse_from_str`](../struct.DateTime.html#method.parse_from_str) methods.
+//! For most cases you should use these high-level interfaces.
+//!
+//! Internally the formatting and parsing shares the same abstract **formatting items**,
+//! which are just an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) of
+//! the [`Item`](./enum.Item.html) type.
+//! They are generated from more readable **format strings**;
+//! currently Chrono supports [one built-in syntax closely resembling
+//! C's `strftime` format](./strftime/index.html).
 
 use std::fmt;
 use std::str::FromStr;
