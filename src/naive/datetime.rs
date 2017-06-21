@@ -1525,10 +1525,10 @@ pub mod serde {
     use super::{NaiveDateTime};
     use serdelib::{ser, de};
 
-    /// Serialize a NaiveDateTime as a string
+    /// Serialize a NaiveDateTime as an RFC 3339 string
     ///
-    /// See the [`ts_seconds`](./serde/ts_seconds/index.html) module to serialize as
-    /// a timestamp.
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// serialization formats.
     impl ser::Serialize for NaiveDateTime {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer

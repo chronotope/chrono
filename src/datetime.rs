@@ -634,15 +634,12 @@ mod rustc_serialize {
 
 }
 
-/// Ser/de helpers
-///
-/// The various modules in here are intended to be used with serde's [`with`
-/// annotation](https://serde.rs/attributes.html#field-attributes).
+/// documented at re-export site
 #[cfg(feature = "serde")]
 pub mod serde {
     use std::fmt;
     use super::DateTime;
-    use offset::{TimeZone, LocalResult, Utc, Local, FixedOffset};
+    use offset::{TimeZone, Utc, Local, FixedOffset};
     use serdelib::{ser, de};
 
     /// Ser/de to/from timestamps in seconds
@@ -686,8 +683,7 @@ pub mod serde {
         use serdelib::{ser, de};
 
         use {DateTime, Utc, FixedOffset};
-        use offset::TimeZone;
-        use super::from;
+        use offset::{LocalResult, TimeZone};
 
         /// Deserialize a DateTime from a seconds timestamp
         ///
@@ -786,11 +782,28 @@ pub mod serde {
             }
         }
 
+        // try!-like function to convert a LocalResult into a serde-ish Result
+        fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
+            where E: de::Error,
+                  V: fmt::Display,
+                  T: fmt::Display,
+        {
+            match me {
+                LocalResult::None => Err(E::custom(
+                    format!("value is not a legal timestamp: {}", ts))),
+                LocalResult::Ambiguous(min, max) => Err(E::custom(
+                    format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
+                            ts, min, max))),
+                LocalResult::Single(val) => Ok(val)
+            }
+        }
     }
 
-    // TODO not very optimized for space (binary formats would want something better)
-
     impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
+        /// Serialize into a rfc3339 time string
+        ///
+        /// See [the `serde` module](./serde/index.html) for alternate
+        /// serializations.
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
@@ -806,22 +819,6 @@ pub mod serde {
 
             // Debug formatting is correct RFC3339, and it allows Zulu.
             serializer.collect_str(&FormatWrapped { inner: &self })
-        }
-    }
-
-    // try!-like function to convert a LocalResult into a serde-ish Result
-    fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
-        where E: de::Error,
-              V: fmt::Display,
-              T: fmt::Display,
-    {
-        match me {
-            LocalResult::None => Err(E::custom(
-                format!("value is not a legal timestamp: {}", ts))),
-            LocalResult::Ambiguous(min, max) => Err(E::custom(
-                format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
-                        ts, min, max))),
-            LocalResult::Single(val) => Ok(val)
         }
     }
 
@@ -845,8 +842,10 @@ pub mod serde {
     /// Deserialize a value that optionally includes a timezone offset in its
     /// string representation
     ///
-    /// The serialized value can be either a string representation or a unix
-    /// timestamp
+    /// The value to be deserialized must be an rfc3339 string.
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// deserialization formats.
     impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
@@ -857,8 +856,10 @@ pub mod serde {
 
     /// Deserialize into a UTC value
     ///
-    /// The serialized value can be either a string representation or a unix
-    /// timestamp
+    /// The value to be deserialized must be an rfc3339 string.
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// deserialization formats.
     impl<'de> de::Deserialize<'de> for DateTime<Utc> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
@@ -870,8 +871,10 @@ pub mod serde {
     /// Deserialize a value that includes no timezone in its string
     /// representation
     ///
-    /// The serialized value can be either a string representation or a unix
-    /// timestamp
+    /// The value to be deserialized must be an rfc3339 string.
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// serialization formats.
     impl<'de> de::Deserialize<'de> for DateTime<Local> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
