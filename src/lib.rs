@@ -392,6 +392,8 @@ pub mod naive {
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
 
+    mod internals;
+
     // avoid using them directly even in the crate itself
     #[path = "date.rs"] mod date_;
     #[path = "time.rs"] mod time_;
