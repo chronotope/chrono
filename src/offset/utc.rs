@@ -13,7 +13,7 @@ use super::{TimeZone, Offset, LocalResult, FixedOffset};
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
 ///
-/// Using the [`TimeZone`](../../../chrono/offset/trait.TimeZone.html) methods
+/// Using the [`TimeZone`](./trait.TimeZone.html) methods
 /// on the UTC struct is the preferred way to construct `DateTime<UTC>`
 /// instances.
 ///

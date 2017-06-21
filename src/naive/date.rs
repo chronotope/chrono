@@ -64,12 +64,12 @@ const MAX_BITS: usize = 44;
 ///
 /// * ISO 8601 calendars has the year 0, which is 1 BCE (a year before 1 CE).
 ///   If you need a typical BCE/BC and CE/AD notation for year numbers,
-///   use the [`Datelike::year_ce`](../../trait.Datelike.html#method.year_ce) method.
+///   use the [`Datelike::year_ce`](../trait.Datelike.html#method.year_ce) method.
 ///
 /// # Week Date
 ///
 /// The ISO 8601 **week date** is a triple of year number, week number
-/// and [day of the week](../../enum.Weekday.html) with the following rules:
+/// and [day of the week](../enum.Weekday.html) with the following rules:
 ///
 /// * A week consists of Monday through Sunday, and is always numbered within some year.
 ///   The week number ranges from 1 to 52 or 53 depending on the year.
@@ -81,7 +81,7 @@ const MAX_BITS: usize = 44;
 ///   For example, January 3, 2016 (Sunday) was on the last (53rd) week of 2015.
 ///
 /// Chrono's date types default to the ISO 8601 [calendar date](#calendar-date),
-/// but the [`Datelike::isoweekdate`](../../trait.Datelike.html#tymethod.isoweekdate) method
+/// but the [`Datelike::isoweekdate`](../trait.Datelike.html#tymethod.isoweekdate) method
 /// can be used to get the corresponding week date.
 ///
 /// # Ordinal Date
@@ -398,7 +398,7 @@ impl NaiveDate {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
-    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -913,7 +913,7 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified format string.
-    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -1382,7 +1382,7 @@ impl Sub<OldDuration> for NaiveDate {
 }
 
 /// The `Debug` output of the naive date `d` is same to
-/// [`d.format("%Y-%m-%d")`](../../format/strftime/index.html).
+/// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1417,7 +1417,7 @@ impl fmt::Debug for NaiveDate {
 }
 
 /// The `Display` output of the naive date `d` is same to
-/// [`d.format("%Y-%m-%d")`](../../format/strftime/index.html).
+/// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1443,7 +1443,7 @@ impl fmt::Display for NaiveDate {
 }
 
 /// Parsing a `str` into a `NaiveDate` uses the same format,
-/// [`%Y-%m-%d`](../../format/strftime/index.html), as in `Debug` and `Display`.
+/// [`%Y-%m-%d`](../format/strftime/index.html), as in `Debug` and `Display`.
 ///
 /// # Example
 ///

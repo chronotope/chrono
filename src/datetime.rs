@@ -21,7 +21,7 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 ///
 /// There are some constructors implemented here (the `from_*` methods), but
 /// the general-purpose constructors are all via the methods on the
-/// [`TimeZone`](../trait.TimeZone.html) implementations.
+/// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
@@ -208,7 +208,7 @@ impl DateTime<FixedOffset> {
 
     /// Parses a string with the specified format string and
     /// returns a new `DateTime` with a parsed `FixedOffset`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// See also `Offset::datetime_from_str` which gives a local `DateTime` on specific time zone.
@@ -241,7 +241,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {

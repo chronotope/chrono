@@ -65,7 +65,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
 
 /// The local timescale. This is implemented via the standard `time` crate.
 ///
-/// Using the [`TimeZone`](../../../chrono/offset/trait.TimeZone.html) methods
+/// Using the [`TimeZone`](./trait.TimeZone.html) methods
 /// on the Local struct is the preferred way to construct `DateTime<Local>`
 /// instances.
 ///

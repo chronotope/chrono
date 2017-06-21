@@ -35,8 +35,8 @@ const MAX_SECS_BITS: usize = 44;
 /// # let _ = dt;
 /// ~~~~
 ///
-/// You can use typical [date-like](../../trait.Datelike.html) and
-/// [time-like](../../trait.Timelike.html) methods,
+/// You can use typical [date-like](../trait.Datelike.html) and
+/// [time-like](../trait.Timelike.html) methods,
 /// provided that relevant traits are in the scope.
 ///
 /// ~~~~
@@ -99,7 +99,7 @@ impl NaiveDateTime {
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// For a non-naive version of this function see
-    /// [`TimeZone::timestamp`](../../offset/trait.TimeZone.html#method.timestamp).
+    /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the
     /// [leap second](./struct.NaiveTime.html#leap-second-handling). (The true "UNIX
@@ -162,7 +162,7 @@ impl NaiveDateTime {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
-    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -594,7 +594,7 @@ impl NaiveDateTime {
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](../../format/strftime/index.html)
+    /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -1256,7 +1256,7 @@ impl Sub<OldDuration> for NaiveDateTime {
 }
 
 /// The `Debug` output of the naive date and time `dt` is same to
-/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](../../format/strftime/index.html).
+/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1289,7 +1289,7 @@ impl fmt::Debug for NaiveDateTime {
 }
 
 /// The `Debug` output of the naive date and time `dt` is same to
-/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](../../format/strftime/index.html).
+/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](../format/strftime/index.html).
 ///
 /// It should be noted that, for leap seconds not on the minute boundary,
 /// it may print a representation not distinguishable from non-leap seconds.
@@ -1320,7 +1320,7 @@ impl fmt::Display for NaiveDateTime {
 }
 
 /// Parsing a `str` into a `NaiveDateTime` uses the same format,
-/// [`%Y-%m-%dT%H:%M:%S%.f`](../../format/strftime/index.html), as in `Debug`.
+/// [`%Y-%m-%dT%H:%M:%S%.f`](../format/strftime/index.html), as in `Debug`.
 ///
 /// # Example
 ///

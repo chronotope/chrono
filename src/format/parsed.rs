@@ -41,13 +41,13 @@ pub struct Parsed {
     /// Year modulo 100. Implies that the year is >= 1 BCE when set.
     pub year_mod_100: Option<i32>,
 
-    /// Year in the [ISO week date](../../naive/date/index.html#week-date).
+    /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date).
     ///
     /// This can be negative unlike [`isoyear_div_100`](#structfield.isoyear_div_100) and
     /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) fields.
     pub isoyear: Option<i32>,
 
-    /// Year in the [ISO week date](../../naive/date/index.html#week-date), divided by 100.
+    /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), divided by 100.
     /// Implies that the year is >= 1 BCE when set.
     ///
     /// Due to the common usage, if this field is missing but
@@ -55,7 +55,7 @@ pub struct Parsed {
     /// it is inferred to 19 when `isoyear_mod_100 >= 70` and 20 otherwise.
     pub isoyear_div_100: Option<i32>,
 
-    /// Year in the [ISO week date](../../naive/date/index.html#week-date), modulo 100.
+    /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), modulo 100.
     /// Implies that the year is >= 1 BCE when set.
     pub isoyear_mod_100: Option<i32>,
 
@@ -70,7 +70,7 @@ pub struct Parsed {
     /// (0--53, 1--53 or 1--52 depending on the year).
     pub week_from_mon: Option<u32>,
 
-    /// [ISO week number](../../naive/date/index.html#week-date)
+    /// [ISO week number](../naive/struct.NaiveDate.html#week-date)
     /// (1--52 or 1--53 depending on the year).
     pub isoweek: Option<u32>,
 

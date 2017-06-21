@@ -15,7 +15,7 @@ use super::{TimeZone, Offset, LocalResult};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
-/// Using the [`TimeZone`](../../../chrono/offset/trait.TimeZone.html) methods
+/// Using the [`TimeZone`](./trait.TimeZone.html) methods
 /// on a `FixedOffset` struct is the preferred way to construct
 /// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
 /// [`west`](#method.west) methods for examples.

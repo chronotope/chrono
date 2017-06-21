@@ -558,7 +558,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<I> {
 
 // this implementation is here only because we need some private code from `scan`
 
-/// Parsing a `str` into a `Weekday` uses the format [`%W`](../../format/strftime/index.html).
+/// Parsing a `str` into a `Weekday` uses the format [`%W`](./format/strftime/index.html).
 ///
 /// # Example
 ///
