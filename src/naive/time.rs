@@ -46,7 +46,7 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// If you cannot tolerate this behavior,
 /// you must use a separate `TimeZone` for the International Atomic Time (TAI).
 /// TAI is like UTC but has no leap seconds, and thus slightly differs from UTC.
-/// Chrono 0.3 does not provide such implementation, but it is planned for 0.4.
+/// Chrono does not yet provide such implementation, but it is planned.
 ///
 /// ## Representing Leap Seconds
 ///

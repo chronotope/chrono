@@ -8,6 +8,89 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.4.0 (2017-06-22)
+
+This was originally planned as a minor release but was pushed to a major release
+due to the compatibility concern raised.
+
+### Added
+
+- `IsoWeek` has been added for the ISO week without time zone.
+
+- The `+=` and `-=` operators against `time::Duration` are now supported for
+  `NaiveDate`, `NaiveTime` and `NaiveDateTime`. (#99)
+
+  (Note that this does not invalidate the eventual deprecation of `time::Duration`.)
+
+- `SystemTime` and `DateTime<Tz>` types can be now converted to each other via `From`.
+  Due to the obvious lack of time zone information in `SystemTime`,
+  the forward direction is limited to `DateTime<Utc>` and `DateTime<Local>` only.
+
+### Changed
+
+- Intermediate implementation modules have been flattened (#161),
+  and `UTC` has been renamed to `Utc` in accordance with the current convention (#148).
+
+  The full list of changes is as follows:
+
+  Before                                   | After
+  ---------------------------------------- | ----------------------------
+  `chrono::date::Date`                     | `chrono::Date`
+  `chrono::date::MIN`                      | `chrono::MIN_DATE`
+  `chrono::date::MAX`                      | `chrono::MAX_DATE`
+  `chrono::datetime::DateTime`             | `chrono::DateTime`
+  `chrono::naive::time::NaiveTime`         | `chrono::naive::NaiveTime`
+  `chrono::naive::date::NaiveDate`         | `chrono::naive::NaiveDate`
+  `chrono::naive::date::MIN`               | `chrono::naive::MIN_DATE`
+  `chrono::naive::date::MAX`               | `chrono::naive::MAX_DATE`
+  `chrono::naive::datetime::NaiveDateTime` | `chrono::naive::NaiveDateTime`
+  `chrono::offset::utc::UTC`               | `chrono::offset::Utc`
+  `chrono::offset::fixed::FixedOffset`     | `chrono::offset::FixedOffset`
+  `chrono::offset::local::Local`           | `chrono::offset::Local`
+  `chrono::format::parsed::Parsed`         | `chrono::format::Parsed`
+
+  With an exception of `Utc`, this change does not affect any direct usage of
+  `chrono::*` or `chrono::prelude::*` types.
+
+- `Datelike::isoweekdate` is replaced by `Datelike::iso_week` which only returns the ISO week.
+
+  The original method used to return a tuple of year number, week number and day of the week,
+  but this duplicated the `Datelike::weekday` method and it had been hard to deal with
+  the raw year and week number for the ISO week date.
+  This change isolates any logic and API for the week date into a separate type.
+
+- `NaiveDateTime` and `DateTime` can now be deserialized from an integral UNIX timestamp. (#125)
+
+  This turns out to be very common input for web-related usages.
+  The existing string representation is still supported as well.
+
+- `chrono::serde` and `chrono::naive::serde` modules have been added
+  for the serialization utilities. (#125)
+
+  Currently they contain the `ts_seconds` modules that can be used to
+  serialize `NaiveDateTime` and `DateTime` values into an integral UNIX timestamp.
+  This can be combined with Serde's `[de]serialize_with` attributes
+  to fully support the (de)serialization to/from the timestamp.
+
+  For rustc-serialize, there are separate `chrono::TsSeconds` and `chrono::naive::TsSeconds` types
+  that are newtype wrappers implementing different (de)serialization logics.
+  This is a suboptimal API, however, and it is strongly recommended to migrate to Serde.
+
+### Fixed
+
+- The major version was made to fix the broken Serde dependency issues. (#146, #156, #158, #159)
+
+  The original intention to technically break the dependency was
+  to faciliate the use of Serde 1.0 at the expense of temporary breakage.
+  Whether this was appropriate or not is quite debatable,
+  but it became clear that there are several high-profile crates requiring Serde 0.9
+  and it is not feasible to force them to use Serde 1.0 anyway.
+
+  To the end, the new major release was made with some known lower-priority breaking changes.
+  0.3.1 is now yanked and any remaining 0.3 users can safely roll back to 0.3.0.
+
+- Various documentation fixes and goodies. (#92, #131, #136)
+
 ## 0.3.1 (2017-05-02)
 
 ### Added

@@ -1,7 +1,7 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-//! # Chrono 0.4.0 (not yet released)
+//! # Chrono 0.4.0
 //!
 //! Date and time handling for Rust.
 //! It aims to be a feature-complete superset of
@@ -20,6 +20,9 @@
 //! * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 //! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 //!
+//! Any significant changes to Chrono are documented in
+//! the [`CHANGELOG.md`](https://github.com/chronotope/chrono/blob/master/CHANGELOG.md) file.
+//!
 //! ## Usage
 //!
 //! Put this in your `Cargo.toml`:
@@ -37,6 +40,12 @@
 //! [dependencies]
 //! chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
 //! ```
+//!
+//! > Note that Chrono's support for rustc-serialize is now considered deprecated.
+//! Starting from 0.4.0 there is no further guarantee that
+//! the features available in Serde will be also available to rustc-serialize,
+//! and the support can be removed in any future major version.
+//! **Rustc-serialize users are strongly recommended to migrate to Serde.**
 //!
 //! Then put this in your crate root:
 //!
