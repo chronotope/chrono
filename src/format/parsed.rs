@@ -642,7 +642,7 @@ mod tests {
     use Datelike;
     use Weekday::*;
     use naive::{MIN_DATE, MAX_DATE, NaiveDate, NaiveTime};
-    use offset::{TimeZone, UTC, FixedOffset};
+    use offset::{TimeZone, Utc, FixedOffset};
 
     #[test]
     fn test_parsed_set_fields() {
@@ -1055,11 +1055,11 @@ mod tests {
         }
 
         // single result from ymdhms
-        assert_eq!(parse!(UTC;
+        assert_eq!(parse!(Utc;
                           year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
-                   Ok(UTC.ymd(2014, 12, 31).and_hms_nano(4, 26, 40, 12_345_678)));
-        assert_eq!(parse!(UTC;
+                   Ok(Utc.ymd(2014, 12, 31).and_hms_nano(4, 26, 40, 12_345_678)));
+        assert_eq!(parse!(Utc;
                           year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
                    Err(IMPOSSIBLE));
@@ -1074,9 +1074,9 @@ mod tests {
                                               .and_hms_nano(13, 26, 40, 12_345_678)));
 
         // single result from timestamp
-        assert_eq!(parse!(UTC; timestamp: 1_420_000_000, offset: 0),
-                   Ok(UTC.ymd(2014, 12, 31).and_hms(4, 26, 40)));
-        assert_eq!(parse!(UTC; timestamp: 1_420_000_000, offset: 32400),
+        assert_eq!(parse!(Utc; timestamp: 1_420_000_000, offset: 0),
+                   Ok(Utc.ymd(2014, 12, 31).and_hms(4, 26, 40)));
+        assert_eq!(parse!(Utc; timestamp: 1_420_000_000, offset: 32400),
                    Err(IMPOSSIBLE));
         assert_eq!(parse!(FixedOffset::east(32400); timestamp: 1_420_000_000, offset: 0),
                    Err(IMPOSSIBLE));

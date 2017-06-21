@@ -1571,7 +1571,7 @@ pub mod serde {
     /// # extern crate serde_json;
     /// # extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, UTC};
+    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
     /// use chrono::naive::serde::ts_seconds;
     /// #[derive(Deserialize, Serialize)]
     /// struct S {
@@ -1614,7 +1614,7 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate serde;
         /// # extern crate chrono;
-        /// # use chrono::{NaiveDateTime, UTC};
+        /// # use chrono::{NaiveDateTime, Utc};
         /// # use serde::Deserialize;
         /// use chrono::naive::serde::ts_seconds::deserialize as from_ts;
         /// #[derive(Deserialize)]
@@ -1650,7 +1650,7 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_json;
         /// # #[macro_use] extern crate serde;
         /// # extern crate chrono;
-        /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, UTC};
+        /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
         /// # use serde::Serialize;
         /// use chrono::naive::serde::ts_seconds::serialize as to_ts;
         /// #[derive(Serialize)]

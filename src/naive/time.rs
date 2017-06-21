@@ -58,13 +58,13 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// All methods accepting fractional seconds will accept such values.
 ///
 /// ~~~~
-/// use chrono::{NaiveDate, NaiveTime, UTC, TimeZone};
+/// use chrono::{NaiveDate, NaiveTime, Utc, TimeZone};
 ///
 /// let t = NaiveTime::from_hms_milli(8, 59, 59, 1_000);
 ///
 /// let dt1 = NaiveDate::from_ymd(2015, 7, 1).and_hms_micro(8, 59, 59, 1_000_000);
 ///
-/// let dt2 = UTC.ymd(2015, 6, 30).and_hms_nano(23, 59, 59, 1_000_000_000);
+/// let dt2 = Utc.ymd(2015, 6, 30).and_hms_nano(23, 59, 59, 1_000_000_000);
 /// # let _ = (t, dt1, dt2);
 /// ~~~~
 ///
@@ -141,9 +141,9 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// will be represented as the second part being 60, as required by ISO 8601.
 ///
 /// ~~~~
-/// use chrono::{UTC, TimeZone};
+/// use chrono::{Utc, TimeZone};
 ///
-/// let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_000);
+/// let dt = Utc.ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_000);
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ~~~~
 ///
@@ -155,12 +155,12 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// and would be read back to the next non-leap second.
 ///
 /// ~~~~
-/// use chrono::{DateTime, UTC, TimeZone};
+/// use chrono::{DateTime, Utc, TimeZone};
 ///
-/// let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 56, 4, 1_000);
+/// let dt = Utc.ymd(2015, 6, 30).and_hms_milli(23, 56, 4, 1_000);
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 ///
-/// let dt = UTC.ymd(2015, 6, 30).and_hms(23, 56, 5);
+/// let dt = Utc.ymd(2015, 6, 30).and_hms(23, 56, 5);
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 /// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
 /// ~~~~

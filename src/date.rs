@@ -9,7 +9,7 @@ use std::ops::{Add, Sub};
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
-use offset::{TimeZone, UTC};
+use offset::{TimeZone, Utc};
 use naive::{self, NaiveDate, NaiveTime, IsoWeek};
 use DateTime;
 use format::{Item, DelayedFormat, StrftimeItems};
@@ -45,9 +45,9 @@ pub struct Date<Tz: TimeZone> {
 }
 
 /// The minimum possible `Date`.
-pub const MIN_DATE: Date<UTC> = Date { date: naive::MIN_DATE, offset: UTC };
+pub const MIN_DATE: Date<Utc> = Date { date: naive::MIN_DATE, offset: Utc };
 /// The maximum possible `Date`.
-pub const MAX_DATE: Date<UTC> = Date { date: naive::MAX_DATE, offset: UTC };
+pub const MAX_DATE: Date<Utc> = Date { date: naive::MAX_DATE, offset: Utc };
 
 impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` with given *UTC* date and offset.

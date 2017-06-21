@@ -178,9 +178,9 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{UTC, TimeZone};
+    /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(UTC.ymd(2015, 5, 15).to_string(), "2015-05-15UTC");
+    /// assert_eq!(Utc.ymd(2015, 5, 15).to_string(), "2015-05-15UTC");
     /// ~~~~
     fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
         self.ymd_opt(year, month, day).unwrap()
@@ -197,10 +197,10 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{UTC, LocalResult, TimeZone};
+    /// use chrono::{Utc, LocalResult, TimeZone};
     ///
-    /// assert_eq!(UTC.ymd_opt(2015, 5, 15).unwrap().to_string(), "2015-05-15UTC");
-    /// assert_eq!(UTC.ymd_opt(2000, 0, 0), LocalResult::None);
+    /// assert_eq!(Utc.ymd_opt(2015, 5, 15).unwrap().to_string(), "2015-05-15UTC");
+    /// assert_eq!(Utc.ymd_opt(2000, 0, 0), LocalResult::None);
     /// ~~~~
     fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_ymd_opt(year, month, day) {
@@ -220,9 +220,9 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{UTC, TimeZone};
+    /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(UTC.yo(2015, 135).to_string(), "2015-05-15UTC");
+    /// assert_eq!(Utc.yo(2015, 135).to_string(), "2015-05-15UTC");
     /// ~~~~
     fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
         self.yo_opt(year, ordinal).unwrap()
@@ -255,9 +255,9 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{UTC, Weekday, TimeZone};
+    /// use chrono::{Utc, Weekday, TimeZone};
     ///
-    /// assert_eq!(UTC.isoywd(2015, 20, Weekday::Fri).to_string(), "2015-05-15UTC");
+    /// assert_eq!(Utc.isoywd(2015, 20, Weekday::Fri).to_string(), "2015-05-15UTC");
     /// ~~~~
     fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
@@ -288,9 +288,9 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::{UTC, TimeZone};
+    /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(UTC.timestamp(1431648000, 0).to_string(), "2015-05-15 00:00:00 UTC");
+    /// assert_eq!(Utc.timestamp(1431648000, 0).to_string(), "2015-05-15 00:00:00 UTC");
     /// ~~~~
     fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
         self.timestamp_opt(secs, nsecs).unwrap()
@@ -371,7 +371,7 @@ mod utc;
 mod fixed;
 mod local;
 
-pub use self::utc::UTC;
+pub use self::utc::Utc;
 pub use self::fixed::FixedOffset;
 pub use self::local::Local;
 

@@ -91,7 +91,7 @@
 //! which defines how the local date is converted to and back from the UTC date.
 //! There are three well-known `TimeZone` implementations:
 //!
-//! * [**`UTC`**](./offset/struct.UTC.html) specifies the UTC time zone. It is most efficient.
+//! * [**`Utc`**](./offset/struct.Utc.html) specifies the UTC time zone. It is most efficient.
 //!
 //! * [**`Local`**](./offset/struct.Local.html) specifies the system local time zone.
 //!
@@ -106,14 +106,14 @@
 //! the [`DateTime::with_timezone`](./struct.DateTime.html#method.with_timezone) method.
 //!
 //! You can get the current date and time in the UTC time zone
-//! ([`UTC::now()`](./offset/struct.UTC.html#method.now))
+//! ([`Utc::now()`](./offset/struct.Utc.html#method.now))
 //! or in the local time zone
 //! ([`Local::now()`](./offset/struct.Local.html#method.now)).
 //!
 //! ```rust
 //! use chrono::prelude::*;
 //!
-//! let utc: DateTime<UTC> = UTC::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
+//! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 //! let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
 //! # let _ = utc; let _ = local;
 //! ```
@@ -126,21 +126,21 @@
 //! use chrono::prelude::*;
 //! use chrono::offset::LocalResult;
 //!
-//! let dt = UTC.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
+//! let dt = Utc.ymd(2014, 7, 8).and_hms(9, 10, 11); // `2014-07-08T09:10:11Z`
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
-//! assert_eq!(dt, UTC.yo(2014, 189).and_hms(9, 10, 11));
+//! assert_eq!(dt, Utc.yo(2014, 189).and_hms(9, 10, 11));
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, UTC.isoywd(2014, 28, Weekday::Tue).and_hms(9, 10, 11));
+//! assert_eq!(dt, Utc.isoywd(2014, 28, Weekday::Tue).and_hms(9, 10, 11));
 //!
-//! let dt = UTC.ymd(2014, 7, 8).and_hms_milli(9, 10, 11, 12); // `2014-07-08T09:10:11.012Z`
-//! assert_eq!(dt, UTC.ymd(2014, 7, 8).and_hms_micro(9, 10, 11, 12_000));
-//! assert_eq!(dt, UTC.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 12_000_000));
+//! let dt = Utc.ymd(2014, 7, 8).and_hms_milli(9, 10, 11, 12); // `2014-07-08T09:10:11.012Z`
+//! assert_eq!(dt, Utc.ymd(2014, 7, 8).and_hms_micro(9, 10, 11, 12_000));
+//! assert_eq!(dt, Utc.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 12_000_000));
 //!
 //! // dynamic verification
-//! assert_eq!(UTC.ymd_opt(2014, 7, 8).and_hms_opt(21, 15, 33),
-//!            LocalResult::Single(UTC.ymd(2014, 7, 8).and_hms(21, 15, 33)));
-//! assert_eq!(UTC.ymd_opt(2014, 7, 8).and_hms_opt(80, 15, 33), LocalResult::None);
-//! assert_eq!(UTC.ymd_opt(2014, 7, 38).and_hms_opt(21, 15, 33), LocalResult::None);
+//! assert_eq!(Utc.ymd_opt(2014, 7, 8).and_hms_opt(21, 15, 33),
+//!            LocalResult::Single(Utc.ymd(2014, 7, 8).and_hms(21, 15, 33)));
+//! assert_eq!(Utc.ymd_opt(2014, 7, 8).and_hms_opt(80, 15, 33), LocalResult::None);
+//! assert_eq!(Utc.ymd_opt(2014, 7, 38).and_hms_opt(21, 15, 33), LocalResult::None);
 //!
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
@@ -179,7 +179,7 @@
 //! // time zone accessor and manipulation
 //! assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 //! assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600));
-//! assert_eq!(dt.with_timezone(&UTC), UTC.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
+//! assert_eq!(dt.with_timezone(&Utc), Utc.ymd(2014, 11, 28).and_hms_nano(12, 45, 59, 324310806));
 //!
 //! // a sample of property manipulations (validates dynamically)
 //! assert_eq!(dt.with_day(29).unwrap().weekday(), Weekday::Sat); // 2014-11-29 is Saturday
@@ -187,14 +187,14 @@
 //! assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November 29, 301 BCE
 //!
 //! // arithmetic operations
-//! let dt1 = UTC.ymd(2014, 11, 14).and_hms(8, 9, 10);
-//! let dt2 = UTC.ymd(2014, 11, 14).and_hms(10, 9, 8);
+//! let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
+//! let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
 //! assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
 //! assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-//! assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
-//!            UTC.ymd(2001, 9, 9).and_hms(1, 46, 40));
-//! assert_eq!(UTC.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
-//!            UTC.ymd(1938, 4, 24).and_hms(22, 13, 20));
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
+//!            Utc.ymd(2001, 9, 9).and_hms(1, 46, 40));
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
+//!            Utc.ymd(1938, 4, 24).and_hms(22, 13, 20));
 //! # }
 //! ```
 //!
@@ -211,7 +211,7 @@
 //! ```rust
 //! use chrono::prelude::*;
 //!
-//! let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
+//! let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
@@ -226,7 +226,7 @@
 //!
 //! 1. The standard [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait
 //!    (and [`parse`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) method
-//!    on a string) can be used for parsing `DateTime<FixedOffset>`, `DateTime<UTC>` and
+//!    on a string) can be used for parsing `DateTime<FixedOffset>`, `DateTime<Utc>` and
 //!    `DateTime<Local>` values. This parses what the `{:?}`
 //!    ([`std::fmt::Debug`](https://doc.rust-lang.org/std/fmt/trait.Debug.html))
 //!    format specifier prints, and requires the offset to be present.
@@ -252,12 +252,12 @@
 //! ```rust
 //! use chrono::prelude::*;
 //!
-//! let dt = UTC.ymd(2014, 11, 28).and_hms(12, 0, 9);
+//! let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
 //! let fixed_dt = dt.with_timezone(&FixedOffset::east(9*3600));
 //!
 //! // method 1
-//! assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<UTC>>(), Ok(dt.clone()));
-//! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<UTC>>(), Ok(dt.clone()));
+//! assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<Utc>>(), Ok(dt.clone()));
+//! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<Utc>>(), Ok(dt.clone()));
 //! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixed_dt.clone()));
 //!
 //! // method 2
@@ -268,15 +268,15 @@
 //! assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
 //!
 //! // method 3
-//! assert_eq!(UTC.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
-//! assert_eq!(UTC.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
+//! assert_eq!(Utc.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
+//! assert_eq!(Utc.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
 //!
 //! // oops, the year is missing!
-//! assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
+//! assert!(Utc.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
 //! // oops, the format string does not include the year at all!
-//! assert!(UTC.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
+//! assert!(Utc.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
 //! // oops, the weekday is incorrect!
-//! assert!(UTC.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
+//! assert!(Utc.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 //! ```
 //!
 //! ### Individual date
@@ -290,12 +290,12 @@
 //! use chrono::offset::LocalResult;
 //!
 //! # // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
-//! assert_eq!(UTC::today(), UTC::now().date());
+//! assert_eq!(Utc::today(), Utc::now().date());
 //! assert_eq!(Local::today(), Local::now().date());
 //!
-//! assert_eq!(UTC.ymd(2014, 11, 28).weekday(), Weekday::Fri);
-//! assert_eq!(UTC.ymd_opt(2014, 11, 31), LocalResult::None);
-//! assert_eq!(UTC.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(),
+//! assert_eq!(Utc.ymd(2014, 11, 28).weekday(), Weekday::Fri);
+//! assert_eq!(Utc.ymd_opt(2014, 11, 31), LocalResult::None);
+//! assert_eq!(Utc.ymd(2014, 11, 28).and_hms_milli(7, 8, 9, 10).format("%H%M%S").to_string(),
 //!            "070809");
 //! ```
 //!
@@ -341,7 +341,7 @@
 //! Chrono inherently does not support an inaccurate or partial date and time representation.
 //! Any operation that can be ambiguous will return `None` in such cases.
 //! For example, "a month later" of 2014-01-30 is not well-defined
-//! and consequently `UTC.ymd(2014, 1, 30).with_month(2)` returns `None`.
+//! and consequently `Utc.ymd(2014, 1, 30).with_month(2)` returns `None`.
 //!
 //! Advanced time zone handling is not yet supported.
 //! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
@@ -361,7 +361,7 @@ extern crate serde as serdelib;
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
-#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, UTC, FixedOffset, Local};
+#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset, Local};
 #[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
 pub use date::{Date, MIN_DATE, MAX_DATE};
 pub use datetime::DateTime;
@@ -372,7 +372,7 @@ pub use format::{ParseError, ParseResult};
 pub mod prelude {
     #[doc(no_inline)] pub use {Datelike, Timelike, Weekday};
     #[doc(no_inline)] pub use {TimeZone, Offset};
-    #[doc(no_inline)] pub use {UTC, FixedOffset, Local};
+    #[doc(no_inline)] pub use {Utc, FixedOffset, Local};
     #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
     #[doc(no_inline)] pub use Date;
     #[doc(no_inline)] pub use DateTime;
