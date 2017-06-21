@@ -9,10 +9,8 @@ use std::error::Error;
 
 use {Datelike, Timelike, Weekday, ParseWeekdayError};
 use div::{div_floor, mod_floor};
-use offset::Offset;
-use offset::fixed::FixedOffset;
-use naive::date::NaiveDate;
-use naive::time::NaiveTime;
+use offset::{Offset, FixedOffset};
+use naive::{NaiveDate, NaiveTime};
 
 pub use self::strftime::StrftimeItems;
 pub use self::parsed::Parsed;
@@ -175,14 +173,14 @@ pub enum Fixed {
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces.
     /// The offset is limited from `-24:00` to `+24:00`,
-    /// which is same to [`FixedOffset`](../offset/fixed/struct.FixedOffset.html)'s range.
+    /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces,
     /// and `Z` can be either in upper case or in lower case.
     /// The offset is limited from `-24:00` to `+24:00`,
-    /// which is same to [`FixedOffset`](../offset/fixed/struct.FixedOffset.html)'s range.
+    /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColonZ,
     /// Same to [`TimezoneOffsetColon`](#variant.TimezoneOffsetColon) but prints no colon.
     /// Parsing allows an optional colon.
@@ -515,7 +513,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
     Ok(())
 }
 
-pub mod parsed;
+mod parsed;
 
 // due to the size of parsing routines, they are in separate modules.
 mod scan;

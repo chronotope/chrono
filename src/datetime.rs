@@ -11,13 +11,9 @@ use std::ops::Deref;
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
-use offset::{TimeZone, Offset};
-use offset::utc::UTC;
-use offset::local::Local;
-use offset::fixed::FixedOffset;
-use naive::time::NaiveTime;
-use naive::datetime::NaiveDateTime;
-use date::Date;
+use offset::{TimeZone, Offset, UTC, Local, FixedOffset};
+use naive::{NaiveTime, NaiveDateTime};
+use Date;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
@@ -510,10 +506,7 @@ fn test_decodable_json_timestamps<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
 mod rustc_serialize {
     use std::fmt;
     use super::{DateTime, TsSeconds};
-    use offset::{TimeZone, LocalResult};
-    use offset::utc::UTC;
-    use offset::local::Local;
-    use offset::fixed::FixedOffset;
+    use offset::{TimeZone, LocalResult, UTC, Local, FixedOffset};
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
     impl<Tz: TimeZone> Encodable for DateTime<Tz> {
@@ -609,11 +602,8 @@ mod rustc_serialize {
 pub mod serde {
     use std::fmt;
     use super::DateTime;
-    use offset::{TimeZone, LocalResult};
-    use offset::utc::UTC;
-    use offset::local::Local;
-    use offset::fixed::FixedOffset;
-    use serde::{ser, de};
+    use offset::{TimeZone, LocalResult, UTC, Local, FixedOffset};
+    use serdelib::{ser, de};
 
     /// Ser/de to/from timestamps in seconds
     ///
@@ -630,7 +620,7 @@ pub mod serde {
     /// # #[macro_use] extern crate serde_json;
     /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, UTC};
-    /// use chrono::datetime::serde::ts_seconds;
+    /// use chrono::serde::ts_seconds;
     /// #[derive(Deserialize, Serialize)]
     /// struct S {
     ///     #[serde(with = "ts_seconds")]
@@ -653,7 +643,7 @@ pub mod serde {
     /// ```
     pub mod ts_seconds {
         use std::fmt;
-        use serde::{ser, de};
+        use serdelib::{ser, de};
 
         use {DateTime, UTC, FixedOffset};
         use offset::TimeZone;
@@ -674,7 +664,7 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate chrono;
         /// # use chrono::{DateTime, UTC};
-        /// use chrono::datetime::serde::ts_seconds::deserialize as from_ts;
+        /// use chrono::serde::ts_seconds::deserialize as from_ts;
         /// #[derive(Deserialize)]
         /// struct S {
         ///     #[serde(deserialize_with = "from_ts")]
@@ -708,7 +698,7 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate chrono;
         /// # use chrono::{TimeZone, DateTime, UTC};
-        /// use chrono::datetime::serde::ts_seconds::serialize as to_ts;
+        /// use chrono::serde::ts_seconds::serialize as to_ts;
         /// #[derive(Serialize)]
         /// struct S {
         ///     #[serde(serialize_with = "to_ts")]
@@ -882,12 +872,8 @@ pub mod serde {
 mod tests {
     use super::DateTime;
     use Datelike;
-    use naive::time::NaiveTime;
-    use naive::date::NaiveDate;
-    use offset::TimeZone;
-    use offset::utc::UTC;
-    use offset::local::Local;
-    use offset::fixed::FixedOffset;
+    use naive::{NaiveTime, NaiveDate};
+    use offset::{TimeZone, UTC, Local, FixedOffset};
     use oldtime::Duration;
 
     #[test]

@@ -2,49 +2,6 @@
 // See README.md and LICENSE.txt for details.
 
 //! ISO 8601 calendar date without timezone.
-//!
-//! # Calendar Date
-//!
-//! The ISO 8601 **calendar date** follows the proleptic Gregorian calendar.
-//! It is like a normal civil calendar but note some slight differences:
-//!
-//! * Dates before the Gregorian calendar's inception in 1582 are defined via the extrapolation.
-//!   Be careful, as historical dates are often noted in the Julian calendar and others
-//!   and the transition to Gregorian may differ across countries (as late as early 20C).
-//!
-//!   (Some example: Both Shakespeare from Britain and Cervantes from Spain seemingly died
-//!   on the same calendar date---April 23, 1616---but in the different calendar.
-//!   Britain used the Julian calendar at that time, so Shakespeare's death is later.)
-//!
-//! * ISO 8601 calendars has the year 0, which is 1 BCE (a year before 1 CE).
-//!   If you need a typical BCE/BC and CE/AD notation for year numbers,
-//!   use the [`Datelike::year_ce`](../../trait.Datelike.html#method.year_ce) method.
-//!
-//! # Week Date
-//!
-//! The ISO 8601 **week date** is a triple of year number, week number
-//! and [day of the week](../../enum.Weekday.html) with the following rules:
-//!
-//! * A week consists of Monday through Sunday, and is always numbered within some year.
-//!   The week number ranges from 1 to 52 or 53 depending on the year.
-//!
-//! * The week 1 of given year is defined as the first week containing January 4 of that year,
-//!   or equivalently, the first week containing four or more days in that year.
-//!
-//! * The year number in the week date may *not* correspond to the actual Gregorian year.
-//!   For example, January 3, 2016 (Sunday) was on the last (53rd) week of 2015.
-//!
-//! Chrono's date types default to the ISO 8601 [calendar date](#calendar-date),
-//! but the [`Datelike::isoweekdate`](../../trait.Datelike.html#tymethod.isoweekdate) method
-//! can be used to get the corresponding week date.
-//!
-//! # Ordinal Date
-//!
-//! The ISO 8601 **ordinal date** is a pair of year number and day of the year ("ordinal").
-//! The ordinal number ranges from 1 to 365 or 366 depending on the year.
-//! The year number is same to that of the [calendar date](#calendar-date).
-//!
-//! This is currently the internal format of Chrono's date types.
 
 use std::{str, fmt, hash};
 use std::ops::{Add, Sub};
@@ -53,8 +10,7 @@ use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
 use div::div_mod_floor;
-use naive::time::NaiveTime;
-use naive::datetime::NaiveDateTime;
+use naive::{NaiveTime, NaiveDateTime};
 use format::{Item, Numeric, Pad};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
@@ -89,32 +45,76 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 +
 const MAX_BITS: usize = 44;
 
 /// ISO 8601 calendar date without timezone.
-/// Allows for every [proleptic Gregorian date](./index.html#calendar-date)
+/// Allows for every [proleptic Gregorian date](#calendar-date)
 /// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
+///
+/// # Calendar Date
+///
+/// The ISO 8601 **calendar date** follows the proleptic Gregorian calendar.
+/// It is like a normal civil calendar but note some slight differences:
+///
+/// * Dates before the Gregorian calendar's inception in 1582 are defined via the extrapolation.
+///   Be careful, as historical dates are often noted in the Julian calendar and others
+///   and the transition to Gregorian may differ across countries (as late as early 20C).
+///
+///   (Some example: Both Shakespeare from Britain and Cervantes from Spain seemingly died
+///   on the same calendar date---April 23, 1616---but in the different calendar.
+///   Britain used the Julian calendar at that time, so Shakespeare's death is later.)
+///
+/// * ISO 8601 calendars has the year 0, which is 1 BCE (a year before 1 CE).
+///   If you need a typical BCE/BC and CE/AD notation for year numbers,
+///   use the [`Datelike::year_ce`](../../trait.Datelike.html#method.year_ce) method.
+///
+/// # Week Date
+///
+/// The ISO 8601 **week date** is a triple of year number, week number
+/// and [day of the week](../../enum.Weekday.html) with the following rules:
+///
+/// * A week consists of Monday through Sunday, and is always numbered within some year.
+///   The week number ranges from 1 to 52 or 53 depending on the year.
+///
+/// * The week 1 of given year is defined as the first week containing January 4 of that year,
+///   or equivalently, the first week containing four or more days in that year.
+///
+/// * The year number in the week date may *not* correspond to the actual Gregorian year.
+///   For example, January 3, 2016 (Sunday) was on the last (53rd) week of 2015.
+///
+/// Chrono's date types default to the ISO 8601 [calendar date](#calendar-date),
+/// but the [`Datelike::isoweekdate`](../../trait.Datelike.html#tymethod.isoweekdate) method
+/// can be used to get the corresponding week date.
+///
+/// # Ordinal Date
+///
+/// The ISO 8601 **ordinal date** is a pair of year number and day of the year ("ordinal").
+/// The ordinal number ranges from 1 to 365 or 366 depending on the year.
+/// The year number is same to that of the [calendar date](#calendar-date).
+///
+/// This is currently the internal format of Chrono's date types.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
 
 /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
-pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+pub const MIN_DATE: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
 /// The maximum possible `NaiveDate` (December 31, 262143 CE).
-pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+pub const MAX_DATE: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
 
-// as it is hard to verify year flags in `MIN` and `MAX`, we use a separate run-time test.
+// as it is hard to verify year flags in `MIN_DATE` and `MAX_DATE`,
+// we use a separate run-time test.
 #[test]
 fn test_date_bounds() {
     let calculated_min = NaiveDate::from_ymd(MIN_YEAR, 1, 1);
     let calculated_max = NaiveDate::from_ymd(MAX_YEAR, 12, 31);
-    assert!(MIN == calculated_min,
-            "`MIN` should have a year flag {:?}", calculated_min.of().flags());
-    assert!(MAX == calculated_max,
-            "`MAX` should have a year flag {:?}", calculated_max.of().flags());
+    assert!(MIN_DATE == calculated_min,
+            "`MIN_DATE` should have a year flag {:?}", calculated_min.of().flags());
+    assert!(MAX_DATE == calculated_max,
+            "`MAX_DATE` should have a year flag {:?}", calculated_max.of().flags());
 
     // let's also check that the entire range do not exceed 2^44 seconds
     // (sometimes used for bounding `Duration` against overflow)
-    let maxsecs = MAX.signed_duration_since(MIN).num_seconds();
+    let maxsecs = MAX_DATE.signed_duration_since(MIN_DATE).num_seconds();
     let maxsecs = maxsecs + 86401; // also take care of DateTime
     assert!(maxsecs < (1 << MAX_BITS),
             "The entire `NaiveDate` range somehow exceeds 2^{} seconds", MAX_BITS);
@@ -136,7 +136,7 @@ impl NaiveDate {
         NaiveDate::from_of(year, mdf.to_of())
     }
 
-    /// Makes a new `NaiveDate` from the [calendar date](./index.html#calendar-date)
+    /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
     /// (year, month and day).
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
@@ -158,7 +158,7 @@ impl NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from the [calendar date](./index.html#calendar-date)
+    /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
     /// (year, month and day).
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
@@ -182,7 +182,7 @@ impl NaiveDate {
         NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
     }
 
-    /// Makes a new `NaiveDate` from the [ordinal date](./index.html#ordinal-date)
+    /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
     /// (year and day of the year).
     ///
     /// Panics on the out-of-range date and/or invalid day of year.
@@ -204,7 +204,7 @@ impl NaiveDate {
         NaiveDate::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from the [ordinal date](./index.html#ordinal-date)
+    /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
     /// (year and day of the year).
     ///
     /// Returns `None` on the out-of-range date and/or invalid day of year.
@@ -229,7 +229,7 @@ impl NaiveDate {
         NaiveDate::from_of(year, Of::new(ordinal, flags))
     }
 
-    /// Makes a new `NaiveDate` from the [ISO week date](./index.html#week-date)
+    /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
     /// (year, week number and day of the week).
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
@@ -252,7 +252,7 @@ impl NaiveDate {
         NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from the [ISO week date](./index.html#week-date)
+    /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
     /// (year, week number and day of the week).
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
@@ -466,7 +466,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
-    /// No [leap second](../time/index.html#leap-second-handling) is allowed here;
+    /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
     /// use `NaiveDate::and_hms_*` methods with a subsecond parameter instead.
     ///
     /// Panics on invalid hour, minute and/or second.
@@ -490,7 +490,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
-    /// No [leap second](../time/index.html#leap-second-handling) is allowed here;
+    /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
     /// use `NaiveDate::and_hms_*_opt` methods with a subsecond parameter instead.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
@@ -514,7 +514,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
     ///
@@ -539,7 +539,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     ///
@@ -565,7 +565,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
     ///
@@ -590,7 +590,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     ///
@@ -616,7 +616,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
     ///
@@ -641,7 +641,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](../time/index.html#leap-second-handling).
+    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     ///
@@ -723,11 +723,11 @@ impl NaiveDate {
     ///
     /// ~~~~
     /// use chrono::NaiveDate;
-    /// use chrono::naive::date::MAX;
+    /// use chrono::naive::MAX_DATE;
     ///
     /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).succ_opt(),
     ///            Some(NaiveDate::from_ymd(2015, 6, 4)));
-    /// assert_eq!(MAX.succ_opt(), None);
+    /// assert_eq!(MAX_DATE.succ_opt(), None);
     /// ~~~~
     #[inline]
     pub fn succ_opt(&self) -> Option<NaiveDate> {
@@ -760,11 +760,11 @@ impl NaiveDate {
     ///
     /// ~~~~
     /// use chrono::NaiveDate;
-    /// use chrono::naive::date::MIN;
+    /// use chrono::naive::MIN_DATE;
     ///
     /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).pred_opt(),
     ///            Some(NaiveDate::from_ymd(2015, 6, 2)));
-    /// assert_eq!(MIN.pred_opt(), None);
+    /// assert_eq!(MIN_DATE.pred_opt(), None);
     /// ~~~~
     #[inline]
     pub fn pred_opt(&self) -> Option<NaiveDate> {
@@ -780,7 +780,7 @@ impl NaiveDate {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveDate;
-    /// use chrono::naive::date::MAX;
+    /// use chrono::naive::MAX_DATE;
     /// use time::Duration;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
@@ -790,7 +790,7 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2015, 7, 27)));
     /// assert_eq!(d.checked_add_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_add_signed(Duration::days(-1_000_000_000)), None);
-    /// assert_eq!(MAX.checked_add_signed(Duration::days(1)), None);
+    /// assert_eq!(MAX_DATE.checked_add_signed(Duration::days(1)), None);
     /// # }
     /// ~~~~
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
@@ -816,7 +816,7 @@ impl NaiveDate {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveDate;
-    /// use chrono::naive::date::MIN;
+    /// use chrono::naive::MIN_DATE;
     /// use time::Duration;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
@@ -826,7 +826,7 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2015, 10, 15)));
     /// assert_eq!(d.checked_sub_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_sub_signed(Duration::days(-1_000_000_000)), None);
-    /// assert_eq!(MIN.checked_sub_signed(Duration::days(1)), None);
+    /// assert_eq!(MIN_DATE.checked_sub_signed(Duration::days(1)), None);
     /// # }
     /// ~~~~
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
@@ -951,7 +951,7 @@ impl NaiveDate {
 }
 
 impl Datelike for NaiveDate {
-    /// Returns the year number in the [calendar date](./index.html#calendar-date).
+    /// Returns the year number in the [calendar date](#calendar-date).
     ///
     /// # Example
     ///
@@ -1013,7 +1013,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).day(), 14);
     /// ~~~~
     ///
-    /// Combined with [`NaiveDate::pred`](./struct.NaiveDate.html#method.pred),
+    /// Combined with [`NaiveDate::pred`](#method.pred),
     /// one can determine the number of days in a particular month.
     /// (Note that this panics when `year` is out of range.)
     ///
@@ -1070,7 +1070,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).ordinal(), 74);
     /// ~~~~
     ///
-    /// Combined with [`NaiveDate::pred`](./struct.NaiveDate.html#method.pred),
+    /// Combined with [`NaiveDate::pred`](#method.pred),
     /// one can determine the number of days in a particular year.
     /// (Note that this panics when `year` is out of range.)
     ///
@@ -1487,9 +1487,9 @@ fn test_encodable_json<F, E>(to_string: F)
                Some(r#""0000-01-01""#.into()));
     assert_eq!(to_string(&NaiveDate::from_ymd(-1, 12, 31)).ok(),
                Some(r#""-0001-12-31""#.into()));
-    assert_eq!(to_string(&MIN).ok(),
+    assert_eq!(to_string(&MIN_DATE).ok(),
                Some(r#""-262144-01-01""#.into()));
-    assert_eq!(to_string(&MAX).ok(),
+    assert_eq!(to_string(&MAX_DATE).ok(),
                Some(r#""+262143-12-31""#.into()));
 }
 
@@ -1505,8 +1505,8 @@ fn test_decodable_json<F, E>(from_str: F)
     assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
     assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
     assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
-    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(MIN));
-    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(MAX));
+    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(MIN_DATE));
+    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(MAX_DATE));
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
@@ -1562,7 +1562,7 @@ mod rustc_serialize {
 mod serde {
     use std::fmt;
     use super::NaiveDate;
-    use serde::{ser, de};
+    use serdelib::{ser, de};
 
     // TODO not very optimized for space (binary formats would want something better)
 
@@ -1638,8 +1638,8 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::NaiveDate;
-    use super::{MIN, MIN_YEAR, MIN_DAYS_FROM_YEAR_0};
-    use super::{MAX, MAX_YEAR, MAX_DAYS_FROM_YEAR_0};
+    use super::{MIN_DATE, MIN_YEAR, MIN_DAYS_FROM_YEAR_0};
+    use super::{MAX_DATE, MAX_YEAR, MAX_DAYS_FROM_YEAR_0};
     use {Datelike, Weekday};
     use std::{i32, u32};
     use oldtime::Duration;
@@ -1778,10 +1778,10 @@ mod tests {
             assert_eq!(from_ndays_from_ce(days).map(|d| d.num_days_from_ce()), Some(days));
         }
 
-        assert_eq!(from_ndays_from_ce(MIN.num_days_from_ce()), Some(MIN));
-        assert_eq!(from_ndays_from_ce(MIN.num_days_from_ce() - 1), None);
-        assert_eq!(from_ndays_from_ce(MAX.num_days_from_ce()), Some(MAX));
-        assert_eq!(from_ndays_from_ce(MAX.num_days_from_ce() + 1), None);
+        assert_eq!(from_ndays_from_ce(MIN_DATE.num_days_from_ce()), Some(MIN_DATE));
+        assert_eq!(from_ndays_from_ce(MIN_DATE.num_days_from_ce() - 1), None);
+        assert_eq!(from_ndays_from_ce(MAX_DATE.num_days_from_ce()), Some(MAX_DATE));
+        assert_eq!(from_ndays_from_ce(MAX_DATE.num_days_from_ce() + 1), None);
     }
 
     #[test]
@@ -1887,7 +1887,7 @@ mod tests {
         assert_eq!(ymd(2014, 5, 31).succ_opt(), Some(ymd(2014, 6, 1)));
         assert_eq!(ymd(2014, 12, 31).succ_opt(), Some(ymd(2015, 1, 1)));
         assert_eq!(ymd(2016, 2, 28).succ_opt(), Some(ymd(2016, 2, 29)));
-        assert_eq!(ymd(MAX.year(), 12, 31).succ_opt(), None);
+        assert_eq!(ymd(MAX_DATE.year(), 12, 31).succ_opt(), None);
     }
 
     #[test]
@@ -1897,7 +1897,7 @@ mod tests {
         assert_eq!(ymd(2015, 1, 1).pred_opt(), Some(ymd(2014, 12, 31)));
         assert_eq!(ymd(2014, 6, 1).pred_opt(), Some(ymd(2014, 5, 31)));
         assert_eq!(ymd(2014, 5, 7).pred_opt(), Some(ymd(2014, 5, 6)));
-        assert_eq!(ymd(MIN.year(), 1, 1).pred_opt(), None);
+        assert_eq!(ymd(MIN_DATE.year(), 1, 1).pred_opt(), None);
     }
 
     #[test]

@@ -10,12 +10,9 @@ use oldtime::Duration as OldDuration;
 use {Datelike, Timelike};
 use Weekday;
 use div::div_rem;
-use offset::{TimeZone, Offset, LocalResult};
-use offset::fixed::FixedOffset;
-use naive::date::NaiveDate;
-use naive::time::NaiveTime;
-use naive::datetime::NaiveDateTime;
-use datetime::DateTime;
+use offset::{TimeZone, Offset, LocalResult, FixedOffset};
+use naive::{NaiveDate, NaiveTime, NaiveDateTime};
+use DateTime;
 use super::{ParseResult, OUT_OF_RANGE, IMPOSSIBLE, NOT_ENOUGH};
 
 /// Parsed parts of date and time. There are two classes of methods:
@@ -641,11 +638,8 @@ mod tests {
     use super::super::{OUT_OF_RANGE, IMPOSSIBLE, NOT_ENOUGH};
     use Datelike;
     use Weekday::*;
-    use naive::date::{self, NaiveDate};
-    use naive::time::NaiveTime;
-    use offset::TimeZone;
-    use offset::utc::UTC;
-    use offset::fixed::FixedOffset;
+    use naive::{MIN_DATE, MAX_DATE, NaiveDate, NaiveTime};
+    use offset::{TimeZone, UTC, FixedOffset};
 
     #[test]
     fn test_parsed_set_fields() {
@@ -764,7 +758,7 @@ mod tests {
                    ymd(0, 1, 1));
         assert_eq!(parse!(year_div_100: -1, year_mod_100: 42, month: 1, day: 1),
                    Err(OUT_OF_RANGE));
-        let max_year = date::MAX.year();
+        let max_year = MAX_DATE.year();
         assert_eq!(parse!(year_div_100: max_year / 100,
                           year_mod_100: max_year % 100, month: 1, day: 1),
                    ymd(max_year, 1, 1));
@@ -963,17 +957,17 @@ mod tests {
 
         // more timestamps
         let max_days_from_year_1970 =
-            date::MAX.signed_duration_since(NaiveDate::from_ymd(1970,1,1));
+            MAX_DATE.signed_duration_since(NaiveDate::from_ymd(1970,1,1));
         let year_0_from_year_1970 =
             NaiveDate::from_ymd(0,1,1).signed_duration_since(NaiveDate::from_ymd(1970,1,1));
         let min_days_from_year_1970 =
-            date::MIN.signed_duration_since(NaiveDate::from_ymd(1970,1,1));
+            MIN_DATE.signed_duration_since(NaiveDate::from_ymd(1970,1,1));
         assert_eq!(parse!(timestamp: min_days_from_year_1970.num_seconds()),
-                   ymdhms(date::MIN.year(),1,1, 0,0,0));
+                   ymdhms(MIN_DATE.year(),1,1, 0,0,0));
         assert_eq!(parse!(timestamp: year_0_from_year_1970.num_seconds()),
                    ymdhms(0,1,1, 0,0,0));
         assert_eq!(parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
-                   ymdhms(date::MAX.year(),12,31, 23,59,59));
+                   ymdhms(MAX_DATE.year(),12,31, 23,59,59));
 
         // leap seconds #1: partial fields
         assert_eq!(parse!(second: 59, timestamp: 1_341_100_798), Err(IMPOSSIBLE));

@@ -6,12 +6,9 @@
 use std::fmt;
 use oldtime;
 
-use naive::date::NaiveDate;
-use naive::datetime::NaiveDateTime;
-use date::Date;
-use datetime::DateTime;
-use super::{TimeZone, Offset, LocalResult};
-use super::fixed::FixedOffset;
+use naive::{NaiveDate, NaiveDateTime};
+use {Date, DateTime};
+use super::{TimeZone, Offset, LocalResult, FixedOffset};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).

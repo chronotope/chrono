@@ -1,35 +1,29 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-/*!
- * The time zone, which calculates offsets from the local time to UTC.
- *
- * There are four operations provided by the `TimeZone` trait:
- *
- * 1. Converting the local `NaiveDateTime` to `DateTime<Tz>`
- * 2. Converting the UTC `NaiveDateTime` to `DateTime<Tz>`
- * 3. Converting `DateTime<Tz>` to the local `NaiveDateTime`
- * 4. Constructing `DateTime<Tz>` objects from various offsets
- *
- * 1 is used for constructors. 2 is used for the `with_timezone` method of date and time types.
- * 3 is used for other methods, e.g. `year()` or `format()`, and provided by an associated type
- * which implements `Offset` (which then passed to `TimeZone` for actual implementations).
- * Technically speaking `TimeZone` has a total knowledge about given timescale,
- * but `Offset` is used as a cache to avoid the repeated conversion
- * and provides implementations for 1 and 3.
- * An `TimeZone` instance can be reconstructed from the corresponding `Offset` instance.
- */
+//! The time zone, which calculates offsets from the local time to UTC.
+//!
+//! There are four operations provided by the `TimeZone` trait:
+//!
+//! 1. Converting the local `NaiveDateTime` to `DateTime<Tz>`
+//! 2. Converting the UTC `NaiveDateTime` to `DateTime<Tz>`
+//! 3. Converting `DateTime<Tz>` to the local `NaiveDateTime`
+//! 4. Constructing `DateTime<Tz>` objects from various offsets
+//!
+//! 1 is used for constructors. 2 is used for the `with_timezone` method of date and time types.
+//! 3 is used for other methods, e.g. `year()` or `format()`, and provided by an associated type
+//! which implements `Offset` (which then passed to `TimeZone` for actual implementations).
+//! Technically speaking `TimeZone` has a total knowledge about given timescale,
+//! but `Offset` is used as a cache to avoid the repeated conversion
+//! and provides implementations for 1 and 3.
+//! An `TimeZone` instance can be reconstructed from the corresponding `Offset` instance.
 
 use std::fmt;
 
 use Weekday;
-use naive::date::NaiveDate;
-use naive::time::NaiveTime;
-use naive::datetime::NaiveDateTime;
-use date::Date;
-use datetime::DateTime;
+use naive::{NaiveDate, NaiveTime, NaiveDateTime};
+use {Date, DateTime};
 use format::{parse, Parsed, ParseResult, StrftimeItems};
-use self::fixed::FixedOffset;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug)]
@@ -165,8 +159,8 @@ pub trait Offset: Sized + Clone + fmt::Debug {
 
 /// The time zone.
 ///
-/// The methods here are the primarily constructors for [`Date`](../date/struct.Date.html) and
-/// [`DateTime`](../datetime/struct.DateTime.html) types.
+/// The methods here are the primarily constructors for [`Date`](../struct.Date.html) and
+/// [`DateTime`](../struct.DateTime.html) types.
 pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
@@ -373,7 +367,11 @@ pub trait TimeZone: Sized + Clone {
     }
 }
 
-pub mod utc;
-pub mod fixed;
-pub mod local;
+mod utc;
+mod fixed;
+mod local;
+
+pub use self::utc::UTC;
+pub use self::fixed::FixedOffset;
+pub use self::local::Local;
 

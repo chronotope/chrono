@@ -9,10 +9,8 @@ use oldtime::Duration as OldDuration;
 
 use Timelike;
 use div::div_mod_floor;
-use naive::time::NaiveTime;
-use naive::date::NaiveDate;
-use naive::datetime::NaiveDateTime;
-use datetime::DateTime;
+use naive::{NaiveTime, NaiveDate, NaiveDateTime};
+use DateTime;
 use super::{TimeZone, Offset, LocalResult};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.

@@ -7,6 +7,7 @@ Ashley Mannix <ashleymannix@live.com.au>
 Ben Boeckel <mathstuf@gmail.com>
 Ben Eills <ben@beneills.com>
 Brandon W Maister <bwm@knewton.com>
+Brandon W Maister <quodlibetor@gmail.com>
 Colin Ray <r.colinray@gmail.com>
 Corey Farwell <coreyf@rwell.org>
 Dan <dan@ebip.co.uk>
@@ -19,6 +20,7 @@ Eric Findlay <e.findlay@protonmail.ch>
 Eunchong Yu <kroisse@gmail.com>
 Frans Skarman <frans.skarman@gmail.com>
 Huon Wilson <dbau.pp+github@gmail.com>
+Igor Gnatenko <ignatenko@redhat.com>
 Jim Turner <jturner314@gmail.com>
 Jisoo Park <xxxyel@gmail.com>
 Joe Wilm <joe@jwilm.com>

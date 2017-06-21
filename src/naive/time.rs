@@ -2,159 +2,6 @@
 // See README.md and LICENSE.txt for details.
 
 //! ISO 8601 time without timezone.
-//!
-//! # Leap Second Handling
-//!
-//! Since 1960s, the manmade atomic clock has been so accurate that
-//! it is much more accurate than Earth's own motion.
-//! It became desirable to define the civil time in terms of the atomic clock,
-//! but that risks the desynchronization of the civil time from Earth.
-//! To account for this, the designers of the Coordinated Universal Time (UTC)
-//! made that the UTC should be kept within 0.9 seconds of the observed Earth-bound time.
-//! When the mean solar day is longer than the ideal (86,400 seconds),
-//! the error slowly accumulates and it is necessary to add a **leap second**
-//! to slow the UTC down a bit.
-//! (We may also remove a second to speed the UTC up a bit, but it never happened.)
-//! The leap second, if any, follows 23:59:59 of June 30 or December 31 in the UTC.
-//!
-//! Fast forward to the 21st century,
-//! we have seen 26 leap seconds from January 1972 to December 2015.
-//! Yes, 26 seconds. Probably you can read this paragraph within 26 seconds.
-//! But those 26 seconds, and possibly more in the future, are never predictable,
-//! and whether to add a leap second or not is known only before 6 months.
-//! Internet-based clocks (via NTP) do account for known leap seconds,
-//! but the system API normally doesn't (and often can't, with no network connection)
-//! and there is no reliable way to retrieve leap second information.
-//!
-//! Chrono does not try to accurately implement leap seconds; it is impossible.
-//! Rather, **it allows for leap seconds but behaves as if there are *no other* leap seconds.**
-//! Various operations will ignore any possible leap second(s)
-//! except when any of the operands were actually leap seconds.
-//!
-//! If you cannot tolerate this behavior,
-//! you must use a separate `TimeZone` for the International Atomic Time (TAI).
-//! TAI is like UTC but has no leap seconds, and thus slightly differs from UTC.
-//! Chrono 0.3 does not provide such implementation, but it is planned for 0.4.
-//!
-//! ## Representing Leap Seconds
-//!
-//! The leap second is indicated via fractional seconds more than 1 second.
-//! This makes possible to treat a leap second as the prior non-leap second
-//! if you don't care about sub-second accuracy.
-//! You should use the proper formatting to get the raw leap second.
-//!
-//! All methods accepting fractional seconds will accept such values.
-//!
-//! ~~~~
-//! use chrono::{NaiveDate, NaiveTime, UTC, TimeZone};
-//!
-//! let t = NaiveTime::from_hms_milli(8, 59, 59, 1_000);
-//!
-//! let dt1 = NaiveDate::from_ymd(2015, 7, 1).and_hms_micro(8, 59, 59, 1_000_000);
-//!
-//! let dt2 = UTC.ymd(2015, 6, 30).and_hms_nano(23, 59, 59, 1_000_000_000);
-//! # let _ = (t, dt1, dt2);
-//! ~~~~
-//!
-//! Note that the leap second can happen anytime given an appropriate time zone;
-//! 2015-07-01 01:23:60 would be a proper leap second if UTC+01:24 had existed.
-//! Practically speaking, though, by the time of the first leap second on 1972-06-30,
-//! every time zone offset around the world has standardized to the 5-minute alignment.
-//!
-//! ## Date And Time Arithmetics
-//!
-//! As a concrete example, let's assume that `03:00:60` and `04:00:60` are leap seconds.
-//! (In reality, of course, leap seconds are separated by at least 6 months.)
-//!
-//! `Time + Duration`:
-//!
-//! - `03:00:00 + 1s = 03:00:01`.
-//! - `03:00:59 + 60s = 03:02:00`.
-//! - `03:00:59 + 1s = 03:01:00`.
-//! - `03:00:60 + 1s = 03:01:00`.
-//!   Note that the sum is identical to the previous.
-//! - `03:00:60 + 60s = 03:01:59`.
-//! - `03:00:60 + 61s = 03:02:00`.
-//! - `03:00:60.1 + 0.8s = 03:00:60.9`.
-//!
-//! `Time - Duration`:
-//!
-//! - `03:00:00 - 1s = 02:59:59`.
-//! - `03:01:00 - 1s = 03:00:59`.
-//! - `03:01:00 - 60s = 03:00:00`.
-//! - `03:00:60 - 60s = 03:00:00`.
-//!   Note that the result is identical to the previous.
-//! - `03:00:60.7 - 0.4s = 03:00:60.3`.
-//! - `03:00:60.7 - 0.9s = 03:00:59.8`.
-//!
-//! `Time - Time`:
-//!
-//! - `04:00:00 - 03:00:00 = 3600s`.
-//! - `03:01:00 - 03:00:00 = 60s`.
-//! - `03:00:60 - 03:00:00 = 60s`.
-//!   Note that the difference is identical to the previous.
-//! - `03:00:60.6 - 03:00:59.4 = 1.2s`.
-//! - `03:01:00 - 03:00:59.8 = 0.2s`.
-//! - `03:01:00 - 03:00:60.5 = 0.5s`.
-//!   Note that the difference is larger than the previous,
-//!   even though the leap second clearly follows the previous whole second.
-//! - `04:00:60.9 - 03:00:60.1 =
-//!   (04:00:60.9 - 04:00:00) + (04:00:00 - 03:01:00) + (03:01:00 - 03:00:60.1) =
-//!   60.9s + 3540s + 0.9s = 3601.8s`.
-//!
-//! In general,
-//!
-//! - `Time + Duration` unconditionally equals to `Duration + Time`.
-//!
-//! - `Time - Duration` unconditionally equals to `Time + (-Duration)`.
-//!
-//! - `Time1 - Time2` unconditionally equals to `-(Time2 - Time1)`.
-//!
-//! - Associativity does not generally hold, because
-//!   `(Time + Duration1) - Duration2` no longer equals to `Time + (Duration1 - Duration2)`
-//!   for two positive durations.
-//!
-//!     - As a special case, `(Time + Duration) - Duration` also does not equal to `Time`.
-//!
-//!     - If you can assume that all durations have the same sign, however,
-//!       then the associativity holds:
-//!       `(Time + Duration1) + Duration2` equals to `Time + (Duration1 + Duration2)`
-//!       for two positive durations.
-//!
-//! ## Reading And Writing Leap Seconds
-//!
-//! The "typical" leap seconds on the minute boundary are
-//! correctly handled both in the formatting and parsing.
-//! The leap second in the human-readable representation
-//! will be represented as the second part being 60, as required by ISO 8601.
-//!
-//! ~~~~
-//! use chrono::{UTC, TimeZone};
-//!
-//! let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_000);
-//! assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
-//! ~~~~
-//!
-//! There are hypothetical leap seconds not on the minute boundary
-//! nevertheless supported by Chrono.
-//! They are allowed for the sake of completeness and consistency;
-//! there were several "exotic" time zone offsets with fractional minutes prior to UTC after all.
-//! For such cases the human-readable representation is ambiguous
-//! and would be read back to the next non-leap second.
-//!
-//! ~~~~
-//! use chrono::{DateTime, UTC, TimeZone};
-//!
-//! let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 56, 4, 1_000);
-//! assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
-//!
-//! let dt = UTC.ymd(2015, 6, 30).and_hms(23, 56, 5);
-//! assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
-//! assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
-//! ~~~~
-//!
-//! Since Chrono alone cannot determine any existence of leap seconds,
-//! **there is absolutely no guarantee that the leap second read has actually happened**.
 
 use std::{str, fmt, hash};
 use std::ops::{Add, Sub};
@@ -168,9 +15,158 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
 ///
-/// <a name="leap-second-what?"></a>
-/// Chrono has a notable policy on the [leap second handling](./index.html#leap-second-handling),
-/// designed to be maximally useful for typical users.
+/// # Leap Second Handling
+///
+/// Since 1960s, the manmade atomic clock has been so accurate that
+/// it is much more accurate than Earth's own motion.
+/// It became desirable to define the civil time in terms of the atomic clock,
+/// but that risks the desynchronization of the civil time from Earth.
+/// To account for this, the designers of the Coordinated Universal Time (UTC)
+/// made that the UTC should be kept within 0.9 seconds of the observed Earth-bound time.
+/// When the mean solar day is longer than the ideal (86,400 seconds),
+/// the error slowly accumulates and it is necessary to add a **leap second**
+/// to slow the UTC down a bit.
+/// (We may also remove a second to speed the UTC up a bit, but it never happened.)
+/// The leap second, if any, follows 23:59:59 of June 30 or December 31 in the UTC.
+///
+/// Fast forward to the 21st century,
+/// we have seen 26 leap seconds from January 1972 to December 2015.
+/// Yes, 26 seconds. Probably you can read this paragraph within 26 seconds.
+/// But those 26 seconds, and possibly more in the future, are never predictable,
+/// and whether to add a leap second or not is known only before 6 months.
+/// Internet-based clocks (via NTP) do account for known leap seconds,
+/// but the system API normally doesn't (and often can't, with no network connection)
+/// and there is no reliable way to retrieve leap second information.
+///
+/// Chrono does not try to accurately implement leap seconds; it is impossible.
+/// Rather, **it allows for leap seconds but behaves as if there are *no other* leap seconds.**
+/// Various operations will ignore any possible leap second(s)
+/// except when any of the operands were actually leap seconds.
+///
+/// If you cannot tolerate this behavior,
+/// you must use a separate `TimeZone` for the International Atomic Time (TAI).
+/// TAI is like UTC but has no leap seconds, and thus slightly differs from UTC.
+/// Chrono 0.3 does not provide such implementation, but it is planned for 0.4.
+///
+/// ## Representing Leap Seconds
+///
+/// The leap second is indicated via fractional seconds more than 1 second.
+/// This makes possible to treat a leap second as the prior non-leap second
+/// if you don't care about sub-second accuracy.
+/// You should use the proper formatting to get the raw leap second.
+///
+/// All methods accepting fractional seconds will accept such values.
+///
+/// ~~~~
+/// use chrono::{NaiveDate, NaiveTime, UTC, TimeZone};
+///
+/// let t = NaiveTime::from_hms_milli(8, 59, 59, 1_000);
+///
+/// let dt1 = NaiveDate::from_ymd(2015, 7, 1).and_hms_micro(8, 59, 59, 1_000_000);
+///
+/// let dt2 = UTC.ymd(2015, 6, 30).and_hms_nano(23, 59, 59, 1_000_000_000);
+/// # let _ = (t, dt1, dt2);
+/// ~~~~
+///
+/// Note that the leap second can happen anytime given an appropriate time zone;
+/// 2015-07-01 01:23:60 would be a proper leap second if UTC+01:24 had existed.
+/// Practically speaking, though, by the time of the first leap second on 1972-06-30,
+/// every time zone offset around the world has standardized to the 5-minute alignment.
+///
+/// ## Date And Time Arithmetics
+///
+/// As a concrete example, let's assume that `03:00:60` and `04:00:60` are leap seconds.
+/// (In reality, of course, leap seconds are separated by at least 6 months.)
+///
+/// `Time + Duration`:
+///
+/// - `03:00:00 + 1s = 03:00:01`.
+/// - `03:00:59 + 60s = 03:02:00`.
+/// - `03:00:59 + 1s = 03:01:00`.
+/// - `03:00:60 + 1s = 03:01:00`.
+///   Note that the sum is identical to the previous.
+/// - `03:00:60 + 60s = 03:01:59`.
+/// - `03:00:60 + 61s = 03:02:00`.
+/// - `03:00:60.1 + 0.8s = 03:00:60.9`.
+///
+/// `Time - Duration`:
+///
+/// - `03:00:00 - 1s = 02:59:59`.
+/// - `03:01:00 - 1s = 03:00:59`.
+/// - `03:01:00 - 60s = 03:00:00`.
+/// - `03:00:60 - 60s = 03:00:00`.
+///   Note that the result is identical to the previous.
+/// - `03:00:60.7 - 0.4s = 03:00:60.3`.
+/// - `03:00:60.7 - 0.9s = 03:00:59.8`.
+///
+/// `Time - Time`:
+///
+/// - `04:00:00 - 03:00:00 = 3600s`.
+/// - `03:01:00 - 03:00:00 = 60s`.
+/// - `03:00:60 - 03:00:00 = 60s`.
+///   Note that the difference is identical to the previous.
+/// - `03:00:60.6 - 03:00:59.4 = 1.2s`.
+/// - `03:01:00 - 03:00:59.8 = 0.2s`.
+/// - `03:01:00 - 03:00:60.5 = 0.5s`.
+///   Note that the difference is larger than the previous,
+///   even though the leap second clearly follows the previous whole second.
+/// - `04:00:60.9 - 03:00:60.1 =
+///   (04:00:60.9 - 04:00:00) + (04:00:00 - 03:01:00) + (03:01:00 - 03:00:60.1) =
+///   60.9s + 3540s + 0.9s = 3601.8s`.
+///
+/// In general,
+///
+/// - `Time + Duration` unconditionally equals to `Duration + Time`.
+///
+/// - `Time - Duration` unconditionally equals to `Time + (-Duration)`.
+///
+/// - `Time1 - Time2` unconditionally equals to `-(Time2 - Time1)`.
+///
+/// - Associativity does not generally hold, because
+///   `(Time + Duration1) - Duration2` no longer equals to `Time + (Duration1 - Duration2)`
+///   for two positive durations.
+///
+///     - As a special case, `(Time + Duration) - Duration` also does not equal to `Time`.
+///
+///     - If you can assume that all durations have the same sign, however,
+///       then the associativity holds:
+///       `(Time + Duration1) + Duration2` equals to `Time + (Duration1 + Duration2)`
+///       for two positive durations.
+///
+/// ## Reading And Writing Leap Seconds
+///
+/// The "typical" leap seconds on the minute boundary are
+/// correctly handled both in the formatting and parsing.
+/// The leap second in the human-readable representation
+/// will be represented as the second part being 60, as required by ISO 8601.
+///
+/// ~~~~
+/// use chrono::{UTC, TimeZone};
+///
+/// let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_000);
+/// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
+/// ~~~~
+///
+/// There are hypothetical leap seconds not on the minute boundary
+/// nevertheless supported by Chrono.
+/// They are allowed for the sake of completeness and consistency;
+/// there were several "exotic" time zone offsets with fractional minutes prior to UTC after all.
+/// For such cases the human-readable representation is ambiguous
+/// and would be read back to the next non-leap second.
+///
+/// ~~~~
+/// use chrono::{DateTime, UTC, TimeZone};
+///
+/// let dt = UTC.ymd(2015, 6, 30).and_hms_milli(23, 56, 4, 1_000);
+/// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
+///
+/// let dt = UTC.ymd(2015, 6, 30).and_hms(23, 56, 5);
+/// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
+/// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
+/// ~~~~
+///
+/// Since Chrono alone cannot determine any existence of leap seconds,
+/// **there is absolutely no guarantee that the leap second read has actually happened**.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveTime {
     secs: u32,
@@ -834,7 +830,7 @@ impl Timelike for NaiveTime {
 
     /// Returns the number of nanoseconds since the whole non-leap second.
     /// The range from 1,000,000,000 to 1,999,999,999 represents
-    /// the [leap second](./naive/time/index.html#leap-second-handling).
+    /// the [leap second](#leap-second-handling).
     ///
     /// # Example
     ///
@@ -1337,7 +1333,7 @@ mod rustc_serialize {
 mod serde {
     use std::fmt;
     use super::NaiveTime;
-    use serde::{ser, de};
+    use serdelib::{ser, de};
 
     // TODO not very optimized for space (binary formats would want something better)
     // TODO round-trip for general leap seconds (not just those with second = 60)

@@ -76,7 +76,7 @@
 //! ### Date and Time
 //!
 //! Chrono provides a
-//! [**`DateTime`**](./datetime/struct.DateTime.html)
+//! [**`DateTime`**](./struct.DateTime.html)
 //! type to represent a date and a time in a timezone.
 //!
 //! For more abstract moment-in-time tracking such as internal timekeeping
@@ -91,11 +91,11 @@
 //! which defines how the local date is converted to and back from the UTC date.
 //! There are three well-known `TimeZone` implementations:
 //!
-//! * [**`UTC`**](./offset/utc/struct.UTC.html) specifies the UTC time zone. It is most efficient.
+//! * [**`UTC`**](./offset/struct.UTC.html) specifies the UTC time zone. It is most efficient.
 //!
-//! * [**`Local`**](./offset/local/struct.Local.html) specifies the system local time zone.
+//! * [**`Local`**](./offset/struct.Local.html) specifies the system local time zone.
 //!
-//! * [**`FixedOffset`**](./offset/fixed/struct.FixedOffset.html) specifies
+//! * [**`FixedOffset`**](./offset/struct.FixedOffset.html) specifies
 //!   an arbitrary, fixed time zone such as UTC+09:00 or UTC-10:30.
 //!   This often results from the parsed textual date and time.
 //!   Since it stores the most information and does not depend on the system environment,
@@ -103,12 +103,12 @@
 //!
 //! `DateTime`s with different `TimeZone` types are distinct and do not mix,
 //! but can be converted to each other using
-//! the [`DateTime::with_timezone`](./datetime/struct.DateTime.html#method.with_timezone) method.
+//! the [`DateTime::with_timezone`](./struct.DateTime.html#method.with_timezone) method.
 //!
 //! You can get the current date and time in the UTC time zone
-//! ([`UTC::now()`](./offset/utc/struct.UTC.html#method.now))
+//! ([`UTC::now()`](./offset/struct.UTC.html#method.now))
 //! or in the local time zone
-//! ([`Local::now()`](./offset/local/struct.Local.html#method.now)).
+//! ([`Local::now()`](./offset/struct.Local.html#method.now)).
 //!
 //! ```rust
 //! use chrono::prelude::*;
@@ -198,14 +198,14 @@
 //! # }
 //! ```
 //!
-//! Formatting is done via the [`format`](./datetime/struct.DateTime.html#method.format) method,
+//! Formatting is done via the [`format`](./struct.DateTime.html#method.format) method,
 //! which format is equivalent to the familiar `strftime` format.
 //! (See the [`format::strftime` module documentation](./format/strftime/index.html#specifiers)
 //! for full syntax.)
 //!
 //! The default `to_string` method and `{:?}` specifier also give a reasonable representation.
-//! Chrono also provides [`to_rfc2822`](./datetime/struct.DateTime.html#method.to_rfc2822) and
-//! [`to_rfc3339`](./datetime/struct.DateTime.html#method.to_rfc3339) methods
+//! Chrono also provides [`to_rfc2822`](./struct.DateTime.html#method.to_rfc2822) and
+//! [`to_rfc3339`](./struct.DateTime.html#method.to_rfc3339) methods
 //! for well-known formats.
 //!
 //! ```rust
@@ -231,13 +231,13 @@
 //!    ([`std::fmt::Debug`](https://doc.rust-lang.org/std/fmt/trait.Debug.html))
 //!    format specifier prints, and requires the offset to be present.
 //!
-//! 2. [`DateTime::parse_from_str`](./datetime/struct.DateTime.html#method.parse_from_str) parses
+//! 2. [`DateTime::parse_from_str`](./struct.DateTime.html#method.parse_from_str) parses
 //!    a date and time with offsets and returns `DateTime<FixedOffset>`.
 //!    This should be used when the offset is a part of input and the caller cannot guess that.
 //!    It *cannot* be used when the offset can be missing.
-//!    [`DateTime::parse_from_rfc2822`](./datetime/struct.DateTime.html#method.parse_from_rfc2822)
+//!    [`DateTime::parse_from_rfc2822`](./struct.DateTime.html#method.parse_from_rfc2822)
 //!    and
-//!    [`DateTime::parse_from_rfc3339`](./datetime/struct.DateTime.html#method.parse_from_rfc3339)
+//!    [`DateTime::parse_from_rfc3339`](./struct.DateTime.html#method.parse_from_rfc3339)
 //!    are similar but for well-known formats.
 //!
 //! 3. [`Offset::datetime_from_str`](./offset/trait.TimeZone.html#method.datetime_from_str) is
@@ -281,7 +281,7 @@
 //!
 //! ### Individual date
 //!
-//! Chrono also provides an individual date type ([**`Date`**](./date/struct.Date.html)).
+//! Chrono also provides an individual date type ([**`Date`**](./struct.Date.html)).
 //! It also has time zones attached, and have to be constructed via time zones.
 //! Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 //!
@@ -301,26 +301,26 @@
 //!
 //! There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
 //!
-//! `DateTime` has [`date`](./datetime/struct.DateTime.html#method.date) method
+//! `DateTime` has [`date`](./struct.DateTime.html#method.date) method
 //! which returns a `Date` which represents its date component.
-//! There is also a [`time`](./datetime/struct.DateTime.html#method.time) method,
+//! There is also a [`time`](./struct.DateTime.html#method.time) method,
 //! which simply returns a naive local time described below.
 //!
 //! ### Naive date and time
 //!
 //! Chrono provides naive counterparts to `Date`, (non-existent) `Time` and `DateTime`
-//! as [**`NaiveDate`**](./naive/date/struct.NaiveDate.html),
-//! [**`NaiveTime`**](./naive/time/struct.NaiveTime.html) and
-//! [**`NaiveDateTime`**](./naive/datetime/struct.NaiveDateTime.html) respectively.
+//! as [**`NaiveDate`**](./naive/struct.NaiveDate.html),
+//! [**`NaiveTime`**](./naive/struct.NaiveTime.html) and
+//! [**`NaiveDateTime`**](./naive/struct.NaiveDateTime.html) respectively.
 //!
 //! They have almost equivalent interfaces as their timezone-aware twins,
 //! but are not associated to time zones obviously and can be quite low-level.
 //! They are mostly useful for building blocks for higher-level types.
 //!
 //! Timezone-aware `DateTime` and `Date` types have two methods returning naive versions:
-//! [`naive_local`](./datetime/struct.DateTime.html#method.naive_local) returns
+//! [`naive_local`](./struct.DateTime.html#method.naive_local) returns
 //! a view to the naive local time,
-//! and [`naive_utc`](./datetime/struct.DateTime.html#method.naive_utc) returns
+//! and [`naive_utc`](./struct.DateTime.html#method.naive_utc) returns
 //! a view to the naive UTC time.
 //!
 //! ## Limitations
@@ -332,7 +332,7 @@
 //! Time types are limited in the nanosecond accuracy.
 //!
 //! [Leap seconds are supported in the representation but
-//! Chrono doesn't try to make use of them](./naive/time/index.html#leap-second-handling).
+//! Chrono doesn't try to make use of them](./naive/struct.NaiveTime.html#leap-second-handling).
 //! (The main reason is that leap seconds are not really predictable.)
 //! Almost *every* operation over the possible leap seconds will ignore them.
 //! Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
@@ -356,34 +356,26 @@ extern crate num;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
-extern crate serde;
+extern crate serde as serdelib;
 
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
-pub use offset::{TimeZone, Offset, LocalResult};
-pub use offset::utc::UTC;
-pub use offset::fixed::FixedOffset;
-pub use offset::local::Local;
-pub use naive::date::NaiveDate;
-pub use naive::time::NaiveTime;
-pub use naive::datetime::NaiveDateTime;
-pub use date::Date;
-pub use datetime::DateTime;
+#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, UTC, FixedOffset, Local};
+#[doc(no_inline)] pub use naive::{NaiveDate, NaiveTime, NaiveDateTime};
+pub use date_::{Date, MIN_DATE, MAX_DATE};
+pub use datetime_::DateTime;
+#[cfg(feature = "rustc-serialize")] pub use datetime_::TsSeconds;
 pub use format::{ParseError, ParseResult};
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
-    pub use {Datelike, Timelike, Weekday};
-    pub use offset::{TimeZone, Offset};
-    pub use offset::utc::UTC;
-    pub use offset::fixed::FixedOffset;
-    pub use offset::local::Local;
-    pub use naive::date::NaiveDate;
-    pub use naive::time::NaiveTime;
-    pub use naive::datetime::NaiveDateTime;
-    pub use date::Date;
-    pub use datetime::DateTime;
+    #[doc(no_inline)] pub use {Datelike, Timelike, Weekday};
+    #[doc(no_inline)] pub use {TimeZone, Offset};
+    #[doc(no_inline)] pub use {UTC, FixedOffset, Local};
+    #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
+    #[doc(no_inline)] pub use Date;
+    #[doc(no_inline)] pub use DateTime;
 }
 
 // useful throughout the codebase
@@ -399,13 +391,34 @@ pub mod naive {
     //! They are primarily building blocks for other types
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
-    pub mod date;
-    pub mod time;
-    pub mod datetime;
+
+    // avoid using them directly even in the crate itself
+    #[path = "date.rs"] mod date_;
+    #[path = "time.rs"] mod time_;
+    #[path = "datetime.rs"] mod datetime_;
+
+    pub use self::date_::{NaiveDate, MIN_DATE, MAX_DATE};
+    pub use self::time_::NaiveTime;
+    pub use self::datetime_::{NaiveDateTime, TsSeconds};
+
+    /// Tools to help serializing/deserializing naive types.
+    #[cfg(feature = "serde")]
+    pub mod serde {
+        pub use super::datetime_::serde::*;
+    }
 }
-pub mod date;
-pub mod datetime;
+#[path = "date.rs"] mod date_;
+#[path = "datetime.rs"] mod datetime_;
 pub mod format;
+
+/// Ser/de helpers
+///
+/// The various modules in here are intended to be used with serde's [`with`
+/// annotation](https://serde.rs/attributes.html#field-attributes).
+#[cfg(feature = "serde")]
+pub mod serde {
+    pub use super::datetime_::serde::*;
+}
 
 /// The day of week.
 ///
@@ -594,7 +607,7 @@ impl fmt::Debug for ParseWeekdayError {
 mod weekday_serde {
     use super::Weekday;
     use std::fmt;
-    use serde::{ser, de};
+    use serdelib::{ser, de};
 
     impl ser::Serialize for Weekday {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -698,7 +711,7 @@ mod weekday_serde {
 
 /// The common set of methods for date component.
 pub trait Datelike: Sized {
-    /// Returns the year number in the [calendar date](./naive/date/index.html#calendar-date).
+    /// Returns the year number in the [calendar date](./naive/struct.NaiveDate.html#calendar-date).
     fn year(&self) -> i32;
 
     /// Returns the absolute year number starting from 1 with a boolean flag,
@@ -826,7 +839,7 @@ pub trait Timelike: Sized {
 
     /// Returns the number of nanoseconds since the whole non-leap second.
     /// The range from 1,000,000,000 to 1,999,999,999 represents
-    /// the [leap second](./naive/time/index.html#leap-second-handling).
+    /// the [leap second](./naive/struct.NaiveTime.html#leap-second-handling).
     fn nanosecond(&self) -> u32;
 
     /// Makes a new value with the hour number changed.
@@ -864,7 +877,7 @@ pub trait Timelike: Sized {
 fn test_readme_doomsday() {
     use num::iter::range_inclusive;
 
-    for y in range_inclusive(naive::date::MIN.year(), naive::date::MAX.year()) {
+    for y in range_inclusive(naive::MIN_DATE.year(), naive::MAX_DATE.year()) {
         // even months
         let d4 = NaiveDate::from_ymd(y, 4, 4);
         let d6 = NaiveDate::from_ymd(y, 6, 6);

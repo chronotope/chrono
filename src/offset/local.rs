@@ -6,11 +6,8 @@
 use oldtime;
 
 use {Datelike, Timelike};
-use naive::date::NaiveDate;
-use naive::time::NaiveTime;
-use naive::datetime::NaiveDateTime;
-use date::Date;
-use datetime::DateTime;
+use naive::{NaiveDate, NaiveTime, NaiveDateTime};
+use {Date, DateTime};
 use super::{TimeZone, LocalResult};
 use super::fixed::FixedOffset;
 
