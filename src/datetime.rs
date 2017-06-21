@@ -8,6 +8,7 @@ use std::cmp::Ordering;
 use std::ops::{Add, Sub};
 #[cfg(feature = "rustc-serialize")]
 use std::ops::Deref;
+use std::time::{SystemTime, UNIX_EPOCH};
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
@@ -418,6 +419,45 @@ impl str::FromStr for DateTime<Local> {
 
     fn from_str(s: &str) -> ParseResult<DateTime<Local>> {
         s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Local))
+    }
+}
+
+impl From<SystemTime> for DateTime<Utc> {
+    fn from(t: SystemTime) -> DateTime<Utc> {
+        let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
+            Ok(dur) => (dur.as_secs() as i64, dur.subsec_nanos()),
+            Err(e) => { // unlikely but should be handled
+                let dur = e.duration();
+                let (sec, nsec) = (dur.as_secs() as i64, dur.subsec_nanos());
+                if nsec == 0 {
+                    (-sec, 0)
+                } else {
+                    (-sec - 1, 1_000_000_000 - nsec)
+                }
+            },
+        };
+        Utc.timestamp(sec, nsec)
+    }
+}
+
+impl From<SystemTime> for DateTime<Local> {
+    fn from(t: SystemTime) -> DateTime<Local> {
+        DateTime::<Utc>::from(t).with_timezone(&Local)
+    }
+}
+
+impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
+    fn from(dt: DateTime<Tz>) -> SystemTime {
+        use std::time::Duration;
+
+        let sec = dt.timestamp();
+        let nsec = dt.timestamp_subsec_nanos();
+        if sec < 0 {
+            // unlikely but should be handled
+            UNIX_EPOCH - Duration::new(-sec as u64, 0) + Duration::new(0, nsec)
+        } else {
+            UNIX_EPOCH + Duration::new(sec as u64, nsec)
+        }
     }
 }
 
@@ -875,6 +915,7 @@ mod tests {
     use naive::{NaiveTime, NaiveDate};
     use offset::{TimeZone, Utc, Local, FixedOffset};
     use oldtime::Duration;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     #[allow(non_snake_case)]
@@ -1043,5 +1084,31 @@ mod tests {
         assert_eq!(1,       datetime.timestamp_subsec_millis());
         assert_eq!(1234,    datetime.timestamp_subsec_micros());
         assert_eq!(1234567, datetime.timestamp_subsec_nanos());
+    }
+
+    #[test]
+    fn test_from_system_time() {
+        use std::time::Duration;
+
+        let epoch = Utc.ymd(1970, 1, 1).and_hms(0, 0, 0);
+
+        // SystemTime -> DateTime<Utc>
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, 999_999_999)),
+                   Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, 999_999_999));
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, 999_999_999)),
+                   Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1));
+
+        // DateTime<Utc> -> SystemTime
+        assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
+        assert_eq!(SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, 999_999_999)),
+                   UNIX_EPOCH + Duration::new(999_999_999, 999_999_999));
+        assert_eq!(SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1)),
+                   UNIX_EPOCH - Duration::new(999_999_999, 999_999_999));
+
+        // DateTime<any tz> -> SystemTime (via `with_timezone`)
+        assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
+        assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400))), UNIX_EPOCH);
+        assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800))), UNIX_EPOCH);
     }
 }
