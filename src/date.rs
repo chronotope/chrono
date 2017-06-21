@@ -10,7 +10,7 @@ use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
 use offset::{TimeZone, UTC};
-use naive::{self, NaiveDate, NaiveTime};
+use naive::{self, NaiveDate, NaiveTime, IsoWeek};
 use DateTime;
 use format::{Item, DelayedFormat, StrftimeItems};
 
@@ -278,7 +278,7 @@ impl<Tz: TimeZone> Datelike for Date<Tz> {
     #[inline] fn ordinal(&self) -> u32 { self.naive_local().ordinal() }
     #[inline] fn ordinal0(&self) -> u32 { self.naive_local().ordinal0() }
     #[inline] fn weekday(&self) -> Weekday { self.naive_local().weekday() }
-    #[inline] fn isoweekdate(&self) -> (i32, u32, Weekday) { self.naive_local().isoweekdate() }
+    #[inline] fn iso_week(&self) -> IsoWeek { self.naive_local().iso_week() }
 
     #[inline]
     fn with_year(&self, year: i32) -> Option<Date<Tz>> {

@@ -10,10 +10,11 @@ use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};
 use div::div_mod_floor;
-use naive::{NaiveTime, NaiveDateTime};
+use naive::{NaiveTime, NaiveDateTime, IsoWeek};
 use format::{Item, Numeric, Pad};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
+use super::isoweek;
 use super::internals::{self, DateImpl, Of, Mdf, YearFlags};
 
 const MAX_YEAR: i32 = internals::MAX_YEAR;
@@ -81,7 +82,8 @@ const MAX_BITS: usize = 44;
 ///   For example, January 3, 2016 (Sunday) was on the last (53rd) week of 2015.
 ///
 /// Chrono's date types default to the ISO 8601 [calendar date](#calendar-date),
-/// but the [`Datelike::isoweekdate`](../trait.Datelike.html#tymethod.isoweekdate) method
+/// but [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) and
+/// [`Datelike::weekday`](../trait.Datelike.html#tymethod.weekday) methods
 /// can be used to get the corresponding week date.
 ///
 /// # Ordinal Date
@@ -151,7 +153,9 @@ impl NaiveDate {
     /// assert_eq!(d.month(), 3);
     /// assert_eq!(d.day(), 14);
     /// assert_eq!(d.ordinal(), 73); // day of year
-    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// assert_eq!(d.iso_week().year(), 2015);
+    /// assert_eq!(d.iso_week().week(), 11);
+    /// assert_eq!(d.weekday(), Weekday::Sat);
     /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
     /// ~~~~
     pub fn from_ymd(year: i32, month: u32, day: u32) -> NaiveDate {
@@ -197,7 +201,9 @@ impl NaiveDate {
     /// assert_eq!(d.year(), 2015);
     /// assert_eq!(d.month(), 3);
     /// assert_eq!(d.day(), 14);
-    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// assert_eq!(d.iso_week().year(), 2015);
+    /// assert_eq!(d.iso_week().week(), 11);
+    /// assert_eq!(d.weekday(), Weekday::Sat);
     /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
     /// ~~~~
     pub fn from_yo(year: i32, ordinal: u32) -> NaiveDate {
@@ -241,7 +247,9 @@ impl NaiveDate {
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 11, Weekday::Sat);
-    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat));
+    /// assert_eq!(d.iso_week().year(), 2015);
+    /// assert_eq!(d.iso_week().week(), 11);
+    /// assert_eq!(d.weekday(), Weekday::Sat);
     /// assert_eq!(d.year(), 2015);
     /// assert_eq!(d.month(), 3);
     /// assert_eq!(d.day(), 14);
@@ -338,7 +346,9 @@ impl NaiveDate {
     /// assert_eq!(d.month(), 3);
     /// assert_eq!(d.day(), 14);
     /// assert_eq!(d.ordinal(), 73); // day of year
-    /// assert_eq!(d.isoweekdate(), (2015, 11, Weekday::Sat)); // ISO week and weekday
+    /// assert_eq!(d.iso_week().year(), 2015);
+    /// assert_eq!(d.iso_week().week(), 11);
+    /// assert_eq!(d.weekday(), Weekday::Sat);
     /// ~~~~
     ///
     /// While not directly supported by Chrono,
@@ -1128,21 +1138,9 @@ impl Datelike for NaiveDate {
         self.of().weekday()
     }
 
-    fn isoweekdate(&self) -> (i32, u32, Weekday) {
-        let of = self.of();
-        let year = self.year();
-        let (rawweek, weekday) = of.isoweekdate_raw();
-        if rawweek < 1 { // previous year
-            let prevlastweek = YearFlags::from_year(year - 1).nisoweeks();
-            (year - 1, prevlastweek, weekday)
-        } else {
-            let lastweek = of.flags().nisoweeks();
-            if rawweek > lastweek { // next year
-                (year + 1, 1, weekday)
-            } else {
-                (year, rawweek, weekday)
-            }
-        }
+    #[inline]
+    fn iso_week(&self) -> IsoWeek {
+        isoweek::iso_week_from_yof(self.year(), self.of())
     }
 
     /// Makes a new `NaiveDate` with the year number changed.
@@ -1720,7 +1718,7 @@ mod tests {
     }
 
     #[test]
-    fn test_date_from_isoywd_and_isoweekdate() {
+    fn test_date_from_isoywd_and_iso_week() {
         for year in 2000..2401 {
             for week in 1..54 {
                 for &weekday in [Weekday::Mon, Weekday::Tue, Weekday::Wed, Weekday::Thu,
@@ -1729,10 +1727,9 @@ mod tests {
                     if d.is_some() {
                         let d = d.unwrap();
                         assert_eq!(d.weekday(), weekday);
-                        let (year_, week_, weekday_) = d.isoweekdate();
-                        assert_eq!(year_, year);
-                        assert_eq!(week_, week);
-                        assert_eq!(weekday_, weekday);
+                        let w = d.iso_week();
+                        assert_eq!(w.year(), year);
+                        assert_eq!(w.week(), week);
                     }
                 }
             }
@@ -1744,8 +1741,8 @@ mod tests {
                     let d = NaiveDate::from_ymd_opt(year, month, day);
                     if d.is_some() {
                         let d = d.unwrap();
-                        let (year_, week_, weekday_) = d.isoweekdate();
-                        let d_ = NaiveDate::from_isoywd(year_, week_, weekday_);
+                        let w = d.iso_week();
+                        let d_ = NaiveDate::from_isoywd(w.year(), w.week(), d.weekday());
                         assert_eq!(d, d_);
                     }
                 }

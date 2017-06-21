@@ -332,7 +332,10 @@ impl Parsed {
 
         // verify the ISO week date.
         let verify_isoweekdate = |date: NaiveDate| {
-            let (isoyear, isoweek, weekday) = date.isoweekdate();
+            let week = date.iso_week();
+            let isoyear = week.year();
+            let isoweek = week.week();
+            let weekday = date.weekday();
             let (isoyear_div_100, isoyear_mod_100) = if isoyear >= 0 {
                 let (q, r) = div_rem(isoyear, 100);
                 (Some(q), Some(r))

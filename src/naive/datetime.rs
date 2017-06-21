@@ -10,7 +10,7 @@ use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
 use div::div_mod_floor;
-use naive::{NaiveTime, NaiveDate};
+use naive::{NaiveTime, NaiveDate, IsoWeek};
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
@@ -781,8 +781,8 @@ impl Datelike for NaiveDateTime {
     }
 
     #[inline]
-    fn isoweekdate(&self) -> (i32, u32, Weekday) {
-        self.date.isoweekdate()
+    fn iso_week(&self) -> IsoWeek {
+        self.date.iso_week()
     }
 
     /// Makes a new `NaiveDateTime` with the year number changed.

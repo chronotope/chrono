@@ -362,10 +362,10 @@ extern crate serde as serdelib;
 pub use oldtime::Duration;
 
 #[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, UTC, FixedOffset, Local};
-#[doc(no_inline)] pub use naive::{NaiveDate, NaiveTime, NaiveDateTime};
-pub use date_::{Date, MIN_DATE, MAX_DATE};
-pub use datetime_::DateTime;
-#[cfg(feature = "rustc-serialize")] pub use datetime_::TsSeconds;
+#[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
+pub use date::{Date, MIN_DATE, MAX_DATE};
+pub use datetime::DateTime;
+#[cfg(feature = "rustc-serialize")] pub use datetime::TsSeconds;
 pub use format::{ParseError, ParseResult};
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
@@ -393,24 +393,24 @@ pub mod naive {
     //! but can be also used for the simpler date and time handling.
 
     mod internals;
+    mod date;
+    mod isoweek;
+    mod time;
+    mod datetime;
 
-    // avoid using them directly even in the crate itself
-    #[path = "date.rs"] mod date_;
-    #[path = "time.rs"] mod time_;
-    #[path = "datetime.rs"] mod datetime_;
-
-    pub use self::date_::{NaiveDate, MIN_DATE, MAX_DATE};
-    pub use self::time_::NaiveTime;
-    pub use self::datetime_::{NaiveDateTime, TsSeconds};
+    pub use self::date::{NaiveDate, MIN_DATE, MAX_DATE};
+    pub use self::isoweek::IsoWeek;
+    pub use self::time::NaiveTime;
+    pub use self::datetime::{NaiveDateTime, TsSeconds};
 
     /// Tools to help serializing/deserializing naive types.
     #[cfg(feature = "serde")]
     pub mod serde {
-        pub use super::datetime_::serde::*;
+        pub use super::datetime::serde::*;
     }
 }
-#[path = "date.rs"] mod date_;
-#[path = "datetime.rs"] mod datetime_;
+mod date;
+mod datetime;
 pub mod format;
 
 /// Ser/de helpers
@@ -419,7 +419,7 @@ pub mod format;
 /// annotation](https://serde.rs/attributes.html#field-attributes).
 #[cfg(feature = "serde")]
 pub mod serde {
-    pub use super::datetime_::serde::*;
+    pub use super::datetime::serde::*;
 }
 
 /// The day of week.
@@ -761,9 +761,8 @@ pub trait Datelike: Sized {
     /// Returns the day of week.
     fn weekday(&self) -> Weekday;
 
-    /// Returns the ISO week date: an adjusted year, week number and day of week.
-    /// The adjusted year may differ from that of the calendar date.
-    fn isoweekdate(&self) -> (i32, u32, Weekday);
+    /// Returns the ISO week.
+    fn iso_week(&self) -> IsoWeek;
 
     /// Makes a new value with the year number changed.
     ///
