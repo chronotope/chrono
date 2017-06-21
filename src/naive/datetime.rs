@@ -187,7 +187,7 @@ impl NaiveDateTime {
     ///            Ok(NaiveDate::from_ymd(2014, 5, 17).and_hms(12, 34, 56)));
     /// ~~~~
     ///
-    /// [Leap seconds](./index.html#leap-second-handling) are correctly handled by
+    /// [Leap seconds](./struct.NaiveTime.html#leap-second-handling) are correctly handled by
     /// treating any time of the form `hh:mm:60` as a leap second.
     /// (This equally applies to the formatting, so the round trip is possible.)
     ///

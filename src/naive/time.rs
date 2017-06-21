@@ -76,9 +76,11 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// ## Date And Time Arithmetics
 ///
 /// As a concrete example, let's assume that `03:00:60` and `04:00:60` are leap seconds.
-/// (In reality, of course, leap seconds are separated by at least 6 months.)
+/// In reality, of course, leap seconds are separated by at least 6 months.
+/// We will also use some intuitive concise notations for the explanation.
 ///
-/// `Time + Duration`:
+/// `Time + Duration`
+/// (short for [`NaiveTime::overflowing_add_signed`](#method.overflowing_add_signed)):
 ///
 /// - `03:00:00 + 1s = 03:00:01`.
 /// - `03:00:59 + 60s = 03:02:00`.
@@ -89,7 +91,8 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// - `03:00:60 + 61s = 03:02:00`.
 /// - `03:00:60.1 + 0.8s = 03:00:60.9`.
 ///
-/// `Time - Duration`:
+/// `Time - Duration`
+/// (short for [`NaiveTime::overflowing_sub_signed`](#method.overflowing_sub_signed)):
 ///
 /// - `03:00:00 - 1s = 02:59:59`.
 /// - `03:01:00 - 1s = 03:00:59`.
@@ -99,7 +102,8 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 /// - `03:00:60.7 - 0.4s = 03:00:60.3`.
 /// - `03:00:60.7 - 0.9s = 03:00:59.8`.
 ///
-/// `Time - Time`:
+/// `Time - Time`
+/// (short for [`NaiveTime::signed_duration_since`](#method.signed_duration_since)):
 ///
 /// - `04:00:00 - 03:00:00 = 3600s`.
 /// - `03:01:00 - 03:00:00 = 60s`.
@@ -176,7 +180,7 @@ pub struct NaiveTime {
 impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
-    /// No [leap second](./index.html#leap-second-handling) is allowed here;
+    /// No [leap second](#leap-second-handling) is allowed here;
     /// use `NaiveTime::from_hms_*` methods with a subsecond parameter instead.
     ///
     /// Panics on invalid hour, minute and/or second.
@@ -199,7 +203,7 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
-    /// No [leap second](./index.html#leap-second-handling) is allowed here;
+    /// No [leap second](#leap-second-handling) is allowed here;
     /// use `NaiveTime::from_hms_*_opt` methods with a subsecond parameter instead.
     ///
     /// Returns `None` on invalid hour, minute and/or second.
@@ -225,7 +229,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
     ///
@@ -248,7 +252,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
     ///
     /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     ///
@@ -276,7 +280,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
     ///
@@ -299,7 +303,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
     ///
     /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     ///
@@ -327,7 +331,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
     ///
@@ -350,7 +354,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     ///
@@ -379,7 +383,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid number of seconds and/or nanosecond.
     ///
@@ -402,7 +406,7 @@ impl NaiveTime {
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
     ///
     /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./index.html#leap-second-handling).
+    /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Returns `None` on invalid number of seconds and/or nanosecond.
     ///
@@ -451,7 +455,7 @@ impl NaiveTime {
     ///            Ok(NaiveTime::from_hms(12, 34, 56)));
     /// ~~~~
     ///
-    /// [Leap seconds](./index.html#leap-second-handling) are correctly handled by
+    /// [Leap seconds](#leap-second-handling) are correctly handled by
     /// treating any time of the form `hh:mm:60` as a leap second.
     /// (This equally applies to the formatting, so the round trip is possible.)
     ///
@@ -609,7 +613,7 @@ impl NaiveTime {
     /// Returns a `Duration` within +/- 1 day.
     /// This does not overflow or underflow at all.
     ///
-    /// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+    /// As a part of Chrono's [leap second handling](#leap-second-handling),
     /// the subtraction assumes that **there is no leap second ever**,
     /// except when any of the `NaiveTime`s themselves represents a leap second
     /// in which case the assumption becomes that
@@ -814,7 +818,7 @@ impl Timelike for NaiveTime {
     /// ~~~~
     ///
     /// This method never returns 60 even when it is a leap second.
-    /// ([Why?](./index.html#leap-second-handling))
+    /// ([Why?](#leap-second-handling))
     /// Use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
     /// ~~~~
@@ -986,7 +990,7 @@ impl hash::Hash for NaiveTime {
 /// An addition of `Duration` to `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 ///
-/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+/// As a part of Chrono's [leap second handling](#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
 /// except when the `NaiveTime` itself represents a leap second
 /// in which case the assumption becomes that **there is exactly a single leap second ever**.
@@ -1054,7 +1058,7 @@ impl Add<OldDuration> for NaiveTime {
 /// In particular the addition ignores integral number of days.
 /// It is same to the addition with a negated `Duration`.
 ///
-/// As a part of Chrono's [leap second handling](./index.html#leap-second-handling),
+/// As a part of Chrono's [leap second handling](#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
 /// except when the `NaiveTime` itself represents a leap second
 /// in which case the assumption becomes that **there is exactly a single leap second ever**.
