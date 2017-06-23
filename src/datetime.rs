@@ -554,7 +554,7 @@ pub mod rustc_serialize {
     impl Decodable for TsSeconds<FixedOffset> {
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<FixedOffset>, D::Error> {
             from(FixedOffset::east(0).timestamp_opt(d.read_i64()?, 0), d)
-                .map(|dt| TsSeconds(dt))
+                .map(TsSeconds)
         }
     }
 
@@ -590,7 +590,7 @@ pub mod rustc_serialize {
     impl Decodable for TsSeconds<Utc> {
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<Utc>, D::Error> {
             from(Utc.timestamp_opt(d.read_i64()?, 0), d)
-                .map(|dt| TsSeconds(dt))
+                .map(TsSeconds)
         }
     }
 

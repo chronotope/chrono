@@ -135,7 +135,7 @@ impl NaiveDateTime {
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = div_mod_floor(secs, 86400);
         let date = days.to_i32().and_then(|days| days.checked_add(719163))
-                                .and_then(|days_ce| NaiveDate::from_num_days_from_ce_opt(days_ce));
+                                .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
             (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
