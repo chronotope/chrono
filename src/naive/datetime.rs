@@ -4,7 +4,7 @@
 //! ISO 8601 date and time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub, Deref, AddAssign, SubAssign};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -51,24 +51,6 @@ const MAX_SECS_BITS: usize = 44;
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
-}
-
-/// A DateTime that can be deserialized from a seconds-based timestamp
-pub struct TsSeconds(NaiveDateTime);
-
-impl From<TsSeconds> for NaiveDateTime {
-    /// Pull the internal NaiveDateTime out
-    fn from(obj: TsSeconds) -> NaiveDateTime {
-        obj.0
-    }
-}
-
-impl Deref for TsSeconds {
-    type Target = NaiveDateTime;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
 }
 
 impl NaiveDateTime {
@@ -1459,7 +1441,7 @@ fn test_decodable_json<F, E>(from_str: F)
 
 #[cfg(all(test, feature = "rustc-serialize"))]
 fn test_decodable_json_timestamp<F, E>(from_str: F)
-    where F: Fn(&str) -> Result<TsSeconds, E>, E: ::std::fmt::Debug
+    where F: Fn(&str) -> Result<rustc_serialize::TsSeconds, E>, E: ::std::fmt::Debug
 {
     assert_eq!(
         *from_str("0").unwrap(),
@@ -1474,8 +1456,9 @@ fn test_decodable_json_timestamp<F, E>(from_str: F)
 }
 
 #[cfg(feature = "rustc-serialize")]
-mod rustc_serialize {
-    use super::{NaiveDateTime, TsSeconds};
+pub mod rustc_serialize {
+    use std::ops::Deref;
+    use super::NaiveDateTime;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
     impl Encodable for NaiveDateTime {
@@ -1487,6 +1470,24 @@ mod rustc_serialize {
     impl Decodable for NaiveDateTime {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDateTime, D::Error> {
             d.read_str()?.parse().map_err(|_| d.error("invalid date time string"))
+        }
+    }
+
+    /// A `DateTime` that can be deserialized from a seconds-based timestamp
+    pub struct TsSeconds(NaiveDateTime);
+
+    impl From<TsSeconds> for NaiveDateTime {
+        /// Pull the internal NaiveDateTime out
+        fn from(obj: TsSeconds) -> NaiveDateTime {
+            obj.0
+        }
+    }
+
+    impl Deref for TsSeconds {
+        type Target = NaiveDateTime;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
         }
     }
 

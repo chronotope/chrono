@@ -6,8 +6,6 @@
 use std::{str, fmt, hash};
 use std::cmp::Ordering;
 use std::ops::{Add, Sub};
-#[cfg(feature = "rustc-serialize")]
-use std::ops::Deref;
 use std::time::{SystemTime, UNIX_EPOCH};
 use oldtime::Duration as OldDuration;
 
@@ -28,30 +26,6 @@ pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
 }
-
-/// A DateTime that can be deserialized from a timestamp
-///
-/// A timestamp here is seconds since the epoch
-#[cfg(feature = "rustc-serialize")]
-pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
-
-#[cfg(feature = "rustc-serialize")]
-impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
-    /// Pull the inner DateTime<Tz> out
-    fn from(obj: TsSeconds<Tz>) -> DateTime<Tz> {
-        obj.0
-    }
-}
-
-#[cfg(feature = "rustc-serialize")]
-impl<Tz: TimeZone> Deref for TsSeconds<Tz> {
-    type Target = DateTime<Tz>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
@@ -517,9 +491,9 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
 fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
                                                            fixed_from_str: FFixed,
                                                            local_from_str: FLocal)
-    where FUtc: Fn(&str) -> Result<TsSeconds<Utc>, E>,
-          FFixed: Fn(&str) -> Result<TsSeconds<FixedOffset>, E>,
-          FLocal: Fn(&str) -> Result<TsSeconds<Local>, E>,
+    where FUtc: Fn(&str) -> Result<rustc_serialize::TsSeconds<Utc>, E>,
+          FFixed: Fn(&str) -> Result<rustc_serialize::TsSeconds<FixedOffset>, E>,
+          FLocal: Fn(&str) -> Result<rustc_serialize::TsSeconds<Local>, E>,
           E: ::std::fmt::Debug
 {
     fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
@@ -543,9 +517,10 @@ fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
 }
 
 #[cfg(feature = "rustc-serialize")]
-mod rustc_serialize {
+pub mod rustc_serialize {
     use std::fmt;
-    use super::{DateTime, TsSeconds};
+    use std::ops::Deref;
+    use super::DateTime;
     use offset::{TimeZone, LocalResult, Utc, Local, FixedOffset};
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
@@ -589,6 +564,26 @@ mod rustc_serialize {
                 .parse::<DateTime<FixedOffset>>()
                 .map(|dt| dt.with_timezone(&Utc))
                 .map_err(|_| d.error("invalid date and time"))
+        }
+    }
+
+    /// A DateTime that can be deserialized from a timestamp
+    ///
+    /// A timestamp here is seconds since the epoch
+    pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
+
+    impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
+        /// Pull the inner DateTime<Tz> out
+        fn from(obj: TsSeconds<Tz>) -> DateTime<Tz> {
+            obj.0
+        }
+    }
+
+    impl<Tz: TimeZone> Deref for TsSeconds<Tz> {
+        type Target = DateTime<Tz>;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
         }
     }
 
