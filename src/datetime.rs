@@ -766,19 +766,19 @@ pub mod serde {
             fn visit_i64<E>(self, value: i64) -> Result<DateTime<FixedOffset>, E>
                 where E: de::Error
             {
-                from(FixedOffset::east(0).timestamp_opt(value, 0), value)
+                from(FixedOffset::east(0).timestamp_opt(value, 0), &value)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_u64<E>(self, value: u64) -> Result<DateTime<FixedOffset>, E>
                 where E: de::Error
             {
-                from(FixedOffset::east(0).timestamp_opt(value as i64, 0), value)
+                from(FixedOffset::east(0).timestamp_opt(value as i64, 0), &value)
             }
         }
 
         // try!-like function to convert a LocalResult into a serde-ish Result
-        fn from<T, E, V>(me: LocalResult<T>, ts: V) -> Result<T, E>
+        fn from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
             where E: de::Error,
                   V: fmt::Display,
                   T: fmt::Display,
