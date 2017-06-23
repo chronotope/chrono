@@ -1519,14 +1519,14 @@ pub mod rustc_serialize {
 
 }
 
-/// Tools to help serializing/deserializing NaiveDateTimes
+/// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
 pub mod serde {
     use std::fmt;
     use super::{NaiveDateTime};
     use serdelib::{ser, de};
 
-    /// Serialize a NaiveDateTime as an RFC 3339 string
+    /// Serialize a `NaiveDateTime` as an RFC 3339 string
     ///
     /// See [the `serde` module](./serde/index.html) for alternate
     /// serialization formats.
@@ -1614,7 +1614,7 @@ pub mod serde {
 
         use NaiveDateTime;
 
-        /// Deserialize a DateTime from a seconds timestamp
+        /// Deserialize a `DateTime` from a seconds timestamp
         ///
         /// Intended for use with `serde`s `deserialize_with` attribute.
         ///

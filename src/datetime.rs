@@ -567,7 +567,7 @@ pub mod rustc_serialize {
         }
     }
 
-    /// A DateTime that can be deserialized from a timestamp
+    /// A `DateTime` that can be deserialized from a timestamp
     ///
     /// A timestamp here is seconds since the epoch
     pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
@@ -680,7 +680,7 @@ pub mod serde {
         use {DateTime, Utc, FixedOffset};
         use offset::{LocalResult, TimeZone};
 
-        /// Deserialize a DateTime from a seconds timestamp
+        /// Deserialize a `DateTime` from a seconds timestamp
         ///
         /// Intended for use with `serde`s `deserialize_with` attribute.
         ///
