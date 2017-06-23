@@ -305,7 +305,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
             Some(c) if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
                 let nextspec = self.remainder.find(|c: char| !c.is_whitespace())
-                                             .unwrap_or(self.remainder.len());
+                                             .unwrap_or_else(|| self.remainder.len());
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -315,7 +315,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
             // the next item is literal
             _ => {
                 let nextspec = self.remainder.find(|c: char| c.is_whitespace() || c == '%')
-                                             .unwrap_or(self.remainder.len());
+                                             .unwrap_or_else(|| self.remainder.len());
                 assert!(nextspec > 0);
                 let item = lit!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];

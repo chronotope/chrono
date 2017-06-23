@@ -36,7 +36,8 @@ pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     if window.len() > max { window = &window[..max]; }
 
     // scan digits
-    let upto = window.iter().position(|&c| c < b'0' || b'9' < c).unwrap_or(window.len());
+    let upto = window.iter().position(|&c| c < b'0' || b'9' < c)
+        .unwrap_or_else(|| window.len());
     if upto < min {
         return Err(if window.is_empty() {TOO_SHORT} else {INVALID});
     }
@@ -224,7 +225,8 @@ pub fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
 pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names
     let upto = s.as_bytes().iter().position(|&c| match c { b'a'...b'z' | b'A'...b'Z' => false,
-                                                           _ => true }).unwrap_or(s.len());
+                                                           _ => true })
+        .unwrap_or_else(|| s.len());
     if upto > 0 {
         let name = &s[..upto];
         let s = &s[upto..];
