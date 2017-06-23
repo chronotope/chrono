@@ -545,13 +545,13 @@ impl NaiveTime {
 
         let rhssecs = rhs.num_seconds();
         let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac) == rhs);
+        debug_assert_eq!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac), rhs);
         let rhssecsinday = rhssecs % 86400;
         let mut morerhssecs = rhssecs - rhssecsinday;
         let rhssecs = rhssecsinday as i32;
         let rhsfrac = rhsfrac as i32;
         debug_assert!(-86400 < rhssecs && rhssecs < 86400);
-        debug_assert!(morerhssecs % 86400 == 0);
+        debug_assert_eq!(morerhssecs % 86400, 0);
         debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
 
         let mut secs = secs as i32 + rhssecs;
