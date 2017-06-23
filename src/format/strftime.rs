@@ -180,7 +180,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
         match self.remainder.chars().next() {
             // we are done
-            None => return None,
+            None => None,
 
             // the next item is a specifier
             Some('%') => {
