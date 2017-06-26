@@ -359,6 +359,7 @@
 
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
+#![deny(missing_debug_implementations)]
 
 extern crate time as oldtime;
 extern crate num;

@@ -1475,6 +1475,7 @@ pub mod rustc_serialize {
     }
 
     /// A `DateTime` that can be deserialized from a seconds-based timestamp
+    #[derive(Debug)]
     pub struct TsSeconds(NaiveDateTime);
 
     impl From<TsSeconds> for NaiveDateTime {

@@ -149,7 +149,7 @@ Notes:
 use super::{Item, Numeric, Fixed, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StrftimeItems<'a> {
     /// Remaining portion of the string.
     remainder: &'a str,

@@ -570,6 +570,7 @@ pub mod rustc_serialize {
     /// A `DateTime` that can be deserialized from a timestamp
     ///
     /// A timestamp here is seconds since the epoch
+    #[derive(Debug)]
     pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
 
     impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
