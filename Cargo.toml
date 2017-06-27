@@ -29,3 +29,6 @@ serde = { version = "1", optional = true }
 serde_json = { version = "1" }
 serde_derive = { version = "1" }
 bincode = { version = "0.8.0" }
+
+[package.metadata.docs.rs]
+all-features = true
