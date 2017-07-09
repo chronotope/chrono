@@ -359,6 +359,7 @@
 
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
+#![deny(missing_debug_implementations)]
 
 extern crate time as oldtime;
 extern crate num;
@@ -374,7 +375,7 @@ pub use oldtime::Duration;
 #[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
 pub use date::{Date, MIN_DATE, MAX_DATE};
 pub use datetime::DateTime;
-#[cfg(feature = "rustc-serialize")] pub use datetime::TsSeconds;
+#[cfg(feature = "rustc-serialize")] pub use datetime::rustc_serialize::TsSeconds;
 pub use format::{ParseError, ParseResult};
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
@@ -410,7 +411,10 @@ pub mod naive {
     pub use self::date::{NaiveDate, MIN_DATE, MAX_DATE};
     pub use self::isoweek::IsoWeek;
     pub use self::time::NaiveTime;
-    pub use self::datetime::{NaiveDateTime, TsSeconds};
+    pub use self::datetime::NaiveDateTime;
+    #[cfg(feature = "rustc-serialize")]
+    pub use self::datetime::rustc_serialize::TsSeconds;
+
 
     /// Serialization/Deserialization of naive types in alternate formats
     ///

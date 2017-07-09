@@ -518,6 +518,7 @@ impl NaiveTime {
     ///            (from_hms(20, 4, 5), -86400));
     /// # }
     /// ~~~~
+    #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
     pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
         let mut secs = self.secs;
         let mut frac = self.frac;
@@ -545,13 +546,13 @@ impl NaiveTime {
 
         let rhssecs = rhs.num_seconds();
         let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac) == rhs);
+        debug_assert_eq!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac), rhs);
         let rhssecsinday = rhssecs % 86400;
         let mut morerhssecs = rhssecs - rhssecsinday;
         let rhssecs = rhssecsinday as i32;
         let rhsfrac = rhsfrac as i32;
         debug_assert!(-86400 < rhssecs && rhssecs < 86400);
-        debug_assert!(morerhssecs % 86400 == 0);
+        debug_assert_eq!(morerhssecs % 86400, 0);
         debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
 
         let mut secs = secs as i32 + rhssecs;
@@ -980,6 +981,7 @@ impl Timelike for NaiveTime {
 ///
 /// Practically this also takes account of fractional seconds, so it is not recommended.
 /// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
+#[cfg_attr(feature = "cargo-clippy", allow(derive_hash_xor_eq))]
 impl hash::Hash for NaiveTime {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.secs.hash(state);

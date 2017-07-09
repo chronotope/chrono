@@ -46,11 +46,25 @@ build_only() {
   channel build -v --features 'serde bincode'
 }
 
+run_clippy() {
+    # cached installation will not work on a later nightly
+    if [ -n "${TRAVIS}" ] && ! cargo install clippy --debug --force; then
+        echo "COULD NOT COMPILE CLIPPY, IGNORING CLIPPY TESTS"
+        exit
+    fi
+
+    cargo clippy --features 'serde bincode rustc-serialize' -- -Dclippy
+}
+
 rustc --version
 cargo --version
 
 CHANNEL=nightly
-build_and_test
+if [ "x${CLIPPY}" = xy ] ; then
+    run_clippy
+else
+    build_and_test
+fi
 
 CHANNEL=beta
 build_and_test

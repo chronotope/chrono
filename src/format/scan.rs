@@ -36,7 +36,8 @@ pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     if window.len() > max { window = &window[..max]; }
 
     // scan digits
-    let upto = window.iter().position(|&c| c < b'0' || b'9' < c).unwrap_or(window.len());
+    let upto = window.iter().position(|&c| c < b'0' || b'9' < c)
+        .unwrap_or_else(|| window.len());
     if upto < min {
         return Err(if window.is_empty() {TOO_SHORT} else {INVALID});
     }
@@ -224,28 +225,24 @@ pub fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
 pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names
     let upto = s.as_bytes().iter().position(|&c| match c { b'a'...b'z' | b'A'...b'Z' => false,
-                                                           _ => true }).unwrap_or(s.len());
+                                                           _ => true })
+        .unwrap_or_else(|| s.len());
     if upto > 0 {
         let name = &s[..upto];
         let s = &s[upto..];
+        let offset_hours = |o| Ok((s, Some(o * 3600)));
         if equals(name, "gmt") || equals(name, "ut") {
-            Ok((s, Some(0)))
-        } else if equals(name, "est") {
-            Ok((s, Some(-5 * 3600)))
+            offset_hours(0)
         } else if equals(name, "edt") {
-            Ok((s, Some(-4 * 3600)))
-        } else if equals(name, "cst") {
-            Ok((s, Some(-6 * 3600)))
-        } else if equals(name, "cdt") {
-            Ok((s, Some(-5 * 3600)))
-        } else if equals(name, "mst") {
-            Ok((s, Some(-7 * 3600)))
-        } else if equals(name, "mdt") {
-            Ok((s, Some(-6 * 3600)))
+            offset_hours(-4)
+        } else if equals(name, "est") || equals(name, "cdt") {
+            offset_hours(-5)
+        } else if equals(name, "cst") || equals(name, "mdt") {
+            offset_hours(-6)
+        } else if equals(name, "mst") || equals(name, "pdt") {
+            offset_hours(-7)
         } else if equals(name, "pst") {
-            Ok((s, Some(-8 * 3600)))
-        } else if equals(name, "pdt") {
-            Ok((s, Some(-7 * 3600)))
+            offset_hours(-8)
         } else {
             Ok((s, None)) // recommended by RFC 2822: consume but treat it as -0000
         }

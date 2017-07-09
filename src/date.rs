@@ -184,7 +184,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Retrieves an associated offset from UTC.
     #[inline]
-    pub fn offset<'a>(&'a self) -> &'a Tz::Offset {
+    pub fn offset(&self) -> &Tz::Offset {
         &self.offset
     }
 

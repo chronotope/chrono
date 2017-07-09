@@ -149,7 +149,7 @@ Notes:
 use super::{Item, Numeric, Fixed, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct StrftimeItems<'a> {
     /// Remaining portion of the string.
     remainder: &'a str,
@@ -180,7 +180,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
         match self.remainder.chars().next() {
             // we are done
-            None => return None,
+            None => None,
 
             // the next item is a specifier
             Some('%') => {
@@ -237,7 +237,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
-                    'b' => fix!(ShortMonthName),
+                    'b' | 'h' => fix!(ShortMonthName),
                     'c' => recons![fix!(ShortWeekdayName), sp!(" "), fix!(ShortMonthName),
                                    sp!(" "), nums!(Day), sp!(" "), num0!(Hour), lit!(":"),
                                    num0!(Minute), lit!(":"), num0!(Second), sp!(" "), num0!(Year)],
@@ -245,7 +245,6 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'e' => nums!(Day),
                     'f' => num0!(Nanosecond),
                     'g' => num0!(IsoYearMod100),
-                    'h' => fix!(ShortMonthName),
                     'j' => num0!(Ordinal),
                     'k' => nums!(Hour),
                     'l' => nums!(Hour12),
@@ -305,7 +304,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
             Some(c) if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
                 let nextspec = self.remainder.find(|c: char| !c.is_whitespace())
-                                             .unwrap_or(self.remainder.len());
+                                             .unwrap_or_else(|| self.remainder.len());
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -315,7 +314,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
             // the next item is literal
             _ => {
                 let nextspec = self.remainder.find(|c: char| c.is_whitespace() || c == '%')
-                                             .unwrap_or(self.remainder.len());
+                                             .unwrap_or_else(|| self.remainder.len());
                 assert!(nextspec > 0);
                 let item = lit!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];

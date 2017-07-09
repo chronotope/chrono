@@ -77,7 +77,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
 /// let dt: DateTime<Local> = Local::now();
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
 /// ~~~~
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Local;
 
 impl Local {

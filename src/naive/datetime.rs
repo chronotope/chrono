@@ -4,7 +4,7 @@
 //! ISO 8601 date and time without timezone.
 
 use std::{str, fmt, hash};
-use std::ops::{Add, Sub, Deref, AddAssign, SubAssign};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -51,24 +51,6 @@ const MAX_SECS_BITS: usize = 44;
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
-}
-
-/// A DateTime that can be deserialized from a seconds-based timestamp
-pub struct TsSeconds(NaiveDateTime);
-
-impl From<TsSeconds> for NaiveDateTime {
-    /// Pull the internal NaiveDateTime out
-    fn from(obj: TsSeconds) -> NaiveDateTime {
-        obj.0
-    }
-}
-
-impl Deref for TsSeconds {
-    type Target = NaiveDateTime;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
 }
 
 impl NaiveDateTime {
@@ -153,7 +135,7 @@ impl NaiveDateTime {
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = div_mod_floor(secs, 86400);
         let date = days.to_i32().and_then(|days| days.checked_add(719163))
-                                .and_then(|days_ce| NaiveDate::from_num_days_from_ce_opt(days_ce));
+                                .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
             (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
@@ -1121,6 +1103,7 @@ impl Timelike for NaiveDateTime {
 ///
 /// Practically this also takes account of fractional seconds, so it is not recommended.
 /// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
+#[cfg_attr(feature = "cargo-clippy", allow(derive_hash_xor_eq))]
 impl hash::Hash for NaiveDateTime {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.date.hash(state);
@@ -1459,7 +1442,7 @@ fn test_decodable_json<F, E>(from_str: F)
 
 #[cfg(all(test, feature = "rustc-serialize"))]
 fn test_decodable_json_timestamp<F, E>(from_str: F)
-    where F: Fn(&str) -> Result<TsSeconds, E>, E: ::std::fmt::Debug
+    where F: Fn(&str) -> Result<rustc_serialize::TsSeconds, E>, E: ::std::fmt::Debug
 {
     assert_eq!(
         *from_str("0").unwrap(),
@@ -1474,8 +1457,9 @@ fn test_decodable_json_timestamp<F, E>(from_str: F)
 }
 
 #[cfg(feature = "rustc-serialize")]
-mod rustc_serialize {
-    use super::{NaiveDateTime, TsSeconds};
+pub mod rustc_serialize {
+    use std::ops::Deref;
+    use super::NaiveDateTime;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
     impl Encodable for NaiveDateTime {
@@ -1487,6 +1471,25 @@ mod rustc_serialize {
     impl Decodable for NaiveDateTime {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDateTime, D::Error> {
             d.read_str()?.parse().map_err(|_| d.error("invalid date time string"))
+        }
+    }
+
+    /// A `DateTime` that can be deserialized from a seconds-based timestamp
+    #[derive(Debug)]
+    pub struct TsSeconds(NaiveDateTime);
+
+    impl From<TsSeconds> for NaiveDateTime {
+        /// Pull the internal NaiveDateTime out
+        fn from(obj: TsSeconds) -> NaiveDateTime {
+            obj.0
+        }
+    }
+
+    impl Deref for TsSeconds {
+        type Target = NaiveDateTime;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
         }
     }
 
@@ -1518,14 +1521,14 @@ mod rustc_serialize {
 
 }
 
-/// Tools to help serializing/deserializing NaiveDateTimes
+/// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
 pub mod serde {
     use std::fmt;
     use super::{NaiveDateTime};
     use serdelib::{ser, de};
 
-    /// Serialize a NaiveDateTime as an RFC 3339 string
+    /// Serialize a `NaiveDateTime` as an RFC 3339 string
     ///
     /// See [the `serde` module](./serde/index.html) for alternate
     /// serialization formats.
@@ -1613,7 +1616,7 @@ pub mod serde {
 
         use NaiveDateTime;
 
-        /// Deserialize a DateTime from a seconds timestamp
+        /// Deserialize a `DateTime` from a seconds timestamp
         ///
         /// Intended for use with `serde`s `deserialize_with` attribute.
         ///

@@ -538,7 +538,7 @@ impl Parsed {
                     // it's okay, just do not try to overwrite the existing field.
                     59 => {}
                     // `datetime` is known to be off by one second.
-                    0 => { datetime = datetime - OldDuration::seconds(1); }
+                    0 => { datetime -= OldDuration::seconds(1); }
                     // otherwise it is impossible.
                     _ => return Err(IMPOSSIBLE)
                 }

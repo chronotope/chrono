@@ -3,7 +3,7 @@
 
 //! ISO 8601 calendar date without timezone.
 
-use std::{str, fmt, hash};
+use std::{str, fmt};
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 use num::traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
@@ -93,7 +93,7 @@ const MAX_BITS: usize = 44;
 /// The year number is same to that of the [calendar date](#calendar-date).
 ///
 /// This is currently the internal format of Chrono's date types.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -1299,14 +1299,6 @@ impl Datelike for NaiveDate {
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
         self.with_of(self.of().with_ordinal(ordinal0 + 1))
-    }
-}
-
-/// `NaiveDate` can be used as a key to the hash maps.
-impl hash::Hash for NaiveDate {
-    fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        // don't need to strip flags, as we can safely assume that it is correct
-        self.ymdf.hash(state);
     }
 }
 

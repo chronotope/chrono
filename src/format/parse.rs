@@ -230,9 +230,9 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
 
             Item::Numeric(spec, _pad) => {
                 use super::Numeric::*;
+                type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
-                let (width, signed, set): (usize, bool,
-                                           fn(&mut Parsed, i64) -> ParseResult<()>) = match spec {
+                let (width, signed, set): (usize, bool, Setter) = match spec {
                     Year           => (4, true, Parsed::set_year),
                     YearDiv100     => (2, false, Parsed::set_year_div_100),
                     YearMod100     => (2, false, Parsed::set_year_mod_100),
