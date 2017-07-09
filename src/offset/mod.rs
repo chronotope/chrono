@@ -283,7 +283,8 @@ pub trait TimeZone: Sized + Clone {
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
+    /// Panics on the out-of-range number of seconds and/or invalid nanosecond,
+    /// for a non-panicking version see [`timestamp_opt`](#method.timestamp_opt).
     ///
     /// # Example
     ///
@@ -300,7 +301,8 @@ pub trait TimeZone: Sized + Clone {
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
+    /// Returns `LocalResult::None` on out-of-range number of seconds and/or
+    /// invalid nanosecond, otherwise always returns `LocalResult::Single`.
     fn timestamp_opt(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp_opt(secs, nsecs) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
