@@ -66,6 +66,30 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp()
     }
 
+    /// Returns the number of non-leap-milliseconds since January 1, 1970 UTC
+    ///
+    /// Note that this does reduce the number of years that can be represented
+    /// from ~584 Billion to ~584 Million. (If this is a problem, please file
+    /// an issue to let me know what domain needs millisecond precision over
+    /// billions of years, I'm curious.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::Utc;
+    /// use chrono::TimeZone;
+    ///
+    /// let dt = Utc.ymd(1970, 1, 1).and_hms_milli(0, 0, 1, 444);
+    /// assert_eq!(dt.timestamp_millis(), 1_444);
+    ///
+    /// let dt = Utc.ymd(2001, 9, 9).and_hms_milli(1, 46, 40, 555);
+    /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
+    /// ~~~~
+    #[inline]
+    pub fn timestamp_millis(&self) -> i64 {
+        self.datetime.timestamp_millis()
+    }
+
     /// Returns the number of milliseconds since the last second boundary
     ///
     /// warning: in event of a leap second, this may exceed 999
