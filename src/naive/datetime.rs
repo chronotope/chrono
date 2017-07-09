@@ -1503,24 +1503,32 @@ pub mod rustc_serialize {
 
     /// A `DateTime` that can be deserialized from a seconds-based timestamp
     #[derive(Debug)]
+    #[deprecated(since = "1.4.2",
+                 note = "RustcSerialize will be removed before chrono 1.0, use Serde instead")]
     pub struct TsSeconds(NaiveDateTime);
 
+    #[allow(deprecated)]
     impl From<TsSeconds> for NaiveDateTime {
         /// Pull the internal NaiveDateTime out
+        #[allow(deprecated)]
         fn from(obj: TsSeconds) -> NaiveDateTime {
             obj.0
         }
     }
 
+    #[allow(deprecated)]
     impl Deref for TsSeconds {
         type Target = NaiveDateTime;
 
+        #[allow(deprecated)]
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
 
+    #[allow(deprecated)]
     impl Decodable for TsSeconds {
+        #[allow(deprecated)]
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds, D::Error> {
             Ok(TsSeconds(
                 NaiveDateTime::from_timestamp_opt(d.read_i64()?, 0)

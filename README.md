@@ -46,20 +46,13 @@ Put this in your `Cargo.toml`:
 chrono = "0.4"
 ```
 
-Or, if you want [Serde](https://github.com/serde-rs/serde) or
-[rustc-serialize](https://github.com/rust-lang-nursery/rustc-serialize) support,
-include the features like this:
+Or, if you want [Serde](https://github.com/serde-rs/serde) include the feature
+like this:
 
 ```toml
 [dependencies]
-chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
+chrono = { version = "0.4", features = ["serde"] }
 ```
-
-> Note that Chrono's support for rustc-serialize is now considered deprecated.
-Starting from 0.4.0 there is no further guarantee that
-the features available in Serde will be also available to rustc-serialize,
-and the support can be removed in any future major version.
-**Rustc-serialize users are strongly recommended to migrate to Serde.**
 
 Then put this in your crate root:
 
