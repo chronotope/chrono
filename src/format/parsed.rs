@@ -550,7 +550,6 @@ impl Parsed {
             try!(parsed.set_ordinal(datetime.ordinal() as i64)); // more efficient than ymd
             try!(parsed.set_hour   (datetime.hour()    as i64));
             try!(parsed.set_minute (datetime.minute()  as i64));
-            try!(parsed.set_nanosecond(0)); // no nanosecond precision in timestamp
 
             // validate other fields (e.g. week) and return
             let date = try!(parsed.to_naive_date());
@@ -933,7 +932,7 @@ mod tests {
                    ymdhmsn(2012,2,3, 5,6,7,890_123_456));
         assert_eq!(parse!(timestamp: 0), ymdhms(1970,1,1, 0,0,0));
         assert_eq!(parse!(timestamp: 1, nanosecond: 0), ymdhms(1970,1,1, 0,0,1));
-        assert_eq!(parse!(timestamp: 1, nanosecond: 1), Err(IMPOSSIBLE));
+        assert_eq!(parse!(timestamp: 1, nanosecond: 1), ymdhmsn(1970,1,1, 0,0,1, 1));
         assert_eq!(parse!(timestamp: 1_420_000_000), ymdhms(2014,12,31, 4,26,40));
         assert_eq!(parse!(timestamp: -0x1_0000_0000), ymdhms(1833,11,24, 17,31,44));
 
