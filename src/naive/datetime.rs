@@ -1914,6 +1914,8 @@ mod tests {
     #[test]
     fn test_datetime_parse_from_str() {
         let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhmsn =
+            |y,m,d,h,n,s,nano| NaiveDate::from_ymd(y, m, d).and_hms_nano(h, n, s, nano);
         assert_eq!(NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
                    Ok(ymdhms(2014, 5, 7, 12, 34, 56))); // ignore offset
         assert_eq!(NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
@@ -1925,6 +1927,16 @@ mod tests {
                                               "%a, %d %b %Y %H:%M:%S GMT").is_err());
         assert!(NaiveDateTime::parse_from_str("2014-5-7 12:3456", "%Y-%m-%d %H:%M:%S").is_err());
         assert!(NaiveDateTime::parse_from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
+        assert_eq!(NaiveDateTime::parse_from_str("1441497364", "%s"),
+                   Ok(ymdhms(2015, 9, 5, 23, 56, 4)));
+        assert_eq!(NaiveDateTime::parse_from_str("1283929614.1234", "%s.%f"),
+                   Ok(ymdhmsn(2010, 9, 8, 7, 6, 54, 1234)));
+        assert_eq!(NaiveDateTime::parse_from_str("1441497364.649", "%s%.3f"),
+                   Ok(ymdhmsn(2015, 9, 5, 23, 56, 4, 649000000)));
+        assert_eq!(NaiveDateTime::parse_from_str("1497854303.087654", "%s%.6f"),
+                   Ok(ymdhmsn(2017, 6, 19, 6, 38, 23, 87654000)));
+        assert_eq!(NaiveDateTime::parse_from_str("1437742189.918273645", "%s%.9f"),
+                   Ok(ymdhmsn(2015, 7, 24, 12, 49, 49, 918273645)));
     }
 
     #[test]
