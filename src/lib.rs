@@ -288,6 +288,17 @@
 //! assert!(Utc.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 //! ```
 //!
+//! ### Conversion from and to EPOCH timestamps
+//!
+//! Use [`Utc.timestamp(seconds, nanoseconds)`](./offset/trait.TimeZone.html#method.timestamp) 
+//! to construct a [`DateTime<Utc>`](./struct.DateTime.html) from a UNIX timestamp 
+//! (seconds, nanoseconds that passed since January 1st 1970).
+//!
+//! Use [`DateTime.timestamp`](./struct.DateTime.html#method.timestamp) to get the timestamp (in seconds)
+//! from a [`DateTime`](./struct.DateTime.html). Additionally, you can use 
+//! [`DateTime.timestamp_subsec_nanos`](./struct.DateTime.html#method.timestamp_subsec_nanos)
+//! to get the number of additional number of nanoseconds.
+//!
 //! ### Individual date
 //!
 //! Chrono also provides an individual date type ([**`Date`**](./struct.Date.html)).
