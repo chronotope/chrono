@@ -112,10 +112,8 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     try!(parsed.set_hour(try_consume!(scan::number(s, 2, 2))));
     s = try!(scan::char(s.trim_left(), b':')).trim_left(); // *S ":" *S
     try!(parsed.set_minute(try_consume!(scan::number(s, 2, 2))));
-    s = s.trim_left();
-    if !s.is_empty() { // [ ":" *S 2DIGIT ]
-        s = try!(scan::char(s, b':')).trim_left();
-        try!(parsed.set_second(try_consume!(scan::number(s, 2, 2))));
+    if let Ok(s_) = scan::char(s.trim_left(), b':') { // [ ":" *S 2DIGIT ]
+        try!(parsed.set_second(try_consume!(scan::number(s_, 2, 2))));
     }
 
     s = try!(scan::space(s)); // mandatory
@@ -613,6 +611,7 @@ fn test_rfc2822() {
         ("Tue, 20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // normal case
         ("20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")),  // no day of week
         ("20 JAN 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")),  // upper case month
+        ("Tue, 20 Jan 2015 17:35 -0800", Ok("Tue, 20 Jan 2015 17:35:00 -0800")), // no second
         ("11 Sep 2001 09:45:00 EST", Ok("Tue, 11 Sep 2001 09:45:00 -0500")),
         ("30 Feb 2015 17:35:20 -0800", Err(OUT_OF_RANGE)),      // bad day of month
         ("Tue, 20 Jan 2015", Err(TOO_SHORT)),                   // omitted fields
