@@ -400,7 +400,7 @@ impl NaiveDate {
     /// ~~~~
     pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
         let days = days + 365; // make December 31, 1 BCE equal to day 0
-        let (year_div_400, cycle) = div_mod_floor(days, 146097);
+        let (year_div_400, cycle) = div_mod_floor(days, 146_097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32,
@@ -683,7 +683,7 @@ impl NaiveDate {
     /// Returns the packed ordinal-flags.
     #[inline]
     fn of(&self) -> Of {
-        Of((self.ymdf & 0b1111_11111_1111) as u32)
+        Of((self.ymdf & 0b1_1111_1111_1111) as u32)
     }
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
@@ -701,7 +701,7 @@ impl NaiveDate {
     fn with_of(&self, of: Of) -> Option<NaiveDate> {
         if of.valid() {
             let Of(of) = of;
-            Some(NaiveDate { ymdf: (self.ymdf & !0b111111111_1111) | of as DateImpl })
+            Some(NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of as DateImpl })
         } else {
             None
         }
@@ -808,7 +808,7 @@ impl NaiveDate {
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
         let cycle = try_opt!((cycle as i32).checked_add(try_opt!(rhs.num_days().to_i32())));
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146097);
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
@@ -844,7 +844,7 @@ impl NaiveDate {
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
         let cycle = try_opt!((cycle as i32).checked_sub(try_opt!(rhs.num_days().to_i32())));
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146097);
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
@@ -885,7 +885,7 @@ impl NaiveDate {
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
         let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
         let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
-        OldDuration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146097 +
+        OldDuration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146_097 +
                           (cycle1 - cycle2))
     }
 

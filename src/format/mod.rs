@@ -395,7 +395,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                 };
 
                 if let Some(v) = v {
-                    if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10000) {
+                    if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10_000) {
                         // non-four-digit years require an explicit sign as per ISO 8601
                         match pad {
                             Pad::None => try!(write!(w, "{:+}", v)),

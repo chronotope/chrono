@@ -180,7 +180,7 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     let offset = try_consume!(scan::timezone_offset_zulu(s, |s| scan::char(s, b':')));
-    if offset <= -86400 || offset >= 86400 { return Err(OUT_OF_RANGE); }
+    if offset <= -86_400 || offset >= 86_400 { return Err(OUT_OF_RANGE); }
     try!(parsed.set_offset(offset as i64));
 
     Ok((s, ()))

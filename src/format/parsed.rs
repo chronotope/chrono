@@ -1041,7 +1041,7 @@ mod tests {
                           minute: 42, second: 4, nanosecond: 12_345_678, offset: -9876),
                    ymdhmsn(2014,12,31, 1,42,4,12_345_678, -9876));
         assert_eq!(parse!(year: 2015, ordinal: 1, hour_div_12: 0, hour_mod_12: 4,
-                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 86400),
+                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 86_400),
                    Err(OUT_OF_RANGE)); // `FixedOffset` does not support such huge offset
     }
 

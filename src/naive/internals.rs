@@ -136,7 +136,7 @@ impl YearFlags {
     #[inline]
     pub fn nisoweeks(&self) -> u32 {
         let YearFlags(flags) = *self;
-        52 + ((0b00000100_00000110 >> flags as usize) & 1)
+        52 + ((0b0000_0100_0000_0110 >> flags as usize) & 1)
     }
 }
 
@@ -425,20 +425,20 @@ impl Mdf {
     pub fn with_month(&self, month: u32) -> Mdf {
         let month = Mdf::clamp_month(month);
         let Mdf(mdf) = *self;
-        Mdf((mdf & 0b11111_1111) | (month << 9))
+        Mdf((mdf & 0b1_1111_1111) | (month << 9))
     }
 
     #[inline]
     pub fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
-        (mdf >> 4) & 0b11111
+        (mdf >> 4) & 0b1_1111
     }
 
     #[inline]
     pub fn with_day(&self, day: u32) -> Mdf {
         let day = Mdf::clamp_day(day);
         let Mdf(mdf) = *self;
-        Mdf((mdf & !0b11111_0000) | (day << 4))
+        Mdf((mdf & !0b1_1111_0000) | (day << 4))
     }
 
     #[inline]
@@ -463,7 +463,7 @@ impl fmt::Debug for Mdf {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Mdf(mdf) = *self;
         write!(f, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{:?}*/)",
-               mdf >> 9, (mdf >> 4) & 0b11111, mdf & 0b1111, YearFlags((mdf & 0b1111) as u8))
+               mdf >> 9, (mdf >> 4) & 0b1_1111, mdf & 0b1111, YearFlags((mdf & 0b1111) as u8))
     }
 }
 

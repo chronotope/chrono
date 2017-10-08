@@ -133,8 +133,8 @@ impl NaiveDateTime {
     /// ~~~~
     #[inline]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        let (days, secs) = div_mod_floor(secs, 86400);
-        let date = days.to_i32().and_then(|days| days.checked_add(719163))
+        let (days, secs) = div_mod_floor(secs, 86_400);
+        let date = days.to_i32().and_then(|days| days.checked_add(719_163))
                                 .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
@@ -260,7 +260,7 @@ impl NaiveDateTime {
     pub fn timestamp(&self) -> i64 {
         let ndays = self.date.num_days_from_ce() as i64;
         let nseconds = self.time.num_seconds_from_midnight() as i64;
-        (ndays - 719163) * 86400 + nseconds
+        (ndays - 719_163) * 86_400 + nseconds
     }
 
     /// Returns the number of non-leap *milliseconds* since midnight on January 1, 1970.
@@ -381,7 +381,7 @@ impl NaiveDateTime {
     ///            Some(hms(3, 5, 6)));
     /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(3600 + 60)),
     ///            Some(hms(4, 6, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(86400)),
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(86_400)),
     ///            Some(from_ymd(2016, 7, 9).and_hms(3, 5, 7)));
     ///
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
@@ -467,7 +467,7 @@ impl NaiveDateTime {
     ///            Some(hms(3, 5, 8)));
     /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(3600 + 60)),
     ///            Some(hms(2, 4, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(86400)),
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(86_400)),
     ///            Some(from_ymd(2016, 7, 7).and_hms(3, 5, 7)));
     ///
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
@@ -546,7 +546,7 @@ impl NaiveDateTime {
     /// // July 8 is 190th day in the year 2016
     /// let d0 = from_ymd(2016, 1, 1);
     /// assert_eq!(d.and_hms_milli(0, 7, 6, 500).signed_duration_since(d0.and_hms(0, 0, 0)),
-    ///            Duration::seconds(189 * 86400 + 7 * 60 + 6) + Duration::milliseconds(500));
+    ///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
     /// # }
     /// ~~~~
     ///
@@ -1163,7 +1163,7 @@ impl hash::Hash for NaiveDateTime {
 /// assert_eq!(hms(3, 5, 7) + Duration::seconds(1),         hms(3, 5, 8));
 /// assert_eq!(hms(3, 5, 7) + Duration::seconds(-1),        hms(3, 5, 6));
 /// assert_eq!(hms(3, 5, 7) + Duration::seconds(3600 + 60), hms(4, 6, 7));
-/// assert_eq!(hms(3, 5, 7) + Duration::seconds(86400),
+/// assert_eq!(hms(3, 5, 7) + Duration::seconds(86_400),
 ///            from_ymd(2016, 7, 9).and_hms(3, 5, 7));
 /// assert_eq!(hms(3, 5, 7) + Duration::days(365),
 ///            from_ymd(2017, 7, 8).and_hms(3, 5, 7));
@@ -1235,7 +1235,7 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// assert_eq!(hms(3, 5, 7) - Duration::seconds(1),         hms(3, 5, 6));
 /// assert_eq!(hms(3, 5, 7) - Duration::seconds(-1),        hms(3, 5, 8));
 /// assert_eq!(hms(3, 5, 7) - Duration::seconds(3600 + 60), hms(2, 4, 7));
-/// assert_eq!(hms(3, 5, 7) - Duration::seconds(86400),
+/// assert_eq!(hms(3, 5, 7) - Duration::seconds(86_400),
 ///            from_ymd(2016, 7, 7).and_hms(3, 5, 7));
 /// assert_eq!(hms(3, 5, 7) - Duration::days(365),
 ///            from_ymd(2015, 7, 9).and_hms(3, 5, 7));
@@ -1807,9 +1807,9 @@ mod tests {
         check((2014,5,6, 7,8,9), Duration::seconds(3600 + 60 + 1), Some((2014,5,6, 8,9,10)));
         check((2014,5,6, 7,8,9), Duration::seconds(-(3600 + 60 + 1)), Some((2014,5,6, 6,7,8)));
         check((2014,5,6, 7,8,9), Duration::seconds(86399), Some((2014,5,7, 7,8,8)));
-        check((2014,5,6, 7,8,9), Duration::seconds(86400 * 10), Some((2014,5,16, 7,8,9)));
-        check((2014,5,6, 7,8,9), Duration::seconds(-86400 * 10), Some((2014,4,26, 7,8,9)));
-        check((2014,5,6, 7,8,9), Duration::seconds(86400 * 10), Some((2014,5,16, 7,8,9)));
+        check((2014,5,6, 7,8,9), Duration::seconds(86_400 * 10), Some((2014,5,16, 7,8,9)));
+        check((2014,5,6, 7,8,9), Duration::seconds(-86_400 * 10), Some((2014,4,26, 7,8,9)));
+        check((2014,5,6, 7,8,9), Duration::seconds(86_400 * 10), Some((2014,5,16, 7,8,9)));
 
         // overflow check
         // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
@@ -1818,7 +1818,7 @@ mod tests {
         check((0,1,1, 0,0,0), max_days_from_year_0, Some((MAX_DATE.year(),12,31, 0,0,0)));
         check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86399),
               Some((MAX_DATE.year(),12,31, 23,59,59)));
-        check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86400), None);
+        check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86_400), None);
         check((0,1,1, 0,0,0), Duration::max_value(), None);
 
         let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0,1,1));
