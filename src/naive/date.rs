@@ -883,9 +883,9 @@ impl NaiveDate {
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
-        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
-        OldDuration::days((year1_div_400 as i64 - year2_div_400 as i64) * 146_097 +
+        let cycle1 = i64::from(internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()));
+        let cycle2 = i64::from(internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()));
+        OldDuration::days((i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 +
                           (cycle1 - cycle2))
     }
 

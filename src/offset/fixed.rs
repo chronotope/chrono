@@ -145,7 +145,7 @@ fn add_with_leapsecond<T>(lhs: &T, rhs: i32) -> T
     // extract and temporarily remove the fractional part and later recover it
     let nanos = lhs.nanosecond();
     let lhs = lhs.with_nanosecond(0).unwrap();
-    (lhs + OldDuration::seconds(rhs as i64)).with_nanosecond(nanos).unwrap()
+    (lhs + OldDuration::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
 }
 
 impl Add<FixedOffset> for NaiveTime {

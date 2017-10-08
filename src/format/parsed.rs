@@ -394,7 +394,7 @@ impl Parsed {
                 if week_from_sun > 53 { return Err(OUT_OF_RANGE); } // can it overflow?
                 let ndays = firstweek + (week_from_sun as i32 - 1) * 7 +
                             weekday.num_days_from_sunday() as i32;
-                let date = try!(newyear.checked_add_signed(OldDuration::days(ndays as i64))
+                let date = try!(newyear.checked_add_signed(OldDuration::days(i64::from(ndays)))
                                        .ok_or(OUT_OF_RANGE));
                 if date.year() != year { return Err(OUT_OF_RANGE); } // early exit for correct error
 
@@ -419,7 +419,7 @@ impl Parsed {
                 if week_from_mon > 53 { return Err(OUT_OF_RANGE); } // can it overflow?
                 let ndays = firstweek + (week_from_mon as i32 - 1) * 7 +
                             weekday.num_days_from_monday() as i32;
-                let date = try!(newyear.checked_add_signed(OldDuration::days(ndays as i64))
+                let date = try!(newyear.checked_add_signed(OldDuration::days(i64::from(ndays)))
                                        .ok_or(OUT_OF_RANGE));
                 if date.year() != year { return Err(OUT_OF_RANGE); } // early exit for correct error
 
@@ -502,7 +502,7 @@ impl Parsed {
 
             // verify the timestamp field if any
             // the following is safe, `timestamp` is very limited in range
-            let timestamp = datetime.timestamp() - offset as i64;
+            let timestamp = datetime.timestamp() - i64::from(offset);
             if let Some(given_timestamp) = self.timestamp {
                 // if `datetime` represents a leap second, it might be off by one second.
                 if given_timestamp != timestamp &&
@@ -525,7 +525,7 @@ impl Parsed {
             }
 
             // reconstruct date and time fields from timestamp
-            let ts = try!(timestamp.checked_add(offset as i64).ok_or(OUT_OF_RANGE));
+            let ts = try!(timestamp.checked_add(i64::from(offset)).ok_or(OUT_OF_RANGE));
             let datetime = NaiveDateTime::from_timestamp_opt(ts, 0);
             let mut datetime = try!(datetime.ok_or(OUT_OF_RANGE));
 
@@ -544,12 +544,12 @@ impl Parsed {
                 }
                 // ...and we have the correct candidates for other fields.
             } else {
-                try!(parsed.set_second(datetime.second() as i64));
+                try!(parsed.set_second(i64::from(datetime.second())));
             }
-            try!(parsed.set_year   (datetime.year()    as i64));
-            try!(parsed.set_ordinal(datetime.ordinal() as i64)); // more efficient than ymd
-            try!(parsed.set_hour   (datetime.hour()    as i64));
-            try!(parsed.set_minute (datetime.minute()  as i64));
+            try!(parsed.set_year   (i64::from(datetime.year())));
+            try!(parsed.set_ordinal(i64::from(datetime.ordinal()))); // more efficient than ymd
+            try!(parsed.set_hour   (i64::from(datetime.hour())));
+            try!(parsed.set_minute (i64::from(datetime.minute())));
 
             // validate other fields (e.g. week) and return
             let date = try!(parsed.to_naive_date());

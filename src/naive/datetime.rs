@@ -258,8 +258,8 @@ impl NaiveDateTime {
     /// ~~~~
     #[inline]
     pub fn timestamp(&self) -> i64 {
-        let ndays = self.date.num_days_from_ce() as i64;
-        let nseconds = self.time.num_seconds_from_midnight() as i64;
+        let ndays = i64::from(self.date.num_days_from_ce());
+        let nseconds = i64::from(self.time.num_seconds_from_midnight());
         (ndays - 719_163) * 86_400 + nseconds
     }
 
@@ -287,7 +287,7 @@ impl NaiveDateTime {
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
         let as_ms = self.timestamp() * 1000;
-        as_ms + self.timestamp_subsec_millis() as i64
+        as_ms + i64::from(self.timestamp_subsec_millis())
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.

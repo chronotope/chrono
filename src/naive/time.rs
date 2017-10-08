@@ -528,15 +528,15 @@ impl NaiveTime {
         // otherwise the addition immediately finishes.
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
-            if rhs >= OldDuration::nanoseconds(rfrac as i64) {
-                rhs = rhs - OldDuration::nanoseconds(rfrac as i64);
+            if rhs >= OldDuration::nanoseconds(i64::from(rfrac)) {
+                rhs = rhs - OldDuration::nanoseconds(i64::from(rfrac));
                 secs += 1;
                 frac = 0;
-            } else if rhs < OldDuration::nanoseconds(-(frac as i64)) {
-                rhs = rhs + OldDuration::nanoseconds(frac as i64);
+            } else if rhs < OldDuration::nanoseconds(-i64::from(frac)) {
+                rhs = rhs + OldDuration::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
-                frac = (frac as i64 + rhs.num_nanoseconds().unwrap()) as u32;
+                frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
                 debug_assert!(frac < 2_000_000_000);
                 return (NaiveTime { secs: secs, frac: frac }, 0);
             }
@@ -683,8 +683,8 @@ impl NaiveTime {
 
         use std::cmp::Ordering;
 
-        let secs = self.secs as i64 - rhs.secs as i64;
-        let frac = self.frac as i64 - rhs.frac as i64;
+        let secs = i64::from(self.secs) - i64::from(rhs.secs);
+        let frac = i64::from(self.frac) - i64::from(rhs.frac);
 
         // `secs` may contain a leap second yet to be counted
         let adjust = match self.secs.cmp(&rhs.secs) {
