@@ -299,6 +299,21 @@
 //! [`DateTime.timestamp_subsec_nanos`](./struct.DateTime.html#method.timestamp_subsec_nanos)
 //! to get the number of additional number of nanoseconds.
 //!
+//! ```rust
+//! # use chrono::DateTime;
+//! # use chrono::Utc;
+//! // We need the trait in scope to use Utc::timestamp().
+//! use chrono::TimeZone;
+//!
+//! // Construct a datetime from epoch:
+//! let dt = Utc.timestamp(1_500_000_000, 0);
+//! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
+//!
+//! // Get epoch value from a datetime:
+//! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();
+//! assert_eq!(dt.timestamp(), 1_500_000_000);
+//! ```
+//!
 //! ### Individual date
 //!
 //! Chrono also provides an individual date type ([**`Date`**](./struct.Date.html)).
