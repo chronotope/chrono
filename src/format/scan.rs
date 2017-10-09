@@ -191,7 +191,7 @@ pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
 
     // hours (00--99)
     let hours = match try!(digits(s)) {
-        (h1 @ b'0'...b'9', h2 @ b'0'...b'9') => ((h1 - b'0') * 10 + (h2 - b'0')) as i32,
+        (h1 @ b'0'...b'9', h2 @ b'0'...b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
         _ => return Err(INVALID),
     };
     s = &s[2..];
@@ -201,7 +201,7 @@ pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
 
     // minutes (00--59)
     let minutes = match try!(digits(s)) {
-        (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => ((m1 - b'0') * 10 + (m2 - b'0')) as i32,
+        (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
         (b'6'...b'9', b'0'...b'9') => return Err(OUT_OF_RANGE),
         _ => return Err(INVALID),
     };

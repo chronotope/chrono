@@ -93,7 +93,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     s = s.trim_left();
     try!(parsed.set_day(try_consume!(scan::number(s, 1, 2))));
     s = try!(scan::space(s)); // mandatory
-    try!(parsed.set_month(1 + try_consume!(scan::short_month0(s)) as i64));
+    try!(parsed.set_month(1 + i64::from(try_consume!(scan::short_month0(s)))));
     s = try!(scan::space(s)); // mandatory
 
     // distinguish two- and three-digit years from four-digit years
@@ -119,7 +119,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     s = try!(scan::space(s)); // mandatory
     if let Some(offset) = try_consume!(scan::timezone_offset_2822(s)) {
         // only set the offset when it is definitely known (i.e. not `-0000`)
-        try!(parsed.set_offset(offset as i64));
+        try!(parsed.set_offset(i64::from(offset)));
     }
 
     Ok((s, ()))
@@ -180,8 +180,8 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     let offset = try_consume!(scan::timezone_offset_zulu(s, |s| scan::char(s, b':')));
-    if offset <= -86400 || offset >= 86400 { return Err(OUT_OF_RANGE); }
-    try!(parsed.set_offset(offset as i64));
+    if offset <= -86_400 || offset >= 86_400 { return Err(OUT_OF_RANGE); }
+    try!(parsed.set_offset(i64::from(offset)));
 
     Ok((s, ()))
 }
@@ -279,12 +279,12 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                 match spec {
                     ShortMonthName => {
                         let month0 = try_consume!(scan::short_month0(s));
-                        try!(parsed.set_month(month0 as i64 + 1));
+                        try!(parsed.set_month(i64::from(month0) + 1));
                     }
 
                     LongMonthName => {
                         let month0 = try_consume!(scan::short_or_long_month0(s));
-                        try!(parsed.set_month(month0 as i64 + 1));
+                        try!(parsed.set_month(i64::from(month0) + 1));
                     }
 
                     ShortWeekdayName => {
@@ -320,13 +320,13 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                     TimezoneOffsetColon | TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(s.trim_left(),
                                                                         scan::colon_or_space));
-                        try!(parsed.set_offset(offset as i64));
+                        try!(parsed.set_offset(i64::from(offset)));
                     }
 
                     TimezoneOffsetColonZ | TimezoneOffsetZ => {
                         let offset = try_consume!(scan::timezone_offset_zulu(s.trim_left(),
                                                                              scan::colon_or_space));
-                        try!(parsed.set_offset(offset as i64));
+                        try!(parsed.set_offset(i64::from(offset)));
                     }
 
                     RFC2822 => try_consume!(parse_rfc2822(parsed, s)),

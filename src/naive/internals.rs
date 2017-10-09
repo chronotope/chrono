@@ -93,10 +93,10 @@ static YEAR_DELTAS: [u8; 401] = [
 
 pub fn cycle_to_yo(cycle: u32) -> (u32, u32) {
     let (mut year_mod_400, mut ordinal0) = div_rem(cycle, 365);
-    let delta = YEAR_DELTAS[year_mod_400 as usize] as u32;
+    let delta = u32::from(YEAR_DELTAS[year_mod_400 as usize]);
     if ordinal0 < delta {
         year_mod_400 -= 1;
-        ordinal0 += 365 - YEAR_DELTAS[year_mod_400 as usize] as u32;
+        ordinal0 += 365 - u32::from(YEAR_DELTAS[year_mod_400 as usize]);
     } else {
         ordinal0 -= delta;
     }
@@ -104,7 +104,7 @@ pub fn cycle_to_yo(cycle: u32) -> (u32, u32) {
 }
 
 pub fn yo_to_cycle(year_mod_400: u32, ordinal: u32) -> u32 {
-    year_mod_400 * 365 + YEAR_DELTAS[year_mod_400 as usize] as u32 + ordinal - 1
+    year_mod_400 * 365 + u32::from(YEAR_DELTAS[year_mod_400 as usize]) + ordinal - 1
 }
 
 impl YearFlags {
@@ -122,13 +122,13 @@ impl YearFlags {
     #[inline]
     pub fn ndays(&self) -> u32 {
         let YearFlags(flags) = *self;
-        366 - (flags >> 3) as u32
+        366 - u32::from(flags >> 3)
     }
 
     #[inline]
     pub fn isoweek_delta(&self) -> u32 {
         let YearFlags(flags) = *self;
-        let mut delta = flags as u32 & 0b111;
+        let mut delta = u32::from(flags) & 0b0111;
         if delta < 3 { delta += 7; }
         delta
     }
@@ -136,7 +136,7 @@ impl YearFlags {
     #[inline]
     pub fn nisoweeks(&self) -> u32 {
         let YearFlags(flags) = *self;
-        52 + ((0b00000100_00000110 >> flags as usize) & 1)
+        52 + ((0b0000_0100_0000_0110 >> flags as usize) & 1)
     }
 }
 
@@ -286,14 +286,14 @@ impl Of {
     #[inline]
     pub fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Of {
         let ordinal = Of::clamp_ordinal(ordinal);
-        Of((ordinal << 4) | (flags as u32))
+        Of((ordinal << 4) | u32::from(flags))
     }
 
     #[inline]
     pub fn from_mdf(Mdf(mdf): Mdf) -> Of {
         let mdl = mdf >> 3;
         match MDL_TO_OL.get(mdl as usize) {
-            Some(&v) => Of(mdf.wrapping_sub((v as i32 as u32 & 0x3ff) << 3)),
+            Some(&v) => Of(mdf.wrapping_sub((i32::from(v) as u32 & 0x3ff) << 3)),
             None => Of(0)
         }
     }
@@ -327,7 +327,7 @@ impl Of {
     #[inline]
     pub fn with_flags(&self, YearFlags(flags): YearFlags) -> Of {
         let Of(of) = *self;
-        Of((of & !0b1111) | (flags as u32))
+        Of((of & !0b1111) | u32::from(flags))
     }
 
     #[inline]
@@ -393,14 +393,14 @@ impl Mdf {
     pub fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Mdf {
         let month = Mdf::clamp_month(month);
         let day = Mdf::clamp_day(day);
-        Mdf((month << 9) | (day << 4) | (flags as u32))
+        Mdf((month << 9) | (day << 4) | u32::from(flags))
     }
 
     #[inline]
     pub fn from_of(Of(of): Of) -> Mdf {
         let ol = of >> 3;
         match OL_TO_MDL.get(ol as usize) {
-            Some(&v) => Mdf(of + ((v as u32) << 3)),
+            Some(&v) => Mdf(of + (u32::from(v) << 3)),
             None => Mdf(0)
         }
     }
@@ -425,20 +425,20 @@ impl Mdf {
     pub fn with_month(&self, month: u32) -> Mdf {
         let month = Mdf::clamp_month(month);
         let Mdf(mdf) = *self;
-        Mdf((mdf & 0b11111_1111) | (month << 9))
+        Mdf((mdf & 0b1_1111_1111) | (month << 9))
     }
 
     #[inline]
     pub fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
-        (mdf >> 4) & 0b11111
+        (mdf >> 4) & 0b1_1111
     }
 
     #[inline]
     pub fn with_day(&self, day: u32) -> Mdf {
         let day = Mdf::clamp_day(day);
         let Mdf(mdf) = *self;
-        Mdf((mdf & !0b11111_0000) | (day << 4))
+        Mdf((mdf & !0b1_1111_0000) | (day << 4))
     }
 
     #[inline]
@@ -450,7 +450,7 @@ impl Mdf {
     #[inline]
     pub fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
         let Mdf(mdf) = *self;
-        Mdf((mdf & !0b1111) | (flags as u32))
+        Mdf((mdf & !0b1111) | u32::from(flags))
     }
 
     #[inline]
@@ -463,7 +463,7 @@ impl fmt::Debug for Mdf {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Mdf(mdf) = *self;
         write!(f, "Mdf(({} << 9) | ({} << 4) | {:#04o} /*{:?}*/)",
-               mdf >> 9, (mdf >> 4) & 0b11111, mdf & 0b1111, YearFlags((mdf & 0b1111) as u8))
+               mdf >> 9, (mdf >> 4) & 0b1_1111, mdf & 0b1111, YearFlags((mdf & 0b1111) as u8))
     }
 }
 

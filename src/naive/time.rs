@@ -420,12 +420,12 @@ impl NaiveTime {
     /// assert!(from_nsecs_opt(0, 0).is_some());
     /// assert!(from_nsecs_opt(86399, 999_999_999).is_some());
     /// assert!(from_nsecs_opt(86399, 1_999_999_999).is_some()); // a leap second after 23:59:59
-    /// assert!(from_nsecs_opt(86400, 0).is_none());
+    /// assert!(from_nsecs_opt(86_400, 0).is_none());
     /// assert!(from_nsecs_opt(86399, 2_000_000_000).is_none());
     /// ~~~~
     #[inline]
     pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
-        if secs >= 86400 || nano >= 2_000_000_000 { return None; }
+        if secs >= 86_400 || nano >= 2_000_000_000 { return None; }
         Some(NaiveTime { secs: secs, frac: nano })
     }
 
@@ -513,9 +513,9 @@ impl NaiveTime {
     /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(11)),
     ///            (from_hms(14, 4, 5), 0));
     /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(23)),
-    ///            (from_hms(2, 4, 5), 86400));
+    ///            (from_hms(2, 4, 5), 86_400));
     /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(-7)),
-    ///            (from_hms(20, 4, 5), -86400));
+    ///            (from_hms(20, 4, 5), -86_400));
     /// # }
     /// ~~~~
     #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
@@ -528,36 +528,36 @@ impl NaiveTime {
         // otherwise the addition immediately finishes.
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
-            if rhs >= OldDuration::nanoseconds(rfrac as i64) {
-                rhs = rhs - OldDuration::nanoseconds(rfrac as i64);
+            if rhs >= OldDuration::nanoseconds(i64::from(rfrac)) {
+                rhs = rhs - OldDuration::nanoseconds(i64::from(rfrac));
                 secs += 1;
                 frac = 0;
-            } else if rhs < OldDuration::nanoseconds(-(frac as i64)) {
-                rhs = rhs + OldDuration::nanoseconds(frac as i64);
+            } else if rhs < OldDuration::nanoseconds(-i64::from(frac)) {
+                rhs = rhs + OldDuration::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
-                frac = (frac as i64 + rhs.num_nanoseconds().unwrap()) as u32;
+                frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
                 debug_assert!(frac < 2_000_000_000);
                 return (NaiveTime { secs: secs, frac: frac }, 0);
             }
         }
-        debug_assert!(secs <= 86400);
+        debug_assert!(secs <= 86_400);
         debug_assert!(frac < 1_000_000_000);
 
         let rhssecs = rhs.num_seconds();
         let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
         debug_assert_eq!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac), rhs);
-        let rhssecsinday = rhssecs % 86400;
+        let rhssecsinday = rhssecs % 86_400;
         let mut morerhssecs = rhssecs - rhssecsinday;
         let rhssecs = rhssecsinday as i32;
         let rhsfrac = rhsfrac as i32;
-        debug_assert!(-86400 < rhssecs && rhssecs < 86400);
-        debug_assert_eq!(morerhssecs % 86400, 0);
+        debug_assert!(-86_400 < rhssecs && rhssecs < 86_400);
+        debug_assert_eq!(morerhssecs % 86_400, 0);
         debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
 
         let mut secs = secs as i32 + rhssecs;
         let mut frac = frac as i32 + rhsfrac;
-        debug_assert!(-86400 < secs && secs < 2 * 86400);
+        debug_assert!(-86_400 < secs && secs < 2 * 86_400);
         debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
 
         if frac < 0 {
@@ -567,17 +567,17 @@ impl NaiveTime {
             frac -= 1_000_000_000;
             secs += 1;
         }
-        debug_assert!(-86400 <= secs && secs < 2 * 86400);
+        debug_assert!(-86_400 <= secs && secs < 2 * 86_400);
         debug_assert!(0 <= frac && frac < 1_000_000_000);
 
         if secs < 0 {
-            secs += 86400;
-            morerhssecs -= 86400;
-        } else if secs >= 86400 {
-            secs -= 86400;
-            morerhssecs += 86400;
+            secs += 86_400;
+            morerhssecs -= 86_400;
+        } else if secs >= 86_400 {
+            secs -= 86_400;
+            morerhssecs += 86_400;
         }
-        debug_assert!(0 <= secs && secs < 86400);
+        debug_assert!(0 <= secs && secs < 86_400);
 
         (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
     }
@@ -599,9 +599,9 @@ impl NaiveTime {
     /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(2)),
     ///            (from_hms(1, 4, 5), 0));
     /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(17)),
-    ///            (from_hms(10, 4, 5), 86400));
+    ///            (from_hms(10, 4, 5), 86_400));
     /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(-22)),
-    ///            (from_hms(1, 4, 5), -86400));
+    ///            (from_hms(1, 4, 5), -86_400));
     /// # }
     /// ~~~~
     #[inline]
@@ -683,8 +683,8 @@ impl NaiveTime {
 
         use std::cmp::Ordering;
 
-        let secs = self.secs as i64 - rhs.secs as i64;
-        let frac = self.frac as i64 - rhs.frac as i64;
+        let secs = i64::from(self.secs) - i64::from(rhs.secs);
+        let frac = i64::from(self.frac) - i64::from(rhs.frac);
 
         // `secs` may contain a leap second yet to be counted
         let adjust = match self.secs.cmp(&rhs.secs) {
@@ -1516,15 +1516,15 @@ mod tests {
         assert_eq!(hmsm(3, 4, 5, 678).overflowing_add_signed(Duration::hours(11)),
                    (hmsm(14, 4, 5, 678), 0));
         assert_eq!(hmsm(3, 4, 5, 678).overflowing_add_signed(Duration::hours(23)),
-                   (hmsm(2, 4, 5, 678), 86400));
+                   (hmsm(2, 4, 5, 678), 86_400));
         assert_eq!(hmsm(3, 4, 5, 678).overflowing_add_signed(Duration::hours(-7)),
-                   (hmsm(20, 4, 5, 678), -86400));
+                   (hmsm(20, 4, 5, 678), -86_400));
 
         // overflowing_add_signed with leap seconds may be counter-intuitive
         assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add_signed(Duration::days(1)),
-                   (hmsm(3, 4, 5, 678), 86400));
+                   (hmsm(3, 4, 5, 678), 86_400));
         assert_eq!(hmsm(3, 4, 5, 1_678).overflowing_add_signed(Duration::days(-1)),
-                   (hmsm(3, 4, 6, 678), -86400));
+                   (hmsm(3, 4, 6, 678), -86_400));
     }
 
     #[test]
