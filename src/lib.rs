@@ -842,7 +842,7 @@ pub trait Datelike: Sized {
         if year < 0 {
             let excess = 1 + (-year) / 400;
             year += excess * 400;
-            ndays -= excess * 146097;
+            ndays -= excess * 146_097;
         }
         let div_100 = year / 100;
         ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);

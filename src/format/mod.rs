@@ -362,26 +362,30 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     (d.ordinal() as i32 - d.weekday().num_days_from_monday() as i32 + 7) / 7;
 
                 let (width, v) = match spec {
-                    Year           => (4, date.map(|d| d.year() as i64)),
-                    YearDiv100     => (2, date.map(|d| div_floor(d.year() as i64, 100))),
-                    YearMod100     => (2, date.map(|d| mod_floor(d.year() as i64, 100))),
-                    IsoYear        => (4, date.map(|d| d.iso_week().year() as i64)),
-                    IsoYearDiv100  => (2, date.map(|d| div_floor(d.iso_week().year() as i64, 100))),
-                    IsoYearMod100  => (2, date.map(|d| mod_floor(d.iso_week().year() as i64, 100))),
-                    Month          => (2, date.map(|d| d.month() as i64)),
-                    Day            => (2, date.map(|d| d.day() as i64)),
-                    WeekFromSun    => (2, date.map(|d| week_from_sun(d) as i64)),
-                    WeekFromMon    => (2, date.map(|d| week_from_mon(d) as i64)),
-                    IsoWeek        => (2, date.map(|d| d.iso_week().week() as i64)),
-                    NumDaysFromSun => (1, date.map(|d| d.weekday().num_days_from_sunday() as i64)),
-                    WeekdayFromMon => (1, date.map(|d| d.weekday().number_from_monday() as i64)),
-                    Ordinal        => (3, date.map(|d| d.ordinal() as i64)),
-                    Hour           => (2, time.map(|t| t.hour() as i64)),
-                    Hour12         => (2, time.map(|t| t.hour12().1 as i64)),
-                    Minute         => (2, time.map(|t| t.minute() as i64)),
-                    Second         => (2, time.map(|t| (t.second() +
-                                                        t.nanosecond() / 1_000_000_000) as i64)),
-                    Nanosecond     => (9, time.map(|t| (t.nanosecond() % 1_000_000_000) as i64)),
+                    Year           => (4, date.map(|d| i64::from(d.year()))),
+                    YearDiv100     => (2, date.map(|d| div_floor(i64::from(d.year()), 100))),
+                    YearMod100     => (2, date.map(|d| mod_floor(i64::from(d.year()), 100))),
+                    IsoYear        => (4, date.map(|d| i64::from(d.iso_week().year()))),
+                    IsoYearDiv100  => (2, date.map(|d| div_floor(
+                        i64::from(d.iso_week().year()), 100))),
+                    IsoYearMod100  => (2, date.map(|d| mod_floor(
+                        i64::from(d.iso_week().year()), 100))),
+                    Month          => (2, date.map(|d| i64::from(d.month()))),
+                    Day            => (2, date.map(|d| i64::from(d.day()))),
+                    WeekFromSun    => (2, date.map(|d| i64::from(week_from_sun(d)))),
+                    WeekFromMon    => (2, date.map(|d| i64::from(week_from_mon(d)))),
+                    IsoWeek        => (2, date.map(|d| i64::from(d.iso_week().week()))),
+                    NumDaysFromSun => (1, date.map(|d| i64::from(d.weekday()
+                                                                  .num_days_from_sunday()))),
+                    WeekdayFromMon => (1, date.map(|d| i64::from(d.weekday()
+                                                                  .number_from_monday()))),
+                    Ordinal        => (3, date.map(|d| i64::from(d.ordinal()))),
+                    Hour           => (2, time.map(|t| i64::from(t.hour()))),
+                    Hour12         => (2, time.map(|t| i64::from(t.hour12().1))),
+                    Minute         => (2, time.map(|t| i64::from(t.minute()))),
+                    Second         => (2, time.map(|t| i64::from(t.second() +
+                                                        t.nanosecond() / 1_000_000_000))),
+                    Nanosecond     => (9, time.map(|t| i64::from(t.nanosecond() % 1_000_000_000))),
                     Timestamp      => (1, match (date, time, off) {
                         (Some(d), Some(t), None) =>
                             Some(d.and_time(*t).timestamp()),
@@ -395,7 +399,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                 };
 
                 if let Some(v) = v {
-                    if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10000) {
+                    if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10_000) {
                         // non-four-digit years require an explicit sign as per ISO 8601
                         match pad {
                             Pad::None => try!(write!(w, "{:+}", v)),

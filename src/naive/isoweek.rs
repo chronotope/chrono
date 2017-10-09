@@ -40,7 +40,7 @@ pub fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
             (year, rawweek)
         }
     };
-    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | of.flags().0 as DateImpl }
+    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(of.flags().0) }
 }
 
 impl IsoWeek {
