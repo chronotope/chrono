@@ -211,6 +211,20 @@ impl DateTime<FixedOffset> {
     /// on the supported escape sequences.
     ///
     /// See also `Offset::datetime_from_str` which gives a local `DateTime` on specific time zone.
+    ///
+    /// Note that this method *requires a timezone* in the string. See
+    /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
+    /// for a version that does not require a timezone in the to-be-parsed str.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use chrono::{DateTime, FixedOffset, TimeZone};
+    ///
+    /// let dt = DateTime::parse_from_str(
+    ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
+    /// assert_eq!(dt, Ok(FixedOffset::east(0).ymd(1983, 4, 13).and_hms_milli(12, 9, 14, 274)));
+    /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
         try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));

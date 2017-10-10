@@ -54,7 +54,7 @@ Spec. | Example       | Description
 `%M`  | `34`          | Minute number (00--59), zero-padded to 2 digits.
 `%S`  | `60`          | Second number (00--60), zero-padded to 2 digits. [5]
 `%f`  | `026490000`   | The fractional seconds (in nanoseconds) since last whole second. [8]
-`%.f` | `.026490`     | Similar to `.%f` but left-aligned. [8]
+`%.f` | `.026490`     | Similar to `.%f` but left-aligned. These all consume the leading dot. [8]
 `%.3f`| `.026`        | Similar to `.%f` but left-aligned but fixed to a length of 3. [8]
 `%.6f`| `.026490`     | Similar to `.%f` but left-aligned but fixed to a length of 6. [8]
 `%.9f`| `.026490000`  | Similar to `.%f` but left-aligned but fixed to a length of 9. [8]
