@@ -246,6 +246,23 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
         self.format_with_items(ITEMS.iter().cloned()).to_string()
     }
 
+    /// Return an RFC 3339 and ISO 8601 date and time with subseconds formatted
+    /// as per a Fixed variant or None for no subseconds.  The Fixed
+    /// variants supported are: Nanosecond, Nanosecond3, Nanosecond6
+    /// and Nanosecond9. Other values will panic!
+    pub fn to_rfc3339p(&self, subform: Option<Fixed>) -> String {
+        self.rfc3339_via_items(subform, false)
+    }
+
+    /// Return an RFC 3339 and ISO 8601 date and time with subseconds formatted
+    /// as per a Fixed variant or None for no subseconds.  The Fixed
+    /// variants supported are: Nanosecond, Nanosecond3, Nanosecond6
+    /// and Nanosecond9. Other values will panic!
+    /// If the timezone is UTC (offset 0), use 'Z'.
+    pub fn to_rfc3339pz(&self, subform: Option<Fixed>) -> String {
+        self.rfc3339_via_items(subform, true)
+    }
+
     /// Formats the combined date and time with the specified formatting items.
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
@@ -260,6 +277,54 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    fn rfc3339_via_items(&self, subform: Option<Fixed>, use_z: bool) -> String
+    {
+        use format::Item::*;
+        use format::Numeric::*;
+        use format::Pad::Zero;
+        use format::Fixed::*;
+        use format::Fixed::Nanosecond;
+
+        static PREFIX: &[Item<'static>] = &[
+            Numeric(Year, Zero),
+            Literal("-"),
+            Numeric(Month, Zero),
+            Literal("-"),
+            Numeric(Day, Zero),
+            Literal("T"),
+            Numeric(Hour, Zero),
+            Literal(":"),
+            Numeric(Minute, Zero),
+            Literal(":"),
+            Numeric(Second, Zero),
+        ];
+
+        let ssitem = match subform {
+            None => None,
+            Some(sf) => match sf {
+                Nanosecond |
+                Nanosecond3 | Nanosecond6 | Nanosecond9 => Some(Fixed(sf)),
+                _ => panic!("Unsupported rfc_3339p subsecond format {:?}", sf)
+            }
+        };
+
+        let tzitem = Fixed(match use_z {
+            true  => TimezoneOffsetColonZ,
+            false => TimezoneOffsetColon
+        });
+
+        match ssitem {
+            None =>
+                self.format_with_items(
+                    PREFIX.iter().chain([tzitem].iter()).cloned()
+                ).to_string(),
+            Some(s) =>
+                self.format_with_items(
+                    PREFIX.iter().chain([s, tzitem].iter()).cloned()
+                ).to_string(),
+        }
     }
 }
 
@@ -1057,6 +1122,36 @@ mod tests {
                    Ok(EDT.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000)));
         assert_eq!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
                    Ok(EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567)));
+    }
+
+    #[test]
+    fn test_rfc3339p_and_z() {
+        use format::Fixed::*;
+        let pst = FixedOffset::east(8*60*60);
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 84_660_684);
+        assert_eq!("2018-01-11T10:05:13+08:00",           dt.to_rfc3339p (None));
+        assert_eq!("2018-01-11T10:05:13+08:00",           dt.to_rfc3339pz(None));
+        assert_eq!("2018-01-11T10:05:13.084+08:00",       dt.to_rfc3339p (Some(Nanosecond3)));
+        assert_eq!("2018-01-11T10:05:13.084660+08:00",    dt.to_rfc3339p (Some(Nanosecond6)));
+        assert_eq!("2018-01-11T10:05:13.084660684+08:00", dt.to_rfc3339p (Some(Nanosecond9)));
+        assert_eq!("2018-01-11T10:05:13.084660684+08:00", dt.to_rfc3339p (Some(Nanosecond)));
+
+        let ut = DateTime::<Utc>::from_utc( dt.naive_utc(), Utc );
+        assert_eq!("2018-01-11T02:05:13+00:00",           ut.to_rfc3339p (None));
+        assert_eq!("2018-01-11T02:05:13Z",                ut.to_rfc3339pz(None));
+        assert_eq!("2018-01-11T02:05:13.084+00:00",       ut.to_rfc3339p (Some(Nanosecond3)));
+        assert_eq!("2018-01-11T02:05:13.084Z",            ut.to_rfc3339pz(Some(Nanosecond3)));
+        assert_eq!("2018-01-11T02:05:13.084660Z",         ut.to_rfc3339pz(Some(Nanosecond6)));
+        assert_eq!("2018-01-11T02:05:13.084660684Z",      ut.to_rfc3339pz(Some(Nanosecond9)));
+        assert_eq!("2018-01-11T02:05:13.084660684Z",      ut.to_rfc3339pz(Some(Nanosecond)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_rfc3339p_fixed_bogus_n() {
+        use format::Fixed::*;
+        let now = Utc::now();
+        println!("{}", now.to_rfc3339p(Some(UpperAmPm)));
     }
 
     #[test]
