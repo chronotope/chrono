@@ -287,7 +287,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
         use format::Fixed::*;
         use format::Fixed::Nanosecond;
 
-        static PREFIX: &[Item<'static>] = &[
+        const PREFIX: &'static [Item<'static>] = &[
             Numeric(Year, Zero),
             Literal("-"),
             Numeric(Month, Zero),
