@@ -309,10 +309,13 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
             }
         };
 
-        let tzitem = Item::Fixed(match use_z {
-            true  => Fixed::TimezoneOffsetColonZ,
-            false => Fixed::TimezoneOffsetColon
-        });
+        let tzitem = Item::Fixed(
+            if use_z {
+                Fixed::TimezoneOffsetColonZ
+            } else {
+                Fixed::TimezoneOffsetColon
+            }
+        );
 
         match ssitem {
             None =>
