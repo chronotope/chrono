@@ -281,38 +281,37 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
 
     fn rfc3339_via_items(&self, subform: Option<Fixed>, use_z: bool) -> String
     {
-        use format::Item::*;
         use format::Numeric::*;
         use format::Pad::Zero;
-        use format::Fixed::*;
-        use format::Fixed::Nanosecond;
 
         const PREFIX: &'static [Item<'static>] = &[
-            Numeric(Year, Zero),
-            Literal("-"),
-            Numeric(Month, Zero),
-            Literal("-"),
-            Numeric(Day, Zero),
-            Literal("T"),
-            Numeric(Hour, Zero),
-            Literal(":"),
-            Numeric(Minute, Zero),
-            Literal(":"),
-            Numeric(Second, Zero),
+            Item::Numeric(Year, Zero),
+            Item::Literal("-"),
+            Item::Numeric(Month, Zero),
+            Item::Literal("-"),
+            Item::Numeric(Day, Zero),
+            Item::Literal("T"),
+            Item::Numeric(Hour, Zero),
+            Item::Literal(":"),
+            Item::Numeric(Minute, Zero),
+            Item::Literal(":"),
+            Item::Numeric(Second, Zero),
         ];
 
         let ssitem = match subform {
             None => None,
             Some(sf) => match sf {
-                Nanosecond |
-                Nanosecond3 | Nanosecond6 | Nanosecond9 => Some(Fixed(sf)),
+                Fixed::Nanosecond |
+                Fixed::Nanosecond3 |
+                Fixed::Nanosecond6 |
+                Fixed::Nanosecond9 => Some(Item::Fixed(sf)),
                 _ => panic!("Unsupported rfc_3339p subsecond format {:?}", sf)
             }
         };
 
-        let tzitem = Fixed(match use_z {
-            true  => TimezoneOffsetColonZ,
-            false => TimezoneOffsetColon
+        let tzitem = Item::Fixed(match use_z {
+            true  => Fixed::TimezoneOffsetColonZ,
+            false => Fixed::TimezoneOffsetColon
         });
 
         match ssitem {
