@@ -391,7 +391,7 @@
 // backward compatibility, and this appeases clippy. If minimum rustc
 // becomes 1.17, should be able to remove this, those 'static lifetimes,
 // and use `static` in a lot of places `const` is used now.
-#![allow(const_static_lifetime)]
+#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime))]
 
 extern crate time as oldtime;
 extern crate num;
