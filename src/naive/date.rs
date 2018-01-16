@@ -958,6 +958,32 @@ impl NaiveDate {
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
+
+    /// Returns an iterator that steps by days until the last representable date.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    ///
+    /// let expected = [
+    ///     NaiveDate::from_ymd(2016, 2, 27),
+    ///     NaiveDate::from_ymd(2016, 2, 28),
+    ///     NaiveDate::from_ymd(2016, 2, 29),
+    ///     NaiveDate::from_ymd(2016, 3, 1),
+    /// ];
+    ///
+    /// let mut count = 0;
+    /// for (idx, d) in NaiveDate::from_ymd(2016, 2, 27).iter_days().take(4).enumerate() {
+    ///    assert_eq!(d, expected[idx]);
+    ///    count += 1;
+    /// }
+    /// assert_eq!(count, 4);
+    /// ```
+    #[inline]
+    pub fn iter_days(&self) -> NaiveDateDaysIterator {
+        NaiveDateDaysIterator { value: *self }
+    }
 }
 
 impl Datelike for NaiveDate {
@@ -1384,6 +1410,36 @@ impl SubAssign<OldDuration> for NaiveDate {
         *self = self.sub(rhs);
     }
 }
+
+
+/// Iterator over `NaiveDate` with a step size of one day.
+#[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
+pub struct NaiveDateDaysIterator {
+    value: NaiveDate
+}
+
+impl Iterator for NaiveDateDaysIterator {
+    type Item = NaiveDate;
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.value == MAX_DATE {
+            return None;
+        }
+        // current < MAX_DATE from here on:
+        let current = self.value;
+        // This can't panic because current is < MAX_DATE:
+        self.value = current.succ();
+        Some(current)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact_size = MAX_DATE.signed_duration_since(self.value).num_days();
+        (exact_size as usize, Some(exact_size as usize))
+    }
+}
+
+impl ExactSizeIterator for NaiveDateDaysIterator {}
+
+// TODO: NaiveDateDaysIterator should implement FusedIterator, TrustedLen, and
+// Step once they becomes stable: https://github.com/chronotope/chrono/issues/208
 
 /// The `Debug` output of the naive date `d` is same to
 /// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
