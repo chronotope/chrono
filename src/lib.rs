@@ -387,6 +387,12 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
+// The explicit 'static lifetimes are still needed for rustc 1.13-16
+// backward compatibility, and this appeases clippy. If minimum rustc
+// becomes 1.17, should be able to remove this, those 'static lifetimes,
+// and use `static` in a lot of places `const` is used now.
+#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime))]
+
 extern crate time as oldtime;
 extern crate num;
 #[cfg(feature = "rustc-serialize")]

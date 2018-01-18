@@ -159,6 +159,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
+    #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
     #[inline]
     pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
         self.datetime.signed_duration_since(rhs.datetime)
