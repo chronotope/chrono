@@ -235,7 +235,7 @@ assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string())
 assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
 assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
 assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
-assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
+assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09.000000000Z");
 ```
 
 Parsing can be done with three methods:
