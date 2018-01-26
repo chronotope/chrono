@@ -16,28 +16,29 @@ use Date;
 use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
 
-/// Specific formatting options for seconds
+/// Specific formatting options for seconds. This may be extended in the
+/// future, so exhaustive matching in external code is not recommended.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SecondsFormat {
-    /// Format whole seconds only, no subseconds.
+    /// Format whole seconds only, with no decimal point nor subseconds.
     Secs,
 
     /// Use fixed 3 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond3](format/enum.Fixed.html#variant.Nanosecond3)
+    /// [Fixed::Nanosecond3](format/enum.Fixed.html#variant.Nanosecond3).
     Millis,
 
     /// Use fixed 6 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond6](format/enum.Fixed.html#variant.Nanosecond6)
+    /// [Fixed::Nanosecond6](format/enum.Fixed.html#variant.Nanosecond6).
     Micros,
 
     /// Use fixed 9 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond9](format/enum.Fixed.html#variant.Nanosecond9)
+    /// [Fixed::Nanosecond9](format/enum.Fixed.html#variant.Nanosecond9).
     Nanos,
 
-    /// Use all available non-zero digits and thus any of above
-    /// formats. This corresponds to
-    /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond)
-    Available,
+    /// Automatically select one of `Secs`, `Millis`, `Micros`, or `Nanos` to
+    /// display all available non-zero sub-second digits.  This corresponds to
+    /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond).
+    AutoSi,
 }
 
 /// ISO 8601 combined date and time with time zone.
@@ -270,10 +271,31 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
         self.format_with_items(ITEMS.iter().cloned()).to_string()
     }
 
-    /// Return an RFC 3339 and ISO 8601 date and time with subseconds
+    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
     /// formatted as per a `SecondsFormat`. If passed `use_z` true and the
-    /// timezone is UTC (offset 0), use 'Z'.
-    pub fn to_rfc3339_opts(&self, subform: SecondsFormat, use_z: bool) -> String {
+    /// timezone is UTC (offset 0), use 'Z', as per
+    /// [Fixed::TimezoneOffsetColonZ](format/enum.Fixed.html#variant.TimezoneOffsetColonZ).
+    /// If passed `use_z` false, use
+    /// [Fixed::TimezoneOffsetColon](format/enum.Fixed.html#variant.TimezoneOffsetColon).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use chrono::{DateTime, FixedOffset, SecondsFormat, TimeZone, Utc};
+    /// let dt = Utc.ymd(2018, 1, 26).and_hms_micro(18, 30, 9, 453_829);
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
+    ///            "2018-01-26T18:30:09.453+00:00");
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true),
+    ///            "2018-01-26T18:30:09.453Z");
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
+    ///            "2018-01-26T18:30:09Z");
+    ///
+    /// let pst = FixedOffset::east(8 * 60 * 60);
+    /// let dt = pst.ymd(2018, 1, 26).and_hms_micro(10, 30, 9, 453_829);
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
+    ///            "2018-01-26T10:30:09+08:00");
+    /// ```
+    pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         use format::Numeric::*;
         use format::Pad::Zero;
         use SecondsFormat::*;
@@ -292,12 +314,12 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
             Item::Numeric(Second, Zero),
         ];
 
-        let ssitem = match subform {
-            Secs      => None,
-            Millis    => Some(Item::Fixed(Fixed::Nanosecond3)),
-            Micros    => Some(Item::Fixed(Fixed::Nanosecond6)),
-            Nanos     => Some(Item::Fixed(Fixed::Nanosecond9)),
-            Available => Some(Item::Fixed(Fixed::Nanosecond)),
+        let ssitem = match secform {
+            Secs   => None,
+            Millis => Some(Item::Fixed(Fixed::Nanosecond3)),
+            Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
+            Nanos  => Some(Item::Fixed(Fixed::Nanosecond9)),
+            AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
         };
 
         let tzitem = Item::Fixed(
@@ -1137,22 +1159,22 @@ mod tests {
     fn test_rfc3339_opts() {
         use SecondsFormat::*;
         let pst = FixedOffset::east(8 * 60 * 60);
-        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_684);
-        assert_eq!(dt.to_rfc3339_opts(Secs, false),      "2018-01-11T10:05:13+08:00");
-        assert_eq!(dt.to_rfc3339_opts(Secs, true),       "2018-01-11T10:05:13+08:00");
-        assert_eq!(dt.to_rfc3339_opts(Millis, false),    "2018-01-11T10:05:13.084+08:00");
-        assert_eq!(dt.to_rfc3339_opts(Micros, false),    "2018-01-11T10:05:13.084660+08:00");
-        assert_eq!(dt.to_rfc3339_opts(Nanos, false),     "2018-01-11T10:05:13.084660684+08:00");
-        assert_eq!(dt.to_rfc3339_opts(Available, false), "2018-01-11T10:05:13.084660684+08:00");
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
+        assert_eq!(dt.to_rfc3339_opts(Secs, false),   "2018-01-11T10:05:13+08:00");
+        assert_eq!(dt.to_rfc3339_opts(Secs, true),    "2018-01-11T10:05:13+08:00");
+        assert_eq!(dt.to_rfc3339_opts(Millis, false), "2018-01-11T10:05:13.084+08:00");
+        assert_eq!(dt.to_rfc3339_opts(Micros, false), "2018-01-11T10:05:13.084660+08:00");
+        assert_eq!(dt.to_rfc3339_opts(Nanos, false),  "2018-01-11T10:05:13.084660000+08:00");
+        assert_eq!(dt.to_rfc3339_opts(AutoSi, false), "2018-01-11T10:05:13.084660+08:00");
 
         let ut = DateTime::<Utc>::from_utc(dt.naive_utc(), Utc);
-        assert_eq!(ut.to_rfc3339_opts(Secs, false),     "2018-01-11T02:05:13+00:00");
-        assert_eq!(ut.to_rfc3339_opts(Secs, true),      "2018-01-11T02:05:13Z");
-        assert_eq!(ut.to_rfc3339_opts(Millis, false),   "2018-01-11T02:05:13.084+00:00");
-        assert_eq!(ut.to_rfc3339_opts(Millis, true),    "2018-01-11T02:05:13.084Z");
-        assert_eq!(ut.to_rfc3339_opts(Micros, true),    "2018-01-11T02:05:13.084660Z");
-        assert_eq!(ut.to_rfc3339_opts(Nanos, true),     "2018-01-11T02:05:13.084660684Z");
-        assert_eq!(ut.to_rfc3339_opts(Available, true), "2018-01-11T02:05:13.084660684Z");
+        assert_eq!(ut.to_rfc3339_opts(Secs, false),   "2018-01-11T02:05:13+00:00");
+        assert_eq!(ut.to_rfc3339_opts(Secs, true),    "2018-01-11T02:05:13Z");
+        assert_eq!(ut.to_rfc3339_opts(Millis, false), "2018-01-11T02:05:13.084+00:00");
+        assert_eq!(ut.to_rfc3339_opts(Millis, true),  "2018-01-11T02:05:13.084Z");
+        assert_eq!(ut.to_rfc3339_opts(Micros, true),  "2018-01-11T02:05:13.084660Z");
+        assert_eq!(ut.to_rfc3339_opts(Nanos, true),   "2018-01-11T02:05:13.084660000Z");
+        assert_eq!(ut.to_rfc3339_opts(AutoSi, true),  "2018-01-11T02:05:13.084660Z");
     }
 
     #[test]
