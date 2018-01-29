@@ -122,7 +122,7 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
 
 impl NaiveDate {
     pub(crate) fn weeks_from(&self, day: Weekday) -> i32 {
-        (self.ordinal() as i32 - self.weekday().num_days_from(day) as i32 + 6) / 7
+        (self.ordinal() as i32 - self.weekday().days_since(day) as i32 + 6) / 7
     }
 
     /// Makes a new `NaiveDate` from year, ordinal and flags.
