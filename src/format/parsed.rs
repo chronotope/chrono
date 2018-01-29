@@ -1152,9 +1152,9 @@ fn resolve_week_date(
 
     let first_day_of_year = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
     // Ordinal of the day at which week 1 starts.
-    let first_week_start = 1 + week_start_day.num_days_from(first_day_of_year.weekday()) as i32;
+    let first_week_start = 1 + week_start_day.days_since(first_day_of_year.weekday()) as i32;
     // Number of the `weekday`, which is 0 for the first day of the week.
-    let weekday = weekday.num_days_from(week_start_day) as i32;
+    let weekday = weekday.days_since(week_start_day) as i32;
     let ordinal = first_week_start + (week as i32 - 1) * 7 + weekday;
     if ordinal <= 0 {
         return Err(IMPOSSIBLE);
