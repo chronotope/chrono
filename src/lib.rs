@@ -539,6 +539,25 @@ impl Weekday {
         }
     }
 
+    /// The number of days since the given day.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::Weekday::*;
+    /// assert_eq!(Mon.days_since(Mon), 0);
+    /// assert_eq!(Sun.days_since(Tue), 5);
+    /// ```
+    pub fn days_since(&self, other: Weekday) -> u32 {
+        let lhs = self.num_days_from_monday();
+        let rhs = other.num_days_from_monday();
+        if lhs > rhs {
+            7 - lhs + rhs
+        } else {
+            rhs - lhs
+        }
+    }
+
     /// Returns a day-of-week number starting from Monday = 1. (ISO 8601 weekday number)
     ///
     /// `w`:                      | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun`
