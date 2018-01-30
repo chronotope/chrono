@@ -406,7 +406,7 @@ pub use oldtime::Duration;
 #[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset, Local};
 #[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
 pub use date::{Date, MIN_DATE, MAX_DATE};
-pub use datetime::DateTime;
+pub use datetime::{DateTime, SecondsFormat};
 #[cfg(feature = "rustc-serialize")] pub use datetime::rustc_serialize::TsSeconds;
 pub use format::{ParseError, ParseResult};
 
@@ -417,7 +417,7 @@ pub mod prelude {
     #[doc(no_inline)] pub use {Utc, FixedOffset, Local};
     #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
     #[doc(no_inline)] pub use Date;
-    #[doc(no_inline)] pub use DateTime;
+    #[doc(no_inline)] pub use {DateTime, SecondsFormat};
 }
 
 // useful throughout the codebase
