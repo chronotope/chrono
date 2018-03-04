@@ -5,7 +5,7 @@
 
 use std::{str, fmt};
 use std::ops::{Add, Sub, AddAssign, SubAssign};
-use num::traits::ToPrimitive;
+use num_traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Datelike};

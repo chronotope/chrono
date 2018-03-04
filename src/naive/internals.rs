@@ -16,7 +16,7 @@
 #![allow(dead_code)] // some internal methods have been left for consistency
 
 use std::{i32, fmt};
-use num::traits::FromPrimitive;
+use num_traits::FromPrimitive;
 use Weekday;
 use div::{div_rem, mod_floor};
 
@@ -469,12 +469,13 @@ impl fmt::Debug for Mdf {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(test)] extern crate num_iter;
     #[cfg(bench)] extern crate test;
 
     use Weekday;
     use super::{Of, Mdf};
     use super::{YearFlags, A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
-    use num::iter::range_inclusive;
+    use num_iter::range_inclusive;
     use std::u32;
 
     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];

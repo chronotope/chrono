@@ -397,7 +397,8 @@
 #![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime, redundant_field_names))]
 
 extern crate time as oldtime;
-extern crate num;
+extern crate num_integer;
+extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
@@ -618,7 +619,7 @@ impl Weekday {
 /// Any weekday can be represented as an integer from 0 to 6, which equals to
 /// [`Weekday::num_days_from_monday`](#method.num_days_from_monday) in this implementation.
 /// Do not heavily depend on this though; use explicit methods whenever possible.
-impl num::traits::FromPrimitive for Weekday {
+impl num_traits::FromPrimitive for Weekday {
     #[inline]
     fn from_i64(n: i64) -> Option<Weekday> {
         match n {
@@ -933,9 +934,11 @@ pub trait Timelike: Sized {
     }
 }
 
+#[cfg(test)] extern crate num_iter;
+
 #[test]
 fn test_readme_doomsday() {
-    use num::iter::range_inclusive;
+    use num_iter::range_inclusive;
 
     for y in range_inclusive(naive::MIN_DATE.year(), naive::MAX_DATE.year()) {
         // even months

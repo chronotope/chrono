@@ -4,7 +4,7 @@
 //! A collection of parsed date and time items.
 //! They can be constructed incrementally while being checked for consistency.
 
-use num::traits::ToPrimitive;
+use num_traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
 use {Datelike, Timelike};

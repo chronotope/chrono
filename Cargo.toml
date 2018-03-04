@@ -21,7 +21,8 @@ name = "chrono"
 
 [dependencies]
 time = "^0.1.36"
-num = { version = "0.1", default-features = false }
+num-integer = { version = "0.1.36", default-features = false }
+num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3", optional = true }
 serde = { version = "1", optional = true }
 
@@ -29,6 +30,7 @@ serde = { version = "1", optional = true }
 serde_json = { version = "1" }
 serde_derive = { version = "1" }
 bincode = { version = "0.8.0" }
+num-iter = { version = "0.1.35", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true
