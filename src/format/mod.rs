@@ -269,6 +269,8 @@ macro_rules! fix  { ($x:ident) => (Item::Fixed(Fixed::$x)) }
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ParseError(ParseErrorKind);
 
+// clippy false positive https://github.com/rust-lang-nursery/rust-clippy/issues/2475
+#[cfg_attr(feature = "cargo-clippy", allow(empty_line_after_outer_attr))]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 enum ParseErrorKind {
     /// Given field is out of permitted range.
