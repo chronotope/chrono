@@ -391,7 +391,10 @@
 // backward compatibility, and this appeases clippy. If minimum rustc
 // becomes 1.17, should be able to remove this, those 'static lifetimes,
 // and use `static` in a lot of places `const` is used now.
-#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime))]
+//
+// Similarly, redundant_field_names lints on not using the
+// field-init-shorthand, which was stabilized in rust 1.17.
+#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime, redundant_field_names))]
 
 extern crate time as oldtime;
 extern crate num;
