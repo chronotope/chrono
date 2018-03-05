@@ -27,13 +27,13 @@ where T: Timelike + Add<Duration, Output=T> + Sub<Duration, Output=T>
 {
     fn round(self, digits: u16) -> T {
         let span = span_for_digits(digits);
-        let rem = self.nanosecond() % span;
-        if rem > 0 {
-            let rev = span - rem;
-            if rev <= rem {
-                self + Duration::nanoseconds(rev.into()) // up
+        let delta_down = self.nanosecond() % span;
+        if delta_down > 0 {
+            let delta_up = span - delta_down;
+            if delta_up <= delta_down {
+                self + Duration::nanoseconds(delta_up.into())
             } else {
-                self - Duration::nanoseconds(rem.into()) // down
+                self - Duration::nanoseconds(delta_down.into())
             }
         } else {
             self // unchanged
@@ -42,9 +42,9 @@ where T: Timelike + Add<Duration, Output=T> + Sub<Duration, Output=T>
 
     fn trunc(self, digits: u16) -> T {
         let span = span_for_digits(digits);
-        let rem = self.nanosecond() % span;
-        if rem > 0 {
-            self - Duration::nanoseconds(rem.into()) // truncate
+        let delta_down = self.nanosecond() % span;
+        if delta_down > 0 {
+            self - Duration::nanoseconds(delta_down.into())
         } else {
             self // unchanged
         }
