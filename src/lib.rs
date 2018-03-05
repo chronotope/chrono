@@ -419,7 +419,7 @@ pub mod prelude {
     #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
     #[doc(no_inline)] pub use Date;
     #[doc(no_inline)] pub use {DateTime, SecondsFormat};
-    #[doc(no_inline)] pub use {SubSecondRound};
+    #[doc(no_inline)] pub use SubSecondRound;
 }
 
 // useful throughout the codebase
