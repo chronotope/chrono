@@ -11,14 +11,14 @@ use oldtime::Duration;
 /// behavior in Chrono display formatting.  Either can be used to guarantee
 /// equality (e.g. for testing) when round-tripping through a lower precision
 /// format.
-pub trait SubSecondRound {
+pub trait SubsecRound {
     /// Return a copy rounded to the specified number of subsecond digits. With
     /// 9 or more digits, self is returned unmodified. Halfway values are
     /// rounded up (away from zero).
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, SubSecondRound, Timelike, TimeZone, Utc};
+    /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc};
     /// let dt = Utc.ymd(2018, 1, 11).and_hms_milli(12, 0, 0, 154);
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
@@ -30,7 +30,7 @@ pub trait SubSecondRound {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, SubSecondRound, Timelike, TimeZone, Utc};
+    /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc};
     /// let dt = Utc.ymd(2018, 1, 11).and_hms_milli(12, 0, 0, 154);
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
@@ -38,7 +38,7 @@ pub trait SubSecondRound {
     fn trunc_subsecs(self, digits: u16) -> Self;
 }
 
-impl<T> SubSecondRound for T
+impl<T> SubsecRound for T
 where T: Timelike + Add<Duration, Output=T> + Sub<Duration, Output=T>
 {
     fn round_subsecs(self, digits: u16) -> T {
@@ -88,7 +88,7 @@ fn span_for_digits(digits: u16) -> u32 {
 mod tests {
     use Timelike;
     use offset::{FixedOffset, TimeZone, Utc};
-    use super::SubSecondRound;
+    use super::SubsecRound;
 
     #[test]
     fn test_round() {

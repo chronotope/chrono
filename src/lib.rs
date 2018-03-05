@@ -409,7 +409,7 @@ pub use date::{Date, MIN_DATE, MAX_DATE};
 pub use datetime::{DateTime, SecondsFormat};
 #[cfg(feature = "rustc-serialize")] pub use datetime::rustc_serialize::TsSeconds;
 pub use format::{ParseError, ParseResult};
-pub use round::SubSecondRound;
+pub use round::SubsecRound;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
@@ -419,7 +419,7 @@ pub mod prelude {
     #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
     #[doc(no_inline)] pub use Date;
     #[doc(no_inline)] pub use {DateTime, SecondsFormat};
-    #[doc(no_inline)] pub use SubSecondRound;
+    #[doc(no_inline)] pub use SubsecRound;
 }
 
 // useful throughout the codebase
