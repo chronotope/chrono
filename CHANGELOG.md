@@ -8,10 +8,32 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.4.1
+
+### Bug Fixes
+
+* Allow parsing timestamps with subsecond precision (@jonasbb)
+* RFC2822 allows times to not include the second (@upsuper)
+
+### Features
+
+* New `timestamp_millis` method on `DateTime` and `NaiveDateTim` that returns
+  number of milliseconds since the epoch. (@quodlibetor)
+* Support exact decimal width on subsecond display for RFC3339 via a new
+  `to_rfc3339_opts` method on `DateTime` (@dekellum)
+* Use no_std-compatible num dependencies (@cuviper)
+* Add `SubsecRound` trait that allows rounding to the nearest second
+  (@dekellum)
+
+### Code Hygiene and Docs
+
+* Docs! (@alatiera @kosta @quodlibetor @kennytm)
+* Run clippy and various fixes (@quodlibetor)
+
 ## 0.4.0 (2017-06-22)
 
-This was originally planned as a minor release but was pushed to a major release
-due to the compatibility concern raised.
+This was originally planned as a minor release but was pushed to a major
+release due to the compatibility concern raised.
 
 ### Added
 
