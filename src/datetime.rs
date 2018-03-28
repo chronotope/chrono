@@ -18,6 +18,8 @@ use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItem
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
+///
+/// See the `TimeZone::to_rfc3339_opts` function for usage.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.
@@ -39,6 +41,10 @@ pub enum SecondsFormat {
     /// display all available non-zero sub-second digits.  This corresponds to
     /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond).
     AutoSi,
+
+    // Do not match against this.
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 /// ISO 8601 combined date and time with time zone.
@@ -300,6 +306,8 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
         use format::Pad::Zero;
         use SecondsFormat::*;
 
+        debug_assert!(secform != __NonExhaustive, "Do not use __NonExhaustive!");
+
         const PREFIX: &'static [Item<'static>] = &[
             Item::Numeric(Year, Zero),
             Item::Literal("-"),
@@ -320,6 +328,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
             Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
             Nanos  => Some(Item::Fixed(Fixed::Nanosecond9)),
             AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
+            __NonExhaustive => unreachable!(),
         };
 
         let tzitem = Item::Fixed(
@@ -1175,6 +1184,14 @@ mod tests {
         assert_eq!(ut.to_rfc3339_opts(Micros, true),  "2018-01-11T02:05:13.084660Z");
         assert_eq!(ut.to_rfc3339_opts(Nanos, true),   "2018-01-11T02:05:13.084660000Z");
         assert_eq!(ut.to_rfc3339_opts(AutoSi, true),  "2018-01-11T02:05:13.084660Z");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_rfc3339_opts_nonexhaustive() {
+        use SecondsFormat;
+        let dt = Utc.ymd(1999, 10, 9).and_hms(1, 2, 3);
+        dt.to_rfc3339_opts(SecondsFormat::__NonExhaustive, true);
     }
 
     #[test]
