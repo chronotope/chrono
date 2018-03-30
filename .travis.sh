@@ -33,8 +33,10 @@ build_and_test() {
   TZ=ACST-9:30 channel test -v --lib
   channel build -v --features rustc-serialize
   TZ=EST4 channel test -v --features rustc-serialize --lib
-  channel build -v --features 'serde bincode'
-  TZ=UTC0 channel test -v --features 'serde bincode'
+  channel build -v --features serde
+  TZ=UTC0 channel test -v --features serde --lib
+  channel build -v --features serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --features serde,rustc-serialize
 }
 
 build_only() {
