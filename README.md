@@ -1,5 +1,5 @@
-[Chrono][docsrs] 0.4.1
-======================
+[Chrono][docsrs]: Date and Time for Rust
+========================================
 
 [![Chrono on Travis CI][travis-image]][travis]
 [![Chrono on Appveyor][appveyor-image]][appveyor]
@@ -12,9 +12,8 @@
 [appveyor]: https://ci.appveyor.com/project/chronotope/chrono
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
-[docsrs-image]: https://docs.rs/chrono/badge.svg?version=0.4.0
-[docsrs]: https://docs.rs/chrono/0.4.0/
-
+[docsrs-image]: https://docs.rs/chrono/badge.svg
+[docsrs]: https://docs.rs/chrono
 
 Date and time handling for Rust.
 It aims to be a feature-complete superset of
