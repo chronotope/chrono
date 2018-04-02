@@ -371,9 +371,10 @@ pub trait TimeZone: Sized + Clone {
 
 mod utc;
 mod fixed;
+#[cfg(feature="clock")]
 mod local;
 
 pub use self::utc::Utc;
 pub use self::fixed::FixedOffset;
+#[cfg(feature="clock")]
 pub use self::local::Local;
-

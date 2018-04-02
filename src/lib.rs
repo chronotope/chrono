@@ -396,6 +396,7 @@
 // field-init-shorthand, which was stabilized in rust 1.17.
 #![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime, redundant_field_names))]
 
+#[cfg(feature="clock")]
 extern crate time as oldtime;
 extern crate num_integer;
 extern crate num_traits;
@@ -407,7 +408,9 @@ extern crate serde as serdelib;
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
-#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset, Local};
+#[cfg(feature="clock")]
+#[doc(no_inline)] pub use offset::Local;
+#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset};
 #[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
 pub use date::{Date, MIN_DATE, MAX_DATE};
 pub use datetime::{DateTime, SecondsFormat};
@@ -419,7 +422,9 @@ pub use round::SubsecRound;
 pub mod prelude {
     #[doc(no_inline)] pub use {Datelike, Timelike, Weekday};
     #[doc(no_inline)] pub use {TimeZone, Offset};
-    #[doc(no_inline)] pub use {Utc, FixedOffset, Local};
+    #[cfg(feature="clock")]
+    #[doc(no_inline)] pub use Local;
+    #[doc(no_inline)] pub use {Utc, FixedOffset};
     #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
     #[doc(no_inline)] pub use Date;
     #[doc(no_inline)] pub use {DateTime, SecondsFormat};
@@ -432,6 +437,8 @@ macro_rules! try_opt {
 }
 
 mod div;
+#[cfg(not(feature="clock"))]
+mod oldtime;
 pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.
