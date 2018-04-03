@@ -1272,6 +1272,52 @@ impl Sub<OldDuration> for NaiveDateTime {
     }
 }
 
+/// Subtracts another `NaiveDateTime` from the current date and time.
+/// This does not overflow or underflow at all.
+///
+/// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
+/// the subtraction assumes that **there is no leap second ever**,
+/// except when any of the `NaiveDateTime`s themselves represents a leap second
+/// in which case the assumption becomes that
+/// **there are exactly one (or two) leap second(s) ever**.
+///
+/// The implementation is a wrapper around
+/// [`NaiveDateTime::signed_duration_since`](#method.signed_duration_since).
+///
+/// # Example
+///
+/// ~~~~
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveDate;
+/// use time::Duration;
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// let d = from_ymd(2016, 7, 8);
+/// assert_eq!(d.and_hms(3, 5, 7) - d.and_hms(2, 4, 6), Duration::seconds(3600 + 60 + 1));
+///
+/// // July 8 is 190th day in the year 2016
+/// let d0 = from_ymd(2016, 1, 1);
+/// assert_eq!(d.and_hms_milli(0, 7, 6, 500) - d0.and_hms(0, 0, 0),
+///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
+/// # }
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that
+/// there were no other leap seconds happened.
+///
+/// ~~~~
+/// # extern crate chrono; extern crate time; fn main() {
+/// # use chrono::NaiveDate;
+/// # use time::Duration;
+/// # let from_ymd = NaiveDate::from_ymd;
+/// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
+/// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms(23, 0, 0),
+///            Duration::seconds(3600) + Duration::milliseconds(500));
+/// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0) - leap,
+///            Duration::seconds(3600) - Duration::milliseconds(500));
+/// # }
+/// ~~~~
 impl Sub<NaiveDateTime> for NaiveDateTime {
     type Output = OldDuration;
 
