@@ -360,6 +360,15 @@ impl<Tz: TimeZone> Sub<OldDuration> for Date<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Sub<Date<Tz>> for Date<Tz> {
+    type Output = OldDuration;
+
+    #[inline]
+    fn sub(self, rhs: Date<Tz>) -> OldDuration {
+        self.signed_duration_since(rhs)
+    }
+}
+
 impl<Tz: TimeZone> fmt::Debug for Date<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}{:?}", self.naive_local(), self.offset)

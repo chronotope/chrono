@@ -1378,6 +1378,15 @@ impl Sub<OldDuration> for NaiveDate {
     }
 }
 
+impl Sub<NaiveDate> for NaiveDate {
+    type Output = OldDuration;
+
+    #[inline]
+    fn sub(self, rhs: NaiveDate) -> OldDuration {
+        self.signed_duration_since(rhs)
+    }
+}
+
 impl SubAssign<OldDuration> for NaiveDate {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
