@@ -8,6 +8,12 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## 0.4.next
+
+* More strongly deprecate RustcSerialize: remove it from documentation unless
+  the feature is enabled, issue a deprecation warning if the rustc-serialize
+  feature is enabled (@quodlibetor)
+
 ## 0.4.1
 
 ### Bug Fixes
