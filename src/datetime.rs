@@ -10,7 +10,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use oldtime::Duration as OldDuration;
 
 use {Weekday, Timelike, Datelike};
-use offset::{TimeZone, Offset, Utc, Local, FixedOffset};
+#[cfg(feature="clock")]
+use offset::Local;
+use offset::{TimeZone, Offset, Utc, FixedOffset};
 use naive::{NaiveTime, NaiveDateTime, IsoWeek};
 use Date;
 use format::{Item, Numeric, Pad, Fixed};
@@ -532,6 +534,7 @@ impl str::FromStr for DateTime<Utc> {
     }
 }
 
+#[cfg(feature="clock")]
 impl str::FromStr for DateTime<Local> {
     type Err = ParseError;
 
@@ -558,6 +561,7 @@ impl From<SystemTime> for DateTime<Utc> {
     }
 }
 
+#[cfg(feature="clock")]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
         DateTime::<Utc>::from(t).with_timezone(&Local)
@@ -594,7 +598,7 @@ fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FF
                Some(r#""2014-07-24T12:34:06+01:00:50""#.into()));
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature="clock", any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
                                                 fixed_from_str: FFixed,
                                                 local_from_str: FLocal)
@@ -631,7 +635,7 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
 }
 
-#[cfg(all(test, feature = "rustc-serialize"))]
+#[cfg(all(test, feature="clock", feature = "rustc-serialize"))]
 fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
                                                            fixed_from_str: FFixed,
                                                            local_from_str: FLocal)
@@ -665,7 +669,9 @@ pub mod rustc_serialize {
     use std::fmt;
     use std::ops::Deref;
     use super::DateTime;
-    use offset::{TimeZone, LocalResult, Utc, Local, FixedOffset};
+    #[cfg(feature="clock")]
+    use offset::Local;
+    use offset::{TimeZone, LocalResult, Utc, FixedOffset};
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
     impl<Tz: TimeZone> Encodable for DateTime<Tz> {
@@ -745,6 +751,7 @@ pub mod rustc_serialize {
         }
     }
 
+    #[cfg(feature="clock")]
     impl Decodable for DateTime<Local> {
         fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Local>, D::Error> {
             match d.read_str()?.parse::<DateTime<FixedOffset>>() {
@@ -754,6 +761,7 @@ pub mod rustc_serialize {
         }
     }
 
+    #[cfg(feature="clock")]
     #[allow(deprecated)]
     impl Decodable for TsSeconds<Local> {
         #[allow(deprecated)]
@@ -770,11 +778,13 @@ pub mod rustc_serialize {
         super::test_encodable_json(json::encode, json::encode);
     }
 
+    #[cfg(feature="clock")]
     #[test]
     fn test_decodable() {
         super::test_decodable_json(json::decode, json::decode, json::decode);
     }
 
+    #[cfg(feature="clock")]
     #[test]
     fn test_decodable_timestamps() {
         super::test_decodable_json_timestamps(json::decode, json::decode, json::decode);
@@ -787,7 +797,9 @@ pub mod rustc_serialize {
 pub mod serde {
     use std::fmt;
     use super::DateTime;
-    use offset::{TimeZone, Utc, Local, FixedOffset};
+    #[cfg(feature="clock")]
+    use offset::Local;
+    use offset::{TimeZone, Utc, FixedOffset};
     use serdelib::{ser, de};
 
     /// Ser/de to/from timestamps in seconds
@@ -1023,6 +1035,7 @@ pub mod serde {
     ///
     /// See [the `serde` module](./serde/index.html) for alternate
     /// serialization formats.
+    #[cfg(feature="clock")]
     impl<'de> de::Deserialize<'de> for DateTime<Local> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer<'de>
@@ -1039,6 +1052,7 @@ pub mod serde {
         super::test_encodable_json(self::serde_json::to_string, self::serde_json::to_string);
     }
 
+    #[cfg(feature="clock")]
     #[test]
     fn test_serde_deserialize() {
         super::test_decodable_json(|input| self::serde_json::from_str(&input), |input| self::serde_json::from_str(&input),
@@ -1062,9 +1076,12 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
+    #[cfg(feature="clock")]
     use Datelike;
     use naive::{NaiveTime, NaiveDate};
-    use offset::{TimeZone, Utc, Local, FixedOffset};
+    #[cfg(feature="clock")]
+    use offset::Local;
+    use offset::{TimeZone, Utc, FixedOffset};
     use oldtime::Duration;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -1138,6 +1155,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="clock")]
     fn test_datetime_with_timezone() {
         let local_now = Local::now();
         let utc_now = local_now.with_timezone(&Utc);
@@ -1233,6 +1251,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="clock")]
     fn test_datetime_format_with_local() {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
@@ -1240,6 +1259,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="clock")]
     fn test_datetime_is_copy() {
         // UTC is known to be `Copy`.
         let a = Utc::now();
@@ -1248,6 +1268,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="clock")]
     fn test_datetime_is_send() {
         use std::thread;
 
@@ -1288,7 +1309,9 @@ mod tests {
                    UNIX_EPOCH - Duration::new(999_999_999, 999_999_999));
 
         // DateTime<any tz> -> SystemTime (via `with_timezone`)
-        assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
+        #[cfg(feature="clock")] {
+            assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
+        }
         assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400))), UNIX_EPOCH);
         assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800))), UNIX_EPOCH);
     }

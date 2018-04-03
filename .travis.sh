@@ -33,8 +33,20 @@ build_and_test() {
   TZ=ACST-9:30 channel test -v --lib
   channel build -v --features rustc-serialize
   TZ=EST4 channel test -v --features rustc-serialize --lib
-  channel build -v --features 'serde bincode'
-  TZ=UTC0 channel test -v --features 'serde bincode'
+  channel build -v --features serde
+  TZ=UTC0 channel test -v --features serde --lib
+  channel build -v --features serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --features serde,rustc-serialize
+
+  # without default "clock" feature
+  channel build -v --no-default-features
+  TZ=ACST-9:30 channel test -v --no-default-features --lib
+  channel build -v --no-default-features --features rustc-serialize
+  TZ=EST4 channel test -v --no-default-features --features rustc-serialize --lib
+  channel build -v --no-default-features --features serde
+  TZ=UTC0 channel test -v --no-default-features --features serde --lib
+  channel build -v --no-default-features --features serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
 }
 
 build_only() {
@@ -44,6 +56,7 @@ build_only() {
   channel build -v
   channel build -v --features rustc-serialize
   channel build -v --features 'serde bincode'
+  channel build -v --no-default-features
 }
 
 run_clippy() {
