@@ -1126,6 +1126,13 @@ impl Sub<OldDuration> for NaiveTime {
     }
 }
 
+impl SubAssign<OldDuration> for NaiveTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: OldDuration) {
+        *self = self.sub(rhs);
+    }
+}
+
 /// Subtracts another `NaiveTime` from the current time.
 /// Returns a `Duration` within +/- 1 day.
 /// This does not overflow or underflow at all.
@@ -1183,13 +1190,6 @@ impl Sub<NaiveTime> for NaiveTime {
     #[inline]
     fn sub(self, rhs: NaiveTime) -> OldDuration {
         self.signed_duration_since(rhs)
-    }
-}
-
-impl SubAssign<OldDuration> for NaiveTime {
-    #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
-        *self = self.sub(rhs);
     }
 }
 
