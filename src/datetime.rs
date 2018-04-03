@@ -701,7 +701,9 @@ pub mod rustc_serialize {
         }
     }
 
+    #[allow(deprecated)]
     impl Decodable for TsSeconds<FixedOffset> {
+        #[allow(deprecated)]
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<FixedOffset>, D::Error> {
             from(FixedOffset::east(0).timestamp_opt(d.read_i64()?, 0), d)
                 .map(TsSeconds)
@@ -723,13 +725,16 @@ pub mod rustc_serialize {
     #[derive(Debug)]
     pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
 
+    #[allow(deprecated)]
     impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
         /// Pull the inner DateTime<Tz> out
+        #[allow(deprecated)]
         fn from(obj: TsSeconds<Tz>) -> DateTime<Tz> {
             obj.0
         }
     }
 
+    #[allow(deprecated)]
     impl<Tz: TimeZone> Deref for TsSeconds<Tz> {
         type Target = DateTime<Tz>;
 
@@ -738,6 +743,7 @@ pub mod rustc_serialize {
         }
     }
 
+    #[allow(deprecated)]
     impl Decodable for TsSeconds<Utc> {
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<Utc>, D::Error> {
             from(Utc.timestamp_opt(d.read_i64()?, 0), d)
@@ -756,7 +762,9 @@ pub mod rustc_serialize {
     }
 
     #[cfg(feature="clock")]
+    #[allow(deprecated)]
     impl Decodable for TsSeconds<Local> {
+        #[allow(deprecated)]
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<Local>, D::Error> {
             from(Utc.timestamp_opt(d.read_i64()?, 0), d)
                 .map(|dt| TsSeconds(dt.with_timezone(&Local)))
