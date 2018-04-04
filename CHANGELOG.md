@@ -10,9 +10,18 @@ Versions with only mechnical changes will be omitted from the following list.
 
 ## 0.4.next
 
+### Deprecations
+
 * More strongly deprecate RustcSerialize: remove it from documentation unless
   the feature is enabled, issue a deprecation warning if the rustc-serialize
-  feature is enabled (@quodlibetor)
+  feature is enabled (@quodlibetor #174)
+
+### Features
+
+* Move all uses of the system clock behind a `clock` feature, for use in
+  environments where we don't have access to the current time. (@jethrogb #236)
+* Implement subtraction of two `Date`s, `Time`s, or `DateTime`s, returning a
+  `Duration` (@tobz1000 #237)
 
 ## 0.4.1
 
