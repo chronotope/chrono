@@ -1133,6 +1133,66 @@ impl SubAssign<OldDuration> for NaiveTime {
     }
 }
 
+/// Subtracts another `NaiveTime` from the current time.
+/// Returns a `Duration` within +/- 1 day.
+/// This does not overflow or underflow at all.
+///
+/// As a part of Chrono's [leap second handling](#leap-second-handling),
+/// the subtraction assumes that **there is no leap second ever**,
+/// except when any of the `NaiveTime`s themselves represents a leap second
+/// in which case the assumption becomes that
+/// **there are exactly one (or two) leap second(s) ever**.
+///
+/// The implementation is a wrapper around
+/// [`NaiveTime::signed_duration_since`](#method.signed_duration_since).
+///
+/// # Example
+///
+/// ~~~~
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveTime;
+/// use time::Duration;
+///
+/// let from_hmsm = NaiveTime::from_hms_milli;
+///
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), Duration::zero());
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), Duration::milliseconds(25));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), Duration::milliseconds(975));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), Duration::seconds(7));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 0, 7, 900), Duration::seconds(5 * 60));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(0, 5, 7, 900), Duration::seconds(3 * 3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), Duration::seconds(-3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(2, 4, 6, 800),
+///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
+/// # }
+/// ~~~~
+///
+/// Leap seconds are handled, but the subtraction assumes that
+/// there were no other leap seconds happened.
+///
+/// ~~~~
+/// # extern crate chrono; extern crate time; fn main() {
+/// # use chrono::NaiveTime;
+/// # use time::Duration;
+/// # let from_hmsm = NaiveTime::from_hms_milli;
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), Duration::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0),
+///            Duration::milliseconds(1500));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 0, 0), Duration::seconds(60));
+/// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(2, 59, 59, 1_000),
+///            Duration::seconds(61));
+/// # }
+/// ~~~~
+impl Sub<NaiveTime> for NaiveTime {
+    type Output = OldDuration;
+
+    #[inline]
+    fn sub(self, rhs: NaiveTime) -> OldDuration {
+        self.signed_duration_since(rhs)
+    }
+}
+
 /// The `Debug` output of the naive time `t` is same to
 /// [`t.format("%H:%M:%S%.f")`](../format/strftime/index.html).
 ///

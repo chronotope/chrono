@@ -1385,6 +1385,42 @@ impl SubAssign<OldDuration> for NaiveDate {
     }
 }
 
+/// Subtracts another `NaiveDate` from the current date.
+/// Returns a `Duration` of integral numbers.
+/// 
+/// This does not overflow or underflow at all,
+/// as all possible output fits in the range of `Duration`.
+///
+/// The implementation is a wrapper around
+/// [`NaiveDate::signed_duration_since`](#method.signed_duration_since).
+///
+/// # Example
+///
+/// ~~~~
+/// # extern crate chrono; extern crate time; fn main() {
+/// use chrono::NaiveDate;
+/// use time::Duration;
+///
+/// let from_ymd = NaiveDate::from_ymd;
+///
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1), Duration::zero());
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), Duration::days(1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2), Duration::days(-1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23), Duration::days(100));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), Duration::days(365));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1), Duration::days(365*4 + 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1), Duration::days(365*400 + 97));
+/// # }
+/// ~~~~
+impl Sub<NaiveDate> for NaiveDate {
+    type Output = OldDuration;
+
+    #[inline]
+    fn sub(self, rhs: NaiveDate) -> OldDuration {
+        self.signed_duration_since(rhs)
+    }
+}
+
 /// The `Debug` output of the naive date `d` is same to
 /// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
 ///
