@@ -1,7 +1,10 @@
 [package]
 name = "chrono"
-version = "0.4.1"
-authors = ["Kang Seonghoon <public+rust@mearie.org>"]
+version = "0.4.2"
+authors = [
+    "Kang Seonghoon <public+rust@mearie.org>",
+    "Brandon W Maister <quodlibetor@gmail.com>",
+]
 
 description = "Date and time library for Rust"
 homepage = "https://github.com/chronotope/chrono"
