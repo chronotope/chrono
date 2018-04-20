@@ -1,6 +1,8 @@
 [Chrono][docsrs]: Date and Time for Rust
 ========================================
 
+[![Join the chat at https://gitter.im/chrono-rs/chrono](https://badges.gitter.im/chrono-rs/chrono.svg)](https://gitter.im/chrono-rs/chrono?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Chrono on Travis CI][travis-image]][travis]
 [![Chrono on Appveyor][appveyor-image]][appveyor]
 [![Chrono on crates.io][cratesio-image]][cratesio]
