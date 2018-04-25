@@ -328,6 +328,11 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                                                                              scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
+                    TimezoneOffsetPermissive => {
+                        let offset = try_consume!(scan::timezone_offset_permissive(
+                            s.trim_left(), scan::colon_or_space));
+                        try!(parsed.set_offset(i64::from(offset)));
+                    }
 
                     RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
                     RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
@@ -570,6 +575,10 @@ fn test_parse() {
     check!("zulu",      [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 0);
     check!("+1234ulu",  [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
     check!("+12:34ulu", [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
+    check!("Z",         [fix!(TimezoneOffsetPermissive)]; offset: 0);
+    check!("z",         [fix!(TimezoneOffsetPermissive)]; offset: 0);
+    check!("+12:00",    [fix!(TimezoneOffsetPermissive)]; offset: 12 * 60 * 60);
+    check!("+12",       [fix!(TimezoneOffsetPermissive)]; offset: 12 * 60 * 60);
     check!("???",       [fix!(TimezoneName)]; BAD_FORMAT); // not allowed
 
     // some practical examples

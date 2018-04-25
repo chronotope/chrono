@@ -200,6 +200,15 @@ pub enum Fixed {
     /// Same to [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ) but prints no colon.
     /// Parsing allows an optional colon.
     TimezoneOffsetZ,
+    /// Same as [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ), but
+    /// allows missing minutes (per [ISO 8601][iso8601]).
+    ///
+    /// # Panics
+    ///
+    /// If you try to use this for printing.
+    ///
+    /// [iso8601]: https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC
+    TimezoneOffsetPermissive,
     /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
@@ -491,6 +500,8 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         off.map(|&(_, off)| write_local_minus_utc(w, off, false, false)),
                     TimezoneOffsetZ =>
                         off.map(|&(_, off)| write_local_minus_utc(w, off, true, false)),
+                    TimezoneOffsetPermissive =>
+                        panic!("Do not try to write %#z it is undefined"),
                     RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
@@ -609,4 +620,3 @@ impl FromStr for Weekday {
         }
     }
 }
-

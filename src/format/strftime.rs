@@ -68,6 +68,7 @@ The following specifiers are available both to formatting and parsing.
 | `%Z`  | `ACST`   | *Formatting only:* Local time zone name.                                   |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
 | `%:z` | `+09:30` | Same to `%z` but with a colon.                                             |
+| `%#z` | `+09`    | *Parsing only:* Same to `%z` but allows minutes to be missing or present.  |
 |       |          |                                                                            |
 |       |          | **DATE & TIME SPECIFIERS:**                                                |
 |`%c`|`Sun Jul  8 00:34:60 2001`|`ctime` date & time format. Same to `%a %b %e %T %Y` sans `\n`.|
@@ -167,6 +168,8 @@ impl<'a> StrftimeItems<'a> {
     }
 }
 
+const HAVE_ALTERNATES: &str = "z";
+
 impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;
 
@@ -205,7 +208,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     '_' => Some(Pad::Space),
                     _ => None,
                 };
-                let spec = if pad_override.is_some() { next!() } else { spec };
+                let is_alternate = spec == '#';
+                let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
+                if is_alternate && !HAVE_ALTERNATES.contains(spec) {
+                    return Some(Item::Error);
+                }
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
@@ -262,7 +269,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'x' => recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
                                    num0!(YearMod100)],
                     'y' => num0!(YearMod100),
-                    'z' => fix!(TimezoneOffset),
+                    'z' => if is_alternate {
+                        fix!(TimezoneOffsetPermissive)
+                    } else {
+                        fix!(TimezoneOffset)
+                    },
                     '+' => fix!(RFC3339),
                     ':' => match next!() {
                         'z' => fix!(TimezoneOffsetColon),
@@ -368,6 +379,9 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("%-e"), [num!(Day)]);
     assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
     assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
+    assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
+    assert_eq!(parse_and_collect("%#z"), [fix!(TimezoneOffsetPermissive)]);
+    assert_eq!(parse_and_collect("%#m"), [Item::Error]);
 }
 
 #[cfg(test)]
