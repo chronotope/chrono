@@ -168,7 +168,7 @@ impl<'a> StrftimeItems<'a> {
     }
 }
 
-const HAVE_ALTERNATES: &str = "z";
+const HAVE_ALTERNATES: &'static str = "z";
 
 impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;
