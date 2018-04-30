@@ -5,6 +5,7 @@
 [![Chrono on Appveyor][appveyor-image]][appveyor]
 [![Chrono on crates.io][cratesio-image]][cratesio]
 [![Chrono on docs.rs][docsrs-image]][docsrs]
+[![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
 
 [travis-image]: https://travis-ci.org/chronotope/chrono.svg?branch=master
 [travis]: https://travis-ci.org/chronotope/chrono
@@ -14,6 +15,8 @@
 [cratesio]: https://crates.io/crates/chrono
 [docsrs-image]: https://docs.rs/chrono/badge.svg
 [docsrs]: https://docs.rs/chrono
+[gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
+[gitter]: https://gitter.im/chrono-rs/chrono?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 Date and time handling for Rust.
 It aims to be a feature-complete superset of
