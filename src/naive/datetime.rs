@@ -290,6 +290,33 @@ impl NaiveDateTime {
         as_ms + i64::from(self.timestamp_subsec_millis())
     }
 
+    /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
+    ///
+    /// Note that this does *not* account for the timezone!
+    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
+    ///
+    /// Note also that this does reduce the number of years that can be
+    /// represented from ~584 Billion to ~584. (If this is a problem,
+    /// please file an issue to let me know what domain needs nanosecond
+    /// precision over millenia, I'm curious.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1).and_hms_nano(0, 0, 1, 444);
+    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    ///
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9).and_hms_nano(1, 46, 40, 555);
+    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
+    /// ~~~~
+    #[inline]
+    pub fn timestamp_nanos(&self) -> i64 {
+        let as_ns = self.timestamp() * 1_000_000_000;
+        as_ns + i64::from(self.timestamp_subsec_nanos())
+    }
+
     /// Returns the number of milliseconds since the last whole non-leap second.
     ///
     /// The return value ranges from 0 to 999,
