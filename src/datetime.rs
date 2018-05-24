@@ -1007,10 +1007,10 @@ pub mod serde {
     /// # #[macro_use] extern crate serde_json;
     /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
-    /// use chrono::serde::ts_nano_seconds;
+    /// use chrono::serde::ts_nanoseconds;
     /// #[derive(Deserialize, Serialize)]
     /// struct S {
-    ///     #[serde(with = "ts_nano_seconds")]
+    ///     #[serde(with = "ts_nanoseconds")]
     ///     time: DateTime<Utc>
     /// }
     ///
@@ -1028,7 +1028,7 @@ pub mod serde {
     /// # }
     /// # fn main() { example().unwrap(); }
     /// ```
-    pub mod ts_nano_seconds {
+    pub mod ts_nanoseconds {
         use std::fmt;
         use serdelib::{ser, de};
 
@@ -1050,7 +1050,7 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate chrono;
         /// # use chrono::{DateTime, Utc};
-        /// use chrono::serde::ts_nano_seconds::deserialize as from_nano_ts;
+        /// use chrono::serde::ts_nanoseconds::deserialize as from_nano_ts;
         /// #[derive(Deserialize)]
         /// struct S {
         ///     #[serde(deserialize_with = "from_nano_ts")]
@@ -1084,7 +1084,7 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate chrono;
         /// # use chrono::{TimeZone, DateTime, Utc};
-        /// use chrono::serde::ts_nano_seconds::serialize as to_nano_ts;
+        /// use chrono::serde::ts_nanoseconds::serialize as to_nano_ts;
         /// #[derive(Serialize)]
         /// struct S {
         ///     #[serde(serialize_with = "to_nano_ts")]
