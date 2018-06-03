@@ -52,7 +52,7 @@ pub enum Pad {
 /// If the number is too long or (in some cases) negative, it is printed as is.
 ///
 /// The **parsing width** is the maximal width to be scanned.
-/// The parser only tries to consume from one to given number of digits (greedily). 
+/// The parser only tries to consume from one to given number of digits (greedily).
 /// It also trims the preceding whitespaces if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
@@ -494,10 +494,17 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
-                            try!(write!(w, "{}, {:2} {} {:04} {:02}:{:02}:{:02} ",
+                            if d.day() < 10 {
+                                try!(write!(w, "{}, {:1} {} {:04} {:02}:{:02}:{:02} ",
                                         SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
                                         d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
                                         t.hour(), t.minute(), sec));
+                            } else {
+                                try!(write!(w, "{}, {:2} {} {:04} {:02}:{:02}:{:02} ",
+                                        SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                                        d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
+                                        t.hour(), t.minute(), sec));
+                            }
                             Some(write_local_minus_utc(w, off, false, false))
                         } else {
                             None
