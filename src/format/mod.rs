@@ -52,7 +52,7 @@ pub enum Pad {
 /// If the number is too long or (in some cases) negative, it is printed as is.
 ///
 /// The **parsing width** is the maximal width to be scanned.
-/// The parser only tries to consume from one to given number of digits (greedily). 
+/// The parser only tries to consume from one to given number of digits (greedily).
 /// It also trims the preceding whitespaces if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
@@ -177,6 +177,12 @@ pub enum Fixed {
     Nanosecond6,
     /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9.
     Nanosecond9,
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3 and there is no leading dot.
+    Nanosecond3NoDot,
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6 and there is no leading dot.
+    Nanosecond6NoDot,
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9 and there is no leading dot.
+    Nanosecond9NoDot,
     /// Timezone name.
     ///
     /// It does not support parsing, its use in the parser is an immediate failure.
@@ -474,6 +480,21 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
                             write!(w, ".{:09}", nano)
+                        }),
+                    Nanosecond3NoDot =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:03}", nano / 1_000_000)
+                        }),
+                    Nanosecond6NoDot =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:06}", nano / 1_000)
+                        }),
+                    Nanosecond9NoDot =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:09}", nano)
                         }),
                     TimezoneName =>
                         off.map(|&(ref name, _)| write!(w, "{}", *name)),

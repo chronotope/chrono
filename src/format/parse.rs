@@ -308,11 +308,16 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         s = &s[2..];
                     }
 
-                    Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9=> {
+                    Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9 => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             try!(parsed.set_nanosecond(nano));
                         }
+                    }
+
+                    Nanosecond3NoDot | Nanosecond6NoDot | Nanosecond9NoDot => {
+                        let nano = try_consume!(scan::nanosecond(&s[1..]));
+                        try!(parsed.set_nanosecond(nano));
                     }
 
                     TimezoneName => return Err(BAD_FORMAT),
@@ -584,6 +589,11 @@ fn test_parse() {
             num!(Hour), lit!(":"), num!(Minute), lit!(":"), num!(Second), fix!(TimezoneOffset)];
            year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
            minute: 37, second: 5, offset: 32400);
+    check!("20150204143705567",
+            [num!(Year), num!(Month), num!(Day),
+            num!(Hour), num!(Minute), num!(Second), num!(Nanosecond)];
+            year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
+            minute: 37, second: 5, nanosecond: 567000000);
     check!("Mon, 10 Jun 2013 09:32:37 GMT",
            [fix!(ShortWeekdayName), lit!(","), sp!(" "), num!(Day), sp!(" "),
             fix!(ShortMonthName), sp!(" "), num!(Year), sp!(" "), num!(Hour), lit!(":"),
