@@ -246,6 +246,16 @@ impl Parsed {
         set_if_consistent(&mut self.nanosecond, try!(value.to_u32().ok_or(OUT_OF_RANGE)))
     }
 
+    /// Tries to set the [`nanosecond`](#structfield.nanosecond) field from given value.
+    pub fn set_millisecond(&mut self, value: i64) -> ParseResult<()> {
+        set_if_consistent(&mut self.nanosecond, try!(value.to_u32().ok_or(OUT_OF_RANGE)) * 1_000_000)
+    }
+
+    /// Tries to set the [`nanosecond`](#structfield.nanosecond) field from given value.
+    pub fn set_microsecond(&mut self, value: i64) -> ParseResult<()> {
+        set_if_consistent(&mut self.nanosecond, try!(value.to_u32().ok_or(OUT_OF_RANGE)) * 1_000)
+    }
+
     /// Tries to set the [`timestamp`](#structfield.timestamp) field from given value.
     pub fn set_timestamp(&mut self, value: i64) -> ParseResult<()> {
         set_if_consistent(&mut self.timestamp, value)

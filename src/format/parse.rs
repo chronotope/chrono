@@ -316,8 +316,10 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                     }
 
                     Nanosecond3NoDot | Nanosecond6NoDot | Nanosecond9NoDot => {
-                        let nano = try_consume!(scan::nanosecond(&s[1..]));
-                        try!(parsed.set_nanosecond(nano));
+                        if !s.is_empty() {
+                            let nano = try_consume!(scan::nanosecond(&s[..]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
                     }
 
                     TimezoneName => return Err(BAD_FORMAT),
@@ -539,6 +541,21 @@ fn test_parse() {
     check!(".  4",          [fix!(Nanosecond)]; INVALID);
     check!("  .4",          [fix!(Nanosecond)]; TOO_LONG); // no automatic trimming
 
+    // fixed: nanoseconds without the dot
+    check!("",             [fix!(Nanosecond3NoDot)]; ); // no field set, but not an error
+    check!("0",            [fix!(Nanosecond3NoDot)]; nanosecond: 0);
+    check!("4",            [fix!(Nanosecond3NoDot)]; nanosecond: 400_000_000);
+    check!("42",           [fix!(Nanosecond3NoDot)]; nanosecond: 420_000_000);
+    check!("421",          [fix!(Nanosecond3NoDot)]; nanosecond: 421_000_000);
+    check!("42195",        [fix!(Nanosecond3NoDot)]; nanosecond: 421_950_000);
+    check!("421950803",    [fix!(Nanosecond3NoDot)]; nanosecond: 421_950_803);
+    check!("421950803547", [fix!(Nanosecond3NoDot)]; nanosecond: 421_950_803);
+    check!("000000003547", [fix!(Nanosecond3NoDot)]; nanosecond: 3);
+    check!("000000000547", [fix!(Nanosecond3NoDot)]; nanosecond: 0);
+    check!("4x",           [fix!(Nanosecond3NoDot)]; TOO_LONG);
+    check!("  4",          [fix!(Nanosecond3NoDot)]; INVALID);
+    check!(".421",         [fix!(Nanosecond3NoDot)]; INVALID);
+
     // fixed: timezone offsets
     check!("+00:00",    [fix!(TimezoneOffset)]; offset: 0);
     check!("-00:00",    [fix!(TimezoneOffset)]; offset: 0);
@@ -591,7 +608,7 @@ fn test_parse() {
            minute: 37, second: 5, offset: 32400);
     check!("20150204143705567",
             [num!(Year), num!(Month), num!(Day),
-            num!(Hour), num!(Minute), num!(Second), num!(Nanosecond)];
+            num!(Hour), num!(Minute), num!(Second), fix!(Nanosecond3NoDot)];
             year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
             minute: 37, second: 5, nanosecond: 567000000);
     check!("Mon, 10 Jun 2013 09:32:37 GMT",
