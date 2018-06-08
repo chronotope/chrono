@@ -16,6 +16,7 @@ Versions with only mechnical changes will be omitted from the following list.
 * Added a serde serialise/deserialise module for nanosecond timestamps. (@harkonenbade #247)
 * Added "Permissive" timezone parsing which allows a numeric timezone to
   be specified without minutes. (@quodlibetor #242)
+* Added support for parsing nanoseconds without the leading dot (@emschwartz #251)
 
 ## 0.4.2
 

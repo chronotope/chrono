@@ -58,6 +58,9 @@ The following specifiers are available both to formatting and parsing.
 | `%.3f`| `.026`        | Similar to `.%f` but left-aligned but fixed to a length of 3. [8]     |
 | `%.6f`| `.026490`     | Similar to `.%f` but left-aligned but fixed to a length of 6. [8]     |
 | `%.9f`| `.026490000`  | Similar to `.%f` but left-aligned but fixed to a length of 9. [8]     |
+| `%3f` | `026`         | Similar to `%.3f` but without the leading dot. [8]                    |
+| `%6f` | `026490`      | Similar to `%.6f` but without the leading dot. [8]                    |
+| `%9f` | `026490000`   | Similar to `%.9f` but without the leading dot. [8]                    |
 |       |               |                                                                       |
 | `%R`  | `00:34`       | Hour-minute format. Same to `%H:%M`.                                  |
 | `%T`  | `00:34:60`    | Hour-minute-second format. Same to `%H:%M:%S`.                        |
@@ -123,7 +126,7 @@ Notes:
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
 
-8. `%f`, `%.f`, `%.3f`, `%.6f`, `%.9f`:
+8. `%f`, `%.f`, `%.3f`, `%.6f`, `%.9f`, `%3f`, `%6f`, `%9f`:
 
    The default `%f` is right-aligned and always zero-padded to 9 digits
    for the compatibility with glibc and others,
@@ -144,6 +147,12 @@ Notes:
    and parsing `.07`, `.070000` etc. will yield the same.
    Note that they can read nothing if the fractional part is zero or
    the next character is not `.` however will print with the specified length.
+
+   The variant `%3f`, `%6f` and `%9f` are left-aligned and print 3, 6 or 9 fractional digits
+   according to the number preceding `f`, but without the leading dot.
+   E.g. 70ms after the last second under `%3f` will print `070` (note: not `07`),
+   and parsing `07`, `070000` etc. will yield the same.
+   Note that they can read nothing if the fractional part is zero.
 
 */
 
