@@ -147,7 +147,7 @@ Notes:
 
 */
 
-use super::{Item, Numeric, Fixed, Pad};
+use super::{Item, Numeric, Fixed, InternalFixed, InternalInternal, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -270,7 +270,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                                    num0!(YearMod100)],
                     'y' => num0!(YearMod100),
                     'z' => if is_alternate {
-                        fix!(TimezoneOffsetPermissive)
+                        internal_fix!(TimezoneOffsetPermissive)
                     } else {
                         fix!(TimezoneOffset)
                     },
@@ -380,7 +380,7 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
     assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
     assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
-    assert_eq!(parse_and_collect("%#z"), [fix!(TimezoneOffsetPermissive)]);
+    assert_eq!(parse_and_collect("%#z"), [internal_fix!(TimezoneOffsetPermissive)]);
     assert_eq!(parse_and_collect("%#m"), [Item::Error]);
 }
 

@@ -200,15 +200,6 @@ pub enum Fixed {
     /// Same to [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ) but prints no colon.
     /// Parsing allows an optional colon.
     TimezoneOffsetZ,
-    /// Same as [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ), but
-    /// allows missing minutes (per [ISO 8601][iso8601]).
-    ///
-    /// # Panics
-    ///
-    /// If you try to use this for printing.
-    ///
-    /// [iso8601]: https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC
-    TimezoneOffsetPermissive,
     /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
@@ -222,29 +213,22 @@ pub enum Fixed {
 }
 
 /// An opaque type representing fixed-format item types for internal uses only.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InternalFixed {
-    _dummy: Void,
+    val: InternalInternal,
 }
 
-impl Clone for InternalFixed {
-    fn clone(&self) -> Self {
-        match self._dummy {}
-    }
-}
-
-impl PartialEq for InternalFixed {
-    fn eq(&self, _other: &InternalFixed) -> bool {
-        match self._dummy {}
-    }
-}
-
-impl Eq for InternalFixed {
-}
-
-impl fmt::Debug for InternalFixed {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "<InternalFixed>")
-    }
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum InternalInternal {
+    /// Same as [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ), but
+    /// allows missing minutes (per [ISO 8601][iso8601]).
+    ///
+    /// # Panics
+    ///
+    /// If you try to use this for printing.
+    ///
+    /// [iso8601]: https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC
+    TimezoneOffsetPermissive,
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
@@ -273,6 +257,7 @@ macro_rules! num  { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::None)) }
 macro_rules! num0 { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::Zero)) }
 macro_rules! nums { ($x:ident) => (Item::Numeric(Numeric::$x, Pad::Space)) }
 macro_rules! fix  { ($x:ident) => (Item::Fixed(Fixed::$x)) }
+macro_rules! internal_fix { ($x:ident) => (Item::Fixed(Fixed::Internal(InternalFixed { val: InternalInternal::$x })))}
 
 /// An error from the `parse` function.
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
@@ -500,7 +485,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         off.map(|&(_, off)| write_local_minus_utc(w, off, false, false)),
                     TimezoneOffsetZ =>
                         off.map(|&(_, off)| write_local_minus_utc(w, off, true, false)),
-                    TimezoneOffsetPermissive =>
+                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) =>
                         panic!("Do not try to write %#z it is undefined"),
                     RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
@@ -522,9 +507,6 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         } else {
                             None
                         },
-
-                    // for the future expansion
-                    Internal(ref int) => match int._dummy {},
                 };
 
                 match ret {
