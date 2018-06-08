@@ -5,6 +5,7 @@
 //! Date and time parsing routines.
 
 use std::usize;
+use std::cmp;
 
 use Weekday;
 
@@ -315,9 +316,26 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         }
                     }
 
-                    Nanosecond3NoDot | Nanosecond6NoDot | Nanosecond9NoDot => {
+                    Nanosecond3NoDot => {
                         if !s.is_empty() {
-                            let nano = try_consume!(scan::nanosecond(&s[..]));
+                            let max_index = cmp::min(s.len() as u64, 3) as usize;
+                            let nano = try_consume!(scan::nanosecond(&s[..max_index]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
+                    }
+
+                    Nanosecond6NoDot => {
+                        if !s.is_empty() {
+                            let max_index = cmp::min(s.len() as u64, 6) as usize;
+                            let nano = try_consume!(scan::nanosecond(&s[..max_index]));
+                            try!(parsed.set_nanosecond(nano));
+                        }
+                    }
+
+                    Nanosecond9NoDot => {
+                        if !s.is_empty() {
+                            let max_index = cmp::min(s.len() as u64, 9) as usize;
+                            let nano = try_consume!(scan::nanosecond(&s[..max_index]));
                             try!(parsed.set_nanosecond(nano));
                         }
                     }
@@ -547,14 +565,39 @@ fn test_parse() {
     check!("4",            [fix!(Nanosecond3NoDot)]; nanosecond: 400_000_000);
     check!("42",           [fix!(Nanosecond3NoDot)]; nanosecond: 420_000_000);
     check!("421",          [fix!(Nanosecond3NoDot)]; nanosecond: 421_000_000);
-    check!("42195",        [fix!(Nanosecond3NoDot)]; nanosecond: 421_950_000);
-    check!("421950803",    [fix!(Nanosecond3NoDot)]; nanosecond: 421_950_803);
-    check!("421950803547", [fix!(Nanosecond3NoDot)]; nanosecond: 421_950_803);
-    check!("000000003547", [fix!(Nanosecond3NoDot)]; nanosecond: 3);
+    check!("42195",        [fix!(Nanosecond3NoDot)]; nanosecond: 421_000_000); // ignores everything after 3 digits
     check!("000000000547", [fix!(Nanosecond3NoDot)]; nanosecond: 0);
     check!("4x",           [fix!(Nanosecond3NoDot)]; TOO_LONG);
     check!("  4",          [fix!(Nanosecond3NoDot)]; INVALID);
     check!(".421",         [fix!(Nanosecond3NoDot)]; INVALID);
+
+    check!("",             [fix!(Nanosecond6NoDot)]; ); // no field set, but not an error
+    check!("0",            [fix!(Nanosecond6NoDot)]; nanosecond: 0);
+    check!("4",            [fix!(Nanosecond6NoDot)]; nanosecond: 400_000_000);
+    check!("42",           [fix!(Nanosecond6NoDot)]; nanosecond: 420_000_000);
+    check!("421",          [fix!(Nanosecond6NoDot)]; nanosecond: 421_000_000);
+    check!("42195",        [fix!(Nanosecond6NoDot)]; nanosecond: 421_950_000);
+    check!("421950803",    [fix!(Nanosecond6NoDot)]; nanosecond: 421_950_000); // ignores everything after 6 digits
+    check!("000003547",    [fix!(Nanosecond6NoDot)]; nanosecond: 3000);
+    check!("000000547",    [fix!(Nanosecond6NoDot)]; nanosecond: 0);
+    check!("4x",           [fix!(Nanosecond6NoDot)]; TOO_LONG);
+    check!("  4",          [fix!(Nanosecond6NoDot)]; INVALID);
+    check!(".421",         [fix!(Nanosecond6NoDot)]; INVALID);
+
+    check!("",             [fix!(Nanosecond9NoDot)]; ); // no field set, but not an error
+    check!("0",            [fix!(Nanosecond9NoDot)]; nanosecond: 0);
+    check!("4",            [fix!(Nanosecond9NoDot)]; nanosecond: 400_000_000);
+    check!("42",           [fix!(Nanosecond9NoDot)]; nanosecond: 420_000_000);
+    check!("421",          [fix!(Nanosecond9NoDot)]; nanosecond: 421_000_000);
+    check!("42195",        [fix!(Nanosecond9NoDot)]; nanosecond: 421_950_000);
+    check!("421950803",    [fix!(Nanosecond9NoDot)]; nanosecond: 421_950_803);
+    check!("421950803547", [fix!(Nanosecond9NoDot)]; nanosecond: 421_950_803);
+    // check!("421950803547", [fix!(Nanosecond9NoDot), num!(Second)]; nanosecond: 421_950_803, second: 54); // don't skip digits that come after the 9
+    check!("000000003547", [fix!(Nanosecond9NoDot)]; nanosecond: 3);
+    check!("000000000547", [fix!(Nanosecond9NoDot)]; nanosecond: 0);
+    check!("4x",           [fix!(Nanosecond9NoDot)]; TOO_LONG);
+    check!("  4",          [fix!(Nanosecond9NoDot)]; INVALID);
+    check!(".421",         [fix!(Nanosecond9NoDot)]; INVALID);
 
     // fixed: timezone offsets
     check!("+00:00",    [fix!(TimezoneOffset)]; offset: 0);
