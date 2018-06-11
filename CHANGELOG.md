@@ -8,12 +8,14 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
-## ?0.4.3?
+## 0.4.3
 
 ### Features
 * Added methods to DateTime/NaiveDateTime to present the stored value as a number
   of nanoseconds since the UNIX epoch (@harkonenbade #247)
 * Added a serde serialise/deserialise module for nanosecond timestamps. (@harkonenbade #247)
+* Added "Permissive" timezone parsing which allows a numeric timezone to
+  be specified without minutes. (@quodlibetor #242)
 
 ## 0.4.2
 
