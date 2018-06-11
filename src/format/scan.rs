@@ -171,8 +171,15 @@ pub fn colon_or_space(s: &str) -> ParseResult<&str> {
 ///
 /// The additional `colon` may be used to parse a mandatory or optional `:`
 /// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
-pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
+pub fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
         where F: FnMut(&str) -> ParseResult<&str> {
+    timezone_offset_internal(s, consume_colon, false)
+}
+
+fn timezone_offset_internal<F>(mut s: &str, mut consume_colon: F, allow_missing_minutes: bool)
+-> ParseResult<(&str, i32)>
+    where F: FnMut(&str) -> ParseResult<&str>
+{
     fn digits(s: &str) -> ParseResult<(u8, u8)> {
         let b = s.as_bytes();
         if b.len() < 2 {
@@ -197,26 +204,51 @@ pub fn timezone_offset<F>(mut s: &str, mut colon: F) -> ParseResult<(&str, i32)>
     s = &s[2..];
 
     // colons (and possibly other separators)
-    s = try!(colon(s));
+    s = try!(consume_colon(s));
 
     // minutes (00--59)
-    let minutes = match try!(digits(s)) {
-        (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
-        (b'6'...b'9', b'0'...b'9') => return Err(OUT_OF_RANGE),
-        _ => return Err(INVALID),
+    // if the next two items are digits then we have to add minutes
+    let minutes = if let Ok(ds) = digits(s) {
+        match ds {
+            (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
+            (b'6'...b'9', b'0'...b'9') => return Err(OUT_OF_RANGE),
+            _ => return Err(INVALID),
+        }
+    } else if allow_missing_minutes {
+        0
+    } else {
+        return Err(TOO_SHORT);
     };
-    s = &s[2..];
+    s = match s.len() {
+        len if len >= 2 => &s[2..],
+        len if len == 0 => s,
+        _ => return Err(TOO_SHORT),
+    };
 
     let seconds = hours * 3600 + minutes * 60;
     Ok((s, if negative {-seconds} else {seconds}))
 }
 
 /// Same to `timezone_offset` but also allows for `z`/`Z` which is same to `+00:00`.
-pub fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
-        where F: FnMut(&str) -> ParseResult<&str> {
+pub fn timezone_offset_zulu<F>(s: &str, colon: F)
+-> ParseResult<(&str, i32)>
+    where F: FnMut(&str) -> ParseResult<&str>
+{
     match s.as_bytes().first() {
         Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
         _ => timezone_offset(s, colon),
+    }
+}
+
+/// Same to `timezone_offset` but also allows for `z`/`Z` which is same to
+/// `+00:00`, and allows missing minutes entirely.
+pub fn timezone_offset_permissive<F>(s: &str, colon: F)
+-> ParseResult<(&str, i32)>
+    where F: FnMut(&str) -> ParseResult<&str>
+{
+    match s.as_bytes().first() {
+        Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
+        _ => timezone_offset_internal(s, colon, true),
     }
 }
 

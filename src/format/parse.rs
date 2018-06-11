@@ -9,7 +9,7 @@ use std::usize;
 use Weekday;
 
 use super::scan;
-use super::{Parsed, ParseResult, Item};
+use super::{Parsed, ParseResult, Item, InternalFixed, InternalInternal};
 use super::{OUT_OF_RANGE, INVALID, TOO_SHORT, TOO_LONG, BAD_FORMAT};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
@@ -328,12 +328,14 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                                                                              scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
+                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
+                        let offset = try_consume!(scan::timezone_offset_permissive(
+                            s.trim_left(), scan::colon_or_space));
+                        try!(parsed.set_offset(i64::from(offset)));
+                    }
 
                     RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
                     RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
-
-                    // for the future expansion
-                    Internal(ref int) => match int._dummy {},
                 }
             }
 
@@ -570,6 +572,10 @@ fn test_parse() {
     check!("zulu",      [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 0);
     check!("+1234ulu",  [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
     check!("+12:34ulu", [fix!(TimezoneOffsetZ), lit!("ulu")]; offset: 754 * 60);
+    check!("Z",         [internal_fix!(TimezoneOffsetPermissive)]; offset: 0);
+    check!("z",         [internal_fix!(TimezoneOffsetPermissive)]; offset: 0);
+    check!("+12:00",    [internal_fix!(TimezoneOffsetPermissive)]; offset: 12 * 60 * 60);
+    check!("+12",       [internal_fix!(TimezoneOffsetPermissive)]; offset: 12 * 60 * 60);
     check!("???",       [fix!(TimezoneName)]; BAD_FORMAT); // not allowed
 
     // some practical examples
