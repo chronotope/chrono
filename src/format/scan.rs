@@ -66,6 +66,20 @@ pub fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
     Ok((s, v))
 }
 
+/// Tries to consume a fixed number of digits as a fractional second.
+/// Returns the number of whole nanoseconds (0--999,999,999).
+pub fn nanosecond_fixed(s: &str, digits: usize) -> ParseResult<(&str, i64)> {
+    // record the number of digits consumed for later scaling.
+    let (s, v) = try!(number(s, digits, digits));
+
+    // scale the number accordingly.
+    static SCALE: [i64; 10] = [0, 100_000_000, 10_000_000, 1_000_000, 100_000, 10_000,
+                               1_000, 100, 10, 1];
+    let v = try!(v.checked_mul(SCALE[digits]).ok_or(OUT_OF_RANGE));
+
+    Ok((s, v))
+}
+
 /// Tries to parse the month index (0 through 11) with the first three ASCII letters.
 pub fn short_month0(s: &str) -> ParseResult<(&str, u8)> {
     if s.len() < 3 { return Err(TOO_SHORT); }
