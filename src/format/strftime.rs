@@ -305,15 +305,15 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         _ => Item::Error,
                     },
                     '3' => match next!() {
-                        'f' => fix!(Nanosecond3NoDot),
+                        'f' => internal_fix!(Nanosecond3NoDot),
                         _ => Item::Error,
                     },
                     '6' => match next!() {
-                        'f' => fix!(Nanosecond6NoDot),
+                        'f' => internal_fix!(Nanosecond6NoDot),
                         _ => Item::Error,
                     },
                     '9' => match next!() {
-                        'f' => fix!(Nanosecond9NoDot),
+                        'f' => internal_fix!(Nanosecond9NoDot),
                         _ => Item::Error,
                     },
                     '%' => lit!("%"),

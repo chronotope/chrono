@@ -315,19 +315,19 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         }
                     }
 
-                    Nanosecond3NoDot => {
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                         if s.len() < 3 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 3));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    Nanosecond6NoDot => {
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
                         if s.len() < 6 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 6));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    Nanosecond9NoDot => {
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
                         if s.len() < 9 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 9));
                         try!(parsed.set_nanosecond(nano));
@@ -553,37 +553,37 @@ fn test_parse() {
     check!("  .4",          [fix!(Nanosecond)]; TOO_LONG); // no automatic trimming
 
     // fixed: nanoseconds without the dot
-    check!("",             [fix!(Nanosecond3NoDot)]; TOO_SHORT);
-    check!("0",            [fix!(Nanosecond3NoDot)]; TOO_SHORT);
-    check!("4",            [fix!(Nanosecond3NoDot)]; TOO_SHORT);
-    check!("42",           [fix!(Nanosecond3NoDot)]; TOO_SHORT);
-    check!("421",          [fix!(Nanosecond3NoDot)]; nanosecond: 421_000_000);
-    check!("42143",        [fix!(Nanosecond3NoDot), num!(Second)]; nanosecond: 421_000_000, second: 43);
-    check!("42195",        [fix!(Nanosecond3NoDot)]; TOO_LONG);
-    check!("4x",           [fix!(Nanosecond3NoDot)]; TOO_SHORT);
-    check!("  4",          [fix!(Nanosecond3NoDot)]; INVALID);
-    check!(".421",         [fix!(Nanosecond3NoDot)]; INVALID);
+    check!("",             [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
+    check!("0",            [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
+    check!("4",            [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
+    check!("42",           [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
+    check!("421",          [internal_fix!(Nanosecond3NoDot)]; nanosecond: 421_000_000);
+    check!("42143",        [internal_fix!(Nanosecond3NoDot), num!(Second)]; nanosecond: 421_000_000, second: 43);
+    check!("42195",        [internal_fix!(Nanosecond3NoDot)]; TOO_LONG);
+    check!("4x",           [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
+    check!("  4",          [internal_fix!(Nanosecond3NoDot)]; INVALID);
+    check!(".421",         [internal_fix!(Nanosecond3NoDot)]; INVALID);
 
-    check!("",             [fix!(Nanosecond6NoDot)]; TOO_SHORT);
-    check!("0",            [fix!(Nanosecond6NoDot)]; TOO_SHORT);
-    check!("42195",        [fix!(Nanosecond6NoDot)]; TOO_SHORT);
-    check!("421950",       [fix!(Nanosecond6NoDot)]; nanosecond: 421_950_000);
-    check!("000003",       [fix!(Nanosecond6NoDot)]; nanosecond: 3000);
-    check!("000000",       [fix!(Nanosecond6NoDot)]; nanosecond: 0);
-    check!("4x",           [fix!(Nanosecond6NoDot)]; TOO_SHORT);
-    check!("     4",       [fix!(Nanosecond6NoDot)]; INVALID);
-    check!(".42100",       [fix!(Nanosecond6NoDot)]; INVALID);
+    check!("",             [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
+    check!("0",            [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
+    check!("42195",        [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
+    check!("421950",       [internal_fix!(Nanosecond6NoDot)]; nanosecond: 421_950_000);
+    check!("000003",       [internal_fix!(Nanosecond6NoDot)]; nanosecond: 3000);
+    check!("000000",       [internal_fix!(Nanosecond6NoDot)]; nanosecond: 0);
+    check!("4x",           [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
+    check!("     4",       [internal_fix!(Nanosecond6NoDot)]; INVALID);
+    check!(".42100",       [internal_fix!(Nanosecond6NoDot)]; INVALID);
 
-    check!("",             [fix!(Nanosecond9NoDot)]; TOO_SHORT);
-    check!("42195",        [fix!(Nanosecond9NoDot)]; TOO_SHORT);
-    check!("421950803",    [fix!(Nanosecond9NoDot)]; nanosecond: 421_950_803);
-    check!("000000003",    [fix!(Nanosecond9NoDot)]; nanosecond: 3);
-    check!("42195080354",  [fix!(Nanosecond9NoDot), num!(Second)]; nanosecond: 421_950_803, second: 54); // don't skip digits that come after the 9
-    check!("421950803547", [fix!(Nanosecond9NoDot)]; TOO_LONG);
-    check!("000000000",    [fix!(Nanosecond9NoDot)]; nanosecond: 0);
-    check!("00000000x",    [fix!(Nanosecond9NoDot)]; INVALID);
-    check!("        4",    [fix!(Nanosecond9NoDot)]; INVALID);
-    check!(".42100000",    [fix!(Nanosecond9NoDot)]; INVALID);
+    check!("",             [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
+    check!("42195",        [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
+    check!("421950803",    [internal_fix!(Nanosecond9NoDot)]; nanosecond: 421_950_803);
+    check!("000000003",    [internal_fix!(Nanosecond9NoDot)]; nanosecond: 3);
+    check!("42195080354",  [internal_fix!(Nanosecond9NoDot), num!(Second)]; nanosecond: 421_950_803, second: 54); // don't skip digits that come after the 9
+    check!("421950803547", [internal_fix!(Nanosecond9NoDot)]; TOO_LONG);
+    check!("000000000",    [internal_fix!(Nanosecond9NoDot)]; nanosecond: 0);
+    check!("00000000x",    [internal_fix!(Nanosecond9NoDot)]; INVALID);
+    check!("        4",    [internal_fix!(Nanosecond9NoDot)]; INVALID);
+    check!(".42100000",    [internal_fix!(Nanosecond9NoDot)]; INVALID);
 
     // fixed: timezone offsets
     check!("+00:00",    [fix!(TimezoneOffset)]; offset: 0);
@@ -637,7 +637,7 @@ fn test_parse() {
            minute: 37, second: 5, offset: 32400);
     check!("20150204143705567",
             [num!(Year), num!(Month), num!(Day),
-            num!(Hour), num!(Minute), num!(Second), fix!(Nanosecond3NoDot)];
+            num!(Hour), num!(Minute), num!(Second), internal_fix!(Nanosecond3NoDot)];
             year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
             minute: 37, second: 5, nanosecond: 567000000);
     check!("Mon, 10 Jun 2013 09:32:37 GMT",
