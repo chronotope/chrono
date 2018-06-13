@@ -255,12 +255,19 @@ impl NaiveDateTime {
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9).and_hms(1, 46, 40);
     /// assert_eq!(dt.timestamp(), 1_000_000_000);
+    ///
+    /// let dt = NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59);
+    /// assert_eq!(dt.timestamp(), -1);
+    ///
+    /// let dt = NaiveDate::from_ymd(-1, 1, 1).and_hms(0, 0, 0);
+    /// assert_eq!(dt.timestamp(), -62198755200);
     /// ~~~~
     #[inline]
     pub fn timestamp(&self) -> i64 {
-        let ndays = i64::from(self.date.num_days_from_ce());
-        let nseconds = i64::from(self.time.num_seconds_from_midnight());
-        (ndays - 719_163) * 86_400 + nseconds
+        const UNIX_EPOCH_DAY: i64 = 719_163;
+        let gregorian_day = i64::from(self.date.num_days_from_ce());
+        let seconds_from_midnight = i64::from(self.time.num_seconds_from_midnight());
+        (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 
     /// Returns the number of non-leap *milliseconds* since midnight on January 1, 1970.
@@ -283,6 +290,9 @@ impl NaiveDateTime {
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9).and_hms_milli(1, 46, 40, 555);
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
+    ///
+    /// let dt = NaiveDate::from_ymd(1969, 12, 31).and_hms_milli(23, 59, 59, 100);
+    /// assert_eq!(dt.timestamp_millis(), -900);
     /// ~~~~
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
