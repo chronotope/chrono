@@ -52,7 +52,7 @@ pub enum Pad {
 /// If the number is too long or (in some cases) negative, it is printed as is.
 ///
 /// The **parsing width** is the maximal width to be scanned.
-/// The parser only tries to consume from one to given number of digits (greedily). 
+/// The parser only tries to consume from one to given number of digits (greedily).
 /// It also trims the preceding whitespaces if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
@@ -229,6 +229,12 @@ enum InternalInternal {
     ///
     /// [iso8601]: https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC
     TimezoneOffsetPermissive,
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3 and there is no leading dot.
+    Nanosecond3NoDot,
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6 and there is no leading dot.
+    Nanosecond6NoDot,
+    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9 and there is no leading dot.
+    Nanosecond9NoDot,
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
@@ -474,6 +480,21 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
                             write!(w, ".{:09}", nano)
+                        }),
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:03}", nano / 1_000_000)
+                        }),
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:06}", nano / 1_000)
+                        }),
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) =>
+                        time.map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:09}", nano)
                         }),
                     TimezoneName =>
                         off.map(|&(ref name, _)| write!(w, "{}", *name)),
