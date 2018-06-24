@@ -19,7 +19,7 @@ use super::{TimeZone, Offset, LocalResult};
 /// on a `FixedOffset` struct is the preferred way to construct
 /// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
 /// [`west`](#method.west) methods for examples.
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
