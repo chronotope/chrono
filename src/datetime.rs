@@ -978,7 +978,7 @@ pub mod serde {
                 write!(formatter, "a unix timestamp in seconds")
             }
 
-            /// Deserialize a timestamp in seconds since the epoch
+            /// Deserialize a timestamp in nanoseconds since the epoch
             fn visit_i64<E>(self, value: i64) -> Result<DateTime<Utc>, E>
                 where E: de::Error
             {
@@ -987,7 +987,7 @@ pub mod serde {
                      &value)
             }
 
-            /// Deserialize a timestamp in seconds since the epoch
+            /// Deserialize a timestamp in nanoseconds since the epoch
             fn visit_u64<E>(self, value: u64) -> Result<DateTime<Utc>, E>
                 where E: de::Error
             {
