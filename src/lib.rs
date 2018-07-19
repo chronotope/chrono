@@ -207,10 +207,13 @@
 //! # }
 //! ```
 //!
+//! ### Formatting and Parsing
+//!
 //! Formatting is done via the [`format`](./struct.DateTime.html#method.format) method,
 //! which format is equivalent to the familiar `strftime` format.
-//! (See the [`format::strftime` module documentation](./format/strftime/index.html#specifiers)
-//! for full syntax.)
+//!
+//! See [`format::strftime`](./format/strftime/index.html#specifiers)
+//! documentation for full syntax and list of specifiers.
 //!
 //! The default `to_string` method and `{:?}` specifier also give a reasonable representation.
 //! Chrono also provides [`to_rfc2822`](./struct.DateTime.html#method.to_rfc2822) and
@@ -288,14 +291,17 @@
 //! assert!(Utc.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 //! ```
 //!
+//! Again : See [`format::strftime`](./format/strftime/index.html#specifiers)
+//! documentation for full syntax and list of specifiers.
+//!
 //! ### Conversion from and to EPOCH timestamps
 //!
-//! Use [`Utc.timestamp(seconds, nanoseconds)`](./offset/trait.TimeZone.html#method.timestamp) 
-//! to construct a [`DateTime<Utc>`](./struct.DateTime.html) from a UNIX timestamp 
+//! Use [`Utc.timestamp(seconds, nanoseconds)`](./offset/trait.TimeZone.html#method.timestamp)
+//! to construct a [`DateTime<Utc>`](./struct.DateTime.html) from a UNIX timestamp
 //! (seconds, nanoseconds that passed since January 1st 1970).
 //!
 //! Use [`DateTime.timestamp`](./struct.DateTime.html#method.timestamp) to get the timestamp (in seconds)
-//! from a [`DateTime`](./struct.DateTime.html). Additionally, you can use 
+//! from a [`DateTime`](./struct.DateTime.html). Additionally, you can use
 //! [`DateTime.timestamp_subsec_nanos`](./struct.DateTime.html#method.timestamp_subsec_nanos)
 //! to get the number of additional number of nanoseconds.
 //!
@@ -386,6 +392,7 @@
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
+#![allow(trivially_copy_pass_by_ref)]
 
 // The explicit 'static lifetimes are still needed for rustc 1.13-16
 // backward compatibility, and this appeases clippy. If minimum rustc
