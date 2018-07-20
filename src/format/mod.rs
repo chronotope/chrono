@@ -495,9 +495,9 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
                             try!(write!(w, "{}, {} {} {:04} {:02}:{:02}:{:02} ",
-                                    SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
-                                    d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
-                                    t.hour(), t.minute(), sec));
+                                        SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                                        d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
+                                        t.hour(), t.minute(), sec));
                             Some(write_local_minus_utc(w, off, false, false))
                         } else {
                             None
