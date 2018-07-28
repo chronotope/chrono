@@ -41,3 +41,6 @@ num-iter = { version = "0.1.35", default-features = false }
 
 [package.metadata.docs.rs]
 all-features = true
+
+[package.metadata.playground]
+all-features = true
