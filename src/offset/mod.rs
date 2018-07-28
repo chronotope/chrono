@@ -310,6 +310,45 @@ pub trait TimeZone: Sized + Clone {
         }
     }
 
+    /// Makes a new `DateTime` from the number of non-leap milliseconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
+    ///
+    /// Panics on out-of-range number of milliseconds for a non-panicking
+    /// version see [`timestamp_millis_opt`](#method.timestamp_millis_opt).
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{Utc, TimeZone};
+    ///
+    /// assert_eq!(Utc.timestamp_millis(1431648000).timestamp(), 1431648);
+    /// ~~~~
+    fn timestamp_millis(&self, millis: i64) -> DateTime<Self> {
+        self.timestamp_millis_opt(millis).unwrap()
+    }
+
+    /// Makes a new `DateTime` from the number of non-leap milliseconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
+    ///
+    ///
+    /// Returns `LocalResult::None` on out-of-range number of milliseconds
+    /// and/or invalid nanosecond, otherwise always returns
+    /// `LocalResult::Single`.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{Utc, TimeZone, LocalResult};
+    /// match Utc.timestamp_millis_opt(1431648000) {
+    ///     LocalResult::Single(dt) => assert_eq!(dt.timestamp(), 1431648),
+    ///     _ => panic!("Incorrect timestamp_millis"),
+    /// };
+    /// ~~~~
+    fn timestamp_millis_opt(&self, millis: i64) -> LocalResult<DateTime<Self>> {
+        let (secs, millis) = (millis / 1000, millis % 1000);
+        self.timestamp_opt(secs, millis as u32 * 1_000_000)
+    }
+
     /// Parses a string with the specified format string and
     /// returns a `DateTime` with the current offset.
     /// See the [`format::strftime` module](../format/strftime/index.html)
