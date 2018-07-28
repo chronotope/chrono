@@ -15,6 +15,7 @@ Versions with only mechnical changes will be omitted from the following list.
 * Added several more serde deserialization helpers (@novacrazy #258)
 * Enabled all features on the playground (@davidtwco #267)
 * Improved docs (@storyfeet #261)
+* Derive `Hash` on `FixedOffset` (@LuoZijun #254)
 
 ## 0.4.4
 
