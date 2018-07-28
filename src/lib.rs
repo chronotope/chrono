@@ -392,7 +392,6 @@
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
-#![allow(trivially_copy_pass_by_ref)]
 
 // The explicit 'static lifetimes are still needed for rustc 1.13-16
 // backward compatibility, and this appeases clippy. If minimum rustc
@@ -401,7 +400,14 @@
 //
 // Similarly, redundant_field_names lints on not using the
 // field-init-shorthand, which was stabilized in rust 1.17.
-#![cfg_attr(feature = "cargo-clippy", allow(const_static_lifetime, redundant_field_names))]
+//
+// Changing trivially_copy_pass_by_ref would require an incompatible version
+// bump.
+#![cfg_attr(feature = "cargo-clippy", allow(
+    const_static_lifetime,
+    redundant_field_names,
+    trivially_copy_pass_by_ref,
+))]
 
 #[cfg(feature="clock")]
 extern crate time as oldtime;
