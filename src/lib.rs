@@ -884,7 +884,16 @@ pub trait Datelike: Sized {
     /// Returns `None` when the resulting value would be invalid.
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self>;
 
-    /// Returns the number of days since January 1, 1 (Day 1) in the proleptic Gregorian calendar.
+    /// Returns the number of days since January 1, Year 1 (aka Day 1) in the
+    /// proleptic Gregorian calendar.
+    ///
+    /// # Example:
+    ///
+    /// ~~~
+    /// use chrono::{NaiveDate, Datelike};
+    /// assert_eq!(NaiveDate::from_ymd(1970, 1, 1).num_days_from_ce(), 719163);
+    /// assert_eq!(NaiveDate::from_ymd(0, 1, 1).num_days_from_ce(), -365);
+    /// ~~~
     fn num_days_from_ce(&self) -> i32 {
         // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
         let mut year = self.year() - 1;

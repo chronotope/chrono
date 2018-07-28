@@ -475,7 +475,7 @@ mod tests {
     use Weekday;
     use super::{Of, Mdf};
     use super::{YearFlags, A, B, C, D, E, F, G, AG, BA, CB, DC, ED, FE, GF};
-    use num_iter::range_inclusive;
+    use self::num_iter::range_inclusive;
     use std::u32;
 
     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
