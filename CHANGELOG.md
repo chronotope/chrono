@@ -8,14 +8,14 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
-## 0.4.5 (unreleased)
+## 0.4.5
 
 ### Features
 
 * Added several more serde deserialization helpers (@novacrazy #258)
 * Enabled all features on the playground (@davidtwco #267)
-* Improved docs (@storyfeet #261)
 * Derive `Hash` on `FixedOffset` (@LuoZijun #254)
+* Improved docs (@storyfeet #261, @quodlibetor #252)
 
 ## 0.4.4
 
