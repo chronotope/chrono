@@ -74,7 +74,7 @@ use chrono::prelude::*;
 ### Duration
 
 Chrono currently uses
-the [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html) type
+the [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type
 from the `time` crate to represent the magnitude of a time span.
 Since this has the same name to the newer, standard type for duration,
 the reference will refer this type as `OldDuration`.
@@ -86,9 +86,9 @@ Chrono does not yet natively support
 the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
 but it will be supported in the future.
 Meanwhile you can convert between two types with
-[`Duration::from_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.from_std)
+[`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
 and
-[`Duration::to_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.to_std)
+[`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
 methods.
 
 ### Date and Time
