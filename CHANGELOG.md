@@ -8,6 +8,12 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechnical changes will be omitted from the following list.
 
+## Unreleased
+
+### Features
+
+* Added `NaiveDate::from_ymwd` for getting eg. the 2nd Friday of March 2017.
+
 ## 0.4.5
 
 ### Features

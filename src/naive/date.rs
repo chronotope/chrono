@@ -407,6 +407,39 @@ impl NaiveDate {
                            Of::new(ordinal, flags))
     }
 
+    /// Makes a new `NaiveDate` by counting weeks from the beginning of the given month.  For
+    /// instance, if you want the 2nd Friday of March 2017 you would use
+    /// `NaiveDate::from_ymwd(2017, 3, WeekDay::Fri, 2)`.  This corresponds to March 10th.
+    ///
+    /// # Panics
+    ///
+    /// The resulting `NaiveDate` is guaranteed to be in `month`.  If `n` is larger than the number
+    /// of `weekday` in `month` (eg. the 6th Friday of March 2017) then this function will panic.
+    ///
+    /// `n` is 1-indexed.  Passing `n=0` will cause a panic.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let from_ymwd = NaiveDate::from_ymwd;
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// assert_eq!(from_ymwd(2018, 8, Weekday::Wed, 1), from_ymd(2018, 8, 1));
+    /// assert_eq!(from_ymwd(2018, 8, Weekday::Fri, 1), from_ymd(2018, 8, 3));
+    /// assert_eq!(from_ymwd(2018, 8, Weekday::Tue, 2), from_ymd(2018, 8, 14));
+    /// assert_eq!(from_ymwd(2018, 8, Weekday::Fri, 4), from_ymd(2018, 8, 24));
+    /// assert_eq!(from_ymwd(2018, 8, Weekday::Fri, 5), from_ymd(2018, 8, 31));
+    /// ~~~~
+    pub fn from_ymwd(year: i32, month: u32, weekday: Weekday, n: u8) -> NaiveDate {
+        assert!(n > 0, "NaiveDate::from_ymwd is 1-indexed");
+        let first = NaiveDate::from_ymd(year, month, 1).weekday();
+        let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
+        let day = (u32::from(n) - 1) * 7 + first_to_dow + 1;
+        NaiveDate::from_ymd(year, month, day)
+    }
+
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
     /// See the [`format::strftime` module](../format/strftime/index.html)
     /// on the supported escape sequences.
@@ -1821,6 +1854,23 @@ mod tests {
         assert_eq!(from_ndays_from_ce(MIN_DATE.num_days_from_ce() - 1), None);
         assert_eq!(from_ndays_from_ce(MAX_DATE.num_days_from_ce()), Some(MAX_DATE));
         assert_eq!(from_ndays_from_ce(MAX_DATE.num_days_from_ce() + 1), None);
+    }
+
+    #[test]
+    fn test_date_from_ymwd() {
+        let ymwd = |y,m,w,n| NaiveDate::from_ymwd(y,m,w,n);
+        assert_eq!(ymwd(2018, 8, Weekday::Wed, 1), NaiveDate::from_ymd(2018, 8, 1));
+        assert_eq!(ymwd(2018, 8, Weekday::Thu, 1), NaiveDate::from_ymd(2018, 8, 2));
+        assert_eq!(ymwd(2018, 8, Weekday::Sun, 1), NaiveDate::from_ymd(2018, 8, 5));
+        assert_eq!(ymwd(2018, 8, Weekday::Mon, 1), NaiveDate::from_ymd(2018, 8, 6));
+        assert_eq!(ymwd(2018, 8, Weekday::Tue, 1), NaiveDate::from_ymd(2018, 8, 7));
+        assert_eq!(ymwd(2018, 8, Weekday::Wed, 2), NaiveDate::from_ymd(2018, 8, 8));
+        assert_eq!(ymwd(2018, 8, Weekday::Sun, 2), NaiveDate::from_ymd(2018, 8, 12));
+        assert_eq!(ymwd(2018, 8, Weekday::Thu, 3), NaiveDate::from_ymd(2018, 8, 16));
+        assert_eq!(ymwd(2018, 8, Weekday::Thu, 4), NaiveDate::from_ymd(2018, 8, 23));
+        assert_eq!(ymwd(2018, 8, Weekday::Thu, 5), NaiveDate::from_ymd(2018, 8, 30));
+        assert_eq!(ymwd(2018, 8, Weekday::Fri, 5), NaiveDate::from_ymd(2018, 8, 31));
+        // assert_eq!(ymwd(2018, 8, Weekday::Sat, 5), NaiveDate::from_ymd(2018, 9, 1));
     }
 
     #[test]
