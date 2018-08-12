@@ -235,6 +235,43 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 }
 
+impl From<DateTime<Utc>> for DateTime<FixedOffset> {
+    fn from(src: DateTime<Utc>) -> Self {
+        src.with_timezone(&FixedOffset::east(0))
+    }
+}
+
+impl From<DateTime<Utc>> for DateTime<Local> {
+    fn from(src: DateTime<Utc>) -> Self {
+        src.with_timezone(&Local)
+    }
+}
+
+impl From<DateTime<FixedOffset>> for DateTime<Utc> {
+    fn from(src: DateTime<FixedOffset>) -> Self {
+        src.with_timezone(&Utc)
+    }
+}
+
+impl From<DateTime<FixedOffset>> for DateTime<Local> {
+    fn from(src: DateTime<FixedOffset>) -> Self {
+        src.with_timezone(&Local)
+    }
+}
+
+impl From<DateTime<Local>> for DateTime<Utc> {
+    fn from(src: DateTime<Local>) -> Self {
+        src.with_timezone(&Utc)
+    }
+}
+
+impl From<DateTime<Local>> for DateTime<FixedOffset> {
+    fn from(src: DateTime<Local>) -> Self {
+        // todo: return in actual current local offset Tz
+        src.with_timezone(&FixedOffset::east(0))
+    }
+}
+
 /// Maps the local datetime to other datetime with given conversion function.
 fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz>>
         where F: FnMut(NaiveDateTime) -> Option<NaiveDateTime> {
