@@ -12,7 +12,7 @@ Versions with only mechnical changes will be omitted from the following list.
 
 ### Features
 
-* Added `NaiveDate::from_ymwd` for getting eg. the 2nd Friday of March 2017.
+* Added `NaiveDate::from_ymwd{,_opt}` for getting eg. the 2nd Friday of March 2017.
 
 ## 0.4.5
 
