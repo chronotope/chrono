@@ -21,7 +21,7 @@ env:
   global:
     - LD_LIBRARY_PATH: /usr/local/lib
     - CLIPPY: n
-script: ./.travis.sh
+script: ./ci/travis.sh
 notifications:
   email: false
   irc:
