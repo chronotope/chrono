@@ -1,9 +1,8 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-//! # Chrono 0.4.0
+//! # Chrono: Date and Time for Rust
 //!
-//! Date and time handling for Rust.
 //! It aims to be a feature-complete superset of
 //! the [time](https://github.com/rust-lang-deprecated/time) library.
 //! In particular,
@@ -32,20 +31,13 @@
 //! chrono = "0.4"
 //! ```
 //!
-//! Or, if you want [Serde](https://github.com/serde-rs/serde) or
-//! [rustc-serialize](https://github.com/rust-lang-nursery/rustc-serialize) support,
-//! include the features like this:
+//! Or, if you want [Serde](https://github.com/serde-rs/serde) include the
+//! feature like this:
 //!
 //! ```toml
 //! [dependencies]
-//! chrono = { version = "0.4", features = ["serde", "rustc-serialize"] }
+//! chrono = { version = "0.4", features = ["serde"] }
 //! ```
-//!
-//! > Note that Chrono's support for rustc-serialize is now considered deprecated.
-//! Starting from 0.4.0 there is no further guarantee that
-//! the features available in Serde will be also available to rustc-serialize,
-//! and the support can be removed in any future major version.
-//! **Rustc-serialize users are strongly recommended to migrate to Serde.**
 //!
 //! Then put this in your crate root:
 //!
@@ -65,7 +57,7 @@
 //! ### Duration
 //!
 //! Chrono currently uses
-//! the [`time::Duration`](https://doc.rust-lang.org/time/time/struct.Duration.html) type
+//! the [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type
 //! from the `time` crate to represent the magnitude of a time span.
 //! Since this has the same name to the newer, standard type for duration,
 //! the reference will refer this type as `OldDuration`.
@@ -74,12 +66,12 @@
 //! months.
 //!
 //! Chrono does not yet natively support
-//! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
+//! the standard [`Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type,
 //! but it will be supported in the future.
 //! Meanwhile you can convert between two types with
-//! [`Duration::from_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.from_std)
+//! [`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
 //! and
-//! [`Duration::to_std`](https://doc.rust-lang.org/time/time/struct.Duration.html#method.to_std)
+//! [`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
 //! methods.
 //!
 //! ### Date and Time
@@ -232,6 +224,10 @@
 //! assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
 //! assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
 //! assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
+//!
+//! // Note that milli/nanoseconds are only printed if they are non-zero
+//! let dt_nano = Utc.ymd(2014, 11, 28).and_hms_nano(12, 0, 9, 1);
+//! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! ```
 //!
 //! Parsing can be done with three methods:
@@ -387,7 +383,7 @@
 //! Advanced time zone handling is not yet supported.
 //! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
 
-#![doc(html_root_url = "https://docs.rs/chrono/0.4.0/")]
+#![doc(html_root_url = "https://docs.rs/chrono/latest/")]
 
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]

@@ -47,6 +47,12 @@ build_and_test() {
   TZ=UTC0 channel test -v --no-default-features --features serde --lib
   channel build -v --no-default-features --features serde,rustc-serialize
   TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
+
+  if [[ "$CHANNEL" == stable ]]; then
+      if [[ -n "$TRAVIS" ]] ; then
+          check_readme
+      fi
+  fi
 }
 
 build_only() {
@@ -67,6 +73,11 @@ run_clippy() {
     fi
 
     cargo clippy --features 'serde bincode rustc-serialize' -- -Dclippy
+}
+
+check_readme() {
+    make readme
+    (set -x; git diff --exit-code -- README.md) ; echo $?
 }
 
 rustc --version

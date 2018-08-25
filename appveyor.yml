@@ -18,4 +18,4 @@ install:
 build: false
 
 test_script:
-  - sh -c 'PATH=`rustc --print sysroot`/bin:$PATH ./.travis.sh'
+  - sh -c 'PATH=`rustc --print sysroot`/bin:$PATH ./ci/travis.sh'
