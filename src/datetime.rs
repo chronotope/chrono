@@ -235,39 +235,67 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 }
 
+/// Convert a `DateTime<Utc>` instance into a `DateTime<FixedOffset>` instance.
 impl From<DateTime<Utc>> for DateTime<FixedOffset> {
+    /// Convert this `DateTime<Utc>` instance into a `DateTime<FixedOffset>` instance.
+    ///
+    /// Conversion is done via [`DateTime::with_timezone`]. Note that the converted value returned by
+    /// this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Utc>) -> Self {
         src.with_timezone(&FixedOffset::east(0))
     }
 }
 
+/// Convert a `DateTime<Utc>` instance into a `DateTime<Local>` instance.
 impl From<DateTime<Utc>> for DateTime<Local> {
+    /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
+    ///
+    /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in timezones.
     fn from(src: DateTime<Utc>) -> Self {
         src.with_timezone(&Local)
     }
 }
 
+/// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Utc>` instance.
 impl From<DateTime<FixedOffset>> for DateTime<Utc> {
+    /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Utc>` instance.
+    ///
+    /// Conversion is performed via [`DateTime::with_timezone`], accounting for the timezone
+    /// difference.
     fn from(src: DateTime<FixedOffset>) -> Self {
         src.with_timezone(&Utc)
     }
 }
 
+/// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
 impl From<DateTime<FixedOffset>> for DateTime<Local> {
+    /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
+    ///
+    /// Conversion is performed via [`DateTime::with_timezone`]. Returns the equivalent value in local
+    /// time.
     fn from(src: DateTime<FixedOffset>) -> Self {
         src.with_timezone(&Local)
     }
 }
 
+/// Convert a `DateTime<Local>` instance into a `DateTime<Utc>` instance.
 impl From<DateTime<Local>> for DateTime<Utc> {
+    /// Convert this `DateTime<Local>` instance into a `DateTime<Utc>` instance.
+    ///
+    /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in
+    /// timezones.
     fn from(src: DateTime<Local>) -> Self {
         src.with_timezone(&Utc)
     }
 }
 
+/// Convert a `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
+    /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
+    ///
+    /// Conversion is performed via [`DateTime::with_timezone`]. Note that the converted value returned
+    /// by this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Local>) -> Self {
-        // todo: return in actual current local offset Tz
         src.with_timezone(&FixedOffset::east(0))
     }
 }
