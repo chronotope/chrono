@@ -681,6 +681,14 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     }
 }
 
+#[test]
+fn test_auto_conversion() {
+    let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
+    let cdt_dt = FixedOffset::west(5 * 60 * 60).ymd(2018, 9, 5).and_hms(18, 58, 0);
+    let utc_dt2: DateTime<Utc> = cdt_dt.into();
+    assert_eq!(utc_dt, utc_dt2);
+}
+
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
     where FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
