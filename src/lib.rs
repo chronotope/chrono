@@ -66,7 +66,7 @@
 //! months.
 //!
 //! Chrono does not yet natively support
-//! the standard [`Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type,
+//! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
 //! but it will be supported in the future.
 //! Meanwhile you can convert between two types with
 //! [`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
