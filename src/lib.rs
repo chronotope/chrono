@@ -451,7 +451,7 @@ mod div;
 mod oldtime;
 pub mod offset;
 pub mod naive {
-    //! Date and time types which do not concern about the timezones.
+    //! Date and time types unconcerned with timezones.
     //!
     //! They are primarily building blocks for other types
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
