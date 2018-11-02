@@ -412,7 +412,7 @@ extern crate std as alloc;
 // These are required by the `time` module:
 #[cfg(all(feature="clock", target_os = "redox"))]
 extern crate syscall;
-#[cfg(all(feature="clock", unix))]
+#[cfg(unix)]
 extern crate libc;
 #[cfg(all(feature="clock", windows))]
 extern crate winapi;
@@ -442,16 +442,12 @@ extern crate test;
 #[cfg(test)]
 doctest!("../README.md");
 
-#[cfg(feature="clock")]
-mod time;
 
-#[cfg(feature="clock")]
-use time as oldtime;
-#[cfg(feature="clock")]
-pub use time::{PreciseTime, SteadyTime};
+pub mod time;
+pub use time::{Duration, PreciseTime, SteadyTime};
 
+pub use time as oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
 
 #[cfg(feature="clock")]
 #[doc(no_inline)] pub use offset::Local;
@@ -483,8 +479,6 @@ macro_rules! try_opt {
 }
 
 mod div;
-#[cfg(not(feature="clock"))]
-mod oldtime;
 pub mod offset;
 pub mod naive {
     //! Date and time types unconcerned with timezones.

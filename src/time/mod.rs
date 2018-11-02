@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 // Copyright 2012-2013 The Rust Project Developers. See the COPYRIGHT
 // file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
@@ -632,7 +633,7 @@ pub fn strftime(format: &str, tm: &Tm) -> Result<String, ParseError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::time::sys;
+    use ::time::sys;
 
     use super::{Timespec, get_time, precise_time_ns, precise_time_s,
                 at_utc, at, strptime, PreciseTime, SteadyTime, ParseError, Duration};
@@ -1214,7 +1215,7 @@ mod tests {
 
     #[test]
     fn test_time_sub() {
-        let a = crate::time::now();
+        let a = ::time::now();
         let b = at(a.to_timespec() + Duration::seconds(5));
         let c = b - a;
         assert_eq!(c.num_nanoseconds(), Some(super::NSEC_PER_SEC as i64 * 5));

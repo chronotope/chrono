@@ -7,7 +7,7 @@ pub use self::inner::*;
     target_os = "redox",
 ))]
 mod common {
-    use crate::time::Tm;
+    use time::Tm;
 
     pub fn time_to_tm(ts: i64, tm: &mut Tm) {
         let leapyear = |year| -> bool {
@@ -72,7 +72,7 @@ mod common {
 #[cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))]
 mod inner {
     use std::ops::{Add, Sub};
-    use crate::time::Tm;
+    use time::Tm;
     use Duration;
     use super::common::{time_to_tm, tm_to_time};
 
@@ -140,7 +140,7 @@ mod inner {
     use std::ops::{Add, Sub};
     use syscall;
     use super::common::{time_to_tm, tm_to_time};
-    use crate::time::NSEC_PER_SEC;
+    use time::NSEC_PER_SEC;
 
     use Duration;
     use Tm;
@@ -276,7 +276,7 @@ mod inner {
     use libc::{self, time_t};
     use std::mem;
     use std::io;
-    use crate::time::Tm;
+    use time::Tm;
 
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     pub use self::mac::*;
@@ -469,7 +469,7 @@ mod inner {
     pub fn set_los_angeles_time_zone() -> TzReset {
         use std::env;
         env::set_var("TZ", "America/Los_Angeles");
-        crate::time::tzset();
+        ::time::tzset();
         TzReset
     }
 
@@ -477,7 +477,7 @@ mod inner {
     pub fn set_london_with_dst_time_zone() -> TzReset {
         use std::env;
         env::set_var("TZ", "Europe/London");
-        crate::time::tzset();
+        ::time::tzset();
         TzReset
     }
 
@@ -487,7 +487,7 @@ mod inner {
         use std::cmp::Ordering;
         use std::ops::{Add, Sub};
         use libc;
-        use crate::time::NSEC_PER_SEC;
+        use time::NSEC_PER_SEC;
 
         use Duration;
 
