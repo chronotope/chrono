@@ -158,9 +158,8 @@
 //! The following illustrates most supported operations to the date and time:
 //!
 //! ```rust
-//! # extern crate chrono; extern crate time; fn main() {
-//! use chrono::prelude::*;
-//! use time::Duration;
+//! # extern crate chrono; fn main() {
+//! use chrono::{prelude::*, Duration};
 //!
 //! # /* we intentionally fake the datetime...
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
@@ -405,14 +404,34 @@
     trivially_copy_pass_by_ref,
 ))]
 
-#[cfg(feature="clock")]
-extern crate time as oldtime;
+
+// These are required by the `time` module:
+#[cfg(all(feature="clock", target_os = "redox"))]
+extern crate syscall;
+#[cfg(all(feature="clock", unix))]
+extern crate libc;
+#[cfg(all(feature="clock", windows))]
+extern crate winapi;
+#[cfg(feature = "rustc-serialize")]
+extern crate rustc_serialize;
+#[cfg(test)]
+#[macro_use]
+extern crate log;
+
 extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
+
+#[cfg(feature="clock")]
+mod time;
+
+#[cfg(feature="clock")]
+use time as oldtime;
+#[cfg(feature="clock")]
+pub use time::{PreciseTime, SteadyTime};
 
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;

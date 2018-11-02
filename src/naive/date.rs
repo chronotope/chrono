@@ -788,10 +788,9 @@ impl NaiveDate {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveDate;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{NaiveDate, Duration};
     /// use chrono::naive::MAX_DATE;
-    /// use time::Duration;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.checked_add_signed(Duration::days(40)),
@@ -824,10 +823,9 @@ impl NaiveDate {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveDate;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{NaiveDate, Duration};
     /// use chrono::naive::MIN_DATE;
-    /// use time::Duration;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.checked_sub_signed(Duration::days(40)),
@@ -862,9 +860,8 @@ impl NaiveDate {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{NaiveDate, Duration};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     /// let since = NaiveDate::signed_duration_since;
@@ -1311,9 +1308,8 @@ impl Datelike for NaiveDate {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveDate;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{NaiveDate, Duration};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1353,9 +1349,8 @@ impl AddAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveDate;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{NaiveDate, Duration};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1387,7 +1382,7 @@ impl SubAssign<OldDuration> for NaiveDate {
 
 /// Subtracts another `NaiveDate` from the current date.
 /// Returns a `Duration` of integral numbers.
-/// 
+///
 /// This does not overflow or underflow at all,
 /// as all possible output fits in the range of `Duration`.
 ///
@@ -1397,9 +1392,8 @@ impl SubAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveDate;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{NaiveDate, Duration};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1629,7 +1623,7 @@ mod serde {
     impl<'de> de::Visitor<'de> for NaiveDateVisitor {
         type Value = NaiveDate;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
         {
             write!(formatter, "a formatted date string")
         }
@@ -2118,4 +2112,3 @@ mod tests {
                    "2009,09,01,00,53");
     }
 }
-
