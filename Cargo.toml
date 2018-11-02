@@ -27,12 +27,11 @@ name = "chrono"
 default = ["clock", "std"]
 alloc = []
 std = []
-clock = ["time", "std"]
+clock = ["std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 __internal_bench = []
 
 [dependencies]
-time = { version = "0.1.39", optional = true }
 num-integer = { version = "0.1.36", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
@@ -41,6 +40,19 @@ serde = { version = "1.0.99", default-features = false, optional = true }
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
+
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.1"
+
+[target.'cfg(target_os = "redox")'.dependencies]
+redox_syscall = "0.1"
+libc = "0.2.1"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "ntdef", "profileapi", "sysinfoapi", "timezoneapi"] }
+libc = "0.2.1"
+log = "0.4"
 
 [dev-dependencies]
 serde_json = { version = "1", default-features = false }

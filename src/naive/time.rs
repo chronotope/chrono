@@ -508,9 +508,8 @@ impl NaiveTime {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveTime;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{NaiveTime, Duration};
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
@@ -594,9 +593,8 @@ impl NaiveTime {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveTime;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{NaiveTime, Duration};
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
@@ -627,9 +625,8 @@ impl NaiveTime {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveTime;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{NaiveTime, Duration};
     ///
     /// let from_hmsm = NaiveTime::from_hms_milli;
     /// let since = NaiveTime::signed_duration_since;
@@ -657,9 +654,8 @@ impl NaiveTime {
     /// there were no other leap seconds happened.
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// # use chrono::NaiveTime;
-    /// # use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// # use chrono::{NaiveTime, Duration};
     /// # let from_hmsm = NaiveTime::from_hms_milli;
     /// # let since = NaiveTime::signed_duration_since;
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(3, 0, 59, 0)),
@@ -1006,9 +1002,8 @@ impl hash::Hash for NaiveTime {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveTime;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{NaiveTime, Duration};
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -1026,9 +1021,8 @@ impl hash::Hash for NaiveTime {
 /// The addition wraps around.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveTime;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{NaiveTime, Duration};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(22*60*60), from_hmsm(1, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(-8*60*60), from_hmsm(19, 5, 7, 0));
@@ -1039,9 +1033,8 @@ impl hash::Hash for NaiveTime {
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveTime;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{NaiveTime, Duration};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap + Duration::zero(),             from_hmsm(3, 5, 59, 1_300));
@@ -1081,9 +1074,8 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveTime;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{NaiveTime, Duration};
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -1099,9 +1091,8 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// The subtraction wraps around.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveTime;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{NaiveTime, Duration};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::days(800),        from_hmsm(3, 5, 7, 0));
@@ -1111,9 +1102,8 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveTime;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{NaiveTime, Duration};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap - Duration::zero(),            from_hmsm(3, 5, 59, 1_300));
@@ -1155,9 +1145,8 @@ impl SubAssign<OldDuration> for NaiveTime {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveTime;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{NaiveTime, Duration};
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -1177,9 +1166,8 @@ impl SubAssign<OldDuration> for NaiveTime {
 /// there were no other leap seconds happened.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveTime;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{NaiveTime, Duration};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), Duration::seconds(1));
 /// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0),
@@ -1736,4 +1724,3 @@ mod tests {
                    "23:59:60");
     }
 }
-
