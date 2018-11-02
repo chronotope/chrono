@@ -73,8 +73,8 @@ use chrono::prelude::*;
 ### Duration
 
 Chrono currently uses
-the [`Duration`](https://docs.rs/chrono/struct.Duration.html) type
-in the `time` module to represent the magnitude of a time span.
+the [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type
+from the `time` crate to represent the magnitude of a time span.
 Since this has the same name to the newer, standard type for duration,
 the reference will refer this type as `OldDuration`.
 Note that this is an "accurate" duration represented as seconds and
@@ -98,9 +98,9 @@ type to represent a date and a time in a timezone.
 
 For more abstract moment-in-time tracking such as internal timekeeping
 that is unconcerned with timezones, consider
-[`SystemTime`](https://doc.rust-lang.org/std/time/struct.SystemTime.html),
+[`time::SystemTime`](https://doc.rust-lang.org/std/time/struct.SystemTime.html),
 which tracks your system clock, or
-[`Instant`](https://doc.rust-lang.org/std/time/struct.Instant.html), which
+[`time::Instant`](https://doc.rust-lang.org/std/time/struct.Instant.html), which
 is an opaque but monotonically-increasing representation of a moment in time.
 
 `DateTime` is timezone-aware and must be constructed from
@@ -172,8 +172,7 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ```rust
-use chrono::prelude::*;
-use chrono::Duration;
+use chrono::{prelude::*, Duration};
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = Local::now();
@@ -388,3 +387,4 @@ and consequently `Utc.ymd(2014, 1, 30).with_month(2)` returns `None`.
 
 Advanced time zone handling is not yet supported.
 For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
+
