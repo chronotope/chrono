@@ -412,8 +412,6 @@ extern crate syscall;
 extern crate libc;
 #[cfg(all(feature="clock", windows))]
 extern crate winapi;
-#[cfg(feature = "rustc-serialize")]
-extern crate rustc_serialize;
 #[cfg(test)]
 #[macro_use]
 extern crate log;
