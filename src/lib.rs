@@ -414,6 +414,10 @@ extern crate serde as serdelib;
 #[cfg(test)]
 #[macro_use]
 extern crate doc_comment;
+#[cfg(target_arch = "wasm32")]
+extern crate wasm_bindgen;
+#[cfg(target_arch = "wasm32")]
+extern crate js_sys;
 
 #[cfg(test)]
 doctest!("../README.md");
