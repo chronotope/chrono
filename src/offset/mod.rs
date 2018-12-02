@@ -20,10 +20,10 @@
 
 use std::fmt;
 
+use format::{parse, ParseResult, Parsed, StrftimeItems};
+use naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use Weekday;
-use naive::{NaiveDate, NaiveTime, NaiveDateTime};
 use {Date, DateTime};
-use format::{parse, Parsed, ParseResult, StrftimeItems};
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug)]
@@ -41,17 +41,26 @@ pub enum LocalResult<T> {
 impl<T> LocalResult<T> {
     /// Returns `Some` only when the conversion result is unique, or `None` otherwise.
     pub fn single(self) -> Option<T> {
-        match self { LocalResult::Single(t) => Some(t), _ => None }
+        match self {
+            LocalResult::Single(t) => Some(t),
+            _ => None,
+        }
     }
 
     /// Returns `Some` for the earliest possible conversion result, or `None` if none.
     pub fn earliest(self) -> Option<T> {
-        match self { LocalResult::Single(t) | LocalResult::Ambiguous(t,_) => Some(t), _ => None }
+        match self {
+            LocalResult::Single(t) | LocalResult::Ambiguous(t, _) => Some(t),
+            _ => None,
+        }
     }
 
     /// Returns `Some` for the latest possible conversion result, or `None` if none.
     pub fn latest(self) -> Option<T> {
-        match self { LocalResult::Single(t) | LocalResult::Ambiguous(_,t) => Some(t), _ => None }
+        match self {
+            LocalResult::Single(t) | LocalResult::Ambiguous(_, t) => Some(t),
+            _ => None,
+        }
     }
 
     /// Maps a `LocalResult<T>` into `LocalResult<U>` with given function.
@@ -72,8 +81,9 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     #[inline]
     pub fn and_time(self, time: NaiveTime) -> LocalResult<DateTime<Tz>> {
         match self {
-            LocalResult::Single(d) => d.and_time(time)
-                                       .map_or(LocalResult::None, LocalResult::Single),
+            LocalResult::Single(d) => d
+                .and_time(time)
+                .map_or(LocalResult::None, LocalResult::Single),
             _ => LocalResult::None,
         }
     }
@@ -85,8 +95,9 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     #[inline]
     pub fn and_hms_opt(self, hour: u32, min: u32, sec: u32) -> LocalResult<DateTime<Tz>> {
         match self {
-            LocalResult::Single(d) => d.and_hms_opt(hour, min, sec)
-                                       .map_or(LocalResult::None, LocalResult::Single),
+            LocalResult::Single(d) => d
+                .and_hms_opt(hour, min, sec)
+                .map_or(LocalResult::None, LocalResult::Single),
             _ => LocalResult::None,
         }
     }
@@ -97,11 +108,17 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
-    pub fn and_hms_milli_opt(self, hour: u32, min: u32, sec: u32,
-                             milli: u32) -> LocalResult<DateTime<Tz>> {
+    pub fn and_hms_milli_opt(
+        self,
+        hour: u32,
+        min: u32,
+        sec: u32,
+        milli: u32,
+    ) -> LocalResult<DateTime<Tz>> {
         match self {
-            LocalResult::Single(d) => d.and_hms_milli_opt(hour, min, sec, milli)
-                                       .map_or(LocalResult::None, LocalResult::Single),
+            LocalResult::Single(d) => d
+                .and_hms_milli_opt(hour, min, sec, milli)
+                .map_or(LocalResult::None, LocalResult::Single),
             _ => LocalResult::None,
         }
     }
@@ -112,11 +129,17 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
-    pub fn and_hms_micro_opt(self, hour: u32, min: u32, sec: u32,
-                             micro: u32) -> LocalResult<DateTime<Tz>> {
+    pub fn and_hms_micro_opt(
+        self,
+        hour: u32,
+        min: u32,
+        sec: u32,
+        micro: u32,
+    ) -> LocalResult<DateTime<Tz>> {
         match self {
-            LocalResult::Single(d) => d.and_hms_micro_opt(hour, min, sec, micro)
-                                       .map_or(LocalResult::None, LocalResult::Single),
+            LocalResult::Single(d) => d
+                .and_hms_micro_opt(hour, min, sec, micro)
+                .map_or(LocalResult::None, LocalResult::Single),
             _ => LocalResult::None,
         }
     }
@@ -127,15 +150,20 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
-    pub fn and_hms_nano_opt(self, hour: u32, min: u32, sec: u32,
-                            nano: u32) -> LocalResult<DateTime<Tz>> {
+    pub fn and_hms_nano_opt(
+        self,
+        hour: u32,
+        min: u32,
+        sec: u32,
+        nano: u32,
+    ) -> LocalResult<DateTime<Tz>> {
         match self {
-            LocalResult::Single(d) => d.and_hms_nano_opt(hour, min, sec, nano)
-                                       .map_or(LocalResult::None, LocalResult::Single),
+            LocalResult::Single(d) => d
+                .and_hms_nano_opt(hour, min, sec, nano)
+                .map_or(LocalResult::None, LocalResult::Single),
             _ => LocalResult::None,
         }
     }
-
 }
 
 impl<T: fmt::Debug> LocalResult<T> {
@@ -144,7 +172,7 @@ impl<T: fmt::Debug> LocalResult<T> {
         match self {
             LocalResult::None => panic!("No such local time"),
             LocalResult::Single(t) => t,
-            LocalResult::Ambiguous(t1,t2) => {
+            LocalResult::Ambiguous(t1, t2) => {
                 panic!("Ambiguous local time, ranging from {:?} to {:?}", t1, t2)
             }
         }
@@ -345,7 +373,11 @@ pub trait TimeZone: Sized + Clone {
     /// };
     /// ~~~~
     fn timestamp_millis_opt(&self, millis: i64) -> LocalResult<DateTime<Self>> {
-        let (secs, millis) = (millis / 1000, millis % 1000);
+        let (mut secs, mut millis) = (millis / 1000, millis % 1000);
+        if millis < 0 {
+            secs -= 1;
+            millis += 1000;
+        }
         self.timestamp_opt(secs, millis as u32 * 1_000_000)
     }
 
@@ -384,9 +416,8 @@ pub trait TimeZone: Sized + Clone {
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
-        self.offset_from_local_datetime(local).map(|offset| {
-            DateTime::from_utc(*local - offset.fix(), offset)
-        })
+        self.offset_from_local_datetime(local)
+            .map(|offset| DateTime::from_utc(*local - offset.fix(), offset))
     }
 
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
@@ -408,12 +439,31 @@ pub trait TimeZone: Sized + Clone {
     }
 }
 
-mod utc;
 mod fixed;
-#[cfg(feature="clock")]
+#[cfg(feature = "clock")]
 mod local;
+mod utc;
 
-pub use self::utc::Utc;
 pub use self::fixed::FixedOffset;
-#[cfg(feature="clock")]
+#[cfg(feature = "clock")]
 pub use self::local::Local;
+pub use self::utc::Utc;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_negative_millis() {
+        let dt = Utc.timestamp_millis(-1000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
+        let dt = Utc.timestamp_millis(-999);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
+        let dt = Utc.timestamp_millis(-1);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999 UTC");
+        let dt = Utc.timestamp_millis(-60000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
+        let dt = Utc.timestamp_millis(-3600000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
+    }
+}
