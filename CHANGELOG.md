@@ -14,6 +14,7 @@ Versions with only mechanical changes will be omitted from the following list.
 ## 0.4.20 (unreleased)
 
 * Add more formatting documentation and examples.
+* Add support for microseconds timestamps serde serialization/deserialization (#304)
 
 ## 0.4.19
 
