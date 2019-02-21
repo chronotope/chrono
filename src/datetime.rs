@@ -140,6 +140,30 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp_millis()
     }
 
+    /// Returns the number of non-leap-microseconds since January 1, 1970 UTC
+    ///
+    /// Note that this does reduce the number of years that can be represented
+    /// from ~584 Billion to ~584 Thousand. (If this is a problem, please file
+    /// an issue to let me know what domain needs microsecond precision over
+    /// millenia, I'm curious.)
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::Utc;
+    /// use chrono::TimeZone;
+    ///
+    /// let dt = Utc.ymd(1970, 1, 1).and_hms_micro(0, 0, 1, 444);
+    /// assert_eq!(dt.timestamp_micros(), 1_000_444);
+    ///
+    /// let dt = Utc.ymd(2001, 9, 9).and_hms_micro(1, 46, 40, 555);
+    /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
+    /// ~~~~
+    #[inline]
+    pub fn timestamp_micros(&self) -> i64 {
+        self.datetime.timestamp_micros()
+    }
+
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC
     ///
     /// Note that this does reduce the number of years that can be represented
