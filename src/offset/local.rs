@@ -8,9 +8,7 @@ use oldtime;
 use {Datelike, Timelike};
 use naive::{NaiveDate, NaiveTime, NaiveDateTime};
 use {Date, DateTime};
-use super::{TimeZone, LocalResult};
-use super::fixed::FixedOffset;
-use super::offset::Offset;
+use super::{TimeZone, Offset, LocalResult, FixedOffset};
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
