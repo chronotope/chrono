@@ -10,6 +10,7 @@ use naive::{NaiveDate, NaiveTime, NaiveDateTime};
 use {Date, DateTime};
 use super::{TimeZone, LocalResult};
 use super::fixed::FixedOffset;
+use super::offset::Offset;
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
@@ -148,6 +149,12 @@ impl TimeZone for Local {
         tm.tm_nsec = utc.nanosecond() as i32;
 
         tm_to_datetime(tm)
+    }
+}
+
+impl Offset for Local {
+    fn fix(&self) -> FixedOffset {
+        FixedOffset::east(oldtime::at(oldtime::Timespec::new(0, 0)).tm_utcoff)
     }
 }
 
