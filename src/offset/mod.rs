@@ -381,6 +381,28 @@ pub trait TimeZone: Sized + Clone {
         self.timestamp_opt(secs, millis as u32 * 1_000_000)
     }
 
+    /// Makes a new `DateTime` from the number of non-leap nanoseconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
+    ///
+    /// Unlike [`timestamp_millis`](#method.timestamp_millis), this never
+    /// panics.
+    ///
+    /// # Example
+    ///
+    /// ~~~~
+    /// use chrono::{Utc, TimeZone};
+    ///
+    /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
+    /// ~~~~
+    fn timestamp_nanos(&self, nanos: i64) -> DateTime<Self> {
+        let (mut secs, mut nanos) = (nanos / 1_000_000_000, nanos % 1_000_000_000);
+        if nanos < 0 {
+            secs -= 1;
+            nanos += 1_000_000_000;
+        }
+        self.timestamp_opt(secs, nanos as u32).unwrap()
+    }
+
     /// Parses a string with the specified format string and
     /// returns a `DateTime` with the current offset.
     /// See the [`format::strftime` module](../format/strftime/index.html)
@@ -465,5 +487,26 @@ mod tests {
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
         let dt = Utc.timestamp_millis(-3600000);
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
+    }
+
+    #[test]
+    fn test_negative_nanos() {
+        let dt = Utc.timestamp_nanos(-1_000_000_000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
+        let dt = Utc.timestamp_nanos(-999_999_999);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.000000001 UTC");
+        let dt = Utc.timestamp_nanos(-1);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999999999 UTC");
+        let dt = Utc.timestamp_nanos(-60_000_000_000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
+        let dt = Utc.timestamp_nanos(-3_600_000_000_000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
+    }
+
+    #[test]
+    fn test_nanos_never_panics() {
+        Utc.timestamp_nanos(i64::max_value());
+        Utc.timestamp_nanos(i64::default());
+        Utc.timestamp_nanos(i64::min_value());
     }
 }
