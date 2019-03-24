@@ -305,21 +305,33 @@ impl NaiveDateTime {
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
     ///
+    /// # Panics
+    ///
     /// Note also that this does reduce the number of years that can be
-    /// represented from ~584 Billion to ~584. (If this is a problem,
-    /// please file an issue to let me know what domain needs nanosecond
-    /// precision over millenia, I'm curious.)
+    /// represented from ~584 Billion to ~584 years. The dates that can be
+    /// represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
+    ///
+    /// (If this is a problem, please file an issue to let me know what domain
+    /// needs nanosecond precision over millenia, I'm curious.)
     ///
     /// # Example
     ///
     /// ~~~~
-    /// use chrono::NaiveDate;
+    /// use chrono::{NaiveDate, NaiveDateTime};
     ///
     /// let dt = NaiveDate::from_ymd(1970, 1, 1).and_hms_nano(0, 0, 1, 444);
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9).and_hms_nano(1, 46, 40, 555);
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
+    ///
+    /// const A_BILLION: i64 = 1_000_000_000;
+    /// let nanos = dt.timestamp_nanos();
+    /// assert_eq!(nanos, 1_000_000_000_000_000_555);
+    /// assert_eq!(
+    ///     dt,
+    ///     NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    /// );
     /// ~~~~
     #[inline]
     pub fn timestamp_nanos(&self) -> i64 {
@@ -2347,5 +2359,25 @@ mod tests {
         let t = -946684799990000;
         let time = base + Duration::microseconds(t);
         assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
+    }
+
+    #[test]
+    fn test_nanosecond_range() {
+        const A_BILLION: i64 = 1_000_000_000;
+        let maximum = "2262-04-11T23:47:16.854775804";
+        let parsed: NaiveDateTime = maximum.parse().unwrap();
+        let nanos = parsed.timestamp_nanos();
+        assert_eq!(
+            parsed,
+            NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+        );
+
+        let minimum = "1677-09-21T00:12:44.000000000";
+        let parsed: NaiveDateTime = minimum.parse().unwrap();
+        let nanos = parsed.timestamp_nanos();
+        assert_eq!(
+            parsed,
+            NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+        );
     }
 }
