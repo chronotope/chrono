@@ -5,6 +5,8 @@
  * Various scanning routines for the parser.
  */
 
+#![allow(deprecated)]
+
 use Weekday;
 use super::{ParseResult, TOO_SHORT, INVALID, OUT_OF_RANGE};
 
