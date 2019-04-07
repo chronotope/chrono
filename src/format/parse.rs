@@ -4,6 +4,8 @@
 
 //! Date and time parsing routines.
 
+#![allow(deprecated)]
+
 use std::usize;
 
 use Weekday;
