@@ -247,6 +247,7 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
 }
 
 /// Convert a `DateTime<Utc>` instance into a `DateTime<Local>` instance.
+#[cfg(feature="clock")]
 impl From<DateTime<Utc>> for DateTime<Local> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
@@ -268,6 +269,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
 }
 
 /// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
+#[cfg(feature="clock")]
 impl From<DateTime<FixedOffset>> for DateTime<Local> {
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
@@ -279,6 +281,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Local> {
 }
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<Utc>` instance.
+#[cfg(feature="clock")]
 impl From<DateTime<Local>> for DateTime<Utc> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<Utc>` instance.
     ///
@@ -290,6 +293,7 @@ impl From<DateTime<Local>> for DateTime<Utc> {
 }
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
+#[cfg(feature="clock")]
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
     ///
