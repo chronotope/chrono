@@ -6,7 +6,13 @@ This documents all notable changes to [Chrono](https://github.com/chronotope/chr
 Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 
 There were/are numerous minor versions before 1.0 due to the language changes.
-Versions with only mechnical changes will be omitted from the following list.
+Versions with only mechanical changes will be omitted from the following list.
+
+## 0.4.6
+
+## Features
+
+* Add `std::convert::From` conversions between the different timezone formats (@mqudsi #271)
 
 ## 0.4.5
 
