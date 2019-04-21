@@ -26,7 +26,7 @@ use Weekday;
 use {Date, DateTime};
 
 /// The conversion result from the local time to the timezone-aware datetime types.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
 pub enum LocalResult<T> {
     /// Given local time representation is invalid.
     /// This can occur when, for example, the positive timezone transition.
