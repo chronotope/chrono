@@ -158,15 +158,15 @@
 //! The following illustrates most supported operations to the date and time:
 //!
 //! ```rust
-//! # extern crate chrono; extern crate time; fn main() {
+//! # extern crate chrono;
+//! extern crate time;
+//!
+//! # fn main() {
 //! use chrono::prelude::*;
 //! use time::Duration;
 //!
-//! # /* we intentionally fake the datetime...
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
-//! let dt = Local::now();
-//! # */ // up to here. we now define a fixed datetime for the illustrative purpose.
-//! # let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
+//! let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
 //!
 //! // property accessors
 //! assert_eq!((dt.year(), dt.month(), dt.day()), (2014, 11, 28));
@@ -302,10 +302,8 @@
 //! to get the number of additional number of nanoseconds.
 //!
 //! ```rust
-//! # use chrono::DateTime;
-//! # use chrono::Utc;
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::TimeZone;
+//! use chrono::{DateTime, TimeZone, Utc};
 //!
 //! // Construct a datetime from epoch:
 //! let dt = Utc.timestamp(1_500_000_000, 0);
@@ -413,6 +411,12 @@ extern crate num_traits;
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
+#[cfg(test)]
+#[macro_use]
+extern crate doc_comment;
+
+#[cfg(test)]
+doctest!("../README.md");
 
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
