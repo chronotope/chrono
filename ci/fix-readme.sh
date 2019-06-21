@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="$( cargo read-manifest | python -c 'import json, sys; print(json.load(sys.stdin)["version"])')"
+VERSION="$( cargo read-manifest | python -c 'import json, sys; print(json.load(sys.stdin)["version"][:3])')"
 LIB="$1"
 
 # Make the Chrono in the header a link to the docs
