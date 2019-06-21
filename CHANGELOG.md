@@ -8,11 +8,27 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
+## 0.4.7
+
+### Fixes
+
+* Disable libc default features so that CI continues to work on rust 1.13
+* Fix panic on negative inputs to timestamp_millis (@cmars #292)
+* Make `LocalResult` `Copy/Eq/Hash`
+
+### Features
+
+* Add `std::convert::From` conversions between the different timezone formats
+  (@mqudsi #271)
+* Add `timestamp_nanos` methods (@jean-airoldie #308)
+* Documentation improvements
+
 ## 0.4.6
 
-## Features
+### Maintenance
 
-* Add `std::convert::From` conversions between the different timezone formats (@mqudsi #271)
+* Doc improvements -- improve README CI verification, external links
+* winapi upgrade to 0.3
 
 ## 0.4.5
 
