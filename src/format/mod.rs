@@ -350,8 +350,8 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
 
     for item in items {
         match item {
-            Item::Literal(s) | Item::Space(s) => try!(write!(w, "{}", s)),
-            Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => try!(write!(w, "{}", s)),
+            Item::Literal(s) | Item::Space(s) => try!(w.pad(s)),
+            Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => try!(w.pad(s)),
 
             Item::Numeric(spec, pad) => {
                 use self::Numeric::*;
@@ -402,15 +402,15 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10_000) {
                         // non-four-digit years require an explicit sign as per ISO 8601
                         match pad {
-                            Pad::None => try!(write!(w, "{:+}", v)),
-                            Pad::Zero => try!(write!(w, "{:+01$}", v, width + 1)),
-                            Pad::Space => try!(write!(w, "{:+1$}", v, width + 1)),
+                            Pad::None => try!(w.pad(&format!("{:+}", v))),
+                            Pad::Zero => try!(w.pad(&format!("{:+01$}", v, width + 1))),
+                            Pad::Space => try!(w.pad(&format!("{:+1$}", v, width + 1))),
                         }
                     } else {
                         match pad {
-                            Pad::None => try!(write!(w, "{}", v)),
-                            Pad::Zero => try!(write!(w, "{:01$}", v, width)),
-                            Pad::Space => try!(write!(w, "{:1$}", v, width)),
+                            Pad::None => try!(w.pad(&v.to_string())),
+                            Pad::Zero => try!(w.pad(&format!("{:01$}", v, width))),
+                            Pad::Space => try!(w.pad(&format!("{:1$}", v, width))),
                         }
                     }
                 } else {
@@ -429,75 +429,75 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     if !allow_zulu || off != 0 {
                         let (sign, off) = if off < 0 {('-', -off)} else {('+', off)};
                         if use_colon {
-                            write!(w, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
+                            w.pad(&format!("{}{:02}:{:02}", sign, off / 3600, off / 60 % 60))
                         } else {
-                            write!(w, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
+                            w.pad(&format!("{}{:02}{:02}", sign, off / 3600, off / 60 % 60))
                         }
                     } else {
-                        write!(w, "Z")
+                        w.pad("Z")
                     }
                 }
 
                 let ret = match spec {
                     ShortMonthName =>
-                        date.map(|d| write!(w, "{}", SHORT_MONTHS[d.month0() as usize])),
+                        date.map(|d| w.pad(SHORT_MONTHS[d.month0() as usize])),
                     LongMonthName =>
-                        date.map(|d| write!(w, "{}", LONG_MONTHS[d.month0() as usize])),
+                        date.map(|d| w.pad(LONG_MONTHS[d.month0() as usize])),
                     ShortWeekdayName =>
-                        date.map(|d| write!(w, "{}",
+                        date.map(|d| w.pad(
                             SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize])),
                     LongWeekdayName =>
-                        date.map(|d| write!(w, "{}",
+                        date.map(|d| w.pad(
                             LONG_WEEKDAYS[d.weekday().num_days_from_monday() as usize])),
                     LowerAmPm =>
-                        time.map(|t| write!(w, "{}", if t.hour12().0 {"pm"} else {"am"})),
+                        time.map(|t| w.pad(if t.hour12().0 {"pm"} else {"am"})),
                     UpperAmPm =>
-                        time.map(|t| write!(w, "{}", if t.hour12().0 {"PM"} else {"AM"})),
+                        time.map(|t| w.pad(if t.hour12().0 {"PM"} else {"AM"})),
                     Nanosecond =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
                             if nano == 0 {
                                 Ok(())
                             } else if nano % 1_000_000 == 0 {
-                                write!(w, ".{:03}", nano / 1_000_000)
+                                w.pad(&format!(".{:03}", nano / 1_000_000))
                             } else if nano % 1_000 == 0 {
-                                write!(w, ".{:06}", nano / 1_000)
+                                w.pad(&format!(".{:06}", nano / 1_000))
                             } else {
-                                write!(w, ".{:09}", nano)
+                                w.pad(&format!(".{:09}", nano))
                             }
                         }),
                     Nanosecond3 =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            write!(w, ".{:03}", nano / 1_000_000)
+                            w.pad(&format!(".{:03}", nano / 1_000_000))
                         }),
                     Nanosecond6 =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            write!(w, ".{:06}", nano / 1_000)
+                            w.pad(&format!(".{:06}", nano / 1_000))
                         }),
                     Nanosecond9 =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            write!(w, ".{:09}", nano)
+                            w.pad(&format!(".{:09}", nano))
                         }),
                     Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            write!(w, "{:03}", nano / 1_000_000)
+                            w.pad(&format!("{:03}", nano / 1_000_000))
                         }),
                     Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            write!(w, "{:06}", nano / 1_000)
+                            w.pad(&format!("{:06}", nano / 1_000))
                         }),
                     Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) =>
                         time.map(|t| {
                             let nano = t.nanosecond() % 1_000_000_000;
-                            write!(w, "{:09}", nano)
+                            w.pad(&format!("{:09}", nano))
                         }),
                     TimezoneName =>
-                        off.map(|&(ref name, _)| write!(w, "{}", *name)),
+                        off.map(|&(ref name, _)| w.pad(name)),
                     TimezoneOffsetColon =>
                         off.map(|&(_, off)| write_local_minus_utc(w, off, false, true)),
                     TimezoneOffsetColonZ =>
@@ -511,10 +511,10 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                     RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
-                            try!(write!(w, "{}, {:2} {} {:04} {:02}:{:02}:{:02} ",
+                            try!(w.pad(&format!("{}, {:2} {} {:04} {:02}:{:02}:{:02} ",
                                         SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
                                         d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
-                                        t.hour(), t.minute(), sec));
+                                        t.hour(), t.minute(), sec)));
                             Some(write_local_minus_utc(w, off, false, false))
                         } else {
                             None
@@ -523,7 +523,7 @@ pub fn format<'a, I>(w: &mut fmt::Formatter, date: Option<&NaiveDate>, time: Opt
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
-                            try!(write!(w, "{:?}T{:?}", d, t));
+                            try!(w.pad(&format!("{:?}T{:?}", d, t)));
                             Some(write_local_minus_utc(w, off, false, true))
                         } else {
                             None
