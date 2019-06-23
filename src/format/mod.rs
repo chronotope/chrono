@@ -334,13 +334,15 @@ const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
-pub fn format<'a>(
+pub fn format<'a, I>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
-    items: impl Iterator<Item=Item<'a>>,
-) -> fmt::Result {
+    items: I,
+) -> fmt::Result
+    where I: Iterator<Item=Item<'a>>
+{
     // full and abbreviated month and weekday names
     static SHORT_MONTHS: [&'static str; 12] =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
