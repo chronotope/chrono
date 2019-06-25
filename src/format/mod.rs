@@ -553,7 +553,7 @@ pub fn format<'a, I>(
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
                             try!(write!(
                                 result,
-                                "{}, {:2} {} {:04} {:02}:{:02}:{:02} ",
+                                "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
                                 SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
                                 d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
                                 t.hour(), t.minute(), sec
