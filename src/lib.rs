@@ -173,7 +173,7 @@
 //! assert_eq!((dt.month0(), dt.day0()), (10, 27)); // for unfortunate souls
 //! assert_eq!((dt.hour(), dt.minute(), dt.second()), (21, 45, 59));
 //! assert_eq!(dt.weekday(), Weekday::Fri);
-//! assert_eq!(dt.weekday().number_from_monday(), 5); // Mon=1, ..., Sat=7
+//! assert_eq!(dt.weekday().number_from_monday(), 5); // Mon=1, ..., Sun=7
 //! assert_eq!(dt.ordinal(), 332); // the day of year
 //! assert_eq!(dt.num_days_from_ce(), 735565); // the number of days from and including Jan 1, 1
 //!
