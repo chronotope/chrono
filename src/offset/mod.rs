@@ -479,6 +479,12 @@ mod tests {
     fn test_negative_millis() {
         let dt = Utc.timestamp_millis(-1000);
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
+        let dt = Utc.timestamp_millis(-7000);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:53 UTC");
+        let dt = Utc.timestamp_millis(-7001);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:52.999 UTC");
+        let dt = Utc.timestamp_millis(-7003);
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:52.997 UTC");
         let dt = Utc.timestamp_millis(-999);
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
         let dt = Utc.timestamp_millis(-1);
@@ -487,6 +493,20 @@ mod tests {
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
         let dt = Utc.timestamp_millis(-3600000);
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
+
+        for (millis, expected) in &[
+            (-7000, "1969-12-31 23:59:53 UTC"),
+            (-7001, "1969-12-31 23:59:52.999 UTC"),
+            (-7003, "1969-12-31 23:59:52.997 UTC"),
+        ] {
+            match Utc.timestamp_millis_opt(*millis) {
+                LocalResult::Single(dt) => {
+                    assert_eq!(dt.to_string(), *expected);
+                },
+                e => panic!("Got {:?} instead of an okay answer", e),
+            }
+        }
+
     }
 
     #[test]
