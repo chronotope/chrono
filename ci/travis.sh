@@ -94,6 +94,7 @@ check_readme() {
 
 rustc --version
 cargo --version
+node --version
 
 CHANNEL=nightly
 if [ "x${CLIPPY}" = xy ] ; then
