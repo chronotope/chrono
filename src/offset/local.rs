@@ -87,13 +87,13 @@ impl Local {
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "emscripten"))))]
     pub fn now() -> DateTime<Local> {
         tm_to_datetime(oldtime::now())
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))]
     pub fn now() -> DateTime<Local> {
         use super::Utc;
         let now: DateTime<Utc> = super::Utc::now();

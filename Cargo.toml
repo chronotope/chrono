@@ -35,7 +35,8 @@ num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1", optional = true }
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+
+[target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten"), not(cargo_web)))'.dependencies]
 wasm-bindgen = { version = "0.2" }
 js-sys = "0.3" # contains FFI bindings for the JS Date API
 
@@ -46,7 +47,7 @@ bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
 doc-comment = "0.3"
 
-[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+[target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten"), not(cargo_web)))'.dev-dependencies]
 wasm-bindgen-test = "0.2"
 
 [package.metadata.docs.rs]
