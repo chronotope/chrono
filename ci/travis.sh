@@ -48,7 +48,7 @@ build_and_test() {
   channel build -v --no-default-features --features serde,rustc-serialize
   TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
 
-  if [ -n "${TRAVIS}" ]; then
+  if [ -n "${TRAVIS}" ] && [ "${TRAVIS_RUST_VERSION}" != "1.13.0" ]; then
     # wasm tests
     touch tests/wasm.rs # ensure rebuild happens so TZ / NOW take effect
     TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node
