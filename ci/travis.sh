@@ -51,8 +51,8 @@ build_and_test() {
   if [ -n "${TRAVIS}" ]; then
     # wasm tests
     touch tests/wasm.rs # ensure rebuild happens so TZ / NOW take effect
-    TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node
-    touch tests/wasm.rs
+    #TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node
+    #touch tests/wasm.rs
     TZ=EST4 NOW=$(date +%s) wasm-pack test --node
     touch tests/wasm.rs
     TZ=UTC0 NOW=$(date +%s) wasm-pack test --node

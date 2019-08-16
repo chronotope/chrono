@@ -23,8 +23,8 @@ env:
     - CLIPPY: n
 install:
   - source $HOME/.nvm/nvm.sh
-  - nvm install 11
-  - nvm use 11
+  - nvm install 10
+  - nvm use 10
   - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 script: ./ci/travis.sh
 notifications:
