@@ -97,7 +97,10 @@ impl Local {
     pub fn now() -> DateTime<Local> {
         use super::Utc;
         let now: DateTime<Utc> = super::Utc::now();
-        now.with_timezone(&Local)
+
+        // Workaround missing timezone logic in `time` crate
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        DateTime::from_utc(now.naive_utc(), offset)
     }
 }
 
