@@ -414,13 +414,10 @@ extern crate serde as serdelib;
 #[cfg(test)]
 #[macro_use]
 extern crate doc_comment;
-#[cfg(all(target_arch = "wasm32", not(target_os = "emscripten"), not(cargo_web)))]
+#[cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))]
 extern crate wasm_bindgen;
-#[cfg(all(target_arch = "wasm32", not(target_os = "emscripten"), not(cargo_web)))]
+#[cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))]
 extern crate js_sys;
-
-#[cfg(all(target_arch = "wasm32", not(target_os = "emscripten"), cargo_web))]
-compile_error!("Chrono currently does not work for wasm32-unknown-unknown + cargo web");
 
 #[cfg(test)]
 doctest!("../README.md");
