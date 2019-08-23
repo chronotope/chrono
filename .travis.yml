@@ -21,6 +21,11 @@ env:
   global:
     - LD_LIBRARY_PATH: /usr/local/lib
     - CLIPPY: n
+install:
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then source $HOME/.nvm/nvm.sh; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then nvm install 10; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then nvm use 10; fi
+  - if [ "$TRAVIS_RUST_VERSION" != "1.13.0" ]; then curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh; fi
 script: ./ci/travis.sh
 notifications:
   email: false

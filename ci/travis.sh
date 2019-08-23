@@ -48,6 +48,18 @@ build_and_test() {
   channel build -v --no-default-features --features serde,rustc-serialize
   TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
 
+  if [ -n "${TRAVIS}" ] && [ "${TRAVIS_RUST_VERSION}" != "1.13.0" ]; then
+    # wasm tests
+    touch tests/wasm.rs # ensure rebuild happens so TZ / NOW take effect
+    TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node
+    touch tests/wasm.rs
+    TZ=EST4 NOW=$(date +%s) wasm-pack test --node
+    touch tests/wasm.rs
+    TZ=UTC0 NOW=$(date +%s) wasm-pack test --node
+    touch tests/wasm.rs
+    TZ=Asia/Katmandu NOW=$(date +%s) wasm-pack test --node
+  fi
+
   if [[ "$CHANNEL" == stable ]]; then
       if [[ -n "$TRAVIS" ]] ; then
           check_readme
@@ -82,6 +94,7 @@ check_readme() {
 
 rustc --version
 cargo --version
+node --version
 
 CHANNEL=nightly
 if [ "x${CLIPPY}" = xy ] ; then
