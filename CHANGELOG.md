@@ -8,12 +8,18 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## next
+## 0.4.8
 
 ### Fixes
 
 * Add '0' to single-digit days in rfc2822 date format (@wyhaya #323)
 * Correctly pad DelayedFormat (@SamokhinIlya #320)
+
+### Features
+
+* Support `wasm-unknown-unknown` via wasm-bindgen (in addition to
+  emscripten/`wasm-unknown-emscripten`). (finished by @evq in #331, initial
+  work by @jjpe #287)
 
 ## 0.4.7
 
