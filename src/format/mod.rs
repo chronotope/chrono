@@ -15,6 +15,8 @@
 //! currently Chrono supports [one built-in syntax closely resembling
 //! C's `strftime` format](./strftime/index.html).
 
+#![allow(ellipsis_inclusive_range_patterns)]
+
 use std::fmt;
 use std::str::FromStr;
 use std::error::Error;
