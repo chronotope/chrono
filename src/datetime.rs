@@ -202,7 +202,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
         let datetime = try_opt!(self.datetime.checked_add_signed(rhs));
-        Some(DateTime { datetime: datetime, offset: self.offset })
+        let tz = self.timezone();
+        Some(tz.from_utc_datetime(&datetime))
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -211,7 +212,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
         let datetime = try_opt!(self.datetime.checked_sub_signed(rhs));
-        Some(DateTime { datetime: datetime, offset: self.offset })
+        let tz = self.timezone();
+        Some(tz.from_utc_datetime(&datetime))
     }
 
     /// Subtracts another `DateTime` from the current date and time.
