@@ -65,16 +65,14 @@ build_and_test_nonwasm() {
 }
 
 build_and_test_wasm() {
-    channel build --features wasmbind -v
-
     touch tests/wasm.rs # ensure rebuild happens so TZ / NOW take effect
-    TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node
+    TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node -- --features wasmbind
     touch tests/wasm.rs
-    TZ=EST4 NOW=$(date +%s) wasm-pack test --node
+    TZ=EST4 NOW=$(date +%s) wasm-pack test --node -- --features wasmbind
     touch tests/wasm.rs
-    TZ=UTC0 NOW=$(date +%s) wasm-pack test --node
+    TZ=UTC0 NOW=$(date +%s) wasm-pack test --node -- --features wasmbind
     touch tests/wasm.rs
-    TZ=Asia/Katmandu NOW=$(date +%s) wasm-pack test --node
+    TZ=Asia/Katmandu NOW=$(date +%s) wasm-pack test --node -- --features wasmbind
 }
 
 build_only() {
