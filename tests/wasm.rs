@@ -6,8 +6,6 @@ mod test {
     use self::chrono::prelude::*;
     use self::wasm_bindgen_test::*;
 
-    use std::env;
-
     #[wasm_bindgen_test]
     fn now() {
         let utc: DateTime<Utc> = Utc::now();
