@@ -29,6 +29,21 @@ build_and_test() {
   # also vary the local time zone to (hopefully) catch tz-dependent bugs
   # also avoid doc-testing multiple times---it takes a lot and rarely helps
   cargo clean
+
+  if [ "${WASMBIND}" != "y" ]; then
+      build_and_test_nonwasm
+  else
+      build_and_test_wasm
+  fi
+
+  if [[ "$CHANNEL" == stable ]]; then
+      if [[ -n "$TRAVIS" ]] ; then
+          check_readme
+      fi
+  fi
+}
+
+build_and_test_nonwasm() {
   channel build -v
   TZ=ACST-9:30 channel test -v --lib
   channel build -v --features rustc-serialize
@@ -47,9 +62,11 @@ build_and_test() {
   TZ=UTC0 channel test -v --no-default-features --features serde --lib
   channel build -v --no-default-features --features serde,rustc-serialize
   TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
+}
 
-  if [ -n "${TRAVIS}" ] && [ "${TRAVIS_RUST_VERSION}" != "1.13.0" ]; then
-    # wasm tests
+build_and_test_wasm() {
+    channel build --features wasmbind -v
+
     touch tests/wasm.rs # ensure rebuild happens so TZ / NOW take effect
     TZ=ACST-9:30 NOW=$(date +%s) wasm-pack test --node
     touch tests/wasm.rs
@@ -58,13 +75,6 @@ build_and_test() {
     TZ=UTC0 NOW=$(date +%s) wasm-pack test --node
     touch tests/wasm.rs
     TZ=Asia/Katmandu NOW=$(date +%s) wasm-pack test --node
-  fi
-
-  if [[ "$CHANNEL" == stable ]]; then
-      if [[ -n "$TRAVIS" ]] ; then
-          check_readme
-      fi
-  fi
 }
 
 build_only() {

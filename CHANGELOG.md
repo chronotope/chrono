@@ -8,6 +8,15 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
+## 0.4.9
+
+### Fixes
+
+* Make Datetime arithmatic adjust their offsets after discovering their new
+  timestamps (@quodlibetor #337)
+* Put wasm-bindgen related code and dependencies behind a `wasmbind` feature
+  gate. (@quodlibetor #335)
+
 ## 0.4.8
 
 ### Fixes

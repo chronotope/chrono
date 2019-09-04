@@ -26,6 +26,7 @@ name = "chrono"
 [features]
 default = ["clock"]
 clock = ["time"]
+wasmbind = ["wasm-bindgen", "js-sys"]
 
 [dependencies]
 libc = { version = "0.2", default-features = false }
@@ -35,10 +36,9 @@ num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1", optional = true }
 
-
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies]
-wasm-bindgen = { version = "0.2" }
-js-sys = "0.3" # contains FFI bindings for the JS Date API
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
 
 [dev-dependencies]
 serde_json = { version = "1" }

@@ -1,4 +1,4 @@
-#[cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))]
+#[cfg(all(target_arch = "wasm32", feature = "wasmbind"))]
 mod test {
     extern crate chrono;
     extern crate wasm_bindgen_test;
