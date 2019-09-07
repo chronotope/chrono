@@ -3,7 +3,7 @@
 
 //! The UTC (Coordinated Universal Time) time zone.
 
-use std::fmt;
+use core::fmt;
 #[cfg(all(feature="clock", not(all(target_arch = "wasm32", feature = "wasmbind"))))]
 use oldtime;
 

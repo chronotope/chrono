@@ -17,9 +17,13 @@
 
 #![allow(ellipsis_inclusive_range_patterns)]
 
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
+#[cfg(any(feature = "std", test))]
 use std::error::Error;
+use alloc::boxed::Box;
+#[cfg(not(any(feature = "std", test)))]
+use alloc::string::{String, ToString};
 
 use {Datelike, Timelike, Weekday, ParseWeekdayError};
 use div::{div_floor, mod_floor};
@@ -30,7 +34,7 @@ pub use self::strftime::StrftimeItems;
 pub use self::parsed::Parsed;
 pub use self::parse::parse;
 
-/// An unhabitated type used for `InternalNumeric` and `InternalFixed` below.
+/// An uninhabited type used for `InternalNumeric` and `InternalFixed` below.
 #[derive(Clone, PartialEq, Eq)]
 enum Void {}
 
@@ -55,7 +59,7 @@ pub enum Pad {
 ///
 /// The **parsing width** is the maximal width to be scanned.
 /// The parser only tries to consume from one to given number of digits (greedily).
-/// It also trims the preceding whitespaces if any.
+/// It also trims the preceding whitespace if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -185,13 +189,13 @@ pub enum Fixed {
     TimezoneName,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `+00:00`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces.
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces,
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
     /// and `Z` can be either in upper case or in lower case.
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
@@ -305,13 +309,7 @@ enum ParseErrorKind {
 /// Same to `Result<T, ParseError>`.
 pub type ParseResult<T> = Result<T, ParseError>;
 
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl Error for ParseError {
+impl ParseError {
     fn description(&self) -> &str {
         match self.0 {
             ParseErrorKind::OutOfRange => "input is out of range",
@@ -322,6 +320,19 @@ impl Error for ParseError {
             ParseErrorKind::TooLong => "trailing input",
             ParseErrorKind::BadFormat => "bad or unsupported format string",
         }
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+#[cfg(any(feature = "std", test))]
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        self.description()
     }
 }
 
@@ -356,7 +367,7 @@ pub fn format<'a, I>(
     static LONG_WEEKDAYS: [&'static str; 7] =
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-    use std::fmt::Write;
+    use core::fmt::Write;
     let mut result = String::new();
 
     for item in items {

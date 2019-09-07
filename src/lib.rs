@@ -387,6 +387,8 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
+
 // The explicit 'static lifetimes are still needed for rustc 1.13-16
 // backward compatibility, and this appeases clippy. If minimum rustc
 // becomes 1.17, should be able to remove this, those 'static lifetimes,
@@ -402,6 +404,13 @@
     redundant_field_names,
     trivially_copy_pass_by_ref,
 ))]
+
+#[cfg(not(any(feature = "std", test)))]
+extern crate alloc;
+#[cfg(any(feature = "std", test))]
+extern crate std as core;
+#[cfg(any(feature = "std", test))]
+extern crate std as alloc;
 
 #[cfg(feature="clock")]
 extern crate time as oldtime;
@@ -678,7 +687,7 @@ impl num_traits::FromPrimitive for Weekday {
     }
 }
 
-use std::fmt;
+use core::fmt;
 
 /// An error resulting from reading `Weekday` value with `FromStr`.
 #[derive(Clone, PartialEq)]
@@ -697,7 +706,9 @@ impl fmt::Debug for ParseWeekdayError {
 #[cfg(feature = "serde")]
 mod weekday_serde {
     use super::Weekday;
-    use std::fmt;
+    use core::fmt;
+    #[cfg(not(any(feature = "std", test)))]
+    use alloc::format;
     use serdelib::{ser, de};
 
     impl ser::Serialize for Weekday {

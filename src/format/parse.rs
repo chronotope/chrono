@@ -6,7 +6,7 @@
 
 #![allow(deprecated)]
 
-use std::usize;
+use core::usize;
 
 use Weekday;
 

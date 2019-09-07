@@ -3,8 +3,8 @@
 
 //! ISO 8601 calendar date without timezone.
 
-use std::{str, fmt};
-use std::ops::{Add, Sub, AddAssign, SubAssign};
+use core::{str, fmt};
+use core::ops::{Add, Sub, AddAssign, SubAssign};
 use num_traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -1387,7 +1387,7 @@ impl SubAssign<OldDuration> for NaiveDate {
 
 /// Subtracts another `NaiveDate` from the current date.
 /// Returns a `Duration` of integral numbers.
-/// 
+///
 /// This does not overflow or underflow at all,
 /// as all possible output fits in the range of `Duration`.
 ///
@@ -1600,7 +1600,9 @@ mod rustc_serialize {
 
 #[cfg(feature = "serde")]
 mod serde {
-    use std::fmt;
+    use core::fmt;
+    #[cfg(not(any(feature = "std", test)))]
+    use alloc::format;
     use super::NaiveDate;
     use serdelib::{ser, de};
 
@@ -1629,7 +1631,7 @@ mod serde {
     impl<'de> de::Visitor<'de> for NaiveDateVisitor {
         type Value = NaiveDate;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
         {
             write!(formatter, "a formatted date string")
         }

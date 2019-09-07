@@ -3,8 +3,8 @@
 
 //! ISO 8601 time without timezone.
 
-use std::{str, fmt, hash};
-use std::ops::{Add, Sub, AddAssign, SubAssign};
+use core::{str, fmt, hash};
+use core::ops::{Add, Sub, AddAssign, SubAssign};
 use oldtime::Duration as OldDuration;
 
 use Timelike;
@@ -681,7 +681,7 @@ impl NaiveTime {
         //      `rhs.frac`|========================================>|
         //          |     |   |        `self - rhs`         |       |
 
-        use std::cmp::Ordering;
+        use core::cmp::Ordering;
 
         let secs = i64::from(self.secs) - i64::from(rhs.secs);
         let frac = i64::from(self.frac) - i64::from(rhs.frac);
@@ -1411,7 +1411,9 @@ mod rustc_serialize {
 
 #[cfg(feature = "serde")]
 mod serde {
-    use std::fmt;
+    use core::fmt;
+    #[cfg(not(any(feature = "std", test)))]
+    use alloc::format;
     use super::NaiveTime;
     use serdelib::{ser, de};
 
@@ -1431,7 +1433,7 @@ mod serde {
     impl<'de> de::Visitor<'de> for NaiveTimeVisitor {
         type Value = NaiveTime;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result 
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
         {
             write!(formatter, "a formatted time string")
         }

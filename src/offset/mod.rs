@@ -18,7 +18,7 @@
 //! and provides implementations for 1 and 3.
 //! An `TimeZone` instance can be reconstructed from the corresponding `Offset` instance.
 
-use std::fmt;
+use core::fmt;
 
 use format::{parse, ParseResult, Parsed, StrftimeItems};
 use naive::{NaiveDate, NaiveDateTime, NaiveTime};

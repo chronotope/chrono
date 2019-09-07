@@ -3,8 +3,8 @@
 
 //! ISO 8601 date and time without timezone.
 
-use std::{str, fmt, hash};
-use std::ops::{Add, Sub, AddAssign, SubAssign};
+use core::{str, fmt, hash};
+use core::ops::{Add, Sub, AddAssign, SubAssign};
 use num_traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -1663,7 +1663,9 @@ pub mod rustc_serialize {
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
 pub mod serde {
-    use std::fmt;
+    use core::fmt;
+    #[cfg(not(any(feature = "std", test)))]
+    use alloc::format;
     use super::{NaiveDateTime};
     use serdelib::{ser, de};
 
@@ -1750,7 +1752,9 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_nanoseconds {
-        use std::fmt;
+        use core::fmt;
+        #[cfg(not(any(feature = "std", test)))]
+        use alloc::format;
         use serdelib::{ser, de};
 
         use NaiveDateTime;
@@ -1895,7 +1899,9 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_milliseconds {
-        use std::fmt;
+        use core::fmt;
+        #[cfg(not(any(feature = "std", test)))]
+        use alloc::format;
         use serdelib::{ser, de};
 
         use NaiveDateTime;
@@ -2040,7 +2046,9 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_seconds {
-        use std::fmt;
+        use core::fmt;
+        #[cfg(not(any(feature = "std", test)))]
+        use alloc::format;
         use serdelib::{ser, de};
 
         use NaiveDateTime;

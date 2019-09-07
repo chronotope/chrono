@@ -85,6 +85,13 @@ build_only() {
   channel build -v --no-default-features
 }
 
+build_core_test() {
+    rustup target add thumbv6m-none-eabi --toolchain $CHANNEL
+    cd ci/core-test
+    channel build -v --target thumbv6m-none-eabi
+    cd ../..
+}
+
 run_clippy() {
     # cached installation will not work on a later nightly
     if [ -n "${TRAVIS}" ] && ! cargo install clippy --debug --force; then
@@ -119,3 +126,6 @@ build_and_test
 
 CHANNEL=1.13.0
 build_only
+
+CHANNEL=stable
+build_core_test
