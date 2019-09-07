@@ -54,14 +54,14 @@ build_and_test_nonwasm() {
   TZ=Asia/Katmandu channel test -v --features serde,rustc-serialize
 
   # without default "clock" feature
-  channel build -v --no-default-features
+  channel build -v --no-default-features --features std
   TZ=ACST-9:30 channel test -v --no-default-features --lib
-  channel build -v --no-default-features --features rustc-serialize
+  channel build -v --no-default-features --features std,rustc-serialize
   TZ=EST4 channel test -v --no-default-features --features rustc-serialize --lib
-  channel build -v --no-default-features --features serde
+  channel build -v --no-default-features --features std,serde
   TZ=UTC0 channel test -v --no-default-features --features serde --lib
-  channel build -v --no-default-features --features serde,rustc-serialize
-  TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
+  channel build -v --no-default-features --features std,serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --no-default-features --features std,serde,rustc-serialize --lib
 }
 
 build_and_test_wasm() {
@@ -82,7 +82,7 @@ build_only() {
   channel build -v
   channel build -v --features rustc-serialize
   channel build -v --features 'serde bincode'
-  channel build -v --no-default-features
+  channel build -v --no-default-features --features std
 }
 
 build_core_test() {
