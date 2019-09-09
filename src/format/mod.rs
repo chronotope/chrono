@@ -21,13 +21,43 @@ use core::fmt;
 use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use alloc::boxed::Box;
-#[cfg(not(any(feature = "std", test)))]
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use alloc::string::{String, ToString};
 
-use {Datelike, Timelike, Weekday, ParseWeekdayError};
+#[cfg(not(any(feature = "alloc", feature = "std", test)))]
+mod core_only {
+    /// Core only
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct Box<T: ?Sized>(core::marker::PhantomData<T>);
+
+    impl Box<str> {
+        /// Core only
+        pub fn len(&self) -> usize { 0 }
+    }
+
+    impl Clone for Box<str> { fn clone(&self) -> Self { Box(core::marker::PhantomData) } }
+
+    impl core::ops::Index<core::ops::RangeFull> for Box<str> {
+        type Output = str;
+        fn index(&self, _: core::ops::RangeFull) -> &Self::Output {
+            ""
+        }
+    }
+}
+
+#[cfg(not(any(feature = "alloc", feature = "std", test)))]
+use self::core_only::Box;
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use {Datelike, Timelike};
+use {Weekday, ParseWeekdayError};
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use div::{div_floor, mod_floor};
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use offset::{Offset, FixedOffset};
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use naive::{NaiveDate, NaiveTime};
 
 pub use self::strftime::StrftimeItems;
@@ -347,6 +377,7 @@ const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
+#[cfg(any(feature = "alloc", feature = "std", test))]
 pub fn format<'a, I>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -609,6 +640,7 @@ pub mod strftime;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
+#[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug)]
 pub struct DelayedFormat<I> {
     /// The date view, if any.
@@ -621,6 +653,7 @@ pub struct DelayedFormat<I> {
     items: I,
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
@@ -636,6 +669,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
     }
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())

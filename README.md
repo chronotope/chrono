@@ -52,7 +52,7 @@ feature like this:
 
 ```toml
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde-1"] }
 ```
 
 Then put this in your crate root:

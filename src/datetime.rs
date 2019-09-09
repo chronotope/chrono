@@ -10,7 +10,7 @@ use core::ops::{Add, Sub};
 use std::time::{SystemTime, UNIX_EPOCH};
 use oldtime::Duration as OldDuration;
 
-#[cfg(not(any(feature = "std", test)))]
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use alloc::string::{String, ToString};
 
 use {Weekday, Timelike, Datelike};
@@ -20,7 +20,9 @@ use offset::{TimeZone, Offset, Utc, FixedOffset};
 use naive::{NaiveTime, NaiveDateTime, IsoWeek};
 use Date;
 use format::{Item, Numeric, Pad, Fixed};
-use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use format::DelayedFormat;
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -367,12 +369,14 @@ impl DateTime<FixedOffset> {
 
 impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc2822(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         self.format_with_items(ITEMS.iter().cloned()).to_string()
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         self.format_with_items(ITEMS.iter().cloned()).to_string()
@@ -402,6 +406,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
     /// ```
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         use format::Numeric::*;
         use format::Pad::Zero;
@@ -453,6 +458,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     }
 
     /// Formats the combined date and time with the specified formatting items.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -463,6 +469,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Formats the combined date and time with the specified format string.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -911,7 +918,7 @@ pub mod rustc_serialize {
 }
 
 /// documented at re-export site
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-1")]
 pub mod serde {
     use core::fmt;
     #[cfg(not(any(feature = "std", test)))]

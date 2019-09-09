@@ -418,7 +418,7 @@ extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-1")]
 extern crate serde as serdelib;
 #[cfg(test)]
 #[macro_use]
@@ -497,7 +497,7 @@ pub mod naive {
     ///
     /// [1]: https://serde.rs/attributes.html#field-attributes
     /// [2]: https://tools.ietf.org/html/rfc3339
-    #[cfg(feature = "serde")]
+    #[cfg(feature = "serde-1")]
     pub mod serde {
         pub use super::datetime::serde::*;
     }
@@ -515,7 +515,7 @@ mod round;
 ///
 /// [1]: https://serde.rs/attributes.html#field-attributes
 /// [2]: https://tools.ietf.org/html/rfc3339
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-1")]
 pub mod serde {
     pub use super::datetime::serde::*;
 }
@@ -703,7 +703,7 @@ impl fmt::Debug for ParseWeekdayError {
 
 // the actual `FromStr` implementation is in the `format` module to leverage the existing code
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-1")]
 mod weekday_serde {
     use super::Weekday;
     use core::fmt;

@@ -12,7 +12,9 @@ use {Weekday, Datelike};
 use div::div_mod_floor;
 use naive::{NaiveTime, NaiveDateTime, IsoWeek};
 use format::{Item, Numeric, Pad};
-use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use format::DelayedFormat;
 
 use super::isoweek;
 use super::internals::{self, DateImpl, Of, Mdf, YearFlags};
@@ -916,6 +918,7 @@ impl NaiveDate {
     /// # let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ~~~~
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -954,6 +957,7 @@ impl NaiveDate {
     /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
     /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ~~~~
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -1598,7 +1602,7 @@ mod rustc_serialize {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-1")]
 mod serde {
     use core::fmt;
     #[cfg(not(any(feature = "std", test)))]

@@ -10,7 +10,9 @@ use oldtime::Duration as OldDuration;
 use Timelike;
 use div::div_mod_floor;
 use format::{Item, Numeric, Pad, Fixed};
-use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use format::DelayedFormat;
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -723,6 +725,7 @@ impl NaiveTime {
     /// # let t = NaiveTime::from_hms(23, 56, 4);
     /// assert_eq!(format!("{}", t.format_with_items(fmt)), "23:56:04");
     /// ~~~~
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -763,6 +766,7 @@ impl NaiveTime {
     /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f")), "23:56:04.012345");
     /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
     /// ~~~~
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -1409,7 +1413,7 @@ mod rustc_serialize {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde-1")]
 mod serde {
     use core::fmt;
     #[cfg(not(any(feature = "std", test)))]
