@@ -8,19 +8,33 @@ set -e
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 channel() {
+    channel_run cargo "$@"
+}
+
+channel_run() {
     if [ -n "${TRAVIS}" ]; then
         if [ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}" ]; then
             pwd
-            (set -x; cargo "$@")
+            echo "$ $*"
+            "$@"
         fi
     elif [ -n "${APPVEYOR}" ]; then
         if [ "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]; then
             pwd
-            (set -x; cargo "$@")
+            echo "$ $*"
+            "$@"
         fi
     else
         pwd
-        (set -x; cargo "+${CHANNEL}" "$@")
+        local cmd="$1"
+        shift
+        if [[ $cmd = cargo ]] ; then
+            echo "$ $cmd +${CHANNEL} $*"
+            "$cmd" "+${CHANNEL}" "$@"
+        else
+            echo "$ $cmd $*"
+            "$cmd" "$@"
+        fi
     fi
 }
 
@@ -86,7 +100,7 @@ build_only() {
 }
 
 build_core_test() {
-    rustup target add thumbv6m-none-eabi --toolchain $CHANNEL
+    channel_run rustup target add thumbv6m-none-eabi --toolchain "$CHANNEL"
     (
         cd ci/core-test
         channel build -v --target thumbv6m-none-eabi
