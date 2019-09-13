@@ -27,7 +27,6 @@ name = "chrono"
 default = ["clock", "std"]
 alloc = []
 std = []
-serde-1 = ["serde", "alloc"]
 clock = ["time", "std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 

@@ -48,20 +48,20 @@ build_and_test_nonwasm() {
   TZ=ACST-9:30 channel test -v --lib
   channel build -v --features rustc-serialize
   TZ=EST4 channel test -v --features rustc-serialize --lib
-  channel build -v --features serde-1
-  TZ=UTC0 channel test -v --features serde-1 --lib
-  channel build -v --features serde-1,rustc-serialize
-  TZ=Asia/Katmandu channel test -v --features serde-1,rustc-serialize
+  channel build -v --features serde
+  TZ=UTC0 channel test -v --features serde --lib
+  channel build -v --features serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --features serde,rustc-serialize
 
   # without default "clock" feature
   channel build -v --no-default-features --features std
   TZ=ACST-9:30 channel test -v --no-default-features --lib
   channel build -v --no-default-features --features std,rustc-serialize
   TZ=EST4 channel test -v --no-default-features --features rustc-serialize --lib
-  channel build -v --no-default-features --features std,serde-1
-  TZ=UTC0 channel test -v --no-default-features --features serde-1 --lib
-  channel build -v --no-default-features --features std,serde-1,rustc-serialize
-  TZ=Asia/Katmandu channel test -v --no-default-features --features std,serde-1,rustc-serialize --lib
+  channel build -v --no-default-features --features std,serde
+  TZ=UTC0 channel test -v --no-default-features --features serde --lib
+  channel build -v --no-default-features --features std,serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --no-default-features --features std,serde,rustc-serialize --lib
 }
 
 build_and_test_wasm() {
@@ -81,15 +81,16 @@ build_only() {
   cargo clean
   channel build -v
   channel build -v --features rustc-serialize
-  channel build -v --features 'serde-1 bincode'
+  channel build -v --features 'serde bincode'
   channel build -v --no-default-features --features std
 }
 
 build_core_test() {
     rustup target add thumbv6m-none-eabi --toolchain $CHANNEL
-    cd ci/core-test
-    channel build -v --target thumbv6m-none-eabi
-    cd ../..
+    (
+        cd ci/core-test
+        channel build -v --target thumbv6m-none-eabi
+    )
 }
 
 run_clippy() {
@@ -99,7 +100,7 @@ run_clippy() {
         exit
     fi
 
-    cargo clippy --features 'serde-1 bincode rustc-serialize' -- -Dclippy
+    cargo clippy --features 'serde bincode rustc-serialize' -- -Dclippy
 }
 
 check_readme() {

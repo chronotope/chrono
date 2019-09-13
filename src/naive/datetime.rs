@@ -1665,7 +1665,7 @@ pub mod rustc_serialize {
 }
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 pub mod serde {
     use core::fmt;
     #[cfg(not(any(feature = "std", test)))]

@@ -918,7 +918,7 @@ pub mod rustc_serialize {
 }
 
 /// documented at re-export site
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 pub mod serde {
     use core::fmt;
     #[cfg(not(any(feature = "std", test)))]

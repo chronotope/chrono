@@ -1413,7 +1413,7 @@ mod rustc_serialize {
     }
 }
 
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "serde")]
 mod serde {
     use core::fmt;
     #[cfg(not(any(feature = "std", test)))]
