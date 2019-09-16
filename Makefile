@@ -1,6 +1,8 @@
 # this Makefile is mostly for the packaging convenience.
 # casual users should use `cargo` to retrieve the appropriate version of Chrono.
 
+CHANNEL=stable
+
 .PHONY: all
 all:
 	@echo 'Try `cargo build` instead.'
@@ -20,11 +22,8 @@ README.md: src/lib.rs
 
 .PHONY: test
 test:
-	TZ=UTC0 cargo test --features 'serde rustc-serialize bincode' --lib
-	TZ=ACST-9:30 cargo test --features 'serde rustc-serialize bincode' --lib
-	TZ=EST4 cargo test --features 'serde rustc-serialize bincode'
+	CHANNEL=$(CHANNEL) ./ci/travis.sh
 
 .PHONY: doc
 doc: authors readme
 	cargo doc --features 'serde rustc-serialize bincode'
-

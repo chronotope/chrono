@@ -7,34 +7,78 @@ set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+
+main() {
+    if [[ -n $CHANNEL ]] ; then
+        if [[ $CHANNEL == 1.13.0 ]]; then
+            banner "Building $CHANNEL"
+            build_only
+        else
+            banner "Building/testing $CHANNEL"
+            #build_and_test
+            banner "Testing Core $CHANNEL"
+            build_core_test
+        fi
+    else
+        CHANNEL=nightly
+        matching_banner "Test $CHANNEL"
+        if [ "x${CLIPPY}" = xy ] ; then
+            run_clippy
+        else
+            build_and_test
+        fi
+
+        CHANNEL=beta
+        matching_banner "Test $CHANNEL"
+        build_and_test
+
+        CHANNEL=stable
+        matching_banner "Test $CHANNEL"
+        build_and_test
+        build_core_test
+
+        CHANNEL=1.13.0
+        matching_banner "Test $CHANNEL"
+        build_only
+    fi
+}
+
 channel() {
     channel_run cargo "$@"
 }
 
 channel_run() {
-    if [ -n "${TRAVIS}" ]; then
-        if [ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}" ]; then
-            pwd
-            echo "$ $*"
-            "$@"
-        fi
-    elif [ -n "${APPVEYOR}" ]; then
-        if [ "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]; then
-            pwd
-            echo "$ $*"
-            "$@"
-        fi
+    if channel_matches ; then
+        pwd
+        local the_cmd="$ $*"
+        echo "$the_cmd"
+        "$@"
     else
         pwd
         local cmd="$1"
         shift
-        if [[ $cmd = cargo ]] ; then
-            echo "$ $cmd +${CHANNEL} $*"
+        if [[ $cmd == cargo || $cmd == rustc ]] ; then
+            underline "$ $cmd +${CHANNEL} $*"
             "$cmd" "+${CHANNEL}" "$@"
+
         else
-            echo "$ $cmd $*"
+            underline "$ $cmd $*"
             "$cmd" "$@"
         fi
+    fi
+}
+
+channel_matches() {
+    if [ -n "${TRAVIS}" ]; then
+        if [ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}" ]; then
+            return 0
+        fi
+    elif [ -n "${APPVEYOR}" ]; then
+        if [ "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]; then
+            return 0
+        fi
+    else
+        return 1
     fi
 }
 
@@ -76,6 +120,9 @@ build_and_test_nonwasm() {
   TZ=UTC0 channel test -v --no-default-features --features serde --lib
   channel build -v --no-default-features --features std,serde,rustc-serialize
   TZ=Asia/Katmandu channel test -v --no-default-features --features std,serde,rustc-serialize --lib
+
+  channel build -v --no-default-features --features 'alloc serde'
+  TZ=UTC0 channel test -v --no-default-features --features 'alloc serde' --lib
 }
 
 build_and_test_wasm() {
@@ -95,15 +142,16 @@ build_only() {
   cargo clean
   channel build -v
   channel build -v --features rustc-serialize
-  channel build -v --features 'serde bincode'
+  channel build -v --features serde
   channel build -v --no-default-features --features std
+  channel build -v --no-default-features --features 'std serde_std'
 }
 
 build_core_test() {
     channel_run rustup target add thumbv6m-none-eabi --toolchain "$CHANNEL"
     (
         cd ci/core-test
-        channel build -v --target thumbv6m-none-eabi
+        channel build -v --features alloc --target thumbv6m-none-eabi
     )
 }
 
@@ -114,7 +162,7 @@ run_clippy() {
         exit
     fi
 
-    cargo clippy --features 'serde bincode rustc-serialize' -- -Dclippy
+    cargo clippy --features 'serde rustc-serialize' -- -Dclippy
 }
 
 check_readme() {
@@ -122,23 +170,25 @@ check_readme() {
     (set -x; git diff --exit-code -- README.md) ; echo $?
 }
 
-rustc --version
-cargo --version
+banner() {
+    echo "======================================================================"
+    echo "$*"
+    echo "======================================================================"
+}
+
+underline() {
+    echo "$*"
+    echo "${*//?/^}"
+}
+
+matching_banner() {
+    if channel_matches || [[ -z $TRAVIS && -z $APPVEYOR ]] ; then
+        banner "$*"
+    fi
+}
+
+channel_run rustc --version
+channel_run cargo --version
 node --version
 
-CHANNEL=nightly
-if [ "x${CLIPPY}" = xy ] ; then
-    run_clippy
-else
-    build_and_test
-fi
-
-CHANNEL=beta
-build_and_test
-
-CHANNEL=stable
-build_and_test
-build_core_test
-
-CHANNEL=1.13.0
-build_only
+main
