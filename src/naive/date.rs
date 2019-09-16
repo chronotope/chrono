@@ -1605,8 +1605,6 @@ mod rustc_serialize {
 #[cfg(feature = "serde")]
 mod serde {
     use core::fmt;
-    #[cfg(not(any(feature = "std", test)))]
-    use alloc::format;
     use super::NaiveDate;
     use serdelib::{ser, de};
 
@@ -1640,10 +1638,18 @@ mod serde {
             write!(formatter, "a formatted date string")
         }
 
+        #[cfg(any(feature = "std", test))]
         fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
             where E: de::Error
         {
             value.parse().map_err(|err| E::custom(format!("{}", err)))
+        }
+
+        #[cfg(not(any(feature = "std", test)))]
+        fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
+            where E: de::Error
+        {
+            value.parse().map_err(|err| E::custom(err))
         }
     }
 

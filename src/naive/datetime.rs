@@ -1668,7 +1668,7 @@ pub mod rustc_serialize {
 #[cfg(feature = "serde")]
 pub mod serde {
     use core::fmt;
-    #[cfg(not(any(feature = "std", test)))]
+    #[cfg(feature = "alloc")]
     use alloc::format;
     use super::{NaiveDateTime};
     use serdelib::{ser, de};

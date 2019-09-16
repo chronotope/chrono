@@ -21,9 +21,9 @@ use core::fmt;
 use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(feature = "alloc")]
 use alloc::boxed::Box;
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(feature = "alloc")]
 use alloc::string::{String, ToString};
 
 #[cfg(not(any(feature = "alloc", feature = "std", test)))]

@@ -405,11 +405,11 @@
     trivially_copy_pass_by_ref,
 ))]
 
-#[cfg(not(any(feature = "std", test)))]
+#[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(any(feature = "std", test))]
 extern crate std as core;
-#[cfg(any(feature = "std", test))]
+#[cfg(all(feature = "std", not(feature="alloc")))]
 extern crate std as alloc;
 
 #[cfg(feature="clock")]
@@ -654,6 +654,20 @@ impl Weekday {
     }
 }
 
+impl fmt::Display for Weekday {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match *self {
+            Weekday::Mon => "Mon",
+            Weekday::Tue => "Tue",
+            Weekday::Wed => "Wed",
+            Weekday::Thu => "Thu",
+            Weekday::Fri => "Fri",
+            Weekday::Sat => "Sat",
+            Weekday::Sun => "Sun",
+        })
+    }
+}
+
 /// Any weekday can be represented as an integer from 0 to 6, which equals to
 /// [`Weekday::num_days_from_monday`](#method.num_days_from_monday) in this implementation.
 /// Do not heavily depend on this though; use explicit methods whenever possible.
@@ -707,15 +721,13 @@ impl fmt::Debug for ParseWeekdayError {
 mod weekday_serde {
     use super::Weekday;
     use core::fmt;
-    #[cfg(not(any(feature = "std", test)))]
-    use alloc::format;
     use serdelib::{ser, de};
 
     impl ser::Serialize for Weekday {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(&self)
         }
     }
 

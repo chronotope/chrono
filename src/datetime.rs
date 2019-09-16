@@ -10,8 +10,10 @@ use core::ops::{Add, Sub};
 use std::time::{SystemTime, UNIX_EPOCH};
 use oldtime::Duration as OldDuration;
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::string::{String, ToString};
+#[cfg(feature = "std")]
+use std::string::ToString;
 
 use {Weekday, Timelike, Datelike};
 #[cfg(feature="clock")]
@@ -921,26 +923,50 @@ pub mod rustc_serialize {
 #[cfg(feature = "serde")]
 pub mod serde {
     use core::fmt;
-    #[cfg(not(any(feature = "std", test)))]
-    use alloc::format;
+    // #[cfg(any(test, feature = "alloc"))]
+    // use alloc::format;
     use super::DateTime;
     #[cfg(feature="clock")]
     use offset::Local;
     use offset::{LocalResult, TimeZone, Utc, FixedOffset};
     use serdelib::{ser, de};
 
+    enum SerdeError<V: fmt::Display, D: fmt::Display> {
+        NonExistent { timestamp: V },
+        Ambiguous { timestamp: V, min: D, max: D }
+    }
+
+    impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "ChronoSerdeError({})", self)
+        }
+    }
+
+    // impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
+    impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                &SerdeError::NonExistent { ref timestamp } => write!(
+                    f, "value is not a legal timestamp: {}", timestamp),
+                &SerdeError::Ambiguous { ref timestamp, ref min, ref max } => write!(
+                        f, "value is an ambiguous timestamp: {}, could be either of {}, {}",
+                        timestamp, min, max),
+            }
+        }
+    }
+
     // try!-like function to convert a LocalResult into a serde-ish Result
     fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
-        where E: de::Error,
-                V: fmt::Display,
-                T: fmt::Display,
+    where
+        E: de::Error,
+        V: fmt::Display,
+        T: fmt::Display,
     {
         match me {
             LocalResult::None => Err(E::custom(
-                format!("value is not a legal timestamp: {}", ts))),
+                SerdeError::NonExistent::<_, u8> { timestamp: ts })),
             LocalResult::Ambiguous(min, max) => Err(E::custom(
-                format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
-                        ts, min, max))),
+                SerdeError::Ambiguous { timestamp: ts, min: min, max: max })),
             LocalResult::Single(val) => Ok(val)
         }
     }
@@ -1418,7 +1444,7 @@ pub mod serde {
         fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(format!("{}", err)))
+            value.parse().map_err(|err: ::format::ParseError| E::custom(err))
         }
     }
 

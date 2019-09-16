@@ -27,6 +27,8 @@ name = "chrono"
 default = ["clock", "std"]
 alloc = []
 std = []
+serde_alloc = ["serde/alloc"]
+serde_std = ["serde/std"]
 clock = ["time", "std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 
@@ -35,7 +37,7 @@ time = { version = "0.1.39", optional = true }
 num-integer = { version = "0.1.36", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
-serde = { version = "1.0.99", default-features = false, features = ["alloc"], optional = true }
+serde = { version = "1.0.99", default-features = false, optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
