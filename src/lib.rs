@@ -454,6 +454,8 @@ macro_rules! try_opt {
     ($e:expr) => (match $e { Some(v) => v, None => return None })
 }
 
+const EPOCH_NUM_DAYS_FROM_CE: i32 = 719_163;
+
 mod div;
 #[cfg(not(feature="clock"))]
 mod oldtime;
@@ -895,6 +897,7 @@ pub trait Datelike: Sized {
     ///
     /// ~~~
     /// use chrono::{NaiveDate, Datelike};
+    ///
     /// assert_eq!(NaiveDate::from_ymd(1970, 1, 1).num_days_from_ce(), 719163);
     /// assert_eq!(NaiveDate::from_ymd(0, 1, 1).num_days_from_ce(), -365);
     /// ~~~
@@ -910,6 +913,21 @@ pub trait Datelike: Sized {
         let div_100 = year / 100;
         ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
         ndays + self.ordinal() as i32
+    }
+
+    /// Return the number of days since the unix epoch, 1970-01-01
+    ///
+    /// # Example:
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Datelike};
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(1970, 1, 1).num_days_from_epoch(), 0);
+    /// assert_eq!(NaiveDate::from_ymd(1969, 1, 1).num_days_from_epoch(), -365);
+    /// assert_eq!(NaiveDate::from_ymd(1999, 12, 31).num_days_from_epoch(), 10_956);
+    /// ```
+    fn num_days_from_epoch(&self) -> i32 {
+        self.num_days_from_ce() - EPOCH_NUM_DAYS_FROM_CE
     }
 }
 
