@@ -530,8 +530,8 @@ enum SerdeError<V: fmt::Display, D: fmt::Display> {
 
 /// Construct a [`SerdeError::NonExistent`]
 #[cfg(feature = "serde")]
-fn ne_timestamp<T: fmt::Display>(timestamp: T) -> SerdeError<T, u8> {
-    SerdeError::NonExistent::<T, u8> { timestamp }
+fn ne_timestamp<T: fmt::Display>(ts: T) -> SerdeError<T, u8> {
+    SerdeError::NonExistent::<T, u8> { timestamp: ts }
 }
 
 #[cfg(feature = "serde")]
