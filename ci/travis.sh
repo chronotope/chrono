@@ -114,7 +114,6 @@ build_only() {
   channel build -v --features rustc-serialize
   channel build -v --features serde
   channel build -v --no-default-features --features std
-  channel build -v --no-default-features --features 'std serde_std'
 }
 
 build_core_test() {
