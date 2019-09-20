@@ -171,12 +171,10 @@ channel() {
 
 channel_run() {
     if channel_matches ; then
-        pwd
         local the_cmd="$ $*"
         underline "$the_cmd"
         "$@"
     elif ! is_ci ; then
-        pwd
         local cmd="$1"
         shift
         if [[ $cmd == cargo || $cmd == rustc ]] ; then
