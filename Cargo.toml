@@ -44,7 +44,7 @@ js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS
 [dev-dependencies]
 serde_json = { version = "1", default-features = false }
 serde_derive = { version = "1", default-features = false }
-bincode = { version = "1.1.0" }
+bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
 doc-comment = "0.3"
 

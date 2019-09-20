@@ -15,7 +15,7 @@ main() {
             build_only
         else
             banner "Building/testing $CHANNEL"
-            #build_and_test
+            build_and_test
             banner "Testing Core $CHANNEL"
             build_core_test
         fi
@@ -51,7 +51,7 @@ channel_run() {
     if channel_matches ; then
         pwd
         local the_cmd="$ $*"
-        echo "$the_cmd"
+        underline "$the_cmd"
         "$@"
     else
         pwd
@@ -60,7 +60,6 @@ channel_run() {
         if [[ $cmd == cargo || $cmd == rustc ]] ; then
             underline "$ $cmd +${CHANNEL} $*"
             "$cmd" "+${CHANNEL}" "$@"
-
         else
             underline "$ $cmd $*"
             "$cmd" "$@"
