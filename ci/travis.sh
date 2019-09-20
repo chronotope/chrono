@@ -2,6 +2,12 @@
 
 # This is the script that's executed by travis, you can run it yourself to run
 # the exact same suite
+#
+# When running it locally the most important thing to set is the CHANNEL env
+# var, otherwise it will run tests against every version of rust that it knows
+# about (nightly, beta, stable, 1.13.0):
+#
+#     $ CHANNEL=stable ./ci/travis.sh
 
 set -e
 
@@ -9,8 +15,8 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 
 main() {
-    if [[ -n $CHANNEL ]] ; then
-        if [[ $CHANNEL == 1.13.0 ]]; then
+    if [[ -n "$CHANNEL" ]] ; then
+        if [[ "$CHANNEL" == 1.13.0 ]]; then
             banner "Building $CHANNEL"
             build_only
         else
@@ -22,7 +28,7 @@ main() {
     else
         CHANNEL=nightly
         matching_banner "Test $CHANNEL"
-        if [ "x${CLIPPY}" = xy ] ; then
+        if [[ "${CLIPPY}" = y ]] ; then
             run_clippy
         else
             build_and_test
@@ -40,44 +46,6 @@ main() {
         CHANNEL=1.13.0
         matching_banner "Test $CHANNEL"
         build_only
-    fi
-}
-
-channel() {
-    channel_run cargo "$@"
-}
-
-channel_run() {
-    if channel_matches ; then
-        pwd
-        local the_cmd="$ $*"
-        underline "$the_cmd"
-        "$@"
-    else
-        pwd
-        local cmd="$1"
-        shift
-        if [[ $cmd == cargo || $cmd == rustc ]] ; then
-            underline "$ $cmd +${CHANNEL} $*"
-            "$cmd" "+${CHANNEL}" "$@"
-        else
-            underline "$ $cmd $*"
-            "$cmd" "$@"
-        fi
-    fi
-}
-
-channel_matches() {
-    if [ -n "${TRAVIS}" ]; then
-        if [ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}" ]; then
-            return 0
-        fi
-    elif [ -n "${APPVEYOR}" ]; then
-        if [ "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]; then
-            return 0
-        fi
-    else
-        return 1
     fi
 }
 
@@ -172,6 +140,8 @@ check_readme() {
     (set -x; git diff --exit-code -- README.md) ; echo $?
 }
 
+# script helpers
+
 banner() {
     echo "======================================================================"
     echo "$*"
@@ -184,13 +154,58 @@ underline() {
 }
 
 matching_banner() {
-    if channel_matches || [[ -z $TRAVIS && -z $APPVEYOR ]] ; then
+    if channel_matches || ! is_ci ; then
         banner "$*"
+        echo_versions
     fi
 }
 
-channel_run rustc --version
-channel_run cargo --version
-node --version
+echo_versions() {
+    channel_run rustc --version
+    channel_run cargo --version
+    node --version
+}
+
+channel() {
+    channel_run cargo "$@"
+}
+
+channel_run() {
+    if channel_matches ; then
+        pwd
+        local the_cmd="$ $*"
+        underline "$the_cmd"
+        "$@"
+    elif ! is_ci ; then
+        pwd
+        local cmd="$1"
+        shift
+        if [[ $cmd == cargo || $cmd == rustc ]] ; then
+            underline "$ $cmd +${CHANNEL} $*"
+            "$cmd" "+${CHANNEL}" "$@"
+        else
+            underline "$ $cmd $*"
+            "$cmd" "$@"
+        fi
+    fi
+}
+
+channel_matches() {
+    if is_ci ; then
+        if [[ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}"
+              || "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]] ; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+is_ci() {
+    if [[ -n "$TRAVIS" || -n "$APPVEYOR" ]] ; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 main
