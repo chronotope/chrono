@@ -1642,14 +1642,14 @@ mod serde {
         fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(format!("{}", err)))
+            value.parse().map_err(E::custom)
         }
 
         #[cfg(not(any(feature = "std", test)))]
         fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(err))
+            value.parse().map_err(E::custom)
         }
     }
 

@@ -1416,8 +1416,6 @@ mod rustc_serialize {
 #[cfg(feature = "serde")]
 mod serde {
     use core::fmt;
-    #[cfg(feature = "alloc")]
-    use alloc::format;
     use super::NaiveTime;
     use serdelib::{ser, de};
 
@@ -1445,7 +1443,7 @@ mod serde {
         fn visit_str<E>(self, value: &str) -> Result<NaiveTime, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(format!("{}", err)))
+            value.parse().map_err(E::custom)
         }
     }
 

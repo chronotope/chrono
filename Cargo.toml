@@ -27,8 +27,6 @@ name = "chrono"
 default = ["clock", "std"]
 alloc = []
 std = []
-serde_alloc = ["serde/alloc"]
-serde_std = ["serde/std"]
 clock = ["time", "std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 
@@ -44,9 +42,9 @@ wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
 
 [dev-dependencies]
-serde_json = { version = "1" }
-serde_derive = { version = "1" }
-bincode = { version = "0.8.0" }
+serde_json = { version = "1", default-features = false }
+serde_derive = { version = "1", default-features = false }
+bincode = { version = "1.1.0" }
 num-iter = { version = "0.1.35", default-features = false }
 doc-comment = "0.3"
 

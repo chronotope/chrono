@@ -520,6 +520,41 @@ pub mod serde {
     pub use super::datetime::serde::*;
 }
 
+// Until rust 1.18 there  is no "pub(crate)" so to share this we need it in the root
+
+#[cfg(feature = "serde")]
+enum SerdeError<V: fmt::Display, D: fmt::Display> {
+    NonExistent { timestamp: V },
+    Ambiguous { timestamp: V, min: D, max: D },
+}
+
+/// Construct a [`SerdeError::NonExistent`]
+#[cfg(feature = "serde")]
+fn ne_timestamp<T: fmt::Display>(timestamp: T) -> SerdeError<T, u8> {
+    SerdeError::NonExistent::<T, u8> { timestamp }
+}
+
+#[cfg(feature = "serde")]
+impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ChronoSerdeError({})", self)
+    }
+}
+
+// impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
+#[cfg(feature = "serde")]
+impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &SerdeError::NonExistent { ref timestamp } => write!(
+                f, "value is not a legal timestamp: {}", timestamp),
+            &SerdeError::Ambiguous { ref timestamp, ref min, ref max } => write!(
+                f, "value is an ambiguous timestamp: {}, could be either of {}, {}",
+                timestamp, min, max),
+        }
+    }
+}
+
 /// The day of week.
 ///
 /// The order of the days of week depends on the context.

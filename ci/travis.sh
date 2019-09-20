@@ -121,6 +121,9 @@ build_and_test_nonwasm() {
   channel build -v --no-default-features --features std,serde,rustc-serialize
   TZ=Asia/Katmandu channel test -v --no-default-features --features std,serde,rustc-serialize --lib
 
+  channel build -v --no-default-features --features 'serde'
+  TZ=UTC0 channel test -v --no-default-features --features 'serde' --lib
+
   channel build -v --no-default-features --features 'alloc serde'
   TZ=UTC0 channel test -v --no-default-features --features 'alloc serde' --lib
 }
@@ -151,7 +154,7 @@ build_core_test() {
     channel_run rustup target add thumbv6m-none-eabi --toolchain "$CHANNEL"
     (
         cd ci/core-test
-        channel build -v --features alloc --target thumbv6m-none-eabi
+        channel build -v --target thumbv6m-none-eabi
     )
 }
 

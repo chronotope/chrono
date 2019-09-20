@@ -1668,8 +1668,6 @@ pub mod rustc_serialize {
 #[cfg(feature = "serde")]
 pub mod serde {
     use core::fmt;
-    #[cfg(feature = "alloc")]
-    use alloc::format;
     use super::{NaiveDateTime};
     use serdelib::{ser, de};
 
@@ -1708,7 +1706,7 @@ pub mod serde {
         fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(format!("{}", err)))
+            value.parse().map_err(E::custom)
         }
     }
 
@@ -1757,11 +1755,9 @@ pub mod serde {
     /// ```
     pub mod ts_nanoseconds {
         use core::fmt;
-        #[cfg(not(any(feature = "std", test)))]
-        use alloc::format;
         use serdelib::{ser, de};
 
-        use NaiveDateTime;
+        use {NaiveDateTime, ne_timestamp};
 
         /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
         ///
@@ -1854,7 +1850,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt(value / 1_000_000_000,
                                                  (value % 1_000_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
@@ -1862,7 +1858,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt(value as i64 / 1_000_000_000,
                                                  (value as i64 % 1_000_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
@@ -1904,11 +1900,9 @@ pub mod serde {
     /// ```
     pub mod ts_milliseconds {
         use core::fmt;
-        #[cfg(not(any(feature = "std", test)))]
-        use alloc::format;
         use serdelib::{ser, de};
 
-        use NaiveDateTime;
+        use {NaiveDateTime, ne_timestamp};
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
         ///
@@ -2001,7 +1995,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt(value / 1000,
                                                 ((value % 1000) * 1_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
@@ -2009,7 +2003,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt((value / 1000) as i64,
                                                  ((value % 1000) * 1_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
@@ -2051,11 +2045,9 @@ pub mod serde {
     /// ```
     pub mod ts_seconds {
         use core::fmt;
-        #[cfg(not(any(feature = "std", test)))]
-        use alloc::format;
         use serdelib::{ser, de};
 
-        use NaiveDateTime;
+        use {NaiveDateTime, ne_timestamp};
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch
         ///
@@ -2147,14 +2139,14 @@ pub mod serde {
                 where E: de::Error
             {
                 NaiveDateTime::from_timestamp_opt(value, 0)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
                 where E: de::Error
             {
                 NaiveDateTime::from_timestamp_opt(value as i64, 0)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
