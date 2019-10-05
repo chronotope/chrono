@@ -2027,9 +2027,10 @@ mod tests {
 
     #[test]
     fn test_into_system_time() {
+        // this time cause panic on some 32-bit systems.
         let dt: DateTime<Utc> = DateTime::parse_from_rfc3339("2208-01-01T00:00:00+00:00")
             .unwrap()
             .into();
-        let st: std::time::SystemTime = dt.into(); // this panic on armv7-unknown-linux-musleabihf
+        let _st: std::time::SystemTime = dt.into();
     }
 }
