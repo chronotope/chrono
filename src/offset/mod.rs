@@ -502,11 +502,10 @@ mod tests {
             match Utc.timestamp_millis_opt(*millis) {
                 LocalResult::Single(dt) => {
                     assert_eq!(dt.to_string(), *expected);
-                },
+                }
                 e => panic!("Got {:?} instead of an okay answer", e),
             }
         }
-
     }
 
     #[test]

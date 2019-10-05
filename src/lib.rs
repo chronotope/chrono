@@ -382,11 +382,9 @@
 //! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/")]
-
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
-
 // The explicit 'static lifetimes are still needed for rustc 1.13-16
 // backward compatibility, and this appeases clippy. If minimum rustc
 // becomes 1.17, should be able to remove this, those 'static lifetimes,
@@ -397,27 +395,30 @@
 //
 // Changing trivially_copy_pass_by_ref would require an incompatible version
 // bump.
-#![cfg_attr(feature = "cargo-clippy", allow(
-    const_static_lifetime,
-    redundant_field_names,
-    trivially_copy_pass_by_ref,
-))]
+#![cfg_attr(
+    feature = "cargo-clippy",
+    allow(
+        const_static_lifetime,
+        redundant_field_names,
+        trivially_copy_pass_by_ref,
+    )
+)]
 
-#[cfg(feature="clock")]
-extern crate time as oldtime;
 extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
+#[cfg(feature = "clock")]
+extern crate time as oldtime;
 #[cfg(test)]
 #[macro_use]
 extern crate doc_comment;
-#[cfg(all(target_arch = "wasm32", feature="wasmbind"))]
-extern crate wasm_bindgen;
-#[cfg(all(target_arch = "wasm32", feature="wasmbind"))]
+#[cfg(all(target_arch = "wasm32", feature = "wasmbind"))]
 extern crate js_sys;
+#[cfg(all(target_arch = "wasm32", feature = "wasmbind"))]
+extern crate wasm_bindgen;
 
 #[cfg(test)]
 doctest!("../README.md");
@@ -425,41 +426,57 @@ doctest!("../README.md");
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
-#[cfg(feature="clock")]
-#[doc(no_inline)] pub use offset::Local;
-#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset};
-#[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
-pub use date::{Date, MIN_DATE, MAX_DATE};
-pub use datetime::{DateTime, SecondsFormat};
+pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
+pub use datetime::{DateTime, SecondsFormat};
 pub use format::{ParseError, ParseResult};
+#[doc(no_inline)]
+pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+#[cfg(feature = "clock")]
+#[doc(no_inline)]
+pub use offset::Local;
+#[doc(no_inline)]
+pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 pub use round::SubsecRound;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
-    #[doc(no_inline)] pub use {Datelike, Timelike, Weekday};
-    #[doc(no_inline)] pub use {TimeZone, Offset};
-    #[cfg(feature="clock")]
-    #[doc(no_inline)] pub use Local;
-    #[doc(no_inline)] pub use {Utc, FixedOffset};
-    #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
-    #[doc(no_inline)] pub use Date;
-    #[doc(no_inline)] pub use {DateTime, SecondsFormat};
-    #[doc(no_inline)] pub use SubsecRound;
+    #[doc(no_inline)]
+    pub use Date;
+    #[cfg(feature = "clock")]
+    #[doc(no_inline)]
+    pub use Local;
+    #[doc(no_inline)]
+    pub use SubsecRound;
+    #[doc(no_inline)]
+    pub use {DateTime, SecondsFormat};
+    #[doc(no_inline)]
+    pub use {Datelike, Timelike, Weekday};
+    #[doc(no_inline)]
+    pub use {FixedOffset, Utc};
+    #[doc(no_inline)]
+    pub use {NaiveDate, NaiveDateTime, NaiveTime};
+    #[doc(no_inline)]
+    pub use {Offset, TimeZone};
 }
 
 // useful throughout the codebase
 macro_rules! try_opt {
-    ($e:expr) => (match $e { Some(v) => v, None => return None })
+    ($e:expr) => {
+        match $e {
+            Some(v) => v,
+            None => return None,
+        }
+    };
 }
 
 const EPOCH_NUM_DAYS_FROM_CE: i32 = 719_163;
 
 mod div;
-#[cfg(not(feature="clock"))]
-mod oldtime;
 pub mod offset;
+#[cfg(not(feature = "clock"))]
+mod oldtime;
 pub mod naive {
     //! Date and time types unconcerned with timezones.
     //!
@@ -467,20 +484,19 @@ pub mod naive {
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
 
-    mod internals;
     mod date;
+    mod datetime;
+    mod internals;
     mod isoweek;
     mod time;
-    mod datetime;
 
-    pub use self::date::{NaiveDate, MIN_DATE, MAX_DATE};
-    pub use self::isoweek::IsoWeek;
-    pub use self::time::NaiveTime;
-    pub use self::datetime::NaiveDateTime;
+    pub use self::date::{NaiveDate, MAX_DATE, MIN_DATE};
     #[cfg(feature = "rustc-serialize")]
     #[allow(deprecated)]
     pub use self::datetime::rustc_serialize::TsSeconds;
-
+    pub use self::datetime::NaiveDateTime;
+    pub use self::isoweek::IsoWeek;
+    pub use self::time::NaiveTime;
 
     /// Serialization/Deserialization of naive types in alternate formats
     ///
@@ -699,12 +715,13 @@ impl fmt::Debug for ParseWeekdayError {
 #[cfg(feature = "serde")]
 mod weekday_serde {
     use super::Weekday;
+    use serdelib::{de, ser};
     use std::fmt;
-    use serdelib::{ser, de};
 
     impl ser::Serialize for Weekday {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
             serializer.serialize_str(&format!("{:?}", self))
         }
@@ -720,15 +737,19 @@ mod weekday_serde {
         }
 
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-            where E: de::Error
+        where
+            E: de::Error,
         {
-            value.parse().map_err(|_| E::custom("short or long weekday names expected"))
+            value
+                .parse()
+                .map_err(|_| E::custom("short or long weekday names expected"))
         }
     }
 
     impl<'de> de::Deserialize<'de> for Weekday {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             deserializer.deserialize_str(WeekdayVisitor)
         }
@@ -990,7 +1011,8 @@ pub trait Timelike: Sized {
     }
 }
 
-#[cfg(test)] extern crate num_iter;
+#[cfg(test)]
+extern crate num_iter;
 
 #[test]
 fn test_readme_doomsday() {

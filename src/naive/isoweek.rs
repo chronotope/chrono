@@ -29,18 +29,22 @@ pub struct IsoWeek {
 // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
 pub fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
     let (rawweek, _) = of.isoweekdate_raw();
-    let (year, week) = if rawweek < 1 { // previous year
+    let (year, week) = if rawweek < 1 {
+        // previous year
         let prevlastweek = YearFlags::from_year(year - 1).nisoweeks();
         (year - 1, prevlastweek)
     } else {
         let lastweek = of.flags().nisoweeks();
-        if rawweek > lastweek { // next year
+        if rawweek > lastweek {
+            // next year
             (year + 1, 1)
         } else {
             (year, rawweek)
         }
     };
-    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(of.flags().0) }
+    IsoWeek {
+        ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(of.flags().0),
+    }
 }
 
 impl IsoWeek {
@@ -140,7 +144,7 @@ impl fmt::Debug for IsoWeek {
 
 #[cfg(test)]
 mod tests {
-    use naive::{internals, MIN_DATE, MAX_DATE};
+    use naive::{internals, MAX_DATE, MIN_DATE};
     use Datelike;
 
     #[test]
@@ -151,11 +155,17 @@ mod tests {
         assert_eq!(minweek.year(), internals::MIN_YEAR);
         assert_eq!(minweek.week(), 1);
         assert_eq!(minweek.week0(), 0);
-        assert_eq!(format!("{:?}", minweek), MIN_DATE.format("%G-W%V").to_string());
+        assert_eq!(
+            format!("{:?}", minweek),
+            MIN_DATE.format("%G-W%V").to_string()
+        );
 
         assert_eq!(maxweek.year(), internals::MAX_YEAR + 1);
         assert_eq!(maxweek.week(), 1);
         assert_eq!(maxweek.week0(), 0);
-        assert_eq!(format!("{:?}", maxweek), MAX_DATE.format("%G-W%V").to_string());
+        assert_eq!(
+            format!("{:?}", maxweek),
+            MAX_DATE.format("%G-W%V").to_string()
+        );
     }
 }

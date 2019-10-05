@@ -156,7 +156,7 @@ Notes:
 
 */
 
-use super::{Item, Numeric, Fixed, InternalFixed, InternalInternal, Pad};
+use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -173,7 +173,10 @@ impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     pub fn new(s: &'a str) -> StrftimeItems<'a> {
         static FMT_NONE: [Item<'static>; 0] = [];
-        StrftimeItems { remainder: s, recons: &FMT_NONE }
+        StrftimeItems {
+            remainder: s,
+            recons: &FMT_NONE,
+        }
     }
 }
 
@@ -199,15 +202,15 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 self.remainder = &self.remainder[1..];
 
                 macro_rules! next {
-                    () => (
+                    () => {
                         match self.remainder.chars().next() {
                             Some(x) => {
                                 self.remainder = &self.remainder[x.len_utf8()..];
                                 x
-                            },
+                            }
                             None => return Some(Item::Error), // premature end of string
                         }
-                    )
+                    };
                 }
 
                 let spec = next!();
@@ -218,7 +221,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     _ => None,
                 };
                 let is_alternate = spec == '#';
-                let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
+                let spec = if pad_override.is_some() || is_alternate {
+                    next!()
+                } else {
+                    spec
+                };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
                     return Some(Item::Error);
                 }
@@ -235,8 +242,13 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'A' => fix!(LongWeekdayName),
                     'B' => fix!(LongMonthName),
                     'C' => num0!(YearDiv100),
-                    'D' => recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
-                                   num0!(YearMod100)],
+                    'D' => recons![
+                        num0!(Month),
+                        lit!("/"),
+                        num0!(Day),
+                        lit!("/"),
+                        num0!(YearMod100)
+                    ],
                     'F' => recons![num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)],
                     'G' => num0!(IsoYear),
                     'H' => num0!(Hour),
@@ -245,18 +257,42 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'P' => fix!(LowerAmPm),
                     'R' => recons![num0!(Hour), lit!(":"), num0!(Minute)],
                     'S' => num0!(Second),
-                    'T' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
+                    'T' => recons![
+                        num0!(Hour),
+                        lit!(":"),
+                        num0!(Minute),
+                        lit!(":"),
+                        num0!(Second)
+                    ],
                     'U' => num0!(WeekFromSun),
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
-                    'X' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
+                    'X' => recons![
+                        num0!(Hour),
+                        lit!(":"),
+                        num0!(Minute),
+                        lit!(":"),
+                        num0!(Second)
+                    ],
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
-                    'c' => recons![fix!(ShortWeekdayName), sp!(" "), fix!(ShortMonthName),
-                                   sp!(" "), nums!(Day), sp!(" "), num0!(Hour), lit!(":"),
-                                   num0!(Minute), lit!(":"), num0!(Second), sp!(" "), num0!(Year)],
+                    'c' => recons![
+                        fix!(ShortWeekdayName),
+                        sp!(" "),
+                        fix!(ShortMonthName),
+                        sp!(" "),
+                        nums!(Day),
+                        sp!(" "),
+                        num0!(Hour),
+                        lit!(":"),
+                        num0!(Minute),
+                        lit!(":"),
+                        num0!(Second),
+                        sp!(" "),
+                        num0!(Year)
+                    ],
                     'd' => num0!(Day),
                     'e' => nums!(Day),
                     'f' => num0!(Nanosecond),
@@ -267,22 +303,41 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'm' => num0!(Month),
                     'n' => sp!("\n"),
                     'p' => fix!(UpperAmPm),
-                    'r' => recons![num0!(Hour12), lit!(":"), num0!(Minute), lit!(":"),
-                                   num0!(Second), sp!(" "), fix!(UpperAmPm)],
+                    'r' => recons![
+                        num0!(Hour12),
+                        lit!(":"),
+                        num0!(Minute),
+                        lit!(":"),
+                        num0!(Second),
+                        sp!(" "),
+                        fix!(UpperAmPm)
+                    ],
                     's' => num!(Timestamp),
                     't' => sp!("\t"),
                     'u' => num!(WeekdayFromMon),
-                    'v' => recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"),
-                                   num0!(Year)],
+                    'v' => recons![
+                        nums!(Day),
+                        lit!("-"),
+                        fix!(ShortMonthName),
+                        lit!("-"),
+                        num0!(Year)
+                    ],
                     'w' => num!(NumDaysFromSun),
-                    'x' => recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"),
-                                   num0!(YearMod100)],
+                    'x' => recons![
+                        num0!(Month),
+                        lit!("/"),
+                        num0!(Day),
+                        lit!("/"),
+                        num0!(YearMod100)
+                    ],
                     'y' => num0!(YearMod100),
-                    'z' => if is_alternate {
-                        internal_fix!(TimezoneOffsetPermissive)
-                    } else {
-                        fix!(TimezoneOffset)
-                    },
+                    'z' => {
+                        if is_alternate {
+                            internal_fix!(TimezoneOffsetPermissive)
+                        } else {
+                            fix!(TimezoneOffset)
+                        }
+                    }
                     '+' => fix!(RFC3339),
                     ':' => match next!() {
                         'z' => fix!(TimezoneOffsetColon),
@@ -323,35 +378,40 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 // adjust `item` if we have any padding modifier
                 if let Some(new_pad) = pad_override {
                     match item {
-                        Item::Numeric(ref kind, _pad) if self.recons.is_empty() =>
-                            Some(Item::Numeric(kind.clone(), new_pad)),
+                        Item::Numeric(ref kind, _pad) if self.recons.is_empty() => {
+                            Some(Item::Numeric(kind.clone(), new_pad))
+                        }
                         _ => Some(Item::Error), // no reconstructed or non-numeric item allowed
                     }
                 } else {
                     Some(item)
                 }
-            },
+            }
 
             // the next item is space
             Some(c) if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
-                let nextspec = self.remainder.find(|c: char| !c.is_whitespace())
-                                             .unwrap_or_else(|| self.remainder.len());
+                let nextspec = self
+                    .remainder
+                    .find(|c: char| !c.is_whitespace())
+                    .unwrap_or_else(|| self.remainder.len());
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
                 Some(item)
-            },
+            }
 
             // the next item is literal
             _ => {
-                let nextspec = self.remainder.find(|c: char| c.is_whitespace() || c == '%')
-                                             .unwrap_or_else(|| self.remainder.len());
+                let nextspec = self
+                    .remainder
+                    .find(|c: char| c.is_whitespace() || c == '%')
+                    .unwrap_or_else(|| self.remainder.len());
                 assert!(nextspec > 0);
                 let item = lit!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
                 Some(item)
-            },
+            }
         }
     }
 }
@@ -362,22 +422,40 @@ fn test_strftime_items() {
     fn parse_and_collect<'a>(s: &'a str) -> Vec<Item<'a>> {
         // map any error into `[Item::Error]`. useful for easy testing.
         let items = StrftimeItems::new(s);
-        let items = items.map(|spec| if spec == Item::Error {None} else {Some(spec)});
-        items.collect::<Option<Vec<_>>>().unwrap_or(vec![Item::Error])
+        let items = items.map(|spec| {
+            if spec == Item::Error {
+                None
+            } else {
+                Some(spec)
+            }
+        });
+        items
+            .collect::<Option<Vec<_>>>()
+            .unwrap_or(vec![Item::Error])
     }
 
     assert_eq!(parse_and_collect(""), []);
     assert_eq!(parse_and_collect(" \t\n\r "), [sp!(" \t\n\r ")]);
     assert_eq!(parse_and_collect("hello?"), [lit!("hello?")]);
-    assert_eq!(parse_and_collect("a  b\t\nc"), [lit!("a"), sp!("  "), lit!("b"), sp!("\t\n"),
-                                                lit!("c")]);
+    assert_eq!(
+        parse_and_collect("a  b\t\nc"),
+        [lit!("a"), sp!("  "), lit!("b"), sp!("\t\n"), lit!("c")]
+    );
     assert_eq!(parse_and_collect("100%%"), [lit!("100"), lit!("%")]);
-    assert_eq!(parse_and_collect("100%% ok"), [lit!("100"), lit!("%"), sp!(" "), lit!("ok")]);
+    assert_eq!(
+        parse_and_collect("100%% ok"),
+        [lit!("100"), lit!("%"), sp!(" "), lit!("ok")]
+    );
     assert_eq!(parse_and_collect("%%PDF-1.0"), [lit!("%"), lit!("PDF-1.0")]);
-    assert_eq!(parse_and_collect("%Y-%m-%d"), [num0!(Year), lit!("-"), num0!(Month), lit!("-"),
-                                               num0!(Day)]);
+    assert_eq!(
+        parse_and_collect("%Y-%m-%d"),
+        [num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)]
+    );
     assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
-    assert_eq!(parse_and_collect("%m %d"), [num0!(Month), sp!(" "), num0!(Day)]);
+    assert_eq!(
+        parse_and_collect("%m %d"),
+        [num0!(Month), sp!(" "), num0!(Day)]
+    );
     assert_eq!(parse_and_collect("%"), [Item::Error]);
     assert_eq!(parse_and_collect("%%"), [lit!("%")]);
     assert_eq!(parse_and_collect("%%%"), [Item::Error]);
@@ -401,7 +479,10 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
     assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
     assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
-    assert_eq!(parse_and_collect("%#z"), [internal_fix!(TimezoneOffsetPermissive)]);
+    assert_eq!(
+        parse_and_collect("%#z"),
+        [internal_fix!(TimezoneOffsetPermissive)]
+    );
     assert_eq!(parse_and_collect("%#m"), [Item::Error]);
 }
 
@@ -410,7 +491,9 @@ fn test_strftime_items() {
 fn test_strftime_docs() {
     use {FixedOffset, TimeZone, Timelike};
 
-    let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
+    let dt = FixedOffset::east(34200)
+        .ymd(2001, 7, 8)
+        .and_hms_nano(0, 34, 59, 1_026_490_708);
 
     // date specifiers
     assert_eq!(dt.format("%Y").to_string(), "2001");
@@ -451,8 +534,13 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%S").to_string(), "60");
     assert_eq!(dt.format("%f").to_string(), "026490708");
     assert_eq!(dt.format("%.f").to_string(), ".026490708");
-    assert_eq!(dt.with_nanosecond(1_026_490_000).unwrap().format("%.f").to_string(),
-               ".026490");
+    assert_eq!(
+        dt.with_nanosecond(1_026_490_000)
+            .unwrap()
+            .format("%.f")
+            .to_string(),
+        ".026490"
+    );
     assert_eq!(dt.format("%.3f").to_string(), ".026");
     assert_eq!(dt.format("%.6f").to_string(), ".026490");
     assert_eq!(dt.format("%.9f").to_string(), ".026490708");
@@ -471,9 +559,17 @@ fn test_strftime_docs() {
 
     // date & time specifiers
     assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
-    assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
-    assert_eq!(dt.with_nanosecond(1_026_490_000).unwrap().format("%+").to_string(),
-               "2001-07-08T00:34:60.026490+09:30");
+    assert_eq!(
+        dt.format("%+").to_string(),
+        "2001-07-08T00:34:60.026490708+09:30"
+    );
+    assert_eq!(
+        dt.with_nanosecond(1_026_490_000)
+            .unwrap()
+            .format("%+")
+            .to_string(),
+        "2001-07-08T00:34:60.026490+09:30"
+    );
     assert_eq!(dt.format("%s").to_string(), "994518299");
 
     // special specifiers
