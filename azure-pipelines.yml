@@ -9,7 +9,7 @@ resources:
     - repository: rust_pipelines
       type: github
       name: xoac/rust-azure-pipelines
-      ref: refs/tags/v0.1.0
+      ref: refs/heads/master
       endpoint: xoac # TODO YOU NEED TO CHANGE THIS!
 
 stages:
