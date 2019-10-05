@@ -1734,7 +1734,6 @@ pub mod rustc_serialize {
     fn test_decodable_timestamps() {
         super::test_decodable_json_timestamp(json::decode);
     }
-
 }
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s

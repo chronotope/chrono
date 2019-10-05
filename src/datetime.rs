@@ -1017,7 +1017,6 @@ pub mod rustc_serialize {
     fn test_decodable_timestamps() {
         super::test_decodable_json_timestamps(json::decode, json::decode, json::decode);
     }
-
 }
 
 /// documented at re-export site
@@ -2033,5 +2032,4 @@ mod tests {
             .into();
         let st: std::time::SystemTime = dt.into(); // this panic on armv7-unknown-linux-musleabihf
     }
-
 }
