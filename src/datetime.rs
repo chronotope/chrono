@@ -2025,4 +2025,13 @@ mod tests {
         assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
         assert_eq!(format!(" {} ", ymd_formatted), format!("{:^17}", ymd));
     }
+
+    #[test]
+    fn test_into_system_time() {
+        let dt: DateTime<Utc> = DateTime::parse_from_rfc3339("2208-01-01T00:00:00+00:00")
+            .unwrap()
+            .into();
+        let st: std::time::SystemTime = dt.into(); // this panic on armv7-unknown-linux-musleabihf
+    }
+
 }
