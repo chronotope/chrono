@@ -10,7 +10,7 @@ resources:
       type: github
       name: xoac/rust-azure-pipelines
       ref: refs/tags/v0.1.0
-      endpoint: PipelinesTemplates # TODO YOU NEED TO CHANGE THIS!
+      endpoint: xoac # TODO YOU NEED TO CHANGE THIS!
 
 stages:
 - stage: check
