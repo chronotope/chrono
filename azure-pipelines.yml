@@ -1,0 +1,47 @@
+trigger:
+  branches:
+    include: ['*']
+  tags:
+    include: ['*']
+
+resources:
+  repositories:
+    - repository: rust_pipelines
+      type: github
+      name: xoac/rust-azure-pipelines
+      ref: refs/tags/v0.1.0
+      endpoint: PipelinesTemplates # TODO YOU NEED TO CHANGE THIS!
+
+stages:
+- stage: check
+  displayName: "Quick checks"
+  jobs:
+  - template: ci/scenarios/check.yml@rust_pipelines
+
+- stage: test
+  displayName: "Multi OS native tests"
+  jobs:
+  - template: ci/scenarios/test.yml@rust_pipelines
+    parameters:
+      min_rust_supported: 1.31  # Use first rust version you wanna support
+
+# This stage allow to easy test your crate using cross project. 
+# Supported targets: https://github.com/rust-embedded/cross#supported-targets
+- stage: embedded
+  displayName: "Cross check and tests"
+  dependsOn:
+    - check
+  jobs:
+  - template: ci/scenarios/embeeded.yml@rust_pipelines
+    parameters:
+      tests:
+        - target: i686-unknown-linux-gnu
+          name: cross_test_i686_unknown_linux_gnu
+        - target: armv7-unknown-linux-musleabihf
+          name: cross_test_armv7_unknown_linux_musleabihf
+        - target: armv7-unknown-linux-gnueabihf
+          name: cross_test_armv7_unknown_linux_gnueabihf
+        - target: aarch64-unknown-linux-gnu
+          name: cross_test_aarch64_unknown_linux_gnu
+        - target: aarch64-unknown-linux-musl
+          name: cross_test_aarch64_unknown_linux_musl
