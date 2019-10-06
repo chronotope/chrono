@@ -330,10 +330,10 @@ impl NaiveDate {
         }
     }
 
-    /// Makes a new `NaiveDate` from the number of days since January 1, 1 (Day 1)
-    /// in the proleptic Gregorian calendar.
+    /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
+    /// January 1, 1 being day 1.
     ///
-    /// Panics on the out-of-range date.
+    /// Panics if the date is out of range.
     ///
     /// # Example
     ///
@@ -378,10 +378,10 @@ impl NaiveDate {
         NaiveDate::from_num_days_from_ce_opt(days).expect("out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` from the number of days since January 1, 1 (Day 1)
-    /// in the proleptic Gregorian calendar.
+    /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
+    /// January 1, 1 being day 1.
     ///
-    /// Returns `None` on the out-of-range date.
+    /// Returns `None` if the date is out of range.
     ///
     /// # Example
     ///
