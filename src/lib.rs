@@ -812,7 +812,7 @@ mod weekday_serde {
 /// use num_traits::FromPrimitive;
 /// let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11); 
 /// // `2019-10-28T09:10:11Z`
-/// let month = Month::from_u32((date.month());
+/// let month = Month::from_u32(date.month());
 /// assert_eq!(month, Some(Month::October))
 /// ```
 /// Or from a Month to an integer usable by dates
