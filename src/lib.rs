@@ -438,7 +438,7 @@ pub use round::SubsecRound;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
-    #[doc(no_inline)] pub use {Datelike, Timelike, Weekday};
+    #[doc(no_inline)] pub use {Datelike, Timelike, Weekday, Month};
     #[doc(no_inline)] pub use {TimeZone, Offset};
     #[cfg(feature="clock")]
     #[doc(no_inline)] pub use Local;
@@ -809,7 +809,9 @@ mod weekday_serde {
 /// 
 /// It is possible to convert from a date to a month independently
 /// ```
+/// # extern crate num_traits;
 /// use num_traits::FromPrimitive;
+/// use chrono::prelude::*;
 /// let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11); 
 /// // `2019-10-28T09:10:11Z`
 /// let month = Month::from_u32(date.month());
@@ -817,6 +819,7 @@ mod weekday_serde {
 /// ```
 /// Or from a Month to an integer usable by dates
 /// ```
+/// # use chrono::prelude::*;
 /// let month = Month::January;
 /// let dt = Utc.ymd(2019, month.number_from_month(), 28).and_hms(9, 10, 11);
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
