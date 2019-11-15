@@ -159,7 +159,7 @@
 //!
 //! ```rust
 //! # extern crate chrono;
-//! extern crate time;
+//! extern crate time; // v0.1
 //!
 //! # fn main() {
 //! use chrono::prelude::*;

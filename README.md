@@ -18,9 +18,7 @@
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
 [gitter]: https://gitter.im/chrono-rs/chrono
 
-It aims to be a feature-complete superset of
-the [time](https://github.com/rust-lang-deprecated/time) library.
-In particular,
+Chrono aims to be a feature-complete time library. In particular,
 
 * Chrono strictly adheres to ISO 8601.
 * Chrono is timezone-aware by default, with separate timezone-naive types.
@@ -74,7 +72,7 @@ use chrono::prelude::*;
 
 Chrono currently uses
 the [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type
-from the `time` crate to represent the magnitude of a time span.
+from the `time` crate (v0.1) to represent the magnitude of a time span.
 Since this has the same name to the newer, standard type for duration,
 the reference will refer this type as `OldDuration`.
 Note that this is an "accurate" duration represented as seconds and
@@ -98,9 +96,9 @@ type to represent a date and a time in a timezone.
 
 For more abstract moment-in-time tracking such as internal timekeeping
 that is unconcerned with timezones, consider
-[`time::SystemTime`](https://doc.rust-lang.org/std/time/struct.SystemTime.html),
+[`std::time::SystemTime`](https://doc.rust-lang.org/std/time/struct.SystemTime.html),
 which tracks your system clock, or
-[`time::Instant`](https://doc.rust-lang.org/std/time/struct.Instant.html), which
+[`std::time::Instant`](https://doc.rust-lang.org/std/time/struct.Instant.html), which
 is an opaque but monotonically-increasing representation of a moment in time.
 
 `DateTime` is timezone-aware and must be constructed from
@@ -172,7 +170,7 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ```rust
-extern crate time;
+extern crate time; // v0.1
 
 use chrono::prelude::*;
 use time::Duration;

@@ -416,7 +416,7 @@ impl NaiveDateTime {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// use time::Duration; // v0.1
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -502,7 +502,7 @@ impl NaiveDateTime {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// use time::Duration; // v0.1
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -584,7 +584,7 @@ impl NaiveDateTime {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// use time::Duration; // v0.1
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -1202,7 +1202,7 @@ impl hash::Hash for NaiveDateTime {
 /// ~~~~
 /// # extern crate chrono; extern crate time; fn main() {
 /// use chrono::NaiveDate;
-/// use time::Duration;
+/// use time::Duration; // v0.1
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1274,7 +1274,7 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// ~~~~
 /// # extern crate chrono; extern crate time; fn main() {
 /// use chrono::NaiveDate;
-/// use time::Duration;
+/// use time::Duration; // v0.1
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1345,7 +1345,7 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// ~~~~
 /// # extern crate chrono; extern crate time; fn main() {
 /// use chrono::NaiveDate;
-/// use time::Duration;
+/// use time::Duration; // v0.1
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///

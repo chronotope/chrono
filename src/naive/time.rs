@@ -506,7 +506,7 @@ impl NaiveTime {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveTime;
-    /// use time::Duration;
+    /// use time::Duration; // v0.1
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
@@ -592,7 +592,7 @@ impl NaiveTime {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveTime;
-    /// use time::Duration;
+    /// use time::Duration; // v0.1
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
@@ -625,7 +625,7 @@ impl NaiveTime {
     /// ~~~~
     /// # extern crate chrono; extern crate time; fn main() {
     /// use chrono::NaiveTime;
-    /// use time::Duration;
+    /// use time::Duration; // v0.1
     ///
     /// let from_hmsm = NaiveTime::from_hms_milli;
     /// let since = NaiveTime::signed_duration_since;
@@ -1002,7 +1002,7 @@ impl hash::Hash for NaiveTime {
 /// ~~~~
 /// # extern crate chrono; extern crate time; fn main() {
 /// use chrono::NaiveTime;
-/// use time::Duration;
+/// use time::Duration; // v0.1
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -1077,7 +1077,7 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// ~~~~
 /// # extern crate chrono; extern crate time; fn main() {
 /// use chrono::NaiveTime;
-/// use time::Duration;
+/// use time::Duration; // v0.1
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
@@ -1151,7 +1151,7 @@ impl SubAssign<OldDuration> for NaiveTime {
 /// ~~~~
 /// # extern crate chrono; extern crate time; fn main() {
 /// use chrono::NaiveTime;
-/// use time::Duration;
+/// use time::Duration; // v0.1
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
