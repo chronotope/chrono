@@ -915,21 +915,6 @@ pub trait Datelike: Sized {
         ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
         ndays + self.ordinal() as i32
     }
-
-    /// Return the number of days since the unix epoch, 1970-01-01
-    ///
-    /// # Example:
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(1970, 1, 1).num_days_from_epoch(), 0);
-    /// assert_eq!(NaiveDate::from_ymd(1969, 1, 1).num_days_from_epoch(), -365);
-    /// assert_eq!(NaiveDate::from_ymd(1999, 12, 31).num_days_from_epoch(), 10_956);
-    /// ```
-    fn num_days_from_epoch(&self) -> i32 {
-        self.num_days_from_ce() - EPOCH_NUM_DAYS_FROM_CE
-    }
 }
 
 /// The common set of methods for time component.
