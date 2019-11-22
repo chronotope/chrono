@@ -470,7 +470,6 @@ impl fmt::Debug for Mdf {
 #[cfg(test)]
 mod tests {
     #[cfg(test)] extern crate num_iter;
-    #[cfg(bench)] extern crate test;
 
     use Weekday;
     use super::{Of, Mdf};
@@ -517,7 +516,7 @@ mod tests {
         assert_eq!(GF.nisoweeks(), 52);
     }
 
-    #[cfg(bench)]
+    #[cfg(feature = "bench")]
     #[bench]
     fn bench_year_flags_from_year(bh: &mut test::Bencher) {
         bh.iter(|| {

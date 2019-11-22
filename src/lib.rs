@@ -383,7 +383,7 @@
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/")]
 
-#![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
+#![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
@@ -427,6 +427,8 @@ extern crate doc_comment;
 extern crate wasm_bindgen;
 #[cfg(all(target_arch = "wasm32", feature="wasmbind"))]
 extern crate js_sys;
+#[cfg(feature = "bench")]
+extern crate test;
 
 #[cfg(test)]
 doctest!("../README.md");
