@@ -218,13 +218,19 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                 s = &s[prefix.len()..];
             }
 
+            #[cfg(any(feature = "alloc", feature = "std", test))]
             Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() { return Err(TOO_SHORT); }
                 if !s.starts_with(&prefix[..]) { return Err(INVALID); }
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) | Item::OwnedSpace(_) => {
+            Item::Space(_) => {
+                s = s.trim_left();
+            }
+
+            #[cfg(any(feature = "alloc", feature = "std", test))]
+            Item::OwnedSpace(_) => {
                 s = s.trim_left();
             }
 

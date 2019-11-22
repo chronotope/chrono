@@ -26,30 +26,6 @@ use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::string::{String, ToString};
 
-#[cfg(not(any(feature = "alloc", feature = "std", test)))]
-mod core_only {
-    /// Core only
-    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-    pub struct Box<T: ?Sized>(core::marker::PhantomData<T>);
-
-    impl Box<str> {
-        /// Core only
-        pub fn len(&self) -> usize { 0 }
-    }
-
-    impl Clone for Box<str> { fn clone(&self) -> Self { Box(core::marker::PhantomData) } }
-
-    impl core::ops::Index<core::ops::RangeFull> for Box<str> {
-        type Output = str;
-        fn index(&self, _: core::ops::RangeFull) -> &Self::Output {
-            ""
-        }
-    }
-}
-
-#[cfg(not(any(feature = "alloc", feature = "std", test)))]
-use self::core_only::Box;
-
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use {Datelike, Timelike};
 use {Weekday, ParseWeekdayError};
@@ -279,10 +255,12 @@ pub enum Item<'a> {
     /// A literally printed and parsed text.
     Literal(&'a str),
     /// Same to `Literal` but with the string owned by the item.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
     /// Same to `Space` but with the string owned by the item.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
     /// the parser simply ignores any padded whitespace and zeroes.
@@ -404,6 +382,7 @@ pub fn format<'a, I>(
     for item in items {
         match item {
             Item::Literal(s) | Item::Space(s) => result.push_str(s),
+            #[cfg(any(feature = "alloc", feature = "std", test))]
             Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
 
             Item::Numeric(spec, pad) => {
