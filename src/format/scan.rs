@@ -30,6 +30,7 @@ fn equals(s: &str, pattern: &str) -> bool {
 /// The absence of digits at all is an unconditional error.
 /// More than `max` digits are consumed up to the first `max` digits.
 /// Any number that does not fit in `i64` is an error.
+#[inline]
 pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     assert!(min <= max);
 
