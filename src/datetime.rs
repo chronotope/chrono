@@ -25,6 +25,7 @@ use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
+use core::borrow::Borrow;
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -326,7 +327,7 @@ impl DateTime<FixedOffset> {
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_datetime()
     }
 
@@ -338,7 +339,7 @@ impl DateTime<FixedOffset> {
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_datetime()
     }
 
@@ -374,14 +375,14 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc2822(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
-        self.format_with_items(ITEMS.iter().cloned()).to_string()
+        self.format_with_items(ITEMS.iter()).to_string()
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
-        self.format_with_items(ITEMS.iter().cloned()).to_string()
+        self.format_with_items(ITEMS.iter()).to_string()
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
@@ -450,11 +451,11 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
         match ssitem {
             None =>
                 self.format_with_items(
-                    PREFIX.iter().chain([tzitem].iter()).cloned()
+                    PREFIX.iter().chain([tzitem].iter())
                 ).to_string(),
             Some(s) =>
                 self.format_with_items(
-                    PREFIX.iter().chain([s, tzitem].iter()).cloned()
+                    PREFIX.iter().chain([s, tzitem].iter())
                 ).to_string(),
         }
     }
@@ -462,8 +463,8 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Formats the combined date and time with the specified formatting items.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
-    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=Item<'a>> + Clone {
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
         let local = self.naive_local();
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
@@ -638,7 +639,7 @@ impl str::FromStr for DateTime<FixedOffset> {
         ];
 
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_datetime()
     }
 }

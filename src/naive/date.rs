@@ -3,6 +3,7 @@
 
 //! ISO 8601 calendar date without timezone.
 
+use core::borrow::Borrow;
 use core::{str, fmt};
 use core::ops::{Add, Sub, AddAssign, SubAssign};
 use num_traits::ToPrimitive;
@@ -920,8 +921,8 @@ impl NaiveDate {
     /// ~~~~
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
-    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=Item<'a>> + Clone {
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
         DelayedFormat::new(Some(*self), None, items)
     }
 
@@ -1516,7 +1517,7 @@ impl str::FromStr for NaiveDate {
         ];
 
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_naive_date()
     }
 }

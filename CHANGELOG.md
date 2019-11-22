@@ -8,6 +8,14 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
+## next
+
+### Features
+
+* Functions that were accepting `Iterator` of `Item`s (for example
+  `format_with_items`) now accept `Iterator` of `Borrow<Item>`, so one can
+  use values or references.
+
 ## 0.4.9
 
 ### Fixes

@@ -6,6 +6,7 @@
 
 #![allow(deprecated)]
 
+use core::borrow::Borrow;
 use core::usize;
 
 use Weekday;
@@ -204,14 +205,14 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 ///   so one can prepend any number of whitespace then any number of zeroes before numbers.
 ///
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
-pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
-        where I: Iterator<Item=Item<'a>> {
+pub fn parse<'a, I, B>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
+        where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
     macro_rules! try_consume {
         ($e:expr) => ({ let (s_, v) = try!($e); s = s_; v })
     }
 
     for item in items {
-        match item {
+        match item.borrow() {
             Item::Literal(prefix) => {
                 if s.len() < prefix.len() { return Err(TOO_SHORT); }
                 if !s.starts_with(prefix) { return Err(INVALID); }
@@ -388,7 +389,7 @@ fn test_parse() {
     // workaround for Rust issue #22255
     fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, items.iter().cloned()));
+        try!(parse(&mut parsed, s, items.iter()));
         Ok(parsed)
     }
 
@@ -699,12 +700,12 @@ fn test_rfc2822() {
 
     fn rfc2822_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter().cloned()));
+        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter()));
         parsed.to_datetime()
     }
 
     fn fmt_rfc2822_datetime(dt: DateTime<FixedOffset>) -> String {
-        dt.format_with_items([Item::Fixed(Fixed::RFC2822)].iter().cloned()).to_string()
+        dt.format_with_items([Item::Fixed(Fixed::RFC2822)].iter()).to_string()
     }
 
     // Test against test data above
@@ -780,12 +781,12 @@ fn test_rfc3339() {
 
     fn rfc3339_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter().cloned()));
+        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter()));
         parsed.to_datetime()
     }
 
     fn fmt_rfc3339_datetime(dt: DateTime<FixedOffset>) -> String {
-        dt.format_with_items([Item::Fixed(Fixed::RFC3339)].iter().cloned()).to_string()
+        dt.format_with_items([Item::Fixed(Fixed::RFC3339)].iter()).to_string()
     }
 
     // Test against test data above

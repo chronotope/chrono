@@ -17,6 +17,7 @@
 
 #![allow(ellipsis_inclusive_range_patterns)]
 
+use core::borrow::Borrow;
 use core::fmt;
 use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
@@ -356,14 +357,14 @@ const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(any(feature = "alloc", feature = "std", test))]
-pub fn format<'a, I>(
+pub fn format<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     items: I,
 ) -> fmt::Result
-    where I: Iterator<Item=Item<'a>>
+    where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>>
 {
     // full and abbreviated month and weekday names
     static SHORT_MONTHS: [&'static str; 12] =
@@ -380,7 +381,7 @@ pub fn format<'a, I>(
     let mut result = String::new();
 
     for item in items {
-        match item {
+        match item.borrow() {
             Item::Literal(s) | Item::Space(s) => result.push_str(s),
             #[cfg(any(feature = "alloc", feature = "std", test))]
             Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
@@ -433,7 +434,7 @@ pub fn format<'a, I>(
 
                 if let Some(v) = v {
                     try!(
-                        if (spec == Year || spec == IsoYear) && !(0 <= v && v < 10_000) {
+                        if (*spec == Year || *spec == IsoYear) && !(0 <= v && v < 10_000) {
                             // non-four-digit years require an explicit sign as per ISO 8601
                             match pad {
                                 Pad::None => write!(result, "{:+}", v),
@@ -633,7 +634,7 @@ pub struct DelayedFormat<I> {
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
+impl<'a, I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
         DelayedFormat { date: date, time: time, off: None, items: items }
@@ -649,7 +650,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<I> {
+impl<'a, I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
     }
