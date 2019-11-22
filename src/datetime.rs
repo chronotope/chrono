@@ -3,11 +3,17 @@
 
 //! ISO 8601 date and time with time zone.
 
-use std::{str, fmt, hash};
-use std::cmp::Ordering;
-use std::ops::{Add, Sub};
+use core::{str, fmt, hash};
+use core::cmp::Ordering;
+use core::ops::{Add, Sub};
+#[cfg(any(feature = "std", test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 use oldtime::Duration as OldDuration;
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+use alloc::string::{String, ToString};
+#[cfg(feature = "std")]
+use std::string::ToString;
 
 use {Weekday, Timelike, Datelike};
 #[cfg(feature="clock")]
@@ -16,7 +22,9 @@ use offset::{TimeZone, Offset, Utc, FixedOffset};
 use naive::{NaiveTime, NaiveDateTime, IsoWeek};
 use Date;
 use format::{Item, Numeric, Pad, Fixed};
-use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use format::DelayedFormat;
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -363,12 +371,14 @@ impl DateTime<FixedOffset> {
 
 impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc2822(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         self.format_with_items(ITEMS.iter().cloned()).to_string()
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         self.format_with_items(ITEMS.iter().cloned()).to_string()
@@ -398,6 +408,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
     /// ```
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         use format::Numeric::*;
         use format::Pad::Zero;
@@ -449,6 +460,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     }
 
     /// Formats the combined date and time with the specified formatting items.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -459,6 +471,7 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Formats the combined date and time with the specified format string.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -647,6 +660,7 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
+#[cfg(any(feature = "std", test))]
 impl From<SystemTime> for DateTime<Utc> {
     fn from(t: SystemTime) -> DateTime<Utc> {
         let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
@@ -672,6 +686,7 @@ impl From<SystemTime> for DateTime<Local> {
     }
 }
 
+#[cfg(any(feature = "std", test))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
         use std::time::Duration;
@@ -699,7 +714,7 @@ fn test_auto_conversion() {
 fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
     where FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
           FFixed: Fn(&DateTime<FixedOffset>) -> Result<String, E>,
-          E: ::std::fmt::Debug
+          E: ::core::fmt::Debug
 {
     assert_eq!(to_string_utc(&Utc.ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
                Some(r#""2014-07-24T12:34:06Z""#.into()));
@@ -717,7 +732,7 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
     where FUtc: Fn(&str) -> Result<DateTime<Utc>, E>,
           FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
           FLocal: Fn(&str) -> Result<DateTime<Local>, E>,
-          E: ::std::fmt::Debug
+          E: ::core::fmt::Debug
 {
     // should check against the offset as well (the normal DateTime comparison will ignore them)
     fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
@@ -754,7 +769,7 @@ fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
     where FUtc: Fn(&str) -> Result<rustc_serialize::TsSeconds<Utc>, E>,
           FFixed: Fn(&str) -> Result<rustc_serialize::TsSeconds<FixedOffset>, E>,
           FLocal: Fn(&str) -> Result<rustc_serialize::TsSeconds<Local>, E>,
-          E: ::std::fmt::Debug
+          E: ::core::fmt::Debug
 {
     fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
         dt.as_ref().map(|dt| (dt, dt.offset()))
@@ -778,8 +793,8 @@ fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(utc_from_str: FUtc,
 
 #[cfg(feature = "rustc-serialize")]
 pub mod rustc_serialize {
-    use std::fmt;
-    use std::ops::Deref;
+    use core::fmt;
+    use core::ops::Deref;
     use super::DateTime;
     #[cfg(feature="clock")]
     use offset::Local;
@@ -907,12 +922,13 @@ pub mod rustc_serialize {
 /// documented at re-export site
 #[cfg(feature = "serde")]
 pub mod serde {
-    use std::fmt;
+    use core::fmt;
     use super::DateTime;
     #[cfg(feature="clock")]
     use offset::Local;
     use offset::{LocalResult, TimeZone, Utc, FixedOffset};
     use serdelib::{ser, de};
+    use {SerdeError, ne_timestamp};
 
     #[doc(hidden)]
     #[derive(Debug)]
@@ -928,16 +944,16 @@ pub mod serde {
 
     // try!-like function to convert a LocalResult into a serde-ish Result
     fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
-        where E: de::Error,
-                V: fmt::Display,
-                T: fmt::Display,
+    where
+        E: de::Error,
+        V: fmt::Display,
+        T: fmt::Display,
     {
         match me {
             LocalResult::None => Err(E::custom(
-                format!("value is not a legal timestamp: {}", ts))),
+                ne_timestamp(ts))),
             LocalResult::Ambiguous(min, max) => Err(E::custom(
-                format!("value is an ambiguous timestamp: {}, could be either of {}, {}",
-                        ts, min, max))),
+                SerdeError::Ambiguous { timestamp: ts, min: min, max: max })),
             LocalResult::Single(val) => Ok(val)
         }
     }
@@ -979,7 +995,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_nanoseconds {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1270,7 +1286,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_milliseconds {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1561,7 +1577,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_seconds {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1847,7 +1863,7 @@ pub mod serde {
         fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(format!("{}", err)))
+            value.parse().map_err(|err: ::format::ParseError| E::custom(err))
         }
     }
 

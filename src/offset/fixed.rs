@@ -3,8 +3,8 @@
 
 //! The time zone which has a fixed offset from UTC.
 
-use std::ops::{Add, Sub};
-use std::fmt;
+use core::ops::{Add, Sub};
+use core::fmt;
 use oldtime::Duration as OldDuration;
 
 use Timelike;

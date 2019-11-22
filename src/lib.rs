@@ -387,6 +387,8 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
+
 // The explicit 'static lifetimes are still needed for rustc 1.13-16
 // backward compatibility, and this appeases clippy. If minimum rustc
 // becomes 1.17, should be able to remove this, those 'static lifetimes,
@@ -402,6 +404,13 @@
     redundant_field_names,
     trivially_copy_pass_by_ref,
 ))]
+
+#[cfg(feature = "alloc")]
+extern crate alloc;
+#[cfg(any(feature = "std", test))]
+extern crate std as core;
+#[cfg(all(feature = "std", not(feature="alloc")))]
+extern crate std as alloc;
 
 #[cfg(feature="clock")]
 extern crate time as oldtime;
@@ -511,6 +520,41 @@ mod round;
 #[cfg(feature = "serde")]
 pub mod serde {
     pub use super::datetime::serde::*;
+}
+
+// Until rust 1.18 there  is no "pub(crate)" so to share this we need it in the root
+
+#[cfg(feature = "serde")]
+enum SerdeError<V: fmt::Display, D: fmt::Display> {
+    NonExistent { timestamp: V },
+    Ambiguous { timestamp: V, min: D, max: D },
+}
+
+/// Construct a [`SerdeError::NonExistent`]
+#[cfg(feature = "serde")]
+fn ne_timestamp<T: fmt::Display>(ts: T) -> SerdeError<T, u8> {
+    SerdeError::NonExistent::<T, u8> { timestamp: ts }
+}
+
+#[cfg(feature = "serde")]
+impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ChronoSerdeError({})", self)
+    }
+}
+
+// impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
+#[cfg(feature = "serde")]
+impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            &SerdeError::NonExistent { ref timestamp } => write!(
+                f, "value is not a legal timestamp: {}", timestamp),
+            &SerdeError::Ambiguous { ref timestamp, ref min, ref max } => write!(
+                f, "value is an ambiguous timestamp: {}, could be either of {}, {}",
+                timestamp, min, max),
+        }
+    }
 }
 
 /// The day of week.
@@ -647,6 +691,20 @@ impl Weekday {
     }
 }
 
+impl fmt::Display for Weekday {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match *self {
+            Weekday::Mon => "Mon",
+            Weekday::Tue => "Tue",
+            Weekday::Wed => "Wed",
+            Weekday::Thu => "Thu",
+            Weekday::Fri => "Fri",
+            Weekday::Sat => "Sat",
+            Weekday::Sun => "Sun",
+        })
+    }
+}
+
 /// Any weekday can be represented as an integer from 0 to 6, which equals to
 /// [`Weekday::num_days_from_monday`](#method.num_days_from_monday) in this implementation.
 /// Do not heavily depend on this though; use explicit methods whenever possible.
@@ -680,7 +738,7 @@ impl num_traits::FromPrimitive for Weekday {
     }
 }
 
-use std::fmt;
+use core::fmt;
 
 /// An error resulting from reading `Weekday` value with `FromStr`.
 #[derive(Clone, PartialEq)]
@@ -699,14 +757,14 @@ impl fmt::Debug for ParseWeekdayError {
 #[cfg(feature = "serde")]
 mod weekday_serde {
     use super::Weekday;
-    use std::fmt;
+    use core::fmt;
     use serdelib::{ser, de};
 
     impl ser::Serialize for Weekday {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where S: ser::Serializer
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(&self)
         }
     }
 

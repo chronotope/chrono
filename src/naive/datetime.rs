@@ -3,8 +3,8 @@
 
 //! ISO 8601 date and time without timezone.
 
-use std::{str, fmt, hash};
-use std::ops::{Add, Sub, AddAssign, SubAssign};
+use core::{str, fmt, hash};
+use core::ops::{Add, Sub, AddAssign, SubAssign};
 use num_traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
@@ -12,7 +12,9 @@ use {Weekday, Timelike, Datelike};
 use div::div_mod_floor;
 use naive::{NaiveTime, NaiveDate, IsoWeek};
 use format::{Item, Numeric, Pad, Fixed};
-use format::{parse, Parsed, ParseError, ParseResult, DelayedFormat, StrftimeItems};
+use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use format::DelayedFormat;
 
 /// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
@@ -645,6 +647,7 @@ impl NaiveDateTime {
     /// # let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4);
     /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
     /// ~~~~
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
             where I: Iterator<Item=Item<'a>> + Clone {
@@ -683,6 +686,7 @@ impl NaiveDateTime {
     /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
     /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
     /// ~~~~
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -1663,7 +1667,7 @@ pub mod rustc_serialize {
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
 pub mod serde {
-    use std::fmt;
+    use core::fmt;
     use super::{NaiveDateTime};
     use serdelib::{ser, de};
 
@@ -1702,7 +1706,7 @@ pub mod serde {
         fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
             where E: de::Error
         {
-            value.parse().map_err(|err| E::custom(format!("{}", err)))
+            value.parse().map_err(E::custom)
         }
     }
 
@@ -1750,10 +1754,10 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_nanoseconds {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
-        use NaiveDateTime;
+        use {NaiveDateTime, ne_timestamp};
 
         /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
         ///
@@ -1846,7 +1850,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt(value / 1_000_000_000,
                                                  (value % 1_000_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
@@ -1854,7 +1858,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt(value as i64 / 1_000_000_000,
                                                  (value as i64 % 1_000_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
@@ -1895,10 +1899,10 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_milliseconds {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
-        use NaiveDateTime;
+        use {NaiveDateTime, ne_timestamp};
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
         ///
@@ -1991,7 +1995,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt(value / 1000,
                                                 ((value % 1000) * 1_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
@@ -1999,7 +2003,7 @@ pub mod serde {
             {
                 NaiveDateTime::from_timestamp_opt((value / 1000) as i64,
                                                  ((value % 1000) * 1_000_000) as u32)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
@@ -2040,10 +2044,10 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_seconds {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
-        use NaiveDateTime;
+        use {NaiveDateTime, ne_timestamp};
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch
         ///
@@ -2135,14 +2139,14 @@ pub mod serde {
                 where E: de::Error
             {
                 NaiveDateTime::from_timestamp_opt(value, 0)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
                 where E: de::Error
             {
                 NaiveDateTime::from_timestamp_opt(value as i64, 0)
-                    .ok_or_else(|| E::custom(format!("value is not a legal timestamp: {}", value)))
+                    .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }

@@ -15,7 +15,7 @@
 
 #![allow(dead_code)] // some internal methods have been left for consistency
 
-use std::{i32, fmt};
+use core::{i32, fmt};
 use num_traits::FromPrimitive;
 use Weekday;
 use div::{div_rem, mod_floor};

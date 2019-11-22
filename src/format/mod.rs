@@ -17,20 +17,30 @@
 
 #![allow(ellipsis_inclusive_range_patterns)]
 
-use std::fmt;
-use std::str::FromStr;
+use core::fmt;
+use core::str::FromStr;
+#[cfg(any(feature = "std", test))]
 use std::error::Error;
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+#[cfg(feature = "alloc")]
+use alloc::string::{String, ToString};
 
-use {Datelike, Timelike, Weekday, ParseWeekdayError};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use {Datelike, Timelike};
+use {Weekday, ParseWeekdayError};
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use div::{div_floor, mod_floor};
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use offset::{Offset, FixedOffset};
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use naive::{NaiveDate, NaiveTime};
 
 pub use self::strftime::StrftimeItems;
 pub use self::parsed::Parsed;
 pub use self::parse::parse;
 
-/// An unhabitated type used for `InternalNumeric` and `InternalFixed` below.
+/// An uninhabited type used for `InternalNumeric` and `InternalFixed` below.
 #[derive(Clone, PartialEq, Eq)]
 enum Void {}
 
@@ -55,7 +65,7 @@ pub enum Pad {
 ///
 /// The **parsing width** is the maximal width to be scanned.
 /// The parser only tries to consume from one to given number of digits (greedily).
-/// It also trims the preceding whitespaces if any.
+/// It also trims the preceding whitespace if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -185,13 +195,13 @@ pub enum Fixed {
     TimezoneName,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `+00:00`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces.
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespaces,
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
     /// and `Z` can be either in upper case or in lower case.
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
@@ -245,10 +255,12 @@ pub enum Item<'a> {
     /// A literally printed and parsed text.
     Literal(&'a str),
     /// Same to `Literal` but with the string owned by the item.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
     /// Same to `Space` but with the string owned by the item.
+    #[cfg(any(feature = "alloc", feature = "std", test))]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
     /// the parser simply ignores any padded whitespace and zeroes.
@@ -305,13 +317,7 @@ enum ParseErrorKind {
 /// Same to `Result<T, ParseError>`.
 pub type ParseResult<T> = Result<T, ParseError>;
 
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl Error for ParseError {
+impl ParseError {
     fn description(&self) -> &str {
         match self.0 {
             ParseErrorKind::OutOfRange => "input is out of range",
@@ -322,6 +328,19 @@ impl Error for ParseError {
             ParseErrorKind::TooLong => "trailing input",
             ParseErrorKind::BadFormat => "bad or unsupported format string",
         }
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.description().fmt(f)
+    }
+}
+
+#[cfg(any(feature = "std", test))]
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        self.description()
     }
 }
 
@@ -336,6 +355,7 @@ const BAD_FORMAT:   ParseError = ParseError(ParseErrorKind::BadFormat);
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
+#[cfg(any(feature = "alloc", feature = "std", test))]
 pub fn format<'a, I>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -356,12 +376,13 @@ pub fn format<'a, I>(
     static LONG_WEEKDAYS: [&'static str; 7] =
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-    use std::fmt::Write;
+    use core::fmt::Write;
     let mut result = String::new();
 
     for item in items {
         match item {
             Item::Literal(s) | Item::Space(s) => result.push_str(s),
+            #[cfg(any(feature = "alloc", feature = "std", test))]
             Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
 
             Item::Numeric(spec, pad) => {
@@ -598,6 +619,7 @@ pub mod strftime;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
+#[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug)]
 pub struct DelayedFormat<I> {
     /// The date view, if any.
@@ -610,6 +632,7 @@ pub struct DelayedFormat<I> {
     items: I,
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
@@ -625,6 +648,7 @@ impl<'a, I: Iterator<Item=Item<'a>> + Clone> DelayedFormat<I> {
     }
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item=Item<'a>> + Clone> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())

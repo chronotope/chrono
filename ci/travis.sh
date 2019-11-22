@@ -2,25 +2,50 @@
 
 # This is the script that's executed by travis, you can run it yourself to run
 # the exact same suite
+#
+# When running it locally the most important thing to set is the CHANNEL env
+# var, otherwise it will run tests against every version of rust that it knows
+# about (nightly, beta, stable, 1.13.0):
+#
+#     $ CHANNEL=stable ./ci/travis.sh
 
 set -e
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-channel() {
-    if [ -n "${TRAVIS}" ]; then
-        if [ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}" ]; then
-            pwd
-            (set -x; cargo "$@")
-        fi
-    elif [ -n "${APPVEYOR}" ]; then
-        if [ "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]; then
-            pwd
-            (set -x; cargo "$@")
+
+main() {
+    if [[ -n "$CHANNEL" ]] ; then
+        if [[ "$CHANNEL" == 1.13.0 ]]; then
+            banner "Building $CHANNEL"
+            build_only
+        else
+            banner "Building/testing $CHANNEL"
+            build_and_test
+            banner "Testing Core $CHANNEL"
+            build_core_test
         fi
     else
-        pwd
-        (set -x; cargo "+${CHANNEL}" "$@")
+        CHANNEL=nightly
+        matching_banner "Test $CHANNEL"
+        if [[ "${CLIPPY}" = y ]] ; then
+            run_clippy
+        else
+            build_and_test
+        fi
+
+        CHANNEL=beta
+        matching_banner "Test $CHANNEL"
+        build_and_test
+
+        CHANNEL=stable
+        matching_banner "Test $CHANNEL"
+        build_and_test
+        build_core_test
+
+        CHANNEL=1.13.0
+        matching_banner "Test $CHANNEL"
+        build_only
     fi
 }
 
@@ -54,14 +79,20 @@ build_and_test_nonwasm() {
   TZ=Asia/Katmandu channel test -v --features serde,rustc-serialize
 
   # without default "clock" feature
-  channel build -v --no-default-features
+  channel build -v --no-default-features --features std
   TZ=ACST-9:30 channel test -v --no-default-features --lib
-  channel build -v --no-default-features --features rustc-serialize
+  channel build -v --no-default-features --features std,rustc-serialize
   TZ=EST4 channel test -v --no-default-features --features rustc-serialize --lib
-  channel build -v --no-default-features --features serde
+  channel build -v --no-default-features --features std,serde
   TZ=UTC0 channel test -v --no-default-features --features serde --lib
-  channel build -v --no-default-features --features serde,rustc-serialize
-  TZ=Asia/Katmandu channel test -v --no-default-features --features serde,rustc-serialize --lib
+  channel build -v --no-default-features --features std,serde,rustc-serialize
+  TZ=Asia/Katmandu channel test -v --no-default-features --features std,serde,rustc-serialize --lib
+
+  channel build -v --no-default-features --features 'serde'
+  TZ=UTC0 channel test -v --no-default-features --features 'serde' --lib
+
+  channel build -v --no-default-features --features 'alloc serde'
+  TZ=UTC0 channel test -v --no-default-features --features 'alloc serde' --lib
 }
 
 build_and_test_wasm() {
@@ -81,8 +112,16 @@ build_only() {
   cargo clean
   channel build -v
   channel build -v --features rustc-serialize
-  channel build -v --features 'serde bincode'
-  channel build -v --no-default-features
+  channel build -v --features serde
+  channel build -v --no-default-features --features std
+}
+
+build_core_test() {
+    channel_run rustup target add thumbv6m-none-eabi --toolchain "$CHANNEL"
+    (
+        cd ci/core-test
+        channel build -v --target thumbv6m-none-eabi
+    )
 }
 
 run_clippy() {
@@ -92,7 +131,7 @@ run_clippy() {
         exit
     fi
 
-    cargo clippy --features 'serde bincode rustc-serialize' -- -Dclippy
+    cargo clippy --features 'serde rustc-serialize' -- -Dclippy
 }
 
 check_readme() {
@@ -100,22 +139,70 @@ check_readme() {
     (set -x; git diff --exit-code -- README.md) ; echo $?
 }
 
-rustc --version
-cargo --version
-node --version
+# script helpers
 
-CHANNEL=nightly
-if [ "x${CLIPPY}" = xy ] ; then
-    run_clippy
-else
-    build_and_test
-fi
+banner() {
+    echo "======================================================================"
+    echo "$*"
+    echo "======================================================================"
+}
 
-CHANNEL=beta
-build_and_test
+underline() {
+    echo "$*"
+    echo "${*//?/^}"
+}
 
-CHANNEL=stable
-build_and_test
+matching_banner() {
+    if channel_matches || ! is_ci ; then
+        banner "$*"
+        echo_versions
+    fi
+}
 
-CHANNEL=1.13.0
-build_only
+echo_versions() {
+    channel_run rustc --version
+    channel_run cargo --version
+    node --version
+}
+
+channel() {
+    channel_run cargo "$@"
+}
+
+channel_run() {
+    if channel_matches ; then
+        local the_cmd="$ $*"
+        underline "$the_cmd"
+        "$@"
+    elif ! is_ci ; then
+        local cmd="$1"
+        shift
+        if [[ $cmd == cargo || $cmd == rustc ]] ; then
+            underline "$ $cmd +${CHANNEL} $*"
+            "$cmd" "+${CHANNEL}" "$@"
+        else
+            underline "$ $cmd $*"
+            "$cmd" "$@"
+        fi
+    fi
+}
+
+channel_matches() {
+    if is_ci ; then
+        if [[ "${TRAVIS_RUST_VERSION}" = "${CHANNEL}"
+              || "${APPVEYOR_RUST_CHANNEL}" = "${CHANNEL}" ]] ; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+is_ci() {
+    if [[ -n "$TRAVIS" || -n "$APPVEYOR" ]] ; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+main
