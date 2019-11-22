@@ -213,56 +213,56 @@ pub fn parse<'a, I, B>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResul
 
     for item in items {
         match item.borrow() {
-            Item::Literal(prefix) => {
+            &Item::Literal(prefix) => {
                 if s.len() < prefix.len() { return Err(TOO_SHORT); }
                 if !s.starts_with(prefix) { return Err(INVALID); }
                 s = &s[prefix.len()..];
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            Item::OwnedLiteral(ref prefix) => {
+            &Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() { return Err(TOO_SHORT); }
                 if !s.starts_with(&prefix[..]) { return Err(INVALID); }
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
+            &Item::Space(_) => {
                 s = s.trim_left();
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            Item::OwnedSpace(_) => {
+            &Item::OwnedSpace(_) => {
                 s = s.trim_left();
             }
 
-            Item::Numeric(spec, _pad) => {
+            &Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
                 let (width, signed, set): (usize, bool, Setter) = match spec {
-                    Year           => (4, true, Parsed::set_year),
-                    YearDiv100     => (2, false, Parsed::set_year_div_100),
-                    YearMod100     => (2, false, Parsed::set_year_mod_100),
-                    IsoYear        => (4, true, Parsed::set_isoyear),
-                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
-                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
-                    Month          => (2, false, Parsed::set_month),
-                    Day            => (2, false, Parsed::set_day),
-                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
-                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
-                    IsoWeek        => (2, false, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    Ordinal        => (3, false, Parsed::set_ordinal),
-                    Hour           => (2, false, Parsed::set_hour),
-                    Hour12         => (2, false, Parsed::set_hour12),
-                    Minute         => (2, false, Parsed::set_minute),
-                    Second         => (2, false, Parsed::set_second),
-                    Nanosecond     => (9, false, Parsed::set_nanosecond),
-                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
+                    &Year           => (4, true, Parsed::set_year),
+                    &YearDiv100     => (2, false, Parsed::set_year_div_100),
+                    &YearMod100     => (2, false, Parsed::set_year_mod_100),
+                    &IsoYear        => (4, true, Parsed::set_isoyear),
+                    &IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
+                    &IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
+                    &Month          => (2, false, Parsed::set_month),
+                    &Day            => (2, false, Parsed::set_day),
+                    &WeekFromSun    => (2, false, Parsed::set_week_from_sun),
+                    &WeekFromMon    => (2, false, Parsed::set_week_from_mon),
+                    &IsoWeek        => (2, false, Parsed::set_isoweek),
+                    &NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
+                    &WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
+                    &Ordinal        => (3, false, Parsed::set_ordinal),
+                    &Hour           => (2, false, Parsed::set_hour),
+                    &Hour12         => (2, false, Parsed::set_hour12),
+                    &Minute         => (2, false, Parsed::set_minute),
+                    &Second         => (2, false, Parsed::set_second),
+                    &Nanosecond     => (9, false, Parsed::set_nanosecond),
+                    &Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
 
                     // for the future expansion
-                    Internal(ref int) => match int._dummy {},
+                    &Internal(ref int) => match int._dummy {},
                 };
 
                 s = s.trim_left();
@@ -282,31 +282,31 @@ pub fn parse<'a, I, B>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResul
                 try!(set(parsed, v));
             }
 
-            Item::Fixed(spec) => {
+            &Item::Fixed(ref spec) => {
                 use super::Fixed::*;
 
                 match spec {
-                    ShortMonthName => {
+                    &ShortMonthName => {
                         let month0 = try_consume!(scan::short_month0(s));
                         try!(parsed.set_month(i64::from(month0) + 1));
                     }
 
-                    LongMonthName => {
+                    &LongMonthName => {
                         let month0 = try_consume!(scan::short_or_long_month0(s));
                         try!(parsed.set_month(i64::from(month0) + 1));
                     }
 
-                    ShortWeekdayName => {
+                    &ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
                         try!(parsed.set_weekday(weekday));
                     }
 
-                    LongWeekdayName => {
+                    &LongWeekdayName => {
                         let weekday = try_consume!(scan::short_or_long_weekday(s));
                         try!(parsed.set_weekday(weekday));
                     }
 
-                    LowerAmPm | UpperAmPm => {
+                    &LowerAmPm | &UpperAmPm => {
                         if s.len() < 2 { return Err(TOO_SHORT); }
                         let ampm = match (s.as_bytes()[0] | 32, s.as_bytes()[1] | 32) {
                             (b'a',b'm') => false,
@@ -317,56 +317,56 @@ pub fn parse<'a, I, B>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResul
                         s = &s[2..];
                     }
 
-                    Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9 => {
+                    &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             try!(parsed.set_nanosecond(nano));
                         }
                     }
 
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
+                    &Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                         if s.len() < 3 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 3));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
+                    &Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
                         if s.len() < 6 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 6));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
+                    &Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
                         if s.len() < 9 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 9));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    TimezoneName => return Err(BAD_FORMAT),
+                    &TimezoneName => return Err(BAD_FORMAT),
 
-                    TimezoneOffsetColon | TimezoneOffset => {
+                    &TimezoneOffsetColon | &TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(s.trim_left(),
                                                                         scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
 
-                    TimezoneOffsetColonZ | TimezoneOffsetZ => {
+                    &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
                         let offset = try_consume!(scan::timezone_offset_zulu(s.trim_left(),
                                                                              scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
-                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
+                    &Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         let offset = try_consume!(scan::timezone_offset_permissive(
                             s.trim_left(), scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
 
-                    RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
-                    RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                    &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
+                    &RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
                 }
             }
 
-            Item::Error => {
+            &Item::Error => {
                 return Err(BAD_FORMAT);
             }
         }

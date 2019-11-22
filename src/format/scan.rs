@@ -43,7 +43,7 @@ pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     }
 
     let mut n = 0i64;
-    for (i, c) in bytes.iter().take(max).copied().enumerate() {
+    for (i, c) in bytes.iter().take(max).cloned().enumerate() { // cloned() = copied()
         if c < b'0' || b'9' < c {
             if i < min {
                 return Err(INVALID);
@@ -58,7 +58,7 @@ pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
         };
     }
 
-    Ok((&s[max.min(bytes.len())..], n))
+    Ok((&s[::core::cmp::min(max, bytes.len())..], n))
 }
 
 /// Tries to consume at least one digits as a fractional second.
