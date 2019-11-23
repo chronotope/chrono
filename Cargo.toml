@@ -48,6 +48,7 @@ serde_derive = { version = "1", default-features = false }
 bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
 doc-comment = "0.3"
+criterion = "0.3"
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dev-dependencies]
 wasm-bindgen-test = "0.2"
@@ -57,3 +58,7 @@ all-features = true
 
 [package.metadata.playground]
 all-features = true
+
+[[bench]]
+name = "parsing"
+harness = false
