@@ -3,6 +3,7 @@
 
 //! ISO 8601 time without timezone.
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::{str, fmt, hash};
 use core::ops::{Add, Sub, AddAssign, SubAssign};

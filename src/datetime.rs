@@ -1141,7 +1141,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_nanoseconds_option {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1432,7 +1432,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_milliseconds_option {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1719,7 +1719,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_seconds_option {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
