@@ -62,3 +62,8 @@ all-features = true
 [[bench]]
 name = "parsing"
 harness = false
+
+[[bench]]
+name = "serde"
+harness = false
+required-features = ["serde"]
