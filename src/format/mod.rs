@@ -433,22 +433,20 @@ pub fn format<'a, I, B>(
 
 
                 if let Some(v) = v {
-                    try!(
-                        if (spec == &Year || spec == &IsoYear) && !(0 <= v && v < 10_000) {
-                            // non-four-digit years require an explicit sign as per ISO 8601
-                            match pad {
-                                &Pad::None => write!(result, "{:+}", v),
-                                &Pad::Zero => write!(result, "{:+01$}", v, width + 1),
-                                &Pad::Space => write!(result, "{:+1$}", v, width + 1),
-                            }
-                        } else {
-                            match pad {
-                                &Pad::None => write!(result, "{}", v),
-                                &Pad::Zero => write!(result, "{:01$}", v, width),
-                                &Pad::Space => write!(result, "{:1$}", v, width),
-                            }
+                    if (spec == &Year || spec == &IsoYear) && !(0 <= v && v < 10_000) {
+                        // non-four-digit years require an explicit sign as per ISO 8601
+                        match pad {
+                            &Pad::None => write!(result, "{:+}", v),
+                            &Pad::Zero => write!(result, "{:+01$}", v, width + 1),
+                            &Pad::Space => write!(result, "{:+1$}", v, width + 1),
                         }
-                    )
+                    } else {
+                        match pad {
+                            &Pad::None => write!(result, "{}", v),
+                            &Pad::Zero => write!(result, "{:01$}", v, width),
+                            &Pad::Space => write!(result, "{:1$}", v, width),
+                        }
+                    }?
                 } else {
                     return Err(fmt::Error) // insufficient arguments for given format
                 }
@@ -575,13 +573,13 @@ pub fn format<'a, I, B>(
                     &RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
-                            try!(write!(
+                            write!(
                                 result,
                                 "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
                                 SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
                                 d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
                                 t.hour(), t.minute(), sec
-                            ));
+                            )?;
                             Some(write_local_minus_utc(&mut result, off, false, false))
                         } else {
                             None
@@ -590,7 +588,7 @@ pub fn format<'a, I, B>(
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
-                            try!(write!(result, "{:?}T{:?}", d, t));
+                            write!(result, "{:?}T{:?}", d, t)?;
                             Some(write_local_minus_utc(&mut result, off, false, true))
                         } else {
                             None
@@ -598,7 +596,7 @@ pub fn format<'a, I, B>(
                 };
 
                 match ret {
-                    Some(ret) => try!(ret),
+                    Some(ret) => ret?,
                     None => return Err(fmt::Error), // insufficient arguments for given format
                 }
             },

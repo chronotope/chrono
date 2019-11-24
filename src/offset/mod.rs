@@ -415,7 +415,7 @@ pub trait TimeZone: Sized + Clone {
     /// with parsed `FixedOffset`.
     fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
+        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime_with_timezone(self)
     }
 
