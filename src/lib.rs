@@ -386,7 +386,6 @@
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
-#![allow(deprecated)]
 
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 

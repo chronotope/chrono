@@ -210,7 +210,7 @@ impl NaiveDateTime {
     /// ~~~~
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, StrftimeItems::new(fmt)));
+        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_datetime_with_offset(0) // no offset adjustment
     }
 
@@ -1489,7 +1489,7 @@ impl str::FromStr for NaiveDateTime {
         ];
 
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter()));
+        parse(&mut parsed, s, ITEMS.iter())?;
         parsed.to_naive_datetime_with_offset(0)
     }
 }
@@ -1834,7 +1834,7 @@ pub mod serde {
         pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
             where D: de::Deserializer<'de>
         {
-            Ok(try!(d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)))
+            Ok(d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)?)
         }
 
         struct NaiveDateTimeFromNanoSecondsVisitor;
@@ -1979,7 +1979,7 @@ pub mod serde {
         pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
             where D: de::Deserializer<'de>
         {
-            Ok(try!(d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)))
+            Ok(d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)?)
         }
 
         struct NaiveDateTimeFromMilliSecondsVisitor;
@@ -2124,7 +2124,7 @@ pub mod serde {
         pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
             where D: de::Deserializer<'de>
         {
-            Ok(try!(d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)))
+            Ok(d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)?)
         }
 
         struct NaiveDateTimeFromSecondsVisitor;
