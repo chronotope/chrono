@@ -31,6 +31,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Use markdown footnotes on the `strftime` docs page (@qudlibetor #359)
 * Migrate from `try!` -> `?` (question mark) because it is now emitting
   deprecation warnings and has been stable since rustc 1.13.0
+* Deny dead code
 
 ## 0.4.9
 
