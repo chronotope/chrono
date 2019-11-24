@@ -29,6 +29,7 @@ alloc = []
 std = []
 clock = ["time", "std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
+bench = ["std"]
 
 [dependencies]
 time = { version = "0.1.39", optional = true }

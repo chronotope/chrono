@@ -6,6 +6,7 @@
 
 #![allow(deprecated)]
 
+use core::borrow::Borrow;
 use core::usize;
 
 use Weekday;
@@ -204,64 +205,64 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 ///   so one can prepend any number of whitespace then any number of zeroes before numbers.
 ///
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
-pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
-        where I: Iterator<Item=Item<'a>> {
+pub fn parse<'a, I, B>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<()>
+        where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
     macro_rules! try_consume {
         ($e:expr) => ({ let (s_, v) = try!($e); s = s_; v })
     }
 
     for item in items {
-        match item {
-            Item::Literal(prefix) => {
+        match item.borrow() {
+            &Item::Literal(prefix) => {
                 if s.len() < prefix.len() { return Err(TOO_SHORT); }
                 if !s.starts_with(prefix) { return Err(INVALID); }
                 s = &s[prefix.len()..];
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            Item::OwnedLiteral(ref prefix) => {
+            &Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() { return Err(TOO_SHORT); }
                 if !s.starts_with(&prefix[..]) { return Err(INVALID); }
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
+            &Item::Space(_) => {
                 s = s.trim_left();
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            Item::OwnedSpace(_) => {
+            &Item::OwnedSpace(_) => {
                 s = s.trim_left();
             }
 
-            Item::Numeric(spec, _pad) => {
+            &Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
                 let (width, signed, set): (usize, bool, Setter) = match spec {
-                    Year           => (4, true, Parsed::set_year),
-                    YearDiv100     => (2, false, Parsed::set_year_div_100),
-                    YearMod100     => (2, false, Parsed::set_year_mod_100),
-                    IsoYear        => (4, true, Parsed::set_isoyear),
-                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
-                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
-                    Month          => (2, false, Parsed::set_month),
-                    Day            => (2, false, Parsed::set_day),
-                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
-                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
-                    IsoWeek        => (2, false, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    Ordinal        => (3, false, Parsed::set_ordinal),
-                    Hour           => (2, false, Parsed::set_hour),
-                    Hour12         => (2, false, Parsed::set_hour12),
-                    Minute         => (2, false, Parsed::set_minute),
-                    Second         => (2, false, Parsed::set_second),
-                    Nanosecond     => (9, false, Parsed::set_nanosecond),
-                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
+                    &Year           => (4, true, Parsed::set_year),
+                    &YearDiv100     => (2, false, Parsed::set_year_div_100),
+                    &YearMod100     => (2, false, Parsed::set_year_mod_100),
+                    &IsoYear        => (4, true, Parsed::set_isoyear),
+                    &IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
+                    &IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
+                    &Month          => (2, false, Parsed::set_month),
+                    &Day            => (2, false, Parsed::set_day),
+                    &WeekFromSun    => (2, false, Parsed::set_week_from_sun),
+                    &WeekFromMon    => (2, false, Parsed::set_week_from_mon),
+                    &IsoWeek        => (2, false, Parsed::set_isoweek),
+                    &NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
+                    &WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
+                    &Ordinal        => (3, false, Parsed::set_ordinal),
+                    &Hour           => (2, false, Parsed::set_hour),
+                    &Hour12         => (2, false, Parsed::set_hour12),
+                    &Minute         => (2, false, Parsed::set_minute),
+                    &Second         => (2, false, Parsed::set_second),
+                    &Nanosecond     => (9, false, Parsed::set_nanosecond),
+                    &Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
 
                     // for the future expansion
-                    Internal(ref int) => match int._dummy {},
+                    &Internal(ref int) => match int._dummy {},
                 };
 
                 s = s.trim_left();
@@ -281,31 +282,31 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                 try!(set(parsed, v));
             }
 
-            Item::Fixed(spec) => {
+            &Item::Fixed(ref spec) => {
                 use super::Fixed::*;
 
                 match spec {
-                    ShortMonthName => {
+                    &ShortMonthName => {
                         let month0 = try_consume!(scan::short_month0(s));
                         try!(parsed.set_month(i64::from(month0) + 1));
                     }
 
-                    LongMonthName => {
+                    &LongMonthName => {
                         let month0 = try_consume!(scan::short_or_long_month0(s));
                         try!(parsed.set_month(i64::from(month0) + 1));
                     }
 
-                    ShortWeekdayName => {
+                    &ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
                         try!(parsed.set_weekday(weekday));
                     }
 
-                    LongWeekdayName => {
+                    &LongWeekdayName => {
                         let weekday = try_consume!(scan::short_or_long_weekday(s));
                         try!(parsed.set_weekday(weekday));
                     }
 
-                    LowerAmPm | UpperAmPm => {
+                    &LowerAmPm | &UpperAmPm => {
                         if s.len() < 2 { return Err(TOO_SHORT); }
                         let ampm = match (s.as_bytes()[0] | 32, s.as_bytes()[1] | 32) {
                             (b'a',b'm') => false,
@@ -316,56 +317,56 @@ pub fn parse<'a, I>(parsed: &mut Parsed, mut s: &str, items: I) -> ParseResult<(
                         s = &s[2..];
                     }
 
-                    Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9 => {
+                    &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             try!(parsed.set_nanosecond(nano));
                         }
                     }
 
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
+                    &Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                         if s.len() < 3 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 3));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
+                    &Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
                         if s.len() < 6 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 6));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
+                    &Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
                         if s.len() < 9 { return Err(TOO_SHORT); }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 9));
                         try!(parsed.set_nanosecond(nano));
                     }
 
-                    TimezoneName => return Err(BAD_FORMAT),
+                    &TimezoneName => return Err(BAD_FORMAT),
 
-                    TimezoneOffsetColon | TimezoneOffset => {
+                    &TimezoneOffsetColon | &TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(s.trim_left(),
                                                                         scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
 
-                    TimezoneOffsetColonZ | TimezoneOffsetZ => {
+                    &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
                         let offset = try_consume!(scan::timezone_offset_zulu(s.trim_left(),
                                                                              scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
-                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
+                    &Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         let offset = try_consume!(scan::timezone_offset_permissive(
                             s.trim_left(), scan::colon_or_space));
                         try!(parsed.set_offset(i64::from(offset)));
                     }
 
-                    RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
-                    RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                    &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
+                    &RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
                 }
             }
 
-            Item::Error => {
+            &Item::Error => {
                 return Err(BAD_FORMAT);
             }
         }
@@ -388,7 +389,7 @@ fn test_parse() {
     // workaround for Rust issue #22255
     fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, items.iter().cloned()));
+        try!(parse(&mut parsed, s, items.iter()));
         Ok(parsed)
     }
 
@@ -699,12 +700,12 @@ fn test_rfc2822() {
 
     fn rfc2822_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter().cloned()));
+        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter()));
         parsed.to_datetime()
     }
 
     fn fmt_rfc2822_datetime(dt: DateTime<FixedOffset>) -> String {
-        dt.format_with_items([Item::Fixed(Fixed::RFC2822)].iter().cloned()).to_string()
+        dt.format_with_items([Item::Fixed(Fixed::RFC2822)].iter()).to_string()
     }
 
     // Test against test data above
@@ -780,12 +781,12 @@ fn test_rfc3339() {
 
     fn rfc3339_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter().cloned()));
+        try!(parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter()));
         parsed.to_datetime()
     }
 
     fn fmt_rfc3339_datetime(dt: DateTime<FixedOffset>) -> String {
-        dt.format_with_items([Item::Fixed(Fixed::RFC3339)].iter().cloned()).to_string()
+        dt.format_with_items([Item::Fixed(Fixed::RFC3339)].iter()).to_string()
     }
 
     // Test against test data above

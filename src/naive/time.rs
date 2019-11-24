@@ -3,6 +3,8 @@
 
 //! ISO 8601 time without timezone.
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use core::borrow::Borrow;
 use core::{str, fmt, hash};
 use core::ops::{Add, Sub, AddAssign, SubAssign};
 use oldtime::Duration as OldDuration;
@@ -727,8 +729,8 @@ impl NaiveTime {
     /// ~~~~
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
-    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=Item<'a>> + Clone {
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
         DelayedFormat::new(None, Some(*self), items)
     }
 
@@ -1303,16 +1305,16 @@ impl str::FromStr for NaiveTime {
 
     fn from_str(s: &str) -> ParseResult<NaiveTime> {
         const ITEMS: &'static [Item<'static>] = &[
-            Item::Space(""), Item::Numeric(Numeric::Hour, Pad::Zero),
+                             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""), Item::Literal(":"),
-            Item::Space(""), Item::Numeric(Numeric::Minute, Pad::Zero),
+                             Item::Numeric(Numeric::Minute, Pad::Zero),
             Item::Space(""), Item::Literal(":"),
-            Item::Space(""), Item::Numeric(Numeric::Second, Pad::Zero),
+                             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond), Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_naive_time()
     }
 }

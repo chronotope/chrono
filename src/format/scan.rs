@@ -30,23 +30,35 @@ fn equals(s: &str, pattern: &str) -> bool {
 /// The absence of digits at all is an unconditional error.
 /// More than `max` digits are consumed up to the first `max` digits.
 /// Any number that does not fit in `i64` is an error.
+#[inline]
 pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     assert!(min <= max);
 
-    // limit `s` to given number of digits
-    let mut window = s.as_bytes();
-    if window.len() > max { window = &window[..max]; }
-
-    // scan digits
-    let upto = window.iter().position(|&c| c < b'0' || b'9' < c)
-        .unwrap_or_else(|| window.len());
-    if upto < min {
-        return Err(if window.is_empty() {TOO_SHORT} else {INVALID});
+    // We are only interested in ascii numbers, so we can work with the `str` as bytes. We stop on
+    // the first non-numeric byte, which may be another ascii character or beginning of multi-byte
+    // UTF-8 character.
+    let bytes = s.as_bytes();
+    if bytes.len() < min {
+        return Err(TOO_SHORT);
     }
 
-    // we can overflow here, which is the only possible cause of error from `parse`.
-    let v: i64 = try!(s[..upto].parse().map_err(|_| OUT_OF_RANGE));
-    Ok((&s[upto..], v))
+    let mut n = 0i64;
+    for (i, c) in bytes.iter().take(max).cloned().enumerate() { // cloned() = copied()
+        if c < b'0' || b'9' < c {
+            if i < min {
+                return Err(INVALID);
+            } else {
+                return Ok((&s[i..], n));
+            }
+        }
+
+        n = match n.checked_mul(10).and_then(|n| n.checked_add((c - b'0') as i64)) {
+            Some(n) => n,
+            None => return Err(OUT_OF_RANGE),
+        };
+    }
+
+    Ok((&s[::core::cmp::min(max, bytes.len())..], n))
 }
 
 /// Tries to consume at least one digits as a fractional second.

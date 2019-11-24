@@ -3,6 +3,7 @@
 
 //! ISO 8601 calendar date with time zone.
 
+use core::borrow::Borrow;
 use core::{fmt, hash};
 use core::cmp::Ordering;
 use core::ops::{Add, Sub};
@@ -258,8 +259,8 @@ impl<Tz: TimeZone> Date<Tz> where Tz::Offset: fmt::Display {
     /// Formats the date with the specified formatting items.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
-    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=Item<'a>> + Clone {
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
         DelayedFormat::new_with_offset(Some(self.naive_local()), None, &self.offset, items)
     }
 

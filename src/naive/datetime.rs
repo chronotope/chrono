@@ -3,6 +3,8 @@
 
 //! ISO 8601 date and time without timezone.
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use core::borrow::Borrow;
 use core::{str, fmt, hash};
 use core::ops::{Add, Sub, AddAssign, SubAssign};
 use num_traits::ToPrimitive;
@@ -649,8 +651,8 @@ impl NaiveDateTime {
     /// ~~~~
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
-    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=Item<'a>> + Clone {
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
         DelayedFormat::new(Some(self.date), Some(self.time), items)
     }
 
@@ -1472,22 +1474,22 @@ impl str::FromStr for NaiveDateTime {
 
     fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
         const ITEMS: &'static [Item<'static>] = &[
-            Item::Space(""), Item::Numeric(Numeric::Year, Pad::Zero),
+                             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""), Item::Literal("-"),
-            Item::Space(""), Item::Numeric(Numeric::Month, Pad::Zero),
+                             Item::Numeric(Numeric::Month, Pad::Zero),
             Item::Space(""), Item::Literal("-"),
-            Item::Space(""), Item::Numeric(Numeric::Day, Pad::Zero),
+                             Item::Numeric(Numeric::Day, Pad::Zero),
             Item::Space(""), Item::Literal("T"), // XXX shouldn't this be case-insensitive?
-            Item::Space(""), Item::Numeric(Numeric::Hour, Pad::Zero),
+                             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""), Item::Literal(":"),
-            Item::Space(""), Item::Numeric(Numeric::Minute, Pad::Zero),
+                             Item::Numeric(Numeric::Minute, Pad::Zero),
             Item::Space(""), Item::Literal(":"),
-            Item::Space(""), Item::Numeric(Numeric::Second, Pad::Zero),
+                             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond), Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_naive_datetime_with_offset(0)
     }
 }

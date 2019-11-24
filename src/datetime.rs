@@ -25,6 +25,7 @@ use format::{Item, Numeric, Pad, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
+use core::borrow::Borrow;
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -326,7 +327,7 @@ impl DateTime<FixedOffset> {
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_datetime()
     }
 
@@ -338,7 +339,7 @@ impl DateTime<FixedOffset> {
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_datetime()
     }
 
@@ -374,14 +375,14 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc2822(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
-        self.format_with_items(ITEMS.iter().cloned()).to_string()
+        self.format_with_items(ITEMS.iter()).to_string()
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339(&self) -> String {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
-        self.format_with_items(ITEMS.iter().cloned()).to_string()
+        self.format_with_items(ITEMS.iter()).to_string()
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
@@ -450,11 +451,11 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
         match ssitem {
             None =>
                 self.format_with_items(
-                    PREFIX.iter().chain([tzitem].iter()).cloned()
+                    PREFIX.iter().chain([tzitem].iter())
                 ).to_string(),
             Some(s) =>
                 self.format_with_items(
-                    PREFIX.iter().chain([s, tzitem].iter()).cloned()
+                    PREFIX.iter().chain([s, tzitem].iter())
                 ).to_string(),
         }
     }
@@ -462,8 +463,8 @@ impl<Tz: TimeZone> DateTime<Tz> where Tz::Offset: fmt::Display {
     /// Formats the combined date and time with the specified formatting items.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
-    pub fn format_with_items<'a, I>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=Item<'a>> + Clone {
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
         let local = self.naive_local();
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
@@ -621,24 +622,24 @@ impl str::FromStr for DateTime<FixedOffset> {
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &'static [Item<'static>] = &[
-            Item::Space(""), Item::Numeric(Numeric::Year, Pad::Zero),
+                             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""), Item::Literal("-"),
-            Item::Space(""), Item::Numeric(Numeric::Month, Pad::Zero),
+                             Item::Numeric(Numeric::Month, Pad::Zero),
             Item::Space(""), Item::Literal("-"),
-            Item::Space(""), Item::Numeric(Numeric::Day, Pad::Zero),
+                             Item::Numeric(Numeric::Day, Pad::Zero),
             Item::Space(""), Item::Literal("T"), // XXX shouldn't this be case-insensitive?
-            Item::Space(""), Item::Numeric(Numeric::Hour, Pad::Zero),
+                             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""), Item::Literal(":"),
-            Item::Space(""), Item::Numeric(Numeric::Minute, Pad::Zero),
+                             Item::Numeric(Numeric::Minute, Pad::Zero),
             Item::Space(""), Item::Literal(":"),
-            Item::Space(""), Item::Numeric(Numeric::Second, Pad::Zero),
+                             Item::Numeric(Numeric::Second, Pad::Zero),
                              Item::Fixed(Fixed::Nanosecond),
             Item::Space(""), Item::Fixed(Fixed::TimezoneOffsetZ),
             Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
-        try!(parse(&mut parsed, s, ITEMS.iter().cloned()));
+        try!(parse(&mut parsed, s, ITEMS.iter()));
         parsed.to_datetime()
     }
 }
@@ -1140,7 +1141,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_nanoseconds_option {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1431,7 +1432,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_milliseconds_option {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -1718,7 +1719,7 @@ pub mod serde {
     /// # fn main() { example().unwrap(); }
     /// ```
     pub mod ts_seconds_option {
-        use std::fmt;
+        use core::fmt;
         use serdelib::{ser, de};
 
         use {DateTime, Utc};
@@ -2212,5 +2213,54 @@ mod tests {
         assert_eq!(format!("  {}", ymd_formatted), format!("{:>17}", ymd));
         assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
         assert_eq!(format!(" {} ", ymd_formatted), format!("{:^17}", ymd));
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_datetime_parse_from_rfc2822(bh: &mut test::Bencher) {
+        bh.iter(|| {
+            let str = test::black_box("Wed, 18 Feb 2015 23:16:09 +0000");
+            DateTime::parse_from_rfc2822(str).unwrap()
+        });
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_datetime_parse_from_rfc3339(bh: &mut test::Bencher) {
+        bh.iter(|| {
+            let str = test::black_box("2015-02-18T23:59:60.234567+05:00");
+            DateTime::parse_from_rfc3339(str).unwrap()
+        });
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_datetime_from_str(bh: &mut test::Bencher) {
+        use std::str::FromStr;
+
+        bh.iter(|| {
+            let str = test::black_box("2019-03-30T18:46:57.193Z");
+            DateTime::<Utc>::from_str(str).unwrap()
+        });
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_datetime_to_rfc2822(bh: &mut test::Bencher) {
+        let pst = FixedOffset::east(8 * 60 * 60);
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
+        bh.iter(|| {
+            test::black_box(dt).to_rfc2822()
+        });
+    }
+
+    #[cfg(feature = "bench")]
+    #[bench]
+    fn bench_datetime_to_rfc3339(bh: &mut test::Bencher) {
+        let pst = FixedOffset::east(8 * 60 * 60);
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
+        bh.iter(|| {
+            test::black_box(dt).to_rfc3339()
+        });
     }
 }
