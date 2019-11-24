@@ -8,13 +8,29 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## next
+## 0.4.10
+
+### Improvements
+
+* `DateTime::parse_from_str` is more than 2x faster in some cases. (@michalsrb
+  #358)
+* Significant improvements to no-std and alloc support (This should also make
+  many format/serialization operations induce zero unnecessary allocations)
+  (@CryZe #341)
 
 ### Features
 
 * Functions that were accepting `Iterator` of `Item`s (for example
   `format_with_items`) now accept `Iterator` of `Borrow<Item>`, so one can
-  use values or references.
+  use values or references. (@michalsrb #358)
+* Add built-in support for structs with nested `Option<Datetime>` etc fields
+  (@manifest #302)
+
+### Internal/doc improvements
+
+* Use markdown footnotes on the `strftime` docs page (@qudlibetor #359)
+* Migrate from `try!` -> `?` (question mark) because it is now emitting
+  deprecation warnings and has been stable since rustc 1.13.0
 
 ## 0.4.9
 
