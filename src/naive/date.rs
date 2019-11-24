@@ -1689,6 +1689,36 @@ mod serde {
     }
 }
 
+#[cfg(feature = "rocket")]
+pub mod rocket {
+    use super::NaiveDate;
+    use rocket::request::FromFormValue;
+    use rocket::http::RawStr;
+
+    impl<'v> FromFormValue<'v> for NaiveDate {
+        type Error = &'v RawStr;
+
+        fn from_form_value(form_value: &'v RawStr) -> Result<NaiveDate, &'v RawStr> {
+            let decoded = form_value.url_decode().map_err(|_| form_value)?;
+            if let Ok(date) = NaiveDate::parse_from_str(&decoded, "%Y-%m-%d") {
+                return Ok(date);
+            }
+            Err(form_value)
+        }
+    }
+
+    #[test]
+    fn test_from_form_value() {
+        assert_eq!(NaiveDate::from_form_value(RawStr::from_str("1967-11-14")),
+                   Ok(NaiveDate::from_ymd(1967, 11, 14)));
+        assert_eq!(NaiveDate::from_form_value(RawStr::from_str("0062-02-05")),
+                   Ok(NaiveDate::from_ymd(62, 02, 05)));
+
+        // This is actually a valid date string:
+        assert!(NaiveDate::from_form_value(RawStr::from_str("17310-09-08")).is_err());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveDate;

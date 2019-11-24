@@ -420,6 +420,8 @@ extern crate num_traits;
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
+#[cfg(feature = "rocket")]
+extern crate rocket;
 #[cfg(test)]
 #[macro_use]
 extern crate doc_comment;
@@ -504,6 +506,21 @@ pub mod naive {
     #[cfg(feature = "serde")]
     pub mod serde {
         pub use super::datetime::serde::*;
+    }
+
+
+    /// Parsing of naive types from form values
+    ///
+    /// The modules in here provide implementations for rockets [`FromFormValue`
+    /// ][1] trait. Implementations for date, time as well as local date and
+    /// time strings are provided. Descriptions of the different formats can be
+    /// fount [here][2].
+    ///
+    /// [1]: https://api.rocket.rs/v0.4/rocket/request/trait.FromFormValue.html
+    /// [2]: https://developer.mozilla.org/en-US/docs/Web/HTML/Date_and_time_formats#Time_strings
+    #[cfg(feature = "rocket")]
+    pub mod rocket {
+        pub use super::datetime::rocket::*;
     }
 }
 mod date;

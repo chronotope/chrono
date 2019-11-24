@@ -37,6 +37,7 @@ num-integer = { version = "0.1.36", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
+rocket = { version = "0.4", default-features = false, optional = true}
 
 [target.'cfg(all(target_arch = "wasm32", not(target_os = "emscripten")))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }

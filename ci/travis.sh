@@ -93,6 +93,14 @@ build_and_test_nonwasm() {
 
   channel build -v --no-default-features --features 'alloc serde'
   TZ=UTC0 channel test -v --no-default-features --features 'alloc serde' --lib
+
+  # rocket 0.4 only supports nightly
+  if [[ "$CHANNEL" == nightly ]]; then
+      channel build -v --features rocket
+      TZ=Asia/Katmandu channel test -v --features rocket
+      channel build -v --no-default-features --features std,serde,rocket,rustc-serialize
+      TZ=EST4 channel test -v --no-default-features --features std,serde,rocket,rustc-serialize --lib
+  fi
 }
 
 build_and_test_wasm() {

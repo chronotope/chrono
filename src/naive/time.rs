@@ -1483,6 +1483,55 @@ mod serde {
     }
 }
 
+#[cfg(feature = "rocket")]
+pub mod rocket {
+    use super::{NaiveTime, Timelike};
+    use rocket::request::FromFormValue;
+    use rocket::http::RawStr;
+
+    impl<'v> FromFormValue<'v> for NaiveTime {
+        type Error = &'v RawStr;
+
+        fn from_form_value(form_value: &'v RawStr) -> Result<Self, Self::Error> {
+            let decoded = form_value.url_decode().map_err(|_| form_value)?;
+            if let Ok(time) = NaiveTime::parse_from_str(&decoded, "%H:%M:%S%.3f") {
+                if time.nanosecond() >= 1_000_000_000 {
+                    return Err(form_value);
+                }
+                return Ok(time);
+            }
+            if let Ok(time) = NaiveTime::parse_from_str(&decoded, "%H:%M") {
+                return Ok(time);
+            }
+            Err(form_value)
+        }
+    }
+
+    #[test]
+    fn test_from_form_value() {
+        assert_eq!(NaiveTime::from_form_value(RawStr::from_str("12%3A34%3A56.999")),
+                   Ok(NaiveTime::from_hms_milli(12, 34, 56, 999)));
+
+        assert_eq!(NaiveTime::from_form_value(RawStr::from_str("12:34:59.999")),
+                   Ok(NaiveTime::from_hms_milli(12, 34, 59, 999)));
+        assert_eq!(NaiveTime::from_form_value(RawStr::from_str("12:34:56.99")),
+                   Ok(NaiveTime::from_hms_milli(12, 34, 56, 990)));
+        assert_eq!(NaiveTime::from_form_value(RawStr::from_str("12:34:56.9")),
+                   Ok(NaiveTime::from_hms_milli(12, 34, 56, 900)));
+        assert_eq!(NaiveTime::from_form_value(RawStr::from_str("12:34:56")),
+                   Ok(NaiveTime::from_hms_milli(12, 34, 56, 0)));
+        assert_eq!(NaiveTime::from_form_value(RawStr::from_str("12:34")),
+                   Ok(NaiveTime::from_hms_milli(12, 34, 0, 0)));
+
+        assert!(NaiveTime::from_form_value(RawStr::from_str("25:00")).is_err());
+        assert!(NaiveTime::from_form_value(RawStr::from_str("00:60")).is_err());
+        assert!(NaiveTime::from_form_value(RawStr::from_str("00:00:60")).is_err());
+        assert!(NaiveTime::from_form_value(RawStr::from_str("00:00:60.999")).is_err());
+        assert!(NaiveTime::from_form_value(RawStr::from_str("00:00:")).is_err());
+        assert!(NaiveTime::from_form_value(RawStr::from_str("00:00:00.")).is_err());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveTime;

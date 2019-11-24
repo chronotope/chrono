@@ -2180,6 +2180,44 @@ pub mod serde {
     }
 }
 
+#[cfg(feature = "rocket")]
+pub mod rocket {
+    use super::{NaiveDate, NaiveDateTime, NaiveTime};
+    use rocket::http::RawStr;
+    use rocket::request::FromFormValue;
+
+    impl<'v> FromFormValue<'v> for NaiveDateTime {
+        type Error = &'v RawStr;
+
+        fn from_form_value(form_value: &'v RawStr) -> Result<NaiveDateTime, &'v RawStr> {
+            let decoded = form_value.url_decode().map_err(|_| form_value)?;
+            if decoded.len() < "0000-00-00T00:00".len() {
+                return Err(form_value)
+            }
+            let date = NaiveDate::from_form_value(RawStr::from_str(&decoded[.."0000-00-00".len()]))
+                .map_err(|_| form_value)?;
+            let time = NaiveTime::from_form_value(RawStr::from_str(&decoded["0000-00-00T".len()..]))
+                .map_err(|_| form_value)?;
+            Ok(NaiveDateTime::new(date, time))
+        }
+    }
+
+    #[test]
+    fn test_from_form_value() {
+        use std::str::FromStr;
+
+        assert_eq!(NaiveDateTime::from_form_value(RawStr::from_str("1986-01-28T11%3A38%3A00.01")),
+                   Ok(NaiveDateTime::from_str("1986-01-28T11:38:00.01").unwrap()));
+
+        assert_eq!(NaiveDateTime::from_form_value(RawStr::from_str("1986-01-28T11:38:00.01")),
+                   Ok(NaiveDateTime::from_str("1986-01-28T11:38:00.01").unwrap()));
+        assert_eq!(NaiveDateTime::from_form_value(RawStr::from_str("1986-01-28T11:38:01")),
+                   Ok(NaiveDateTime::from_str("1986-01-28T11:38:01.0").unwrap()));
+        assert_eq!(NaiveDateTime::from_form_value(RawStr::from_str("0170-07-31T22:00")),
+                   Ok(NaiveDateTime::from_str("0170-07-31T22:00:00.0").unwrap()));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
