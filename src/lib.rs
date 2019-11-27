@@ -424,9 +424,9 @@ extern crate serde as serdelib;
 #[cfg(test)]
 #[macro_use]
 extern crate doc_comment;
-#[cfg(all(target_arch = "wasm32", feature="wasmbind"))]
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate wasm_bindgen;
-#[cfg(all(target_arch = "wasm32", feature="wasmbind"))]
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate js_sys;
 #[cfg(feature = "bench")]
 extern crate test;

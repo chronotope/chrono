@@ -4,7 +4,10 @@
 //! The UTC (Coordinated Universal Time) time zone.
 
 use core::fmt;
-#[cfg(all(feature="clock", not(all(target_arch = "wasm32", feature = "wasmbind"))))]
+#[cfg(all(
+    feature = "clock",
+    not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
+))]
 use oldtime;
 
 use naive::{NaiveDate, NaiveDateTime};
@@ -38,7 +41,7 @@ impl Utc {
     pub fn today() -> Date<Utc> { Utc::now().date() }
 
     /// Returns a `DateTime` which corresponds to the current date.
-    #[cfg(not(all(target_arch = "wasm32", feature = "wasmbind")))]
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Utc> {
         let spec = oldtime::get_time();
         let naive = NaiveDateTime::from_timestamp(spec.sec, spec.nsec as u32);
@@ -46,7 +49,7 @@ impl Utc {
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
-    #[cfg(all(target_arch = "wasm32", feature = "wasmbind"))]
+    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
         let millisecs_since_unix_epoch: u64 = now.get_time() as u64;
