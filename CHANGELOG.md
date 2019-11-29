@@ -10,6 +10,14 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.10
 
+### Compatibility notes
+
+* Putting some functionality behind an `alloc` feature to improve no-std
+  support (in #341) means that if you were relying on chrono with
+  `no-default-features` *and* using any of the functions that require alloc
+  support (i.e. any of the string-generating functions like `to_rfc3339`) you
+  will need to add the `alloc` feature in your Cargo.toml.
+
 ### Improvements
 
 * `DateTime::parse_from_str` is more than 2x faster in some cases. (@michalsrb
