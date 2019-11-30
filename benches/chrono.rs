@@ -1,10 +1,12 @@
+//! Benchmarks for chrono that just depend on std
+
 extern crate chrono;
 extern crate criterion;
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use chrono::prelude::*;
-use chrono::{Utc, FixedOffset, DateTime};
+use chrono::{Utc, FixedOffset, DateTime, YearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
@@ -50,13 +52,23 @@ fn bench_datetime_to_rfc3339(c: &mut Criterion) {
     });
 }
 
+fn bench_year_flags_from_year(c: &mut Criterion) {
+    c.bench_function("bench_year_flags_from_year", |b|
+                     b.iter(|| {
+        for year in -999i32..1000 {
+            YearFlags::from_year(year);
+        }
+    }));
+}
+
 criterion_group!(
     benches,
     bench_datetime_parse_from_rfc2822,
     bench_datetime_parse_from_rfc3339,
     bench_datetime_from_str,
     bench_datetime_to_rfc2822,
-    bench_datetime_to_rfc3339
+    bench_datetime_to_rfc3339,
+    bench_year_flags_from_year,
 );
 
 criterion_main!(benches);

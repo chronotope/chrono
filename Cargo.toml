@@ -29,7 +29,7 @@ alloc = []
 std = []
 clock = ["time", "std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
-bench = ["std"]
+__internal_bench = []
 
 [dependencies]
 time = { version = "0.1.39", optional = true }
@@ -60,7 +60,8 @@ all-features = true
 all-features = true
 
 [[bench]]
-name = "parsing"
+name = "chrono"
+required-features = ["__internal_bench"]
 harness = false
 
 [[bench]]
