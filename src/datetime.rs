@@ -2051,6 +2051,8 @@ mod tests {
 
         assert_eq!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
                    Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)));
+        assert_eq!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 -0000"),
+                   Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)));
         assert_eq!(DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
                    Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)));
         assert_eq!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
