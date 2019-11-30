@@ -73,10 +73,6 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     //   by adding 1900. note that four-or-more-digit years less than 1000
     //   are *never* affected by this rule.
     //
-    // - zone of `-0000` and any unrecognized legacy time zones (including
-    //   *every* one-letter military time zones) are considered "missing",
-    //   in such that we don't actually know what time zone is being used.
-    //
     // - mismatching day-of-week is always an error, which is consistent to
     //   Chrono's own rules.
     //

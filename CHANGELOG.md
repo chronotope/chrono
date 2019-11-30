@@ -10,6 +10,11 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## next
 
+### Improvements
+
+* Support "negative UTC" in `parse_from_rfc2822` (@quodlibetor #368 reported in
+  #102)
+
 ### Internal improvements
 
 * Use Criterion for benchmarks (@quodlibetor)
