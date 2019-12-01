@@ -477,7 +477,10 @@ pub mod naive {
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
 
+    #[cfg(not(feature = "__internal_bench"))]
     mod internals;
+    #[cfg(feature = "__internal_bench")]
+    pub mod internals;
     mod date;
     mod isoweek;
     mod time;
@@ -509,6 +512,9 @@ mod date;
 mod datetime;
 pub mod format;
 mod round;
+
+#[cfg(feature = "__internal_bench")]
+pub use naive::internals::YearFlags;
 
 /// Serialization/Deserialization in alternate formats
 ///

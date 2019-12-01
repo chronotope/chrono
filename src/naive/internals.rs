@@ -14,6 +14,7 @@
 //! so that the user-facing `NaiveDate` can validate the input as late as possible.
 
 #![allow(dead_code)] // some internal methods have been left for consistency
+#![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use core::{i32, fmt};
 use num_traits::FromPrimitive;
@@ -514,16 +515,6 @@ mod tests {
         assert_eq!(ED.nisoweeks(), 53);
         assert_eq!(FE.nisoweeks(), 52);
         assert_eq!(GF.nisoweeks(), 52);
-    }
-
-    #[cfg(feature = "bench")]
-    #[bench]
-    fn bench_year_flags_from_year(bh: &mut test::Bencher) {
-        bh.iter(|| {
-            for year in -999i32..1000 {
-                YearFlags::from_year(year);
-            }
-        });
     }
 
     #[test]
