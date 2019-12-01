@@ -324,6 +324,17 @@ fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz
 impl DateTime<FixedOffset> {
     /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
     /// then returns a new `DateTime` with a parsed `FixedOffset`.
+    ///
+    /// RFC 2822 is the internet message standard that specifices the
+    /// representation of times in HTTP and email headers.
+    ///
+    /// ```
+    /// # use chrono::{DateTime, FixedOffset, TimeZone};
+    /// assert_eq!(
+    ///     DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
+    ///     FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)
+    /// );
+    /// ```
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
