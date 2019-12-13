@@ -55,10 +55,10 @@ doc-comment = "0.3"
 wasm-bindgen-test = "0.2"
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["serde"]
 
 [package.metadata.playground]
-all-features = true
+features = ["serde"]
 
 [[bench]]
 name = "chrono"
