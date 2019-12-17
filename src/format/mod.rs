@@ -318,32 +318,22 @@ enum ParseErrorKind {
 /// Same to `Result<T, ParseError>`.
 pub type ParseResult<T> = Result<T, ParseError>;
 
-impl ParseError {
-    fn description(&self) -> &str {
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
-            ParseErrorKind::OutOfRange => "input is out of range",
-            ParseErrorKind::Impossible => "no possible date and time matching input",
-            ParseErrorKind::NotEnough => "input is not enough for unique date and time",
-            ParseErrorKind::Invalid => "input contains invalid characters",
-            ParseErrorKind::TooShort => "premature end of input",
-            ParseErrorKind::TooLong => "trailing input",
-            ParseErrorKind::BadFormat => "bad or unsupported format string",
+            ParseErrorKind::OutOfRange => write!(f, "input is out of range"),
+            ParseErrorKind::Impossible => write!(f, "no possible date and time matching input"),
+            ParseErrorKind::NotEnough => write!(f, "input is not enough for unique date and time"),
+            ParseErrorKind::Invalid => write!(f, "input contains invalid characters"),
+            ParseErrorKind::TooShort => write!(f, "premature end of input"),
+            ParseErrorKind::TooLong => write!(f, "trailing input"),
+            ParseErrorKind::BadFormat => write!(f, "bad or unsupported format string"),
         }
     }
 }
 
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
 #[cfg(any(feature = "std", test))]
-impl Error for ParseError {
-    fn description(&self) -> &str {
-        self.description()
-    }
-}
+impl Error for ParseError {}
 
 // to be used in this module and submodules
 const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);

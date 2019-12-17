@@ -393,24 +393,14 @@ impl fmt::Display for Duration {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OutOfRangeError(());
 
-impl OutOfRangeError {
-    fn description(&self) -> &str {
-        "Source duration value is out of range for the target type"
-    }
-}
-
 impl fmt::Display for OutOfRangeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
+        write!(f, "Source duration value is out of range for the target type")
     }
 }
 
 #[cfg(any(feature = "std", test))]
-impl Error for OutOfRangeError {
-    fn description(&self) -> &str {
-        self.description()
-    }
-}
+impl Error for OutOfRangeError {}
 
 // Copied from libnum
 #[inline]
