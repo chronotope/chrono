@@ -477,10 +477,7 @@ pub mod naive {
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
 
-    #[cfg(not(feature = "__internal_bench"))]
     mod internals;
-    #[cfg(feature = "__internal_bench")]
-    pub mod internals;
     mod date;
     mod isoweek;
     mod time;
@@ -493,6 +490,10 @@ pub mod naive {
     #[cfg(feature = "rustc-serialize")]
     #[allow(deprecated)]
     pub use self::datetime::rustc_serialize::TsSeconds;
+
+    #[cfg(feature = "__internal_bench")]
+    #[doc(hidden)]
+    pub use self::internals::YearFlags as __BenchYearFlags;
 
 
     /// Serialization/Deserialization of naive types in alternate formats
@@ -514,7 +515,8 @@ pub mod format;
 mod round;
 
 #[cfg(feature = "__internal_bench")]
-pub use naive::internals::YearFlags;
+#[doc(hidden)]
+pub use naive::__BenchYearFlags;
 
 /// Serialization/Deserialization in alternate formats
 ///
