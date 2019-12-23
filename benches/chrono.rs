@@ -3,7 +3,7 @@
 extern crate chrono;
 extern crate criterion;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 
 use chrono::prelude::*;
 use chrono::{Utc, FixedOffset, DateTime, __BenchYearFlags};
@@ -59,6 +59,53 @@ fn bench_year_flags_from_year(c: &mut Criterion) {
             __BenchYearFlags::from_year(year);
         }
     }));
+
+/// Returns the number of multiples of `div` in the range `start..end`.
+///
+/// If the range `start..end` is back-to-front, i.e. `start` is greater than `end`, the
+/// behaviour is defined by the following equation:
+/// `in_between(start, end, div) == - in_between(end, start, div)`.
+///
+/// When `div` is 1, this is equivalent to `end - start`, i.e. the length of `start..end`.
+///
+/// # Panics
+///
+/// Panics if `div` is not positive.
+fn in_between(start: i32, end: i32, div: i32) -> i32 {
+    assert!(div > 0, "in_between: nonpositive div = {}", div);
+    let start = (start.div_euclid(div), start.rem_euclid(div));
+    let end = (end.div_euclid(div), end.rem_euclid(div));
+    // The lowest multiple of `div` greater than or equal to `start`, divided.
+    let start = start.0 + (start.1 != 0) as i32;
+    // The lowest multiple of `div` greater than or equal to   `end`, divided.
+    let end = end.0 + (end.1 != 0) as i32;
+    end - start
+}
+
+/// Alternative implementation to `Datelike::num_days_from_ce`
+fn num_days_from_ce_alt<Date: Datelike>(date: &Date) -> i32 {
+    let year = date.year();
+    let diff = move |div| in_between(1, year, div);
+    // 365 days a year, one more in leap years. In the gregorian calendar, leap years are all
+    // the multiples of 4 except multiples of 100 but including multiples of 400.
+    date.ordinal() as i32 + 365 * diff(1) + diff(4) - diff(100) + diff(400)
+}
+
+fn bench_num_days_from_ce(c: &mut Criterion) {
+    let mut group = c.benchmark_group("num_days_from_ce");
+    for year in &[1, 500, 2000, 2019] {
+        let d = NaiveDate::from_ymd(*year, 1, 1);
+        group.bench_with_input(
+            BenchmarkId::new("new", year),
+            &d,
+            |b, y| b.iter(|| num_days_from_ce_alt(y)),
+        );
+        group.bench_with_input(
+            BenchmarkId::new("classic", year),
+            &d,
+            |b, y| b.iter(|| y.num_days_from_ce()),
+        );
+    }
 }
 
 criterion_group!(
@@ -69,6 +116,7 @@ criterion_group!(
     bench_datetime_to_rfc2822,
     bench_datetime_to_rfc3339,
     bench_year_flags_from_year,
+    bench_num_days_from_ce,
 );
 
 criterion_main!(benches);
