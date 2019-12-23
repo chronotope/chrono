@@ -400,7 +400,12 @@ impl fmt::Display for OutOfRangeError {
 }
 
 #[cfg(any(feature = "std", test))]
-impl Error for OutOfRangeError {}
+impl Error for OutOfRangeError {
+    #[allow(deprecated)]
+    fn description(&self) -> &str {
+        "out of range error"
+    }
+}
 
 // Copied from libnum
 #[inline]

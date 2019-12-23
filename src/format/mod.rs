@@ -333,7 +333,12 @@ impl fmt::Display for ParseError {
 }
 
 #[cfg(any(feature = "std", test))]
-impl Error for ParseError {}
+impl Error for ParseError {
+    #[allow(deprecated)]
+    fn description(&self) -> &str {
+        "parser error, see to_string() for details"
+    }
+}
 
 // to be used in this module and submodules
 const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
