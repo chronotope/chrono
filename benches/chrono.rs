@@ -6,7 +6,7 @@ extern crate criterion;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use chrono::prelude::*;
-use chrono::{Utc, FixedOffset, DateTime, YearFlags};
+use chrono::{Utc, FixedOffset, DateTime, __BenchYearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
@@ -56,7 +56,7 @@ fn bench_year_flags_from_year(c: &mut Criterion) {
     c.bench_function("bench_year_flags_from_year", |b|
                      b.iter(|| {
         for year in -999i32..1000 {
-            YearFlags::from_year(year);
+            __BenchYearFlags::from_year(year);
         }
     }));
 }
