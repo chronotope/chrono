@@ -52,7 +52,6 @@ libc = "0.2.1"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "ntdef", "profileapi", "sysinfoapi", "timezoneapi"] }
 libc = "0.2.1"
-log = "0.4"
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 mach = "0.3"
@@ -64,6 +63,7 @@ bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
 criterion = { version = "0.3" }
 doc-comment = "0.3"
+log = "0.4"
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
 wasm-bindgen-test = "0.2"

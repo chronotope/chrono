@@ -418,28 +418,25 @@ extern crate libc;
 extern crate winapi;
 #[cfg(all(feature="clock", any(target_os = "macos", target_os = "ios")))]
 extern crate mach;
-
-#[cfg(feature = "rustc-serialize")]
-extern crate rustc_serialize;
-#[cfg(test)]
-#[macro_use]
-extern crate log;
-
 extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
-#[cfg(test)]
-#[macro_use]
-extern crate doc_comment;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate wasm_bindgen;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate js_sys;
 #[cfg(feature = "bench")]
 extern crate test;
+
+#[cfg(test)]
+#[macro_use]
+extern crate log;
+#[cfg(test)]
+#[macro_use]
+extern crate doc_comment;
 
 #[cfg(test)]
 doctest!("../README.md");
