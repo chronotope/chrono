@@ -26,5 +26,9 @@ fn bench_ser_naivedatetime_writer(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_ser_naivedatetime_writer, bench_ser_naivedatetime_string);
+criterion_group!(
+    benches,
+    bench_ser_naivedatetime_writer,
+    bench_ser_naivedatetime_string
+);
 criterion_main!(benches);

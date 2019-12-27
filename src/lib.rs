@@ -382,14 +382,11 @@
 //! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/")]
-
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![deny(dead_code)]
-
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
-
 // The explicit 'static lifetimes are still needed for rustc 1.13-16
 // backward compatibility, and this appeases clippy. If minimum rustc
 // becomes 1.17, should be able to remove this, those 'static lifetimes,
@@ -400,36 +397,39 @@
 //
 // Changing trivially_copy_pass_by_ref would require an incompatible version
 // bump.
-#![cfg_attr(feature = "cargo-clippy", allow(
-    const_static_lifetime,
-    redundant_field_names,
-    trivially_copy_pass_by_ref,
-))]
+#![cfg_attr(
+    feature = "cargo-clippy",
+    allow(
+        const_static_lifetime,
+        redundant_field_names,
+        trivially_copy_pass_by_ref,
+    )
+)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
+#[cfg(all(feature = "std", not(feature = "alloc")))]
+extern crate std as alloc;
 #[cfg(any(feature = "std", test))]
 extern crate std as core;
-#[cfg(all(feature = "std", not(feature="alloc")))]
-extern crate std as alloc;
 
-#[cfg(feature="clock")]
-extern crate time as oldtime;
 extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
+#[cfg(feature = "clock")]
+extern crate time as oldtime;
 #[cfg(test)]
 #[macro_use]
 extern crate doc_comment;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
-extern crate wasm_bindgen;
-#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate js_sys;
 #[cfg(feature = "bench")]
 extern crate test;
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+extern crate wasm_bindgen;
 
 #[cfg(test)]
 doctest!("../README.md");
@@ -437,39 +437,55 @@ doctest!("../README.md");
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
-#[cfg(feature="clock")]
-#[doc(no_inline)] pub use offset::Local;
-#[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset};
-#[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
-pub use date::{Date, MIN_DATE, MAX_DATE};
-pub use datetime::{DateTime, SecondsFormat};
+pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
+pub use datetime::{DateTime, SecondsFormat};
 pub use format::{ParseError, ParseResult};
+#[doc(no_inline)]
+pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+#[cfg(feature = "clock")]
+#[doc(no_inline)]
+pub use offset::Local;
+#[doc(no_inline)]
+pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 pub use round::SubsecRound;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
-    #[doc(no_inline)] pub use {Datelike, Timelike, Weekday};
-    #[doc(no_inline)] pub use {TimeZone, Offset};
-    #[cfg(feature="clock")]
-    #[doc(no_inline)] pub use Local;
-    #[doc(no_inline)] pub use {Utc, FixedOffset};
-    #[doc(no_inline)] pub use {NaiveDate, NaiveTime, NaiveDateTime};
-    #[doc(no_inline)] pub use Date;
-    #[doc(no_inline)] pub use {DateTime, SecondsFormat};
-    #[doc(no_inline)] pub use SubsecRound;
+    #[doc(no_inline)]
+    pub use Date;
+    #[cfg(feature = "clock")]
+    #[doc(no_inline)]
+    pub use Local;
+    #[doc(no_inline)]
+    pub use SubsecRound;
+    #[doc(no_inline)]
+    pub use {DateTime, SecondsFormat};
+    #[doc(no_inline)]
+    pub use {Datelike, Timelike, Weekday};
+    #[doc(no_inline)]
+    pub use {FixedOffset, Utc};
+    #[doc(no_inline)]
+    pub use {NaiveDate, NaiveDateTime, NaiveTime};
+    #[doc(no_inline)]
+    pub use {Offset, TimeZone};
 }
 
 // useful throughout the codebase
 macro_rules! try_opt {
-    ($e:expr) => (match $e { Some(v) => v, None => return None })
+    ($e:expr) => {
+        match $e {
+            Some(v) => v,
+            None => return None,
+        }
+    };
 }
 
 mod div;
-#[cfg(not(feature="clock"))]
-mod oldtime;
 pub mod offset;
+#[cfg(not(feature = "clock"))]
+mod oldtime;
 pub mod naive {
     //! Date and time types unconcerned with timezones.
     //!
@@ -477,24 +493,23 @@ pub mod naive {
     //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
     //! but can be also used for the simpler date and time handling.
 
-    mod internals;
     mod date;
+    mod datetime;
+    mod internals;
     mod isoweek;
     mod time;
-    mod datetime;
 
-    pub use self::date::{NaiveDate, MIN_DATE, MAX_DATE};
-    pub use self::isoweek::IsoWeek;
-    pub use self::time::NaiveTime;
-    pub use self::datetime::NaiveDateTime;
+    pub use self::date::{NaiveDate, MAX_DATE, MIN_DATE};
     #[cfg(feature = "rustc-serialize")]
     #[allow(deprecated)]
     pub use self::datetime::rustc_serialize::TsSeconds;
+    pub use self::datetime::NaiveDateTime;
+    pub use self::isoweek::IsoWeek;
+    pub use self::time::NaiveTime;
 
     #[cfg(feature = "__internal_bench")]
     #[doc(hidden)]
     pub use self::internals::YearFlags as __BenchYearFlags;
-
 
     /// Serialization/Deserialization of naive types in alternate formats
     ///
@@ -557,11 +572,18 @@ impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
 impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            &SerdeError::NonExistent { ref timestamp } => write!(
-                f, "value is not a legal timestamp: {}", timestamp),
-            &SerdeError::Ambiguous { ref timestamp, ref min, ref max } => write!(
-                f, "value is an ambiguous timestamp: {}, could be either of {}, {}",
-                timestamp, min, max),
+            &SerdeError::NonExistent { ref timestamp } => {
+                write!(f, "value is not a legal timestamp: {}", timestamp)
+            }
+            &SerdeError::Ambiguous {
+                ref timestamp,
+                ref min,
+                ref max,
+            } => write!(
+                f,
+                "value is an ambiguous timestamp: {}, could be either of {}, {}",
+                timestamp, min, max
+            ),
         }
     }
 }
@@ -767,11 +789,12 @@ impl fmt::Debug for ParseWeekdayError {
 mod weekday_serde {
     use super::Weekday;
     use core::fmt;
-    use serdelib::{ser, de};
+    use serdelib::{de, ser};
 
     impl ser::Serialize for Weekday {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
             serializer.collect_str(&self)
         }
@@ -787,15 +810,19 @@ mod weekday_serde {
         }
 
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-            where E: de::Error
+        where
+            E: de::Error,
         {
-            value.parse().map_err(|_| E::custom("short or long weekday names expected"))
+            value
+                .parse()
+                .map_err(|_| E::custom("short or long weekday names expected"))
         }
     }
 
     impl<'de> de::Deserialize<'de> for Weekday {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             deserializer.deserialize_str(WeekdayVisitor)
         }
@@ -1046,7 +1073,8 @@ pub trait Timelike: Sized {
     }
 }
 
-#[cfg(test)] extern crate num_iter;
+#[cfg(test)]
+extern crate num_iter;
 
 #[test]
 fn test_readme_doomsday() {
@@ -1095,11 +1123,11 @@ fn test_num_days_from_ce_against_alternative_impl() {
     fn in_between(start: i32, end: i32, div: i32) -> i32 {
         assert!(div > 0, "in_between: nonpositive div = {}", div);
         let start = (start.div_euclid(div), start.rem_euclid(div));
-        let   end = (  end.div_euclid(div),   end.rem_euclid(div));
+        let end = (end.div_euclid(div), end.rem_euclid(div));
         // The lowest multiple of `div` greater than or equal to `start`, divided.
         let start = start.0 + (start.1 != 0) as i32;
         // The lowest multiple of `div` greater than or equal to   `end`, divided.
-        let   end =   end.0 + (  end.1 != 0) as i32;
+        let end = end.0 + (end.1 != 0) as i32;
         end - start
     }
 
@@ -1116,10 +1144,18 @@ fn test_num_days_from_ce_against_alternative_impl() {
 
     for year in range_inclusive(naive::MIN_DATE.year(), naive::MAX_DATE.year()) {
         let jan1_year = NaiveDate::from_ymd(year, 1, 1);
-        assert_eq!(jan1_year.num_days_from_ce(), num_days_from_ce(&jan1_year),
-            "on {:?}", jan1_year);
+        assert_eq!(
+            jan1_year.num_days_from_ce(),
+            num_days_from_ce(&jan1_year),
+            "on {:?}",
+            jan1_year
+        );
         let mid_year = jan1_year + Duration::days(133);
-        assert_eq!(mid_year.num_days_from_ce(), num_days_from_ce(&mid_year),
-            "on {:?}", mid_year);
+        assert_eq!(
+            mid_year.num_days_from_ce(),
+            num_days_from_ce(&mid_year),
+            "on {:?}",
+            mid_year
+        );
     }
 }

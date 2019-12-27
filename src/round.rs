@@ -1,9 +1,9 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-use Timelike;
 use core::ops::{Add, Sub};
 use oldtime::Duration;
+use Timelike;
 
 /// Extension trait for subsecond rounding or truncation to a maximum number
 /// of digits. Rounding can be used to decrease the error variance when
@@ -39,7 +39,8 @@ pub trait SubsecRound {
 }
 
 impl<T> SubsecRound for T
-where T: Timelike + Add<Duration, Output=T> + Sub<Duration, Output=T>
+where
+    T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
     fn round_subsecs(self, digits: u16) -> T {
         let span = span_for_digits(digits);
@@ -72,23 +73,23 @@ fn span_for_digits(digits: u16) -> u32 {
     // fast lookup form of: 10^(9-min(9,digits))
     match digits {
         0 => 1_000_000_000,
-        1 =>   100_000_000,
-        2 =>    10_000_000,
-        3 =>     1_000_000,
-        4 =>       100_000,
-        5 =>        10_000,
-        6 =>         1_000,
-        7 =>           100,
-        8 =>            10,
-        _ =>             1
+        1 => 100_000_000,
+        2 => 10_000_000,
+        3 => 1_000_000,
+        4 => 100_000,
+        5 => 10_000,
+        6 => 1_000,
+        7 => 100,
+        8 => 10,
+        _ => 1,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use Timelike;
-    use offset::{FixedOffset, TimeZone, Utc};
     use super::SubsecRound;
+    use offset::{FixedOffset, TimeZone, Utc};
+    use Timelike;
 
     #[test]
     fn test_round() {
@@ -122,7 +123,9 @@ mod tests {
 
     #[test]
     fn test_round_leap_nanos() {
-        let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 1_750_500_000);
+        let dt = Utc
+            .ymd(2016, 12, 31)
+            .and_hms_nano(23, 59, 59, 1_750_500_000);
         assert_eq!(dt.round_subsecs(9), dt);
         assert_eq!(dt.round_subsecs(4), dt);
         assert_eq!(dt.round_subsecs(2).nanosecond(), 1_750_000_000);
@@ -165,7 +168,9 @@ mod tests {
 
     #[test]
     fn test_trunc_leap_nanos() {
-        let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 1_750_500_000);
+        let dt = Utc
+            .ymd(2016, 12, 31)
+            .and_hms_nano(23, 59, 59, 1_750_500_000);
         assert_eq!(dt.trunc_subsecs(9), dt);
         assert_eq!(dt.trunc_subsecs(4), dt);
         assert_eq!(dt.trunc_subsecs(2).nanosecond(), 1_750_000_000);

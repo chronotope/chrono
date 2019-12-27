@@ -10,10 +10,10 @@ use core::fmt;
 ))]
 use oldtime;
 
+use super::{FixedOffset, LocalResult, Offset, TimeZone};
 use naive::{NaiveDate, NaiveDateTime};
-#[cfg(feature="clock")]
+#[cfg(feature = "clock")]
 use {Date, DateTime};
-use super::{TimeZone, Offset, LocalResult, FixedOffset};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -35,10 +35,12 @@ use super::{TimeZone, Offset, LocalResult, FixedOffset};
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Utc;
 
-#[cfg(feature="clock")]
+#[cfg(feature = "clock")]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
-    pub fn today() -> Date<Utc> { Utc::now().date() }
+    pub fn today() -> Date<Utc> {
+        Utc::now().date()
+    }
 
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
@@ -53,7 +55,7 @@ impl Utc {
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
         let millisecs_since_unix_epoch: u64 = now.get_time() as u64;
-        let secs  = millisecs_since_unix_epoch / 1000;
+        let secs = millisecs_since_unix_epoch / 1000;
         let nanos = 1_000_000 * (millisecs_since_unix_epoch - 1000 * secs);
         let naive = NaiveDateTime::from_timestamp(secs as i64, nanos as u32);
         DateTime::from_utc(naive, Utc)
@@ -63,7 +65,9 @@ impl Utc {
 impl TimeZone for Utc {
     type Offset = Utc;
 
-    fn from_offset(_state: &Utc) -> Utc { Utc }
+    fn from_offset(_state: &Utc) -> Utc {
+        Utc
+    }
 
     fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<Utc> {
         LocalResult::Single(Utc)
@@ -72,18 +76,28 @@ impl TimeZone for Utc {
         LocalResult::Single(Utc)
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Utc { Utc }
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Utc { Utc }
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Utc {
+        Utc
+    }
+    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Utc {
+        Utc
+    }
 }
 
 impl Offset for Utc {
-    fn fix(&self) -> FixedOffset { FixedOffset::east(0) }
+    fn fix(&self) -> FixedOffset {
+        FixedOffset::east(0)
+    }
 }
 
 impl fmt::Debug for Utc {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "Z") }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Z")
+    }
 }
 
 impl fmt::Display for Utc {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "UTC") }
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "UTC")
+    }
 }

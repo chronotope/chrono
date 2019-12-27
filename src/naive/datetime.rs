@@ -5,18 +5,18 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::{str, fmt, hash};
-use core::ops::{Add, Sub, AddAssign, SubAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::{fmt, hash, str};
 use num_traits::ToPrimitive;
 use oldtime::Duration as OldDuration;
 
-use {Weekday, Timelike, Datelike};
 use div::div_mod_floor;
-use naive::{NaiveTime, NaiveDate, IsoWeek};
-use format::{Item, Numeric, Pad, Fixed};
-use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
+use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use format::{Fixed, Item, Numeric, Pad};
+use naive::{IsoWeek, NaiveDate, NaiveTime};
+use {Datelike, Timelike, Weekday};
 
 /// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
@@ -76,7 +76,10 @@ impl NaiveDateTime {
     /// ~~~~
     #[inline]
     pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime { date: date, time: time }
+        NaiveDateTime {
+            date: date,
+            time: time,
+        }
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -138,11 +141,16 @@ impl NaiveDateTime {
     #[inline]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = div_mod_floor(secs, 86_400);
-        let date = days.to_i32().and_then(|days| days.checked_add(719_163))
-                                .and_then(NaiveDate::from_num_days_from_ce_opt);
+        let date = days
+            .to_i32()
+            .and_then(|days| days.checked_add(719_163))
+            .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
-            (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
+            (Some(date), Some(time)) => Some(NaiveDateTime {
+                date: date,
+                time: time,
+            }),
             (_, _) => None,
         }
     }
@@ -489,7 +497,10 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime {
+            date: date,
+            time: time,
+        })
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -571,7 +582,10 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_sub_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime {
+            date: date,
+            time: time,
+        })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -652,7 +666,10 @@ impl NaiveDateTime {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
-            where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>> {
+    where
+        I: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
         DelayedFormat::new(Some(self.date), Some(self.time), items)
     }
 
@@ -867,7 +884,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
-        self.date.with_year(year).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_year(year)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 1) changed.
@@ -889,7 +908,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
-        self.date.with_month(month).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_month(month)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 0) changed.
@@ -911,7 +932,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
-        self.date.with_month0(month0).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_month0(month0)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 1) changed.
@@ -932,7 +955,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
-        self.date.with_day(day).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_day(day)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 0) changed.
@@ -953,7 +978,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
-        self.date.with_day0(day0).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_day0(day0)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 1) changed.
@@ -981,7 +1008,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
-        self.date.with_ordinal(ordinal).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_ordinal(ordinal)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 0) changed.
@@ -1009,7 +1038,9 @@ impl Datelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
-        self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
+        self.date
+            .with_ordinal0(ordinal0)
+            .map(|d| NaiveDateTime { date: d, ..*self })
     }
 }
 
@@ -1104,7 +1135,9 @@ impl Timelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
-        self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
+        self.time
+            .with_hour(hour)
+            .map(|t| NaiveDateTime { time: t, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the minute number changed.
@@ -1126,7 +1159,9 @@ impl Timelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
-        self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
+        self.time
+            .with_minute(min)
+            .map(|t| NaiveDateTime { time: t, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the second number changed.
@@ -1150,7 +1185,9 @@ impl Timelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
-        self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
+        self.time
+            .with_second(sec)
+            .map(|t| NaiveDateTime { time: t, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
@@ -1177,7 +1214,9 @@ impl Timelike for NaiveDateTime {
     /// ~~~~
     #[inline]
     fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
-        self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
+        self.time
+            .with_nanosecond(nano)
+            .map(|t| NaiveDateTime { time: t, ..*self })
     }
 }
 
@@ -1253,7 +1292,8 @@ impl Add<OldDuration> for NaiveDateTime {
 
     #[inline]
     fn add(self, rhs: OldDuration) -> NaiveDateTime {
-        self.checked_add_signed(rhs).expect("`NaiveDateTime + Duration` overflowed")
+        self.checked_add_signed(rhs)
+            .expect("`NaiveDateTime + Duration` overflowed")
     }
 }
 
@@ -1323,7 +1363,8 @@ impl Sub<OldDuration> for NaiveDateTime {
 
     #[inline]
     fn sub(self, rhs: OldDuration) -> NaiveDateTime {
-        self.checked_sub_signed(rhs).expect("`NaiveDateTime - Duration` overflowed")
+        self.checked_sub_signed(rhs)
+            .expect("`NaiveDateTime - Duration` overflowed")
     }
 }
 
@@ -1474,18 +1515,24 @@ impl str::FromStr for NaiveDateTime {
 
     fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
         const ITEMS: &'static [Item<'static>] = &[
-                             Item::Numeric(Numeric::Year, Pad::Zero),
-            Item::Space(""), Item::Literal("-"),
-                             Item::Numeric(Numeric::Month, Pad::Zero),
-            Item::Space(""), Item::Literal("-"),
-                             Item::Numeric(Numeric::Day, Pad::Zero),
-            Item::Space(""), Item::Literal("T"), // XXX shouldn't this be case-insensitive?
-                             Item::Numeric(Numeric::Hour, Pad::Zero),
-            Item::Space(""), Item::Literal(":"),
-                             Item::Numeric(Numeric::Minute, Pad::Zero),
-            Item::Space(""), Item::Literal(":"),
-                             Item::Numeric(Numeric::Second, Pad::Zero),
-            Item::Fixed(Fixed::Nanosecond), Item::Space(""),
+            Item::Numeric(Numeric::Year, Pad::Zero),
+            Item::Space(""),
+            Item::Literal("-"),
+            Item::Numeric(Numeric::Month, Pad::Zero),
+            Item::Space(""),
+            Item::Literal("-"),
+            Item::Numeric(Numeric::Day, Pad::Zero),
+            Item::Space(""),
+            Item::Literal("T"), // XXX shouldn't this be case-insensitive?
+            Item::Numeric(Numeric::Hour, Pad::Zero),
+            Item::Space(""),
+            Item::Literal(":"),
+            Item::Numeric(Numeric::Minute, Pad::Zero),
+            Item::Space(""),
+            Item::Literal(":"),
+            Item::Numeric(Numeric::Second, Pad::Zero),
+            Item::Fixed(Fixed::Nanosecond),
+            Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
@@ -1496,63 +1543,82 @@ impl str::FromStr for NaiveDateTime {
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
-    where F: Fn(&NaiveDateTime) -> Result<String, E>, E: ::std::fmt::Debug
+where
+    F: Fn(&NaiveDateTime) -> Result<String, E>,
+    E: ::std::fmt::Debug,
 {
-    use naive::{MIN_DATE, MAX_DATE};
+    use naive::{MAX_DATE, MIN_DATE};
 
     assert_eq!(
         to_string(&NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)).ok(),
-        Some(r#""2016-07-08T09:10:48.090""#.into()));
+        Some(r#""2016-07-08T09:10:48.090""#.into())
+    );
     assert_eq!(
         to_string(&NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)).ok(),
-        Some(r#""2014-07-24T12:34:06""#.into()));
+        Some(r#""2014-07-24T12:34:06""#.into())
+    );
     assert_eq!(
         to_string(&NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)).ok(),
-        Some(r#""0000-01-01T00:00:60""#.into()));
+        Some(r#""0000-01-01T00:00:60""#.into())
+    );
     assert_eq!(
         to_string(&NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)).ok(),
-        Some(r#""-0001-12-31T23:59:59.000000007""#.into()));
+        Some(r#""-0001-12-31T23:59:59.000000007""#.into())
+    );
     assert_eq!(
         to_string(&MIN_DATE.and_hms(0, 0, 0)).ok(),
-        Some(r#""-262144-01-01T00:00:00""#.into()));
+        Some(r#""-262144-01-01T00:00:00""#.into())
+    );
     assert_eq!(
         to_string(&MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
-        Some(r#""+262143-12-31T23:59:60.999999999""#.into()));
+        Some(r#""+262143-12-31T23:59:60.999999999""#.into())
+    );
 }
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<F, E>(from_str: F)
-    where F: Fn(&str) -> Result<NaiveDateTime, E>, E: ::std::fmt::Debug
+where
+    F: Fn(&str) -> Result<NaiveDateTime, E>,
+    E: ::std::fmt::Debug,
 {
-    use naive::{MIN_DATE, MAX_DATE};
+    use naive::{MAX_DATE, MIN_DATE};
 
     assert_eq!(
         from_str(r#""2016-07-08T09:10:48.090""#).ok(),
-        Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
+        Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90))
+    );
     assert_eq!(
         from_str(r#""2016-7-8T9:10:48.09""#).ok(),
-        Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90)));
+        Some(NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90))
+    );
     assert_eq!(
         from_str(r#""2014-07-24T12:34:06""#).ok(),
-        Some(NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6)));
+        Some(NaiveDate::from_ymd(2014, 7, 24).and_hms(12, 34, 6))
+    );
     assert_eq!(
         from_str(r#""0000-01-01T00:00:60""#).ok(),
-        Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
+        Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000))
+    );
     assert_eq!(
         from_str(r#""0-1-1T0:0:60""#).ok(),
-        Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000)));
+        Some(NaiveDate::from_ymd(0, 1, 1).and_hms_milli(0, 0, 59, 1_000))
+    );
     assert_eq!(
         from_str(r#""-0001-12-31T23:59:59.000000007""#).ok(),
-        Some(NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7)));
+        Some(NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7))
+    );
     assert_eq!(
         from_str(r#""-262144-01-01T00:00:00""#).ok(),
-        Some(MIN_DATE.and_hms(0, 0, 0)));
+        Some(MIN_DATE.and_hms(0, 0, 0))
+    );
     assert_eq!(
         from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
-        Some(MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999)));
+        Some(MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999))
+    );
     assert_eq!(
         from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
-        Some(MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999)));
+        Some(MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999))
+    );
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
@@ -1576,10 +1642,11 @@ fn test_decodable_json<F, E>(from_str: F)
     assert!(from_str(r#"null"#).is_err());
 }
 
-
 #[cfg(all(test, feature = "rustc-serialize"))]
 fn test_decodable_json_timestamp<F, E>(from_str: F)
-    where F: Fn(&str) -> Result<rustc_serialize::TsSeconds, E>, E: ::std::fmt::Debug
+where
+    F: Fn(&str) -> Result<rustc_serialize::TsSeconds, E>,
+    E: ::std::fmt::Debug,
 {
     assert_eq!(
         *from_str("0").unwrap(),
@@ -1595,9 +1662,9 @@ fn test_decodable_json_timestamp<F, E>(from_str: F)
 
 #[cfg(feature = "rustc-serialize")]
 pub mod rustc_serialize {
-    use std::ops::Deref;
     use super::NaiveDateTime;
-    use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
+    use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+    use std::ops::Deref;
 
     impl Encodable for NaiveDateTime {
         fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
@@ -1607,14 +1674,18 @@ pub mod rustc_serialize {
 
     impl Decodable for NaiveDateTime {
         fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDateTime, D::Error> {
-            d.read_str()?.parse().map_err(|_| d.error("invalid date time string"))
+            d.read_str()?
+                .parse()
+                .map_err(|_| d.error("invalid date time string"))
         }
     }
 
     /// A `DateTime` that can be deserialized from a seconds-based timestamp
     #[derive(Debug)]
-    #[deprecated(since = "1.4.2",
-                 note = "RustcSerialize will be removed before chrono 1.0, use Serde instead")]
+    #[deprecated(
+        since = "1.4.2",
+        note = "RustcSerialize will be removed before chrono 1.0, use Serde instead"
+    )]
     pub struct TsSeconds(NaiveDateTime);
 
     #[allow(deprecated)]
@@ -1642,11 +1713,13 @@ pub mod rustc_serialize {
         fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds, D::Error> {
             Ok(TsSeconds(
                 NaiveDateTime::from_timestamp_opt(d.read_i64()?, 0)
-                    .ok_or_else(|| d.error("invalid timestamp"))?))
+                    .ok_or_else(|| d.error("invalid timestamp"))?,
+            ))
         }
     }
 
-    #[cfg(test)] use rustc_serialize::json;
+    #[cfg(test)]
+    use rustc_serialize::json;
 
     #[test]
     fn test_encodable() {
@@ -1661,17 +1734,15 @@ pub mod rustc_serialize {
     #[test]
     fn test_decodable_timestamps() {
         super::test_decodable_json_timestamp(json::decode);
-
     }
-
 }
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
 pub mod serde {
+    use super::NaiveDateTime;
     use core::fmt;
-    use super::{NaiveDateTime};
-    use serdelib::{ser, de};
+    use serdelib::{de, ser};
 
     /// Serialize a `NaiveDateTime` as an RFC 3339 string
     ///
@@ -1679,10 +1750,11 @@ pub mod serde {
     /// serialization formats.
     impl ser::Serialize for NaiveDateTime {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
             struct FormatWrapped<'a, D: 'a> {
-                inner: &'a D
+                inner: &'a D,
             }
 
             impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
@@ -1700,13 +1772,13 @@ pub mod serde {
     impl<'de> de::Visitor<'de> for NaiveDateTimeVisitor {
         type Value = NaiveDateTime;
 
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-        {
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             write!(formatter, "a formatted date and time string")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
-            where E: de::Error
+        where
+            E: de::Error,
         {
             value.parse().map_err(E::custom)
         }
@@ -1714,7 +1786,8 @@ pub mod serde {
 
     impl<'de> de::Deserialize<'de> for NaiveDateTime {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             deserializer.deserialize_str(NaiveDateTimeVisitor)
         }
@@ -1757,9 +1830,9 @@ pub mod serde {
     /// ```
     pub mod ts_nanoseconds {
         use core::fmt;
-        use serdelib::{ser, de};
+        use serdelib::{de, ser};
 
-        use {NaiveDateTime, ne_timestamp};
+        use {ne_timestamp, NaiveDateTime};
 
         /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
         ///
@@ -1796,7 +1869,8 @@ pub mod serde {
         /// # fn main() { example().unwrap(); }
         /// ```
         pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
             serializer.serialize_i64(dt.timestamp_nanos())
         }
@@ -1832,7 +1906,8 @@ pub mod serde {
         /// # fn main() { example().unwrap(); }
         /// ```
         pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             Ok(d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)?)
         }
@@ -1842,25 +1917,30 @@ pub mod serde {
         impl<'de> de::Visitor<'de> for NaiveDateTimeFromNanoSecondsVisitor {
             type Value = NaiveDateTime;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-            {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a unix timestamp")
             }
 
             fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
-                NaiveDateTime::from_timestamp_opt(value / 1_000_000_000,
-                                                 (value % 1_000_000_000) as u32)
-                    .ok_or_else(|| E::custom(ne_timestamp(value)))
+                NaiveDateTime::from_timestamp_opt(
+                    value / 1_000_000_000,
+                    (value % 1_000_000_000) as u32,
+                )
+                .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
-                NaiveDateTime::from_timestamp_opt(value as i64 / 1_000_000_000,
-                                                 (value as i64 % 1_000_000_000) as u32)
-                    .ok_or_else(|| E::custom(ne_timestamp(value)))
+                NaiveDateTime::from_timestamp_opt(
+                    value as i64 / 1_000_000_000,
+                    (value as i64 % 1_000_000_000) as u32,
+                )
+                .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
@@ -1902,9 +1982,9 @@ pub mod serde {
     /// ```
     pub mod ts_milliseconds {
         use core::fmt;
-        use serdelib::{ser, de};
+        use serdelib::{de, ser};
 
-        use {NaiveDateTime, ne_timestamp};
+        use {ne_timestamp, NaiveDateTime};
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
         ///
@@ -1941,7 +2021,8 @@ pub mod serde {
         /// # fn main() { example().unwrap(); }
         /// ```
         pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
             serializer.serialize_i64(dt.timestamp_millis())
         }
@@ -1977,7 +2058,8 @@ pub mod serde {
         /// # fn main() { example().unwrap(); }
         /// ```
         pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             Ok(d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)?)
         }
@@ -1987,25 +2069,27 @@ pub mod serde {
         impl<'de> de::Visitor<'de> for NaiveDateTimeFromMilliSecondsVisitor {
             type Value = NaiveDateTime;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-            {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a unix timestamp")
             }
 
             fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
-                NaiveDateTime::from_timestamp_opt(value / 1000,
-                                                ((value % 1000) * 1_000_000) as u32)
+                NaiveDateTime::from_timestamp_opt(value / 1000, ((value % 1000) * 1_000_000) as u32)
                     .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
-                NaiveDateTime::from_timestamp_opt((value / 1000) as i64,
-                                                 ((value % 1000) * 1_000_000) as u32)
-                    .ok_or_else(|| E::custom(ne_timestamp(value)))
+                NaiveDateTime::from_timestamp_opt(
+                    (value / 1000) as i64,
+                    ((value % 1000) * 1_000_000) as u32,
+                )
+                .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
         }
     }
@@ -2047,9 +2131,9 @@ pub mod serde {
     /// ```
     pub mod ts_seconds {
         use core::fmt;
-        use serdelib::{ser, de};
+        use serdelib::{de, ser};
 
-        use {NaiveDateTime, ne_timestamp};
+        use {ne_timestamp, NaiveDateTime};
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch
         ///
@@ -2086,7 +2170,8 @@ pub mod serde {
         /// # fn main() { example().unwrap(); }
         /// ```
         pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
             serializer.serialize_i64(dt.timestamp())
         }
@@ -2122,7 +2207,8 @@ pub mod serde {
         /// # fn main() { example().unwrap(); }
         /// ```
         pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             Ok(d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)?)
         }
@@ -2132,20 +2218,21 @@ pub mod serde {
         impl<'de> de::Visitor<'de> for NaiveDateTimeFromSecondsVisitor {
             type Value = NaiveDateTime;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result
-            {
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a unix timestamp")
             }
 
             fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
                 NaiveDateTime::from_timestamp_opt(value, 0)
                     .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
             fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
-                where E: de::Error
+            where
+                E: de::Error,
             {
                 NaiveDateTime::from_timestamp_opt(value as i64, 0)
                     .ok_or_else(|| E::custom(ne_timestamp(value)))
@@ -2153,8 +2240,10 @@ pub mod serde {
         }
     }
 
-    #[cfg(test)] extern crate serde_json;
-    #[cfg(test)] extern crate bincode;
+    #[cfg(test)]
+    extern crate bincode;
+    #[cfg(test)]
+    extern crate serde_json;
 
     #[test]
     fn test_serde_serialize() {
@@ -2170,8 +2259,8 @@ pub mod serde {
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
+        use self::bincode::{deserialize, serialize, Infinite};
         use naive::NaiveDate;
-        use self::bincode::{Infinite, serialize, deserialize};
 
         let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
         let encoded = serialize(&dt, Infinite).unwrap();
@@ -2183,96 +2272,160 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
-    use Datelike;
-    use naive::{NaiveDate, MIN_DATE, MAX_DATE};
-    use std::i64;
+    use naive::{NaiveDate, MAX_DATE, MIN_DATE};
     use oldtime::Duration;
+    use std::i64;
+    use Datelike;
 
     #[test]
     fn test_datetime_from_timestamp() {
         let from_timestamp = |secs| NaiveDateTime::from_timestamp_opt(secs, 0);
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
         assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
         assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
-        assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
-        assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
+        assert_eq!(
+            from_timestamp(1_000_000_000),
+            Some(ymdhms(2001, 9, 9, 1, 46, 40))
+        );
+        assert_eq!(
+            from_timestamp(0x7fffffff),
+            Some(ymdhms(2038, 1, 19, 3, 14, 7))
+        );
         assert_eq!(from_timestamp(i64::MIN), None);
         assert_eq!(from_timestamp(i64::MAX), None);
     }
 
     #[test]
     fn test_datetime_add() {
-        fn check((y,m,d,h,n,s): (i32,u32,u32,u32,u32,u32), rhs: Duration,
-                 result: Option<(i32,u32,u32,u32,u32,u32)>) {
+        fn check(
+            (y, m, d, h, n, s): (i32, u32, u32, u32, u32, u32),
+            rhs: Duration,
+            result: Option<(i32, u32, u32, u32, u32, u32)>,
+        ) {
             let lhs = NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-            let sum = result.map(|(y,m,d,h,n,s)| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
+            let sum =
+                result.map(|(y, m, d, h, n, s)| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
             assert_eq!(lhs.checked_add_signed(rhs), sum);
             assert_eq!(lhs.checked_sub_signed(-rhs), sum);
         };
 
-        check((2014,5,6, 7,8,9), Duration::seconds(3600 + 60 + 1), Some((2014,5,6, 8,9,10)));
-        check((2014,5,6, 7,8,9), Duration::seconds(-(3600 + 60 + 1)), Some((2014,5,6, 6,7,8)));
-        check((2014,5,6, 7,8,9), Duration::seconds(86399), Some((2014,5,7, 7,8,8)));
-        check((2014,5,6, 7,8,9), Duration::seconds(86_400 * 10), Some((2014,5,16, 7,8,9)));
-        check((2014,5,6, 7,8,9), Duration::seconds(-86_400 * 10), Some((2014,4,26, 7,8,9)));
-        check((2014,5,6, 7,8,9), Duration::seconds(86_400 * 10), Some((2014,5,16, 7,8,9)));
+        check(
+            (2014, 5, 6, 7, 8, 9),
+            Duration::seconds(3600 + 60 + 1),
+            Some((2014, 5, 6, 8, 9, 10)),
+        );
+        check(
+            (2014, 5, 6, 7, 8, 9),
+            Duration::seconds(-(3600 + 60 + 1)),
+            Some((2014, 5, 6, 6, 7, 8)),
+        );
+        check(
+            (2014, 5, 6, 7, 8, 9),
+            Duration::seconds(86399),
+            Some((2014, 5, 7, 7, 8, 8)),
+        );
+        check(
+            (2014, 5, 6, 7, 8, 9),
+            Duration::seconds(86_400 * 10),
+            Some((2014, 5, 16, 7, 8, 9)),
+        );
+        check(
+            (2014, 5, 6, 7, 8, 9),
+            Duration::seconds(-86_400 * 10),
+            Some((2014, 4, 26, 7, 8, 9)),
+        );
+        check(
+            (2014, 5, 6, 7, 8, 9),
+            Duration::seconds(86_400 * 10),
+            Some((2014, 5, 16, 7, 8, 9)),
+        );
 
         // overflow check
         // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
         // (they are private constants, but the equivalence is tested in that module.)
-        let max_days_from_year_0 = MAX_DATE.signed_duration_since(NaiveDate::from_ymd(0,1,1));
-        check((0,1,1, 0,0,0), max_days_from_year_0, Some((MAX_DATE.year(),12,31, 0,0,0)));
-        check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86399),
-              Some((MAX_DATE.year(),12,31, 23,59,59)));
-        check((0,1,1, 0,0,0), max_days_from_year_0 + Duration::seconds(86_400), None);
-        check((0,1,1, 0,0,0), Duration::max_value(), None);
+        let max_days_from_year_0 = MAX_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
+        check(
+            (0, 1, 1, 0, 0, 0),
+            max_days_from_year_0,
+            Some((MAX_DATE.year(), 12, 31, 0, 0, 0)),
+        );
+        check(
+            (0, 1, 1, 0, 0, 0),
+            max_days_from_year_0 + Duration::seconds(86399),
+            Some((MAX_DATE.year(), 12, 31, 23, 59, 59)),
+        );
+        check(
+            (0, 1, 1, 0, 0, 0),
+            max_days_from_year_0 + Duration::seconds(86_400),
+            None,
+        );
+        check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
 
-        let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0,1,1));
-        check((0,1,1, 0,0,0), min_days_from_year_0, Some((MIN_DATE.year(),1,1, 0,0,0)));
-        check((0,1,1, 0,0,0), min_days_from_year_0 - Duration::seconds(1), None);
-        check((0,1,1, 0,0,0), Duration::min_value(), None);
+        let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
+        check(
+            (0, 1, 1, 0, 0, 0),
+            min_days_from_year_0,
+            Some((MIN_DATE.year(), 1, 1, 0, 0, 0)),
+        );
+        check(
+            (0, 1, 1, 0, 0, 0),
+            min_days_from_year_0 - Duration::seconds(1),
+            None,
+        );
+        check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
     }
 
     #[test]
     fn test_datetime_sub() {
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let since = NaiveDateTime::signed_duration_since;
-        assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
-                   Duration::zero());
-        assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
-                   Duration::seconds(1));
-        assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-                   Duration::seconds(-1));
-        assert_eq!(since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-                   Duration::seconds(86399));
-        assert_eq!(since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
-                   Duration::seconds(999_999_999));
+        assert_eq!(
+            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
+            Duration::zero()
+        );
+        assert_eq!(
+            since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
+            Duration::seconds(1)
+        );
+        assert_eq!(
+            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
+            Duration::seconds(-1)
+        );
+        assert_eq!(
+            since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
+            Duration::seconds(86399)
+        );
+        assert_eq!(
+            since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
+            Duration::seconds(999_999_999)
+        );
     }
 
     #[test]
     fn test_datetime_addassignment() {
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
         date += Duration::minutes(10_000_000);
-        assert_eq!(date,  ymdhms(2035, 10, 6, 20, 50, 10));
+        assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
         date += Duration::days(10);
-        assert_eq!(date,  ymdhms(2035, 10, 16, 20, 50, 10));
+        assert_eq!(date, ymdhms(2035, 10, 16, 20, 50, 10));
     }
 
     #[test]
     fn test_datetime_subassignment() {
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
         date -= Duration::minutes(10_000_000);
-        assert_eq!(date,  ymdhms(1997, 9, 26, 23, 30, 10));
+        assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
         date -= Duration::days(10);
-        assert_eq!(date,  ymdhms(1997, 9, 16, 23, 30, 10));
+        assert_eq!(date, ymdhms(1997, 9, 16, 23, 30, 10));
     }
 
     #[test]
     fn test_datetime_timestamp() {
-        let to_timestamp = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s).timestamp();
+        let to_timestamp =
+            |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s).timestamp();
         assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
         assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
@@ -2291,17 +2444,25 @@ mod tests {
         for &s in &valid {
             let d = match s.parse::<NaiveDateTime>() {
                 Ok(d) => d,
-                Err(e) => panic!("parsing `{}` has failed: {}", s, e)
+                Err(e) => panic!("parsing `{}` has failed: {}", s, e),
             };
             let s_ = format!("{:?}", d);
             // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
             let d_ = match s_.parse::<NaiveDateTime>() {
                 Ok(d) => d,
-                Err(e) => panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}",
-                                 s, d, e)
+                Err(e) => panic!(
+                    "`{}` is parsed into `{:?}`, but reparsing that has failed: {}",
+                    s, d, e
+                ),
             };
-            assert!(d == d_, "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match", s, d, d_);
+            assert!(
+                d == d_,
+                "`{}` is parsed into `{:?}`, but reparsed result \
+                              `{:?}` does not match",
+                s,
+                d,
+                d_
+            );
         }
 
         // some invalid cases
@@ -2320,30 +2481,51 @@ mod tests {
 
     #[test]
     fn test_datetime_parse_from_str() {
-        let ymdhms = |y,m,d,h,n,s| NaiveDate::from_ymd(y,m,d).and_hms(h,n,s);
+        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let ymdhmsn =
-            |y,m,d,h,n,s,nano| NaiveDate::from_ymd(y, m, d).and_hms_nano(h, n, s, nano);
-        assert_eq!(NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-                   Ok(ymdhms(2014, 5, 7, 12, 34, 56))); // ignore offset
-        assert_eq!(NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
-                   Ok(ymdhms(2015, 2, 2, 0, 0, 0)));
-        assert_eq!(NaiveDateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
-                                                 "%a, %d %b %Y %H:%M:%S GMT"),
-                   Ok(ymdhms(2013, 8, 9, 23, 54, 35)));
-        assert!(NaiveDateTime::parse_from_str("Sat, 09 Aug 2013 23:54:35 GMT",
-                                              "%a, %d %b %Y %H:%M:%S GMT").is_err());
+            |y, m, d, h, n, s, nano| NaiveDate::from_ymd(y, m, d).and_hms_nano(h, n, s, nano);
+        assert_eq!(
+            NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+            Ok(ymdhms(2014, 5, 7, 12, 34, 56))
+        ); // ignore offset
+        assert_eq!(
+            NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
+            Ok(ymdhms(2015, 2, 2, 0, 0, 0))
+        );
+        assert_eq!(
+            NaiveDateTime::parse_from_str(
+                "Fri, 09 Aug 2013 23:54:35 GMT",
+                "%a, %d %b %Y %H:%M:%S GMT"
+            ),
+            Ok(ymdhms(2013, 8, 9, 23, 54, 35))
+        );
+        assert!(NaiveDateTime::parse_from_str(
+            "Sat, 09 Aug 2013 23:54:35 GMT",
+            "%a, %d %b %Y %H:%M:%S GMT"
+        )
+        .is_err());
         assert!(NaiveDateTime::parse_from_str("2014-5-7 12:3456", "%Y-%m-%d %H:%M:%S").is_err());
         assert!(NaiveDateTime::parse_from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
-        assert_eq!(NaiveDateTime::parse_from_str("1441497364", "%s"),
-                   Ok(ymdhms(2015, 9, 5, 23, 56, 4)));
-        assert_eq!(NaiveDateTime::parse_from_str("1283929614.1234", "%s.%f"),
-                   Ok(ymdhmsn(2010, 9, 8, 7, 6, 54, 1234)));
-        assert_eq!(NaiveDateTime::parse_from_str("1441497364.649", "%s%.3f"),
-                   Ok(ymdhmsn(2015, 9, 5, 23, 56, 4, 649000000)));
-        assert_eq!(NaiveDateTime::parse_from_str("1497854303.087654", "%s%.6f"),
-                   Ok(ymdhmsn(2017, 6, 19, 6, 38, 23, 87654000)));
-        assert_eq!(NaiveDateTime::parse_from_str("1437742189.918273645", "%s%.9f"),
-                   Ok(ymdhmsn(2015, 7, 24, 12, 49, 49, 918273645)));
+        assert_eq!(
+            NaiveDateTime::parse_from_str("1441497364", "%s"),
+            Ok(ymdhms(2015, 9, 5, 23, 56, 4))
+        );
+        assert_eq!(
+            NaiveDateTime::parse_from_str("1283929614.1234", "%s.%f"),
+            Ok(ymdhmsn(2010, 9, 8, 7, 6, 54, 1234))
+        );
+        assert_eq!(
+            NaiveDateTime::parse_from_str("1441497364.649", "%s%.3f"),
+            Ok(ymdhmsn(2015, 9, 5, 23, 56, 4, 649000000))
+        );
+        assert_eq!(
+            NaiveDateTime::parse_from_str("1497854303.087654", "%s%.6f"),
+            Ok(ymdhmsn(2017, 6, 19, 6, 38, 23, 87654000))
+        );
+        assert_eq!(
+            NaiveDateTime::parse_from_str("1437742189.918273645", "%s%.9f"),
+            Ok(ymdhmsn(2015, 7, 24, 12, 49, 49, 918273645))
+        );
     }
 
     #[test]
@@ -2360,11 +2542,15 @@ mod tests {
     }
 
     #[test]
-    fn test_datetime_add_sub_invariant() { // issue #37
+    fn test_datetime_add_sub_invariant() {
+        // issue #37
         let base = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
         let t = -946684799990000;
         let time = base + Duration::microseconds(t);
-        assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
+        assert_eq!(
+            t,
+            time.signed_duration_since(base).num_microseconds().unwrap()
+        );
     }
 
     #[test]
