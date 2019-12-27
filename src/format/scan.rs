@@ -262,8 +262,20 @@ pub fn timezone_offset_zulu<F>(s: &str, colon: F)
 -> ParseResult<(&str, i32)>
     where F: FnMut(&str) -> ParseResult<&str>
 {
-    match s.as_bytes().first() {
+    let bytes = s.as_bytes();
+    match bytes.first() {
         Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
+        Some(&b'u') | Some(&b'U') => {
+            if bytes.len() >= 3 {
+                let (b, c) = (bytes[1], bytes[2]);
+                match (b | 32, c | 32) {
+                    (b't', b'c') => Ok((&s[3..], 0)),
+                    _ => Err(INVALID),
+                }
+            } else {
+                Err(INVALID)
+            }
+        }
         _ => timezone_offset(s, colon),
     }
 }
