@@ -20,10 +20,10 @@ pub fn strptime(mut s: &str, format: &str) -> Result<Tm, ParseError> {
     while let Some(ch) = chars.next() {
         if ch == '%' {
             if let Some(ch) = chars.next() {
-                try!(parse_type(&mut s, ch, &mut tm));
+                parse_type(&mut s, ch, &mut tm)?;
             }
         } else {
-            try!(parse_char(&mut s, ch));
+            parse_char(&mut s, ch)?;
         }
     }
     Ok(tm)
