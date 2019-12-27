@@ -397,7 +397,7 @@ mod inner {
     mod mac {
         use libc::{self, timeval};
         use mach::mach_time::{mach_timebase_info, mach_absolute_time};
-        use std::sync::{Once, ONCE_INIT};
+        use std::sync::Once;
         use std::ops::{Add, Sub};
         use Duration;
 
@@ -406,7 +406,7 @@ mod inner {
                 numer: 0,
                 denom: 0,
             };
-            static ONCE: Once = ONCE_INIT;
+            static ONCE: Once = Once::new();
 
             unsafe {
                 ONCE.call_once(|| {
@@ -618,7 +618,7 @@ mod inner {
 mod inner {
     use std::io;
     use std::mem;
-    use std::sync::{Once, ONCE_INIT};
+    use std::sync::Once;
     use std::ops::{Add, Sub};
     use {Tm, Duration};
 
@@ -631,7 +631,7 @@ mod inner {
 
     fn frequency() -> i64 {
         static mut FREQUENCY: i64 = 0;
-        static ONCE: Once = ONCE_INIT;
+        static ONCE: Once = Once::new();
 
         unsafe {
             ONCE.call_once(|| {
@@ -906,11 +906,11 @@ mod inner {
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724944%28v=vs.85%29.aspx
     #[cfg(test)]
     fn acquire_privileges() {
-        use std::sync::{ONCE_INIT, Once};
+        use std::sync::Once;
         use winapi::um::processthreadsapi::*;
         use winapi::um::winbase::LookupPrivilegeValueA;
         const SE_PRIVILEGE_ENABLED: DWORD = 2;
-        static INIT: Once = ONCE_INIT;
+        static INIT: Once = Once::new();
 
         // TODO: FIXME
         extern "system" {

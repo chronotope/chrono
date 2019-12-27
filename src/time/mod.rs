@@ -639,7 +639,7 @@ mod tests {
     use super::ParseError::{InvalidTime, InvalidYear, MissingFormatConverter,
                             InvalidFormatSpecifier};
 
-    use std::sync::{Once, ONCE_INIT, Mutex, MutexGuard, LockResult};
+    use std::sync::{Once, Mutex, MutexGuard, LockResult};
     use std::mem;
 
     struct TzReset {
@@ -651,7 +651,7 @@ mod tests {
         // Lock manages current timezone because some tests require LA some
         // London
         static mut LOCK: *mut Mutex<()> = 0 as *mut _;
-        static INIT: Once = ONCE_INIT;
+        static INIT: Once = Once::new();
 
         unsafe {
             INIT.call_once(|| {
