@@ -395,7 +395,8 @@ mod inner {
 
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     mod mac {
-        use libc::{self, timeval, mach_timebase_info};
+        use libc::{self, timeval};
+        use mach::mach_time::{mach_timebase_info, mach_absolute_time};
         use std::sync::{Once, ONCE_INIT};
         use std::ops::{Add, Sub};
         use Duration;
@@ -425,7 +426,7 @@ mod inner {
         #[inline]
         pub fn get_precise_ns() -> u64 {
             unsafe {
-                let time = libc::mach_absolute_time();
+                let time = mach_absolute_time();
                 let info = info();
                 time * info.numer as u64 / info.denom as u64
             }

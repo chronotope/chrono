@@ -416,6 +416,8 @@ extern crate syscall;
 extern crate libc;
 #[cfg(all(feature="clock", windows))]
 extern crate winapi;
+#[cfg(all(feature="clock", any(target_os = "macos", target_os = "ios")))]
+extern crate mach;
 
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;

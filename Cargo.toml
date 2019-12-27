@@ -54,6 +54,9 @@ winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "ntd
 libc = "0.2.1"
 log = "0.4"
 
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+mach = "0.3"
+
 [dev-dependencies]
 serde_json = { version = "1", default-features = false }
 serde_derive = { version = "1", default-features = false }
