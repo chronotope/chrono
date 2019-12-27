@@ -96,6 +96,12 @@ Versions with only mechanical changes will be omitted from the following list.
 * Doc improvements -- improve README CI verification, external links
 * winapi upgrade to 0.3
 
+## Unreleased
+
+### Features
+
+* Added `NaiveDate::from_weekday_of_month{,_opt}` for getting eg. the 2nd Friday of March 2017.
+
 ## 0.4.5
 
 ### Features
