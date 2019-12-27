@@ -576,6 +576,21 @@ impl<Tz: TimeZone> Eq for DateTime<Tz> {
 }
 
 impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
+    /// Compare two DateTimes based on their true time, ignoring time zones
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// let earlier = Utc.ymd(2015, 5, 15).and_hms(2, 0, 0).with_timezone(&FixedOffset::west(1 * 3600));
+    /// let later   = Utc.ymd(2015, 5, 15).and_hms(3, 0, 0).with_timezone(&FixedOffset::west(5 * 3600));
+    ///
+    /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
+    /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
+    ///
+    /// assert!(later > earlier);
+    /// ```
     fn partial_cmp(&self, other: &DateTime<Tz2>) -> Option<Ordering> {
         self.datetime.partial_cmp(&other.datetime)
     }

@@ -14,6 +14,7 @@ Versions with only mechanical changes will be omitted from the following list.
 
 * Support "negative UTC" in `parse_from_rfc2822` (@quodlibetor #368 reported in
   #102)
+* Support comparisons of DateTimes with different timezones (@dlalic in #375)
 
 ### Internal improvements
 
