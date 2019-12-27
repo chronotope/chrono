@@ -18,6 +18,8 @@ Versions with only mechanical changes will be omitted from the following list.
 ### Internal improvements
 
 * Use Criterion for benchmarks (@quodlibetor)
+* Absorb the time crate so that we no longer depend on a deprecated external
+  package (@jjpe in #286)
 
 ## 0.4.10
 
