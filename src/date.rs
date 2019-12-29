@@ -240,7 +240,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Returns a view to the naive local date.
     ///
-    /// This is technically same to [`naive_utc`](#method.naive_utc)
+    /// This is technically the same as [`naive_utc`](#method.naive_utc)
     /// because the offset is restricted to never exceed one day,
     /// but provided for the consistency.
     #[inline]

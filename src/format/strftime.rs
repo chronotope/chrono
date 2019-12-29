@@ -18,10 +18,10 @@ The following specifiers are available both to formatting and parsing.
 | `%m`  | `07`     | Month number (01--12), zero-padded to 2 digits.                            |
 | `%b`  | `Jul`    | Abbreviated month name. Always 3 letters.                                  |
 | `%B`  | `July`   | Full month name. Also accepts corresponding abbreviation in parsing.       |
-| `%h`  | `Jul`    | Same to `%b`.                                                              |
+| `%h`  | `Jul`    | Same as `%b`.                                                              |
 |       |          |                                                                            |
 | `%d`  | `08`     | Day number (01--31), zero-padded to 2 digits.                              |
-| `%e`  | ` 8`     | Same to `%d` but space-padded. Same to `%_d`.                              |
+| `%e`  | ` 8`     | Same as `%d` but space-padded. Same as `%_d`.                              |
 |       |          |                                                                            |
 | `%a`  | `Sun`    | Abbreviated weekday name. Always 3 letters.                                |
 | `%A`  | `Sunday` | Full weekday name. Also accepts corresponding abbreviation in parsing.     |
@@ -29,24 +29,24 @@ The following specifiers are available both to formatting and parsing.
 | `%u`  | `7`      | Monday = 1, Tuesday = 2, ..., Sunday = 7. (ISO 8601)                       |
 |       |          |                                                                            |
 | `%U`  | `28`     | Week number starting with Sunday (00--53), zero-padded to 2 digits. [^3]   |
-| `%W`  | `27`     | Same to `%U`, but week 1 starts with the first Monday in that year instead.|
+| `%W`  | `27`     | Same as `%U`, but week 1 starts with the first Monday in that year instead.|
 |       |          |                                                                            |
-| `%G`  | `2001`   | Same to `%Y` but uses the year number in ISO 8601 week date. [^4]          |
-| `%g`  | `01`     | Same to `%y` but uses the year number in ISO 8601 week date. [^4]          |
-| `%V`  | `27`     | Same to `%U` but uses the week number in ISO 8601 week date (01--53). [^4] |
+| `%G`  | `2001`   | Same as `%Y` but uses the year number in ISO 8601 week date. [^4]          |
+| `%g`  | `01`     | Same as `%y` but uses the year number in ISO 8601 week date. [^4]          |
+| `%V`  | `27`     | Same as `%U` but uses the week number in ISO 8601 week date (01--53). [^4] |
 |       |          |                                                                            |
 | `%j`  | `189`    | Day of the year (001--366), zero-padded to 3 digits.                       |
 |       |          |                                                                            |
-| `%D`  | `07/08/01`    | Month-day-year format. Same to `%m/%d/%y`.                            |
-| `%x`  | `07/08/01`    | Same to `%D`.                                                         |
-| `%F`  | `2001-07-08`  | Year-month-day format (ISO 8601). Same to `%Y-%m-%d`.                 |
-| `%v`  | ` 8-Jul-2001` | Day-month-year format. Same to `%e-%b-%Y`.                            |
+| `%D`  | `07/08/01`    | Month-day-year format. Same as `%m/%d/%y`.                            |
+| `%x`  | `07/08/01`    | Same as `%D`.                                                         |
+| `%F`  | `2001-07-08`  | Year-month-day format (ISO 8601). Same as `%Y-%m-%d`.                 |
+| `%v`  | ` 8-Jul-2001` | Day-month-year format. Same as `%e-%b-%Y`.                            |
 |       |          |                                                                            |
 |       |          | **TIME SPECIFIERS:**                                                       |
 | `%H`  | `00`     | Hour number (00--23), zero-padded to 2 digits.                             |
-| `%k`  | ` 0`     | Same to `%H` but space-padded. Same to `%_H`.                              |
+| `%k`  | ` 0`     | Same as `%H` but space-padded. Same as `%_H`.                              |
 | `%I`  | `12`     | Hour number in 12-hour clocks (01--12), zero-padded to 2 digits.           |
-| `%l`  | `12`     | Same to `%I` but space-padded. Same to `%_I`.                              |
+| `%l`  | `12`     | Same as `%I` but space-padded. Same as `%_I`.                              |
 |       |          |                                                                            |
 | `%P`  | `am`     | `am` or `pm` in 12-hour clocks.                                            |
 | `%p`  | `AM`     | `AM` or `PM` in 12-hour clocks.                                            |
@@ -62,19 +62,19 @@ The following specifiers are available both to formatting and parsing.
 | `%6f` | `026490`      | Similar to `%.6f` but without the leading dot. [^8]                   |
 | `%9f` | `026490000`   | Similar to `%.9f` but without the leading dot. [^8]                   |
 |       |               |                                                                       |
-| `%R`  | `00:34`       | Hour-minute format. Same to `%H:%M`.                                  |
-| `%T`  | `00:34:60`    | Hour-minute-second format. Same to `%H:%M:%S`.                        |
-| `%X`  | `00:34:60`    | Same to `%T`.                                                         |
-| `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same to `%I:%M:%S %p`.   |
+| `%R`  | `00:34`       | Hour-minute format. Same as `%H:%M`.                                  |
+| `%T`  | `00:34:60`    | Hour-minute-second format. Same as `%H:%M:%S`.                        |
+| `%X`  | `00:34:60`    | Same as `%T`.                                                         |
+| `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
 | `%Z`  | `ACST`   | *Formatting only:* Local time zone name.                                   |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
-| `%:z` | `+09:30` | Same to `%z` but with a colon.                                             |
-| `%#z` | `+09`    | *Parsing only:* Same to `%z` but allows minutes to be missing or present.  |
+| `%:z` | `+09:30` | Same as `%z` but with a colon.                                             |
+| `%#z` | `+09`    | *Parsing only:* Same as `%z` but allows minutes to be missing or present.  |
 |       |          |                                                                            |
 |       |          | **DATE & TIME SPECIFIERS:**                                                |
-|`%c`|`Sun Jul  8 00:34:60 2001`|`ctime` date & time format. Same to `%a %b %e %T %Y` sans `\n`.|
+|`%c`|`Sun Jul  8 00:34:60 2001`|`ctime` date & time format. Same as `%a %b %e %T %Y` sans `\n`.|
 | `%+`  | `2001-07-08T00:34:60.026490+09:30` | ISO 8601 / RFC 3339 date & time format. [^6]     |
 |       |               |                                                                       |
 | `%s`  | `994518299`   | UNIX timestamp, the number of seconds since 1970-01-01 00:00 UTC. [^7]|

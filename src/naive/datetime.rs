@@ -623,7 +623,7 @@ impl NaiveDateTime {
     }
 
     /// Formats the combined date and time with the specified formatting items.
-    /// Otherwise it is same to the ordinary [`format`](#method.format) method.
+    /// Otherwise it is the same as the ordinary [`format`](#method.format) method.
     ///
     /// The `Iterator` of items should be `Clone`able,
     /// since the resulting `DelayedFormat` value may be formatted multiple times.
@@ -1265,7 +1265,7 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 }
 
 /// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
-/// It is same to the addition with a negated `Duration`.
+/// It is the same as the addition with a negated `Duration`.
 ///
 /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
@@ -1389,7 +1389,7 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
     }
 }
 
-/// The `Debug` output of the naive date and time `dt` is same to
+/// The `Debug` output of the naive date and time `dt` is the same as
 /// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
@@ -1422,7 +1422,7 @@ impl fmt::Debug for NaiveDateTime {
     }
 }
 
-/// The `Debug` output of the naive date and time `dt` is same to
+/// The `Debug` output of the naive date and time `dt` is the same as
 /// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](../format/strftime/index.html).
 ///
 /// It should be noted that, for leap seconds not on the minute boundary,

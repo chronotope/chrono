@@ -53,10 +53,10 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     // minute      = *S 2DIGIT *S
     // second      = *S 2DIGIT *S
     // zone        = ( "+" / "-" ) 4DIGIT /
-    //               "UT" / "GMT" /                  ; same to +0000
-    //               "EST" / "CST" / "MST" / "PST" / ; same to -0500 to -0800
-    //               "EDT" / "CDT" / "MDT" / "PDT" / ; same to -0400 to -0700
-    //               1*(%d65-90 / %d97-122)          ; same to -0000
+    //               "UT" / "GMT" /                  ; same as +0000
+    //               "EST" / "CST" / "MST" / "PST" / ; same as -0500 to -0800
+    //               "EDT" / "CDT" / "MDT" / "PDT" / ; same as -0400 to -0700
+    //               1*(%d65-90 / %d97-122)          ; same as -0000
     //
     // some notes:
     //

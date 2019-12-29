@@ -257,7 +257,7 @@ fn timezone_offset_internal<F>(mut s: &str, mut consume_colon: F, allow_missing_
     Ok((s, if negative {-seconds} else {seconds}))
 }
 
-/// Same to `timezone_offset` but also allows for `z`/`Z` which is same to `+00:00`.
+/// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as `+00:00`.
 pub fn timezone_offset_zulu<F>(s: &str, colon: F)
 -> ParseResult<(&str, i32)>
     where F: FnMut(&str) -> ParseResult<&str>
@@ -268,7 +268,7 @@ pub fn timezone_offset_zulu<F>(s: &str, colon: F)
     }
 }
 
-/// Same to `timezone_offset` but also allows for `z`/`Z` which is same to
+/// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as
 /// `+00:00`, and allows missing minutes entirely.
 pub fn timezone_offset_permissive<F>(s: &str, colon: F)
 -> ParseResult<(&str, i32)>
@@ -280,7 +280,7 @@ pub fn timezone_offset_permissive<F>(s: &str, colon: F)
     }
 }
 
-/// Same to `timezone_offset` but also allows for RFC 2822 legacy timezones.
+/// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
 /// May return `None` which indicates an insufficient offset data (i.e. `-0000`).
 pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names

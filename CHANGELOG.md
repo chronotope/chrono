@@ -451,7 +451,7 @@ and replaced by 0.2.25 very shortly. Duh.)
   They are glibc extensions which seem to be reasonably widespread (e.g. Ruby).
 
 - Added `%:z` specifier and corresponding formatting items
-  which is essentially same to `%z` but with a colon.
+  which is essentially the same as `%z` but with a colon.
 
 - Added a new specifier `%.f` which precision adapts from the input.
   This was added as a response to the UX problems in the original nanosecond specifier `%f`.

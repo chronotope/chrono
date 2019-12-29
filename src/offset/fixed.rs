@@ -136,7 +136,7 @@ impl fmt::Display for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { fmt::Debug::fmt(self, f) }
 }
 
-// addition or subtraction of FixedOffset to/from Timelike values is same to
+// addition or subtraction of FixedOffset to/from Timelike values is the same as
 // adding or subtracting the offset's local_minus_utc value
 // but keep keeps the leap second information.
 // this should be implemented more efficiently, but for the time being, this is generic right now.
