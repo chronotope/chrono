@@ -110,7 +110,7 @@ pub struct Parsed {
     _dummy: (),
 }
 
-/// Checks if `old` is either empty or has the same value to `new` (i.e. "consistent"),
+/// Checks if `old` is either empty or has the same value as `new` (i.e. "consistent"),
 /// and if it is empty, set `old` to `new` as well.
 #[inline]
 fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<()> {

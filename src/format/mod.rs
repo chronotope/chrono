@@ -184,11 +184,11 @@ pub enum Fixed {
     /// May print nothing, 3, 6 or 9 digits according to the available accuracy.
     /// See also [`Numeric::Nanosecond`](./enum.Numeric.html#variant.Nanosecond).
     Nanosecond,
-    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3.
+    /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3.
     Nanosecond3,
-    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6.
+    /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6.
     Nanosecond6,
-    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9.
+    /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9.
     Nanosecond9,
     /// Timezone name.
     ///
@@ -198,19 +198,19 @@ pub enum Fixed {
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
     /// The offset is limited from `-24:00` to `+24:00`,
-    /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
+    /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
     /// and `Z` can be either in upper case or in lower case.
     /// The offset is limited from `-24:00` to `+24:00`,
-    /// which is same to [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
+    /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColonZ,
-    /// Same to [`TimezoneOffsetColon`](#variant.TimezoneOffsetColon) but prints no colon.
+    /// Same as [`TimezoneOffsetColon`](#variant.TimezoneOffsetColon) but prints no colon.
     /// Parsing allows an optional colon.
     TimezoneOffset,
-    /// Same to [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ) but prints no colon.
+    /// Same as [`TimezoneOffsetColonZ`](#variant.TimezoneOffsetColonZ) but prints no colon.
     /// Parsing allows an optional colon.
     TimezoneOffsetZ,
     /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
@@ -242,11 +242,11 @@ enum InternalInternal {
     ///
     /// [iso8601]: https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC
     TimezoneOffsetPermissive,
-    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3 and there is no leading dot.
+    /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 3 and there is no leading dot.
     Nanosecond3NoDot,
-    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6 and there is no leading dot.
+    /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 6 and there is no leading dot.
     Nanosecond6NoDot,
-    /// Same to [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9 and there is no leading dot.
+    /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9 and there is no leading dot.
     Nanosecond9NoDot,
 }
 
@@ -255,12 +255,12 @@ enum InternalInternal {
 pub enum Item<'a> {
     /// A literally printed and parsed text.
     Literal(&'a str),
-    /// Same to `Literal` but with the string owned by the item.
+    /// Same as `Literal` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
-    /// Same to `Space` but with the string owned by the item.
+    /// Same as `Space` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
@@ -316,7 +316,7 @@ enum ParseErrorKind {
     BadFormat,
 }
 
-/// Same to `Result<T, ParseError>`.
+/// Same as `Result<T, ParseError>`.
 pub type ParseResult<T> = Result<T, ParseError>;
 
 impl fmt::Display for ParseError {
@@ -566,7 +566,7 @@ pub fn format<'a, I, B>(
                         off.map(|&(_, off)| write_local_minus_utc(&mut result, off, true, false)),
                     &Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) =>
                         panic!("Do not try to write %#z it is undefined"),
-                    &RFC2822 => // same to `%a, %e %b %Y %H:%M:%S %z`
+                    &RFC2822 => // same as `%a, %e %b %Y %H:%M:%S %z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             let sec = t.second() + t.nanosecond() / 1_000_000_000;
                             write!(
@@ -580,7 +580,7 @@ pub fn format<'a, I, B>(
                         } else {
                             None
                         },
-                    &RFC3339 => // same to `%Y-%m-%dT%H:%M:%S%.f%:z`
+                    &RFC3339 => // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.

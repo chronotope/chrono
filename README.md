@@ -75,7 +75,7 @@ use chrono::prelude::*;
 Chrono currently uses
 the [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type
 from the `time` crate to represent the magnitude of a time span.
-Since this has the same name to the newer, standard type for duration,
+Since this has the same name as the newer, standard type for duration,
 the reference will refer this type as `OldDuration`.
 Note that this is an "accurate" duration represented as seconds and
 nanoseconds and does not represent "nominal" components such as days or

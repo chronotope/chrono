@@ -94,7 +94,7 @@ const MAX_BITS: usize = 44;
 ///
 /// The ISO 8601 **ordinal date** is a pair of year number and day of the year ("ordinal").
 /// The ordinal number ranges from 1 to 365 or 366 depending on the year.
-/// The year number is same to that of the [calendar date](#calendar-date).
+/// The year number is the same as that of the [calendar date](#calendar-date).
 ///
 /// This is currently the internal format of Chrono's date types.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
@@ -943,7 +943,7 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified formatting items.
-    /// Otherwise it is same to the ordinary `format` method.
+    /// Otherwise it is the same as the ordinary `format` method.
     ///
     /// The `Iterator` of items should be `Clone`able,
     /// since the resulting `DelayedFormat` value may be formatted multiple times.
@@ -1400,7 +1400,7 @@ impl AddAssign<OldDuration> for NaiveDate {
 
 /// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
-/// It is same to the addition with a negated `Duration`.
+/// It is the same as the addition with a negated `Duration`.
 ///
 /// Panics on underflow or overflow.
 /// Use [`NaiveDate::checked_sub_signed`](#method.checked_sub_signed) to detect that.
@@ -1476,7 +1476,7 @@ impl Sub<NaiveDate> for NaiveDate {
     }
 }
 
-/// The `Debug` output of the naive date `d` is same to
+/// The `Debug` output of the naive date `d` is the same as
 /// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
@@ -1511,7 +1511,7 @@ impl fmt::Debug for NaiveDate {
     }
 }
 
-/// The `Display` output of the naive date `d` is same to
+/// The `Display` output of the naive date `d` is the same as
 /// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.

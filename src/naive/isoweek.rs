@@ -104,7 +104,7 @@ impl IsoWeek {
     }
 }
 
-/// The `Debug` output of the ISO week `w` is same to
+/// The `Debug` output of the ISO week `w` is the same as
 /// [`d.format("%G-W%V")`](../format/strftime/index.html)
 /// where `d` is any `NaiveDate` value in that week.
 ///
