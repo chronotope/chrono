@@ -575,8 +575,23 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<DateTime<Tz2>> for DateTime<Tz> {
 impl<Tz: TimeZone> Eq for DateTime<Tz> {
 }
 
-impl<Tz: TimeZone> PartialOrd for DateTime<Tz> {
-    fn partial_cmp(&self, other: &DateTime<Tz>) -> Option<Ordering> {
+impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
+    /// Compare two DateTimes based on their true time, ignoring time zones
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// let earlier = Utc.ymd(2015, 5, 15).and_hms(2, 0, 0).with_timezone(&FixedOffset::west(1 * 3600));
+    /// let later   = Utc.ymd(2015, 5, 15).and_hms(3, 0, 0).with_timezone(&FixedOffset::west(5 * 3600));
+    ///
+    /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
+    /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
+    ///
+    /// assert!(later > earlier);
+    /// ```
+    fn partial_cmp(&self, other: &DateTime<Tz2>) -> Option<Ordering> {
         self.datetime.partial_cmp(&other.datetime)
     }
 }
@@ -2005,6 +2020,9 @@ mod tests {
         assert_eq!(d.date(), tz.ymd(2017, 8, 9));
         assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2017, 8, 9));
         assert_eq!(d.date().and_time(d.time()), Some(d));
+
+        let utc_d = Utc.ymd(2017, 8, 9).and_hms(12, 34, 56);
+        assert!(utc_d < d);
     }
 
     #[test]
