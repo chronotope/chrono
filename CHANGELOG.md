@@ -12,6 +12,9 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ### Improvements
 
+* Support a space or `T` in `FromStr` for `DateTime<Tz>`, meaning that e.g.
+  `dt.to_string().parse::<DateTime<Utc>>()` now correctly works on round-trip.
+  (@quodlibetor in #378)
 * Support "negative UTC" in `parse_from_rfc2822` (@quodlibetor #368 reported in
   #102)
 

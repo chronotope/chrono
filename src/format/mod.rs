@@ -284,6 +284,7 @@ macro_rules! internal_fix { ($x:ident) => (Item::Fixed(Fixed::Internal(InternalF
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ParseError(ParseErrorKind);
 
+/// The category of parse error
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 enum ParseErrorKind {
     /// Given field is out of permitted range.

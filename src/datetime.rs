@@ -21,7 +21,7 @@ use offset::Local;
 use offset::{TimeZone, Offset, Utc, FixedOffset};
 use naive::{NaiveTime, NaiveDateTime, IsoWeek};
 use Date;
-use format::{Item, Numeric, Pad, Fixed};
+use format::{Item, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
@@ -625,33 +625,6 @@ impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
 impl<Tz: TimeZone> fmt::Display for DateTime<Tz> where Tz::Offset: fmt::Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", self.naive_local(), self.offset)
-    }
-}
-
-impl str::FromStr for DateTime<FixedOffset> {
-    type Err = ParseError;
-
-    fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const ITEMS: &'static [Item<'static>] = &[
-                             Item::Numeric(Numeric::Year, Pad::Zero),
-            Item::Space(""), Item::Literal("-"),
-                             Item::Numeric(Numeric::Month, Pad::Zero),
-            Item::Space(""), Item::Literal("-"),
-                             Item::Numeric(Numeric::Day, Pad::Zero),
-            Item::Space(""), Item::Literal("T"), // XXX shouldn't this be case-insensitive?
-                             Item::Numeric(Numeric::Hour, Pad::Zero),
-            Item::Space(""), Item::Literal(":"),
-                             Item::Numeric(Numeric::Minute, Pad::Zero),
-            Item::Space(""), Item::Literal(":"),
-                             Item::Numeric(Numeric::Second, Pad::Zero),
-                             Item::Fixed(Fixed::Nanosecond),
-            Item::Space(""), Item::Fixed(Fixed::TimezoneOffsetZ),
-            Item::Space(""),
-        ];
-
-        let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
-        parsed.to_datetime()
     }
 }
 
@@ -2104,6 +2077,15 @@ mod tests {
 
     #[test]
     fn test_datetime_from_str() {
+        assert_eq!("2015-02-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
+                   Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert_eq!("2015-02-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
+                   Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert_eq!("2015-02-18T23:16:9.15 UTC".parse::<DateTime<Utc>>(),
+                   Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+        assert_eq!("2015-02-18T23:16:9.15UTC".parse::<DateTime<Utc>>(),
+                   Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
+
         assert_eq!("2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
                    Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150)));
         assert_eq!("2015-2-18T13:16:9.15-10:00".parse::<DateTime<FixedOffset>>(),
@@ -2130,6 +2112,25 @@ mod tests {
         assert_eq!(Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT",
                                          "%a, %d %b %Y %H:%M:%S GMT"),
                    Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)));
+    }
+
+    #[test]
+    fn test_to_string_round_trip() {
+        let dt = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0);
+        let _dt: DateTime<Utc> = dt.to_string().parse().unwrap();
+
+        let ndt_fixed = dt.with_timezone(&FixedOffset::east(3600));
+        let _dt: DateTime<FixedOffset> = ndt_fixed.to_string().parse().unwrap();
+
+        let ndt_fixed = dt.with_timezone(&FixedOffset::east(0));
+        let _dt: DateTime<FixedOffset> = ndt_fixed.to_string().parse().unwrap();
+    }
+
+    #[test]
+    #[cfg(feature="clock")]
+    fn test_to_string_round_trip_with_local() {
+        let ndt = Local::now();
+        let _dt: DateTime<FixedOffset> = ndt.to_string().parse().unwrap();
     }
 
     #[test]
