@@ -1046,6 +1046,79 @@ pub trait Timelike: Sized {
     }
 }
 
+/// Value at index `i` is the minimum number of days in the month `i+1`
+pub static MONTH_MIN_DAYS: [u8; 12] = [
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+];
+
+/// Value at index `i` is the maximum number of days in the month `i+1`
+pub static MONTH_MAX_DAYS: [u8; 12] = [
+    31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+];
+
+/// Common set of methods for transitioning dates into newer ones
+pub trait Transition: Sized {
+    /// Returns true if leap year
+    fn is_leap_year(&self) -> bool;
+
+    /// Returns the last day of the month
+    fn last_day_of_month(&self) -> u32;
+
+    /// Returns the date as on the start of the current year
+    fn start_of_year(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the current year
+    fn end_of_year(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the current month
+    fn start_of_month(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the current month
+    fn end_of_month(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the current week
+    fn start_of_iso8601_week(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the current week
+    fn end_of_iso8601_week(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the previous year
+    fn start_of_pred_year(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the previous year
+    fn end_of_pred_year(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the previous month
+    fn start_of_pred_month(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the previous month
+    fn end_of_pred_month(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the previous week
+    fn start_of_pred_iso8601_week(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the previous week
+    fn end_of_pred_iso8601_week(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the succeeding year
+    fn start_of_succ_year(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the succeeding year
+    fn end_of_succ_year(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the succeeding month
+    fn start_of_succ_month(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the succeeding month
+    fn end_of_succ_month(&self) -> Option<Self>;
+
+    /// Returns the date as on the start of the succeeding week
+    fn start_of_succ_iso8601_week(&self) -> Option<Self>;
+
+    /// Returns the date as on the end of the succeeding week
+    fn end_of_succ_iso8601_week(&self) -> Option<Self>;
+}
+
 #[cfg(test)] extern crate num_iter;
 
 #[test]
