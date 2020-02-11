@@ -317,7 +317,7 @@ impl NaiveDateTime {
     /// 2262-04-11T23:47:16.854775804.
     ///
     /// (If this is a problem, please file an issue to let me know what domain
-    /// needs nanosecond precision over millenia, I'm curious.)
+    /// needs nanosecond precision over millennia, I'm curious.)
     ///
     /// # Example
     ///

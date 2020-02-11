@@ -55,7 +55,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` with given *UTC* date and offset.
     /// The local date should be constructed via the `TimeZone` trait.
     //
-    // note: this constructor is purposedly not named to `new` to discourage the direct usage.
+    // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     pub fn from_utc(date: NaiveDate, offset: Tz::Offset) -> Date<Tz> {
         Date { date: date, offset: offset }

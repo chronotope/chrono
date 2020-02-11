@@ -241,7 +241,7 @@ release due to the compatibility concern raised.
 - The major version was made to fix the broken Serde dependency issues. (#146, #156, #158, #159)
 
   The original intention to technically break the dependency was
-  to faciliate the use of Serde 1.0 at the expense of temporary breakage.
+  to facilitate the use of Serde 1.0 at the expense of temporary breakage.
   Whether this was appropriate or not is quite debatable,
   but it became clear that there are several high-profile crates requiring Serde 0.9
   and it is not feasible to force them to use Serde 1.0 anyway.
