@@ -43,7 +43,7 @@ wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
 
 [dev-dependencies]
-serde_json = { version = "1", default-features = false }
+serde_json = { version = "1" }
 serde_derive = { version = "1", default-features = false }
 bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
