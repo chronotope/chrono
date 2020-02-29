@@ -70,9 +70,9 @@ pub struct DateTime<Tz: TimeZone> {
 }
 
 /// The minimum possible `DateTime`.
-pub const MIN_UTC_DATETIME: Date<Utc> = Date { datetime: naive::MIN_DATE, offset: Utc };
+pub const MIN_UTC_DATETIME: DateTime<Utc> = DateTime { datetime: naive::MIN_DATETIME, offset: Utc };
 /// The maximum possible `DateTime`.
-pub const MAX_UTC_DATETIME: Date<Utc> = Date { datetime: naive::MAX_DATE, offset: Utc };
+pub const MAX_UTC_DATETIME: DateTime<Utc> = DateTime { datetime: naive::MAX_DATETIME, offset: Utc };
 
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
