@@ -58,9 +58,9 @@ pub struct NaiveDateTime {
 }
 
 /// The minimum possible `NaiveDateTime` (Note MIN_DATE is January 1, 262145 BCE)
-pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime { date: MIN_DATE, time: MIN_TIME};
+pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime { date: MIN_DATE, time: MIN_TIME };
 /// The maximum possible `NaiveDateTime` (Note MAX_DATE is December 31, 262143 CE)
-pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MAX_TIME};
+pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MAX_TIME };
 
 impl NaiveDateTime {
     /// Makes a new `NaiveDateTime` from date and time components.
