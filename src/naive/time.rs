@@ -181,6 +181,11 @@ pub struct NaiveTime {
     frac: u32,
 }
 
+/// The minimum possible 'NaiveTime' 
+pub const MIN_TIME: NaiveTime = { secs: 0, frac: 0 };
+/// The maximum possible 'NaiveTime'
+pub const MAX_TIME: NaiveTime = { secs: u32::Max, frac: u32::Max };
+
 impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
