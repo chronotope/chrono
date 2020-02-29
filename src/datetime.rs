@@ -19,7 +19,7 @@ use {Weekday, Timelike, Datelike};
 #[cfg(feature="clock")]
 use offset::Local;
 use offset::{TimeZone, Offset, Utc, FixedOffset};
-use naive::{NaiveTime, NaiveDateTime, IsoWeek};
+use naive::{self, NaiveTime, NaiveDateTime, IsoWeek};
 use Date;
 use format::{Item, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
