@@ -411,7 +411,7 @@ impl NaiveDate {
                            Of::new(ordinal, flags))
     }
 
-    /// Makes a new `NaiveDate` by counting the number of occurances of a particular day-of-week
+    /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
     /// since the beginning of the given month.  For instance, if you want the 2nd Friday of March
     /// 2017, you would use `NaiveDate::from_weekday_of_month(2017, 3, Weekday::Fri, 2)`.
     ///
@@ -440,7 +440,7 @@ impl NaiveDate {
         NaiveDate::from_weekday_of_month_opt(year, month, weekday, n).expect("out-of-range date")
     }
 
-    /// Makes a new `NaiveDate` by counting the number of occurances of a particular day-of-week
+    /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
     /// since the beginning of the given month.  For instance, if you want the 2nd Friday of March
     /// 2017, you would use `NaiveDate::from_weekday_of_month(2017, 3, Weekday::Fri, 2)`.  `n` is 1-indexed.
     ///

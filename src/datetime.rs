@@ -82,7 +82,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(Utc.timestamp(61, 0), dt);
     /// ~~~~
     //
-    // note: this constructor is purposedly not named to `new` to discourage the direct usage.
+    // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         DateTime { datetime: datetime, offset: offset }
@@ -137,7 +137,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Note that this does reduce the number of years that can be represented
     /// from ~584 Billion to ~584. (If this is a problem, please file
     /// an issue to let me know what domain needs nanosecond precision over
-    /// millenia, I'm curious.)
+    /// millennia, I'm curious.)
     ///
     /// # Example
     ///
