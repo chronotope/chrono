@@ -8,7 +8,7 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## next
+## 0.4.11
 
 ### Improvements
 
@@ -18,6 +18,13 @@ Versions with only mechanical changes will be omitted from the following list.
 * Support "negative UTC" in `parse_from_rfc2822` (@quodlibetor #368 reported in
   #102)
 * Support comparisons of DateTimes with different timezones (@dlalic in #375)
+* Many documentation improvements
+
+### Bitrot and external integration fixes
+
+* Don't use wasmbind on wasi (@coolreader18 #365)
+* Avoid deprecation warnings for `Error::description` (@AnderEnder and
+  @quodlibetor #376)
 
 ### Internal improvements
 
