@@ -442,7 +442,7 @@ pub use oldtime::Duration;
 #[doc(no_inline)] pub use offset::{TimeZone, Offset, LocalResult, Utc, FixedOffset};
 #[doc(no_inline)] pub use naive::{NaiveDate, IsoWeek, NaiveTime, NaiveDateTime};
 pub use date::{Date, MIN_DATE, MAX_DATE};
-pub use datetime::{DateTime, SecondsFormat};
+pub use datetime::{DateTime, SecondsFormat, MIN_UTC_DATETIME, MAX_UTC_DATETIME};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use format::{ParseError, ParseResult};
