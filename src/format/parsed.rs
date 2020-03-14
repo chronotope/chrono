@@ -345,11 +345,11 @@ impl Parsed {
             };
             let month = date.month();
             let day = date.day();
-            (self.year.unwrap_or(year) == year &&
+            self.year.unwrap_or(year) == year &&
              self.year_div_100.or(year_div_100) == year_div_100 &&
              self.year_mod_100.or(year_mod_100) == year_mod_100 &&
              self.month.unwrap_or(month) == month &&
-             self.day.unwrap_or(day) == day)
+             self.day.unwrap_or(day) == day
         };
 
         // verify the ISO week date.
@@ -364,11 +364,11 @@ impl Parsed {
             } else {
                 (None, None) // they should be empty to be consistent
             };
-            (self.isoyear.unwrap_or(isoyear) == isoyear &&
+            self.isoyear.unwrap_or(isoyear) == isoyear &&
              self.isoyear_div_100.or(isoyear_div_100) == isoyear_div_100 &&
              self.isoyear_mod_100.or(isoyear_mod_100) == isoyear_mod_100 &&
              self.isoweek.unwrap_or(isoweek) == isoweek &&
-             self.weekday.unwrap_or(weekday) == weekday)
+             self.weekday.unwrap_or(weekday) == weekday
         };
 
         // verify the ordinal and other (non-ISO) week dates.
@@ -377,9 +377,9 @@ impl Parsed {
             let weekday = date.weekday();
             let week_from_sun = (ordinal as i32 - weekday.num_days_from_sunday() as i32 + 7) / 7;
             let week_from_mon = (ordinal as i32 - weekday.num_days_from_monday() as i32 + 7) / 7;
-            (self.ordinal.unwrap_or(ordinal) == ordinal &&
+            self.ordinal.unwrap_or(ordinal) == ordinal &&
              self.week_from_sun.map_or(week_from_sun, |v| v as i32) == week_from_sun &&
-             self.week_from_mon.map_or(week_from_mon, |v| v as i32) == week_from_mon)
+             self.week_from_mon.map_or(week_from_mon, |v| v as i32) == week_from_mon
         };
 
         // test several possibilities.
