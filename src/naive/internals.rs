@@ -164,7 +164,7 @@ pub const MIN_MDL: u32 = (1 << 6) | (1 << 1);
 pub const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
 const XX: i8 = -128;
-static MDL_TO_OL: [i8; (MAX_MDL as usize + 1)] = [
+static MDL_TO_OL: [i8; MAX_MDL as usize + 1] = [
      XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
      XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
      XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -219,7 +219,7 @@ static MDL_TO_OL: [i8; (MAX_MDL as usize + 1)] = [
      98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, 98,100, // 12
 ];
 
-static OL_TO_MDL: [u8; (MAX_OL as usize + 1)] = [
+static OL_TO_MDL: [u8; MAX_OL as usize + 1] = [
       0,  0,                                                         // 0
      64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
      64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
