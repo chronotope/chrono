@@ -353,6 +353,8 @@ where
                         parsed.set_month(i64::from(month0) + 1).map_err(|e| (s, e))?;
                     }
 
+                    &OneLetterMonthName => return Err((s, NOT_ENOUGH)),
+
                     &ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
                         parsed.set_weekday(weekday).map_err(|e| (s, e))?;
@@ -362,6 +364,8 @@ where
                         let weekday = try_consume!(scan::short_or_long_weekday(s));
                         parsed.set_weekday(weekday).map_err(|e| (s, e))?;
                     }
+
+                    &OneLetterWeekdayName => return Err((s, NOT_ENOUGH)),
 
                     &LowerAmPm | &UpperAmPm => {
                         if s.len() < 2 {
@@ -374,6 +378,17 @@ where
                         };
                         parsed.set_ampm(ampm).map_err(|e| (s, e))?;
                         s = &s[2..];
+                    }
+
+                    &OneLetterLowerAmPm | &OneLetterUpperAmPm => {
+                        if s.len() < 1 { return Err((s, TOO_SHORT)); }
+                        let ampm = match s.as_bytes()[0] | 32 {
+                            b'a' => false,
+                            b'p' => true,
+                            _ => return Err((s, INVALID))
+                        };
+                        parsed.set_ampm(ampm).map_err(|e| (s, e))?;
+                        s = &s[1..];
                     }
 
                     &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
