@@ -164,6 +164,10 @@ pub enum Fixed {
     ///
     /// Prints a full name in the title case, reads either a short or full name in any case.
     LongMonthName,
+    /// One letter month names.
+    ///
+    /// Prints only first letter.
+    OneLetterMonthName,
     /// Abbreviated day of the week names.
     ///
     /// Prints a three-letter-long name in the title case, reads the same name in any case.
@@ -172,6 +176,10 @@ pub enum Fixed {
     ///
     /// Prints a full name in the title case, reads either a short or full name in any case.
     LongWeekdayName,
+    /// One letter day of the week names.
+    ///
+    /// Prints only first letter.
+    OneLetterWeekdayName,
     /// AM/PM.
     ///
     /// Prints in lower case, reads in any case.
@@ -180,6 +188,14 @@ pub enum Fixed {
     ///
     /// Prints in upper case, reads in any case.
     UpperAmPm,
+    /// a/p.
+    ///
+    /// Prints only first letter.
+    OneLetterLowerAmPm,
+    /// A/P.
+    ///
+    /// Prints only first letter.
+    OneLetterUpperAmPm,
     /// An optional dot plus one or more digits for left-aligned nanoseconds.
     /// May print nothing, 3, 6 or 9 digits according to the available accuracy.
     /// See also [`Numeric::Nanosecond`](./enum.Numeric.html#variant.Nanosecond).
@@ -368,10 +384,13 @@ pub fn format<'a, I, B>(
     static LONG_MONTHS: [&'static str; 12] =
         ["January", "February", "March", "April", "May", "June",
          "July", "August", "September", "October", "November", "December"];
+    static ONE_LETTER_MONTHS: [&'static str; 12] =
+        ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
     static SHORT_WEEKDAYS: [&'static str; 7] =
         ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     static LONG_WEEKDAYS: [&'static str; 7] =
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    static ONE_LETTER_WEEKDAYS: [&'static str; 7] = ["M", "T", "W", "T", "F", "S", "S"];
 
     use core::fmt::Write;
     let mut result = String::new();
@@ -484,6 +503,11 @@ pub fn format<'a, I, B>(
                             result.push_str(LONG_MONTHS[d.month0() as usize]);
                             Ok(())
                         }),
+                    &OneLetterMonthName =>
+                        date.map(|d| {
+                            result.push_str(ONE_LETTER_MONTHS[d.month0() as usize]);
+                            Ok(())
+                        }),
                     &ShortWeekdayName =>
                         date.map(|d| {
                             result.push_str(
@@ -498,6 +522,13 @@ pub fn format<'a, I, B>(
                             );
                             Ok(())
                         }),
+                    &OneLetterWeekdayName =>
+                        date.map(|d| {
+                            result.push_str(
+                                ONE_LETTER_WEEKDAYS[d.weekday().num_days_from_monday() as usize]
+                            );
+                            Ok(())
+                        }),
                     &LowerAmPm =>
                         time.map(|t| {
                             result.push_str(if t.hour12().0 {"pm"} else {"am"});
@@ -506,6 +537,16 @@ pub fn format<'a, I, B>(
                     &UpperAmPm =>
                         time.map(|t| {
                             result.push_str(if t.hour12().0 {"PM"} else {"AM"});
+                            Ok(())
+                        }),
+                    &OneLetterLowerAmPm =>
+                        time.map(|t| {
+                            result.push_str(if t.hour12().0 {"p"} else {"a"});
+                            Ok(())
+                        }),
+                    &OneLetterUpperAmPm =>
+                        time.map(|t| {
+                            result.push_str(if t.hour12().0 {"P"} else {"A"});
                             Ok(())
                         }),
                     &Nanosecond =>
