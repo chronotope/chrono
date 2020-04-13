@@ -74,6 +74,10 @@ pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     Year,
+    /// Full Gregorian year (FW=2, PW=∞). Can be negative.
+    ///
+    /// Prints last two digits for year >= 1000 or year <= -1000.
+    ShortYear,
     /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
     YearDiv100,
     /// Gregorian year modulo 100 (FW=PW=2). Cannot be negative.
@@ -408,6 +412,7 @@ pub fn format_item<'a>(
 
             let (width, v) = match spec {
                 &Year           => (4, date.map(|d| i64::from(d.year()))),
+                &ShortYear      => (2, date.map(|d| i64::from(d.year() % 100))),
                 &YearDiv100     => (2, date.map(|d| div_floor(i64::from(d.year()), 100))),
                 &YearMod100     => (2, date.map(|d| mod_floor(i64::from(d.year()), 100))),
                 &IsoYear        => (4, date.map(|d| i64::from(d.iso_week().year()))),

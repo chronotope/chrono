@@ -253,6 +253,7 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
 
                 let (width, signed, set): (usize, bool, Setter) = match spec {
                     &Year           => (4, true, Parsed::set_year),
+                    &ShortYear      => (2, true, Parsed::set_year_short),
                     &YearDiv100     => (2, false, Parsed::set_year_div_100),
                     &YearMod100     => (2, false, Parsed::set_year_mod_100),
                     &IsoYear        => (4, true, Parsed::set_isoyear),
