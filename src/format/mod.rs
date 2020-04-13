@@ -75,6 +75,10 @@ pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     Year,
+    /// Full Gregorian year (FW=2, PW=∞). Can be negative.
+    ///
+    /// Prints last two digits for year >= 1000 or year <= -1000.
+    ShortYear,
     /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
     YearDiv100,
     /// Gregorian year modulo 100 (FW=PW=2). Cannot be negative.
