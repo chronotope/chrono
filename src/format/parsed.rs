@@ -169,8 +169,9 @@ impl Parsed {
     /// Tries to set the [`year`](#structfield.year) field from given value.
     #[inline]
     pub fn set_year_short(&mut self, value: i64) -> ParseResult<()> {
-        if value <= -100 || value >= 100 { return Err(OUT_OF_RANGE); }
-        set_if_consistent(&mut self.year, (2000 + value).to_i32().ok_or(OUT_OF_RANGE)?)
+        if value < 0 || value >= 100 { return Err(OUT_OF_RANGE); }
+        let base = if value <= 68 { 2000 } else { 1900 };
+        set_if_consistent(&mut self.year, (base + value).to_i32().ok_or(OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`year_div_100`](#structfield.year_div_100) field from given value.
