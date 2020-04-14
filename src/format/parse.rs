@@ -309,8 +309,6 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
                         parsed.set_month(i64::from(month0) + 1).map_err(|e| (s, e))?;
                     }
 
-                    &OneLetterMonthName => return Err((s, NOT_ENOUGH)),
-
                     &ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
                         parsed.set_weekday(weekday).map_err(|e| (s, e))?;
@@ -321,8 +319,6 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
                         parsed.set_weekday(weekday).map_err(|e| (s, e))?;
                     }
 
-                    &OneLetterWeekdayName => return Err((s, NOT_ENOUGH)),
-
                     &LowerAmPm | &UpperAmPm => {
                         if s.len() < 2 { return Err((s, TOO_SHORT)); }
                         let ampm = match (s.as_bytes()[0] | 32, s.as_bytes()[1] | 32) {
@@ -332,17 +328,6 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
                         };
                         parsed.set_ampm(ampm).map_err(|e| (s, e))?;
                         s = &s[2..];
-                    }
-
-                    &OneLetterLowerAmPm | &OneLetterUpperAmPm => {
-                        if s.len() < 1 { return Err((s, TOO_SHORT)); }
-                        let ampm = match s.as_bytes()[0] | 32 {
-                            b'a' => false,
-                            b'p' => true,
-                            _ => return Err((s, INVALID))
-                        };
-                        parsed.set_ampm(ampm).map_err(|e| (s, e))?;
-                        s = &s[1..];
                     }
 
                     &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
@@ -391,6 +376,25 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
 
                     &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
                     &RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                }
+            }
+
+            &Item::FixedExt(ref spec) => {
+                use super::FixedExt::*;
+
+                match spec {
+                    &OneLetterMonthName | &OneLetterWeekdayName => return Err((s, NOT_ENOUGH)),
+
+                    &OneLetterLowerAmPm | &OneLetterUpperAmPm => {
+                        if s.len() < 1 { return Err((s, TOO_SHORT)); }
+                        let ampm = match s.as_bytes()[0] | 32 {
+                            b'a' => false,
+                            b'p' => true,
+                            _ => return Err((s, INVALID))
+                        };
+                        parsed.set_ampm(ampm).map_err(|e| (s, e))?;
+                        s = &s[1..];
+                    }
                 }
             }
 
