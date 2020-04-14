@@ -168,10 +168,6 @@ pub enum Fixed {
     ///
     /// Prints a full name in the title case, reads either a short or full name in any case.
     LongMonthName,
-    /// One letter month names.
-    ///
-    /// Prints only first letter.
-    OneLetterMonthName,
     /// Abbreviated day of the week names.
     ///
     /// Prints a three-letter-long name in the title case, reads the same name in any case.
@@ -180,10 +176,6 @@ pub enum Fixed {
     ///
     /// Prints a full name in the title case, reads either a short or full name in any case.
     LongWeekdayName,
-    /// One letter day of the week names.
-    ///
-    /// Prints only first letter.
-    OneLetterWeekdayName,
     /// AM/PM.
     ///
     /// Prints in lower case, reads in any case.
@@ -192,14 +184,6 @@ pub enum Fixed {
     ///
     /// Prints in upper case, reads in any case.
     UpperAmPm,
-    /// a/p.
-    ///
-    /// Prints only first letter.
-    OneLetterLowerAmPm,
-    /// A/P.
-    ///
-    /// Prints only first letter.
-    OneLetterUpperAmPm,
     /// An optional dot plus one or more digits for left-aligned nanoseconds.
     /// May print nothing, 3, 6 or 9 digits according to the available accuracy.
     /// See also [`Numeric::Nanosecond`](./enum.Numeric.html#variant.Nanosecond).
@@ -245,6 +229,28 @@ pub enum Fixed {
     Internal(InternalFixed),
 }
 
+/// Fixed-format item types used for example in Excel formats
+///
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum FixedExt {
+    /// One letter month names.
+    ///
+    /// Prints only first letter.
+    OneLetterMonthName,
+    /// One letter day of the week names.
+    ///
+    /// Prints only first letter.
+    OneLetterWeekdayName,
+    /// a/p.
+    ///
+    /// Prints only first letter.
+    OneLetterLowerAmPm,
+    /// A/P.
+    ///
+    /// Prints only first letter.
+    OneLetterUpperAmPm,
+}
+
 /// An opaque type representing fixed-format item types for internal uses only.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InternalFixed {
@@ -288,6 +294,8 @@ pub enum Item<'a> {
     Numeric(Numeric, Pad),
     /// Fixed-format item.
     Fixed(Fixed),
+    /// Extra fixed-format item.
+    FixedExt(FixedExt),
     /// Issues a formatting error. Used to signal an invalid format string.
     Error,
 }
@@ -660,6 +668,40 @@ fn format_inner<'a>(
                         }
                     }
                 };
+
+            match ret {
+                Some(ret) => ret?,
+                None => return Err(fmt::Error), // insufficient arguments for given format
+            }
+        },
+
+        Item::FixedExt(ref spec) => {
+            use self::FixedExt::*;
+
+            let ret = match spec {
+                &OneLetterMonthName =>
+                    date.map(|d| {
+                        result.push_str(ONE_LETTER_MONTHS[d.month0() as usize]);
+                        Ok(())
+                    }),
+                &OneLetterWeekdayName =>
+                    date.map(|d| {
+                        result.push_str(
+                            ONE_LETTER_WEEKDAYS[d.weekday().num_days_from_monday() as usize]
+                        );
+                        Ok(())
+                    }),
+                &OneLetterLowerAmPm =>
+                    time.map(|t| {
+                        result.push_str(if t.hour12().0 {"p"} else {"a"});
+                        Ok(())
+                    }),
+                &OneLetterUpperAmPm =>
+                    time.map(|t| {
+                        result.push_str(if t.hour12().0 {"P"} else {"A"});
+                        Ok(())
+                    }),
+            };
 
             match ret {
                 Some(ret) => ret?,
