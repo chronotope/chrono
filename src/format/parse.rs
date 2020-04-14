@@ -601,6 +601,12 @@ fn test_parse() {
     check!("-",           [num!(Year)]; TOO_SHORT);
     check!("+",           [num!(Year)]; TOO_SHORT);
 
+    // short year
+    check!("87",    [num!(ShortYear)]; year: 1987);
+    check!("68",    [num!(ShortYear)]; year: 2068);
+    check!("-1",    [num!(ShortYear)]; OUT_OF_RANGE);
+    check!("100",   [num!(ShortYear)]; TOO_LONG);
+
     // unsigned numeric
     check!("345",   [num!(Ordinal)]; ordinal: 345);
     check!("+345",  [num!(Ordinal)]; INVALID);
