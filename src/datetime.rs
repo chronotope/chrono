@@ -1279,7 +1279,7 @@ pub mod serde {
                 where
                     D: de::Deserializer<'de>,
             {
-                d.deserialize_i64(NanoSecondsTimestampVisitor).map(|val| Some(val))
+                d.deserialize_i64(NanoSecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
@@ -1577,7 +1577,7 @@ pub mod serde {
                 where
                     D: de::Deserializer<'de>,
             {
-                d.deserialize_i64(MilliSecondsTimestampVisitor).map(|val| Some(val))
+                d.deserialize_i64(MilliSecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
@@ -1871,7 +1871,7 @@ pub mod serde {
                 where
                     D: de::Deserializer<'de>,
             {
-                d.deserialize_i64(SecondsTimestampVisitor).map(|val| Some(val))
+                d.deserialize_i64(SecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
