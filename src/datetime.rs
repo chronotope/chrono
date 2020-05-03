@@ -1288,6 +1288,13 @@ pub mod serde {
             {
                 Ok(None)
             }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
         }
     }
 
@@ -1579,6 +1586,13 @@ pub mod serde {
             {
                 Ok(None)
             }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
         }
     }
 
@@ -1862,6 +1876,13 @@ pub mod serde {
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
                 where E: de::Error
             {
                 Ok(None)
