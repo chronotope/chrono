@@ -229,6 +229,12 @@ impl Duration {
         if d < MIN || d > MAX { None } else { Some(d) }
     }
 
+    /// Returns the duration as an absolute (non-negative) value.
+    #[inline]
+    pub fn abs(&self) -> Duration {
+        Duration { secs: self.secs.abs(), nanos: self.nanos }
+    }
+
     /// The minimum possible `Duration`: `i64::MIN` milliseconds.
     #[inline]
     pub fn min_value() -> Duration { MIN }
