@@ -421,7 +421,7 @@ extern crate num_traits;
 extern crate rustc_serialize;
 #[cfg(feature = "serde")]
 extern crate serde as serdelib;
-#[cfg(test)]
+#[cfg(doctest)]
 #[macro_use]
 extern crate doc_comment;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
@@ -431,7 +431,7 @@ extern crate js_sys;
 #[cfg(feature = "bench")]
 extern crate test;
 
-#[cfg(test)]
+#[cfg(doctest)]
 doctest!("../README.md");
 
 // this reexport is to aid the transition and should not be in the prelude!
