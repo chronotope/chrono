@@ -688,6 +688,7 @@ mod parsed;
 mod parse;
 mod scan;
 
+pub mod locale;
 pub mod strftime;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
