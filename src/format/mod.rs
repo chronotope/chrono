@@ -382,12 +382,12 @@ const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 /// Formats single formatting item
 #[cfg(any(feature = "alloc", feature = "std", test))]
 pub fn format_item<'a>(
-    w: &mut fmt::Formatter,
+    mut result: String,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'a>,
-) -> fmt::Result {
+) -> Result<String, fmt::Error> {
     // full and abbreviated month and weekday names
     static SHORT_MONTHS: [&'static str; 12] = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -418,7 +418,6 @@ pub fn format_item<'a>(
     ];
 
     use core::fmt::Write;
-    let mut result = String::new();
 
     match item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
@@ -657,7 +656,7 @@ pub fn format_item<'a>(
         Item::Error => return Err(fmt::Error),
     }
 
-    w.pad(&result)
+    Ok(result)
 }
 
 /// Tries to format given arguments with given formatting items.
@@ -668,20 +667,19 @@ pub fn format<'a, I, B>(
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
-    items: I,
+    mut items: I,
 ) -> fmt::Result
 where
     I: Iterator<Item = B> + Clone,
     B: Borrow<Item<'a>>,
 {
-    for item in items {
-        let t = format_item(w, date, time, off, item.borrow());
-        if t.is_err() {
-            return t;
-        }
-    }
-
-    return Ok(());
+    items
+        // Format all items in a temporary string buffer...
+        .try_fold(String::new(), |result, item| {
+            format_item(result, date, time, off, item.borrow())
+        })
+        // ...then respect format! padding, if any.
+        .and_then(|ref result| w.pad(result))
 }
 
 mod parsed;
