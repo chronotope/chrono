@@ -37,6 +37,7 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
+pub use self::locale::Locale;
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
@@ -386,37 +387,9 @@ pub fn format_item<'a>(
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
+    locale: &Locale,
     item: &Item<'a>,
 ) -> Result<String, fmt::Error> {
-    // full and abbreviated month and weekday names
-    static SHORT_MONTHS: [&'static str; 12] = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
-    static LONG_MONTHS: [&'static str; 12] = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
-    static SHORT_WEEKDAYS: [&'static str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    static LONG_WEEKDAYS: [&'static str; 7] = [
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday",
-    ];
-
     use core::fmt::Write;
 
     match item {
@@ -528,19 +501,23 @@ pub fn format_item<'a>(
 
             let ret = match spec {
                 &ShortMonthName => date.map(|d| {
-                    result.push_str(SHORT_MONTHS[d.month0() as usize]);
+                    result.push_str(locale.short_months()[d.month0() as usize]);
                     Ok(())
                 }),
                 &LongMonthName => date.map(|d| {
-                    result.push_str(LONG_MONTHS[d.month0() as usize]);
+                    result.push_str(locale.long_months()[d.month0() as usize]);
                     Ok(())
                 }),
                 &ShortWeekdayName => date.map(|d| {
-                    result.push_str(SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize]);
+                    result.push_str(
+                        locale.short_weekdays()[d.weekday().num_days_from_monday() as usize],
+                    );
                     Ok(())
                 }),
                 &LongWeekdayName => date.map(|d| {
-                    result.push_str(LONG_WEEKDAYS[d.weekday().num_days_from_monday() as usize]);
+                    result.push_str(
+                        locale.long_weekdays()[d.weekday().num_days_from_monday() as usize],
+                    );
                     Ok(())
                 }),
                 &LowerAmPm => time.map(|t| {
@@ -620,9 +597,9 @@ pub fn format_item<'a>(
                         write!(
                             result,
                             "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
-                            SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                            locale.short_weekdays()[d.weekday().num_days_from_monday() as usize],
                             d.day(),
-                            SHORT_MONTHS[d.month0() as usize],
+                            locale.short_months()[d.month0() as usize],
                             d.year(),
                             t.hour(),
                             t.minute(),
@@ -667,6 +644,7 @@ pub fn format<'a, I, B>(
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
+    locale: &Locale,
     mut items: I,
 ) -> fmt::Result
 where
@@ -676,7 +654,7 @@ where
     items
         // Format all items in a temporary string buffer...
         .try_fold(String::new(), |result, item| {
-            format_item(result, date, time, off, item.borrow())
+            format_item(result, date, time, off, locale, item.borrow())
         })
         // ...then respect format! padding, if any.
         .and_then(|ref result| w.pad(result))
@@ -702,6 +680,8 @@ pub struct DelayedFormat<I> {
     time: Option<NaiveTime>,
     /// The name and local-to-UTC difference for the offset (timezone), if any.
     off: Option<(String, FixedOffset)>,
+    /// The localized representation of weekdays and months.
+    locale: Locale,
     /// An iterator returning formatting items.
     items: I,
 }
@@ -709,11 +689,17 @@ pub struct DelayedFormat<I> {
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
-    pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
+    pub fn new(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        locale: Locale,
+        items: I,
+    ) -> DelayedFormat<I> {
         DelayedFormat {
             date: date,
             time: time,
             off: None,
+            locale,
             items: items,
         }
     }
@@ -723,6 +709,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         offset: &Off,
+        locale: Locale,
         items: I,
     ) -> DelayedFormat<I>
     where
@@ -733,6 +720,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             date: date,
             time: time,
             off: Some(name_and_diff),
+            locale,
             items: items,
         }
     }
@@ -746,6 +734,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
             self.date.as_ref(),
             self.time.as_ref(),
             self.off.as_ref(),
+            &self.locale,
             self.items.clone(),
         )
     }
