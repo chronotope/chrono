@@ -10,7 +10,7 @@ use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::{DelayedFormat, Item, StrftimeItems};
+use format::{DelayedFormat, Item, Locale, StrftimeItems};
 use naive::{self, IsoWeek, NaiveDate, NaiveTime};
 use offset::{TimeZone, Utc};
 use DateTime;
@@ -306,7 +306,13 @@ where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormat::new_with_offset(Some(self.naive_local()), None, &self.offset, items)
+        DelayedFormat::new_with_offset(
+            Some(self.naive_local()),
+            None,
+            &self.offset,
+            Locale::default(),
+            items,
+        )
     }
 
     /// Formats the date with the specified format string.

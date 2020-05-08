@@ -19,7 +19,7 @@ use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item};
+use format::{Fixed, Item, Locale};
 use naive::{IsoWeek, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use offset::Local;
@@ -484,7 +484,14 @@ where
         B: Borrow<Item<'a>>,
     {
         let local = self.naive_local();
-        DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
+
+        DelayedFormat::new_with_offset(
+            Some(local.date()),
+            Some(local.time()),
+            &self.offset,
+            Locale::default(),
+            items,
+        )
     }
 
     /// Formats the combined date and time with the specified format string.

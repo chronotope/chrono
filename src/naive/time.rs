@@ -13,7 +13,7 @@ use div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item, Numeric, Pad};
+use format::{Fixed, Item, Locale, Numeric, Pad};
 use Timelike;
 
 /// ISO 8601 time without timezone.
@@ -775,7 +775,7 @@ impl NaiveTime {
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormat::new(None, Some(*self), items)
+        DelayedFormat::new(None, Some(*self), Locale::default(), items)
     }
 
     /// Formats the time with the specified format string.

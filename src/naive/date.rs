@@ -14,7 +14,7 @@ use div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Item, Numeric, Pad};
+use format::{Item, Locale, Numeric, Pad};
 use naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use {Datelike, Weekday};
 
@@ -1036,7 +1036,7 @@ impl NaiveDate {
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormat::new(Some(*self), None, items)
+        DelayedFormat::new(Some(*self), None, Locale::default(), items)
     }
 
     /// Formats the date with the specified format string.
