@@ -14,6 +14,11 @@ Versions with only mechanical changes will be omitted from the following list.
 
 * Add `DurationRound` trait that allows rounding and truncating by `Duration` (@robyoung)
 
+### Internal Improvements
+
+* Code improvements to impl `From` for `js_sys` in wasm to reuse code (@schrieveslaach)
+
+
 ## 0.4.12
 
 ### New Methods and impls
