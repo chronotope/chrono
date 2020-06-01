@@ -1184,7 +1184,7 @@ pub mod serde {
             where S: ser::Serializer
         {
             match *opt {
-                Some(ref dt) => ts_nanoseconds::serialize(dt, serializer),
+                Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos()),
                 None => serializer.serialize_none(),
             }
         }
@@ -1475,7 +1475,7 @@ pub mod serde {
             where S: ser::Serializer
         {
             match *opt {
-                Some(ref dt) => ts_milliseconds::serialize(dt, serializer),
+                Some(ref dt) => serializer.serialize_some(&dt.timestamp_millis()),
                 None => serializer.serialize_none(),
             }
         }
@@ -1762,7 +1762,7 @@ pub mod serde {
             where S: ser::Serializer
         {
             match *opt {
-                Some(ref dt) => ts_seconds::serialize(dt, serializer),
+                Some(ref dt) => serializer.serialize_some(&dt.timestamp()),
                 None => serializer.serialize_none(),
             }
         }
