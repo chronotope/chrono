@@ -1279,11 +1279,18 @@ pub mod serde {
                 where
                     D: de::Deserializer<'de>,
             {
-                d.deserialize_i64(NanoSecondsTimestampVisitor).map(|val| Some(val))
+                d.deserialize_i64(NanoSecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
                 where E: de::Error
             {
                 Ok(None)
@@ -1535,17 +1542,29 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_derive;
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate chrono;
-        /// # use chrono::{DateTime, Utc};
+        /// # use chrono::prelude::*;
         /// use chrono::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
-        /// #[derive(Deserialize)]
+        ///
+        /// #[derive(Deserialize, PartialEq, Debug)]
+        /// #[serde(untagged)]
+        /// enum E<T> {
+        ///     V(T),
+        /// }
+        ///
+        /// #[derive(Deserialize, PartialEq, Debug)]
         /// struct S {
-        ///     #[serde(deserialize_with = "from_milli_tsopt")]
+        ///     #[serde(default, deserialize_with = "from_milli_tsopt")]
         ///     time: Option<DateTime<Utc>>
         /// }
         ///
-        /// # fn example() -> Result<S, serde_json::Error> {
-        /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-        /// # Ok(my_s)
+        /// # fn example() -> Result<(), serde_json::Error> {
+        /// let my_s: E<S> = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
+        /// assert_eq!(my_s, E::V(S { time: Some(Utc.timestamp(1526522699, 918000000)) }));
+        /// let s: E<S> = serde_json::from_str(r#"{ "time": null }"#)?;
+        /// assert_eq!(s, E::V(S { time: None }));
+        /// let t: E<S> = serde_json::from_str(r#"{}"#)?;
+        /// assert_eq!(t, E::V(S { time: None }));
+        /// # Ok(())
         /// # }
         /// # fn main() { example().unwrap(); }
         /// ```
@@ -1570,11 +1589,18 @@ pub mod serde {
                 where
                     D: de::Deserializer<'de>,
             {
-                d.deserialize_i64(MilliSecondsTimestampVisitor).map(|val| Some(val))
+                d.deserialize_i64(MilliSecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
                 where E: de::Error
             {
                 Ok(None)
@@ -1857,11 +1883,18 @@ pub mod serde {
                 where
                     D: de::Deserializer<'de>,
             {
-                d.deserialize_i64(SecondsTimestampVisitor).map(|val| Some(val))
+                d.deserialize_i64(SecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
                 where E: de::Error
             {
                 Ok(None)
