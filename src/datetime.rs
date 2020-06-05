@@ -25,6 +25,7 @@ use format::{Item, Fixed};
 use format::{parse, Parsed, ParseError, ParseResult, StrftimeItems};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 
 /// Specific formatting options for seconds. This may be extended in the

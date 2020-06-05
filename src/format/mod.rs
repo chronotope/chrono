@@ -17,6 +17,7 @@
 
 #![allow(ellipsis_inclusive_range_patterns)]
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::fmt;
 use core::str::FromStr;
@@ -360,7 +361,20 @@ pub fn format_item<'a>(
     item: &Item<'a>,
 ) -> fmt::Result
 {
-    // full and abbreviated month and weekday names
+    let mut result = String::new();
+    format_inner(&mut result, date, time, off, item)?;
+    w.pad(&result)
+}
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+fn format_inner<'a>(
+    result: &mut String,
+    date: Option<&NaiveDate>,
+    time: Option<&NaiveTime>,
+    off: Option<&(String, FixedOffset)>,
+    item: &Item<'a>
+) -> fmt::Result {
+        // full and abbreviated month and weekday names
     static SHORT_MONTHS: [&'static str; 12] =
         ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     static LONG_MONTHS: [&'static str; 12] =
@@ -372,9 +386,8 @@ pub fn format_item<'a>(
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     use core::fmt::Write;
-    let mut result = String::new();
 
-    match item {
+    match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
         #[cfg(any(feature = "alloc", feature = "std", test))]
         Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
@@ -554,13 +567,13 @@ pub fn format_item<'a>(
                         Ok(())
                     }),
                 &TimezoneOffsetColon =>
-                    off.map(|&(_, off)| write_local_minus_utc(&mut result, off, false, true)),
+                    off.map(|&(_, off)| write_local_minus_utc(result, off, false, true)),
                 &TimezoneOffsetColonZ =>
-                    off.map(|&(_, off)| write_local_minus_utc(&mut result, off, true, true)),
+                    off.map(|&(_, off)| write_local_minus_utc(result, off, true, true)),
                 &TimezoneOffset =>
-                    off.map(|&(_, off)| write_local_minus_utc(&mut result, off, false, false)),
+                    off.map(|&(_, off)| write_local_minus_utc(result, off, false, false)),
                 &TimezoneOffsetZ =>
-                    off.map(|&(_, off)| write_local_minus_utc(&mut result, off, true, false)),
+                    off.map(|&(_, off)| write_local_minus_utc(result, off, true, false)),
                 &Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) =>
                     panic!("Do not try to write %#z it is undefined"),
                 &RFC2822 => // same as `%a, %e %b %Y %H:%M:%S %z`
@@ -573,7 +586,7 @@ pub fn format_item<'a>(
                             d.day(), SHORT_MONTHS[d.month0() as usize], d.year(),
                             t.hour(), t.minute(), sec
                         )?;
-                        Some(write_local_minus_utc(&mut result, off, false, false))
+                        Some(write_local_minus_utc(result, off, false, false))
                     } else {
                         None
                     },
@@ -582,7 +595,7 @@ pub fn format_item<'a>(
                         // reuse `Debug` impls which already print ISO 8601 format.
                         // this is faster in this way.
                         write!(result, "{:?}T{:?}", d, t)?;
-                        Some(write_local_minus_utc(&mut result, off, false, true))
+                        Some(write_local_minus_utc(result, off, false, true))
                     } else {
                         None
                     },
@@ -596,8 +609,7 @@ pub fn format_item<'a>(
 
         Item::Error => return Err(fmt::Error),
     }
-
-    w.pad(&result)
+    Ok(())
 }
 
 /// Tries to format given arguments with given formatting items.
@@ -612,14 +624,11 @@ pub fn format<'a, I, B>(
 ) -> fmt::Result
     where I: Iterator<Item=B> + Clone, B: Borrow<Item<'a>>
 {
+    let mut result = String::new();
     for item in items {
-        let t = format_item(w, date, time, off, item.borrow());
-        if t.is_err() {
-            return t;
-        }
+        format_inner(&mut result, date, time, off, item.borrow())?;
     }
-
-    return Ok(());
+    w.pad(&result)
 }
 
 mod parsed;
