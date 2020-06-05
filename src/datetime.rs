@@ -703,6 +703,47 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     }
 }
 
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+impl From<js_sys::Date> for DateTime<Utc> {
+    fn from(date: js_sys::Date) -> DateTime<Utc> {
+        let time = date.get_time() as i64;
+        DateTime::<Utc>::from_utc(
+            NaiveDateTime::from_timestamp(time / 1000, ((time % 1000) * 1_000_000) as u32),
+            Utc,
+        )
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+impl From<&js_sys::Date> for DateTime<Utc> {
+    fn from(date: &js_sys::Date) -> DateTime<Utc> {
+        let time = date.get_time() as i64;
+        DateTime::<Utc>::from_utc(
+            NaiveDateTime::from_timestamp(time / 1000, ((time % 1000) * 1_000_000) as u32),
+            Utc,
+        )
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+impl From<DateTime<Utc>> for js_sys::Date {
+    fn from(date: DateTime<Utc>) -> js_sys::Date {
+        let js_date = js_sys::Date::new_0();
+
+        js_date.set_utc_full_year_with_month_date(
+            date.year() as u32,
+            date.month0() as i32,
+            date.day() as i32
+        );
+
+        js_date.set_utc_hours(date.hour());
+        js_date.set_utc_minutes(date.minute());
+        js_date.set_utc_seconds(date.second());
+
+        js_date
+    }
+}
+
 #[test]
 fn test_auto_conversion() {
     let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
