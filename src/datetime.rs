@@ -1542,17 +1542,22 @@ pub mod serde {
         /// # #[macro_use] extern crate serde_derive;
         /// # #[macro_use] extern crate serde_json;
         /// # extern crate chrono;
-        /// # use chrono::{DateTime, Utc};
+        /// # use chrono::prelude::*;
         /// use chrono::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
-        /// #[derive(Deserialize)]
+        /// #[derive(Deserialize, PartialEq)]
         /// struct S {
         ///     #[serde(deserialize_with = "from_milli_tsopt")]
         ///     time: Option<DateTime<Utc>>
         /// }
         ///
-        /// # fn example() -> Result<S, serde_json::Error> {
+        /// # fn example() -> Result<(), serde_json::Error> {
         /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-        /// # Ok(my_s)
+        /// assert_eq!(my_s.time, Some(Utc.timestamp(1526522699, 918000000)));
+        /// let s: S = serde_json::from_str(r#"{ "time": null }"#)?;
+        /// assert!(s.time.is_none());
+        /// let t: S = serde_json::from_str(r#"{}"#)?;
+        /// assert!(t.time.is_none());
+        /// # Ok(())
         /// # }
         /// # fn main() { example().unwrap(); }
         /// ```
