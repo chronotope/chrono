@@ -93,6 +93,10 @@ build_and_test_nonwasm() {
 
   channel build -v --no-default-features --features 'alloc serde'
   TZ=UTC0 channel test -v --no-default-features --features 'alloc serde' --lib
+
+  if [[ "$CHANNEL" == stable ]]; then
+      channel build -v --no-default-features --features '__doctest'
+      TZ=UTC0 channel test -v --no-default-features --features '__doctest' --lib
 }
 
 build_and_test_wasm() {
