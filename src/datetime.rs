@@ -1544,19 +1544,26 @@ pub mod serde {
         /// # extern crate chrono;
         /// # use chrono::prelude::*;
         /// use chrono::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
-        /// #[derive(Deserialize, PartialEq)]
+        ///
+        /// #[derive(Deserialize, PartialEq, Debug)]
+        /// #[serde(untagged)]
+        /// enum E<T> {
+        ///     V(T),
+        /// }
+        ///
+        /// #[derive(Deserialize, PartialEq, Debug)]
         /// struct S {
         ///     #[serde(default, deserialize_with = "from_milli_tsopt")]
         ///     time: Option<DateTime<Utc>>
         /// }
         ///
         /// # fn example() -> Result<(), serde_json::Error> {
-        /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-        /// assert_eq!(my_s.time, Some(Utc.timestamp(1526522699, 918000000)));
-        /// let s: S = serde_json::from_str(r#"{ "time": null }"#)?;
-        /// assert!(s.time.is_none());
-        /// let t: S = serde_json::from_str(r#"{}"#)?;
-        /// assert!(t.time.is_none());
+        /// let my_s: E<S> = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
+        /// assert_eq!(my_s, E::V(S { time: Some(Utc.timestamp(1526522699, 918000000)) }));
+        /// let s: E<S> = serde_json::from_str(r#"{ "time": null }"#)?;
+        /// assert_eq!(s, E::V(S { time: None }));
+        /// let t: E<S> = serde_json::from_str(r#"{}"#)?;
+        /// assert_eq!(t, E::V(S { time: None }));
         /// # Ok(())
         /// # }
         /// # fn main() { example().unwrap(); }
@@ -1587,6 +1594,13 @@ pub mod serde {
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+                where E: de::Error
+            {
+                Ok(None)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
                 where E: de::Error
             {
                 Ok(None)
