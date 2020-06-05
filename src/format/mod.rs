@@ -387,7 +387,7 @@ fn format_inner<'a>(
 
     use core::fmt::Write;
 
-    match item {
+    match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
         #[cfg(any(feature = "alloc", feature = "std", test))]
         Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
