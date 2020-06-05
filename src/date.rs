@@ -3,6 +3,7 @@
 
 //! ISO 8601 calendar date with time zone.
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::{fmt, hash};
 use core::cmp::Ordering;

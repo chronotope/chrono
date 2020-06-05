@@ -17,6 +17,7 @@
 
 #![allow(ellipsis_inclusive_range_patterns)]
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::fmt;
 use core::str::FromStr;
@@ -365,6 +366,7 @@ pub fn format_item<'a>(
     w.pad(&result)
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 fn format_inner<'a>(
     result: &mut String,
     date: Option<&NaiveDate>,
