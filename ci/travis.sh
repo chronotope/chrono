@@ -97,6 +97,7 @@ build_and_test_nonwasm() {
   if [[ "$CHANNEL" == stable ]]; then
       channel build -v --no-default-features --features '__doctest'
       TZ=UTC0 channel test -v --no-default-features --features '__doctest' --lib
+  fi
 }
 
 build_and_test_wasm() {
