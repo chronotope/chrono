@@ -1546,7 +1546,7 @@ pub mod serde {
         /// use chrono::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
         /// #[derive(Deserialize, PartialEq)]
         /// struct S {
-        ///     #[serde(deserialize_with = "from_milli_tsopt")]
+        ///     #[serde(default, deserialize_with = "from_milli_tsopt")]
         ///     time: Option<DateTime<Utc>>
         /// }
         ///
@@ -1587,13 +1587,6 @@ pub mod serde {
 
             /// Deserialize a timestamp in seconds since the epoch
             fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
-                where E: de::Error
-            {
-                Ok(None)
-            }
-
-            /// Deserialize a timestamp in seconds since the epoch
-            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
                 where E: de::Error
             {
                 Ok(None)
