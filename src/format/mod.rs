@@ -576,7 +576,7 @@ fn format_inner<'a>(
                     off.map(|&(_, off)| write_local_minus_utc(result, off, true, false)),
                 &Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) =>
                     panic!("Do not try to write %#z it is undefined"),
-                &RFC2822 => // same as `%a, %e %b %Y %H:%M:%S %z`
+                &RFC2822 => // same as `%a, %d %b %Y %H:%M:%S %z`
                     if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                         let sec = t.second() + t.nanosecond() / 1_000_000_000;
                         write!(
