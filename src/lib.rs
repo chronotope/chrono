@@ -421,6 +421,8 @@ extern crate std as alloc;
 
 #[cfg(feature="clock")]
 extern crate time as oldtime;
+#[cfg(not(feature="clock"))]
+mod oldtime;
 extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
@@ -475,8 +477,6 @@ macro_rules! try_opt {
 }
 
 mod div;
-#[cfg(not(feature="clock"))]
-mod oldtime;
 pub mod offset;
 pub mod naive {
     //! Date and time types unconcerned with timezones.
