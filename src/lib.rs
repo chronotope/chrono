@@ -407,7 +407,7 @@
 // Changing trivially_copy_pass_by_ref would require an incompatible version
 // bump.
 #![cfg_attr(feature = "cargo-clippy", allow(
-    const_static_lifetime,
+    redundant_static_lifetime,
     redundant_field_names,
     trivially_copy_pass_by_ref,
 ))]
