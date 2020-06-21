@@ -1186,7 +1186,7 @@ pub mod serde {
 
         use {DateTime, Utc};
 
-        use super::{ts_nanoseconds, NanoSecondsTimestampVisitor};
+        use super::NanoSecondsTimestampVisitor;
 
         /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch or none
         ///
@@ -1484,7 +1484,7 @@ pub mod serde {
 
         use {DateTime, Utc};
 
-        use super::{ts_milliseconds, MilliSecondsTimestampVisitor};
+        use super::MilliSecondsTimestampVisitor;
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch or none
         ///
@@ -1790,7 +1790,7 @@ pub mod serde {
 
         use {DateTime, Utc};
 
-        use super::{ts_seconds, SecondsTimestampVisitor};
+        use super::SecondsTimestampVisitor;
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch or none
         ///
