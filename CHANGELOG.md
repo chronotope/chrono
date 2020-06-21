@@ -8,6 +8,24 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
+## 0.4.12 (unreleased)
+
+### New Methods and impls
+
+* `Duration::seconds_nanos` to construct a duration when you have both seconds
+  and nanoseconds (#426 @sploiselle).
+* `Duration::abs` to ensure that a duration is just a magnitude (#418 @abreis).
+
+### Compatibility improvements
+
+* impl `From` for `js_sys` in wasm (#424 @schrieveslaach)
+* Bump required version of `time` for redox support.
+
+### Bugfixes
+
+* serde modules do a better job with `Option` types (#417 @mwkroening and #429
+  @fx-kirin)
+
 ## 0.4.11
 
 ### Improvements
