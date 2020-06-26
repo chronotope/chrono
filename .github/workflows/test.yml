@@ -1,4 +1,4 @@
-name: Test
+name: test
 
 on:
   push:
@@ -12,20 +12,17 @@ jobs:
       matrix:
         os: [ubuntu-16.04, ubuntu-latest, macos-latest, windows-latest]
         rust_version: [stable]
-        wasm: ['no_wasm']
-        core: ['std']
-        kind: ['test']
         include:
+        # check all tzs on most-recent OS's
         - os: ubuntu-latest
           rust_version: stable
-          kind: lint
-        # check all tzs occasionally
-        - os: ubuntu-latest
-          rust_version: stable
-          exhaustive_tz: y
+          exhaustive_tz: all_tzs
         - os: windows-latest
           rust_version: stable
-          exhaustive_tz: y
+          exhaustive_tz: all_tzs
+        - os: macos-latest
+          rust_version: stable
+          exhaustive_tz: all_tzs
         # test other rust versions
         - os: ubuntu-latest
           rust_version: beta
@@ -36,17 +33,6 @@ jobs:
         - os: macos-latest
           rust_version: 1.13.0
           # time doesn't work on windows with 1.13
-        # test wasmbind
-        - os: macos-latest
-          wasm: 'yes_wasm'
-          rust_version: stable
-        # test no_std
-        - os: macos-latest
-          core: 'no_std'
-          rust_version: stable
-        - os: ubuntu-latest
-          core: 'no_std'
-          rust_version: stable
 
     runs-on: ${{ matrix.os }}
 
@@ -54,31 +40,79 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Install rust
-        if: ${{ matrix.core == 'std' }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust_version }}
           override: true
-
-      - name: Install rust with no_std toolchain
-        if: ${{ matrix.core == 'no_std' }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust_version }}
-          target: thumbv6m-none-eabi
-          override: true
-
-      - name: Install node
-        if: ${{ matrix.wasm == 'yes_wasm' }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: '12'
 
       - name: Build and Test
         run: bash ci/github.sh
         env:
           RUST_VERSION: ${{ matrix.rust_version }}
-          CORE: ${{ matrix.core }}
-          WASM: ${{ matrix.wasm }}
           EXHAUSTIVE_TZ: ${{ matrix.exhaustive_tz }}
-          KIND: ${{ matrix.kind }}
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Lint
+        run: bash ci/lint.sh
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          check_together: 'y'
+
+  no_std:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install rust with no_std toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv6m-none-eabi
+          override: true
+
+      - name: Build no_std lib
+        run: cargo build --target thumbv6m-none-eabi --color=always
+        working-directory: ./ci/core-test
+
+  wasm:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+
+      - name: Install node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12'
+
+      - name: Install wasm-pack
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          wasm-pack --version
+
+      - name: Build and Test
+        run: bash ci/github.sh
+        env:
+          RUST_VERSION: stable
+          WASM: wasm_simple

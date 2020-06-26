@@ -2,36 +2,49 @@
 
 set -euo pipefail
 
+# shellcheck source=ci/_shlib.sh
+source "${BASH_SOURCE[0]%/*}/_shlib.sh"
+
 TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
 FEATURES=(std serde clock "alloc serde")
 RUST_113_FEATURES=(rustc-serialize serde)
 
 main() {
-    if [[ $RUST_VERSION != 1.13.0 ]]; then
-        if [[ $KIND == lint ]]; then
-            do_lints
-        elif [[ $WASM == yes_wasm ]]; then
+    if [[ "$*" =~ "-h" ]]; then
+        echo -n "usage: ENV_VARS... $0
+
+Recognized environment variables. Their values are as they are so that they are
+meaningful in the github actions feature matrix UI.
+
+    RUST_VERSION        The rust version currently being tested
+                        This doesn't set the version, it is just used to test
+    WASM                Empty or 'yes_wasm'
+    CORE                'std' or 'no_std'
+    EXHAUSTIVE_TZ       Emptly or 'all_tzs'
+"
+        exit
+    fi
+
+    runv cargo --version
+
+    if [[ ${RUST_VERSION:-} != 1.13.0 ]]; then
+        if [[ ${WASM:-} == yes_wasm ]]; then
             test_wasm
-        elif [[ $CORE == no_std ]]; then
+        elif [[ ${WASM:-} == wasm_simple ]]; then
+            test_wasm_simple
+        elif [[ ${CORE:-} == no_std ]]; then
             test_core
-        elif [[ $EXHAUSTIVE_TZ == y ]]; then
+        elif [[ ${EXHAUSTIVE_TZ:-} == all_tzs ]]; then
             test_all_tzs
         else
             test_regular UTC0
         fi
-    elif [[ $RUST_VERSION == 1.13.0 ]]; then
+    elif [[ ${RUST_VERSION:-} == 1.13.0 ]]; then
         test_113
     else
         echo "ERROR: didn't run any tests"
         exit 1
     fi
-}
-
-do_lints() {
-    # TODO: get clippy clean
-    # runt cargo clippy --color=always || true
-    runt make readme
-    runv git diff --exit-code -- README.md
 }
 
 test_all_tzs() {
@@ -69,24 +82,18 @@ test_wasm() {
         exit 1
     fi
     if ! command -v wasm-pack >/dev/null; then
-        echo ">$ curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh" >&2
+        echo "::group::curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh"
         curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        runv wasm-pack --version
     fi
+    test_wasm_simple
+}
+
+test_wasm_simple() {
     now=$(date +%s)
     for tz in "${TEST_TZS[@]}"; do
         runt env TZ="$tz" NOW="$now" wasm-pack test --node -- --features wasmbind
     done
 }
 
-runt() {
-    echo "======================================================================" >&2
-    runv "$@"
-}
-
-runv() {
-    echo ">$ $*" >&2
-    # stdout is swallowed by gh actions
-    "$@" >&2
-}
-
-main
+main "$@"

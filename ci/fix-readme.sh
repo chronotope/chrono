@@ -13,8 +13,8 @@ echo '
 [![Chrono on docs.rs][docsrs-image]][docsrs]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
 
-[gh-image]: https://github.com/chronotope/chrono/workflows/Test/badge.svg
-[gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3ATest
+[gh-image]: https://github.com/chronotope/chrono/workflows/test/badge.svg
+[gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
 [docsrs-image]: https://docs.rs/chrono/badge.svg
@@ -24,9 +24,9 @@ echo '
 
 # print the section between the header and the usage
 awk '/^\/\/! # Chrono:/,/^\/\/! ## /' "$LIB" | cut -b 5- | grep -v '^#' | \
-    sed 's/](\.\//](https:\/\/docs.rs\/chrono\/'$VERSION'\/chrono\//g'
+    sed 's/](\.\//](https:\/\/docs.rs\/chrono\/'"$VERSION"'\/chrono\//g'
 echo
 # Replace relative doc links with links to this exact version of docs on
 # docs.rs
 awk '/^\/\/! ## /,!/^\/\/!/' "$LIB" | cut -b 5- | grep -v '^# ' | \
-    sed 's/](\.\//](https:\/\/docs.rs\/chrono\/'$VERSION'\/chrono\//g' \
+    sed 's/](\.\//](https:\/\/docs.rs\/chrono\/'"$VERSION"'\/chrono\//g' \
