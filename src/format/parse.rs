@@ -224,57 +224,57 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
     }
 
     for item in items {
-        match item.borrow() {
-            &Item::Literal(prefix) => {
+        match *item.borrow() {
+            Item::Literal(prefix) => {
                 if s.len() < prefix.len() { return Err((s, TOO_SHORT)); }
                 if !s.starts_with(prefix) { return Err((s, INVALID)); }
                 s = &s[prefix.len()..];
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            &Item::OwnedLiteral(ref prefix) => {
+            Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() { return Err((s, TOO_SHORT)); }
                 if !s.starts_with(&prefix[..]) { return Err((s, INVALID)); }
                 s = &s[prefix.len()..];
             }
 
-            &Item::Space(_) => {
+            Item::Space(_) => {
                 s = s.trim_left();
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            &Item::OwnedSpace(_) => {
+            Item::OwnedSpace(_) => {
                 s = s.trim_left();
             }
 
-            &Item::Numeric(ref spec, ref _pad) => {
+            Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
-                let (width, signed, set): (usize, bool, Setter) = match spec {
-                    &Year           => (4, true, Parsed::set_year),
-                    &YearDiv100     => (2, false, Parsed::set_year_div_100),
-                    &YearMod100     => (2, false, Parsed::set_year_mod_100),
-                    &IsoYear        => (4, true, Parsed::set_isoyear),
-                    &IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
-                    &IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
-                    &Month          => (2, false, Parsed::set_month),
-                    &Day            => (2, false, Parsed::set_day),
-                    &WeekFromSun    => (2, false, Parsed::set_week_from_sun),
-                    &WeekFromMon    => (2, false, Parsed::set_week_from_mon),
-                    &IsoWeek        => (2, false, Parsed::set_isoweek),
-                    &NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    &WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    &Ordinal        => (3, false, Parsed::set_ordinal),
-                    &Hour           => (2, false, Parsed::set_hour),
-                    &Hour12         => (2, false, Parsed::set_hour12),
-                    &Minute         => (2, false, Parsed::set_minute),
-                    &Second         => (2, false, Parsed::set_second),
-                    &Nanosecond     => (9, false, Parsed::set_nanosecond),
-                    &Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
+                let (width, signed, set): (usize, bool, Setter) = match *spec {
+                    Year           => (4, true, Parsed::set_year),
+                    YearDiv100     => (2, false, Parsed::set_year_div_100),
+                    YearMod100     => (2, false, Parsed::set_year_mod_100),
+                    IsoYear        => (4, true, Parsed::set_isoyear),
+                    IsoYearDiv100  => (2, false, Parsed::set_isoyear_div_100),
+                    IsoYearMod100  => (2, false, Parsed::set_isoyear_mod_100),
+                    Month          => (2, false, Parsed::set_month),
+                    Day            => (2, false, Parsed::set_day),
+                    WeekFromSun    => (2, false, Parsed::set_week_from_sun),
+                    WeekFromMon    => (2, false, Parsed::set_week_from_mon),
+                    IsoWeek        => (2, false, Parsed::set_isoweek),
+                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
+                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
+                    Ordinal        => (3, false, Parsed::set_ordinal),
+                    Hour           => (2, false, Parsed::set_hour),
+                    Hour12         => (2, false, Parsed::set_hour12),
+                    Minute         => (2, false, Parsed::set_minute),
+                    Second         => (2, false, Parsed::set_second),
+                    Nanosecond     => (9, false, Parsed::set_nanosecond),
+                    Timestamp      => (usize::MAX, false, Parsed::set_timestamp),
 
                     // for the future expansion
-                    &Internal(ref int) => match int._dummy {},
+                    Internal(ref int) => match int._dummy {},
                 };
 
                 s = s.trim_left();
@@ -294,7 +294,7 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
                 set(parsed, v).map_err(|e| (s, e))?;
             }
 
-            &Item::Fixed(ref spec) => {
+            Item::Fixed(ref spec) => {
                 use super::Fixed::*;
 
                 match spec {
@@ -378,7 +378,7 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
                 }
             }
 
-            &Item::Error => {
+            Item::Error => {
                 return Err((s, BAD_FORMAT));
             }
         }
