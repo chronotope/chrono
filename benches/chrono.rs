@@ -3,10 +3,10 @@
 extern crate chrono;
 extern crate criterion;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use chrono::prelude::*;
-use chrono::{Utc, FixedOffset, DateTime, __BenchYearFlags};
+use chrono::{DateTime, FixedOffset, Utc, __BenchYearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
@@ -39,26 +39,24 @@ fn bench_datetime_from_str(c: &mut Criterion) {
 fn bench_datetime_to_rfc2822(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60);
     let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
-    c.bench_function("bench_datetime_to_rfc2822", |b| {
-        b.iter(|| black_box(dt).to_rfc2822())
-    });
+    c.bench_function("bench_datetime_to_rfc2822", |b| b.iter(|| black_box(dt).to_rfc2822()));
 }
 
 fn bench_datetime_to_rfc3339(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60);
     let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
-    c.bench_function("bench_datetime_to_rfc3339", |b| {
-        b.iter(|| black_box(dt).to_rfc3339())
-    });
+    c.bench_function("bench_datetime_to_rfc3339", |b| b.iter(|| black_box(dt).to_rfc3339()));
 }
 
 fn bench_year_flags_from_year(c: &mut Criterion) {
-    c.bench_function("bench_year_flags_from_year", |b|
-                     b.iter(|| {
-        for year in -999i32..1000 {
-            __BenchYearFlags::from_year(year);
-        }
-    }));
+    c.bench_function("bench_year_flags_from_year", |b| {
+        b.iter(|| {
+            for year in -999i32..1000 {
+                __BenchYearFlags::from_year(year);
+            }
+        })
+    });
+}
 
 /// Returns the number of multiples of `div` in the range `start..end`.
 ///
@@ -95,16 +93,12 @@ fn bench_num_days_from_ce(c: &mut Criterion) {
     let mut group = c.benchmark_group("num_days_from_ce");
     for year in &[1, 500, 2000, 2019] {
         let d = NaiveDate::from_ymd(*year, 1, 1);
-        group.bench_with_input(
-            BenchmarkId::new("new", year),
-            &d,
-            |b, y| b.iter(|| num_days_from_ce_alt(y)),
-        );
-        group.bench_with_input(
-            BenchmarkId::new("classic", year),
-            &d,
-            |b, y| b.iter(|| y.num_days_from_ce()),
-        );
+        group.bench_with_input(BenchmarkId::new("new", year), &d, |b, y| {
+            b.iter(|| num_days_from_ce_alt(y))
+        });
+        group.bench_with_input(BenchmarkId::new("classic", year), &d, |b, y| {
+            b.iter(|| y.num_days_from_ce())
+        });
     }
 }
 
