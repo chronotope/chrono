@@ -228,7 +228,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
-    #[cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
     #[inline]
     pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
         self.datetime.signed_duration_since(rhs.datetime)
@@ -1187,7 +1186,7 @@ pub mod serde {
 
         use {DateTime, Utc};
 
-        use super::{ts_nanoseconds, NanoSecondsTimestampVisitor};
+        use super::NanoSecondsTimestampVisitor;
 
         /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch or none
         ///
@@ -1485,7 +1484,7 @@ pub mod serde {
 
         use {DateTime, Utc};
 
-        use super::{ts_milliseconds, MilliSecondsTimestampVisitor};
+        use super::MilliSecondsTimestampVisitor;
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch or none
         ///
@@ -1791,7 +1790,7 @@ pub mod serde {
 
         use {DateTime, Utc};
 
-        use super::{ts_seconds, SecondsTimestampVisitor};
+        use super::SecondsTimestampVisitor;
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch or none
         ///
@@ -2265,24 +2264,57 @@ mod tests {
     }
 
     #[test]
+    #[cfg(not(target_os = "windows"))]
     fn test_from_system_time() {
         use std::time::Duration;
+
+        let epoch = Utc.ymd(1970, 1, 1).and_hms(0, 0, 0);
+        let nanos = 999_999_999;
+
+        // SystemTime -> DateTime<Utc>
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
+                   Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos));
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
+                   Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1));
+
+        // DateTime<Utc> -> SystemTime
+        assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
+        assert_eq!(SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)),
+                   UNIX_EPOCH + Duration::new(999_999_999, nanos));
+        assert_eq!(SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1)),
+                   UNIX_EPOCH - Duration::new(999_999_999, 999_999_999));
+
+        // DateTime<any tz> -> SystemTime (via `with_timezone`)
+        #[cfg(feature="clock")] {
+            assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
+        }
+        assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400))), UNIX_EPOCH);
+        assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800))), UNIX_EPOCH);
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_from_system_time() {
+        use std::time::Duration;
+
+        let nanos = 999_999_000;
 
         let epoch = Utc.ymd(1970, 1, 1).and_hms(0, 0, 0);
 
         // SystemTime -> DateTime<Utc>
         assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
-        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, 999_999_999)),
-                   Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, 999_999_999));
-        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, 999_999_999)),
-                   Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1));
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
+                   Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos));
+        assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
+                   Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1_000));
 
         // DateTime<Utc> -> SystemTime
         assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
-        assert_eq!(SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, 999_999_999)),
-                   UNIX_EPOCH + Duration::new(999_999_999, 999_999_999));
-        assert_eq!(SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1)),
-                   UNIX_EPOCH - Duration::new(999_999_999, 999_999_999));
+        assert_eq!(SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)),
+                   UNIX_EPOCH + Duration::new(999_999_999, nanos));
+        assert_eq!(SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1_000)),
+                   UNIX_EPOCH - Duration::new(999_999_999, nanos));
 
         // DateTime<any tz> -> SystemTime (via `with_timezone`)
         #[cfg(feature="clock")] {

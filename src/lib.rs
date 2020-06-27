@@ -391,6 +391,8 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![deny(dead_code)]
+// lints are added all the time, we test on 1.13
+#![allow(unknown_lints)]
 
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 
@@ -405,7 +407,7 @@
 // Changing trivially_copy_pass_by_ref would require an incompatible version
 // bump.
 #![cfg_attr(feature = "cargo-clippy", allow(
-    const_static_lifetime,
+    redundant_static_lifetime,
     redundant_field_names,
     trivially_copy_pass_by_ref,
 ))]
@@ -419,6 +421,8 @@ extern crate std as alloc;
 
 #[cfg(feature="clock")]
 extern crate time as oldtime;
+#[cfg(not(feature="clock"))]
+mod oldtime;
 extern crate num_integer;
 extern crate num_traits;
 #[cfg(feature = "rustc-serialize")]
@@ -473,8 +477,6 @@ macro_rules! try_opt {
 }
 
 mod div;
-#[cfg(not(feature="clock"))]
-mod oldtime;
 pub mod offset;
 pub mod naive {
     //! Date and time types unconcerned with timezones.

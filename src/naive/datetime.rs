@@ -1185,7 +1185,6 @@ impl Timelike for NaiveDateTime {
 ///
 /// Practically this also takes account of fractional seconds, so it is not recommended.
 /// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
-#[cfg_attr(feature = "cargo-clippy", allow(derive_hash_xor_eq))]
 impl hash::Hash for NaiveDateTime {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.date.hash(state);
