@@ -92,7 +92,7 @@ jobs:
   wasm:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -113,6 +113,7 @@ jobs:
 
       - name: Install wasm-pack
         run: |
+          export RUST_BACKTRACE=1
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           wasm-pack --version
 
