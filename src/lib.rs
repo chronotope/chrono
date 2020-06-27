@@ -396,20 +396,23 @@
 
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 
-// The explicit 'static lifetimes are still needed for rustc 1.13-16
-// backward compatibility, and this appeases clippy. If minimum rustc
-// becomes 1.17, should be able to remove this, those 'static lifetimes,
-// and use `static` in a lot of places `const` is used now.
-//
-// Similarly, redundant_field_names lints on not using the
-// field-init-shorthand, which was stabilized in rust 1.17.
-//
-// Changing trivially_copy_pass_by_ref would require an incompatible version
-// bump.
 #![cfg_attr(feature = "cargo-clippy", allow(
-    redundant_static_lifetime,
+    renamed_and_removed_lints,
+    // The explicit 'static lifetimes are still needed for rustc 1.13-16
+    // backward compatibility, and this appeases clippy. If minimum rustc
+    // becomes 1.17, should be able to remove this, those 'static lifetimes,
+    // and use `static` in a lot of places `const` is used now.
+    redundant_static_lifetimes,
+    // Similarly, redundant_field_names lints on not using the
+    // field-init-shorthand, which was stabilized in rust 1.17.
     redundant_field_names,
+    // Changing trivially_copy_pass_by_ref would require an incompatible version
+    // bump.
     trivially_copy_pass_by_ref,
+    try_err,
+    // Currently deprecated, we use the separate implementation to add docs
+    // warning that putting a time in a hash table is probably a bad idea
+    derive_hash_xor_eq,
 ))]
 
 #[cfg(feature = "alloc")]

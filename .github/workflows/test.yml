@@ -56,6 +56,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
       - name: Lint
         run: bash ci/lint.sh
       - name: Run ShellCheck
