@@ -157,6 +157,14 @@ impl TimeZone for Local {
         Date::from_utc(*utc, *midnight.offset())
     }
 
+    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
+        // Get the offset from the js runtime
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        DateTime::from_utc(*utc, offset)
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         let timespec = datetime_to_timespec(utc, false);
 

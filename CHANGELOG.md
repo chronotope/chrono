@@ -25,6 +25,8 @@ Versions with only mechanical changes will be omitted from the following list.
 
 * serde modules do a better job with `Option` types (#417 @mwkroening and #429
   @fx-kirin)
+* Use js runtime when using wasmbind to get the local offset (#412
+  @quodlibetor)
 
 ## 0.4.11
 
