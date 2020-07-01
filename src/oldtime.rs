@@ -136,19 +136,6 @@ impl Duration {
         Duration { secs: secs, nanos: nanos as i32 }
     }
 
-    /// Makes a new `Duration` with the given number of seconds and nanoseconds.
-    ///
-    /// `nanos` in excess of `999_999_999` are carried over into seconds.
-    #[inline]
-    pub fn seconds_nanos(secs: i64, nanos: i32) -> Duration {
-        let (secs_from_nanos, nanos) = div_mod_floor_64(nanos.into(), NANOS_PER_SEC as i64);
-        let d = Duration { secs: secs + secs_from_nanos, nanos: nanos as i32 };
-        if d < MIN || d > MAX {
-            panic!("Duration::seconds out of bounds");
-        }
-        d
-    }
-
     /// Returns the total number of whole weeks in the duration.
     #[inline]
     pub fn num_weeks(&self) -> i64 {
@@ -663,10 +650,6 @@ mod tests {
     fn test_to_std() {
         assert_eq!(Duration::seconds(1).to_std(), Ok(StdDuration::new(1, 0)));
         assert_eq!(Duration::seconds(86401).to_std(), Ok(StdDuration::new(86401, 0)));
-        assert_eq!(
-            Duration::seconds_nanos(86401, 86401).to_std(),
-            Ok(StdDuration::new(86401, 86401))
-        );
         assert_eq!(Duration::milliseconds(123).to_std(), Ok(StdDuration::new(0, 123000000)));
         assert_eq!(Duration::milliseconds(123765).to_std(), Ok(StdDuration::new(123, 765000000)));
         assert_eq!(Duration::nanoseconds(777).to_std(), Ok(StdDuration::new(0, 777)));
