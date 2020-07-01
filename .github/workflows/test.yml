@@ -3,8 +3,10 @@ name: test
 on:
   push:
     branches: [master]
+    paths: '**.rs'
   pull_request:
     branches: [master]
+    paths: '**.rs'
 
 jobs:
   test:
@@ -50,23 +52,6 @@ jobs:
         env:
           RUST_VERSION: ${{ matrix.rust_version }}
           EXHAUSTIVE_TZ: ${{ matrix.exhaustive_tz }}
-
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - name: Lint
-        run: bash ci/lint.sh
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
-        with:
-          check_together: 'y'
 
   no_std:
     strategy:
