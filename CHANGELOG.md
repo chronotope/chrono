@@ -12,8 +12,6 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ### New Methods and impls
 
-* `Duration::seconds_nanos` to construct a duration when you have both seconds
-  and nanoseconds (#426 @sploiselle).
 * `Duration::abs` to ensure that a duration is just a magnitude (#418 @abreis).
 
 ### Compatibility improvements
