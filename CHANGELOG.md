@@ -8,7 +8,7 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## 0.4.12 (unreleased)
+## 0.4.12
 
 ### New Methods and impls
 
@@ -25,6 +25,11 @@ Versions with only mechanical changes will be omitted from the following list.
   @fx-kirin)
 * Use js runtime when using wasmbind to get the local offset (#412
   @quodlibetor)
+
+### Internal Improvements
+
+* Migrate to github actions from travis-ci, make the overall CI experience more comprehensible,
+  significantly faster and more correct (#439 @quodlibetor)
 
 ## 0.4.11
 
