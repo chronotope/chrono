@@ -10,6 +10,9 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.13 (unreleased)
 
+### Features
+
+* Add `DurationRound` trait that allows rounding and truncating by `Duration` (@robyoung)
 
 ## 0.4.12
 
