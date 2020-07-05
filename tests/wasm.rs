@@ -35,4 +35,13 @@ mod test {
             local.offset(),
         );
     }
+
+    #[wasm_bindgen_test]
+    fn from_is_exact() {
+        let now = js_sys::Date::new_0();
+
+        let dt = DateTime::<Utc>::from(now.clone());
+
+        assert_eq!(now.get_time() as i64, dt.timestamp_millis());
+    }
 }
