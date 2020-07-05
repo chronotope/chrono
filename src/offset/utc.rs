@@ -54,11 +54,7 @@ impl Utc {
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
-        let millisecs_since_unix_epoch: u64 = now.get_time() as u64;
-        let secs = millisecs_since_unix_epoch / 1000;
-        let nanos = 1_000_000 * (millisecs_since_unix_epoch - 1000 * secs);
-        let naive = NaiveDateTime::from_timestamp(secs as i64, nanos as u32);
-        DateTime::from_utc(naive, Utc)
+        DateTime::<Utc>::from(now)
     }
 }
 

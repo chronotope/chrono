@@ -91,9 +91,8 @@ test_wasm() {
 
 test_wasm_simple() {
     now=$(date +%s)
-    for tz in "${TEST_TZS[@]}"; do
-        runt env TZ="$tz" NOW="$now" wasm-pack test --node -- --features wasmbind
-    done
+    tz=$(date +%z)
+    runt env TZ="$tz" NOW="$now" wasm-pack test --node -- --features wasmbind
 }
 
 main "$@"

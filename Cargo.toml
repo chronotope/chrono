@@ -52,7 +52,7 @@ criterion = { version = "0.3" }
 doc-comment = { version = "0.3" }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
-wasm-bindgen-test = "0.2"
+wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
 features = ["serde"]
