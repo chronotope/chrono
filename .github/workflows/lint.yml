@@ -20,6 +20,6 @@ jobs:
       - name: Lint
         run: bash ci/lint.sh
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@master
+        uses: ludeeus/action-shellcheck@0.3.0
         with:
           check_together: 'y'
