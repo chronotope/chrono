@@ -459,7 +459,7 @@ pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 pub use offset::Local;
 #[doc(no_inline)]
 pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
-pub use round::SubsecRound;
+pub use round::{DurationRound, RoundingError, SubsecRound};
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
