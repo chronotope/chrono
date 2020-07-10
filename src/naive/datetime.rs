@@ -15,6 +15,8 @@ use div::div_mod_floor;
 use format::DelayedFormat;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item, Numeric, Pad};
+use naive::date::{MAX_DATE, MIN_DATE};
+use naive::time::{MAX_TIME, MIN_TIME};
 use naive::{IsoWeek, NaiveDate, NaiveTime};
 use {Datelike, Timelike, Weekday};
 
@@ -25,6 +27,11 @@ use {Datelike, Timelike, Weekday};
 /// an alternative returning `Option` or `Result`. Thus we need some early bound to avoid
 /// touching that call when we are already sure that it WILL overflow...
 const MAX_SECS_BITS: usize = 44;
+
+/// The minimum possible `NaiveDateTime`.
+pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime { date: MIN_DATE, time: MIN_TIME };
+/// The maximum possible `NaiveDateTime`.
+pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MAX_TIME };
 
 /// ISO 8601 combined date and time without timezone.
 ///
