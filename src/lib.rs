@@ -450,7 +450,7 @@ pub use oldtime::Duration;
 pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
-pub use datetime::{DateTime, SecondsFormat};
+pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 pub use format::{ParseError, ParseResult};
 #[doc(no_inline)]
 pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
@@ -511,7 +511,7 @@ pub mod naive {
     #[cfg(feature = "rustc-serialize")]
     #[allow(deprecated)]
     pub use self::datetime::rustc_serialize::TsSeconds;
-    pub use self::datetime::NaiveDateTime;
+    pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
     pub use self::isoweek::IsoWeek;
     pub use self::time::NaiveTime;
 

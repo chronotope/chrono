@@ -10,6 +10,10 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.14 (unreleased)
 
+## Improvements
+
+* Added MIN and MAX values for `NaiveTime`, `NaiveDateTime` and `DateTime<Utc>`.
+
 
 ## 0.4.13
 

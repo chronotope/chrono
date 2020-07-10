@@ -21,7 +21,7 @@ use core::borrow::Borrow;
 use format::DelayedFormat;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
-use naive::{IsoWeek, NaiveDateTime, NaiveTime};
+use naive::{self, IsoWeek, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use offset::Local;
 use offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -69,6 +69,11 @@ pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
 }
+
+/// The minimum possilbe `DateTime<Utc>`.
+pub const MIN_DATETIME: DateTime<Utc> = DateTime { datetime: naive::MIN_DATETIME, offset: Utc };
+/// The maximum possible `DateTime<Utc>`.
+pub const MAX_DATETIME: DateTime<Utc> = DateTime { datetime: naive::MAX_DATETIME, offset: Utc };
 
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
