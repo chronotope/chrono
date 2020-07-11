@@ -439,6 +439,7 @@ extern crate js_sys;
 extern crate test;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate wasm_bindgen;
+extern crate pure_rust_locales;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
@@ -451,7 +452,7 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
-pub use format::{ParseError, ParseResult};
+pub use format::{ParseError, ParseResult, FormatError, FormatResult};
 #[doc(no_inline)]
 pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]

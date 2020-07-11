@@ -10,6 +10,8 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.14 (unreleased)
 
+* Added locales. All format functions can now use locales.
+
 ## Improvements
 
 * Added MIN and MAX values for `NaiveTime`, `NaiveDateTime` and `DateTime<Utc>`.

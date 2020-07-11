@@ -38,6 +38,8 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
+mod locales;
+
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
@@ -378,6 +380,55 @@ const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
 const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
+/// An error from a "format" function.
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub struct FormatError(FormatErrorKind);
+
+/// The category of format error.
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+enum FormatErrorKind {
+    /// The locale is unknown or not available.
+    #[cfg(feature = "locales")]
+    UnknownLocale,
+
+    /// Format error.
+    Format,
+
+    /// Insufficient arguments for given format.
+    InsufficientArguments,
+
+    /// Item error.
+    Item,
+}
+
+/// Same as `Result<T, FormatError>`.
+pub type FormatResult<T> = Result<T, FormatError>;
+
+impl fmt::Display for FormatError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            FormatErrorKind::UnknownLocale => write!(f, "the locale is unknown or not available"),
+            FormatErrorKind::Format => write!(f, "{}", fmt::Error),
+            FormatErrorKind::InsufficientArguments => write!(f, "insufficient arguments for given format"),
+            FormatErrorKind::Item => write!(f, "item error"),
+        }
+    }
+}
+
+#[cfg(any(feature = "std", test))]
+impl Error for FormatError {
+    #[allow(deprecated)]
+    fn description(&self) -> &str {
+        "format error"
+    }
+}
+
+impl From<fmt::Error> for FormatError {
+    fn from(_err: fmt::Error) -> Self {
+        FormatError(FormatErrorKind::Format)
+    }
+}
+
 /// Formats single formatting item
 #[cfg(any(feature = "alloc", feature = "std", test))]
 pub fn format_item<'a>(
@@ -386,10 +437,12 @@ pub fn format_item<'a>(
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'a>,
-) -> fmt::Result {
+    locale: &str,
+) -> FormatResult<()> {
     let mut result = String::new();
-    format_inner(&mut result, date, time, off, item)?;
-    w.pad(&result)
+    format_inner(&mut result, date, time, off, item, locale)?;
+    w.pad(&result)?;
+    Ok(())
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
@@ -399,27 +452,13 @@ fn format_inner<'a>(
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'a>,
-) -> fmt::Result {
+    locale: &str,
+) -> FormatResult<()> {
     // full and abbreviated month and weekday names
-    static SHORT_MONTHS: [&'static str; 12] =
-        ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    static LONG_MONTHS: [&'static str; 12] = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
-    static SHORT_WEEKDAYS: [&'static str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    static LONG_WEEKDAYS: [&'static str; 7] =
-        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    let short_months = locales::short_months(locale)?;
+    let long_months = locales::long_months(locale)?;
+    let short_weekdays = locales::short_weekdays(locale)?;
+    let long_weekdays = locales::long_weekdays(locale)?;
 
     use core::fmt::Write;
 
@@ -489,7 +528,7 @@ fn format_inner<'a>(
                     }
                 }?
             } else {
-                return Err(fmt::Error); // insufficient arguments for given format
+                return Err(FormatError(FormatErrorKind::InsufficientArguments));
             }
         }
 
@@ -521,20 +560,20 @@ fn format_inner<'a>(
             let ret =
                 match *spec {
                     ShortMonthName => date.map(|d| {
-                        result.push_str(SHORT_MONTHS[d.month0() as usize]);
+                        result.push_str(short_months[d.month0() as usize]);
                         Ok(())
                     }),
                     LongMonthName => date.map(|d| {
-                        result.push_str(LONG_MONTHS[d.month0() as usize]);
+                        result.push_str(long_months[d.month0() as usize]);
                         Ok(())
                     }),
                     ShortWeekdayName => date.map(|d| {
                         result
-                            .push_str(SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize]);
+                            .push_str(short_weekdays[d.weekday().num_days_from_sunday() as usize]);
                         Ok(())
                     }),
                     LongWeekdayName => date.map(|d| {
-                        result.push_str(LONG_WEEKDAYS[d.weekday().num_days_from_monday() as usize]);
+                        result.push_str(long_weekdays[d.weekday().num_days_from_sunday() as usize]);
                         Ok(())
                     }),
                     LowerAmPm => time.map(|t| {
@@ -611,9 +650,9 @@ fn format_inner<'a>(
                             write!(
                                 result,
                                 "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
-                                SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                                short_weekdays[d.weekday().num_days_from_sunday() as usize],
                                 d.day(),
-                                SHORT_MONTHS[d.month0() as usize],
+                                short_months[d.month0() as usize],
                                 d.year(),
                                 t.hour(),
                                 t.minute(),
@@ -640,11 +679,11 @@ fn format_inner<'a>(
 
             match ret {
                 Some(ret) => ret?,
-                None => return Err(fmt::Error), // insufficient arguments for given format
+                None => return Err(FormatError(FormatErrorKind::InsufficientArguments)),
             }
         }
 
-        Item::Error => return Err(fmt::Error),
+        Item::Error => return Err(FormatError(FormatErrorKind::Item)),
     }
     Ok(())
 }
@@ -658,16 +697,18 @@ pub fn format<'a, I, B>(
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     items: I,
-) -> fmt::Result
+    locale: &str,
+) -> FormatResult<()>
 where
     I: Iterator<Item = B> + Clone,
     B: Borrow<Item<'a>>,
 {
     let mut result = String::new();
     for item in items {
-        format_inner(&mut result, date, time, off, item.borrow())?;
+        format_inner(&mut result, date, time, off, item.borrow(), locale)?;
     }
-    w.pad(&result)
+    w.pad(&result)?;
+    Ok(())
 }
 
 mod parsed;
@@ -718,7 +759,8 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
+        format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone(), "en_US")
+            .map_err(|_| fmt::Error)
     }
 }
 
