@@ -2,10 +2,10 @@ name: test
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
     paths: '**.rs'
   pull_request:
-    branches: [master]
+    branches: [main, master]
     paths: '**.rs'
 
 jobs:

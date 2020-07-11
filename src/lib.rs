@@ -20,7 +20,7 @@
 //! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 //!
 //! Any significant changes to Chrono are documented in
-//! the [`CHANGELOG.md`](https://github.com/chronotope/chrono/blob/master/CHANGELOG.md) file.
+//! the [`CHANGELOG.md`](https://github.com/chronotope/chrono/blob/main/CHANGELOG.md) file.
 //!
 //! ## Usage
 //!
