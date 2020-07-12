@@ -409,7 +409,9 @@ impl fmt::Display for FormatError {
         match self.0 {
             FormatErrorKind::UnknownLocale => write!(f, "the locale is unknown or not available"),
             FormatErrorKind::Format => write!(f, "{}", fmt::Error),
-            FormatErrorKind::InsufficientArguments => write!(f, "insufficient arguments for given format"),
+            FormatErrorKind::InsufficientArguments => {
+                write!(f, "insufficient arguments for given format")
+            }
             FormatErrorKind::Item => write!(f, "item error"),
         }
     }
@@ -759,8 +761,15 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone(), "en_US")
-            .map_err(|_| fmt::Error)
+        format(
+            f,
+            self.date.as_ref(),
+            self.time.as_ref(),
+            self.off.as_ref(),
+            self.items.clone(),
+            "en_US",
+        )
+        .map_err(|_| fmt::Error)
     }
 }
 

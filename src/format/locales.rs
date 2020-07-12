@@ -1,6 +1,6 @@
 #[cfg(feature = "locales")]
 mod with_locales {
-    use super::super::{FormatResult, FormatError, FormatErrorKind};
+    use super::super::{FormatError, FormatErrorKind, FormatResult};
 
     macro_rules! locale_match {
         ($locale:expr => $($item:ident)::+) => {{
