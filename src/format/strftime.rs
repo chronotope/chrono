@@ -519,7 +519,7 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%%").to_string(), "%");
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "locales", test))]
 #[test]
 fn test_strftime_docs_localized() {
     use {FixedOffset, TimeZone, Timelike};

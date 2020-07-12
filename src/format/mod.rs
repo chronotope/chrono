@@ -38,7 +38,7 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
-#[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+#[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
 mod locales;
 
 pub use self::parse::parse;
@@ -391,7 +391,7 @@ pub struct FormatError(FormatErrorKind);
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 enum FormatErrorKind {
     /// The locale is unknown or not available.
-    #[cfg(any(feature = "locales", test))]
+    #[cfg(feature = "locales")]
     UnknownLocale,
 
     /// Format error.
@@ -412,7 +412,7 @@ pub type FormatResult<T> = Result<T, FormatError>;
 impl fmt::Display for FormatError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
-            #[cfg(any(feature = "locales", test))]
+            #[cfg(feature = "locales")]
             FormatErrorKind::UnknownLocale => write!(f, "the locale is unknown or not available"),
             FormatErrorKind::Format => write!(f, "{}", fmt::Error),
             FormatErrorKind::InsufficientArguments => {
@@ -463,18 +463,18 @@ fn format_inner<'a>(
     #[allow(unused_variables)] locale: &str,
 ) -> FormatResult<()> {
     // full and abbreviated month and weekday names
-    #[cfg(any(feature = "locales", test))]
+    #[cfg(feature = "locales")]
     let short_months = locales::short_months(locale)?;
-    #[cfg(any(feature = "locales", test))]
+    #[cfg(feature = "locales")]
     let long_months = locales::long_months(locale)?;
-    #[cfg(any(feature = "locales", test))]
+    #[cfg(feature = "locales")]
     let short_weekdays = locales::short_weekdays(locale)?;
-    #[cfg(any(feature = "locales", test))]
+    #[cfg(feature = "locales")]
     let long_weekdays = locales::long_weekdays(locale)?;
-    #[cfg(not(any(feature = "locales", test)))]
+    #[cfg(not(feature = "locales"))]
     let short_months =
         &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    #[cfg(not(any(feature = "locales", test)))]
+    #[cfg(not(feature = "locales"))]
     let long_months = &[
         "January",
         "February",
@@ -489,9 +489,9 @@ fn format_inner<'a>(
         "November",
         "December",
     ];
-    #[cfg(not(any(feature = "locales", test)))]
+    #[cfg(not(feature = "locales"))]
     let short_weekdays = &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    #[cfg(not(any(feature = "locales", test)))]
+    #[cfg(not(feature = "locales"))]
     let long_weekdays =
         &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
