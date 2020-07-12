@@ -6,7 +6,7 @@ set -euo pipefail
 source "${BASH_SOURCE[0]%/*}/_shlib.sh"
 
 TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
-FEATURES=(std serde clock "alloc serde")
+FEATURES=(std serde clock "alloc serde" locales)
 RUST_113_FEATURES=(rustc-serialize serde)
 
 main() {

@@ -35,19 +35,32 @@ mod without_locales {
     use super::super::FormatResult;
 
     pub(crate) fn short_months(_locale: &str) -> FormatResult<&[&'static str]> {
-        Ok(pure_rust_locales::en_US::LC_TIME::ABMON)
+        Ok(&["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])
     }
 
     pub(crate) fn long_months(_locale: &str) -> FormatResult<&[&'static str]> {
-        Ok(pure_rust_locales::en_US::LC_TIME::MON)
+        Ok(&[
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ])
     }
 
     pub(crate) fn short_weekdays(_locale: &str) -> FormatResult<&[&'static str]> {
-        Ok(pure_rust_locales::en_US::LC_TIME::ABDAY)
+        Ok(&["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
     }
 
     pub(crate) fn long_weekdays(_locale: &str) -> FormatResult<&[&'static str]> {
-        Ok(pure_rust_locales::en_US::LC_TIME::DAY)
+        Ok(&["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"])
     }
 }
 
