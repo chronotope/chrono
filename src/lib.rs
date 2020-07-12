@@ -452,7 +452,9 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
-pub use format::{FormatError, FormatResult, ParseError, ParseResult};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+pub use format::{FormatError, FormatResult};
+pub use format::{ParseError, ParseResult};
 #[doc(no_inline)]
 pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]

@@ -38,6 +38,7 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 mod locales;
 
 pub use self::parse::parse;
@@ -382,9 +383,11 @@ const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 /// An error from a "format" function.
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[cfg(any(feature = "alloc", feature = "std", test))]
 pub struct FormatError(FormatErrorKind);
 
 /// The category of format error.
+#[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 enum FormatErrorKind {
     /// The locale is unknown or not available.
@@ -402,11 +405,14 @@ enum FormatErrorKind {
 }
 
 /// Same as `Result<T, FormatError>`.
+#[cfg(any(feature = "alloc", feature = "std", test))]
 pub type FormatResult<T> = Result<T, FormatError>;
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 impl fmt::Display for FormatError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
+            #[cfg(feature = "locales")]
             FormatErrorKind::UnknownLocale => write!(f, "the locale is unknown or not available"),
             FormatErrorKind::Format => write!(f, "{}", fmt::Error),
             FormatErrorKind::InsufficientArguments => {
@@ -425,6 +431,7 @@ impl Error for FormatError {
     }
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 impl From<fmt::Error> for FormatError {
     fn from(_err: fmt::Error) -> Self {
         FormatError(FormatErrorKind::Format)
