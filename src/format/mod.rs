@@ -249,6 +249,9 @@ pub enum FixedExt {
     ///
     /// Prints only first letter.
     OneLetterUpperAmPm,
+    // Do not match against this.
+    #[doc(hidden)]
+    __DoNotMatch,
 }
 
 /// An opaque type representing fixed-format item types for internal uses only.
@@ -652,6 +655,7 @@ pub fn format_item<'a>(
                         result.push_str(if t.hour12().0 {"P"} else {"A"});
                         Ok(())
                     }),
+                _ => return Err(fmt::Error),
             };
 
             match ret {

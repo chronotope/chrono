@@ -395,6 +395,8 @@ where I: Iterator<Item=B>, B: Borrow<Item<'a>> {
                         parsed.set_ampm(ampm).map_err(|e| (s, e))?;
                         s = &s[1..];
                     }
+
+                    _ => return Err((s, INVALID)),
                 }
             }
 
