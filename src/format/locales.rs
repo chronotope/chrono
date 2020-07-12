@@ -3,6 +3,7 @@ use super::{FormatError, FormatErrorKind, FormatResult};
 macro_rules! locale_match {
     ($locale:expr => $($item:ident)::+) => {{
         match $locale {
+            "POSIX" => Ok(pure_rust_locales::POSIX::$($item)::+),
             "en_US" => Ok(pure_rust_locales::en_US::$($item)::+),
             "fr_BE" => Ok(pure_rust_locales::fr_BE::$($item)::+),
             // TODO: all the locales are available

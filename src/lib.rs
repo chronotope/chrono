@@ -435,7 +435,7 @@ extern crate serde as serdelib;
 extern crate doc_comment;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate js_sys;
-#[cfg(feature = "locales")]
+#[cfg(any(feature = "locales", test))]
 extern crate pure_rust_locales;
 #[cfg(feature = "bench")]
 extern crate test;

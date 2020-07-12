@@ -520,7 +520,6 @@ fn test_strftime_docs() {
 }
 
 #[cfg(test)]
-#[cfg(feature = "locales")] // TODO: remove
 #[test]
 fn test_strftime_docs_localized() {
     use {FixedOffset, TimeZone, Timelike};
