@@ -460,8 +460,10 @@ fn format_inner<'a>(
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'a>,
-    #[allow(unused_variables)] locale: &str,
+    _locale: &str,
 ) -> FormatResult<()> {
+    #[cfg(feature = "locales")]
+    let locale = _locale;
     // full and abbreviated month and weekday names
     #[cfg(feature = "locales")]
     let short_months = locales::short_months(locale)?;
