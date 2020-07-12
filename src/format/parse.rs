@@ -455,6 +455,8 @@ where
                         parsed.set_ampm(ampm).map_err(|e| (s, e))?;
                         s = &s[1..];
                     }
+
+                    _ => return Err((s, INVALID)),
                 }
             }
 
