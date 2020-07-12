@@ -38,7 +38,7 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 mod locales;
 
 pub use self::parse::parse;
@@ -464,10 +464,37 @@ fn format_inner<'a>(
     locale: &str,
 ) -> FormatResult<()> {
     // full and abbreviated month and weekday names
+    #[cfg(feature = "locales")]
     let short_months = locales::short_months(locale)?;
+    #[cfg(feature = "locales")]
     let long_months = locales::long_months(locale)?;
+    #[cfg(feature = "locales")]
     let short_weekdays = locales::short_weekdays(locale)?;
+    #[cfg(feature = "locales")]
     let long_weekdays = locales::long_weekdays(locale)?;
+    #[cfg(not(feature = "locales"))]
+    let short_months =
+        &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    #[cfg(not(feature = "locales"))]
+    let long_months = &[
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
+    #[cfg(not(feature = "locales"))]
+    let short_weekdays = &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    #[cfg(not(feature = "locales"))]
+    let long_weekdays =
+        &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
     use core::fmt::Write;
 
