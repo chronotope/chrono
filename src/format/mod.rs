@@ -785,6 +785,57 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
     }
 }
 
+/// A *temporary* object which can be used as an argument to `format!` or others.
+/// This is normally constructed via `format` methods of each date and time type.
+#[cfg(any(feature = "alloc", feature = "std", test))]
+#[derive(Debug)]
+pub struct DelayedFormatLocalized<I> {
+    /// The date view, if any.
+    date: Option<NaiveDate>,
+    /// The time view, if any.
+    time: Option<NaiveTime>,
+    /// The name and local-to-UTC difference for the offset (timezone), if any.
+    off: Option<(String, FixedOffset)>,
+    /// An iterator returning formatting items.
+    items: I,
+}
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocalized<I> {
+    /// Makes a new `DelayedFormat` value out of local date and time.
+    pub fn new(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        items: I,
+    ) -> DelayedFormatLocalized<I> {
+        DelayedFormatLocalized { date: date, time: time, off: None, items: items }
+    }
+
+    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
+    pub fn new_with_offset<Off>(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        offset: &Off,
+        items: I,
+    ) -> DelayedFormatLocalized<I>
+    where
+        Off: Offset + fmt::Display,
+    {
+        let name_and_diff = (offset.to_string(), offset.fix());
+        DelayedFormatLocalized { date: date, time: time, off: Some(name_and_diff), items: items }
+    }
+}
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display
+    for DelayedFormatLocalized<I>
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
+            .map_err(|_| fmt::Error)
+    }
+}
+
 // this implementation is here only because we need some private code from `scan`
 
 /// Parsing a `str` into a `Weekday` uses the format [`%W`](./format/strftime/index.html).

@@ -10,6 +10,8 @@ use core::ops::{Add, Sub};
 use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+use format::DelayedFormatLocalized;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
 use naive::{self, IsoWeek, NaiveDate, NaiveTime};
@@ -294,6 +296,26 @@ where
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Formats the date with the specified formatting items.
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[inline]
+    pub fn format_localized_with_items<'a, I, B>(&self, items: I) -> DelayedFormatLocalized<I>
+    where
+        I: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        DelayedFormatLocalized::new_with_offset(Some(self.naive_local()), None, &self.offset, items)
+    }
+
+    /// Formats the date with the specified format string.
+    /// See the [`format::strftime` module](./format/strftime/index.html)
+    /// on the supported escape sequences.
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[inline]
+    pub fn format_localized<'a>(&self, fmt: &'a str) -> DelayedFormatLocalized<StrftimeItems<'a>> {
+        self.format_localized_with_items(StrftimeItems::new(fmt))
     }
 }
 
