@@ -20,7 +20,7 @@ use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
 #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
-use format::DelayedFormatLocalized;
+use format::{DelayedFormatLocalized, Locale};
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
 use naive::{self, IsoWeek, NaiveDateTime, NaiveTime};
@@ -499,11 +499,11 @@ where
     /// Formats the combined date and time with the specified formatting items and locale.
     #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     #[inline]
-    pub fn format_localized_with_items<'a, 'b, I, B>(
+    pub fn format_localized_with_items<'a, I, B>(
         &self,
         items: I,
-        locale: &'b str,
-    ) -> DelayedFormatLocalized<'b, I>
+        locale: Locale,
+    ) -> DelayedFormatLocalized<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -523,11 +523,11 @@ where
     /// on the supported escape sequences.
     #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     #[inline]
-    pub fn format_localized<'a, 'b>(
+    pub fn format_localized<'a>(
         &self,
         fmt: &'a str,
-        locale: &'b str,
-    ) -> DelayedFormatLocalized<'b, StrftimeItems<'a>> {
+        locale: Locale,
+    ) -> DelayedFormatLocalized<StrftimeItems<'a>> {
         self.format_localized_with_items(StrftimeItems::new(fmt), locale)
     }
 }
