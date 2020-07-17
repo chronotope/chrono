@@ -19,9 +19,9 @@ use std::string::ToString;
 use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
+use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 use format::{DelayedFormatLocalized, Locale};
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
 use naive::{self, IsoWeek, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]

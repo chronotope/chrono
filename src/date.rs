@@ -10,10 +10,10 @@ use core::ops::{Add, Sub};
 use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
-use format::{DelayedFormatLocalized, Locale};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+use format::{DelayedFormatLocalized, Locale};
 use naive::{self, IsoWeek, NaiveDate, NaiveTime};
 use offset::{TimeZone, Utc};
 use DateTime;

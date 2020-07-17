@@ -522,8 +522,8 @@ fn test_strftime_docs() {
 #[cfg(all(feature = "locales", test))]
 #[test]
 fn test_strftime_docs_localized() {
-    use {FixedOffset, TimeZone, Timelike};
     use pure_rust_locales::Locale;
+    use {FixedOffset, TimeZone, Timelike};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 
@@ -576,7 +576,10 @@ fn test_strftime_docs_localized() {
     assert_eq!(dt.format_localized("%f", Locale::POSIX).to_string(), "026490708");
     assert_eq!(dt.format_localized("%.f", Locale::POSIX).to_string(), ".026490708");
     assert_eq!(
-        dt.with_nanosecond(1_026_490_000).unwrap().format_localized("%.f", Locale::POSIX).to_string(),
+        dt.with_nanosecond(1_026_490_000)
+            .unwrap()
+            .format_localized("%.f", Locale::POSIX)
+            .to_string(),
         ".026490"
     );
     assert_eq!(dt.format_localized("%.3f", Locale::POSIX).to_string(), ".026");
@@ -602,7 +605,10 @@ fn test_strftime_docs_localized() {
         "2001-07-08T00:34:60.026490708+09:30"
     );
     assert_eq!(
-        dt.with_nanosecond(1_026_490_000).unwrap().format_localized("%+", Locale::POSIX).to_string(),
+        dt.with_nanosecond(1_026_490_000)
+            .unwrap()
+            .format_localized("%+", Locale::POSIX)
+            .to_string(),
         "2001-07-08T00:34:60.026490+09:30"
     );
     assert_eq!(dt.format_localized("%s", Locale::POSIX).to_string(), "994518299");

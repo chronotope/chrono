@@ -771,13 +771,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocali
         items: I,
         locale: Locale,
     ) -> DelayedFormatLocalized<I> {
-        DelayedFormatLocalized {
-            date: date,
-            time: time,
-            off: None,
-            items: items,
-            locale: locale,
-        }
+        DelayedFormatLocalized { date: date, time: time, off: None, items: items, locale: locale }
     }
 
     /// Makes a new `DelayedFormatLocalized` value out of local date and time and UTC offset.
