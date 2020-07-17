@@ -804,7 +804,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
 /// This is normally constructed via `format` methods of each date and time type.
 #[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug)]
-pub struct DelayedFormatLocalized<I> {
+pub struct DelayedFormatLocalized<'a, I> {
     /// The date view, if any.
     date: Option<NaiveDate>,
     /// The time view, if any.
@@ -814,19 +814,19 @@ pub struct DelayedFormatLocalized<I> {
     /// An iterator returning formatting items.
     items: I,
     /// Locale used for text.
-    locale: String,
+    locale: &'a str,
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocalized<I> {
+impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocalized<'b, I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     pub fn new(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         items: I,
-        locale: impl Into<String>,
-    ) -> DelayedFormatLocalized<I> {
-        DelayedFormatLocalized { date: date, time: time, off: None, items: items, locale: locale.into() }
+        locale: &'b str,
+    ) -> DelayedFormatLocalized<'b, I> {
+        DelayedFormatLocalized { date: date, time: time, off: None, items: items, locale: locale.as_ref() }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
@@ -835,22 +835,22 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocali
         time: Option<NaiveTime>,
         offset: &Off,
         items: I,
-        locale: impl Into<String>,
-    ) -> DelayedFormatLocalized<I>
+        locale: &'b str,
+    ) -> DelayedFormatLocalized<'b, I>
     where
         Off: Offset + fmt::Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormatLocalized { date: date, time: time, off: Some(name_and_diff), items: items, locale: locale.into() }
+        DelayedFormatLocalized { date: date, time: time, off: Some(name_and_diff), items: items, locale: locale.as_ref() }
     }
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display
-    for DelayedFormatLocalized<I>
+impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display
+    for DelayedFormatLocalized<'b, I>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
+        format_localized(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone(), self.locale)
             .map_err(|_| fmt::Error)
     }
 }
