@@ -301,12 +301,12 @@ where
     /// Formats the date with the specified formatting items.
     #[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
     #[inline]
-    pub fn format_localized_with_items<'a, I, B>(&self, items: I) -> DelayedFormatLocalized<I>
+    pub fn format_localized_with_items<'a, I, B>(&self, items: I, locale: impl Into<String>) -> DelayedFormatLocalized<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormatLocalized::new_with_offset(Some(self.naive_local()), None, &self.offset, items)
+        DelayedFormatLocalized::new_with_offset(Some(self.naive_local()), None, &self.offset, items, locale)
     }
 
     /// Formats the date with the specified format string.
@@ -314,8 +314,8 @@ where
     /// on the supported escape sequences.
     #[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
     #[inline]
-    pub fn format_localized<'a>(&self, fmt: &'a str) -> DelayedFormatLocalized<StrftimeItems<'a>> {
-        self.format_localized_with_items(StrftimeItems::new(fmt))
+    pub fn format_localized<'a>(&self, fmt: &'a str, locale: impl Into<String>) -> DelayedFormatLocalized<StrftimeItems<'a>> {
+        self.format_localized_with_items(StrftimeItems::new(fmt), locale)
     }
 }
 

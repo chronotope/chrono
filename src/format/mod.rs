@@ -813,6 +813,8 @@ pub struct DelayedFormatLocalized<I> {
     off: Option<(String, FixedOffset)>,
     /// An iterator returning formatting items.
     items: I,
+    /// Locale used for text.
+    locale: String,
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
@@ -822,8 +824,9 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocali
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         items: I,
+        locale: impl Into<String>,
     ) -> DelayedFormatLocalized<I> {
-        DelayedFormatLocalized { date: date, time: time, off: None, items: items }
+        DelayedFormatLocalized { date: date, time: time, off: None, items: items, locale: locale.into() }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
@@ -832,12 +835,13 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocali
         time: Option<NaiveTime>,
         offset: &Off,
         items: I,
+        locale: impl Into<String>,
     ) -> DelayedFormatLocalized<I>
     where
         Off: Offset + fmt::Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormatLocalized { date: date, time: time, off: Some(name_and_diff), items: items }
+        DelayedFormatLocalized { date: date, time: time, off: Some(name_and_diff), items: items, locale: locale.into() }
     }
 }
 
