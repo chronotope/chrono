@@ -298,8 +298,8 @@ where
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
-    /// Formats the date with the specified formatting items.
-    #[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+    /// Formats the date with the specified formatting items and locale.
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     #[inline]
     pub fn format_localized_with_items<'a, 'b, I, B>(
         &self,
@@ -319,10 +319,10 @@ where
         )
     }
 
-    /// Formats the date with the specified format string.
+    /// Formats the date with the specified format string and locale.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
-    #[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     #[inline]
     pub fn format_localized<'a, 'b>(
         &self,
