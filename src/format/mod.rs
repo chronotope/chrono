@@ -802,7 +802,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 #[derive(Debug)]
 pub struct DelayedFormatLocalized<'a, I> {
     /// The date view, if any.
@@ -817,9 +817,9 @@ pub struct DelayedFormatLocalized<'a, I> {
     locale: &'a str,
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLocalized<'b, I> {
-    /// Makes a new `DelayedFormat` value out of local date and time.
+    /// Makes a new `DelayedFormatLocalized` value out of local date and time.
     pub fn new(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
@@ -835,7 +835,7 @@ impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLo
         }
     }
 
-    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
+    /// Makes a new `DelayedFormatLocalized` value out of local date and time and UTC offset.
     pub fn new_with_offset<Off>(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
@@ -857,7 +857,7 @@ impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLo
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display
     for DelayedFormatLocalized<'b, I>
 {
@@ -913,7 +913,7 @@ impl FromStr for Weekday {
 }
 
 /// Formats single formatting item
-#[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 pub fn format_item_localized<'a>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -930,7 +930,7 @@ pub fn format_item_localized<'a>(
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
-#[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
