@@ -19,7 +19,7 @@ use std::string::ToString;
 use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
-#[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 use format::DelayedFormatLocalized;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};

@@ -10,7 +10,7 @@ use core::ops::{Add, Sub};
 use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
-#[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
 use format::DelayedFormatLocalized;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
