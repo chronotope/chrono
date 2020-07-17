@@ -826,7 +826,13 @@ impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLo
         items: I,
         locale: &'b str,
     ) -> DelayedFormatLocalized<'b, I> {
-        DelayedFormatLocalized { date: date, time: time, off: None, items: items, locale: locale.as_ref() }
+        DelayedFormatLocalized {
+            date: date,
+            time: time,
+            off: None,
+            items: items,
+            locale: locale.as_ref(),
+        }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
@@ -841,7 +847,13 @@ impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormatLo
         Off: Offset + fmt::Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormatLocalized { date: date, time: time, off: Some(name_and_diff), items: items, locale: locale.as_ref() }
+        DelayedFormatLocalized {
+            date: date,
+            time: time,
+            off: Some(name_and_diff),
+            items: items,
+            locale: locale.as_ref(),
+        }
     }
 }
 
@@ -850,8 +862,15 @@ impl<'a, 'b, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display
     for DelayedFormatLocalized<'b, I>
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        format_localized(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone(), self.locale)
-            .map_err(|_| fmt::Error)
+        format_localized(
+            f,
+            self.date.as_ref(),
+            self.time.as_ref(),
+            self.off.as_ref(),
+            self.items.clone(),
+            self.locale,
+        )
+        .map_err(|_| fmt::Error)
     }
 }
 

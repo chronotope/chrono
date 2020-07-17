@@ -499,7 +499,11 @@ where
     /// Formats the combined date and time with the specified formatting items.
     #[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
     #[inline]
-    pub fn format_localized_with_items<'a, 'b, I, B>(&self, items: I, locale: &'b str) -> DelayedFormatLocalized<'b, I>
+    pub fn format_localized_with_items<'a, 'b, I, B>(
+        &self,
+        items: I,
+        locale: &'b str,
+    ) -> DelayedFormatLocalized<'b, I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -519,7 +523,11 @@ where
     /// on the supported escape sequences.
     #[cfg(any(all(feature = "locales", any(feature = "alloc", feature = "std")), test))]
     #[inline]
-    pub fn format_localized<'a, 'b>(&self, fmt: &'a str, locale: &'b str) -> DelayedFormatLocalized<'b, StrftimeItems<'a>> {
+    pub fn format_localized<'a, 'b>(
+        &self,
+        fmt: &'a str,
+        locale: &'b str,
+    ) -> DelayedFormatLocalized<'b, StrftimeItems<'a>> {
         self.format_localized_with_items(StrftimeItems::new(fmt), locale)
     }
 }

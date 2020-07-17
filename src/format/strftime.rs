@@ -536,7 +536,10 @@ fn test_strftime_docs_localized() {
     assert_eq!(dt.format_localized("%h", "POSIX").to_string(), "Jul");
     assert_eq!(dt.format_localized("%d", "POSIX").to_string(), "08");
     assert_eq!(dt.format_localized("%e", "POSIX").to_string(), " 8");
-    assert_eq!(dt.format_localized("%e", "POSIX").to_string(), dt.format_localized("%_d", "POSIX").to_string());
+    assert_eq!(
+        dt.format_localized("%e", "POSIX").to_string(),
+        dt.format_localized("%_d", "POSIX").to_string()
+    );
     assert_eq!(dt.format_localized("%a", "POSIX").to_string(), "Sun");
     assert_eq!(dt.format_localized("%A", "POSIX").to_string(), "Sunday");
     assert_eq!(dt.format_localized("%w", "POSIX").to_string(), "0");
@@ -555,10 +558,16 @@ fn test_strftime_docs_localized() {
     // time specifiers
     assert_eq!(dt.format_localized("%H", "POSIX").to_string(), "00");
     assert_eq!(dt.format_localized("%k", "POSIX").to_string(), " 0");
-    assert_eq!(dt.format_localized("%k", "POSIX").to_string(), dt.format_localized("%_H", "POSIX").to_string());
+    assert_eq!(
+        dt.format_localized("%k", "POSIX").to_string(),
+        dt.format_localized("%_H", "POSIX").to_string()
+    );
     assert_eq!(dt.format_localized("%I", "POSIX").to_string(), "12");
     assert_eq!(dt.format_localized("%l", "POSIX").to_string(), "12");
-    assert_eq!(dt.format_localized("%l", "POSIX").to_string(), dt.format_localized("%_I", "POSIX").to_string());
+    assert_eq!(
+        dt.format_localized("%l", "POSIX").to_string(),
+        dt.format_localized("%_I", "POSIX").to_string()
+    );
     assert_eq!(dt.format_localized("%P", "POSIX").to_string(), "am");
     assert_eq!(dt.format_localized("%p", "POSIX").to_string(), "AM");
     assert_eq!(dt.format_localized("%M", "POSIX").to_string(), "34");
@@ -587,7 +596,10 @@ fn test_strftime_docs_localized() {
 
     // date & time specifiers
     assert_eq!(dt.format_localized("%c", "POSIX").to_string(), "Sun Jul  8 00:34:60 2001");
-    assert_eq!(dt.format_localized("%+", "POSIX").to_string(), "2001-07-08T00:34:60.026490708+09:30");
+    assert_eq!(
+        dt.format_localized("%+", "POSIX").to_string(),
+        "2001-07-08T00:34:60.026490708+09:30"
+    );
     assert_eq!(
         dt.with_nanosecond(1_026_490_000).unwrap().format_localized("%+", "POSIX").to_string(),
         "2001-07-08T00:34:60.026490+09:30"
