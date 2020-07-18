@@ -693,8 +693,7 @@ where
     for item in items {
         format_inner(&mut result, date, time, off, item.borrow(), None)?;
     }
-    w.pad(&result)?;
-    Ok(())
+    w.pad(&result)
 }
 
 mod parsed;
