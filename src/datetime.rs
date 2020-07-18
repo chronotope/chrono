@@ -19,9 +19,9 @@ use std::string::ToString;
 use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
-use format::{DelayedFormatLocalized, Locale};
+use format::Locale;
+use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
 use naive::{self, IsoWeek, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -503,13 +503,13 @@ where
         &self,
         items: I,
         locale: Locale,
-    ) -> DelayedFormatLocalized<I>
+    ) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
         let local = self.naive_local();
-        DelayedFormatLocalized::new_with_offset(
+        DelayedFormat::new_with_offset_and_locale(
             Some(local.date()),
             Some(local.time()),
             &self.offset,
@@ -527,7 +527,7 @@ where
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormatLocalized<StrftimeItems<'a>> {
+    ) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_localized_with_items(StrftimeItems::new(fmt), locale)
     }
 }

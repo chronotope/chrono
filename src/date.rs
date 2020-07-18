@@ -10,10 +10,10 @@ use core::ops::{Add, Sub};
 use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+use format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
-use format::{DelayedFormatLocalized, Locale};
 use naive::{self, IsoWeek, NaiveDate, NaiveTime};
 use offset::{TimeZone, Utc};
 use DateTime;
@@ -305,12 +305,12 @@ where
         &self,
         items: I,
         locale: Locale,
-    ) -> DelayedFormatLocalized<I>
+    ) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormatLocalized::new_with_offset(
+        DelayedFormat::new_with_offset_and_locale(
             Some(self.naive_local()),
             None,
             &self.offset,
@@ -328,7 +328,7 @@ where
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormatLocalized<StrftimeItems<'a>> {
+    ) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_localized_with_items(StrftimeItems::new(fmt), locale)
     }
 }
