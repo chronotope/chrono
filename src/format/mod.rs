@@ -861,6 +861,5 @@ where
     for item in items {
         format_inner(&mut result, date, time, off, item.borrow(), Some(locale))?;
     }
-    w.pad(&result)?;
-    Ok(())
+    w.pad(&result)
 }
