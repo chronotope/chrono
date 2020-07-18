@@ -49,6 +49,7 @@ pub use pure_rust_locales::Locale;
 
 #[cfg(not(feature = "locales"))]
 #[allow(dead_code)]
+#[derive(Debug)]
 struct Locale;
 
 /// An uninhabited type used for `InternalNumeric` and `InternalFixed` below.
