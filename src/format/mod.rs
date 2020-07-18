@@ -839,8 +839,7 @@ pub fn format_item_localized<'a>(
 ) -> fmt::Result {
     let mut result = String::new();
     format_inner(&mut result, date, time, off, item, Some(locale))?;
-    w.pad(&result)?;
-    Ok(())
+    w.pad(&result)
 }
 
 /// Tries to format given arguments with given formatting items.
