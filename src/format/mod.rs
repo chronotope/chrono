@@ -39,7 +39,7 @@ use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
 #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
-mod locales;
+pub(crate) mod locales;
 
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
