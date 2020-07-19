@@ -796,6 +796,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[cfg(feature = "locales")]
         if let Some(locale) = self.locale {
             format_localized(
                 f,
@@ -808,6 +809,8 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
         } else {
             format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
         }
+        #[cfg(not(feature = "locales"))]
+        format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
     }
 }
 
