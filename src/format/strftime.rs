@@ -38,7 +38,7 @@ The following specifiers are available both to formatting and parsing.
 | `%j`  | `189`    | Day of the year (001--366), zero-padded to 3 digits.                       |
 |       |          |                                                                            |
 | `%D`  | `07/08/01`    | Month-day-year format. Same as `%m/%d/%y`.                            |
-| `%x`  | `07/08/01`    | Same as `%D`.                                                         |
+| `%x`  | `07/08/01`    | Locale's date representation (e.g., 12/31/99).                        |
 | `%F`  | `2001-07-08`  | Year-month-day format (ISO 8601). Same as `%Y-%m-%d`.                 |
 | `%v`  | ` 8-Jul-2001` | Day-month-year format. Same as `%e-%b-%Y`.                            |
 |       |          |                                                                            |
@@ -64,7 +64,7 @@ The following specifiers are available both to formatting and parsing.
 |       |               |                                                                       |
 | `%R`  | `00:34`       | Hour-minute format. Same as `%H:%M`.                                  |
 | `%T`  | `00:34:60`    | Hour-minute-second format. Same as `%H:%M:%S`.                        |
-| `%X`  | `00:34:60`    | Same as `%T`.                                                         |
+| `%X`  | `00:34:60`    | Locale's time representation (e.g., 23:13:48).                        |
 | `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
@@ -74,7 +74,7 @@ The following specifiers are available both to formatting and parsing.
 | `%#z` | `+09`    | *Parsing only:* Same as `%z` but allows minutes to be missing or present.  |
 |       |          |                                                                            |
 |       |          | **DATE & TIME SPECIFIERS:**                                                |
-|`%c`|`Sun Jul  8 00:34:60 2001`|`ctime` date & time format. Same as `%a %b %e %T %Y` sans `\n`.|
+|`%c`|`Sun Jul  8 00:34:60 2001`|Locale's date and time (e.g., Thu Mar  3 23:05:25 2005).       |
 | `%+`  | `2001-07-08T00:34:60.026490+09:30` | ISO 8601 / RFC 3339 date & time format. [^6]     |
 |       |               |                                                                       |
 | `%s`  | `994518299`   | UNIX timestamp, the number of seconds since 1970-01-01 00:00 UTC. [^7]|
