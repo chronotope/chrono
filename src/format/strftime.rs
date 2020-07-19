@@ -271,7 +271,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
-                        self.recons = vec![$($tail),+];
+                        self.recons = <[_]>::into_vec(Box::new([$($tail),+]));
                         $head
                     })
                 }
