@@ -399,8 +399,7 @@ pub fn format_item<'a>(
 ) -> fmt::Result {
     let mut result = String::new();
     format_inner(&mut result, date, time, off, item, None)?;
-    w.pad(&result)?;
-    Ok(())
+    w.pad(&result)
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
