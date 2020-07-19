@@ -798,18 +798,16 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #[cfg(feature = "locales")]
         if let Some(locale) = self.locale {
-            format_localized(
+            return format_localized(
                 f,
                 self.date.as_ref(),
                 self.time.as_ref(),
                 self.off.as_ref(),
                 self.items.clone(),
                 locale,
-            )
-        } else {
-            format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
+            );
         }
-        #[cfg(not(feature = "locales"))]
+
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
     }
 }
