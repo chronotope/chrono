@@ -528,93 +528,32 @@ fn test_strftime_docs_localized() {
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 
     // date specifiers
-    assert_eq!(dt.format_localized("%Y", Locale::POSIX).to_string(), "2001");
-    assert_eq!(dt.format_localized("%C", Locale::POSIX).to_string(), "20");
-    assert_eq!(dt.format_localized("%y", Locale::POSIX).to_string(), "01");
-    assert_eq!(dt.format_localized("%m", Locale::POSIX).to_string(), "07");
-    assert_eq!(dt.format_localized("%b", Locale::POSIX).to_string(), "Jul");
-    assert_eq!(dt.format_localized("%B", Locale::POSIX).to_string(), "July");
-    assert_eq!(dt.format_localized("%h", Locale::POSIX).to_string(), "Jul");
-    assert_eq!(dt.format_localized("%d", Locale::POSIX).to_string(), "08");
-    assert_eq!(dt.format_localized("%e", Locale::POSIX).to_string(), " 8");
-    assert_eq!(
-        dt.format_localized("%e", Locale::POSIX).to_string(),
-        dt.format_localized("%_d", Locale::POSIX).to_string()
-    );
-    assert_eq!(dt.format_localized("%a", Locale::POSIX).to_string(), "Sun");
-    assert_eq!(dt.format_localized("%A", Locale::POSIX).to_string(), "Sunday");
-    assert_eq!(dt.format_localized("%w", Locale::POSIX).to_string(), "0");
-    assert_eq!(dt.format_localized("%u", Locale::POSIX).to_string(), "7");
-    assert_eq!(dt.format_localized("%U", Locale::POSIX).to_string(), "28");
-    assert_eq!(dt.format_localized("%W", Locale::POSIX).to_string(), "27");
-    assert_eq!(dt.format_localized("%G", Locale::POSIX).to_string(), "2001");
-    assert_eq!(dt.format_localized("%g", Locale::POSIX).to_string(), "01");
-    assert_eq!(dt.format_localized("%V", Locale::POSIX).to_string(), "27");
-    assert_eq!(dt.format_localized("%j", Locale::POSIX).to_string(), "189");
-    assert_eq!(dt.format_localized("%D", Locale::POSIX).to_string(), "07/08/01");
-    assert_eq!(dt.format_localized("%x", Locale::POSIX).to_string(), "07/08/01");
-    assert_eq!(dt.format_localized("%F", Locale::POSIX).to_string(), "2001-07-08");
-    assert_eq!(dt.format_localized("%v", Locale::POSIX).to_string(), " 8-Jul-2001");
+    assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");
+    assert_eq!(dt.format_localized("%B", Locale::fr_BE).to_string(), "juillet");
+    assert_eq!(dt.format_localized("%h", Locale::fr_BE).to_string(), "jui");
+    assert_eq!(dt.format_localized("%a", Locale::fr_BE).to_string(), "dim");
+    assert_eq!(dt.format_localized("%A", Locale::fr_BE).to_string(), "dimanche");
+    assert_eq!(dt.format_localized("%D", Locale::fr_BE).to_string(), "07/08/01"); // TODO
+    assert_eq!(dt.format_localized("%x", Locale::fr_BE).to_string(), "07/08/01"); // TODO
+    assert_eq!(dt.format_localized("%F", Locale::fr_BE).to_string(), "2001-07-08"); // TODO
+    assert_eq!(dt.format_localized("%v", Locale::fr_BE).to_string(), " 8-jui-2001"); // TODO
 
     // time specifiers
-    assert_eq!(dt.format_localized("%H", Locale::POSIX).to_string(), "00");
-    assert_eq!(dt.format_localized("%k", Locale::POSIX).to_string(), " 0");
-    assert_eq!(
-        dt.format_localized("%k", Locale::POSIX).to_string(),
-        dt.format_localized("%_H", Locale::POSIX).to_string()
-    );
-    assert_eq!(dt.format_localized("%I", Locale::POSIX).to_string(), "12");
-    assert_eq!(dt.format_localized("%l", Locale::POSIX).to_string(), "12");
-    assert_eq!(
-        dt.format_localized("%l", Locale::POSIX).to_string(),
-        dt.format_localized("%_I", Locale::POSIX).to_string()
-    );
-    assert_eq!(dt.format_localized("%P", Locale::POSIX).to_string(), "am");
-    assert_eq!(dt.format_localized("%p", Locale::POSIX).to_string(), "AM");
-    assert_eq!(dt.format_localized("%M", Locale::POSIX).to_string(), "34");
-    assert_eq!(dt.format_localized("%S", Locale::POSIX).to_string(), "60");
-    assert_eq!(dt.format_localized("%f", Locale::POSIX).to_string(), "026490708");
-    assert_eq!(dt.format_localized("%.f", Locale::POSIX).to_string(), ".026490708");
+    assert_eq!(dt.format_localized("%P", Locale::fr_BE).to_string(), "am"); // TODO
+    assert_eq!(dt.format_localized("%p", Locale::fr_BE).to_string(), "AM"); // TODO
     assert_eq!(
         dt.with_nanosecond(1_026_490_000)
             .unwrap()
-            .format_localized("%.f", Locale::POSIX)
+            .format_localized("%.f", Locale::fr_BE)
             .to_string(),
         ".026490"
     );
-    assert_eq!(dt.format_localized("%.3f", Locale::POSIX).to_string(), ".026");
-    assert_eq!(dt.format_localized("%.6f", Locale::POSIX).to_string(), ".026490");
-    assert_eq!(dt.format_localized("%.9f", Locale::POSIX).to_string(), ".026490708");
-    assert_eq!(dt.format_localized("%3f", Locale::POSIX).to_string(), "026");
-    assert_eq!(dt.format_localized("%6f", Locale::POSIX).to_string(), "026490");
-    assert_eq!(dt.format_localized("%9f", Locale::POSIX).to_string(), "026490708");
-    assert_eq!(dt.format_localized("%R", Locale::POSIX).to_string(), "00:34");
-    assert_eq!(dt.format_localized("%T", Locale::POSIX).to_string(), "00:34:60");
-    assert_eq!(dt.format_localized("%X", Locale::POSIX).to_string(), "00:34:60");
-    assert_eq!(dt.format_localized("%r", Locale::POSIX).to_string(), "12:34:60 AM");
-
-    // time zone specifiers
-    //assert_eq!(dt.format_localized("%Z", Locale::POSIX).to_string(), "ACST");
-    assert_eq!(dt.format_localized("%z", Locale::POSIX).to_string(), "+0930");
-    assert_eq!(dt.format_localized("%:z", Locale::POSIX).to_string(), "+09:30");
+    assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34"); // TODO
+    assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60"); // TODO
+    assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60"); // TODO
+    assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 AM"); // TODO
 
     // date & time specifiers
-    assert_eq!(dt.format_localized("%c", Locale::POSIX).to_string(), "Sun Jul  8 00:34:60 2001");
-    assert_eq!(
-        dt.format_localized("%+", Locale::POSIX).to_string(),
-        "2001-07-08T00:34:60.026490708+09:30"
-    );
-    assert_eq!(
-        dt.with_nanosecond(1_026_490_000)
-            .unwrap()
-            .format_localized("%+", Locale::POSIX)
-            .to_string(),
-        "2001-07-08T00:34:60.026490+09:30"
-    );
-    assert_eq!(dt.format_localized("%s", Locale::POSIX).to_string(), "994518299");
-
-    // special specifiers
-    assert_eq!(dt.format_localized("%t", Locale::POSIX).to_string(), "\t");
-    assert_eq!(dt.format_localized("%n", Locale::POSIX).to_string(), "\n");
-    assert_eq!(dt.format_localized("%%", Locale::POSIX).to_string(), "%");
+    assert_eq!(dt.format_localized("%c", Locale::fr_BE).to_string(), "Sun Jul  8 00:34:60 2001");
+    // TODO
 }

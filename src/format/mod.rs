@@ -785,7 +785,14 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(locale) = self.locale {
-            format_localized(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone(), locale)
+            format_localized(
+                f,
+                self.date.as_ref(),
+                self.time.as_ref(),
+                self.off.as_ref(),
+                self.items.clone(),
+                locale,
+            )
         } else {
             format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
         }

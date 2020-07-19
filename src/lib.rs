@@ -481,6 +481,9 @@ pub mod prelude {
     #[cfg(feature = "clock")]
     #[doc(no_inline)]
     pub use Local;
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[doc(no_inline)]
+    pub use Locale;
     #[doc(no_inline)]
     pub use SubsecRound;
     #[doc(no_inline)]
@@ -493,9 +496,6 @@ pub mod prelude {
     pub use {NaiveDate, NaiveDateTime, NaiveTime};
     #[doc(no_inline)]
     pub use {Offset, TimeZone};
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
-    #[doc(no_inline)]
-    pub use Locale;
 }
 
 // useful throughout the codebase
