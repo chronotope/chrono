@@ -159,7 +159,9 @@ Notes:
 
 */
 
-use super::{locales, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, Pad};
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+use super::{locales, Locale};
+use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
