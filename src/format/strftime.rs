@@ -176,19 +176,28 @@ pub struct StrftimeItems<'a> {
     #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
     recons: &'static [Item<'static>],
     /// Date format
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     d_fmt: Vec<Item<'a>>,
+    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    d_fmt: &'static [Item<'static>],
     /// Date and time format
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     d_t_fmt: Vec<Item<'a>>,
+    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    d_t_fmt: &'static [Item<'static>],
     /// Time format
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     t_fmt: Vec<Item<'a>>,
+    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    t_fmt: &'static [Item<'static>],
 }
 
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     pub fn new(s: &'a str) -> StrftimeItems<'a> {
-        static D_FMT: &[Item<'static>] =
+        static D_FMT: &'static [Item<'static>] =
             &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-        static D_T_FMT: &[Item<'static>] = &[
+        static D_T_FMT: &'static [Item<'static>] = &[
             fix!(ShortWeekdayName),
             sp!(" "),
             fix!(ShortMonthName),
@@ -203,15 +212,31 @@ impl<'a> StrftimeItems<'a> {
             sp!(" "),
             num0!(Year),
         ];
-        static T_FMT: &[Item<'static>] =
+        static T_FMT: &'static [Item<'static>] =
             &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+        #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+        static FMT_NONE: &'static [Item<'static>; 0] = &[];
 
-        StrftimeItems {
-            remainder: s,
-            recons: Vec::new(),
-            d_fmt: D_FMT.to_vec(),
-            d_t_fmt: D_T_FMT.to_vec(),
-            t_fmt: T_FMT.to_vec(),
+        #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+        {
+            StrftimeItems {
+                remainder: s,
+                recons: Vec::new(),
+                d_fmt: D_FMT.to_vec(),
+                d_t_fmt: D_T_FMT.to_vec(),
+                t_fmt: T_FMT.to_vec(),
+            }
+        }
+
+        #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+        {
+            StrftimeItems {
+                remainder: s,
+                recons: FMT_NONE,
+                d_fmt: D_FMT,
+                d_t_fmt: D_T_FMT,
+                t_fmt: T_FMT,
+            }
         }
     }
 
@@ -222,7 +247,13 @@ impl<'a> StrftimeItems<'a> {
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
         let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
 
-        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
+        StrftimeItems {
+            remainder: s,
+            recons: Vec::new(),
+            d_fmt: d_fmt,
+            d_t_fmt: d_t_fmt,
+            t_fmt: t_fmt,
+        }
     }
 }
 
@@ -235,7 +266,14 @@ impl<'a> Iterator for StrftimeItems<'a> {
         // we have some reconstructed items to return
         if !self.recons.is_empty() {
             let item = self.recons[0].clone();
-            self.recons = self.recons[1..].to_vec();
+            #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+            {
+                self.recons = self.recons[1..].to_vec();
+            }
+            #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+            {
+                self.recons = &self.recons[1..];
+            }
             return Some(item);
         }
 
@@ -274,7 +312,15 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
-                        self.recons = vec![$($tail),+];
+                        #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+                        {
+                            self.recons = vec![$($tail),+];
+                        }
+                        #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+                        {
+                            const RECONS: &'static [Item<'static>] = &[$($tail),+];
+                            self.recons = RECONS;
+                        }
                         $head
                     })
                 }
@@ -299,7 +345,20 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
                     'X' => {
-                        self.recons = self.t_fmt[1..].to_vec();
+                        #[cfg(all(
+                            feature = "locales",
+                            any(feature = "alloc", feature = "std", test)
+                        ))]
+                        {
+                            self.recons = self.t_fmt[1..].to_vec();
+                        }
+                        #[cfg(not(all(
+                            feature = "locales",
+                            any(feature = "alloc", feature = "std", test)
+                        )))]
+                        {
+                            self.recons = &self.t_fmt[1..];
+                        }
                         self.t_fmt[0].clone()
                     }
                     'Y' => num0!(Year),
@@ -307,7 +366,20 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
                     'c' => {
-                        self.recons = self.d_t_fmt[1..].to_vec();
+                        #[cfg(all(
+                            feature = "locales",
+                            any(feature = "alloc", feature = "std", test)
+                        ))]
+                        {
+                            self.recons = self.d_t_fmt[1..].to_vec();
+                        }
+                        #[cfg(not(all(
+                            feature = "locales",
+                            any(feature = "alloc", feature = "std", test)
+                        )))]
+                        {
+                            self.recons = &self.d_t_fmt[1..];
+                        }
                         self.d_t_fmt[0].clone()
                     }
                     'd' => num0!(Day),
@@ -337,7 +409,20 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     }
                     'w' => num!(NumDaysFromSun),
                     'x' => {
-                        self.recons = self.d_fmt[1..].to_vec();
+                        #[cfg(all(
+                            feature = "locales",
+                            any(feature = "alloc", feature = "std", test)
+                        ))]
+                        {
+                            self.recons = self.d_fmt[1..].to_vec();
+                        }
+                        #[cfg(not(all(
+                            feature = "locales",
+                            any(feature = "alloc", feature = "std", test)
+                        )))]
+                        {
+                            self.recons = &self.d_fmt[1..];
+                        }
                         self.d_fmt[0].clone()
                     }
                     'y' => num0!(YearMod100),

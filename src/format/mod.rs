@@ -797,15 +797,17 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #[cfg(feature = "locales")]
-        if let Some(locale) = self.locale {
-            return format_localized(
-                f,
-                self.date.as_ref(),
-                self.time.as_ref(),
-                self.off.as_ref(),
-                self.items.clone(),
-                locale,
-            );
+        {
+            if let Some(locale) = self.locale {
+                return format_localized(
+                    f,
+                    self.date.as_ref(),
+                    self.time.as_ref(),
+                    self.off.as_ref(),
+                    self.items.clone(),
+                    locale,
+                );
+            }
         }
 
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
