@@ -590,5 +590,4 @@ fn test_strftime_docs_localized() {
         dt.format_localized("%c", Locale::fr_BE).to_string(),
         "dim 08 jui 2001 00:34:60 +09:30"
     );
-    // TODO
 }
