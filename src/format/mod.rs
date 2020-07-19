@@ -413,7 +413,7 @@ fn format_inner<'a>(
 ) -> fmt::Result {
     #[cfg(feature = "locales")]
     let locale = _locale.unwrap_or(Locale::POSIX);
-    // full and abbreviated month and weekday names
+
     #[cfg(feature = "locales")]
     let short_months = locales::short_months(locale);
     #[cfg(feature = "locales")]
@@ -422,6 +422,9 @@ fn format_inner<'a>(
     let short_weekdays = locales::short_weekdays(locale);
     #[cfg(feature = "locales")]
     let long_weekdays = locales::long_weekdays(locale);
+    #[cfg(feature = "locales")]
+    let am_pm = locales::am_pm(locale);
+
     #[cfg(not(feature = "locales"))]
     let short_months =
         &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -445,6 +448,11 @@ fn format_inner<'a>(
     #[cfg(not(feature = "locales"))]
     let long_weekdays =
         &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    #[cfg(not(feature = "locales"))]
+    let am_pm = &["AM", "PM"];
+
+    let am_pm_lowercase: Vec<_> = am_pm.iter().map(|x| x.to_lowercase()).collect();
+    let am_pm_lowercase = &[am_pm_lowercase[0].as_str(), am_pm_lowercase[1].as_str()];
 
     use core::fmt::Write;
 
@@ -563,11 +571,15 @@ fn format_inner<'a>(
                         Ok(())
                     }),
                     LowerAmPm => time.map(|t| {
-                        result.push_str(if t.hour12().0 { "pm" } else { "am" });
+                        result.push_str(if t.hour12().0 {
+                            am_pm_lowercase[1]
+                        } else {
+                            am_pm_lowercase[0]
+                        });
                         Ok(())
                     }),
                     UpperAmPm => time.map(|t| {
-                        result.push_str(if t.hour12().0 { "PM" } else { "AM" });
+                        result.push_str(if t.hour12().0 { am_pm[1] } else { am_pm[0] });
                         Ok(())
                     }),
                     Nanosecond => time.map(|t| {

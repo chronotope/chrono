@@ -159,7 +159,7 @@ Notes:
 
 */
 
-use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
+use super::{locales, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -169,14 +169,55 @@ pub struct StrftimeItems<'a> {
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// parser refers to the statically reconstructed slice of them.
     /// If `recons` is not empty they have to be returned earlier than the `remainder`.
-    recons: &'static [Item<'static>],
+    recons: Vec<Item<'a>>,
+    /// Date format
+    d_fmt: Vec<Item<'a>>,
+    /// Date and time format
+    d_t_fmt: Vec<Item<'a>>,
+    /// Time format
+    t_fmt: Vec<Item<'a>>,
 }
 
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     pub fn new(s: &'a str) -> StrftimeItems<'a> {
-        static FMT_NONE: [Item<'static>; 0] = [];
-        StrftimeItems { remainder: s, recons: &FMT_NONE }
+        static D_FMT: &[Item<'static>] =
+            &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
+        static D_T_FMT: &[Item<'static>] = &[
+            fix!(ShortWeekdayName),
+            sp!(" "),
+            fix!(ShortMonthName),
+            sp!(" "),
+            nums!(Day),
+            sp!(" "),
+            num0!(Hour),
+            lit!(":"),
+            num0!(Minute),
+            lit!(":"),
+            num0!(Second),
+            sp!(" "),
+            num0!(Year),
+        ];
+        static T_FMT: &[Item<'static>] =
+            &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+
+        StrftimeItems {
+            remainder: s,
+            recons: Vec::new(),
+            d_fmt: D_FMT.to_vec(),
+            d_t_fmt: D_T_FMT.to_vec(),
+            t_fmt: T_FMT.to_vec(),
+        }
+    }
+
+    /// Creates a new parsing iterator from the `strftime`-like format string.
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
+        let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
+        let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
+        let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
+
+        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
     }
 }
 
@@ -189,7 +230,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
         // we have some reconstructed items to return
         if !self.recons.is_empty() {
             let item = self.recons[0].clone();
-            self.recons = &self.recons[1..];
+            self.recons = self.recons[1..].to_vec();
             return Some(item);
         }
 
@@ -228,8 +269,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
-                        const RECONS: &'static [Item<'static>] = &[$($tail),+];
-                        self.recons = RECONS;
+                        self.recons = vec![$($tail),+];
                         $head
                     })
                 }
@@ -253,26 +293,18 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'U' => num0!(WeekFromSun),
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
-                    'X' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
+                    'X' => {
+                        self.recons = self.t_fmt[1..].to_vec();
+                        self.t_fmt[0].clone()
+                    }
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
-                    'c' => recons![
-                        fix!(ShortWeekdayName),
-                        sp!(" "),
-                        fix!(ShortMonthName),
-                        sp!(" "),
-                        nums!(Day),
-                        sp!(" "),
-                        num0!(Hour),
-                        lit!(":"),
-                        num0!(Minute),
-                        lit!(":"),
-                        num0!(Second),
-                        sp!(" "),
-                        num0!(Year)
-                    ],
+                    'c' => {
+                        self.recons = self.d_t_fmt[1..].to_vec();
+                        self.d_t_fmt[0].clone()
+                    }
                     'd' => num0!(Day),
                     'e' => nums!(Day),
                     'f' => num0!(Nanosecond),
@@ -300,7 +332,8 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     }
                     'w' => num!(NumDaysFromSun),
                     'x' => {
-                        recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)]
+                        self.recons = self.d_fmt[1..].to_vec();
+                        self.d_fmt[0].clone()
                     }
                     'y' => num0!(YearMod100),
                     'z' => {
@@ -522,7 +555,6 @@ fn test_strftime_docs() {
 #[cfg(all(feature = "locales", test))]
 #[test]
 fn test_strftime_docs_localized() {
-    use pure_rust_locales::Locale;
     use {FixedOffset, TimeZone, Timelike};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
@@ -533,14 +565,14 @@ fn test_strftime_docs_localized() {
     assert_eq!(dt.format_localized("%h", Locale::fr_BE).to_string(), "jui");
     assert_eq!(dt.format_localized("%a", Locale::fr_BE).to_string(), "dim");
     assert_eq!(dt.format_localized("%A", Locale::fr_BE).to_string(), "dimanche");
-    assert_eq!(dt.format_localized("%D", Locale::fr_BE).to_string(), "07/08/01"); // TODO
-    assert_eq!(dt.format_localized("%x", Locale::fr_BE).to_string(), "07/08/01"); // TODO
-    assert_eq!(dt.format_localized("%F", Locale::fr_BE).to_string(), "2001-07-08"); // TODO
-    assert_eq!(dt.format_localized("%v", Locale::fr_BE).to_string(), " 8-jui-2001"); // TODO
+    assert_eq!(dt.format_localized("%D", Locale::fr_BE).to_string(), "07/08/01");
+    assert_eq!(dt.format_localized("%x", Locale::fr_BE).to_string(), "08/07/01");
+    assert_eq!(dt.format_localized("%F", Locale::fr_BE).to_string(), "2001-07-08");
+    assert_eq!(dt.format_localized("%v", Locale::fr_BE).to_string(), " 8-jui-2001");
 
     // time specifiers
-    assert_eq!(dt.format_localized("%P", Locale::fr_BE).to_string(), "am"); // TODO
-    assert_eq!(dt.format_localized("%p", Locale::fr_BE).to_string(), "AM"); // TODO
+    assert_eq!(dt.format_localized("%P", Locale::fr_BE).to_string(), "");
+    assert_eq!(dt.format_localized("%p", Locale::fr_BE).to_string(), "");
     assert_eq!(
         dt.with_nanosecond(1_026_490_000)
             .unwrap()
@@ -548,12 +580,15 @@ fn test_strftime_docs_localized() {
             .to_string(),
         ".026490"
     );
-    assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34"); // TODO
-    assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60"); // TODO
-    assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60"); // TODO
-    assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 AM"); // TODO
+    assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34");
+    assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60");
+    assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60");
+    assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 ");
 
     // date & time specifiers
-    assert_eq!(dt.format_localized("%c", Locale::fr_BE).to_string(), "dim jui  8 00:34:60 2001");
+    assert_eq!(
+        dt.format_localized("%c", Locale::fr_BE).to_string(),
+        "dim 08 jui 2001 00:34:60 +09:30"
+    );
     // TODO
 }

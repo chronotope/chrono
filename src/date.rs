@@ -329,7 +329,7 @@ where
         fmt: &'a str,
         locale: Locale,
     ) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_localized_with_items(StrftimeItems::new(fmt), locale)
+        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
     }
 }
 
