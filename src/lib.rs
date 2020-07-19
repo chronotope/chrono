@@ -216,7 +216,7 @@
 //! help of an additional C library. This functionality is under the feature
 //! `locales`:
 //!
-//! ```ignore
+//! ```text
 //! chrono { version = ..., features = ["locales"]
 //! ```
 //!
