@@ -554,6 +554,6 @@ fn test_strftime_docs_localized() {
     assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 AM"); // TODO
 
     // date & time specifiers
-    assert_eq!(dt.format_localized("%c", Locale::fr_BE).to_string(), "Sun Jul  8 00:34:60 2001");
+    assert_eq!(dt.format_localized("%c", Locale::fr_BE).to_string(), "dim jui  8 00:34:60 2001");
     // TODO
 }
