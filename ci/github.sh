@@ -56,7 +56,7 @@ test_all_tzs() {
 test_regular() {
     tz="$1" && shift
 
-    runt env TZ="$tz" cargo test --features __doctest --color=always -- --color=always
+    runt env TZ="$tz" cargo test --features __doctest,locales --color=always -- --color=always
     for feature in "${FEATURES[@]}"; do
         runt env TZ="$tz" cargo test --no-default-features --features "$feature" --lib --color=always -- --color=always
     done

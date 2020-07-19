@@ -224,7 +224,7 @@ Chrono now also provides date formatting in almost any language without the
 help of an additional C library. This functionality is under the feature
 `locales`:
 
-```
+```text
 chrono { version = ..., features = ["locales"]
 ```
 
