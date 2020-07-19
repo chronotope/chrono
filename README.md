@@ -220,12 +220,21 @@ Chrono also provides [`to_rfc2822`](https://docs.rs/chrono/0.4/chrono/struct.Dat
 [`to_rfc3339`](https://docs.rs/chrono/0.4/chrono/struct.DateTime.html#method.to_rfc3339) methods
 for well-known formats.
 
+Chrono now also provides date formatting in almost any language without the
+help of an additional C library. This functionality is under the feature
+`locales`:
+
+```
+chrono { version = ..., features = ["locales"]
+```
+
 ```rust
 use chrono::prelude::*;
 
 let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
 assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
+assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
 assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 
 assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");

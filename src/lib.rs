@@ -212,12 +212,21 @@
 //! [`to_rfc3339`](./struct.DateTime.html#method.to_rfc3339) methods
 //! for well-known formats.
 //!
+//! Chrono now also provides date formatting in almost any language without the
+//! help of an additional C library. This functionality is under the feature
+//! `locales`:
+//!
+//! ```ignore
+//! chrono { version = ..., features = ["locales"]
+//! ```
+//!
 //! ```rust
 //! use chrono::prelude::*;
 //!
 //! let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
+//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //!
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
@@ -453,6 +462,8 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 #[doc(no_inline)]
 pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
@@ -482,6 +493,9 @@ pub mod prelude {
     pub use {NaiveDate, NaiveDateTime, NaiveTime};
     #[doc(no_inline)]
     pub use {Offset, TimeZone};
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[doc(no_inline)]
+    pub use Locale;
 }
 
 // useful throughout the codebase
