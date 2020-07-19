@@ -171,7 +171,10 @@ pub struct StrftimeItems<'a> {
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// parser refers to the statically reconstructed slice of them.
     /// If `recons` is not empty they have to be returned earlier than the `remainder`.
+    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
     recons: Vec<Item<'a>>,
+    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    recons: &'static [Item<'static>],
     /// Date format
     d_fmt: Vec<Item<'a>>,
     /// Date and time format
@@ -271,7 +274,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
-                        self.recons = <[_]>::into_vec(Box::new([$($tail),+]));
+                        self.recons = vec![$($tail),+];
                         $head
                     })
                 }
