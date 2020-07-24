@@ -28,14 +28,13 @@ use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
 
-use div::{div_floor, mod_floor};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use naive::{NaiveDate, NaiveTime};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use offset::{FixedOffset, Offset};
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use {Datelike, Month, Timelike, Weekday};
-use {ParseMonthError, ParseWeekdayError};
+use {Datelike, Timelike};
+use {Month, ParseMonthError, ParseWeekdayError, Weekday};
 
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
@@ -421,6 +420,7 @@ fn format_inner<'a>(
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     use core::fmt::Write;
+    use div::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),

@@ -1015,6 +1015,30 @@ impl Month {
             Month::December => 12,
         }
     }
+
+    /// Get the name of the month
+    ///
+    /// ```
+    /// use chrono::Month;
+    ///
+    /// assert_eq!(Month::January.name(), "January")
+    /// ```
+    pub fn name(&self) -> &'static str {
+        match *self {
+            Month::January => "January",
+            Month::February => "February",
+            Month::March => "March",
+            Month::April => "April",
+            Month::May => "May",
+            Month::June => "June",
+            Month::July => "July",
+            Month::August => "August",
+            Month::September => "September",
+            Month::October => "October",
+            Month::November => "November",
+            Month::December => "December",
+        }
+    }
 }
 
 impl num_traits::FromPrimitive for Month {
@@ -1065,18 +1089,20 @@ impl fmt::Debug for ParseMonthError {
         write!(f, "ParseMonthError {{ .. }}")
     }
 }
+
 #[cfg(feature = "serde")]
 mod month_serde {
     use super::Month;
     use serdelib::{de, ser};
-    use std::fmt;
+
+    use core::fmt;
 
     impl ser::Serialize for Month {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: ser::Serializer,
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(self.name())
         }
     }
 
@@ -1454,12 +1480,12 @@ fn test_num_days_from_ce_against_alternative_impl() {
         let mid_year = jan1_year + Duration::days(133);
         assert_eq!(mid_year.num_days_from_ce(), num_days_from_ce(&mid_year), "on {:?}", mid_year);
     }
+}
 
-    #[test]
-    fn test_month_enum_succ_pred() {
-        assert_eq!(Month::January.succ(), Month::February);
-        assert_eq!(Month::December.succ(), Month::January);
-        assert_eq!(Month::January.pred(), Month::December);
-        assert_eq!(Month::February.pred(), Month::January);
-    }
+#[test]
+fn test_month_enum_succ_pred() {
+    assert_eq!(Month::January.succ(), Month::February);
+    assert_eq!(Month::December.succ(), Month::January);
+    assert_eq!(Month::January.pred(), Month::December);
+    assert_eq!(Month::February.pred(), Month::January);
 }
