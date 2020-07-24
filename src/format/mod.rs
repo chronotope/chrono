@@ -48,7 +48,6 @@ pub use self::strftime::StrftimeItems;
 pub use pure_rust_locales::Locale;
 
 #[cfg(not(feature = "locales"))]
-#[allow(dead_code)]
 #[derive(Debug)]
 struct Locale;
 
