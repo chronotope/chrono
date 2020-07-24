@@ -159,7 +159,7 @@ Notes:
 
 */
 
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
@@ -171,24 +171,24 @@ pub struct StrftimeItems<'a> {
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// parser refers to the statically reconstructed slice of them.
     /// If `recons` is not empty they have to be returned earlier than the `remainder`.
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     recons: Vec<Item<'a>>,
-    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    #[cfg(not(feature = "locales"))]
     recons: &'static [Item<'static>],
     /// Date format
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     d_fmt: Vec<Item<'a>>,
-    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    #[cfg(not(feature = "locales"))]
     d_fmt: &'static [Item<'static>],
     /// Date and time format
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     d_t_fmt: Vec<Item<'a>>,
-    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    #[cfg(not(feature = "locales"))]
     d_t_fmt: &'static [Item<'static>],
     /// Time format
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     t_fmt: Vec<Item<'a>>,
-    #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+    #[cfg(not(feature = "locales"))]
     t_fmt: &'static [Item<'static>],
 }
 
@@ -214,10 +214,10 @@ impl<'a> StrftimeItems<'a> {
         ];
         static T_FMT: &'static [Item<'static>] =
             &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
-        #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+        #[cfg(not(feature = "locales"))]
         static FMT_NONE: &'static [Item<'static>; 0] = &[];
 
-        #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+        #[cfg(feature = "locales")]
         {
             StrftimeItems {
                 remainder: s,
@@ -228,7 +228,7 @@ impl<'a> StrftimeItems<'a> {
             }
         }
 
-        #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+        #[cfg(not(feature = "locales"))]
         {
             StrftimeItems {
                 remainder: s,
@@ -241,7 +241,7 @@ impl<'a> StrftimeItems<'a> {
     }
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
@@ -266,11 +266,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
         // we have some reconstructed items to return
         if !self.recons.is_empty() {
             let item = self.recons[0].clone();
-            #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+            #[cfg(feature = "locales")]
             {
                 self.recons = self.recons[1..].to_vec();
             }
-            #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+            #[cfg(not(feature = "locales"))]
             {
                 self.recons = &self.recons[1..];
             }
@@ -312,11 +312,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+] => ({
-                        #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+                        #[cfg(feature = "locales")]
                         {
                             self.recons = vec![$($tail),+];
                         }
-                        #[cfg(not(all(feature = "locales", any(feature = "alloc", feature = "std", test))))]
+                        #[cfg(not(feature = "locales"))]
                         {
                             const RECONS: &'static [Item<'static>] = &[$($tail),+];
                             self.recons = RECONS;
@@ -642,7 +642,7 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%%").to_string(), "%");
 }
 
-#[cfg(all(feature = "locales", test))]
+#[cfg(feature = "locales")]
 #[test]
 fn test_strftime_docs_localized() {
     use {FixedOffset, TimeZone, Timelike};

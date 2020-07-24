@@ -225,8 +225,10 @@ help of an additional C library. This functionality is under the feature
 `locales`:
 
 ```text
-chrono { version = ..., features = ["locales"]
+chrono { version = "0.4", features = ["locales"]
 ```
+
+The `locales` feature requires and implies at least the `alloc` feature.
 
 ```rust
 use chrono::prelude::*;

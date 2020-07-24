@@ -38,13 +38,13 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {ParseWeekdayError, Weekday};
 
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 pub(crate) mod locales;
 
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 pub use pure_rust_locales::Locale;
 
 #[cfg(not(feature = "locales"))]
@@ -853,7 +853,7 @@ impl FromStr for Weekday {
 }
 
 /// Formats single formatting item
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 pub fn format_item_localized<'a>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -869,7 +869,7 @@ pub fn format_item_localized<'a>(
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,

@@ -217,8 +217,10 @@
 //! `locales`:
 //!
 //! ```text
-//! chrono { version = ..., features = ["locales"]
+//! chrono { version = "0.4", features = ["locales"]
 //! ```
+//!
+//! The `locales` feature requires and implies at least the `alloc` feature.
 //!
 //! ```rust
 //! use chrono::prelude::*;
@@ -462,7 +464,7 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 #[doc(no_inline)]
@@ -481,7 +483,7 @@ pub mod prelude {
     #[cfg(feature = "clock")]
     #[doc(no_inline)]
     pub use Local;
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     #[doc(no_inline)]
     pub use Locale;
     #[doc(no_inline)]

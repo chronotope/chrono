@@ -10,7 +10,7 @@ use core::ops::{Add, Sub};
 use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
-#[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+#[cfg(feature = "locales")]
 use format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
@@ -299,7 +299,7 @@ where
     }
 
     /// Formats the date with the specified formatting items and locale.
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     #[inline]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
@@ -322,7 +322,7 @@ where
     /// Formats the date with the specified format string and locale.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
-    #[cfg(all(feature = "locales", any(feature = "alloc", feature = "std", test)))]
+    #[cfg(feature = "locales")]
     #[inline]
     pub fn format_localized<'a>(
         &self,
