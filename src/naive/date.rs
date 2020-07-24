@@ -1048,6 +1048,58 @@ impl NaiveDate {
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
+
+    /// Returns an iterator that steps by days until the last representable date.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    ///
+    /// let expected = [
+    ///     NaiveDate::from_ymd(2016, 2, 27),
+    ///     NaiveDate::from_ymd(2016, 2, 28),
+    ///     NaiveDate::from_ymd(2016, 2, 29),
+    ///     NaiveDate::from_ymd(2016, 3, 1),
+    /// ];
+    ///
+    /// let mut count = 0;
+    /// for (idx, d) in NaiveDate::from_ymd(2016, 2, 27).iter_days().take(4).enumerate() {
+    ///    assert_eq!(d, expected[idx]);
+    ///    count += 1;
+    /// }
+    /// assert_eq!(count, 4);
+    /// ```
+    #[inline]
+    pub fn iter_days(&self) -> NaiveDateDaysIterator {
+        NaiveDateDaysIterator { value: *self }
+    }
+
+    /// Returns an iterator that steps by weeks until the last representable date.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    ///
+    /// let expected = [
+    ///     NaiveDate::from_ymd(2016, 2, 27),
+    ///     NaiveDate::from_ymd(2016, 3, 5),
+    ///     NaiveDate::from_ymd(2016, 3, 12),
+    ///     NaiveDate::from_ymd(2016, 3, 19),
+    /// ];
+    ///
+    /// let mut count = 0;
+    /// for (idx, d) in NaiveDate::from_ymd(2016, 2, 27).iter_weeks().take(4).enumerate() {
+    ///    assert_eq!(d, expected[idx]);
+    ///    count += 1;
+    /// }
+    /// assert_eq!(count, 4);
+    /// ```
+    #[inline]
+    pub fn iter_weeks(&self) -> NaiveDateWeeksIterator {
+        NaiveDateWeeksIterator { value: *self }
+    }
 }
 
 impl Datelike for NaiveDate {
@@ -1510,6 +1562,63 @@ impl Sub<NaiveDate> for NaiveDate {
         self.signed_duration_since(rhs)
     }
 }
+
+/// Iterator over `NaiveDate` with a step size of one day.
+#[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
+pub struct NaiveDateDaysIterator {
+    value: NaiveDate,
+}
+
+impl Iterator for NaiveDateDaysIterator {
+    type Item = NaiveDate;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.value == MAX_DATE {
+            return None;
+        }
+        // current < MAX_DATE from here on:
+        let current = self.value;
+        // This can't panic because current is < MAX_DATE:
+        self.value = current.succ();
+        Some(current)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact_size = MAX_DATE.signed_duration_since(self.value).num_days();
+        (exact_size as usize, Some(exact_size as usize))
+    }
+}
+
+impl ExactSizeIterator for NaiveDateDaysIterator {}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
+pub struct NaiveDateWeeksIterator {
+    value: NaiveDate,
+}
+
+impl Iterator for NaiveDateWeeksIterator {
+    type Item = NaiveDate;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if MAX_DATE - self.value < OldDuration::weeks(1) {
+            return None;
+        }
+        let current = self.value;
+        self.value = current + OldDuration::weeks(1);
+        Some(current)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact_size = MAX_DATE.signed_duration_since(self.value).num_weeks();
+        (exact_size as usize, Some(exact_size as usize))
+    }
+}
+
+impl ExactSizeIterator for NaiveDateWeeksIterator {}
+
+// TODO: NaiveDateDaysIterator and NaiveDateWeeksIterator should implement FusedIterator,
+// TrustedLen, and Step once they becomes stable.
+// See: https://github.com/chronotope/chrono/issues/208
 
 /// The `Debug` output of the naive date `d` is the same as
 /// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
@@ -2268,6 +2377,22 @@ mod tests {
         assert_eq!(
             NaiveDate::from_ymd(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(),
             "2009,09,01,00,53"
+        );
+    }
+
+    #[test]
+    fn test_day_iterator_limit() {
+        assert_eq!(
+            NaiveDate::from_ymd(262143, 12, 29).iter_days().take(4).collect::<Vec<_>>().len(),
+            2
+        );
+    }
+
+    #[test]
+    fn test_week_iterator_limit() {
+        assert_eq!(
+            NaiveDate::from_ymd(262143, 12, 12).iter_weeks().take(4).collect::<Vec<_>>().len(),
+            2
         );
     }
 }
