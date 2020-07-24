@@ -345,17 +345,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
                     'X' => {
-                        #[cfg(all(
-                            feature = "locales",
-                            any(feature = "alloc", feature = "std", test)
-                        ))]
+                        #[cfg(feature = "locales")]
                         {
                             self.recons = self.t_fmt[1..].to_vec();
                         }
-                        #[cfg(not(all(
-                            feature = "locales",
-                            any(feature = "alloc", feature = "std", test)
-                        )))]
+                        #[cfg(not(feature = "locales"))]
                         {
                             self.recons = &self.t_fmt[1..];
                         }
@@ -366,17 +360,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
                     'c' => {
-                        #[cfg(all(
-                            feature = "locales",
-                            any(feature = "alloc", feature = "std", test)
-                        ))]
+                        #[cfg(feature = "locales")]
                         {
                             self.recons = self.d_t_fmt[1..].to_vec();
                         }
-                        #[cfg(not(all(
-                            feature = "locales",
-                            any(feature = "alloc", feature = "std", test)
-                        )))]
+                        #[cfg(not(feature = "locales"))]
                         {
                             self.recons = &self.d_t_fmt[1..];
                         }
@@ -409,17 +397,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     }
                     'w' => num!(NumDaysFromSun),
                     'x' => {
-                        #[cfg(all(
-                            feature = "locales",
-                            any(feature = "alloc", feature = "std", test)
-                        ))]
+                        #[cfg(feature = "locales")]
                         {
                             self.recons = self.d_fmt[1..].to_vec();
                         }
-                        #[cfg(not(all(
-                            feature = "locales",
-                            any(feature = "alloc", feature = "std", test)
-                        )))]
+                        #[cfg(not(feature = "locales"))]
                         {
                             self.recons = &self.d_fmt[1..];
                         }
