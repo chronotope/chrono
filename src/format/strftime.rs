@@ -257,7 +257,7 @@ impl<'a> StrftimeItems<'a> {
     }
 }
 
-const HAVE_ALTERNATES: &'static str = "z";
+const HAVE_ALTERNATES: &'static str = "zxXc";
 
 impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;
@@ -311,7 +311,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 }
 
                 macro_rules! recons {
-                    [$head:expr, $($tail:expr),+] => ({
+                    [$head:expr, $($tail:expr),+ $(,)?] => ({
                         #[cfg(feature = "locales")]
                         {
                             self.recons = vec![$($tail),+];
@@ -345,30 +345,64 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
                     'X' => {
+                        let head;
                         #[cfg(feature = "locales")]
                         {
-                            self.recons = self.t_fmt[1..].to_vec();
+                            if is_alternate {
+                                self.recons = self.t_fmt[1..].to_vec();
+                                head = self.t_fmt[0].clone();
+                            } else {
+                                head = recons![
+                                    num0!(Hour),
+                                    lit!(":"),
+                                    num0!(Minute),
+                                    lit!(":"),
+                                    num0!(Second)
+                                ];
+                            }
                         }
                         #[cfg(not(feature = "locales"))]
                         {
                             self.recons = &self.t_fmt[1..];
+                            head = self.t_fmt[0].clone();
                         }
-                        self.t_fmt[0].clone()
+                        head
                     }
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
                     'c' => {
+                        let head;
                         #[cfg(feature = "locales")]
                         {
-                            self.recons = self.d_t_fmt[1..].to_vec();
+                            if is_alternate {
+                                self.recons = self.d_t_fmt[1..].to_vec();
+                                head = self.d_t_fmt[0].clone();
+                            } else {
+                                head = recons![
+                                    fix!(ShortWeekdayName),
+                                    sp!(" "),
+                                    fix!(ShortMonthName),
+                                    sp!(" "),
+                                    nums!(Day),
+                                    sp!(" "),
+                                    num0!(Hour),
+                                    lit!(":"),
+                                    num0!(Minute),
+                                    lit!(":"),
+                                    num0!(Second),
+                                    sp!(" "),
+                                    num0!(Year),
+                                ];
+                            }
                         }
                         #[cfg(not(feature = "locales"))]
                         {
                             self.recons = &self.d_t_fmt[1..];
+                            head = self.d_t_fmt[0].clone();
                         }
-                        self.d_t_fmt[0].clone()
+                        head
                     }
                     'd' => num0!(Day),
                     'e' => nums!(Day),
@@ -397,15 +431,28 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     }
                     'w' => num!(NumDaysFromSun),
                     'x' => {
+                        let head;
                         #[cfg(feature = "locales")]
                         {
-                            self.recons = self.d_fmt[1..].to_vec();
+                            if is_alternate {
+                                self.recons = self.d_fmt[1..].to_vec();
+                                head = self.d_fmt[0].clone();
+                            } else {
+                                head = recons![
+                                    num0!(Month),
+                                    lit!("/"),
+                                    num0!(Day),
+                                    lit!("/"),
+                                    num0!(YearMod100)
+                                ];
+                            }
                         }
                         #[cfg(not(feature = "locales"))]
                         {
                             self.recons = &self.d_fmt[1..];
+                            head = self.d_fmt[0].clone();
                         }
-                        self.d_fmt[0].clone()
+                        head
                     }
                     'y' => num0!(YearMod100),
                     'z' => {
@@ -638,7 +685,8 @@ fn test_strftime_docs_localized() {
     assert_eq!(dt.format_localized("%a", Locale::fr_BE).to_string(), "dim");
     assert_eq!(dt.format_localized("%A", Locale::fr_BE).to_string(), "dimanche");
     assert_eq!(dt.format_localized("%D", Locale::fr_BE).to_string(), "07/08/01");
-    assert_eq!(dt.format_localized("%x", Locale::fr_BE).to_string(), "08/07/01");
+    assert_eq!(dt.format_localized("%x", Locale::fr_BE).to_string(), "07/08/01");
+    assert_eq!(dt.format_localized("%#x", Locale::fr_BE).to_string(), "08/07/01");
     assert_eq!(dt.format_localized("%F", Locale::fr_BE).to_string(), "2001-07-08");
     assert_eq!(dt.format_localized("%v", Locale::fr_BE).to_string(), " 8-jui-2001");
 
@@ -648,11 +696,13 @@ fn test_strftime_docs_localized() {
     assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34");
     assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60");
     assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60");
+    assert_eq!(dt.format_localized("%#X", Locale::fr_BE).to_string(), "00:34:60");
     assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 ");
 
     // date & time specifiers
+    assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
     assert_eq!(
-        dt.format_localized("%c", Locale::fr_BE).to_string(),
+        dt.format_localized("%#c", Locale::fr_BE).to_string(),
         "dim 08 jui 2001 00:34:60 +09:30"
     );
 }
