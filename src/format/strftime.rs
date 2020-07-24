@@ -663,13 +663,6 @@ fn test_strftime_docs_localized() {
     // time specifiers
     assert_eq!(dt.format_localized("%P", Locale::fr_BE).to_string(), "");
     assert_eq!(dt.format_localized("%p", Locale::fr_BE).to_string(), "");
-    assert_eq!(
-        dt.with_nanosecond(1_026_490_000)
-            .unwrap()
-            .format_localized("%.f", Locale::fr_BE)
-            .to_string(),
-        ".026490"
-    );
     assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34");
     assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60");
     assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60");
