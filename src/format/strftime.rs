@@ -311,7 +311,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 }
 
                 macro_rules! recons {
-                    [$head:expr, $($tail:expr),+ $(,)?] => ({
+                    [$head:expr, $($tail:expr),+ $(,)*] => ({
                         #[cfg(feature = "locales")]
                         {
                             self.recons = vec![$($tail),+];
