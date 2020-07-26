@@ -470,6 +470,7 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+/// L10n locales.
 #[cfg(feature = "locales")]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};

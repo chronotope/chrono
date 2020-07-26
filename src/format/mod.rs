@@ -44,6 +44,7 @@ pub(crate) mod locales;
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
+/// L10n locales.
 #[cfg(feature = "locales")]
 pub use pure_rust_locales::Locale;
 
