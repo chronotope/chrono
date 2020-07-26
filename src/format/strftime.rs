@@ -163,6 +163,11 @@ Notes:
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
+#[cfg(feature = "locales")]
+type Fmt<'a> = Vec<Item<'a>>;
+#[cfg(not(feature = "locales"))]
+type Fmt<'a> = &'static [Item<'static>];
+
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
 pub struct StrftimeItems<'a> {
@@ -171,25 +176,13 @@ pub struct StrftimeItems<'a> {
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// parser refers to the statically reconstructed slice of them.
     /// If `recons` is not empty they have to be returned earlier than the `remainder`.
-    #[cfg(feature = "locales")]
-    recons: Vec<Item<'a>>,
-    #[cfg(not(feature = "locales"))]
-    recons: &'static [Item<'static>],
+    recons: Fmt<'a>,
     /// Date format
-    #[cfg(feature = "locales")]
-    d_fmt: Vec<Item<'a>>,
-    #[cfg(not(feature = "locales"))]
-    d_fmt: &'static [Item<'static>],
+    d_fmt: Fmt<'a>,
     /// Date and time format
-    #[cfg(feature = "locales")]
-    d_t_fmt: Vec<Item<'a>>,
-    #[cfg(not(feature = "locales"))]
-    d_t_fmt: &'static [Item<'static>],
+    d_t_fmt: Fmt<'a>,
     /// Time format
-    #[cfg(feature = "locales")]
-    t_fmt: Vec<Item<'a>>,
-    #[cfg(not(feature = "locales"))]
-    t_fmt: &'static [Item<'static>],
+    t_fmt: Fmt<'a>,
 }
 
 impl<'a> StrftimeItems<'a> {
@@ -265,13 +258,14 @@ impl<'a> Iterator for StrftimeItems<'a> {
     fn next(&mut self) -> Option<Item<'a>> {
         // we have some reconstructed items to return
         if !self.recons.is_empty() {
-            let item = self.recons[0].clone();
+            let item;
             #[cfg(feature = "locales")]
             {
-                self.recons = self.recons[1..].to_vec();
+                item = self.recons.remove(0);
             }
             #[cfg(not(feature = "locales"))]
             {
+                item = self.recons[0].clone();
                 self.recons = &self.recons[1..];
             }
             return Some(item);
@@ -314,7 +308,8 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     [$head:expr, $($tail:expr),+ $(,)*] => ({
                         #[cfg(feature = "locales")]
                         {
-                            self.recons = vec![$($tail),+];
+                            self.recons.clear();
+                            $(self.recons.push($tail);)+
                         }
                         #[cfg(not(feature = "locales"))]
                         {
@@ -323,6 +318,21 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         }
                         $head
                     })
+                }
+
+                macro_rules! recons_from_slice {
+                    ($slice:expr) => {{
+                        #[cfg(feature = "locales")]
+                        {
+                            self.recons.clear();
+                            self.recons.extend_from_slice(&$slice[1..]);
+                        }
+                        #[cfg(not(feature = "locales"))]
+                        {
+                            self.recons = &$slice[1..];
+                        }
+                        $slice[0].clone()
+                    }};
                 }
 
                 let item = match spec {
@@ -344,32 +354,12 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'U' => num0!(WeekFromSun),
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
-                    'X' => {
-                        #[cfg(feature = "locales")]
-                        {
-                            self.recons = self.t_fmt[1..].to_vec();
-                        }
-                        #[cfg(not(feature = "locales"))]
-                        {
-                            self.recons = &self.t_fmt[1..];
-                        }
-                        self.t_fmt[0].clone()
-                    }
+                    'X' => recons_from_slice!(self.t_fmt),
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
-                    'c' => {
-                        #[cfg(feature = "locales")]
-                        {
-                            self.recons = self.d_t_fmt[1..].to_vec();
-                        }
-                        #[cfg(not(feature = "locales"))]
-                        {
-                            self.recons = &self.d_t_fmt[1..];
-                        }
-                        self.d_t_fmt[0].clone()
-                    }
+                    'c' => recons_from_slice!(self.d_t_fmt),
                     'd' => num0!(Day),
                     'e' => nums!(Day),
                     'f' => num0!(Nanosecond),
@@ -396,17 +386,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"), num0!(Year)]
                     }
                     'w' => num!(NumDaysFromSun),
-                    'x' => {
-                        #[cfg(feature = "locales")]
-                        {
-                            self.recons = self.d_fmt[1..].to_vec();
-                        }
-                        #[cfg(not(feature = "locales"))]
-                        {
-                            self.recons = &self.d_fmt[1..];
-                        }
-                        self.d_fmt[0].clone()
-                    }
+                    'x' => recons_from_slice!(self.d_fmt),
                     'y' => num0!(YearMod100),
                     'z' => {
                         if is_alternate {
