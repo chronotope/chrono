@@ -44,26 +44,31 @@ Put this in your `Cargo.toml`:
 chrono = "0.4"
 ```
 
-Or, if you want [Serde](https://github.com/serde-rs/serde) include the
-feature like this:
+### Features
 
-```toml
-[dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-```
+Chrono supports various runtime environments and operating systems, and has
+several features that may be enabled or disabled.
 
-Then put this in your crate root:
+Default features:
 
-```rust
-extern crate chrono;
-```
+- `alloc`: Enable features that depend on allocation (primarily string formatting)
+- `std`: Enables functionality that depends on the standard library. This
+  is a superset of `alloc` and adds interoperation with standard library types
+  and traits.
+- `clock`: enables reading the system time (`now`), independent of whether
+  `std::time::SystemTime` is present, depends on having a libc.
 
-Avoid using `use chrono::*;` as Chrono exports several modules other than types.
-If you prefer the glob imports, use the following instead:
+Optional features:
 
-```rust
-use chrono::prelude::*;
-```
+- `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
+- [`serde`][]: Enable
+
+[`serde`]: https://github.com/serde-rs/serde
+[wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
+
+See the [cargo docs][] for examples of specifying features.
+
+[cargo-docs]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features
 
 ## Overview
 
