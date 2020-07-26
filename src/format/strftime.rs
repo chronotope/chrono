@@ -168,6 +168,26 @@ type Fmt<'a> = Vec<Item<'a>>;
 #[cfg(not(feature = "locales"))]
 type Fmt<'a> = &'static [Item<'static>];
 
+static D_FMT: &'static [Item<'static>] =
+    &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
+static D_T_FMT: &'static [Item<'static>] = &[
+    fix!(ShortWeekdayName),
+    sp!(" "),
+    fix!(ShortMonthName),
+    sp!(" "),
+    nums!(Day),
+    sp!(" "),
+    num0!(Hour),
+    lit!(":"),
+    num0!(Minute),
+    lit!(":"),
+    num0!(Second),
+    sp!(" "),
+    num0!(Year),
+];
+static T_FMT: &'static [Item<'static>] =
+    &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
 pub struct StrftimeItems<'a> {
@@ -188,49 +208,7 @@ pub struct StrftimeItems<'a> {
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     pub fn new(s: &'a str) -> StrftimeItems<'a> {
-        static D_FMT: &'static [Item<'static>] =
-            &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-        static D_T_FMT: &'static [Item<'static>] = &[
-            fix!(ShortWeekdayName),
-            sp!(" "),
-            fix!(ShortMonthName),
-            sp!(" "),
-            nums!(Day),
-            sp!(" "),
-            num0!(Hour),
-            lit!(":"),
-            num0!(Minute),
-            lit!(":"),
-            num0!(Second),
-            sp!(" "),
-            num0!(Year),
-        ];
-        static T_FMT: &'static [Item<'static>] =
-            &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
-        #[cfg(not(feature = "locales"))]
-        static FMT_NONE: &'static [Item<'static>; 0] = &[];
-
-        #[cfg(feature = "locales")]
-        {
-            StrftimeItems {
-                remainder: s,
-                recons: Vec::new(),
-                d_fmt: D_FMT.to_vec(),
-                d_t_fmt: D_T_FMT.to_vec(),
-                t_fmt: T_FMT.to_vec(),
-            }
-        }
-
-        #[cfg(not(feature = "locales"))]
-        {
-            StrftimeItems {
-                remainder: s,
-                recons: FMT_NONE,
-                d_fmt: D_FMT,
-                d_t_fmt: D_T_FMT,
-                t_fmt: T_FMT,
-            }
-        }
+        Self::with_remainer(s)
     }
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
@@ -246,6 +224,30 @@ impl<'a> StrftimeItems<'a> {
             d_fmt: d_fmt,
             d_t_fmt: d_t_fmt,
             t_fmt: t_fmt,
+        }
+    }
+
+    #[cfg(not(feature = "locales"))]
+    fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
+        static FMT_NONE: &'static [Item<'static>; 0] = &[];
+
+        StrftimeItems {
+            remainder: s,
+            recons: FMT_NONE,
+            d_fmt: D_FMT,
+            d_t_fmt: D_T_FMT,
+            t_fmt: T_FMT,
+        }
+    }
+
+    #[cfg(feature = "locales")]
+    fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
+        StrftimeItems {
+            remainder: s,
+            recons: Vec::new(),
+            d_fmt: D_FMT.to_vec(),
+            d_t_fmt: D_T_FMT.to_vec(),
+            t_fmt: T_FMT.to_vec(),
         }
     }
 }
