@@ -49,6 +49,7 @@
 //!
 //! - `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
 //! - [`serde`][]: Enable
+//! - `locales`: Enable localization.
 //!
 //! [`serde`]: https://github.com/serde-rs/serde
 //! [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
