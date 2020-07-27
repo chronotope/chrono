@@ -29,14 +29,12 @@ use core::str::FromStr;
 use std::error::Error;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use div::{div_floor, mod_floor};
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use naive::{NaiveDate, NaiveTime};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use offset::{FixedOffset, Offset};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use {Datelike, Timelike};
-use {ParseWeekdayError, Weekday};
+use {Month, ParseMonthError, ParseWeekdayError, Weekday};
 
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
@@ -422,6 +420,7 @@ fn format_inner<'a>(
         ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     use core::fmt::Write;
+    use div::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
@@ -756,6 +755,57 @@ impl FromStr for Weekday {
             Ok(w)
         } else {
             Err(ParseWeekdayError { _dummy: () })
+        }
+    }
+}
+
+/// Parsing a `str` into a `Month` uses the format [`%W`](./format/strftime/index.html).
+///
+/// # Example
+///
+/// ~~~~
+/// use chrono::Month;
+///
+/// assert_eq!("January".parse::<Month>(), Ok(Month::January));
+/// assert!("any day".parse::<Month>().is_err());
+/// ~~~~
+///
+/// The parsing is case-insensitive.
+///
+/// ~~~~
+/// # use chrono::Month;
+/// assert_eq!("fEbruARy".parse::<Month>(), Ok(Month::February));
+/// ~~~~
+///
+/// Only the shortest form (e.g. `jan`) and the longest form (e.g. `january`) is accepted.
+///
+/// ~~~~
+/// # use chrono::Month;
+/// assert!("septem".parse::<Month>().is_err());
+/// assert!("Augustin".parse::<Month>().is_err());
+/// ~~~~
+impl FromStr for Month {
+    type Err = ParseMonthError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Ok(("", w)) = scan::short_or_long_month0(s) {
+            match w {
+                0 => Ok(Month::January),
+                1 => Ok(Month::February),
+                2 => Ok(Month::March),
+                3 => Ok(Month::April),
+                4 => Ok(Month::May),
+                5 => Ok(Month::June),
+                6 => Ok(Month::July),
+                7 => Ok(Month::August),
+                8 => Ok(Month::September),
+                9 => Ok(Month::October),
+                10 => Ok(Month::November),
+                11 => Ok(Month::December),
+                _ => Err(ParseMonthError { _dummy: () }),
+            }
+        } else {
+            Err(ParseMonthError { _dummy: () })
         }
     }
 }
