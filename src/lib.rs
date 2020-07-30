@@ -498,7 +498,7 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use {DateTime, SecondsFormat};
     #[doc(no_inline)]
-    pub use {Datelike, Timelike, Weekday};
+    pub use {Datelike, Month, Timelike, Weekday};
     #[doc(no_inline)]
     pub use {FixedOffset, Utc};
     #[doc(no_inline)]
@@ -918,20 +918,23 @@ mod weekday_serde {
 }
 
 /// The month of the year.
-/// 
-/// This enum is just a convenience implementation. 
+///
+/// This enum is just a convenience implementation.
 /// The month in dates created by DateLike objects does not return this enum.
-/// 
+///
 /// It is possible to convert from a date to a month independently
 /// ```
+/// # extern crate num_traits;
 /// use num_traits::FromPrimitive;
-/// let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11); 
+/// use chrono::prelude::*;
+/// let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11);
 /// // `2019-10-28T09:10:11Z`
-/// let month = Month::from_u32((date.month());
+/// let month = Month::from_u32(date.month());
 /// assert_eq!(month, Some(Month::October))
 /// ```
 /// Or from a Month to an integer usable by dates
 /// ```
+/// # use chrono::prelude::*;
 /// let month = Month::January;
 /// let dt = Utc.ymd(2019, month.number_from_month(), 28).and_hms(9, 10, 11);
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
@@ -951,23 +954,22 @@ pub enum Month {
     /// April
     April = 3,
     /// May
-    May  = 4,
+    May = 4,
     /// June
     June = 5,
     /// July
     July = 6,
     /// August
-    August  = 7,
+    August = 7,
     /// September
     September = 8,
     /// October
-    October = 9, 
+    October = 9,
     /// November
     November = 10,
     /// December
-    December = 11
+    December = 11,
 }
-
 
 impl Month {
     /// The next month.
@@ -1038,15 +1040,39 @@ impl Month {
             Month::December => 12,
         }
     }
+
+    /// Get the name of the month
+    ///
+    /// ```
+    /// use chrono::Month;
+    ///
+    /// assert_eq!(Month::January.name(), "January")
+    /// ```
+    pub fn name(&self) -> &'static str {
+        match *self {
+            Month::January => "January",
+            Month::February => "February",
+            Month::March => "March",
+            Month::April => "April",
+            Month::May => "May",
+            Month::June => "June",
+            Month::July => "July",
+            Month::August => "August",
+            Month::September => "September",
+            Month::October => "October",
+            Month::November => "November",
+            Month::December => "December",
+        }
+    }
 }
 
 impl num_traits::FromPrimitive for Month {
     /// Returns an Option<Month> from a i64, assuming a 1-index, January = 1.
-    /// 
+    ///
     /// `Month::from_i64(n: i64)`: | `1`                  | `2`                   | ... | `12`
     /// ---------------------------| -------------------- | --------------------- | ... | -----
     /// ``:                        | Some(Month::January) | Some(Month::February) | ... | Some(Month::December)
-    
+
     #[inline]
     fn from_u64(n: u64) -> Option<Month> {
         Self::from_u32(n as u32)
@@ -1088,17 +1114,20 @@ impl fmt::Debug for ParseMonthError {
         write!(f, "ParseMonthError {{ .. }}")
     }
 }
+
 #[cfg(feature = "serde")]
 mod month_serde {
     use super::Month;
-    use std::fmt;
-    use serdelib::{ser, de};
+    use serdelib::{de, ser};
+
+    use core::fmt;
 
     impl ser::Serialize for Month {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where S: ser::Serializer
+        where
+            S: ser::Serializer,
         {
-            serializer.serialize_str(&format!("{:?}", self))
+            serializer.collect_str(self.name())
         }
     }
 
@@ -1112,7 +1141,8 @@ mod month_serde {
         }
 
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-            where E: de::Error
+        where
+            E: de::Error,
         {
             value.parse().map_err(|_| E::custom("short (3-letter) or full month names expected"))
         }
@@ -1120,7 +1150,8 @@ mod month_serde {
 
     impl<'de> de::Deserialize<'de> for Month {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-            where D: de::Deserializer<'de>
+        where
+            D: de::Deserializer<'de>,
         {
             deserializer.deserialize_str(MonthVisitor)
         }
@@ -1182,20 +1213,14 @@ mod month_serde {
             assert_eq!(month, expected_month);
         }
 
-        let errors: Vec<&str> = vec![
-            "\"not a month\"",
-            "\"ja\"",
-            "\"Dece\"",
-            "Dec",
-            "\"Augustin\""
-        ];
+        let errors: Vec<&str> =
+            vec!["\"not a month\"", "\"ja\"", "\"Dece\"", "Dec", "\"Augustin\""];
 
         for string in errors {
             from_str::<Month>(string).unwrap_err();
         }
     }
 }
-
 
 /// The common set of methods for date component.
 pub trait Datelike: Sized {
@@ -1408,7 +1433,6 @@ mod test {
         }
     }
 
-
     #[test]
     fn test_month_enum_primitive_parse() {
         use num_traits::FromPrimitive;
@@ -1422,7 +1446,7 @@ mod test {
         assert_eq!(dec_opt, Some(Month::December));
         assert_eq!(no_month, None);
 
-        let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11); 
+        let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11);
         assert_eq!(Month::from_u32(date.month()), Some(Month::October));
 
         let month = Month::January;
@@ -1481,12 +1505,12 @@ fn test_num_days_from_ce_against_alternative_impl() {
         let mid_year = jan1_year + Duration::days(133);
         assert_eq!(mid_year.num_days_from_ce(), num_days_from_ce(&mid_year), "on {:?}", mid_year);
     }
+}
 
-    #[test]
-    fn test_month_enum_succ_pred() {
-        assert_eq!(Month::January.succ(), Month::February);
-        assert_eq!(Month::December.succ(), Month::January);
-        assert_eq!(Month::January.pred(), Month::December);
-        assert_eq!(Month::February.pred(), Month::January);
-    }
+#[test]
+fn test_month_enum_succ_pred() {
+    assert_eq!(Month::January.succ(), Month::February);
+    assert_eq!(Month::December.succ(), Month::January);
+    assert_eq!(Month::January.pred(), Month::December);
+    assert_eq!(Month::February.pred(), Month::January);
 }

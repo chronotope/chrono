@@ -28,14 +28,13 @@ use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
 
-use div::{div_floor, mod_floor};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use naive::{NaiveDate, NaiveTime};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use offset::{FixedOffset, Offset};
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use {Datelike, Month, Timelike, Weekday};
-use {ParseMonthError, ParseWeekdayError};
+use {Datelike, Timelike};
+use {Month, ParseMonthError, ParseWeekdayError, Weekday};
 
 #[cfg(feature = "locales")]
 pub(crate) mod locales;
@@ -454,6 +453,7 @@ fn format_inner<'a>(
     let am_pm_lowercase = &[am_pm_lowercase[0].as_str(), am_pm_lowercase[1].as_str()];
 
     use core::fmt::Write;
+    use div::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
