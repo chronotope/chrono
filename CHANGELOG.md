@@ -12,13 +12,13 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ### Features
 
-* Added day and week iterators for `NaiveDate` (@gnzlbg & @robyoung)
-* Added `locales`. All format functions can now use locales.
+* Add day and week iterators for `NaiveDate` (@gnzlbg & @robyoung)
+* Add a `Month` enum (@hhamana)
+* Add `locales`. All format functions can now use locales.
 
 ### Improvements
 
 * Added MIN and MAX values for `NaiveTime`, `NaiveDateTime` and `DateTime<Utc>`.
-
 
 ## 0.4.13
 
