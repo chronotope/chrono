@@ -6,7 +6,7 @@ set -euo pipefail
 source "${BASH_SOURCE[0]%/*}/_shlib.sh"
 
 TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
-FEATURES=(std serde clock "alloc serde")
+FEATURES=(std serde clock "alloc serde" unstable-locales)
 RUST_113_FEATURES=(rustc-serialize serde)
 
 main() {
@@ -56,7 +56,7 @@ test_all_tzs() {
 test_regular() {
     tz="$1" && shift
 
-    runt env TZ="$tz" cargo test --features __doctest --color=always -- --color=always
+    runt env TZ="$tz" cargo test --features __doctest,unstable-locales --color=always -- --color=always
     for feature in "${FEATURES[@]}"; do
         runt env TZ="$tz" cargo test --no-default-features --features "$feature" --lib --color=always -- --color=always
     done

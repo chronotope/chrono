@@ -48,7 +48,10 @@
 //! Optional features:
 //!
 //! - `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
-//! - [`serde`][]: Enable
+//! - [`serde`][]: Enable serialization/deserialization via serde.
+//! - `unstable-locales`: Enable localization. This adds various methods with a
+//!   `_localized` suffix. The implementation and API may change or even be
+//!   removed in a patch release. Feedback welcome.
 //!
 //! [`serde`]: https://github.com/serde-rs/serde
 //! [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
@@ -217,12 +220,23 @@
 //! [`to_rfc3339`](./struct.DateTime.html#method.to_rfc3339) methods
 //! for well-known formats.
 //!
+//! Chrono now also provides date formatting in almost any language without the
+//! help of an additional C library. This functionality is under the feature
+//! `unstable-locales`:
+//!
+//! ```text
+//! chrono { version = "0.4", features = ["unstable-locales"]
+//! ```
+//!
+//! The `unstable-locales` feature requires and implies at least the `alloc` feature.
+//!
 //! ```rust
 //! use chrono::prelude::*;
 //!
 //! let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
+//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //!
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
@@ -440,6 +454,8 @@ extern crate serde as serdelib;
 extern crate doc_comment;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate js_sys;
+#[cfg(feature = "unstable-locales")]
+extern crate pure_rust_locales;
 #[cfg(feature = "bench")]
 extern crate test;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
@@ -456,6 +472,9 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+/// L10n locales.
+#[cfg(feature = "unstable-locales")]
+pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 #[doc(no_inline)]
 pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
@@ -473,6 +492,9 @@ pub mod prelude {
     #[cfg(feature = "clock")]
     #[doc(no_inline)]
     pub use Local;
+    #[cfg(feature = "unstable-locales")]
+    #[doc(no_inline)]
+    pub use Locale;
     #[doc(no_inline)]
     pub use SubsecRound;
     #[doc(no_inline)]

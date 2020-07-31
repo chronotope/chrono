@@ -8,6 +8,7 @@ Ben Boeckel <mathstuf@gmail.com>
 Ben Eills <ben@beneills.com>
 Brandon W Maister <bwm@knewton.com>
 Brandon W Maister <quodlibetor@gmail.com>
+Cecile Tonglet <cecile.tonglet@cecton.com>
 Colin Ray <r.colinray@gmail.com>
 Corey Farwell <coreyf@rwell.org>
 Dan <dan@ebip.co.uk>

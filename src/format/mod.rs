@@ -36,9 +36,19 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {Month, ParseMonthError, ParseWeekdayError, Weekday};
 
+#[cfg(feature = "unstable-locales")]
+pub(crate) mod locales;
+
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
+/// L10n locales.
+#[cfg(feature = "unstable-locales")]
+pub use pure_rust_locales::Locale;
+
+#[cfg(not(feature = "unstable-locales"))]
+#[derive(Debug)]
+struct Locale;
 
 /// An uninhabited type used for `InternalNumeric` and `InternalFixed` below.
 #[derive(Clone, PartialEq, Eq)]
@@ -386,7 +396,7 @@ pub fn format_item<'a>(
     item: &Item<'a>,
 ) -> fmt::Result {
     let mut result = String::new();
-    format_inner(&mut result, date, time, off, item)?;
+    format_inner(&mut result, date, time, off, item, None)?;
     w.pad(&result)
 }
 
@@ -397,11 +407,27 @@ fn format_inner<'a>(
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'a>,
+    _locale: Option<Locale>,
 ) -> fmt::Result {
-    // full and abbreviated month and weekday names
-    static SHORT_MONTHS: [&'static str; 12] =
-        ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    static LONG_MONTHS: [&'static str; 12] = [
+    #[cfg(feature = "unstable-locales")]
+    let locale = _locale.unwrap_or(Locale::POSIX);
+
+    #[cfg(feature = "unstable-locales")]
+    let short_months = locales::short_months(locale);
+    #[cfg(feature = "unstable-locales")]
+    let long_months = locales::long_months(locale);
+    #[cfg(feature = "unstable-locales")]
+    let short_weekdays = locales::short_weekdays(locale);
+    #[cfg(feature = "unstable-locales")]
+    let long_weekdays = locales::long_weekdays(locale);
+    #[cfg(feature = "unstable-locales")]
+    let am_pm = locales::am_pm(locale);
+
+    #[cfg(not(feature = "unstable-locales"))]
+    let short_months =
+        &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    #[cfg(not(feature = "unstable-locales"))]
+    let long_months = &[
         "January",
         "February",
         "March",
@@ -415,9 +441,16 @@ fn format_inner<'a>(
         "November",
         "December",
     ];
-    static SHORT_WEEKDAYS: [&'static str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    static LONG_WEEKDAYS: [&'static str; 7] =
-        ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    #[cfg(not(feature = "unstable-locales"))]
+    let short_weekdays = &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    #[cfg(not(feature = "unstable-locales"))]
+    let long_weekdays =
+        &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    #[cfg(not(feature = "unstable-locales"))]
+    let am_pm = &["AM", "PM"];
+
+    let am_pm_lowercase: Vec<_> = am_pm.iter().map(|x| x.to_lowercase()).collect();
+    let am_pm_lowercase = &[am_pm_lowercase[0].as_str(), am_pm_lowercase[1].as_str()];
 
     use core::fmt::Write;
     use div::{div_floor, mod_floor};
@@ -520,28 +553,32 @@ fn format_inner<'a>(
             let ret =
                 match *spec {
                     ShortMonthName => date.map(|d| {
-                        result.push_str(SHORT_MONTHS[d.month0() as usize]);
+                        result.push_str(short_months[d.month0() as usize]);
                         Ok(())
                     }),
                     LongMonthName => date.map(|d| {
-                        result.push_str(LONG_MONTHS[d.month0() as usize]);
+                        result.push_str(long_months[d.month0() as usize]);
                         Ok(())
                     }),
                     ShortWeekdayName => date.map(|d| {
                         result
-                            .push_str(SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize]);
+                            .push_str(short_weekdays[d.weekday().num_days_from_sunday() as usize]);
                         Ok(())
                     }),
                     LongWeekdayName => date.map(|d| {
-                        result.push_str(LONG_WEEKDAYS[d.weekday().num_days_from_monday() as usize]);
+                        result.push_str(long_weekdays[d.weekday().num_days_from_sunday() as usize]);
                         Ok(())
                     }),
                     LowerAmPm => time.map(|t| {
-                        result.push_str(if t.hour12().0 { "pm" } else { "am" });
+                        result.push_str(if t.hour12().0 {
+                            am_pm_lowercase[1]
+                        } else {
+                            am_pm_lowercase[0]
+                        });
                         Ok(())
                     }),
                     UpperAmPm => time.map(|t| {
-                        result.push_str(if t.hour12().0 { "PM" } else { "AM" });
+                        result.push_str(if t.hour12().0 { am_pm[1] } else { am_pm[0] });
                         Ok(())
                     }),
                     Nanosecond => time.map(|t| {
@@ -610,9 +647,9 @@ fn format_inner<'a>(
                             write!(
                                 result,
                                 "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
-                                SHORT_WEEKDAYS[d.weekday().num_days_from_monday() as usize],
+                                short_weekdays[d.weekday().num_days_from_sunday() as usize],
                                 d.day(),
-                                SHORT_MONTHS[d.month0() as usize],
+                                short_months[d.month0() as usize],
                                 d.year(),
                                 t.hour(),
                                 t.minute(),
@@ -664,7 +701,7 @@ where
 {
     let mut result = String::new();
     for item in items {
-        format_inner(&mut result, date, time, off, item.borrow())?;
+        format_inner(&mut result, date, time, off, item.borrow(), None)?;
     }
     w.pad(&result)
 }
@@ -690,13 +727,15 @@ pub struct DelayedFormat<I> {
     off: Option<(String, FixedOffset)>,
     /// An iterator returning formatting items.
     items: I,
+    /// Locale used for text.
+    locale: Option<Locale>,
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
-        DelayedFormat { date: date, time: time, off: None, items: items }
+        DelayedFormat { date: date, time: time, off: None, items: items, locale: None }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
@@ -710,13 +749,66 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         Off: Offset + fmt::Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date: date, time: time, off: Some(name_and_diff), items: items }
+        DelayedFormat {
+            date: date,
+            time: time,
+            off: Some(name_and_diff),
+            items: items,
+            locale: None,
+        }
+    }
+
+    /// Makes a new `DelayedFormat` value out of local date and time and locale.
+    #[cfg(feature = "unstable-locales")]
+    pub fn new_with_locale(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        items: I,
+        locale: Locale,
+    ) -> DelayedFormat<I> {
+        DelayedFormat { date: date, time: time, off: None, items: items, locale: Some(locale) }
+    }
+
+    /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
+    #[cfg(feature = "unstable-locales")]
+    pub fn new_with_offset_and_locale<Off>(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        offset: &Off,
+        items: I,
+        locale: Locale,
+    ) -> DelayedFormat<I>
+    where
+        Off: Offset + fmt::Display,
+    {
+        let name_and_diff = (offset.to_string(), offset.fix());
+        DelayedFormat {
+            date: date,
+            time: time,
+            off: Some(name_and_diff),
+            items: items,
+            locale: Some(locale),
+        }
     }
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[cfg(feature = "unstable-locales")]
+        {
+            if let Some(locale) = self.locale {
+                return format_localized(
+                    f,
+                    self.date.as_ref(),
+                    self.time.as_ref(),
+                    self.off.as_ref(),
+                    self.items.clone(),
+                    locale,
+                );
+            }
+        }
+
         format(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), self.items.clone())
     }
 }
@@ -757,6 +849,43 @@ impl FromStr for Weekday {
             Err(ParseWeekdayError { _dummy: () })
         }
     }
+}
+
+/// Formats single formatting item
+#[cfg(feature = "unstable-locales")]
+pub fn format_item_localized<'a>(
+    w: &mut fmt::Formatter,
+    date: Option<&NaiveDate>,
+    time: Option<&NaiveTime>,
+    off: Option<&(String, FixedOffset)>,
+    item: &Item<'a>,
+    locale: Locale,
+) -> fmt::Result {
+    let mut result = String::new();
+    format_inner(&mut result, date, time, off, item, Some(locale))?;
+    w.pad(&result)
+}
+
+/// Tries to format given arguments with given formatting items.
+/// Internally used by `DelayedFormat`.
+#[cfg(feature = "unstable-locales")]
+pub fn format_localized<'a, I, B>(
+    w: &mut fmt::Formatter,
+    date: Option<&NaiveDate>,
+    time: Option<&NaiveTime>,
+    off: Option<&(String, FixedOffset)>,
+    items: I,
+    locale: Locale,
+) -> fmt::Result
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+{
+    let mut result = String::new();
+    for item in items {
+        format_inner(&mut result, date, time, off, item.borrow(), Some(locale))?;
+    }
+    w.pad(&result)
 }
 
 /// Parsing a `str` into a `Month` uses the format [`%W`](./format/strftime/index.html).

@@ -19,6 +19,8 @@ use std::string::ToString;
 use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
+#[cfg(feature = "unstable-locales")]
+use format::Locale;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
 use naive::{self, IsoWeek, NaiveDateTime, NaiveTime};
@@ -492,6 +494,41 @@ where
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Formats the combined date and time with the specified formatting items and locale.
+    #[cfg(feature = "unstable-locales")]
+    #[inline]
+    pub fn format_localized_with_items<'a, I, B>(
+        &self,
+        items: I,
+        locale: Locale,
+    ) -> DelayedFormat<I>
+    where
+        I: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        let local = self.naive_local();
+        DelayedFormat::new_with_offset_and_locale(
+            Some(local.date()),
+            Some(local.time()),
+            &self.offset,
+            items,
+            locale,
+        )
+    }
+
+    /// Formats the combined date and time with the specified format string and locale.
+    /// See the [`format::strftime` module](./format/strftime/index.html)
+    /// on the supported escape sequences.
+    #[cfg(feature = "unstable-locales")]
+    #[inline]
+    pub fn format_localized<'a>(
+        &self,
+        fmt: &'a str,
+        locale: Locale,
+    ) -> DelayedFormat<StrftimeItems<'a>> {
+        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
     }
 }
 
