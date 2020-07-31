@@ -159,13 +159,13 @@ Notes:
 
 */
 
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 type Fmt<'a> = Vec<Item<'a>>;
-#[cfg(not(feature = "locales"))]
+#[cfg(not(feature = "unstable-locales"))]
 type Fmt<'a> = &'static [Item<'static>];
 
 static D_FMT: &'static [Item<'static>] =
@@ -212,7 +212,7 @@ impl<'a> StrftimeItems<'a> {
     }
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
@@ -227,7 +227,7 @@ impl<'a> StrftimeItems<'a> {
         }
     }
 
-    #[cfg(not(feature = "locales"))]
+    #[cfg(not(feature = "unstable-locales"))]
     fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
         static FMT_NONE: &'static [Item<'static>; 0] = &[];
 
@@ -240,7 +240,7 @@ impl<'a> StrftimeItems<'a> {
         }
     }
 
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
         StrftimeItems {
             remainder: s,
@@ -261,11 +261,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
         // we have some reconstructed items to return
         if !self.recons.is_empty() {
             let item;
-            #[cfg(feature = "locales")]
+            #[cfg(feature = "unstable-locales")]
             {
                 item = self.recons.remove(0);
             }
-            #[cfg(not(feature = "locales"))]
+            #[cfg(not(feature = "unstable-locales"))]
             {
                 item = self.recons[0].clone();
                 self.recons = &self.recons[1..];
@@ -308,12 +308,12 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons {
                     [$head:expr, $($tail:expr),+ $(,)*] => ({
-                        #[cfg(feature = "locales")]
+                        #[cfg(feature = "unstable-locales")]
                         {
                             self.recons.clear();
                             $(self.recons.push($tail);)+
                         }
-                        #[cfg(not(feature = "locales"))]
+                        #[cfg(not(feature = "unstable-locales"))]
                         {
                             const RECONS: &'static [Item<'static>] = &[$($tail),+];
                             self.recons = RECONS;
@@ -324,12 +324,12 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
                 macro_rules! recons_from_slice {
                     ($slice:expr) => {{
-                        #[cfg(feature = "locales")]
+                        #[cfg(feature = "unstable-locales")]
                         {
                             self.recons.clear();
                             self.recons.extend_from_slice(&$slice[1..]);
                         }
-                        #[cfg(not(feature = "locales"))]
+                        #[cfg(not(feature = "unstable-locales"))]
                         {
                             self.recons = &$slice[1..];
                         }
@@ -606,10 +606,10 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%%").to_string(), "%");
 }
 
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use {FixedOffset, TimeZone, Timelike};
+    use {FixedOffset, TimeZone};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 

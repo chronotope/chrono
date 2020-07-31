@@ -36,17 +36,17 @@ use offset::{FixedOffset, Offset};
 use {Datelike, Timelike};
 use {Month, ParseMonthError, ParseWeekdayError, Weekday};
 
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 pub(crate) mod locales;
 
 pub use self::parse::parse;
 pub use self::parsed::Parsed;
 pub use self::strftime::StrftimeItems;
 /// L10n locales.
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 pub use pure_rust_locales::Locale;
 
-#[cfg(not(feature = "locales"))]
+#[cfg(not(feature = "unstable-locales"))]
 #[derive(Debug)]
 struct Locale;
 
@@ -409,24 +409,24 @@ fn format_inner<'a>(
     item: &Item<'a>,
     _locale: Option<Locale>,
 ) -> fmt::Result {
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     let locale = _locale.unwrap_or(Locale::POSIX);
 
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     let short_months = locales::short_months(locale);
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     let long_months = locales::long_months(locale);
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     let short_weekdays = locales::short_weekdays(locale);
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     let long_weekdays = locales::long_weekdays(locale);
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     let am_pm = locales::am_pm(locale);
 
-    #[cfg(not(feature = "locales"))]
+    #[cfg(not(feature = "unstable-locales"))]
     let short_months =
         &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    #[cfg(not(feature = "locales"))]
+    #[cfg(not(feature = "unstable-locales"))]
     let long_months = &[
         "January",
         "February",
@@ -441,12 +441,12 @@ fn format_inner<'a>(
         "November",
         "December",
     ];
-    #[cfg(not(feature = "locales"))]
+    #[cfg(not(feature = "unstable-locales"))]
     let short_weekdays = &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    #[cfg(not(feature = "locales"))]
+    #[cfg(not(feature = "unstable-locales"))]
     let long_weekdays =
         &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    #[cfg(not(feature = "locales"))]
+    #[cfg(not(feature = "unstable-locales"))]
     let am_pm = &["AM", "PM"];
 
     let am_pm_lowercase: Vec<_> = am_pm.iter().map(|x| x.to_lowercase()).collect();
@@ -759,7 +759,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     pub fn new_with_locale(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
@@ -770,7 +770,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     pub fn new_with_offset_and_locale<Off>(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
@@ -795,7 +795,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 #[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        #[cfg(feature = "locales")]
+        #[cfg(feature = "unstable-locales")]
         {
             if let Some(locale) = self.locale {
                 return format_localized(
@@ -852,7 +852,7 @@ impl FromStr for Weekday {
 }
 
 /// Formats single formatting item
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 pub fn format_item_localized<'a>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -868,7 +868,7 @@ pub fn format_item_localized<'a>(
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,

@@ -48,8 +48,10 @@
 //! Optional features:
 //!
 //! - `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
-//! - [`serde`][]: Enable
-//! - `locales`: Enable localization.
+//! - [`serde`][]: Enable serialization/deserialization via serde.
+//! - `unstable-locales`: Enable localization. This adds various methods with a
+//!   `_localized` suffix. The implementation and API may change or even be
+//!   removed in a patch release. Feedback welcome.
 //!
 //! [`serde`]: https://github.com/serde-rs/serde
 //! [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
@@ -220,13 +222,13 @@
 //!
 //! Chrono now also provides date formatting in almost any language without the
 //! help of an additional C library. This functionality is under the feature
-//! `locales`:
+//! `unstable-locales`:
 //!
 //! ```text
-//! chrono { version = "0.4", features = ["locales"]
+//! chrono { version = "0.4", features = ["unstable-locales"]
 //! ```
 //!
-//! The `locales` feature requires and implies at least the `alloc` feature.
+//! The `unstable-locales` feature requires and implies at least the `alloc` feature.
 //!
 //! ```rust
 //! use chrono::prelude::*;
@@ -452,7 +454,7 @@ extern crate serde as serdelib;
 extern crate doc_comment;
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 extern crate js_sys;
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 extern crate pure_rust_locales;
 #[cfg(feature = "bench")]
 extern crate test;
@@ -471,7 +473,7 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 /// L10n locales.
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 #[doc(no_inline)]
@@ -490,7 +492,7 @@ pub mod prelude {
     #[cfg(feature = "clock")]
     #[doc(no_inline)]
     pub use Local;
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     #[doc(no_inline)]
     pub use Locale;
     #[doc(no_inline)]

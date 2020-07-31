@@ -29,7 +29,7 @@ alloc = []
 std = []
 clock = ["time", "std"]
 wasmbind = ["wasm-bindgen", "js-sys"]
-locales = ["pure-rust-locales", "alloc"]
+unstable-locales = ["pure-rust-locales", "alloc"]
 __internal_bench = []
 __doctest = []
 

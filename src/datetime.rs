@@ -19,7 +19,7 @@ use std::string::ToString;
 use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::DelayedFormat;
-#[cfg(feature = "locales")]
+#[cfg(feature = "unstable-locales")]
 use format::Locale;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
@@ -497,7 +497,7 @@ where
     }
 
     /// Formats the combined date and time with the specified formatting items and locale.
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
@@ -521,7 +521,7 @@ where
     /// Formats the combined date and time with the specified format string and locale.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
-    #[cfg(feature = "locales")]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     pub fn format_localized<'a>(
         &self,

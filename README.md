@@ -61,8 +61,10 @@ Default features:
 Optional features:
 
 - `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
-- [`serde`][]: Enable
-- `locales`: Enable localization.
+- [`serde`][]: Enable serialization/deserialization via serde.
+- `unstable-locales`: Enable localization. This adds various methods with a
+  `_localized` suffix. The implementation and API may change or even be
+  removed in a patch release. Feedback welcome.
 
 [`serde`]: https://github.com/serde-rs/serde
 [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
@@ -228,13 +230,13 @@ for well-known formats.
 
 Chrono now also provides date formatting in almost any language without the
 help of an additional C library. This functionality is under the feature
-`locales`:
+`unstable-locales`:
 
 ```text
-chrono { version = "0.4", features = ["locales"]
+chrono { version = "0.4", features = ["unstable-locales"]
 ```
 
-The `locales` feature requires and implies at least the `alloc` feature.
+The `unstable-locales` feature requires and implies at least the `alloc` feature.
 
 ```rust
 use chrono::prelude::*;
