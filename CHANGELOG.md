@@ -15,6 +15,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add day and week iterators for `NaiveDate` (@gnzlbg & @robyoung)
 * Add a `Month` enum (@hhamana)
 * Add `locales`. All format functions can now use locales.
+* Fix Local.from_local_datetime method for wasm
 
 ### Improvements
 

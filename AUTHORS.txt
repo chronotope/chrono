@@ -33,6 +33,7 @@ Ken Tossell <ken@tossell.net>
 Martin Risell Lilja <martin.risell.lilja@gmail.com>
 Richard Petrie <rap1011@ksu.edu>
 Ryan Lewis <ryansname@gmail.com>
+Sergey V. Shadoy <shadoysv@yandex.ru>
 Sergey V. Galtsev <sergey.v.galtsev@github.com>
 Steve Klabnik <steve@steveklabnik.com>
 Tom Gallacher <tomgallacher23@gmail.com>

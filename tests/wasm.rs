@@ -44,4 +44,15 @@ mod test {
 
         assert_eq!(now.get_time() as i64, dt.timestamp_millis());
     }
+
+    #[wasm_bindgen_test]
+    fn local_from_local_datetime() {
+        let now = Local::now();
+        let ndt = now.naive_local();
+        let res = match Local.from_local_datetime(&ndt).single() {
+            Some(v) => v,
+            None => panic! {"Required for test!"},
+        };
+        assert_eq!(now, res);
+    }
 }

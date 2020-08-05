@@ -7,12 +7,16 @@ use oldtime;
 
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
-use naive::{NaiveDate, NaiveDateTime, NaiveTime};
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+use naive::NaiveTime;
+use naive::{NaiveDate, NaiveDateTime};
 use {Date, DateTime};
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 use {Datelike, Timelike};
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 fn tm_to_datetime(mut tm: oldtime::Tm) -> DateTime<Local> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
@@ -43,6 +47,7 @@ fn tm_to_datetime(mut tm: oldtime::Tm) -> DateTime<Local> {
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
     // well, this exploits an undocumented `Tm::to_timespec` behavior
     // to get the exact function we want (either `timegm` or `mktime`).
@@ -141,6 +146,16 @@ impl TimeZone for Local {
         midnight.map(|datetime| Date::from_utc(*local, *datetime.offset()))
     }
 
+    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
+        let mut local = local.clone();
+        // Get the offset from the js runtime
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        local -= oldtime::Duration::seconds(offset.local_minus_utc() as i64);
+        LocalResult::Single(DateTime::from_utc(local, offset))
+    }
+
+    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let timespec = datetime_to_timespec(local, true);
 
