@@ -71,7 +71,7 @@ Optional features:
 
 See the [cargo docs][] for examples of specifying features.
 
-[cargo-docs]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features
+[cargo docs]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features
 
 ## Overview
 
