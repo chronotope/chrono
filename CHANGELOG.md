@@ -8,14 +8,17 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## 0.4.14 (unreleased)
+## 0.4.15 (unreleased)
+
+## 0.4.14
 
 ### Features
 
 * Add day and week iterators for `NaiveDate` (@gnzlbg & @robyoung)
 * Add a `Month` enum (@hhamana)
-* Add `locales`. All format functions can now use locales.
-* Fix Local.from_local_datetime method for wasm
+* Add `locales`. All format functions can now use locales, see the documentation for the
+  `unstable-locales` feature.
+* Fix `Local.from_local_datetime` method for wasm
 
 ### Improvements
 
