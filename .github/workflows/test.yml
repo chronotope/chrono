@@ -3,10 +3,14 @@ name: test
 on:
   push:
     branches: [main, master]
-    paths: '**.rs'
+    paths:
+      - '**.rs'
+      - .github/**
   pull_request:
     branches: [main, master]
-    paths: '**.rs'
+    paths:
+      - '**.rs'
+      - .github/**
 
 jobs:
   test:
