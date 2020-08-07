@@ -7,6 +7,7 @@ source "${BASH_SOURCE[0]%/*}/_shlib.sh"
 
 TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
 FEATURES=(std serde clock "alloc serde" unstable-locales)
+CHECK_FEATURES=(alloc "std unstable-locales" "serde clock" "clock unstable-locales")
 RUST_113_FEATURES=(rustc-serialize serde)
 
 main() {
@@ -21,6 +22,7 @@ meaningful in the github actions feature matrix UI.
     WASM                Empty or 'yes_wasm'
     CORE                'std' or 'no_std'
     EXHAUSTIVE_TZ       Emptly or 'all_tzs'
+    CHECK_COMBINATORIC  Combine various features and verify that we compile
 "
         exit
     fi
@@ -36,6 +38,8 @@ meaningful in the github actions feature matrix UI.
             test_core
         elif [[ ${EXHAUSTIVE_TZ:-} == all_tzs ]]; then
             test_all_tzs
+        elif [[ ${CHECK_COMBINATORIC:-} == combinatoric ]]; then
+            check_combinatoric
         else
             test_regular UTC0
         fi
@@ -59,6 +63,14 @@ test_regular() {
     runt env TZ="$tz" cargo test --features __doctest,unstable-locales --color=always -- --color=always
     for feature in "${FEATURES[@]}"; do
         runt env TZ="$tz" cargo test --no-default-features --features "$feature" --lib --color=always -- --color=always
+    done
+}
+
+check_combinatoric() {
+    runt cargo check --no-default-features
+    runt cargo check --all-features
+    for feature in "${CHECK_FEATURES[@]}"; do
+        runt cargo check --no-default-features --features "$feature" --lib --color=always
     done
 }
 
