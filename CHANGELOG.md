@@ -10,7 +10,7 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.15 (unreleased)
 
-## 0.4.14
+## 0.4.14 **YANKED**
 
 ### Features
 
