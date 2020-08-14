@@ -410,47 +410,42 @@ fn format_inner<'a>(
     _locale: Option<Locale>,
 ) -> fmt::Result {
     #[cfg(feature = "unstable-locales")]
-    let locale = _locale.unwrap_or(Locale::POSIX);
-
-    #[cfg(feature = "unstable-locales")]
-    let short_months = locales::short_months(locale);
-    #[cfg(feature = "unstable-locales")]
-    let long_months = locales::long_months(locale);
-    #[cfg(feature = "unstable-locales")]
-    let short_weekdays = locales::short_weekdays(locale);
-    #[cfg(feature = "unstable-locales")]
-    let long_weekdays = locales::long_weekdays(locale);
-    #[cfg(feature = "unstable-locales")]
-    let am_pm = locales::am_pm(locale);
-
+    let (short_months, long_months, short_weekdays, long_weekdays, am_pm, am_pm_lowercase) = {
+        let locale = _locale.unwrap_or(Locale::POSIX);
+        let am_pm = locales::am_pm(locale);
+        (
+            locales::short_months(locale),
+            locales::long_months(locale),
+            locales::short_weekdays(locale),
+            locales::long_weekdays(locale),
+            am_pm,
+            &[am_pm[0].to_lowercase(), am_pm[1].to_lowercase()],
+        )
+    };
     #[cfg(not(feature = "unstable-locales"))]
-    let short_months =
-        &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    #[cfg(not(feature = "unstable-locales"))]
-    let long_months = &[
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ];
-    #[cfg(not(feature = "unstable-locales"))]
-    let short_weekdays = &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    #[cfg(not(feature = "unstable-locales"))]
-    let long_weekdays =
-        &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    #[cfg(not(feature = "unstable-locales"))]
-    let am_pm = &["AM", "PM"];
-
-    let am_pm_lowercase: Vec<_> = am_pm.iter().map(|x| x.to_lowercase()).collect();
-    let am_pm_lowercase = &[am_pm_lowercase[0].as_str(), am_pm_lowercase[1].as_str()];
+    let (short_months, long_months, short_weekdays, long_weekdays, am_pm, am_pm_lowercase) = {
+        (
+            &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+            &[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+            ],
+            &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+            &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            &["AM", "PM"],
+            &["am", "pm"],
+        )
+    };
 
     use core::fmt::Write;
     use div::{div_floor, mod_floor};
@@ -570,11 +565,14 @@ fn format_inner<'a>(
                         Ok(())
                     }),
                     LowerAmPm => time.map(|t| {
-                        result.push_str(if t.hour12().0 {
-                            am_pm_lowercase[1]
-                        } else {
-                            am_pm_lowercase[0]
-                        });
+                        #[cfg_attr(feature = "cargo-clippy", allow(useless_asref))]
+                        {
+                            result.push_str(if t.hour12().0 {
+                                am_pm_lowercase[1].as_ref()
+                            } else {
+                                am_pm_lowercase[0].as_ref()
+                            });
+                        }
                         Ok(())
                     }),
                     UpperAmPm => time.map(|t| {
