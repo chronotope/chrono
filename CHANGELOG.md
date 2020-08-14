@@ -8,7 +8,13 @@ Chrono obeys the principle of [Semantic Versioning](http://semver.org/).
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## 0.4.15 (unreleased)
+## 0.4.16 (unreleased)
+
+## 0.4.15
+
+### Fixes
+
+* Correct usage of vec in specific feature combinations (@quodlibetor)
 
 ## 0.4.14 **YANKED**
 
