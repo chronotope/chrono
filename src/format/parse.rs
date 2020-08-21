@@ -407,7 +407,9 @@ where
                         parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
                     }
 
-                    &TimezoneName => return Err((s, BAD_FORMAT)),
+                    &TimezoneName => {
+                        try_consume!(scan::timezone_name_skip(s));
+                    }
 
                     &TimezoneOffsetColon | &TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(
@@ -752,7 +754,7 @@ fn test_parse() {
     check!("z",         [internal_fix!(TimezoneOffsetPermissive)]; offset: 0);
     check!("+12:00",    [internal_fix!(TimezoneOffsetPermissive)]; offset: 12 * 60 * 60);
     check!("+12",       [internal_fix!(TimezoneOffsetPermissive)]; offset: 12 * 60 * 60);
-    check!("???",       [fix!(TimezoneName)]; BAD_FORMAT); // not allowed
+    check!("CEST 5",    [fix!(TimezoneName), lit!(" "), num!(Day)]; day: 5);
 
     // some practical examples
     check!("2015-02-04T14:37:05+09:00",
@@ -771,6 +773,12 @@ fn test_parse() {
             num!(Minute), lit!(":"), num!(Second), sp!(" "), lit!("GMT")];
            year: 2013, month: 6, day: 10, weekday: Weekday::Mon,
            hour_div_12: 0, hour_mod_12: 9, minute: 32, second: 37);
+    check!("Sun Aug 02 13:39:15 CEST 2020",
+            [fix!(ShortWeekdayName), sp!(" "), fix!(ShortMonthName), sp!(" "),
+            num!(Day), sp!(" "), num!(Hour), lit!(":"), num!(Minute), lit!(":"),
+            num!(Second), sp!(" "), fix!(TimezoneName), sp!(" "), num!(Year)];
+            year: 2020, month: 8, day: 2, weekday: Weekday::Sun,
+            hour_div_12: 1, hour_mod_12: 1, minute: 39, second: 15);
     check!("20060102150405",
            [num!(Year), num!(Month), num!(Day), num!(Hour), num!(Minute), num!(Second)];
            year: 2006, month: 1, day: 2, hour_div_12: 1, hour_mod_12: 3, minute: 4, second: 5);

@@ -10,6 +10,11 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.16 (unreleased)
 
+### Features
+
+* Add %Z specifier to the `FromStr`, similar to the glibc strptime
+  (does not set the offset from the timezone name)
+
 ## 0.4.15
 
 ### Fixes

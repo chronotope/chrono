@@ -68,7 +68,7 @@ The following specifiers are available both to formatting and parsing.
 | `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
-| `%Z`  | `ACST`   | *Formatting only:* Local time zone name.                                   |
+| `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. [^9] |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
 | `%:z` | `+09:30` | Same as `%z` but with a colon.                                             |
 | `%#z` | `+09`    | *Parsing only:* Same as `%z` but allows minutes to be missing or present.  |
@@ -157,6 +157,15 @@ Notes:
    and parsing `07`, `070000` etc. will yield the same.
    Note that they can read nothing if the fractional part is zero.
 
+[^9]: `%Z`:
+   Offset will not be populated from the parsed data, nor will it be validated.
+   Timezone is completely ignored. Similar to the glibc `strptime` treatment of
+   this format code.
+   <br>
+   <br>
+   It is not possible to reliably convert from an abbreviation to an offset,
+   for example CDT can mean either Central Daylight Time (North America) or
+   China Daylight Time.
 */
 
 #[cfg(feature = "unstable-locales")]
