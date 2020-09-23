@@ -4,14 +4,14 @@
 //! The UTC (Coordinated Universal Time) time zone.
 
 use core::fmt;
+
+use super::{FixedOffset, LocalResult, Offset, TimeZone};
+use naive::{NaiveDate, NaiveDateTime};
 #[cfg(all(
     feature = "clock",
     not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
 ))]
-use oldtime;
-
-use super::{FixedOffset, LocalResult, Offset, TimeZone};
-use naive::{NaiveDate, NaiveDateTime};
+use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(feature = "clock")]
 use {Date, DateTime};
 
@@ -45,8 +45,9 @@ impl Utc {
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Utc> {
-        let spec = oldtime::get_time();
-        let naive = NaiveDateTime::from_timestamp(spec.sec, spec.nsec as u32);
+        let now =
+            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
+        let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32);
         DateTime::from_utc(naive, Utc)
     }
 

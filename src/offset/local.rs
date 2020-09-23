@@ -3,7 +3,8 @@
 
 //! The local (system) time zone.
 
-use oldtime;
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+use sys::{self, Timespec};
 
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
@@ -17,20 +18,20 @@ use {Datelike, Timelike};
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-fn tm_to_datetime(mut tm: oldtime::Tm) -> DateTime<Local> {
+fn tm_to_datetime(mut tm: sys::Tm) -> DateTime<Local> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
     }
 
     #[cfg(not(windows))]
-    fn tm_to_naive_date(tm: &oldtime::Tm) -> NaiveDate {
+    fn tm_to_naive_date(tm: &sys::Tm) -> NaiveDate {
         // from_yo is more efficient than from_ymd (since it's the internal representation).
         NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1)
     }
 
     #[cfg(windows)]
-    fn tm_to_naive_date(tm: &oldtime::Tm) -> NaiveDate {
+    fn tm_to_naive_date(tm: &sys::Tm) -> NaiveDate {
         // ...but tm_yday is broken in Windows (issue #85)
         NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
     }
@@ -48,13 +49,13 @@ fn tm_to_datetime(mut tm: oldtime::Tm) -> DateTime<Local> {
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> oldtime::Timespec {
+fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> sys::Timespec {
     // well, this exploits an undocumented `Tm::to_timespec` behavior
     // to get the exact function we want (either `timegm` or `mktime`).
     // the number 1 is arbitrary but should be non-zero to trigger `mktime`.
     let tm_utcoff = if local { 1 } else { 0 };
 
-    let tm = oldtime::Tm {
+    let tm = sys::Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
         tm_hour: d.hour() as i32,
@@ -98,7 +99,7 @@ impl Local {
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Local> {
-        tm_to_datetime(oldtime::now())
+        tm_to_datetime(Timespec::now().local())
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
@@ -160,7 +161,7 @@ impl TimeZone for Local {
         let timespec = datetime_to_timespec(local, true);
 
         // datetime_to_timespec completely ignores leap seconds, so we need to adjust for them
-        let mut tm = oldtime::at(timespec);
+        let mut tm = timespec.local();
         assert_eq!(tm.tm_nsec, 0);
         tm.tm_nsec = local.nanosecond() as i32;
 
@@ -184,7 +185,7 @@ impl TimeZone for Local {
         let timespec = datetime_to_timespec(utc, false);
 
         // datetime_to_timespec completely ignores leap seconds, so we need to adjust for them
-        let mut tm = oldtime::at(timespec);
+        let mut tm = timespec.local();
         assert_eq!(tm.tm_nsec, 0);
         tm.tm_nsec = utc.nanosecond() as i32;
 

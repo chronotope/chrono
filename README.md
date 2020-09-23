@@ -177,10 +177,9 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ```rust
-extern crate time;
 
 use chrono::prelude::*;
-use time::Duration;
+use chrono::Duration;
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
