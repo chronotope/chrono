@@ -102,9 +102,14 @@ test_wasm() {
 }
 
 test_wasm_simple() {
-    now=$(date +%s)
-    tz=$(date +%z)
-    runt env TZ="$tz" NOW="$now" wasm-pack test --node -- --features wasmbind
+    if ! runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind ; then
+        # sometimes on github the initial build takes 8-10 minutes, and we
+        # check that the time makes sense inside the test by approximately
+        # comparing it to the env var,
+        #
+        # so re-run the test in case it took too long
+        runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind
+    fi
 }
 
 main "$@"

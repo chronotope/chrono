@@ -11,9 +11,18 @@ mod test {
         let utc: DateTime<Utc> = Utc::now();
         let local: DateTime<Local> = Local::now();
 
-        // Ensure time fetched is correct
-        let actual = Utc.datetime_from_str(&env!("NOW"), "%s").unwrap();
-        assert!(utc - actual < chrono::Duration::minutes(5));
+        // Ensure time set by the test script is correct
+        let now = env!("NOW");
+        let actual = Utc.datetime_from_str(&now, "%s").unwrap();
+        let diff = utc - actual;
+        assert!(
+            diff < chrono::Duration::minutes(5),
+            "expected {} - {} == {} < 5m (env var: {})",
+            utc,
+            actual,
+            diff,
+            now,
+        );
 
         let tz = env!("TZ");
         eprintln!("testing with tz={}", tz);
