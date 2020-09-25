@@ -1,6 +1,6 @@
 [package]
 name = "chrono"
-version = "0.4.16"
+version = "0.4.17"
 authors = [
     "Kang Seonghoon <public+rust@mearie.org>",
     "Brandon W Maister <quodlibetor@gmail.com>",
