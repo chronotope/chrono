@@ -15,6 +15,12 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add %Z specifier to the `FromStr`, similar to the glibc strptime
   (does not set the offset from the timezone name)
 
+* Drop the dependency on time v0.1, which is deprecated, unless the `oldtime`
+  feature is active. This feature is active by default in v0.4.16 for backwards
+  compatibility, but will likely be removed in v0.5. Code that imports
+  `time::Duration` should be switched to import `chrono::Duration` instead to
+  avoid breakage.
+
 ## 0.4.15
 
 ### Fixes

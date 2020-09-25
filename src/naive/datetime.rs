@@ -427,9 +427,8 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -455,9 +454,8 @@ impl NaiveDateTime {
     /// Overflow returns `None`.
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// # use chrono::NaiveDate;
-    /// # use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// # use chrono::{Duration, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
     /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::days(1_000_000_000)), None);
     /// # }
@@ -467,9 +465,8 @@ impl NaiveDateTime {
     /// but the addition assumes that it is the only leap second happened.
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// # use chrono::NaiveDate;
-    /// # use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
     /// let leap = hmsm(3, 5, 59, 1_300);
@@ -513,9 +510,8 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -541,9 +537,8 @@ impl NaiveDateTime {
     /// Overflow returns `None`.
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// # use chrono::NaiveDate;
-    /// # use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// # use chrono::{Duration, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
     /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::days(1_000_000_000)), None);
     /// # }
@@ -553,9 +548,8 @@ impl NaiveDateTime {
     /// but the subtraction assumes that it is the only leap second happened.
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// # use chrono::NaiveDate;
-    /// # use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
     /// let leap = hmsm(3, 5, 59, 1_300);
@@ -595,9 +589,8 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// use chrono::NaiveDate;
-    /// use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -616,9 +609,8 @@ impl NaiveDateTime {
     /// there were no other leap seconds happened.
     ///
     /// ~~~~
-    /// # extern crate chrono; extern crate time; fn main() {
-    /// # use chrono::NaiveDate;
-    /// # use time::Duration;
+    /// # extern crate chrono; fn main() {
+    /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
     /// assert_eq!(leap.signed_duration_since(from_ymd(2015, 6, 30).and_hms(23, 0, 0)),
@@ -1217,9 +1209,8 @@ impl hash::Hash for NaiveDateTime {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveDate;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1243,9 +1234,8 @@ impl hash::Hash for NaiveDateTime {
 /// but the addition assumes that it is the only leap second happened.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveDate;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
 /// let leap = hmsm(3, 5, 59, 1_300);
@@ -1289,9 +1279,8 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveDate;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1315,9 +1304,8 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// but the subtraction assumes that it is the only leap second happened.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveDate;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
 /// let leap = hmsm(3, 5, 59, 1_300);
@@ -1360,9 +1348,8 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// use chrono::NaiveDate;
-/// use time::Duration;
+/// # extern crate chrono; fn main() {
+/// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
@@ -1380,9 +1367,8 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// there were no other leap seconds happened.
 ///
 /// ~~~~
-/// # extern crate chrono; extern crate time; fn main() {
-/// # use chrono::NaiveDate;
-/// # use time::Duration;
+/// # extern crate chrono; fn main() {
+/// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
 /// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms(23, 0, 0),
