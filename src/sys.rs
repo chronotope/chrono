@@ -16,8 +16,8 @@
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(target_arch = "wasm32")]
-#[path = "sys/wasm32.rs"]
+#[cfg(any(target_arch = "wasm32", target_env = "sgx"))]
+#[path = "sys/stub.rs"]
 mod inner;
 
 #[cfg(unix)]
