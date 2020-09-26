@@ -77,14 +77,21 @@ See the [cargo docs][] for examples of specifying features.
 
 ### Duration
 
-Chrono currently uses
-the [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html) type
-from the `time` crate to represent the magnitude of a time span.
-Since this has the same name as the newer, standard type for duration,
-the reference will refer this type as `OldDuration`.
+Chrono currently uses its own [`Duration`] type to represent the magnitude
+of a time span. Since this has the same name as the newer, standard type for
+duration, the reference will refer this type as `OldDuration`.
+
 Note that this is an "accurate" duration represented as seconds and
 nanoseconds and does not represent "nominal" components such as days or
 months.
+
+When the `oldtime` feature is enabled, [`Duration`] is an alias for the
+[`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html)
+type from v0.1 of the time crate. time v0.1 is deprecated, so new code
+should disable the `oldtime` feature and use the `chrono::Duration` type
+instead. The `oldtime` feature is enabled by default for backwards
+compatibility, but future versions of Chrono are likely to remove the
+feature entirely.
 
 Chrono does not yet natively support
 the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
