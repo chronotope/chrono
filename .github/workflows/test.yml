@@ -2,13 +2,9 @@ name: test
 
 on:
   push:
-    branches: [main, master]
-    paths:
-      - '**.rs'
-      - .github/**
-      - Cargo.toml
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
     paths:
       - '**.rs'
       - .github/**
