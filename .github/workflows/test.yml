@@ -6,11 +6,13 @@ on:
     paths:
       - '**.rs'
       - .github/**
+      - Cargo.toml
   pull_request:
     branches: [main, master]
     paths:
       - '**.rs'
       - .github/**
+      - Cargo.toml
 
 jobs:
   test:
