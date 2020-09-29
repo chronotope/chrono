@@ -78,7 +78,7 @@ pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
         }
         #[cfg(any(target_os = "solaris", target_os = "illumos"))]
         let gmtoff = {
-            ::tzset();
+            ::oldtime::tzset();
             // < 0 means we don't know; assume we're not in DST.
             if out.tm_isdst == 0 {
                 // timezone is seconds west of UTC, tm_gmtoff is seconds east
