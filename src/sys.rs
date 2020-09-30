@@ -67,19 +67,6 @@ impl Timespec {
     }
 }
 
-#[cfg(not(any(windows, target_env = "sgx")))]
-#[allow(dead_code)] // only used on some architectures
-pub fn tzset() {
-    extern "C" {
-        fn tzset();
-    }
-    unsafe { tzset() }
-}
-
-#[cfg(any(windows, target_env = "sgx"))]
-#[allow(dead_code)] // only used on some architectures
-pub fn tzset() {}
-
 /// Holds a calendar date and time broken down into its components (year, month,
 /// day, and so on), also called a broken-down time value.
 // FIXME: use c_int instead of i32?
