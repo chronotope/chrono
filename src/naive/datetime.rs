@@ -1419,7 +1419,7 @@ impl fmt::Debug for NaiveDateTime {
     }
 }
 
-/// The `Debug` output of the naive date and time `dt` is the same as
+/// The `Display` output of the naive date and time `dt` is the same as
 /// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](../format/strftime/index.html).
 ///
 /// It should be noted that, for leap seconds not on the minute boundary,
