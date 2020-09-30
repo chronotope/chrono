@@ -1,4 +1,4 @@
-name: test
+name: All Tests and Builds
 
 on:
   push:
@@ -116,3 +116,19 @@ jobs:
         env:
           RUST_VERSION: stable
           WASM: wasm_simple
+
+  cross-targets:
+    strategy:
+      matrix:
+        target:
+          - x86_64-sun-solaris
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install cross
+        run: bash ci/install-cross.sh
+
+      - name: Build static library
+        run: cross check --target ${{ matrix.target }}

@@ -19,6 +19,14 @@ extern "C" {
     static altzone: time_t;
 }
 
+#[cfg(any(target_os = "solaris", target_os = "illumos"))]
+fn tzset() {
+    extern "C" {
+        fn tzset();
+    }
+    unsafe { tzset() }
+}
+
 fn rust_tm_to_tm(rust_tm: &Tm, tm: &mut libc::tm) {
     tm.tm_sec = rust_tm.tm_sec;
     tm.tm_min = rust_tm.tm_min;
@@ -78,7 +86,7 @@ pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
         }
         #[cfg(any(target_os = "solaris", target_os = "illumos"))]
         let gmtoff = {
-            ::tzset();
+            tzset();
             // < 0 means we don't know; assume we're not in DST.
             if out.tm_isdst == 0 {
                 // timezone is seconds west of UTC, tm_gmtoff is seconds east
