@@ -13,6 +13,8 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.20 (unreleased)
 
+* Add more formatting documentation and examples.
+
 ## 0.4.19
 
 * Correct build on solaris/illumos
