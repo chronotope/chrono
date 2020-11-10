@@ -490,6 +490,15 @@ where
     /// Formats the combined date and time with the specified format string.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::prelude::*;
+    ///
+    /// let date_time: DateTime<Utc> = Utc.ymd(2017, 04, 02).and_hms(12, 50, 32);
+    /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
+    /// assert_eq!(formatted, "02/04/2017 12:50");
+    /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {

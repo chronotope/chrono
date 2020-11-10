@@ -292,6 +292,15 @@ where
     /// Formats the date with the specified format string.
     /// See the [`format::strftime` module](./format/strftime/index.html)
     /// on the supported escape sequences.
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::prelude::*;
+    ///
+    /// let date_time: Date<Utc> = Utc.ymd(2017, 04, 02);
+    /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
+    /// assert_eq!(formatted, "02/04/2017");
+    /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
