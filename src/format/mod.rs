@@ -12,8 +12,26 @@
 //! which are just an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) of
 //! the [`Item`](./enum.Item.html) type.
 //! They are generated from more readable **format strings**;
-//! currently Chrono supports [one built-in syntax closely resembling
-//! C's `strftime` format](./strftime/index.html).
+//! currently Chrono supports a built-in syntax closely resembling
+//! C's `strftime` format. The available options can be found [here](./strftime/index.html).
+//!
+//! # Example
+//! ```rust
+//! # use std::error::Error;
+//! #
+//! # fn main() -> Result<(), Box<dyn Error>> {
+//! use chrono::prelude::*;
+//!
+//! let date_time = Utc.ymd(2020, 11, 10).and_hms(0, 1, 32);
+//!
+//! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
+//! assert_eq!(formatted, "2020-11-10 00:01:32");
+//!
+//! let parsed = Utc.datetime_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?;
+//! assert_eq!(parsed, date_time);
+//! # Ok(())
+//! # }
+//! ```
 
 #![allow(ellipsis_inclusive_range_patterns)]
 
