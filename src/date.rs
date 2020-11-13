@@ -290,7 +290,7 @@ where
     }
 
     /// Formats the date with the specified format string.
-    /// See the [`format::strftime` module](./format/strftime/index.html)
+    /// See the [`::format::strftime`] module
     /// on the supported escape sequences.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
@@ -320,7 +320,7 @@ where
     }
 
     /// Formats the date with the specified format string and locale.
-    /// See the [`format::strftime` module](./format/strftime/index.html)
+    /// See the [`::format::strftime`] module
     /// on the supported escape sequences.
     #[cfg(feature = "unstable-locales")]
     #[inline]

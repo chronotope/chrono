@@ -332,7 +332,7 @@ where
 
 impl DateTime<FixedOffset> {
     /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
-    /// then returns a new `DateTime` with a parsed `FixedOffset`.
+    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
     ///
     /// RFC 2822 is the internet message standard that specifices the
     /// representation of times in HTTP and email headers.
@@ -352,7 +352,7 @@ impl DateTime<FixedOffset> {
     }
 
     /// Parses an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`,
-    /// then returns a new `DateTime` with a parsed `FixedOffset`.
+    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
     ///
     /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows some freedom
     /// over the syntax and RFC 3339 exercises that freedom to rigidly define a fixed format.
@@ -363,15 +363,17 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses a string with the specified format string and
-    /// returns a new `DateTime` with a parsed `FixedOffset`.
-    /// See the [`format::strftime` module](./format/strftime/index.html)
-    /// on the supported escape sequences.
+    /// Parses a string with the specified format string and returns a new
+    /// [`DateTime`] with a parsed [`FixedOffset`].
     ///
-    /// See also `Offset::datetime_from_str` which gives a local `DateTime` on specific time zone.
+    /// See the [`::format::strftime`] module on the supported escape
+    /// sequences.
+    ///
+    /// See also [`TimeZone::datetime_from_str`] which gives a local
+    /// [`DateTime`] on specific time zone.
     ///
     /// Note that this method *requires a timezone* in the string. See
-    /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
+    /// [`NaiveDateTime::parse_from_str`]
     /// for a version that does not require a timezone in the to-be-parsed str.
     ///
     /// # Example
@@ -409,11 +411,11 @@ where
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
-    /// formatted as per a `SecondsFormat`. If passed `use_z` true and the
-    /// timezone is UTC (offset 0), use 'Z', as per
-    /// [Fixed::TimezoneOffsetColonZ](format/enum.Fixed.html#variant.TimezoneOffsetColonZ).
-    /// If passed `use_z` false, use
-    /// [Fixed::TimezoneOffsetColon](format/enum.Fixed.html#variant.TimezoneOffsetColon).
+    /// formatted as per a `SecondsFormat`.
+    ///
+    /// If passed `use_z` true and the timezone is UTC (offset 0), use 'Z', as
+    /// per [`Fixed::TimezoneOffsetColonZ`] If passed `use_z` false, use
+    /// [`Fixed::TimezoneOffsetColon`]
     ///
     /// # Examples
     ///
@@ -488,7 +490,7 @@ where
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](./format/strftime/index.html)
+    /// See the [`::format::strftime`] module
     /// on the supported escape sequences.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[inline]
@@ -518,9 +520,11 @@ where
         )
     }
 
-    /// Formats the combined date and time with the specified format string and locale.
-    /// See the [`format::strftime` module](./format/strftime/index.html)
-    /// on the supported escape sequences.
+    /// Formats the combined date and time with the specified format string and
+    /// locale.
+    ///
+    /// See the [`::format::strftime`] module on the supported escape
+    /// sequences.
     #[cfg(feature = "unstable-locales")]
     #[inline]
     pub fn format_localized<'a>(
@@ -1005,7 +1009,7 @@ pub mod rustc_serialize {
         }
     }
 
-    /// A `DateTime` that can be deserialized from a timestamp
+    /// A [`DateTime`] that can be deserialized from a timestamp
     ///
     /// A timestamp here is seconds since the epoch
     #[derive(Debug)]
@@ -1200,7 +1204,7 @@ pub mod serde {
             serializer.serialize_i64(dt.timestamp_nanos())
         }
 
-        /// Deserialize a `DateTime` from a nanosecond timestamp
+        /// Deserialize a [`DateTime`] from a nanosecond timestamp
         ///
         /// Intended for use with `serde`s `deserialize_with` attribute.
         ///
