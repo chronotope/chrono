@@ -427,6 +427,8 @@
     redundant_static_lifetimes,
     // the field-init shorthand (which this lint recommends) was stabilized in rust 1.17.
     redundant_field_names,
+    // #[non_exhaustive] was introduced in 1.40
+    manual_non_exhaustive,
     // `matches!` was stabilized in 1.42
     match_like_matches_macro,
     // Changing trivially_copy_pass_by_ref would require an incompatible version
