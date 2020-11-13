@@ -403,16 +403,17 @@ pub trait TimeZone: Sized + Clone {
         self.timestamp_opt(secs, nanos as u32).unwrap()
     }
 
-    /// Parses a string with the specified format string and
-    /// returns a `DateTime` with the current offset.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
-    /// on the supported escape sequences.
+    /// Parses a string with the specified format string and returns a
+    /// `DateTime` with the current offset.
     ///
-    /// If the format does not include offsets, the current offset is assumed;
-    /// otherwise the input should have a matching UTC offset.
+    /// See the [`::format::strftime`] module on the
+    /// supported escape sequences.
     ///
-    /// See also `DateTime::parse_from_str` which gives a local `DateTime`
-    /// with parsed `FixedOffset`.
+    /// If the to-be-parsed string includes an offset, it *must* match the
+    /// offset of the TimeZone, otherwise an error will be returned.
+    ///
+    /// See also [`DateTime::parse_from_str`] which gives a [`DateTime`] with
+    /// parsed [`FixedOffset`].
     fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;

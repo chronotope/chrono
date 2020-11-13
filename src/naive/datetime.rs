@@ -702,7 +702,7 @@ impl NaiveDateTime {
 impl Datelike for NaiveDateTime {
     /// Returns the year number in the [calendar date](./index.html#calendar-date).
     ///
-    /// See also the [`NaiveDate::year`](./struct.NaiveDate.html#method.year) method.
+    /// See also the [`NaiveDate::year`] method.
     ///
     /// # Example
     ///
@@ -857,8 +857,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_year`](./struct.NaiveDate.html#method.with_year) method.
+    /// See also the [`NaiveDate::with_year`] method.
     ///
     /// # Example
     ///
@@ -878,8 +877,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_month`](./struct.NaiveDate.html#method.with_month) method.
+    /// See also the [`NaiveDate::with_month`] method.
     ///
     /// # Example
     ///
@@ -900,8 +898,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_month0`](./struct.NaiveDate.html#method.with_month0) method.
+    /// See also the [`NaiveDate::with_month0`] method.
     ///
     /// # Example
     ///
@@ -922,8 +919,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_day`](./struct.NaiveDate.html#method.with_day) method.
+    /// See also the [`NaiveDate::with_day`] method.
     ///
     /// # Example
     ///
@@ -943,8 +939,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_day0`](./struct.NaiveDate.html#method.with_day0) method.
+    /// See also the [`NaiveDate::with_day0`] method.
     ///
     /// # Example
     ///
@@ -964,8 +959,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_ordinal`](./struct.NaiveDate.html#method.with_ordinal) method.
+    /// See also the [`NaiveDate::with_ordinal`] method.
     ///
     /// # Example
     ///
@@ -992,8 +986,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveDate::with_ordinal0`](./struct.NaiveDate.html#method.with_ordinal0) method.
+    /// See also the [`NaiveDate::with_ordinal0`] method.
     ///
     /// # Example
     ///
@@ -1020,7 +1013,7 @@ impl Datelike for NaiveDateTime {
 impl Timelike for NaiveDateTime {
     /// Returns the hour number from 0 to 23.
     ///
-    /// See also the [`NaiveTime::hour`](./struct.NaiveTime.html#method.hour) method.
+    /// See also the [`NaiveTime::hour`] method.
     ///
     /// # Example
     ///
@@ -1037,7 +1030,7 @@ impl Timelike for NaiveDateTime {
 
     /// Returns the minute number from 0 to 59.
     ///
-    /// See also the [`NaiveTime::minute`](./struct.NaiveTime.html#method.minute) method.
+    /// See also the [`NaiveTime::minute`] method.
     ///
     /// # Example
     ///
@@ -1054,7 +1047,7 @@ impl Timelike for NaiveDateTime {
 
     /// Returns the second number from 0 to 59.
     ///
-    /// See also the [`NaiveTime::second`](./struct.NaiveTime.html#method.second) method.
+    /// See also the [`NaiveTime::second`] method.
     ///
     /// # Example
     ///
@@ -1073,8 +1066,7 @@ impl Timelike for NaiveDateTime {
     /// The range from 1,000,000,000 to 1,999,999,999 represents
     /// the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
-    /// See also the
-    /// [`NaiveTime::nanosecond`](./struct.NaiveTime.html#method.nanosecond) method.
+    /// See also the [`NaiveTime::nanosecond`] method.
     ///
     /// # Example
     ///
@@ -1093,8 +1085,7 @@ impl Timelike for NaiveDateTime {
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
-    /// See also the
-    /// [`NaiveTime::with_hour`](./struct.NaiveTime.html#method.with_hour) method.
+    /// See also the [`NaiveTime::with_hour`] method.
     ///
     /// # Example
     ///
@@ -1116,7 +1107,7 @@ impl Timelike for NaiveDateTime {
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// See also the
-    /// [`NaiveTime::with_minute`](./struct.NaiveTime.html#method.with_minute) method.
+    /// [`NaiveTime::with_minute`] method.
     ///
     /// # Example
     ///
@@ -1135,12 +1126,11 @@ impl Timelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the second number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    /// As with the [`second`](#method.second) method,
-    /// the input range is restricted to 0 through 59.
+    /// Returns `None` when the resulting `NaiveDateTime` would be invalid. As
+    /// with the [`NaiveDateTime::second`] method, the input range is
+    /// restricted to 0 through 59.
     ///
-    /// See also the
-    /// [`NaiveTime::with_second`](./struct.NaiveTime.html#method.with_second) method.
+    /// See also the [`NaiveTime::with_second`] method.
     ///
     /// # Example
     ///
@@ -1160,12 +1150,10 @@ impl Timelike for NaiveDateTime {
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
     ///
     /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    /// As with the [`nanosecond`](#method.nanosecond) method,
+    /// As with the [`NaiveDateTime::nanosecond`] method,
     /// the input range can exceed 1,000,000,000 for leap seconds.
     ///
-    /// See also the
-    /// [`NaiveTime::with_nanosecond`](./struct.NaiveTime.html#method.with_nanosecond)
-    /// method.
+    /// See also the [`NaiveTime::with_nanosecond`] method.
     ///
     /// # Example
     ///
@@ -1203,8 +1191,8 @@ impl hash::Hash for NaiveDateTime {
 /// except when the `NaiveDateTime` itself represents a leap second
 /// in which case the assumption becomes that **there is exactly a single leap second ever**.
 ///
-/// Panics on underflow or overflow.
-/// Use [`NaiveDateTime::checked_add_signed`](#method.checked_add_signed) to detect that.
+/// Panics on underflow or overflow. Use [`NaiveDateTime::checked_add_signed`]
+/// to detect that.
 ///
 /// # Example
 ///
@@ -1273,8 +1261,8 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// except when the `NaiveDateTime` itself represents a leap second
 /// in which case the assumption becomes that **there is exactly a single leap second ever**.
 ///
-/// Panics on underflow or overflow.
-/// Use [`NaiveDateTime::checked_sub_signed`](#method.checked_sub_signed) to detect that.
+/// Panics on underflow or overflow. Use [`NaiveDateTime::checked_sub_signed`]
+/// to detect that.
 ///
 /// # Example
 ///
@@ -1342,8 +1330,7 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// in which case the assumption becomes that
 /// **there are exactly one (or two) leap second(s) ever**.
 ///
-/// The implementation is a wrapper around
-/// [`NaiveDateTime::signed_duration_since`](#method.signed_duration_since).
+/// The implementation is a wrapper around [`NaiveDateTime::signed_duration_since`].
 ///
 /// # Example
 ///
@@ -1363,8 +1350,8 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # }
 /// ~~~~
 ///
-/// Leap seconds are handled, but the subtraction assumes that
-/// there were no other leap seconds happened.
+/// Leap seconds are handled, but the subtraction assumes that no other leap
+/// seconds happened.
 ///
 /// ~~~~
 /// # extern crate chrono; fn main() {
@@ -1387,7 +1374,7 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
 }
 
 /// The `Debug` output of the naive date and time `dt` is the same as
-/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](../format/strftime/index.html).
+/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1420,7 +1407,7 @@ impl fmt::Debug for NaiveDateTime {
 }
 
 /// The `Display` output of the naive date and time `dt` is the same as
-/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](../format/strftime/index.html).
+/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](::format::strftime).
 ///
 /// It should be noted that, for leap seconds not on the minute boundary,
 /// it may print a representation not distinguishable from non-leap seconds.
@@ -1451,7 +1438,7 @@ impl fmt::Display for NaiveDateTime {
 }
 
 /// Parsing a `str` into a `NaiveDateTime` uses the same format,
-/// [`%Y-%m-%dT%H:%M:%S%.f`](../format/strftime/index.html), as in `Debug`.
+/// [`%Y-%m-%dT%H:%M:%S%.f`](::format::strftime), as in `Debug`.
 ///
 /// # Example
 ///
