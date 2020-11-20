@@ -558,7 +558,7 @@ fn format_inner<'a>(
                         write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
                     }
                 } else {
-                    result.push_str("Z");
+                    result.push('Z');
                     Ok(())
                 }
             }

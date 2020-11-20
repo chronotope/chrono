@@ -21,24 +21,31 @@ use {Datelike, Weekday};
 
 /// ISO 8601 calendar date with time zone.
 ///
-/// This type should be considered ambiguous at best,
-/// due to the inherent lack of precision required for the time zone resolution.
-/// For serialization and deserialization uses, it is best to use `NaiveDate` instead.
+/// You almost certainly want to be using a [`NaiveDate`] instead of this type.
+///
+/// This type primarily exists to aid in the construction of DateTimes that
+/// have a timezone by way of the [`TimeZone`] datelike constructors (e.g.
+/// [`TimeZone::ymd`]).
+///
+/// This type should be considered ambiguous at best, due to the inherent lack
+/// of precision required for the time zone resolution.
+///
 /// There are some guarantees on the usage of `Date<Tz>`:
 ///
-/// - If properly constructed via `TimeZone::ymd` and others without an error,
+/// - If properly constructed via [`TimeZone::ymd`] and others without an error,
 ///   the corresponding local date should exist for at least a moment.
 ///   (It may still have a gap from the offset changes.)
 ///
-/// - The `TimeZone` is free to assign *any* `Offset` to the local date,
-///   as long as that offset did occur in given day.
+/// - The `TimeZone` is free to assign *any* [`Offset`](::offset::Offset) to the
+///   local date, as long as that offset did occur in given day.
+///
 ///   For example, if `2015-03-08T01:59-08:00` is followed by `2015-03-08T03:00-07:00`,
 ///   it may produce either `2015-03-08-08:00` or `2015-03-08-07:00`
 ///   but *not* `2015-03-08+00:00` and others.
 ///
-/// - Once constructed as a full `DateTime`,
-///   `DateTime::date` and other associated methods should return those for the original `Date`.
-///   For example, if `dt = tz.ymd(y,m,d).hms(h,n,s)` were valid, `dt.date() == tz.ymd(y,m,d)`.
+/// - Once constructed as a full `DateTime`, [`DateTime::date`] and other associated
+///   methods should return those for the original `Date`. For example, if `dt =
+///   tz.ymd(y,m,d).hms(h,n,s)` were valid, `dt.date() == tz.ymd(y,m,d)`.
 ///
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
