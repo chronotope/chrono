@@ -23,7 +23,7 @@ use format::DelayedFormat;
 use format::Locale;
 use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use format::{Fixed, Item};
-use naive::{self, IsoWeek, NaiveDateTime, NaiveTime};
+use naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use offset::Local;
 use offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -96,10 +96,43 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime: datetime, offset: offset }
     }
 
-    /// Retrieves a date component.
+    /// Retrieves a date component
+    ///
+    /// Unless you are immediately planning on turning this into a `DateTime`
+    /// with the same Timezone you should use the
+    /// [`date_naive`](DateTime::date_naive) method.
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// let date: Date<Utc> = Utc.ymd(2020, 1, 1);
+    /// let dt: DateTime<Utc> = date.and_hms(0, 0, 0);
+    ///
+    /// assert_eq!(dt.date(), date);
+    ///
+    /// assert_eq!(dt.date().and_hms(1, 1, 1), date.and_hms(1, 1, 1));
+    /// ```
     #[inline]
     pub fn date(&self) -> Date<Tz> {
         Date::from_utc(self.naive_local().date(), self.offset.clone())
+    }
+
+    /// Retrieves the Date without an associated timezone
+    ///
+    /// [`NaiveDate`] is a more well-defined type, and has more traits implemented on it,
+    /// so should be preferred to [`Date`] any time you truly want to operate on Dates.
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// let date: DateTime<Utc> = Utc.ymd(2020, 1, 1).and_hms(0, 0, 0);
+    /// let other: DateTime<FixedOffset> = FixedOffset::east(23).ymd(2020, 1, 1).and_hms(0, 0, 0);
+    /// assert_eq!(date.date_naive(), other.date_naive());
+    /// ```
+    #[inline]
+    pub fn date_naive(&self) -> NaiveDate {
+        let local = self.naive_local();
+        NaiveDate::from_ymd(local.year(), local.month(), local.day())
     }
 
     /// Retrieves a time component.
