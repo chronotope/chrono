@@ -899,20 +899,6 @@ impl From<DateTime<Utc>> for js_sys::Date {
     }
 }
 
-/// The default value for a DateTime 1st of January 1970 00:00:00 UTC.
-///
-/// # Example
-///
-/// ~~~~
-/// let default_date = DateTime::default();
-/// assert_eq!(default_date, DateTime::from_utc(NaiveDateTime::default(), 0));
-/// ~~~~
-impl <Tz: TimeZone> Default for DateTime<Tz> {
-    fn default() -> Self {
-        DateTime::from_utc(NaiveDateTime::default(), 0)
-    }
-}
-
 #[test]
 fn test_auto_conversion() {
     let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
