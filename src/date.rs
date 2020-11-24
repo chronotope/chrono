@@ -494,3 +494,17 @@ where
         write!(f, "{}{}", self.naive_local(), self.offset)
     }
 }
+
+/// The default value for a DateTime 1st of January 1970 00:00:00 UTC.
+///
+/// # Example
+///
+/// ~~~~
+/// let default_date = DateTime::default();
+/// assert_eq!(default_date, DateTime::from_utc(NaiveDateTime::default(), 0));
+/// ~~~~
+impl<Tz: TimeZone> Default for Date<Tz> {
+    fn default() -> Self {
+        Date::from_utc(NaiveDate::default(), 0)
+    }
+}

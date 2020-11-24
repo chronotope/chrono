@@ -1714,6 +1714,20 @@ impl str::FromStr for NaiveDate {
     }
 }
 
+/// The default for a NaiveDate is 1st of January 1970.
+///
+/// # Example
+///
+/// ~~~~
+/// let default_date = NaiveDate::default();
+/// assert_eq!(default_date, NaiveDate::from_ymd(1970, 1, 1));
+/// ~~~~
+impl Default for NaiveDate {
+    fn default() -> Self {
+        NaiveDate::from_ymd(1970, 1, 1)
+    }
+}
+
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
 where

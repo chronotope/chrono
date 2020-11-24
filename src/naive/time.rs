@@ -1341,6 +1341,20 @@ impl str::FromStr for NaiveTime {
     }
 }
 
+/// The default for a NaiveTime is midnight, oo:oo:00 exactly.
+///
+/// # Example
+///
+/// ~~~~
+/// let default_time = NaiveTime::default();
+/// assert_eq!(default_time, NaiveTime::from_hms(0, 0, 0));
+/// ~~~~
+impl Default for NaiveTime {
+    fn default() -> Self {
+        NaiveTime::from_hms(0, 0, 0)
+    }
+}
+
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
 where
