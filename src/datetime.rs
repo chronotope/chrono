@@ -83,12 +83,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
     ///
     /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
     /// assert_eq!(Utc.timestamp(61, 0), dt);
-    /// ~~~~
+    /// ```
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
@@ -158,7 +158,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::Utc;
     /// use chrono::TimeZone;
     ///
@@ -167,7 +167,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = Utc.ymd(2001, 9, 9).and_hms_milli(1, 46, 40, 555);
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
-    /// ~~~~
+    /// ```
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
         self.datetime.timestamp_millis()
@@ -182,7 +182,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::Utc;
     /// use chrono::TimeZone;
     ///
@@ -191,7 +191,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = Utc.ymd(2001, 9, 9).and_hms_micro(1, 46, 40, 555);
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
-    /// ~~~~
+    /// ```
     #[inline]
     pub fn timestamp_micros(&self) -> i64 {
         self.datetime.timestamp_micros()
@@ -206,7 +206,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::Utc;
     /// use chrono::TimeZone;
     ///
@@ -215,7 +215,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 40, 555);
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
-    /// ~~~~
+    /// ```
     #[inline]
     pub fn timestamp_nanos(&self) -> i64 {
         self.datetime.timestamp_nanos()

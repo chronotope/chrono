@@ -81,12 +81,12 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> sys::Timespec {
 ///
 /// # Example
 ///
-/// ~~~~
+/// ```
 /// use chrono::{Local, DateTime, TimeZone};
 ///
 /// let dt: DateTime<Local> = Local::now();
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
-/// ~~~~
+/// ```
 #[derive(Copy, Clone, Debug)]
 pub struct Local;
 

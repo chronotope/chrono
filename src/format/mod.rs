@@ -835,26 +835,26 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
 ///
 /// # Example
 ///
-/// ~~~~
+/// ```
 /// use chrono::Weekday;
 ///
 /// assert_eq!("Sunday".parse::<Weekday>(), Ok(Weekday::Sun));
 /// assert!("any day".parse::<Weekday>().is_err());
-/// ~~~~
+/// ```
 ///
 /// The parsing is case-insensitive.
 ///
-/// ~~~~
+/// ```
 /// # use chrono::Weekday;
 /// assert_eq!("mON".parse::<Weekday>(), Ok(Weekday::Mon));
-/// ~~~~
+/// ```
 ///
 /// Only the shortest form (e.g. `sun`) and the longest form (e.g. `sunday`) is accepted.
 ///
-/// ~~~~
+/// ```
 /// # use chrono::Weekday;
 /// assert!("thurs".parse::<Weekday>().is_err());
-/// ~~~~
+/// ```
 impl FromStr for Weekday {
     type Err = ParseWeekdayError;
 
@@ -908,27 +908,27 @@ where
 ///
 /// # Example
 ///
-/// ~~~~
+/// ```
 /// use chrono::Month;
 ///
 /// assert_eq!("January".parse::<Month>(), Ok(Month::January));
 /// assert!("any day".parse::<Month>().is_err());
-/// ~~~~
+/// ```
 ///
 /// The parsing is case-insensitive.
 ///
-/// ~~~~
+/// ```
 /// # use chrono::Month;
 /// assert_eq!("fEbruARy".parse::<Month>(), Ok(Month::February));
-/// ~~~~
+/// ```
 ///
 /// Only the shortest form (e.g. `jan`) and the longest form (e.g. `january`) is accepted.
 ///
-/// ~~~~
+/// ```
 /// # use chrono::Month;
 /// assert!("septem".parse::<Month>().is_err());
 /// assert!("Augustin".parse::<Month>().is_err());
-/// ~~~~
+/// ```
 impl FromStr for Month {
     type Err = ParseMonthError;
 
