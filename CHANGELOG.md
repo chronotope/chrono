@@ -15,6 +15,7 @@ Versions with only mechanical changes will be omitted from the following list.
 
 * Add more formatting documentation and examples.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
+* Fix `DurationRound` is not TZ aware (#495)
 
 ## 0.4.19
 

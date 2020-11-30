@@ -151,10 +151,12 @@ impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
 
     fn duration_round(self, duration: Duration) -> Result<Self, Self::Err> {
         if let Some(span) = duration.num_nanoseconds() {
-            if self.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+            let naive = self.naive_local();
+
+            if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
                 return Err(RoundingError::TimestampExceedsLimit);
             }
-            let stamp = self.timestamp_nanos();
+            let stamp = naive.timestamp_nanos();
             if span > stamp.abs() {
                 return Err(RoundingError::DurationExceedsTimestamp);
             }
@@ -180,10 +182,12 @@ impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
 
     fn duration_trunc(self, duration: Duration) -> Result<Self, Self::Err> {
         if let Some(span) = duration.num_nanoseconds() {
-            if self.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+            let naive = self.naive_local();
+
+            if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
                 return Err(RoundingError::TimestampExceedsLimit);
             }
-            let stamp = self.timestamp_nanos();
+            let stamp = naive.timestamp_nanos();
             if span > stamp.abs() {
                 return Err(RoundingError::DurationExceedsTimestamp);
             }
@@ -395,6 +399,28 @@ mod tests {
             dt.duration_round(Duration::days(1)).unwrap().to_string(),
             "2012-12-13 00:00:00 UTC"
         );
+
+        // timezone east
+        let dt = FixedOffset::east(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        assert_eq!(
+            dt.duration_round(Duration::days(1)).unwrap().to_string(),
+            "2020-10-28 00:00:00 +01:00"
+        );
+        assert_eq!(
+            dt.duration_round(Duration::weeks(1)).unwrap().to_string(),
+            "2020-10-29 00:00:00 +01:00"
+        );
+
+        // timezone west
+        let dt = FixedOffset::west(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        assert_eq!(
+            dt.duration_round(Duration::days(1)).unwrap().to_string(),
+            "2020-10-28 00:00:00 -01:00"
+        );
+        assert_eq!(
+            dt.duration_round(Duration::weeks(1)).unwrap().to_string(),
+            "2020-10-29 00:00:00 -01:00"
+        );
     }
 
     #[test]
@@ -442,6 +468,28 @@ mod tests {
         assert_eq!(
             dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
             "2012-12-12 00:00:00 UTC"
+        );
+
+        // timezone east
+        let dt = FixedOffset::east(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        assert_eq!(
+            dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
+            "2020-10-27 00:00:00 +01:00"
+        );
+        assert_eq!(
+            dt.duration_trunc(Duration::weeks(1)).unwrap().to_string(),
+            "2020-10-22 00:00:00 +01:00"
+        );
+
+        // timezone west
+        let dt = FixedOffset::west(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        assert_eq!(
+            dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
+            "2020-10-27 00:00:00 -01:00"
+        );
+        assert_eq!(
+            dt.duration_trunc(Duration::weeks(1)).unwrap().to_string(),
+            "2020-10-22 00:00:00 -01:00"
         );
     }
 
