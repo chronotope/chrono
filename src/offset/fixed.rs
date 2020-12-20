@@ -32,13 +32,13 @@ impl FixedOffset {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime = FixedOffset::east(5 * hour).ymd(2016, 11, 08)
     ///                                           .and_hms(0, 0, 0);
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
-    /// ~~~~
+    /// ```
     pub fn east(secs: i32) -> FixedOffset {
         FixedOffset::east_opt(secs).expect("FixedOffset::east out of bounds")
     }
@@ -62,13 +62,13 @@ impl FixedOffset {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime = FixedOffset::west(5 * hour).ymd(2016, 11, 08)
     ///                                           .and_hms(0, 0, 0);
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
-    /// ~~~~
+    /// ```
     pub fn west(secs: i32) -> FixedOffset {
         FixedOffset::west_opt(secs).expect("FixedOffset::west out of bounds")
     }

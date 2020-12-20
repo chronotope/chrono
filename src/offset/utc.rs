@@ -24,14 +24,14 @@ use {Date, DateTime};
 ///
 /// # Example
 ///
-/// ~~~~
+/// ```
 /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
 ///
 /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
 ///
 /// assert_eq!(Utc.timestamp(61, 0), dt);
 /// assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
-/// ~~~~
+/// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Utc;
 

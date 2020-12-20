@@ -50,22 +50,22 @@ impl IsoWeek {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 1, Weekday::Mon);
     /// assert_eq!(d.iso_week().year(), 2015);
-    /// ~~~~
+    /// ```
     ///
     /// This year number might not match the calendar year number.
     /// Continuing the example...
     ///
-    /// ~~~~
+    /// ```
     /// # use chrono::{NaiveDate, Datelike, Weekday};
     /// # let d = NaiveDate::from_isoywd(2015, 1, Weekday::Mon);
     /// assert_eq!(d.year(), 2014);
     /// assert_eq!(d, NaiveDate::from_ymd(2014, 12, 29));
-    /// ~~~~
+    /// ```
     #[inline]
     pub fn year(&self) -> i32 {
         self.ywf >> 10
@@ -77,12 +77,12 @@ impl IsoWeek {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 15, Weekday::Mon);
     /// assert_eq!(d.iso_week().week(), 15);
-    /// ~~~~
+    /// ```
     #[inline]
     pub fn week(&self) -> u32 {
         ((self.ywf >> 4) & 0x3f) as u32
@@ -94,12 +94,12 @@ impl IsoWeek {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 15, Weekday::Mon);
     /// assert_eq!(d.iso_week().week0(), 14);
-    /// ~~~~
+    /// ```
     #[inline]
     pub fn week0(&self) -> u32 {
         ((self.ywf >> 4) & 0x3f) as u32 - 1
@@ -112,21 +112,21 @@ impl IsoWeek {
 ///
 /// # Example
 ///
-/// ~~~~
+/// ```
 /// use chrono::{NaiveDate, Datelike};
 ///
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(2015,  9,  5).iso_week()), "2015-W36");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(   0,  1,  3).iso_week()), "0000-W01");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(9999, 12, 31).iso_week()), "9999-W52");
-/// ~~~~
+/// ```
 ///
 /// ISO 8601 requires an explicit sign for years before 1 BCE or after 9999 CE.
 ///
-/// ~~~~
+/// ```
 /// # use chrono::{NaiveDate, Datelike};
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(    0,  1,  2).iso_week()),  "-0001-W52");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(10000, 12, 31).iso_week()), "+10000-W52");
-/// ~~~~
+/// ```
 impl fmt::Debug for IsoWeek {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();

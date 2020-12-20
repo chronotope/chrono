@@ -205,11 +205,11 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, TimeZone};
     ///
     /// assert_eq!(Utc.ymd(2015, 5, 15).to_string(), "2015-05-15UTC");
-    /// ~~~~
+    /// ```
     fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
         self.ymd_opt(year, month, day).unwrap()
     }
@@ -224,12 +224,12 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, LocalResult, TimeZone};
     ///
     /// assert_eq!(Utc.ymd_opt(2015, 5, 15).unwrap().to_string(), "2015-05-15UTC");
     /// assert_eq!(Utc.ymd_opt(2000, 0, 0), LocalResult::None);
-    /// ~~~~
+    /// ```
     fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_ymd_opt(year, month, day) {
             Some(d) => self.from_local_date(&d),
@@ -247,11 +247,11 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, TimeZone};
     ///
     /// assert_eq!(Utc.yo(2015, 135).to_string(), "2015-05-15UTC");
-    /// ~~~~
+    /// ```
     fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
         self.yo_opt(year, ordinal).unwrap()
     }
@@ -282,11 +282,11 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, Weekday, TimeZone};
     ///
     /// assert_eq!(Utc.isoywd(2015, 20, Weekday::Fri).to_string(), "2015-05-15UTC");
-    /// ~~~~
+    /// ```
     fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
     }
@@ -316,11 +316,11 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, TimeZone};
     ///
     /// assert_eq!(Utc.timestamp(1431648000, 0).to_string(), "2015-05-15 00:00:00 UTC");
-    /// ~~~~
+    /// ```
     fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
         self.timestamp_opt(secs, nsecs).unwrap()
     }
@@ -346,11 +346,11 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, TimeZone};
     ///
     /// assert_eq!(Utc.timestamp_millis(1431648000).timestamp(), 1431648);
-    /// ~~~~
+    /// ```
     fn timestamp_millis(&self, millis: i64) -> DateTime<Self> {
         self.timestamp_millis_opt(millis).unwrap()
     }
@@ -365,13 +365,13 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, TimeZone, LocalResult};
     /// match Utc.timestamp_millis_opt(1431648000) {
     ///     LocalResult::Single(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     _ => panic!("Incorrect timestamp_millis"),
     /// };
-    /// ~~~~
+    /// ```
     fn timestamp_millis_opt(&self, millis: i64) -> LocalResult<DateTime<Self>> {
         let (mut secs, mut millis) = (millis / 1000, millis % 1000);
         if millis < 0 {
@@ -389,11 +389,11 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// # Example
     ///
-    /// ~~~~
+    /// ```
     /// use chrono::{Utc, TimeZone};
     ///
     /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
-    /// ~~~~
+    /// ```
     fn timestamp_nanos(&self, nanos: i64) -> DateTime<Self> {
         let (mut secs, mut nanos) = (nanos / 1_000_000_000, nanos % 1_000_000_000);
         if nanos < 0 {
