@@ -64,4 +64,18 @@ mod test {
         };
         assert_eq!(now, res);
     }
+
+    #[wasm_bindgen_test]
+    fn convert_all_parts_with_milliseconds() {
+        let time: DateTime<Utc> = "2020-12-01T03:01:55.974Z".parse().unwrap();
+        let js_date = js_sys::Date::from(time);
+
+        assert_eq!(js_date.get_utc_full_year(), 2020);
+        assert_eq!(js_date.get_utc_month(), 12);
+        assert_eq!(js_date.get_utc_date(), 1);
+        assert_eq!(js_date.get_utc_hours(), 3);
+        assert_eq!(js_date.get_utc_minutes(), 1);
+        assert_eq!(js_date.get_utc_seconds(), 55);
+        assert_eq!(js_date.get_utc_milliseconds(), 974);
+    }
 }

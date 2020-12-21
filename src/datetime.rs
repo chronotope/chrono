@@ -872,30 +872,18 @@ impl From<js_sys::Date> for DateTime<Utc> {
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
-        let millisecs_since_unix_epoch: u64 = date.get_time() as u64;
-        let secs = millisecs_since_unix_epoch / 1000;
-        let nanos = 1_000_000 * (millisecs_since_unix_epoch % 1000);
-        let naive = NaiveDateTime::from_timestamp(secs as i64, nanos as u32);
-        DateTime::from_utc(naive, Utc)
+        Utc.timestamp_millis(date.get_time() as i64)
     }
 }
 
 #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
 impl From<DateTime<Utc>> for js_sys::Date {
+    /// Converts a `DateTime<Utc>` to a JS `Date`. The resulting value may be lossy,
+    /// any values that have a millisecond timestamp value greater/less than ±8,640,000,000,000,000
+    /// (April 20, 271821 BCE ~ September 13, 275760 CE) will become invalid dates in JS.
     fn from(date: DateTime<Utc>) -> js_sys::Date {
-        let js_date = js_sys::Date::new_0();
-
-        js_date.set_utc_full_year_with_month_date(
-            date.year() as u32,
-            date.month0() as i32,
-            date.day() as i32,
-        );
-
-        js_date.set_utc_hours(date.hour());
-        js_date.set_utc_minutes(date.minute());
-        js_date.set_utc_seconds(date.second());
-
-        js_date
+        let js_millis = wasm_bindgen::JsValue::from_f64(date.timestamp_millis() as f64);
+        js_sys::Date::new(&js_millis)
     }
 }
 
