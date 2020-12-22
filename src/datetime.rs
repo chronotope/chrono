@@ -802,6 +802,17 @@ where
     }
 }
 
+/// Accepts a relaxed form of RFC3339.
+/// A space or a 'T' are acepted as the separator between the date and time
+/// parts. Additional spaces are allowed between each component.
+///
+/// All of these examples are equivalent:
+/// ```
+/// # use chrono::{DateTime, Utc};
+/// "2012-12-12T12:12:12Z".parse::<DateTime<Utc>>();
+/// "2012-12-12 12:12:12Z".parse::<DateTime<Utc>>();
+/// "2012-  12-12T12:  12:12Z".parse::<DateTime<Utc>>();
+/// ```
 impl str::FromStr for DateTime<Utc> {
     type Err = ParseError;
 
@@ -810,6 +821,17 @@ impl str::FromStr for DateTime<Utc> {
     }
 }
 
+/// Accepts a relaxed form of RFC3339.
+/// A space or a 'T' are acepted as the separator between the date and time
+/// parts. Additional spaces are allowed between each component.
+///
+/// All of these examples are equivalent:
+/// ```
+/// # use chrono::{DateTime, Local};
+/// "2012-12-12T12:12:12Z".parse::<DateTime<Local>>();
+/// "2012-12-12 12:12:12Z".parse::<DateTime<Local>>();
+/// "2012-  12-12T12:  12:12Z".parse::<DateTime<Local>>();
+/// ```
 #[cfg(feature = "clock")]
 impl str::FromStr for DateTime<Local> {
     type Err = ParseError;

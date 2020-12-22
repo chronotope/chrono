@@ -455,6 +455,17 @@ where
     }
 }
 
+/// Accepts a relaxed form of RFC3339.
+/// A space or a 'T' are acepted as the separator between the date and time
+/// parts. Additional spaces are allowed between each component.
+///
+/// All of these examples are equivalent:
+/// ```
+/// # use chrono::{DateTime, offset::FixedOffset};
+/// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>();
+/// "2012-12-12 12:12:12Z".parse::<DateTime<FixedOffset>>();
+/// "2012-  12-12T12:  12:12Z".parse::<DateTime<FixedOffset>>();
+/// ```
 impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
 
