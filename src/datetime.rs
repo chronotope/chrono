@@ -316,6 +316,7 @@ impl Default for DateTime<Utc> {
     }
 }
 
+#[cfg(feature = "clock")]
 impl Default for DateTime<Local> {
     fn default() -> Self {
         Local.from_utc_datetime(&NaiveDateTime::default())
