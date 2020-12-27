@@ -1517,6 +1517,8 @@ impl str::FromStr for NaiveDateTime {
 /// # Example
 ///
 /// ~~~~
+/// use chrono::NaiveDateTime;
+///
 /// let default_date = NaiveDateTime::default();
 /// assert_eq!(default_date, NaiveDateTime::from_timestamp(0, 0));
 /// ~~~~

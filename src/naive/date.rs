@@ -1719,6 +1719,8 @@ impl str::FromStr for NaiveDate {
 /// # Example
 ///
 /// ~~~~
+/// use chrono::NaiveDate;
+///
 /// let default_date = NaiveDate::default();
 /// assert_eq!(default_date, NaiveDate::from_ymd(1970, 1, 1));
 /// ~~~~

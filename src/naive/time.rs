@@ -1346,6 +1346,8 @@ impl str::FromStr for NaiveTime {
 /// # Example
 ///
 /// ~~~~
+/// use chrono::NaiveTime;
+///
 /// let default_time = NaiveTime::default();
 /// assert_eq!(default_time, NaiveTime::from_hms(0, 0, 0));
 /// ~~~~

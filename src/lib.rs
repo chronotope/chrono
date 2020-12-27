@@ -231,29 +231,33 @@
 //! `unstable-locales`:
 //!
 //! ```text
-//! chrono { version = "0.4", features = ["unstable-locales"]
+//! chrono = { version = "0.4", features = ["unstable-locales"] }
 //! ```
+#![cfg_attr(
+    feature = "unstable-locales",
+    doc = r##"
+The `unstable-locales` feature requires and implies at least the `alloc` feature.
+
+```rust
+use chrono::prelude::*;
+
+let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
+assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
+assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
+assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
+assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //!
-//! The `unstable-locales` feature requires and implies at least the `alloc` feature.
+assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
+assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
+assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
+assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 //!
-//! ```rust
-//! use chrono::prelude::*;
-//!
-//! let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
-//! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
-//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
-//!
-//! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
-//! assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
-//! assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
-//! assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
-//!
-//! // Note that milli/nanoseconds are only printed if they are non-zero
-//! let dt_nano = Utc.ymd(2014, 11, 28).and_hms_nano(12, 0, 9, 1);
-//! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
-//! ```
+// Note that milli/nanoseconds are only printed if they are non-zero
+let dt_nano = Utc.ymd(2014, 11, 28).and_hms_nano(12, 0, 9, 1);
+assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
+```
+"##
+)]
 //!
 //! Parsing can be done with three methods:
 //!
