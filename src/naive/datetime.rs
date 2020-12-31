@@ -1511,17 +1511,17 @@ impl str::FromStr for NaiveDateTime {
     }
 }
 
-/// The default for a NaiveDateTime is one with epoch 0
-/// that is 1st of January 1970 at 00:00:00.
+/// The default value for a NaiveDateTime is one with epoch 0
+/// that is, 1st of January 1970 at 00:00:00.
 ///
 /// # Example
 ///
-/// ~~~~
+/// ```rust
 /// use chrono::NaiveDateTime;
 ///
 /// let default_date = NaiveDateTime::default();
 /// assert_eq!(default_date, NaiveDateTime::from_timestamp(0, 0));
-/// ~~~~
+/// ```
 impl Default for NaiveDateTime {
     fn default() -> Self {
         NaiveDateTime::from_timestamp(0, 0)
