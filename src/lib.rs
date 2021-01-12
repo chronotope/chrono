@@ -438,6 +438,8 @@
     // Currently deprecated, we use the separate implementation to add docs
     // warning that putting a time in a hash table is probably a bad idea
     derive_hash_xor_eq,
+    // Range contains was stabilized in 1.35.
+    manual_range_contains,
 ))]
 
 #[cfg(feature = "alloc")]
