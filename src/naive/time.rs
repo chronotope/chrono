@@ -578,7 +578,7 @@ impl NaiveTime {
             secs += 1;
         }
         debug_assert!(-86_400 <= secs && secs < 2 * 86_400);
-        debug_assert!(0 <= frac && frac < 1_000_000_000);
+        debug_assert!((0..=1_000_000_000).contains(&frac));
 
         if secs < 0 {
             secs += 86_400;
@@ -587,7 +587,7 @@ impl NaiveTime {
             secs -= 86_400;
             morerhssecs += 86_400;
         }
-        debug_assert!(0 <= secs && secs < 86_400);
+        debug_assert!((0..=86_400).contains(&secs));
 
         (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
     }
