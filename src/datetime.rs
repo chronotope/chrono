@@ -310,6 +310,25 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 }
 
+impl Default for DateTime<Utc> {
+    fn default() -> Self {
+        Utc.from_utc_datetime(&NaiveDateTime::default())
+    }
+}
+
+#[cfg(feature = "clock")]
+impl Default for DateTime<Local> {
+    fn default() -> Self {
+        Local.from_utc_datetime(&NaiveDateTime::default())
+    }
+}
+
+impl Default for DateTime<FixedOffset> {
+    fn default() -> Self {
+        FixedOffset::west(0).from_utc_datetime(&NaiveDateTime::default())
+    }
+}
+
 /// Convert a `DateTime<Utc>` instance into a `DateTime<FixedOffset>` instance.
 impl From<DateTime<Utc>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<FixedOffset>` instance.
