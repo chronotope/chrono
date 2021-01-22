@@ -373,12 +373,14 @@ impl Div<i32> for Duration {
     }
 }
 
+#[cfg(any(feature = "std", test))]
 impl<'a> std::iter::Sum<&'a Duration> for Duration {
     fn sum<I: Iterator<Item = &'a Duration>>(iter: I) -> Duration {
         iter.fold(Duration::zero(), |acc, x| acc + *x)
     }
 }
 
+#[cfg(any(feature = "std", test))]
 impl std::iter::Sum<Duration> for Duration {
     fn sum<I: Iterator<Item = Duration>>(iter: I) -> Duration {
         iter.fold(Duration::zero(), |acc, x| acc + x)
