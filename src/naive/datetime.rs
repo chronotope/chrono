@@ -1362,7 +1362,6 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1374,14 +1373,12 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// let d0 = from_ymd(2016, 1, 1);
 /// assert_eq!(d.and_hms_milli(0, 7, 6, 500) - d0.and_hms(0, 0, 0),
 ///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that no other leap
 /// seconds happened.
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
@@ -1389,7 +1386,6 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 ///            Duration::seconds(3600) + Duration::milliseconds(500));
 /// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0) - leap,
 ///            Duration::seconds(3600) - Duration::milliseconds(500));
-/// # }
 /// ```
 impl Sub<NaiveDateTime> for NaiveDateTime {
     type Output = OldDuration;
@@ -1397,6 +1393,29 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
     #[inline]
     fn sub(self, rhs: NaiveDateTime) -> OldDuration {
         self.signed_duration_since(rhs)
+    }
+}
+
+/// Subtracts a `NaiveDate` from the current date and time.
+///
+/// This is a convenience wrapper around [`impl Sub<NaiveDateTime>`](#impl-Sub<NaiveDateTime>)
+/// where the time part of the `NaiveDate` is set to zero.
+///
+/// # Example
+///
+/// ```
+/// # use chrono::{Duration, NaiveDate};
+/// # let from_ymd = NaiveDate::from_ymd;
+/// let date_time = from_ymd(2015, 6, 30).and_hms(23, 59, 55);
+/// let date = from_ymd(2015, 6, 30);
+/// assert_eq!(date_time - date, Duration::seconds(86_395));
+/// ```
+impl Sub<NaiveDate> for NaiveDateTime {
+    type Output = OldDuration;
+
+    #[inline]
+    fn sub(self, rhs: NaiveDate) -> OldDuration {
+        self - rhs.and_hms(0, 0, 0)
     }
 }
 
