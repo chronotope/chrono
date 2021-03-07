@@ -84,7 +84,7 @@ pub enum SecondsFormat {
 #[derive(Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct DateTime<Tz: TimeZone> {
-    datetime: NaiveDateTime,
+    pub(crate) datetime: NaiveDateTime,
     offset: Tz::Offset,
 }
 

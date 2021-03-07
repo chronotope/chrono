@@ -371,7 +371,7 @@ impl fmt::Debug for Of {
 /// (month, day of month and leap flag),
 /// which is an index to the `MDL_TO_OL` lookup table.
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
-pub(super) struct Mdf(pub(super) u32);
+pub(crate) struct Mdf(pub(super) u32);
 
 impl Mdf {
     #[inline]
@@ -419,7 +419,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn month(&self) -> u32 {
+    pub(crate) fn month(&self) -> u32 {
         let Mdf(mdf) = *self;
         mdf >> 9
     }
@@ -432,7 +432,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn day(&self) -> u32 {
+    pub(crate) fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
         (mdf >> 4) & 0b1_1111
     }
