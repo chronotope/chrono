@@ -39,9 +39,9 @@ jobs:
         - os: ubuntu-latest
           rust_version: nightly
         - os: ubuntu-16.04
-          rust_version: 1.13.0
+          rust_version: 1.33.0
         - os: macos-latest
-          rust_version: 1.13.0
+          rust_version: 1.33.0
           # time doesn't work on windows with 1.13
 
     runs-on: ${{ matrix.os }}

@@ -9,12 +9,12 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 use oldtime::Duration as OldDuration;
 
-use div::div_mod_floor;
+use crate::div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item, Numeric, Pad};
-use Timelike;
+use crate::format::DelayedFormat;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::Timelike;
 
 pub const MIN_TIME: NaiveTime = NaiveTime { secs: 0, frac: 0 };
 pub const MAX_TIME: NaiveTime = NaiveTime { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
@@ -1543,7 +1543,7 @@ mod tests {
     use super::NaiveTime;
     use oldtime::Duration;
     use std::u32;
-    use Timelike;
+    use crate::Timelike;
 
     #[test]
     fn test_time_from_hms_milli() {

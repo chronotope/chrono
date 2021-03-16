@@ -17,9 +17,9 @@
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use core::{fmt, i32};
-use div::{div_rem, mod_floor};
+use crate::div::{div_rem, mod_floor};
 use num_traits::FromPrimitive;
-use Weekday;
+use crate::Weekday;
 
 /// The internal date representation. This also includes the packed `Mdf` value.
 pub type DateImpl = i32;
@@ -489,7 +489,7 @@ mod tests {
     use super::{Mdf, Of};
     use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
     use std::u32;
-    use Weekday;
+    use crate::Weekday;
 
     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
     const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];

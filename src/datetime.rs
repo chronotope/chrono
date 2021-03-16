@@ -18,17 +18,17 @@ use std::string::ToString;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
+use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
-use format::Locale;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item};
-use naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+use crate::format::Locale;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item};
+use crate::naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
-use offset::Local;
-use offset::{FixedOffset, Offset, TimeZone, Utc};
-use Date;
-use {Datelike, Timelike, Weekday};
+use crate::offset::Local;
+use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::Date;
+use crate::{Datelike, Timelike, Weekday};
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -512,8 +512,8 @@ where
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
-        use format::Numeric::*;
-        use format::Pad::Zero;
+        use crate::format::Numeric::*;
+        use crate::format::Pad::Zero;
         use SecondsFormat::*;
 
         debug_assert!(secform != __NonExhaustive, "Do not use __NonExhaustive!");
@@ -1056,8 +1056,8 @@ pub mod rustc_serialize {
     use core::fmt;
     use core::ops::Deref;
     #[cfg(feature = "clock")]
-    use offset::Local;
-    use offset::{FixedOffset, LocalResult, TimeZone, Utc};
+    use crate::offset::Local;
+    use crate::offset::{FixedOffset, LocalResult, TimeZone, Utc};
     use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
     impl<Tz: TimeZone> Encodable for DateTime<Tz> {
@@ -1182,10 +1182,10 @@ pub mod serde {
     use super::DateTime;
     use core::fmt;
     #[cfg(feature = "clock")]
-    use offset::Local;
-    use offset::{FixedOffset, LocalResult, TimeZone, Utc};
+    use crate::offset::Local;
+    use crate::offset::{FixedOffset, LocalResult, TimeZone, Utc};
     use serdelib::{de, ser};
-    use {ne_timestamp, SerdeError};
+    use crate::{ne_timestamp, SerdeError};
 
     #[doc(hidden)]
     #[derive(Debug)]
@@ -1255,8 +1255,8 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use offset::TimeZone;
-        use {DateTime, Utc};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         use super::{serde_from, NanoSecondsTimestampVisitor};
 
@@ -1409,8 +1409,8 @@ pub mod serde {
 
         use serdelib::{de, ser};
 
-        use offset::TimeZone;
-        use {DateTime, Utc};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         use super::serde_from;
 
@@ -1486,7 +1486,7 @@ pub mod serde {
             D: de::Deserializer<'de>,
         {
             #[allow(deprecated)]
-            Ok(try!(d.deserialize_i64(MicroSecondsTimestampVisitor)))
+            Ok(d.deserialize_i64(MicroSecondsTimestampVisitor)?)
         }
 
         struct MicroSecondsTimestampVisitor;
@@ -1565,7 +1565,7 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use {DateTime, Utc};
+        use crate::{DateTime, Utc};
 
         use super::NanoSecondsTimestampVisitor;
 
@@ -1721,8 +1721,8 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use offset::TimeZone;
-        use {DateTime, Utc};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         use super::{serde_from, MilliSecondsTimestampVisitor};
 
@@ -1871,7 +1871,7 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use {DateTime, Utc};
+        use crate::{DateTime, Utc};
 
         use super::MilliSecondsTimestampVisitor;
 
@@ -2040,8 +2040,8 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use offset::TimeZone;
-        use {DateTime, Utc};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         use super::{serde_from, SecondsTimestampVisitor};
 
@@ -2184,7 +2184,7 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use {DateTime, Utc};
+        use crate::{DateTime, Utc};
 
         use super::SecondsTimestampVisitor;
 
@@ -2337,7 +2337,7 @@ pub mod serde {
         where
             E: de::Error,
         {
-            value.parse().map_err(|err: ::format::ParseError| E::custom(err))
+            value.parse().map_err(|err: crate::format::ParseError| E::custom(err))
         }
     }
 
@@ -2426,14 +2426,14 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
-    use naive::{NaiveDate, NaiveTime};
+    use crate::naive::{NaiveDate, NaiveTime};
     #[cfg(feature = "clock")]
-    use offset::Local;
-    use offset::{FixedOffset, TimeZone, Utc};
-    use oldtime::Duration;
+    use crate::offset::Local;
+    use crate::offset::{FixedOffset, TimeZone, Utc};
+    use crate::oldtime::Duration;
     use std::time::{SystemTime, UNIX_EPOCH};
     #[cfg(feature = "clock")]
-    use Datelike;
+    use crate::Datelike;
 
     #[test]
     #[allow(non_snake_case)]
@@ -2586,7 +2586,7 @@ mod tests {
 
     #[test]
     fn test_rfc3339_opts() {
-        use SecondsFormat::*;
+        use crate::SecondsFormat::*;
         let pst = FixedOffset::east(8 * 60 * 60);
         let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
         assert_eq!(dt.to_rfc3339_opts(Secs, false), "2018-01-11T10:05:13+08:00");
@@ -2609,7 +2609,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_rfc3339_opts_nonexhaustive() {
-        use SecondsFormat;
+        use crate::SecondsFormat;
         let dt = Utc.ymd(1999, 10, 9).and_hms(1, 2, 3);
         dt.to_rfc3339_opts(SecondsFormat::__NonExhaustive, true);
     }

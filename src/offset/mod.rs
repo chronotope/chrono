@@ -20,10 +20,10 @@
 
 use core::fmt;
 
-use format::{parse, ParseResult, Parsed, StrftimeItems};
-use naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use Weekday;
-use {Date, DateTime};
+use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
+use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::Weekday;
+use crate::{Date, DateTime};
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]

@@ -11,13 +11,13 @@ use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
 
 #[cfg(feature = "unstable-locales")]
-use format::Locale;
+use crate::format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::{DelayedFormat, Item, StrftimeItems};
-use naive::{self, IsoWeek, NaiveDate, NaiveTime};
-use offset::{TimeZone, Utc};
-use DateTime;
-use {Datelike, Weekday};
+use crate::format::{DelayedFormat, Item, StrftimeItems};
+use crate::naive::{self, IsoWeek, NaiveDate, NaiveTime};
+use crate::offset::{TimeZone, Utc};
+use crate::DateTime;
+use crate::{Datelike, Weekday};
 
 /// ISO 8601 calendar date with time zone.
 ///
