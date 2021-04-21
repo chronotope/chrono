@@ -7,6 +7,7 @@ use core::cmp::Ordering;
 use core::ops::{Add, Sub};
 use core::{fmt, hash, str};
 use oldtime::Duration as OldDuration;
+use std::convert::TryFrom;
 #[cfg(any(feature = "std", test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -307,6 +308,21 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     pub fn naive_local(&self) -> NaiveDateTime {
         self.datetime + self.offset.fix()
+    }
+
+    /// Retrieve the elapsed years from now to the given DateTime
+    pub fn elapsed_years(&self) -> u32 {
+        let now = Utc::now();
+
+        let years = if (now.month(), now.day(), now.hour(), now.minute(), now.second())
+            < (self.month(), self.day(), self.hour(), self.minute(), self.second())
+        {
+            now.year() - self.year() - 1
+        } else {
+            now.year() - self.year()
+        };
+
+        u32::try_from(years).unwrap_or(0)
     }
 }
 
@@ -2431,6 +2447,7 @@ mod tests {
     use offset::Local;
     use offset::{FixedOffset, TimeZone, Utc};
     use oldtime::Duration;
+    use std::convert::TryFrom;
     use std::time::{SystemTime, UNIX_EPOCH};
     #[cfg(feature = "clock")]
     use Datelike;
@@ -2841,5 +2858,22 @@ mod tests {
         assert_eq!(format!("  {}", ymd_formatted), format!("{:>17}", ymd));
         assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
         assert_eq!(format!(" {} ", ymd_formatted), format!("{:^17}", ymd));
+    }
+
+    #[test]
+    fn test_years_elapsed() {
+        assert_eq!(
+            Utc.ymd(2011, 5, 15).and_hms(6, 34, 0).elapsed_years(),
+            u32::try_from(Utc.ymd(2021, 4, 21).and_hms(23, 17, 0).year() - 2012).unwrap()
+        );
+        assert_eq!(
+            Utc.ymd(2021, 4, 21).and_hms(3, 24, 0).elapsed_years(),
+            u32::try_from(Utc.ymd(2021, 4, 21).and_hms(11, 12, 0).year() - 2021).unwrap()
+        );
+        assert_eq!(
+            Utc.ymd(2015, 3, 15).and_hms(16, 48, 0).elapsed_years(),
+            u32::try_from(Utc.ymd(2021, 4, 21).and_hms(9, 7, 0).year() - 2015).unwrap()
+        );
+        assert_eq!(Utc.ymd(2034, 5, 15).and_hms(0, 34, 0).elapsed_years(), 0);
     }
 }
