@@ -1100,7 +1100,7 @@ impl NaiveDate {
         NaiveDateWeeksIterator { value: *self }
     }
 
-    /// Retrieve the elapsed years from now to the given DateTime
+    /// Retrieve the elapsed years from now to the given NaiveDate
     pub fn elapsed_years(&self) -> u32 {
         let now = Utc::now().naive_utc().date();
 
