@@ -9,6 +9,7 @@ use core::cmp::Ordering;
 use core::ops::{Add, Sub};
 use core::{fmt, hash};
 use oldtime::Duration as OldDuration;
+use std::convert::TryFrom;
 
 #[cfg(feature = "unstable-locales")]
 use format::Locale;
@@ -271,6 +272,19 @@ impl<Tz: TimeZone> Date<Tz> {
     pub fn naive_local(&self) -> NaiveDate {
         self.date
     }
+
+    /// Retrieve the elapsed years from now to the given Date
+    pub fn elapsed_years(&self) -> u32 {
+        let now = Utc::today();
+
+        let years = if (now.month(), now.day()) < (self.month(), self.day()) {
+            now.year() - self.year() - 1
+        } else {
+            now.year() - self.year()
+        };
+
+        u32::try_from(years).unwrap_or(0)
+    }
 }
 
 /// Maps the local date to other date with given conversion function.
@@ -492,5 +506,30 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.naive_local(), self.offset)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use offset::TimeZone;
+    use offset::Utc;
+    use std::convert::TryFrom;
+    use Datelike;
+
+    #[test]
+    fn test_years_elapsed() {
+        assert_eq!(
+            Utc.ymd(2011, 5, 15).elapsed_years(),
+            u32::try_from(Utc.ymd(2021, 4, 21).year() - 2012).unwrap()
+        );
+        assert_eq!(
+            Utc.ymd(2021, 4, 21).elapsed_years(),
+            u32::try_from(Utc.ymd(2021, 4, 21).year() - 2021).unwrap()
+        );
+        assert_eq!(
+            Utc.ymd(2015, 3, 15).elapsed_years(),
+            u32::try_from(Utc.ymd(2021, 4, 21).year() - 2015).unwrap()
+        );
+        assert_eq!(Utc.ymd(2034, 5, 15).elapsed_years(), 0);
     }
 }
