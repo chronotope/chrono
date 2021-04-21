@@ -8,7 +8,9 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 use num_traits::ToPrimitive;
+use offset::Utc;
 use oldtime::Duration as OldDuration;
+use std::convert::TryFrom;
 
 use div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
@@ -723,6 +725,21 @@ impl NaiveDateTime {
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Retrieve the elapsed years from now to the given NaiveDateTime
+    pub fn elapsed_years(&self) -> u32 {
+        let now = Utc::now().naive_utc();
+
+        let years = if (now.month(), now.day(), now.hour(), now.minute(), now.second())
+            < (self.month(), self.day(), self.hour(), self.minute(), self.second())
+        {
+            now.year() - self.year() - 1
+        } else {
+            now.year() - self.year()
+        };
+
+        u32::try_from(years).unwrap_or(0)
     }
 }
 
@@ -2279,6 +2296,7 @@ mod tests {
     use super::NaiveDateTime;
     use naive::{NaiveDate, MAX_DATE, MIN_DATE};
     use oldtime::Duration;
+    use std::convert::TryFrom;
     use std::i64;
     use Datelike;
 
@@ -2534,5 +2552,24 @@ mod tests {
             parsed,
             NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
         );
+    }
+
+    #[test]
+    fn test_years_elapsed() {
+        assert_eq!(
+            NaiveDate::from_ymd(2011, 5, 15).and_hms(6, 34, 0).elapsed_years(),
+            u32::try_from(NaiveDate::from_ymd(2021, 4, 21).and_hms(23, 17, 0).year() - 2012)
+                .unwrap()
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2021, 4, 21).and_hms(3, 24, 0).elapsed_years(),
+            u32::try_from(NaiveDate::from_ymd(2021, 4, 21).and_hms(11, 12, 0).year() - 2021)
+                .unwrap()
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2015, 3, 15).and_hms(16, 48, 0).elapsed_years(),
+            u32::try_from(NaiveDate::from_ymd(2021, 4, 21).and_hms(9, 7, 0).year() - 2015).unwrap()
+        );
+        assert_eq!(NaiveDate::from_ymd(2034, 5, 15).and_hms(0, 34, 0).elapsed_years(), 0);
     }
 }
