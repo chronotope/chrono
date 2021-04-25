@@ -731,13 +731,12 @@ impl NaiveDateTime {
     pub fn elapsed_years(&self) -> u32 {
         let now = Utc::now().naive_utc();
 
-        let years = if (now.month(), now.day(), now.hour(), now.minute(), now.second())
-            < (self.month(), self.day(), self.hour(), self.minute(), self.second())
-        {
-            now.year() - self.year() - 1
-        } else {
-            now.year() - self.year()
-        };
+        let years =
+            if (now.month(), now.day(), now.time()) < (self.month(), self.day(), self.time()) {
+                now.year() - self.year() - 1
+            } else {
+                now.year() - self.year()
+            };
 
         u32::try_from(years).unwrap_or(0)
     }

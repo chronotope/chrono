@@ -1921,7 +1921,6 @@ mod tests {
     use super::NaiveDate;
     use super::{MAX_DATE, MAX_DAYS_FROM_YEAR_0, MAX_YEAR};
     use super::{MIN_DATE, MIN_DAYS_FROM_YEAR_0, MIN_YEAR};
-    use offset::Utc;
     use oldtime::Duration;
     use std::convert::TryFrom;
     use std::{i32, u32};
