@@ -1099,19 +1099,6 @@ impl NaiveDate {
     pub fn iter_weeks(&self) -> NaiveDateWeeksIterator {
         NaiveDateWeeksIterator { value: *self }
     }
-
-    /// Retrieve the elapsed years from now to the given NaiveDate
-    pub fn elapsed_years(&self) -> u32 {
-        let now = Utc::now().naive_utc().date();
-
-        let years = if (now.month(), now.day()) < (self.month(), self.day()) {
-            now.year() - self.year() - 1
-        } else {
-            now.year() - self.year()
-        };
-
-        u32::try_from(years).unwrap_or(0)
-    }
 }
 
 impl Datelike for NaiveDate {
@@ -2420,22 +2407,5 @@ mod tests {
             NaiveDate::from_ymd(262143, 12, 12).iter_weeks().take(4).collect::<Vec<_>>().len(),
             2
         );
-    }
-
-    #[test]
-    fn test_years_elapsed() {
-        assert_eq!(
-            NaiveDate::from_ymd(2011, 5, 15).elapsed_years(),
-            u32::try_from(NaiveDate::from_ymd(2021, 4, 21).year() - 2012).unwrap()
-        );
-        assert_eq!(
-            NaiveDate::from_ymd(2021, 4, 21).elapsed_years(),
-            u32::try_from(NaiveDate::from_ymd(2021, 4, 21).year() - 2021).unwrap()
-        );
-        assert_eq!(
-            NaiveDate::from_ymd(2015, 3, 15).elapsed_years(),
-            u32::try_from(NaiveDate::from_ymd(2021, 4, 21).year() - 2015).unwrap()
-        );
-        assert_eq!(NaiveDate::from_ymd(2034, 5, 15).elapsed_years(), 0);
     }
 }
