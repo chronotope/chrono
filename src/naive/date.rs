@@ -8,9 +8,7 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 use num_traits::ToPrimitive;
-use offset::Utc;
 use oldtime::Duration as OldDuration;
-use std::convert::TryFrom;
 
 use div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]

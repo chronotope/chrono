@@ -310,7 +310,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime + self.offset.fix()
     }
 
-    /// Retrieve the elapsed years from now to the given DateTime
+    /// Retrieve the elapsed years from now to the given [`DateTime`]
     pub fn elapsed_years(&self) -> u32 {
         let now = Utc::now();
 
@@ -2861,15 +2861,15 @@ mod tests {
 
     #[test]
     fn test_years_elapsed() {
-        // This is always at least one year because 1 year = 52.1775 weeks
+        // This is always at least one year because 1 year = 52.1775 weeks.
         let one_year_ago = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 1.5).ceil() as i64);
-        // A bit more than 2 years
+        // A bit more than 2 years.
         let two_year_ago = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 2.5).ceil() as i64);
 
         assert_eq!(one_year_ago.elapsed_years(), 1);
         assert_eq!(two_year_ago.elapsed_years(), 2);
 
-        // if the date is later than now, the function will always return 0
+        // if the given DateTime is later than now, the function will always return 0.
         assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
     }
 }
