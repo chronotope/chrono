@@ -16,7 +16,7 @@ use format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
 use naive::{self, IsoWeek, NaiveDate, NaiveTime};
-use offset::{Local, TimeZone, Utc};
+use offset::{TimeZone, Utc};
 use DateTime;
 use {Datelike, Weekday};
 
