@@ -511,25 +511,19 @@ where
 
 #[cfg(test)]
 mod tests {
-    use offset::TimeZone;
+    use consts::f64;
     use offset::Utc;
-    use std::convert::TryFrom;
-    use Datelike;
+    use oldtime::Duration;
 
     #[test]
     fn test_years_elapsed() {
-        assert_eq!(
-            Utc.ymd(2011, 5, 15).elapsed_years(),
-            u32::try_from(Utc.ymd(2021, 4, 21).year() - 2012).unwrap()
-        );
-        assert_eq!(
-            Utc.ymd(2021, 4, 21).elapsed_years(),
-            u32::try_from(Utc.ymd(2021, 4, 21).year() - 2021).unwrap()
-        );
-        assert_eq!(
-            Utc.ymd(2015, 3, 15).elapsed_years(),
-            u32::try_from(Utc.ymd(2021, 4, 21).year() - 2015).unwrap()
-        );
-        assert_eq!(Utc.ymd(2034, 5, 15).elapsed_years(), 0);
+        // This is always at least one year because 1 year = 52.1775 weeks
+        let one_year = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 1.5).ceil() as i64);
+        // A bit more than 2 years
+        let two_year = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 2.5).ceil() as i64);
+        assert_eq!(one_year.elapsed_years(), 1);
+        assert_eq!(two_year.elapsed_years(), 2);
+        // if the date is later than now, the function will always return 0
+        assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
     }
 }

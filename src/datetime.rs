@@ -2441,12 +2441,12 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
+    use consts::f64;
     use naive::{NaiveDate, NaiveTime};
     #[cfg(feature = "clock")]
     use offset::Local;
     use offset::{FixedOffset, TimeZone, Utc};
     use oldtime::Duration;
-    use std::convert::TryFrom;
     use std::time::{SystemTime, UNIX_EPOCH};
     #[cfg(feature = "clock")]
     use Datelike;
@@ -2861,18 +2861,15 @@ mod tests {
 
     #[test]
     fn test_years_elapsed() {
-        assert_eq!(
-            Utc.ymd(2011, 5, 15).and_hms(6, 34, 0).elapsed_years(),
-            u32::try_from(Utc.ymd(2021, 4, 21).and_hms(23, 17, 0).year() - 2012).unwrap()
-        );
-        assert_eq!(
-            Utc.ymd(2021, 4, 21).and_hms(3, 24, 0).elapsed_years(),
-            u32::try_from(Utc.ymd(2021, 4, 21).and_hms(11, 12, 0).year() - 2021).unwrap()
-        );
-        assert_eq!(
-            Utc.ymd(2015, 3, 15).and_hms(16, 48, 0).elapsed_years(),
-            u32::try_from(Utc.ymd(2021, 4, 21).and_hms(9, 7, 0).year() - 2015).unwrap()
-        );
-        assert_eq!(Utc.ymd(2034, 5, 15).and_hms(0, 34, 0).elapsed_years(), 0);
+        // This is always at least one year because 1 year = 52.1775 weeks
+        let one_year = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 1.5).ceil() as i64);
+        // A bit more than 2 years
+        let two_year = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 2.5).ceil() as i64);
+
+        assert_eq!(one_year.elapsed_years(), 1);
+        assert_eq!(two_year.elapsed_years(), 2);
+
+        // if the date is later than now, the function will always return 0
+        assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
     }
 }
