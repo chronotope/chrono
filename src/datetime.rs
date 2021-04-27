@@ -310,7 +310,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime + self.offset.fix()
     }
 
-    /// Retrieve the elapsed years from now to the given [`DateTime`]
+    /// Retrieve the elapsed years from now to the given [`DateTime`].
     pub fn elapsed_years(&self) -> u32 {
         let now = Utc::now();
 

@@ -2279,7 +2279,6 @@ mod tests {
     use super::NaiveDateTime;
     use naive::{NaiveDate, MAX_DATE, MIN_DATE};
     use oldtime::Duration;
-    use std::convert::TryFrom;
     use std::i64;
     use Datelike;
 
