@@ -16,7 +16,7 @@ use format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use format::{DelayedFormat, Item, StrftimeItems};
 use naive::{self, IsoWeek, NaiveDate, NaiveTime};
-use offset::{TimeZone, Utc};
+use offset::{Local, TimeZone, Utc};
 use DateTime;
 use {Datelike, Weekday};
 
@@ -275,7 +275,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Retrieve the elapsed years from now to the given [`Date`].
     pub fn elapsed_years(&self) -> u32 {
-        let now = Utc::today();
+        let now = Utc::today().with_timezone(&self.timezone());
 
         let years = if (now.month(), now.day()) < (self.month(), self.day()) {
             now.year() - self.year() - 1
