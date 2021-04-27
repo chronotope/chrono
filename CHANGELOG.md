@@ -17,6 +17,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
+* Add a function that calculate the years elapsed between `Utc::today` and a given `Date` or `Utc::now()` and a given `DateTime`
 
 ## 0.4.19
 
