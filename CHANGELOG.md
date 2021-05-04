@@ -11,6 +11,12 @@ breakage if you use `no-default-features`.
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
+## Unreleased
+
+* Implement `arbitrary::Arbitrary` for `NaiveDate`, `NaiveTime`, and
+  `NaiveDateTime`.  You need to enable the "arbitrary" feature to get these
+  impls.
+
 ## 0.4.22
 
 * Allow wasmbindgen to be optional on `wasm32-unknown-unknown` target [(#771)](https://github.com/chronotope/chrono/pull/771)
