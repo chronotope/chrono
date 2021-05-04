@@ -191,6 +191,15 @@ pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
 #[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
 pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
 
+#[cfg(feature = "arbitrary")]
+impl arbitrary::Arbitrary<'_> for NaiveDate {
+    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveDate> {
+        let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
+        let ord = u.int_in_range(1..=366)?;
+        NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
+    }
+}
+
 // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
 // we use a separate run-time test.
 #[test]
