@@ -604,7 +604,7 @@ pub mod consts {
     /// Constants of type `f64`.
     pub mod f64 {
         /// Number of weeks in a year.
-        pub const WEEK_PER_YEAR: f64 = 52.1775;
+        pub const WEEKS_PER_YEAR: f64 = 52.1775;
     }
 }
 
