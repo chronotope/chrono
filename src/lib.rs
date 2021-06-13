@@ -599,7 +599,7 @@ pub mod consts {
     /// Constants of type `f32`.
     pub mod f32 {
         /// Number of weeks in a year.
-        pub const WEEK_PER_YEAR: f32 = 52.1775;
+        pub const WEEKS_PER_YEAR: f32 = 52.1775;
     }
     /// Constants of type `f64`.
     pub mod f64 {
