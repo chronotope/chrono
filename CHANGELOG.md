@@ -17,7 +17,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
-* Add a function that calculate the years elapsed between now and a given `Date` or `DateTime`
+* Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
 
 ## 0.4.19
 
@@ -743,4 +743,3 @@ and replaced by 0.2.25 very shortly. Duh.)
 ## 0.1.0 (2014-11-20)
 
 The initial version that was available to `crates.io`.
-
