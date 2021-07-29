@@ -514,14 +514,19 @@ impl NaiveDateTime {
     /// # }
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_add_signed(rhs);
-
-        // early checking to avoid overflow in OldDuration::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
+        // early checking to avoid overflow in overflowing_add_signed
+        let rhs_secs = rhs.whole_seconds();
+        if rhs_secs <= (-1 << MAX_SECS_BITS) || rhs_secs >= (1 << MAX_SECS_BITS) {
             return None;
         }
 
-        let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
+        let (time, rem_secs) = self.time.overflowing_add_signed(rhs);
+        // check again to avoid overflow in OldDuration::seconds
+        if rem_secs <= (-1 << MAX_SECS_BITS) || rem_secs >= (1 << MAX_SECS_BITS) {
+            return None;
+        }
+
+        let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rem_secs)));
         Some(NaiveDateTime { date: date, time: time })
     }
 
