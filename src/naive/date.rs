@@ -950,7 +950,7 @@ impl NaiveDate {
     /// let from_ymd = NaiveDate::from_ymd;
     /// let since = NaiveDate::signed_duration_since;
     ///
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 1)), Duration::zero());
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 1)), Duration::ZERO);
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 12, 31)), Duration::days(1));
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 2)), Duration::days(-1));
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 9, 23)), Duration::days(100));
@@ -1442,7 +1442,7 @@ impl Datelike for NaiveDate {
 }
 
 /// An addition of `Duration` to `NaiveDate` discards the fractional days,
-/// rounding to the closest integral number of days towards `Duration::zero()`.
+/// rounding to the closest integral number of days towards `Duration::ZERO`.
 ///
 /// Panics on underflow or overflow.
 /// Use [`NaiveDate::checked_add_signed`](#method.checked_add_signed) to detect that.
@@ -1455,7 +1455,7 @@ impl Datelike for NaiveDate {
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
-/// assert_eq!(from_ymd(2014, 1, 1) + Duration::zero(),             from_ymd(2014, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + Duration::ZERO,               from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::seconds(86399),     from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::seconds(-86399),    from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(1),            from_ymd(2014, 1, 2));
@@ -1482,7 +1482,7 @@ impl AddAssign<OldDuration> for NaiveDate {
 }
 
 /// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
-/// rounding to the closest integral number of days towards `Duration::zero()`.
+/// rounding to the closest integral number of days towards `Duration::ZERO`.
 /// It is the same as the addition with a negated `Duration`.
 ///
 /// Panics on underflow or overflow.
@@ -1496,7 +1496,7 @@ impl AddAssign<OldDuration> for NaiveDate {
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
-/// assert_eq!(from_ymd(2014, 1, 1) - Duration::zero(),             from_ymd(2014, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - Duration::ZERO,               from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::seconds(86399),     from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::seconds(-86399),    from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(1),            from_ymd(2013, 12, 31));
@@ -1539,7 +1539,7 @@ impl SubAssign<OldDuration> for NaiveDate {
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1), Duration::zero());
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1), Duration::ZERO);
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), Duration::days(1));
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2), Duration::days(-1));
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23), Duration::days(100));
@@ -2203,7 +2203,7 @@ mod tests {
             assert_eq!(lhs.checked_sub_signed(-rhs), sum);
         }
 
-        check((2014, 1, 1), Duration::zero(), Some((2014, 1, 1)));
+        check((2014, 1, 1), Duration::ZERO, Some((2014, 1, 1)));
         check((2014, 1, 1), Duration::seconds(86399), Some((2014, 1, 1)));
         // always round towards zero
         check((2014, 1, 1), Duration::seconds(-86399), Some((2014, 1, 1)));
@@ -2218,10 +2218,10 @@ mod tests {
         // overflow check
         check((0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64), Some((MAX_YEAR, 12, 31)));
         check((0, 1, 1), Duration::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1), None);
-        check((0, 1, 1), Duration::max_value(), None);
+        check((0, 1, 1), Duration::MAX, None);
         check((0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64), Some((MIN_YEAR, 1, 1)));
         check((0, 1, 1), Duration::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1), None);
-        check((0, 1, 1), Duration::min_value(), None);
+        check((0, 1, 1), Duration::MIN, None);
     }
 
     #[test]
@@ -2233,7 +2233,7 @@ mod tests {
             assert_eq!(rhs.signed_duration_since(lhs), -diff);
         }
 
-        check((2014, 1, 1), (2014, 1, 1), Duration::zero());
+        check((2014, 1, 1), (2014, 1, 1), Duration::ZERO);
         check((2014, 1, 2), (2014, 1, 1), Duration::days(1));
         check((2014, 12, 31), (2014, 1, 1), Duration::days(364));
         check((2015, 1, 3), (2014, 1, 1), Duration::days(365 + 2));
