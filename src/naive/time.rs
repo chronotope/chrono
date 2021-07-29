@@ -555,7 +555,7 @@ impl NaiveTime {
         debug_assert!(frac < 1_000_000_000);
 
         let rhssecs = rhs.whole_seconds();
-        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).whole_nanoseconds();
+        let rhsfrac = rhs.subsec_nanoseconds();
         debug_assert_eq!(
             OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac as i64),
             rhs
