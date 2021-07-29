@@ -2200,7 +2200,9 @@ mod tests {
             let lhs = NaiveDate::from_ymd(y1, m1, d1);
             let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd(y, m, d));
             assert_eq!(lhs.checked_add_signed(rhs), sum);
-            assert_eq!(lhs.checked_sub_signed(-rhs), sum);
+            if let Some(rhs) = rhs.checked_mul(-1) {
+                assert_eq!(lhs.checked_sub_signed(rhs), sum);
+            }
         }
 
         check((2014, 1, 1), Duration::ZERO, Some((2014, 1, 1)));
