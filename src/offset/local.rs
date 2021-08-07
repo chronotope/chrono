@@ -99,12 +99,26 @@ impl Local {
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Local> {
+        #[cfg(feature = "test-override")]
+        {
+            if let Some(t) = Self::test_get_override() {
+                return t;
+            }
+        }
+
         tm_to_datetime(Timespec::now().local())
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Local> {
+        #[cfg(feature = "test-override")]
+        {
+            if let Some(t) = Self::test_get_override() {
+                return t;
+            }
+        }
+
         use super::Utc;
         let now: DateTime<Utc> = super::Utc::now();
 
@@ -193,6 +207,43 @@ impl TimeZone for Local {
     }
 }
 
+#[cfg(all(feature = "test-override"))]
+thread_local!(static OVERRIDE: std::cell::RefCell<Option<DateTime<Local>>> = std::cell::RefCell::new(None));
+
+#[cfg(all(feature = "test-override"))]
+impl Local {
+    /// Override the value that will be returned by `Local::now()`, for use in local tests.
+    ///
+    /// ```
+    /// use chrono::{Local, TimeZone, Datelike};
+    /// fn is_today_leap_day() -> bool {
+    ///     let today = Local::today();
+    ///     today.month() == 2 && today.day() == 29
+    /// }
+    ///
+    /// Local::test_override_now(Local.ymd(2020, 2, 29).and_hms(0, 0, 0));
+    /// assert!(is_today_leap_day());
+    /// Local::test_clear_override();
+    /// ```
+    pub fn test_override_now(datetime: DateTime<Local>) {
+        OVERRIDE.with(|o| {
+            *o.borrow_mut() = Some(datetime);
+        });
+    }
+
+    /// Clear an override created by `Utc::test_override_now()`.
+    pub fn test_clear_override() {
+        OVERRIDE.with(|o| {
+            *o.borrow_mut() = None;
+        });
+    }
+
+    #[inline]
+    fn test_get_override() -> Option<DateTime<Local>> {
+        OVERRIDE.with(|o| *o.borrow())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Local;
@@ -223,5 +274,17 @@ mod tests {
             "unexpected timestr {:?}",
             timestr
         );
+    }
+
+    #[cfg(feature = "test-override")]
+    #[test]
+    fn test_override() {
+        assert!(Local::now() > Local.ymd(2021, 8, 7).and_hms(1, 0, 0));
+
+        Local::test_override_now(Local.ymd(2020, 2, 29).and_hms(0, 0, 0));
+        assert_eq!(Local::now(), Local.ymd(2020, 2, 29).and_hms(0, 0, 0));
+
+        Local::test_clear_override();
+        assert!(Local::now() > Local.ymd(2021, 8, 7).and_hms(1, 0, 0));
     }
 }

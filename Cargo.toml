@@ -31,6 +31,7 @@ clock = ["libc", "std", "winapi"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
+test-override = []
 __internal_bench = []
 __doctest = []
 

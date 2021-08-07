@@ -45,6 +45,13 @@ impl Utc {
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Utc> {
+        #[cfg(feature = "test-override")]
+        {
+            if let Some(t) = Self::test_get_override() {
+                return t;
+            }
+        }
+
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
         let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32);
@@ -54,6 +61,13 @@ impl Utc {
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Utc> {
+        #[cfg(feature = "test-override")]
+        {
+            if let Some(t) = Self::test_get_override() {
+                return t;
+            }
+        }
+
         let now = js_sys::Date::new_0();
         DateTime::<Utc>::from(now)
     }
@@ -96,5 +110,61 @@ impl fmt::Debug for Utc {
 impl fmt::Display for Utc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "UTC")
+    }
+}
+
+#[cfg(all(feature = "clock", feature = "test-override"))]
+thread_local!(static OVERRIDE: std::cell::RefCell<Option<DateTime<Utc>>> = std::cell::RefCell::new(None));
+
+#[cfg(all(feature = "clock", feature = "test-override"))]
+impl Utc {
+    /// Override the value that will be returned by `Utc::now()`, for use in local tests.
+    ///
+    /// ```
+    /// use chrono::{Utc, TimeZone, Datelike};
+    /// fn is_today_leap_day() -> bool {
+    ///     let today = Utc::today();
+    ///     today.month() == 2 && today.day() == 29
+    /// }
+    ///
+    /// Utc::test_override_now(Utc.ymd(2020, 2, 29).and_hms(0, 0, 0));
+    /// assert!(is_today_leap_day());
+    /// Utc::test_clear_override();
+    /// ```
+    pub fn test_override_now(datetime: DateTime<Utc>) {
+        OVERRIDE.with(|o| {
+            *o.borrow_mut() = Some(datetime);
+        });
+    }
+
+    /// Clear an override created by `Utc::test_override_now()`.
+    pub fn test_clear_override() {
+        OVERRIDE.with(|o| {
+            *o.borrow_mut() = None;
+        });
+    }
+
+    /// Get the overriden time to return for `Utc::now()`.
+    #[inline]
+    fn test_get_override() -> Option<DateTime<Utc>> {
+        OVERRIDE.with(|o| *o.borrow())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Utc;
+    use offset::TimeZone;
+
+    #[cfg(feature = "test-override")]
+    #[test]
+    fn test_override() {
+        assert!(Utc::now() > Utc.ymd(2021, 8, 7).and_hms(13, 0, 0));
+
+        Utc::test_override_now(Utc.ymd(2020, 2, 29).and_hms(0, 0, 0));
+        assert_eq!(Utc::now(), Utc.ymd(2020, 2, 29).and_hms(0, 0, 0));
+
+        Utc::test_clear_override();
+        assert!(Utc::now() > Utc.ymd(2021, 8, 7).and_hms(13, 0, 0));
     }
 }
