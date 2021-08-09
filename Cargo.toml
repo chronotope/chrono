@@ -63,7 +63,8 @@ doc-comment = { version = "0.3" }
 wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
-features = ["serde"]
+rustdoc-args = ["--cfg", "docsrs"]
+features = ["serde", "test-override"]
 
 [package.metadata.playground]
 features = ["serde"]

@@ -449,6 +449,7 @@
     // Range contains was stabilized in 1.35.
     manual_range_contains,
 ))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

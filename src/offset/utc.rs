@@ -118,6 +118,7 @@ thread_local!(static OVERRIDE: std::cell::RefCell<Option<DateTime<Utc>>> = std::
 
 #[cfg(all(feature = "clock", feature = "test-override"))]
 impl Utc {
+    #[cfg_attr(docsrs, doc(cfg(feature = "test-override")))]
     /// Override the value that will be returned by `Utc::now()`, for use in local tests.
     ///
     /// ```
@@ -137,6 +138,7 @@ impl Utc {
         });
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "test-override")))]
     /// Clear an override created by `Utc::test_override_now()`.
     pub fn test_clear_override() {
         OVERRIDE.with(|o| {

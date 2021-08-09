@@ -212,6 +212,7 @@ thread_local!(static OVERRIDE: std::cell::RefCell<Option<DateTime<Local>>> = std
 
 #[cfg(all(feature = "test-override"))]
 impl Local {
+    #[cfg_attr(docsrs, doc(cfg(feature = "test-override")))]
     /// Override the value that will be returned by `Local::now()`, for use in local tests.
     ///
     /// ```
@@ -231,6 +232,7 @@ impl Local {
         });
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "test-override")))]
     /// Clear an override created by `Utc::test_override_now()`.
     pub fn test_clear_override() {
         OVERRIDE.with(|o| {
@@ -238,6 +240,7 @@ impl Local {
         });
     }
 
+    /// Get the overriden time to return for `Utc::now()`.
     #[inline]
     fn test_get_override() -> Option<DateTime<Local>> {
         OVERRIDE.with(|o| *o.borrow())
