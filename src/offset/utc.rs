@@ -169,4 +169,40 @@ mod tests {
         Utc::test_clear_override();
         assert!(Utc::now() > Utc.ymd(2021, 8, 7).and_hms(13, 0, 0));
     }
+
+    #[cfg(feature = "test-override")]
+    #[test]
+    fn test_override_multiple_threads() {
+        use std::sync::{Arc, Barrier};
+        use std::thread::spawn;
+
+        let barrier = Arc::new(Barrier::new(3));
+
+        let barrier_1 = barrier.clone();
+        let thread_1 = spawn(move || {
+            Utc::test_override_now(Utc.ymd(2020, 2, 29).and_hms(12, 0, 0));
+            barrier_1.wait();
+
+            assert_eq!(Utc::now(), Utc.ymd(2020, 2, 29).and_hms(12, 0, 0));
+        });
+
+        let barrier_2 = barrier.clone();
+        let thread_2 = spawn(move || {
+            Utc::test_override_now(Utc.ymd(2016, 2, 29).and_hms(12, 0, 0));
+            barrier_2.wait();
+
+            assert_eq!(Utc::now(), Utc.ymd(2016, 2, 29).and_hms(12, 0, 0));
+        });
+
+        let barrier_3 = barrier;
+        let thread_3 = spawn(move || {
+            barrier_3.wait();
+
+            assert!(Utc::now() > Utc.ymd(2021, 8, 7).and_hms(13, 0, 0));
+        });
+
+        thread_1.join().expect("Thread 1 should succeed");
+        thread_2.join().expect("Thread 2 should succeed");
+        thread_3.join().expect("Thread 3 should succeed");
+    }
 }
