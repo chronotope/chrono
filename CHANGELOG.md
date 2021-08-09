@@ -13,7 +13,7 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.20 (unreleased)
 
-* Add more formatting documentation and examples.
+* Add more formatting documentation and examples, update a few (@gauthamkrishna9991)
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
