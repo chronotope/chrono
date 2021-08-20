@@ -18,7 +18,8 @@ use crate::naive::{self, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
 use crate::DateTime;
 use crate::{Datelike, Weekday};
-
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 /// ISO 8601 calendar date with time zone.
 ///
 /// You almost certainly want to be using a [`NaiveDate`] instead of this type.
@@ -51,6 +52,7 @@ use crate::{Datelike, Weekday};
 ///   so the local date and UTC date should be equal for most cases
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
 #[derive(Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,

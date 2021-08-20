@@ -21,6 +21,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Correct build for wasm32-unknown-emscripten target (#568)
 * Change `Local::now()` and `Utc::now()` documentation from "current date" to "current date and time" (#647)
 * Fix `duration_round` panic on rounding by `Duration::zero()` (#658)
+* Add optional rkyv support.
 
 ## 0.4.19
 
