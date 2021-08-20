@@ -15,6 +15,8 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::oldtime::Duration as OldDuration;
 use crate::Timelike;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize;
@@ -189,6 +191,7 @@ pub(super) const MAX_TIME: NaiveTime =
 /// Since Chrono alone cannot determine any existence of leap seconds,
 /// **there is absolutely no guarantee that the leap second read has actually happened**.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,

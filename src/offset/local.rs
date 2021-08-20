@@ -14,6 +14,8 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::{Date, DateTime};
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 use crate::{Datelike, Timelike};
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
@@ -88,6 +90,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> sys::Timespec {
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
 /// ```
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Local;
 
 impl Local {
