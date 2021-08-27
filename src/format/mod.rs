@@ -338,9 +338,17 @@ macro_rules! internal_fix {
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ParseError(ParseErrorKind);
 
+impl ParseError {
+    /// The category of parse error
+    pub fn kind(&self) -> ParseErrorKind {
+        self.0
+    }
+}
+
 /// The category of parse error
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-enum ParseErrorKind {
+#[non_exhaustive]
+pub enum ParseErrorKind {
     /// Given field is out of permitted range.
     OutOfRange,
 
