@@ -53,7 +53,7 @@ winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "tim
 [dev-dependencies]
 serde_json = { version = "1" }
 serde_derive = { version = "1", default-features = false }
-bincode = { version = "0.8.0" }
+bincode = { version = "1" }
 num-iter = { version = "0.1.35", default-features = false }
 criterion = { version = "0.3" }
 doc-comment = { version = "0.3" }

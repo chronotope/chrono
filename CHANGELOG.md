@@ -17,6 +17,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
+* Update bincode dev-dependency to v1 (#306)
 
 ## 0.4.19
 

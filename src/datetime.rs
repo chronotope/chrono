@@ -2413,10 +2413,10 @@ pub mod serde {
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use self::bincode::{deserialize, serialize, Infinite};
+        use self::bincode::{deserialize, serialize};
 
         let dt = Utc.ymd(2014, 7, 24).and_hms(12, 34, 6);
-        let encoded = serialize(&dt, Infinite).unwrap();
+        let encoded = serialize(&dt).unwrap();
         let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
         assert_eq!(dt, decoded);
         assert_eq!(dt.offset(), decoded.offset());

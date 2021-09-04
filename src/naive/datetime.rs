@@ -2243,18 +2243,18 @@ pub mod serde {
     // it is not self-describing.
     #[test]
     fn test_serde_bincode() {
-        use self::bincode::{deserialize, serialize, Infinite};
+        use self::bincode::{deserialize, serialize};
         use naive::NaiveDate;
 
         let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
-        let encoded = serialize(&dt, Infinite).unwrap();
+        let encoded = serialize(&dt).unwrap();
         let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
         assert_eq!(dt, decoded);
     }
 
     #[test]
     fn test_serde_bincode_optional() {
-        use self::bincode::{deserialize, serialize, Infinite};
+        use self::bincode::{deserialize, serialize};
         use self::serde_derive::{Deserialize, Serialize};
         use prelude::*;
         use serde::ts_nanoseconds_option;
@@ -2267,7 +2267,7 @@ pub mod serde {
         }
 
         let expected = Test { one: Some(1), two: Some(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1)) };
-        let bytes: Vec<u8> = serialize(&expected, Infinite).unwrap();
+        let bytes: Vec<u8> = serialize(&expected).unwrap();
         let actual = deserialize::<Test>(&(bytes)).unwrap();
 
         assert_eq!(expected, actual);
