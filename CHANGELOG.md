@@ -24,6 +24,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add optional rkyv support.
 * Add support for microseconds timestamps serde serialization for `NaiveDateTime`.
 * Add support for optional timestamps serde serialization for `NaiveDateTime`.
+* Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
 
 ## 0.4.19
 
