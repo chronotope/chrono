@@ -34,6 +34,8 @@ meaningful in the github actions feature matrix UI.
             test_wasm
         elif [[ ${WASM:-} == wasm_simple ]]; then
             test_wasm_simple
+        elif [[ ${WASM:-} == wasm_emscripten ]]; then
+            test_wasm_emscripten
         elif [[ ${CORE:-} == no_std ]]; then
             test_core
         elif [[ ${EXHAUSTIVE_TZ:-} == all_tzs ]]; then
@@ -110,6 +112,10 @@ test_wasm_simple() {
         # so re-run the test in case it took too long
         runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind
     fi
+}
+
+test_wasm_emscripten() {
+    runt cargo build --target wasm32-unknown-emscripten
 }
 
 main "$@"
