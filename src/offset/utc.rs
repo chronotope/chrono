@@ -173,6 +173,7 @@ mod tests {
     #[cfg(feature = "test-override")]
     #[test]
     fn test_override_multiple_threads() {
+        // stub
         use std::sync::{Arc, Barrier};
         use std::thread::spawn;
 
