@@ -2591,6 +2591,7 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
     #[cfg(feature = "clock")]
     use Datelike;
+    use alloc::str::FromStr;
 
     #[test]
     #[allow(non_snake_case)]
@@ -2769,6 +2770,15 @@ mod tests {
         use SecondsFormat;
         let dt = Utc.ymd(1999, 10, 9).and_hms(1, 2, 3);
         dt.to_rfc3339_opts(SecondsFormat::__NonExhaustive, true);
+    }
+
+    #[test]
+    fn test_datetime_from_str_vp() {
+        let input = "1%Z%I%A%Z%I%A\u{7f}\u{1c} 4ThuP0\u{7f}\n\u{2000}\n\n\u{2000}\n\nJ \u{0} %Z%s%Z%\u{0}%s%Zsssssssssssssssssss%sZ%I\nJ \n3%Z%";
+
+        let result = crate::DateTime::parse_from_str(input, input);
+        assert_eq!(result.is_err(), true);
+
     }
 
     #[test]

@@ -162,6 +162,10 @@ pub fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
 /// Tries to parse the weekday with short or long weekday names.
 /// It prefers long weekday names to short weekday names when both are possible.
 pub fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
+    if !s.is_ascii() {
+        return Err(crate::format::ParseError { 0: crate::format::ParseErrorKind::Invalid });
+    }
+
     // lowercased weekday names, minus first three chars
     static LONG_WEEKDAY_SUFFIXES: [&'static str; 7] =
         ["day", "sday", "nesday", "rsday", "day", "urday", "day"];
