@@ -2591,7 +2591,6 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
     #[cfg(feature = "clock")]
     use Datelike;
-    use alloc::str::FromStr;
 
     #[test]
     #[allow(non_snake_case)]
