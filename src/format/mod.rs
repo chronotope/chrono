@@ -744,6 +744,9 @@ pub struct DelayedFormat<I> {
     /// An iterator returning formatting items.
     items: I,
     /// Locale used for text.
+    // TODO: Only used with the locale feature. We should make this property
+    // only present when the feature is enabled.
+    #[allow(dead_code)]
     locale: Option<Locale>,
 }
 
