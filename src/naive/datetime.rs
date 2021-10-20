@@ -453,7 +453,7 @@ impl NaiveDateTime {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust,ignore
     /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
@@ -491,7 +491,7 @@ impl NaiveDateTime {
     /// Leap seconds are handled,
     /// but the addition assumes that it is the only leap second happened.
     ///
-    /// ```
+    /// ```rust,ignore
     /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
@@ -515,7 +515,10 @@ impl NaiveDateTime {
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         // early checking to avoid overflow in overflowing_add_signed
+        #[cfg(feature = "oldtime")]
         let rhs_secs = rhs.whole_seconds();
+        #[cfg(not(feature = "oldtime"))]
+        let rhs_secs = rhs.num_seconds();
         if rhs_secs <= (-1 << MAX_SECS_BITS) || rhs_secs >= (1 << MAX_SECS_BITS) {
             return None;
         }
@@ -541,7 +544,7 @@ impl NaiveDateTime {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust,ignore
     /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
@@ -579,7 +582,7 @@ impl NaiveDateTime {
     /// Leap seconds are handled,
     /// but the subtraction assumes that it is the only leap second happened.
     ///
-    /// ```
+    /// ```rust,ignore
     /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
@@ -1228,7 +1231,7 @@ impl hash::Hash for NaiveDateTime {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
@@ -1253,7 +1256,7 @@ impl hash::Hash for NaiveDateTime {
 /// Leap seconds are handled,
 /// but the addition assumes that it is the only leap second happened.
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
@@ -1298,7 +1301,7 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
@@ -1323,7 +1326,7 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// Leap seconds are handled,
 /// but the subtraction assumes that it is the only leap second happened.
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
@@ -2311,9 +2314,12 @@ mod tests {
             let sum =
                 result.map(|(y, m, d, h, n, s)| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
             assert_eq!(lhs.checked_add_signed(rhs), sum);
+            #[cfg(feature = "oldtime")]
             if let Some(rhs) = rhs.checked_mul(-1) {
                 assert_eq!(lhs.checked_sub_signed(rhs), sum);
             }
+            #[cfg(not(feature = "oldtime"))]
+            assert_eq!(lhs.checked_sub_signed(-rhs), sum);
         }
 
         check(
@@ -2342,19 +2348,31 @@ mod tests {
             Some((MAX_DATE.year(), 12, 31, 23, 59, 59)),
         );
         check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
+        #[cfg(feature = "oldtime")]
         check((0, 1, 1, 0, 0, 0), Duration::MAX, None);
+        #[cfg(not(feature = "oldtime"))]
+        check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
 
         let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
         check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((MIN_DATE.year(), 1, 1, 0, 0, 0)));
         check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
+        #[cfg(feature = "oldtime")]
         check((0, 1, 1, 0, 0, 0), Duration::MIN, None);
+        #[cfg(not(feature = "oldtime"))]
+        check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
     }
 
     #[test]
     fn test_datetime_sub() {
         let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let since = NaiveDateTime::signed_duration_since;
+        #[cfg(feature = "oldtime")]
         assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), Duration::ZERO);
+        #[cfg(not(feature = "oldtime"))]
+        assert_eq!(
+            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
+            Duration::zero()
+        );
         assert_eq!(
             since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
             Duration::seconds(1)
@@ -2517,7 +2535,10 @@ mod tests {
         let base = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
         let t = -946684799990000;
         let time = base + Duration::microseconds(t);
+        #[cfg(feature = "oldtime")]
         assert_eq!(t, time.signed_duration_since(base).whole_microseconds() as i64);
+        #[cfg(not(feature = "oldtime"))]
+        assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
     }
 
     #[test]

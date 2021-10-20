@@ -1109,16 +1109,34 @@ mod tests {
             NaiveDate::from_ymd(0, 1, 1).signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
         let min_days_from_year_1970 =
             MIN_DATE.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
+        #[cfg(feature = "oldtime")]
         assert_eq!(
             parse!(timestamp: min_days_from_year_1970.whole_seconds()),
             ymdhms(MIN_DATE.year(), 1, 1, 0, 0, 0)
         );
+        #[cfg(not(feature = "oldtime"))]
+        assert_eq!(
+            parse!(timestamp: min_days_from_year_1970.num_seconds()),
+            ymdhms(MIN_DATE.year(), 1, 1, 0, 0, 0)
+        );
+        #[cfg(feature = "oldtime")]
         assert_eq!(
             parse!(timestamp: year_0_from_year_1970.whole_seconds()),
             ymdhms(0, 1, 1, 0, 0, 0)
         );
+        #[cfg(not(feature = "oldtime"))]
+        assert_eq!(
+            parse!(timestamp: year_0_from_year_1970.num_seconds()),
+            ymdhms(0, 1, 1, 0, 0, 0)
+        );
+        #[cfg(feature = "oldtime")]
         assert_eq!(
             parse!(timestamp: max_days_from_year_1970.whole_seconds() + 86399),
+            ymdhms(MAX_DATE.year(), 12, 31, 23, 59, 59)
+        );
+        #[cfg(not(feature = "oldtime"))]
+        assert_eq!(
+            parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
             ymdhms(MAX_DATE.year(), 12, 31, 23, 59, 59)
         );
 

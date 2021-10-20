@@ -32,7 +32,7 @@ impl FixedOffset {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust,ignore
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime = FixedOffset::east(5 * hour).ymd(2016, 11, 08)
@@ -62,7 +62,7 @@ impl FixedOffset {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust,ignore
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime = FixedOffset::west(5 * hour).ymd(2016, 11, 08)

@@ -538,6 +538,7 @@ impl NaiveTime {
         // otherwise the addition immediately finishes.
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
+            #[allow(clippy::assign_op_pattern)]
             if rhs >= OldDuration::nanoseconds(i64::from(rfrac)) {
                 rhs = rhs - OldDuration::nanoseconds(i64::from(rfrac));
                 secs += 1;
@@ -546,7 +547,14 @@ impl NaiveTime {
                 rhs = rhs + OldDuration::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
-                frac = (i64::from(frac) + rhs.whole_nanoseconds() as i64) as u32;
+                #[cfg(feature = "oldtime")]
+                {
+                    frac = (i64::from(frac) + rhs.whole_nanoseconds() as i64) as u32;
+                }
+                #[cfg(not(feature = "oldtime"))]
+                {
+                    frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap() as i64) as u32;
+                }
                 debug_assert!(frac < 2_000_000_000);
                 return (NaiveTime { secs: secs, frac: frac }, 0);
             }
@@ -554,8 +562,13 @@ impl NaiveTime {
         debug_assert!(secs <= 86_400);
         debug_assert!(frac < 1_000_000_000);
 
-        let rhssecs = rhs.whole_seconds();
-        let rhsfrac = rhs.subsec_nanoseconds();
+        #[cfg(feature = "oldtime")]
+        let (rhssecs, rhsfrac) = (rhs.whole_seconds(), rhs.subsec_nanoseconds());
+        #[cfg(not(feature = "oldtime"))]
+        let (rhssecs, rhsfrac) = (
+            rhs.num_seconds(),
+            (rhs - OldDuration::seconds(rhs.num_seconds())).num_nanoseconds().unwrap(),
+        );
         debug_assert_eq!(
             OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac as i64),
             rhs
@@ -634,7 +647,7 @@ impl NaiveTime {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```rust,ignore
     /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveTime};
     ///
@@ -849,7 +862,7 @@ impl Timelike for NaiveTime {
     /// ([Why?](#leap-second-handling))
     /// Use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
-    /// ```
+    /// ```rust,ignore
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000);
     /// assert_eq!(leap.second(), 59);
@@ -877,7 +890,7 @@ impl Timelike for NaiveTime {
     /// You can reduce the range with `time.nanosecond() % 1_000_000_000`, or
     /// use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
-    /// ```
+    /// ```rust,ignore
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000);
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
@@ -1033,7 +1046,7 @@ impl hash::Hash for NaiveTime {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveTime};
 ///
@@ -1064,7 +1077,7 @@ impl hash::Hash for NaiveTime {
 ///
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
@@ -1105,7 +1118,7 @@ impl AddAssign<OldDuration> for NaiveTime {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveTime};
 ///
@@ -1133,7 +1146,7 @@ impl AddAssign<OldDuration> for NaiveTime {
 ///
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
@@ -1176,7 +1189,7 @@ impl SubAssign<OldDuration> for NaiveTime {
 ///
 /// # Example
 ///
-/// ```
+/// ```rust,ignore
 /// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveTime};
 ///
@@ -1628,7 +1641,10 @@ mod tests {
 
         let hmsm = |h, m, s, mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
+        #[cfg(feature = "oldtime")]
         check!(hmsm(3, 5, 7, 900), Duration::ZERO, hmsm(3, 5, 7, 900));
+        #[cfg(not(feature = "oldtime"))]
+        check!(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
         check!(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
         check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-1800), hmsm(3, 5, 6, 500));
         check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-800), hmsm(3, 5, 7, 500));
@@ -1707,7 +1723,10 @@ mod tests {
 
         let hmsm = |h, m, s, mi| NaiveTime::from_hms_milli(h, m, s, mi);
 
+        #[cfg(feature = "oldtime")]
         check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::ZERO);
+        #[cfg(not(feature = "oldtime"))]
+        check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
         check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
         check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
         check!(

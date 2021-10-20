@@ -96,7 +96,7 @@ fn span_for_digits(digits: u16) -> u32 {
 /// Extension trait for rounding or truncating a DateTime by a Duration.
 ///
 /// # Limitations
-/// Both rounding and truncating are done via [`Duration::num_nanoseconds`] and
+/// Both rounding and truncating are done via [`Duration::whole_nanoseconds`] and
 /// [`DateTime::timestamp_nanos`]. This means that they will fail if either the
 /// `Duration` or the `DateTime` are too big to represented as nanoseconds. They
 /// will also fail if the `Duration` is bigger than the timestamp.
@@ -179,7 +179,10 @@ fn duration_round<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
+    #[cfg(feature = "oldtime")]
     let span = duration.whole_nanoseconds();
+    #[cfg(not(feature = "oldtime"))]
+    let span = duration.num_nanoseconds().ok_or(RoundingError::DurationExceedsLimit)? as i128;
     if span > i64::MAX as i128 || span < i64::MIN as i128 {
         return Err(RoundingError::DurationExceedsLimit);
     }
@@ -217,7 +220,10 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
+    #[cfg(feature = "oldtime")]
     let span = duration.whole_nanoseconds();
+    #[cfg(not(feature = "oldtime"))]
+    let span = duration.num_nanoseconds().ok_or(RoundingError::DurationExceedsLimit)? as i128;
     if span > i64::MAX as i128 || span < i64::MIN as i128 {
         return Err(RoundingError::DurationExceedsLimit);
     }

@@ -16,7 +16,7 @@
 //! C's `strftime` format. The available options can be found [here](./strftime/index.html).
 //!
 //! # Example
-//! ```rust
+//! ```rust,ignore
 //! # use std::error::Error;
 //! #
 //! # fn main() -> Result<(), Box<dyn Error>> {
