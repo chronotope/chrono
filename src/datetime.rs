@@ -96,12 +96,16 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime: datetime, offset: offset }
     }
 
-    /// Makes a new `DateTime` with given **local** datetime and offset that 
-    /// presents local timezone. 
-    /// 
-    /// # Example 
+    /// Makes a new `DateTime` with given **local** datetime and offset that
+    /// presents local timezone.
+    ///
+    /// # Example
     ///
     /// ```
+    /// use chrono::DateTime;
+    /// use chrono::naive::NaiveDate;
+    /// use chrono::offset::{Utc, FixedOffset};
+    ///
     /// let naivedatetime_utc = NaiveDate::from_ymd(2000, 1, 12).and_hms(2, 0, 0);
     /// let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
     ///
@@ -117,7 +121,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
     /// ```
     #[inline]
-    pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) ->DateTime<Tz> {
+    pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         let datetime_utc = datetime - offset.fix();
 
         DateTime { datetime: datetime_utc, offset: offset }
