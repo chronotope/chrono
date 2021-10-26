@@ -101,6 +101,7 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install node
         uses: actions/setup-node@v1
@@ -131,6 +132,8 @@ jobs:
 
       - name: Install cross
         run: bash ci/install-cross.sh
+
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build static library
         run: cross check --target ${{ matrix.target }}
