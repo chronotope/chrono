@@ -46,7 +46,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
           override: true
-      - use: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build and Test
         run: bash ci/github.sh
