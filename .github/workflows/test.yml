@@ -79,6 +79,7 @@ jobs:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build no_std lib
         run: cargo build --target thumbv6m-none-eabi --color=always
