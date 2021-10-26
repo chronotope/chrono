@@ -46,6 +46,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build and Test
         run: bash ci/github.sh
@@ -69,6 +70,7 @@ jobs:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build no_std lib
         run: cargo build --target thumbv6m-none-eabi --color=always
@@ -90,6 +92,7 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install node
         uses: actions/setup-node@v1
