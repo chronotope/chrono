@@ -338,6 +338,7 @@ impl Of {
         (weekord / 7, Weekday::from_u32(weekord % 7).unwrap())
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
     #[inline]
     pub fn to_mdf(&self) -> Mdf {
         Mdf::from_of(*self)
@@ -460,6 +461,7 @@ impl Mdf {
         Mdf((mdf & !0b1111) | u32::from(flags))
     }
 
+    #[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
     #[inline]
     pub fn to_of(&self) -> Of {
         Of::from_mdf(*self)
