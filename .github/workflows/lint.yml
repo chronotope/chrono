@@ -17,6 +17,7 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - uses: Swatinem/rust-cache@v1
       - name: Lint
         run: bash ci/lint.sh
       - name: Run ShellCheck

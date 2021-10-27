@@ -18,6 +18,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
 * Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
+* Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
 
 ## 0.4.19
 
