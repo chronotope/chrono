@@ -3059,6 +3059,9 @@ mod tests {
 
         // if the given DateTime is later than now, the function will always return 0.
         assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
+    }
+
+    #[test]
     fn test_datetime_from_local() {
         // 2000-01-12T02:00:00Z
         let naivedatetime_utc = NaiveDate::from_ymd(2000, 1, 12).and_hms(2, 0, 0);
