@@ -1250,6 +1250,95 @@ pub mod serde {
         }
     }
 
+    /// Serialize into a rfc3339 time string
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// serializations.
+    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: ser::Serializer,
+        {
+            struct FormatWrapped<'a, D: 'a> {
+                inner: &'a D,
+            }
+
+            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                    self.inner.fmt(f)
+                }
+            }
+
+            // Debug formatting is correct RFC3339, and it allows Zulu.
+            serializer.collect_str(&FormatWrapped { inner: &self })
+        }
+    }
+
+    struct DateTimeVisitor;
+
+    impl<'de> de::Visitor<'de> for DateTimeVisitor {
+        type Value = DateTime<FixedOffset>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            write!(formatter, "a formatted date and time string or a unix timestamp")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
+        where
+            E: de::Error,
+        {
+            value.parse().map_err(|err: ::format::ParseError| E::custom(err))
+        }
+    }
+
+    /// Deserialize a value that optionally includes a timezone offset in its
+    /// string representation
+    ///
+    /// The value to be deserialized must be an rfc3339 string.
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// deserialization formats.
+    impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            deserializer.deserialize_str(DateTimeVisitor)
+        }
+    }
+
+    /// Deserialize into a UTC value
+    ///
+    /// The value to be deserialized must be an rfc3339 string.
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// deserialization formats.
+    impl<'de> de::Deserialize<'de> for DateTime<Utc> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Utc))
+        }
+    }
+
+    /// Deserialize a value that includes no timezone in its string
+    /// representation
+    ///
+    /// The value to be deserialized must be an rfc3339 string.
+    ///
+    /// See [the `serde` module](./serde/index.html) for alternate
+    /// serialization formats.
+    #[cfg(feature = "clock")]
+    impl<'de> de::Deserialize<'de> for DateTime<Local> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+        }
+    }
+
     /// Ser/de to/from timestamps in nanoseconds
     ///
     /// Intended for use with `serde`'s `with` attribute.
@@ -1399,6 +1488,162 @@ pub mod serde {
                     ),
                     &value,
                 )
+            }
+        }
+    }
+
+    /// Ser/de to/from timestamps in nanoseconds
+    ///
+    /// Intended for use with `serde`'s `with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # // We mark this ignored so that we can test on 1.13 (which does not
+    /// # // support custom derive), and run tests with --ignored on beta and
+    /// # // nightly to actually trigger these.
+    /// #
+    /// # #[macro_use] extern crate serde_derive;
+    /// # #[macro_use] extern crate serde_json;
+    /// # extern crate chrono;
+    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// use chrono::serde::ts_nanoseconds_option;
+    /// #[derive(Deserialize, Serialize)]
+    /// struct S {
+    ///     #[serde(with = "ts_nanoseconds_option")]
+    ///     time: Option<DateTime<Utc>>
+    /// }
+    ///
+    /// # fn example() -> Result<S, serde_json::Error> {
+    /// let time = Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733));
+    /// let my_s = S {
+    ///     time: time.clone(),
+    /// };
+    ///
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
+    /// let my_s: S = serde_json::from_str(&as_string)?;
+    /// assert_eq!(my_s.time, time);
+    /// # Ok(my_s)
+    /// # }
+    /// # fn main() { example().unwrap(); }
+    /// ```
+    pub mod ts_nanoseconds_option {
+        use core::fmt;
+        use serdelib::{de, ser};
+
+        use {DateTime, Utc};
+
+        use super::NanoSecondsTimestampVisitor;
+
+        /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch or none
+        ///
+        /// Intended for use with `serde`s `serialize_with` attribute.
+        ///
+        /// # Example:
+        ///
+        /// ```rust
+        /// # // We mark this ignored so that we can test on 1.13 (which does not
+        /// # // support custom derive), and run tests with --ignored on beta and
+        /// # // nightly to actually trigger these.
+        /// #
+        /// # #[macro_use] extern crate serde_derive;
+        /// # #[macro_use] extern crate serde_json;
+        /// # extern crate chrono;
+        /// # use chrono::{TimeZone, DateTime, Utc};
+        /// use chrono::serde::ts_nanoseconds_option::serialize as to_nano_tsopt;
+        /// #[derive(Serialize)]
+        /// struct S {
+        ///     #[serde(serialize_with = "to_nano_tsopt")]
+        ///     time: Option<DateTime<Utc>>
+        /// }
+        ///
+        /// # fn example() -> Result<String, serde_json::Error> {
+        /// let my_s = S {
+        ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733)),
+        /// };
+        /// let as_string = serde_json::to_string(&my_s)?;
+        /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
+        /// # Ok(as_string)
+        /// # }
+        /// # fn main() { example().unwrap(); }
+        /// ```
+        pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: ser::Serializer,
+        {
+            match *opt {
+                Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos()),
+                None => serializer.serialize_none(),
+            }
+        }
+
+        /// Deserialize a `DateTime` from a nanosecond timestamp or none
+        ///
+        /// Intended for use with `serde`s `deserialize_with` attribute.
+        ///
+        /// # Example:
+        ///
+        /// ```rust
+        /// # // We mark this ignored so that we can test on 1.13 (which does not
+        /// # // support custom derive), and run tests with --ignored on beta and
+        /// # // nightly to actually trigger these.
+        /// #
+        /// # #[macro_use] extern crate serde_derive;
+        /// # #[macro_use] extern crate serde_json;
+        /// # extern crate chrono;
+        /// # use chrono::{DateTime, Utc};
+        /// use chrono::serde::ts_nanoseconds_option::deserialize as from_nano_tsopt;
+        /// #[derive(Deserialize)]
+        /// struct S {
+        ///     #[serde(deserialize_with = "from_nano_tsopt")]
+        ///     time: Option<DateTime<Utc>>
+        /// }
+        ///
+        /// # fn example() -> Result<S, serde_json::Error> {
+        /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
+        /// # Ok(my_s)
+        /// # }
+        /// # fn main() { example().unwrap(); }
+        /// ```
+        pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            Ok(d.deserialize_option(OptionNanoSecondsTimestampVisitor)?)
+        }
+
+        struct OptionNanoSecondsTimestampVisitor;
+
+        impl<'de> de::Visitor<'de> for OptionNanoSecondsTimestampVisitor {
+            type Value = Option<DateTime<Utc>>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a unix timestamp in nanoseconds or none")
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_some<D>(self, d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+            where
+                D: de::Deserializer<'de>,
+            {
+                d.deserialize_i64(NanoSecondsTimestampVisitor).map(Some)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            where
+                E: de::Error,
+            {
+                Ok(None)
+            }
+
+            /// Deserialize a timestamp in seconds since the epoch
+            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            where
+                E: de::Error,
+            {
+                Ok(None)
             }
         }
     }
@@ -1693,162 +1938,6 @@ pub mod serde {
                 D: de::Deserializer<'de>,
             {
                 d.deserialize_i64(MicroSecondsTimestampVisitor).map(Some)
-            }
-
-            /// Deserialize a timestamp in seconds since the epoch
-            fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
-            where
-                E: de::Error,
-            {
-                Ok(None)
-            }
-
-            /// Deserialize a timestamp in seconds since the epoch
-            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
-            where
-                E: de::Error,
-            {
-                Ok(None)
-            }
-        }
-    }
-
-    /// Ser/de to/from timestamps in nanoseconds
-    ///
-    /// Intended for use with `serde`'s `with` attribute.
-    ///
-    /// # Example:
-    ///
-    /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
-    /// # use chrono::{TimeZone, DateTime, Utc};
-    /// use chrono::serde::ts_nanoseconds_option;
-    /// #[derive(Deserialize, Serialize)]
-    /// struct S {
-    ///     #[serde(with = "ts_nanoseconds_option")]
-    ///     time: Option<DateTime<Utc>>
-    /// }
-    ///
-    /// # fn example() -> Result<S, serde_json::Error> {
-    /// let time = Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733));
-    /// let my_s = S {
-    ///     time: time.clone(),
-    /// };
-    ///
-    /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// let my_s: S = serde_json::from_str(&as_string)?;
-    /// assert_eq!(my_s.time, time);
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
-    /// ```
-    pub mod ts_nanoseconds_option {
-        use core::fmt;
-        use serdelib::{de, ser};
-
-        use {DateTime, Utc};
-
-        use super::NanoSecondsTimestampVisitor;
-
-        /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch or none
-        ///
-        /// Intended for use with `serde`s `serialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # extern crate chrono;
-        /// # use chrono::{TimeZone, DateTime, Utc};
-        /// use chrono::serde::ts_nanoseconds_option::serialize as to_nano_tsopt;
-        /// #[derive(Serialize)]
-        /// struct S {
-        ///     #[serde(serialize_with = "to_nano_tsopt")]
-        ///     time: Option<DateTime<Utc>>
-        /// }
-        ///
-        /// # fn example() -> Result<String, serde_json::Error> {
-        /// let my_s = S {
-        ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733)),
-        /// };
-        /// let as_string = serde_json::to_string(&my_s)?;
-        /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-        /// # Ok(as_string)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            match *opt {
-                Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos()),
-                None => serializer.serialize_none(),
-            }
-        }
-
-        /// Deserialize a `DateTime` from a nanosecond timestamp or none
-        ///
-        /// Intended for use with `serde`s `deserialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # extern crate chrono;
-        /// # use chrono::{DateTime, Utc};
-        /// use chrono::serde::ts_nanoseconds_option::deserialize as from_nano_tsopt;
-        /// #[derive(Deserialize)]
-        /// struct S {
-        ///     #[serde(deserialize_with = "from_nano_tsopt")]
-        ///     time: Option<DateTime<Utc>>
-        /// }
-        ///
-        /// # fn example() -> Result<S, serde_json::Error> {
-        /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-        /// # Ok(my_s)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            Ok(d.deserialize_option(OptionNanoSecondsTimestampVisitor)?)
-        }
-
-        struct OptionNanoSecondsTimestampVisitor;
-
-        impl<'de> de::Visitor<'de> for OptionNanoSecondsTimestampVisitor {
-            type Value = Option<DateTime<Utc>>;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a unix timestamp in nanoseconds or none")
-            }
-
-            /// Deserialize a timestamp in seconds since the epoch
-            fn visit_some<D>(self, d: D) -> Result<Option<DateTime<Utc>>, D::Error>
-            where
-                D: de::Deserializer<'de>,
-            {
-                d.deserialize_i64(NanoSecondsTimestampVisitor).map(Some)
             }
 
             /// Deserialize a timestamp in seconds since the epoch
@@ -2485,95 +2574,6 @@ pub mod serde {
             {
                 Ok(None)
             }
-        }
-    }
-
-    impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
-        /// Serialize into a rfc3339 time string
-        ///
-        /// See [the `serde` module](./serde/index.html) for alternate
-        /// serializations.
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            struct FormatWrapped<'a, D: 'a> {
-                inner: &'a D,
-            }
-
-            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
-                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                    self.inner.fmt(f)
-                }
-            }
-
-            // Debug formatting is correct RFC3339, and it allows Zulu.
-            serializer.collect_str(&FormatWrapped { inner: &self })
-        }
-    }
-
-    struct DateTimeVisitor;
-
-    impl<'de> de::Visitor<'de> for DateTimeVisitor {
-        type Value = DateTime<FixedOffset>;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "a formatted date and time string or a unix timestamp")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
-        where
-            E: de::Error,
-        {
-            value.parse().map_err(|err: ::format::ParseError| E::custom(err))
-        }
-    }
-
-    /// Deserialize a value that optionally includes a timezone offset in its
-    /// string representation
-    ///
-    /// The value to be deserialized must be an rfc3339 string.
-    ///
-    /// See [the `serde` module](./serde/index.html) for alternate
-    /// deserialization formats.
-    impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            deserializer.deserialize_str(DateTimeVisitor)
-        }
-    }
-
-    /// Deserialize into a UTC value
-    ///
-    /// The value to be deserialized must be an rfc3339 string.
-    ///
-    /// See [the `serde` module](./serde/index.html) for alternate
-    /// deserialization formats.
-    impl<'de> de::Deserialize<'de> for DateTime<Utc> {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Utc))
-        }
-    }
-
-    /// Deserialize a value that includes no timezone in its string
-    /// representation
-    ///
-    /// The value to be deserialized must be an rfc3339 string.
-    ///
-    /// See [the `serde` module](./serde/index.html) for alternate
-    /// serialization formats.
-    #[cfg(feature = "clock")]
-    impl<'de> de::Deserialize<'de> for DateTime<Local> {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
         }
     }
 
