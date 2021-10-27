@@ -17,7 +17,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
-* Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
+* Add `DateTime::from_local()` to construct from given local date and time (#572)
 * Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
 
 ## 0.4.19
