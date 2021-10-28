@@ -1287,7 +1287,7 @@ pub mod serde {
         where
             E: de::Error,
         {
-            value.parse().map_err(|err: ::format::ParseError| E::custom(err))
+            value.parse().map_err(E::custom)
         }
     }
 
@@ -1455,7 +1455,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NanoSecondsTimestampVisitor)?)
+            d.deserialize_i64(NanoSecondsTimestampVisitor)
         }
 
         impl<'de> de::Visitor<'de> for NanoSecondsTimestampVisitor {
@@ -1610,7 +1610,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_option(OptionNanoSecondsTimestampVisitor)?)
+            d.deserialize_option(OptionNanoSecondsTimestampVisitor)
         }
 
         struct OptionNanoSecondsTimestampVisitor;
@@ -1765,7 +1765,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(MicroSecondsTimestampVisitor)?)
+            d.deserialize_i64(MicroSecondsTimestampVisitor)
         }
 
         impl<'de> de::Visitor<'de> for MicroSecondsTimestampVisitor {
@@ -1781,7 +1781,7 @@ pub mod serde {
                 E: de::Error,
             {
                 serde_from(
-                    Utc.timestamp_opt(value / 1000_000, ((value % 1000_000) * 1_000) as u32),
+                    Utc.timestamp_opt(value / 1_000_000, ((value % 1_000_000) * 1_000) as u32),
                     &value,
                 )
             }
@@ -1793,8 +1793,8 @@ pub mod serde {
             {
                 serde_from(
                     Utc.timestamp_opt(
-                        (value / 1000_000) as i64,
-                        ((value % 1000_000) * 1_000) as u32,
+                        (value / 1_000_000) as i64,
+                        ((value % 1_000_000) * 1_000) as u32,
                     ),
                     &value,
                 )
@@ -1920,7 +1920,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_option(OptionMicroSecondsTimestampVisitor)?)
+            d.deserialize_option(OptionMicroSecondsTimestampVisitor)
         }
 
         struct OptionMicroSecondsTimestampVisitor;
@@ -2074,7 +2074,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))?)
+            d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))
         }
 
         impl<'de> de::Visitor<'de> for MilliSecondsTimestampVisitor {
@@ -2238,8 +2238,8 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_option(OptionMilliSecondsTimestampVisitor)
-                .map(|opt| opt.map(|dt| dt.with_timezone(&Utc)))?)
+            d.deserialize_option(OptionMilliSecondsTimestampVisitor)
+                .map(|opt| opt.map(|dt| dt.with_timezone(&Utc)))
         }
 
         struct OptionMilliSecondsTimestampVisitor;
@@ -2393,7 +2393,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(SecondsTimestampVisitor)?)
+            d.deserialize_i64(SecondsTimestampVisitor)
         }
 
         impl<'de> de::Visitor<'de> for SecondsTimestampVisitor {
@@ -2539,7 +2539,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_option(OptionSecondsTimestampVisitor)?)
+            d.deserialize_option(OptionSecondsTimestampVisitor)
         }
 
         struct OptionSecondsTimestampVisitor;

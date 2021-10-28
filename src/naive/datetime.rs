@@ -1887,7 +1887,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)?)
+            d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)
         }
 
         struct NaiveDateTimeFromNanoSecondsVisitor;
@@ -2039,7 +2039,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)?)
+            d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)
         }
 
         struct NaiveDateTimeFromMilliSecondsVisitor;
@@ -2188,7 +2188,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)?)
+            d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)
         }
 
         struct NaiveDateTimeFromSecondsVisitor;
