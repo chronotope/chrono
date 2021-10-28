@@ -1280,7 +1280,7 @@ pub mod serde {
         type Value = DateTime<FixedOffset>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "a formatted date and time string or a unix timestamp")
+            formatter.write_str("a formatted date and time string or a unix timestamp")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
@@ -1462,7 +1462,7 @@ pub mod serde {
             type Value = DateTime<Utc>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "a unix timestamp in nanoseconds")
+                formatter.write_str("a unix timestamp in nanoseconds")
             }
 
             /// Deserialize a timestamp in nanoseconds since the epoch
@@ -1772,7 +1772,7 @@ pub mod serde {
             type Value = DateTime<Utc>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "a unix timestamp in microseconds")
+                formatter.write_str("a unix timestamp in microseconds")
             }
 
             /// Deserialize a timestamp in milliseconds since the epoch
@@ -1929,7 +1929,7 @@ pub mod serde {
             type Value = Option<DateTime<Utc>>;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "a unix timestamp in microseconds or none")
+                formatter.write_str("a unix timestamp in microseconds or none")
             }
 
             /// Deserialize a timestamp in seconds since the epoch

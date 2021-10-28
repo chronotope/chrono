@@ -1751,7 +1751,7 @@ pub mod serde {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "a formatted date and time string")
+            formatter.write_str("a formatted date and time string")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
