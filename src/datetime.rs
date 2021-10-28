@@ -1283,7 +1283,7 @@ pub mod serde {
             formatter.write_str("a formatted date and time string or a unix timestamp")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<DateTime<FixedOffset>, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
@@ -1466,7 +1466,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in nanoseconds since the epoch
-            fn visit_i64<E>(self, value: i64) -> Result<DateTime<Utc>, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1477,7 +1477,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in nanoseconds since the epoch
-            fn visit_u64<E>(self, value: u64) -> Result<DateTime<Utc>, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1623,7 +1623,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_some<D>(self, d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+            fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
             where
                 D: de::Deserializer<'de>,
             {
@@ -1631,7 +1631,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_none<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1639,7 +1639,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1776,7 +1776,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in milliseconds since the epoch
-            fn visit_i64<E>(self, value: i64) -> Result<DateTime<Utc>, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1787,7 +1787,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in milliseconds since the epoch
-            fn visit_u64<E>(self, value: u64) -> Result<DateTime<Utc>, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1933,7 +1933,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_some<D>(self, d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+            fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
             where
                 D: de::Deserializer<'de>,
             {
@@ -1941,7 +1941,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_none<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1949,7 +1949,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2085,7 +2085,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in milliseconds since the epoch
-            fn visit_i64<E>(self, value: i64) -> Result<DateTime<Utc>, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2096,7 +2096,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in milliseconds since the epoch
-            fn visit_u64<E>(self, value: u64) -> Result<DateTime<Utc>, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2252,7 +2252,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_some<D>(self, d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+            fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
             where
                 D: de::Deserializer<'de>,
             {
@@ -2260,7 +2260,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_none<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2268,7 +2268,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2404,7 +2404,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_i64<E>(self, value: i64) -> Result<DateTime<Utc>, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2412,7 +2412,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_u64<E>(self, value: u64) -> Result<DateTime<Utc>, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2552,7 +2552,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_some<D>(self, d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+            fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
             where
                 D: de::Deserializer<'de>,
             {
@@ -2560,7 +2560,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_none<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_none<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2568,7 +2568,7 @@ pub mod serde {
             }
 
             /// Deserialize a timestamp in seconds since the epoch
-            fn visit_unit<E>(self) -> Result<Option<DateTime<Utc>>, E>
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {

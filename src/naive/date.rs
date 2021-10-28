@@ -1848,7 +1848,7 @@ mod serde {
         }
 
         #[cfg(any(feature = "std", test))]
-        fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
@@ -1856,7 +1856,7 @@ mod serde {
         }
 
         #[cfg(not(any(feature = "std", test)))]
-        fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
