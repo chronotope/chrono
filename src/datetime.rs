@@ -4,10 +4,10 @@
 //! ISO 8601 date and time with time zone.
 
 use core::cmp::Ordering;
+use core::convert::TryFrom;
 use core::ops::{Add, Sub};
 use core::{fmt, hash, str};
 use oldtime::Duration as OldDuration;
-use std::convert::TryFrom;
 #[cfg(any(feature = "std", test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -3050,9 +3050,11 @@ mod tests {
     #[test]
     fn test_years_elapsed() {
         // This is always at least one year because 1 year = 52.1775 weeks.
-        let one_year_ago = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 1.5).ceil() as i64);
+        let one_year_ago =
+            Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 1.5).ceil() as i64);
         // A bit more than 2 years.
-        let two_year_ago = Utc::today() - Duration::weeks((f64::WEEK_PER_YEAR * 2.5).ceil() as i64);
+        let two_year_ago =
+            Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 2.5).ceil() as i64);
 
         assert_eq!(one_year_ago.elapsed_years(), 1);
         assert_eq!(two_year_ago.elapsed_years(), 2);
