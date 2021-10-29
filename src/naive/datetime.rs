@@ -361,12 +361,12 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, NaiveDateTime};
     ///
     /// let dt = NaiveDate::from_ymd(1970, 1, 1).and_hms_nano(0, 0, 1, 444);
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    /// assert_eq!(dt.timestamp_nanos().unwrap(), 1_000_000_444);
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9).and_hms_nano(1, 46, 40, 555);
     ///
     /// const A_BILLION: i64 = 1_000_000_000;
-    /// let nanos = dt.timestamp_nanos();
+    /// let nanos = dt.timestamp_nanos().unwrap();
     /// assert_eq!(nanos, 1_000_000_000_000_000_555);
     /// assert_eq!(
     ///     dt,
@@ -374,9 +374,9 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[inline]
-    pub fn timestamp_nanos(&self) -> i64 {
-        let as_ns = self.timestamp() * 1_000_000_000;
-        as_ns + i64::from(self.timestamp_subsec_nanos())
+    pub fn timestamp_nanos(&self) -> Option<i64> {
+        let as_ns = self.timestamp().checked_mul(1_000_000_000);
+        as_ns.map(|nanos| nanos + i64::from(self.timestamp_subsec_nanos()))
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
@@ -1850,7 +1850,7 @@ pub mod serde {
         where
             S: ser::Serializer,
         {
-            serializer.serialize_i64(dt.timestamp_nanos())
+            serializer.serialize_i64(dt.timestamp_nanos().unwrap())
         }
 
         /// Deserialize a `DateTime` from a nanoseconds timestamp
@@ -2520,7 +2520,10 @@ mod tests {
         let nanos = parsed.timestamp_nanos();
         assert_eq!(
             parsed,
-            NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+            NaiveDateTime::from_timestamp(
+                nanos.unwrap() / A_BILLION,
+                (nanos.unwrap() % A_BILLION) as u32
+            )
         );
 
         let minimum = "1677-09-21T00:12:44.000000000";
@@ -2528,7 +2531,10 @@ mod tests {
         let nanos = parsed.timestamp_nanos();
         assert_eq!(
             parsed,
-            NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+            NaiveDateTime::from_timestamp(
+                nanos.unwrap() / A_BILLION,
+                (nanos.unwrap() % A_BILLION) as u32
+            )
         );
     }
 }

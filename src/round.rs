@@ -183,7 +183,7 @@ where
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
-        let stamp = naive.timestamp_nanos();
+        let stamp = naive.timestamp_nanos().unwrap();
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
@@ -219,7 +219,7 @@ where
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
-        let stamp = naive.timestamp_nanos();
+        let stamp = naive.timestamp_nanos().unwrap();
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }

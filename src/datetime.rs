@@ -242,13 +242,13 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::TimeZone;
     ///
     /// let dt = Utc.ymd(1970, 1, 1).and_hms_nano(0, 0, 1, 444);
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    /// assert_eq!(dt.timestamp_nanos().unwrap(), 1_000_000_444);
     ///
     /// let dt = Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 40, 555);
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
+    /// assert_eq!(dt.timestamp_nanos().unwrap(), 1_000_000_000_000_000_555);
     /// ```
     #[inline]
-    pub fn timestamp_nanos(&self) -> i64 {
+    pub fn timestamp_nanos(&self) -> Option<i64> {
         self.datetime.timestamp_nanos()
     }
 
@@ -1420,7 +1420,7 @@ pub mod serde {
         where
             S: ser::Serializer,
         {
-            serializer.serialize_i64(dt.timestamp_nanos())
+            serializer.serialize_i64(dt.timestamp_nanos().unwrap())
         }
 
         /// Deserialize a [`DateTime`] from a nanosecond timestamp
@@ -2614,6 +2614,7 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
+    use crate::NaiveDateTime;
     use naive::{NaiveDate, NaiveTime};
     #[cfg(feature = "clock")]
     use offset::Local;
@@ -3049,5 +3050,12 @@ mod tests {
 
         assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
         assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
+    }
+
+    #[test]
+    fn test_datetime_timestamp_nanos_panic() {
+        let naive = NaiveDateTime::from_timestamp_opt(456456456456, 0).unwrap();
+        let datetime = DateTime::<Utc>::from_utc(naive, Utc);
+        assert!(datetime.timestamp_nanos().is_none());
     }
 }
