@@ -18,6 +18,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
 * Add `DateTime::from_local()` to construct from given local date and time (#572)
+* Fix `timestamp_nanos` panicking. (#613)
 
 ## 0.4.19
 
