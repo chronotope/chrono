@@ -14,7 +14,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-16.04, ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-18.04, ubuntu-latest, macos-latest, windows-latest]
         rust_version: [stable]
         exhaustive_tz: [onetz]
         check_combinatoric: [no_combinatoric]
@@ -38,7 +38,7 @@ jobs:
           rust_version: beta
         - os: ubuntu-latest
           rust_version: nightly
-        - os: ubuntu-16.04
+        - os: ubuntu-18.04
           rust_version: 1.13.0
         - os: macos-latest
           rust_version: 1.13.0
@@ -55,6 +55,7 @@ jobs:
           toolchain: ${{ matrix.rust_version }}
           override: true
 
+      - uses: Swatinem/rust-cache@v1
       - name: Build and Test
         run: bash ci/github.sh
         env:
@@ -78,6 +79,7 @@ jobs:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build no_std lib
         run: cargo build --target thumbv6m-none-eabi --color=always
@@ -99,6 +101,7 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install node
         uses: actions/setup-node@v1
@@ -129,6 +132,8 @@ jobs:
 
       - name: Install cross
         run: bash ci/install-cross.sh
+
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build static library
         run: cross check --target ${{ matrix.target }}
