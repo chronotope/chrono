@@ -1844,11 +1844,11 @@ mod serde {
         type Value = NaiveDate;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "a formatted date string")
+            formatter.write_str("a formatted date string")
         }
 
         #[cfg(any(feature = "std", test))]
-        fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
@@ -1856,7 +1856,7 @@ mod serde {
         }
 
         #[cfg(not(any(feature = "std", test)))]
-        fn visit_str<E>(self, value: &str) -> Result<NaiveDate, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
