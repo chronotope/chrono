@@ -3050,4 +3050,25 @@ mod tests {
         assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
         assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
     }
+
+    #[test]
+    fn test_format_to_string() {
+        // create a naive date
+        let naive_date = NaiveDate::from_ymd(2000, 1, 12);
+        assert_eq!(format!("{}", naive_date.format("%Y %b %d")), String::from("2000 Jan 12"));
+        assert_eq!(format!("{}", naive_date.format("%F")), String::from("2000-01-12"));
+        // try to format something that the instance doesn't have
+        assert_eq!(format!("{}", naive_date.format("%r")), String::from(":: "));
+        // pass a wrong format
+        assert_eq!(
+            format!("{}", naive_date.format("%Y %{whatever} %d")),
+            String::from("2000 whatever} 12")
+        );
+
+        // create a naive time
+        let naive_time = NaiveTime::from_hms(12, 43, 33);
+        assert_eq!(format!("{}", naive_time.format("%H:%M:%S %p")), String::from("12:43:33 PM"));
+        // try to format something that doesn't exist
+        assert_eq!(format!("{}", naive_time.format("%F %H:%M:%S")), String::from("-- 12:43:33"));
+    }
 }

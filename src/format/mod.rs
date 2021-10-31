@@ -533,9 +533,8 @@ fn format_inner<'a>(
                         Pad::Space => write!(result, "{:1$}", v, width),
                     }
                 }?
-            } else {
-                return Err(fmt::Error); // insufficient arguments for given format
             }
+            // do nothing if the arguments is insufficent
         }
 
         Item::Fixed(ref spec) => {
@@ -690,13 +689,13 @@ fn format_inner<'a>(
                     }
                 };
 
-            match ret {
-                Some(ret) => ret?,
-                None => return Err(fmt::Error), // insufficient arguments for given format
+            if let Some(ret) = ret {
+                ret?
             }
         }
 
-        Item::Error => return Err(fmt::Error),
+        // do nothing, if the format is in wrong format
+        Item::Error => (),
     }
     Ok(())
 }
