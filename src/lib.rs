@@ -38,15 +38,22 @@
 //!
 //! Default features:
 //!
-//! - `alloc`: Enable features that depend on allocation (primarily string formatting)
 //! - `std`: Enables functionality that depends on the standard library. This
 //!   is a superset of `alloc` and adds interoperation with standard library types
 //!   and traits.
 //! - `clock`: enables reading the system time (`now`), independent of whether
 //!   `std::time::SystemTime` is present, depends on having a libc.
+//! - `oldtime`: **deprecated** Cause the `chrono::Duration` time to be exactly
+//!   the `Duration` in `time` 0.1's Duration.
+//!
+//!    It is recommended to disable default features and to not rely on this,
+//!    instead manually converting between the two Duration types in your own
+//!    code if necessary.
 //!
 //! Optional features:
 //!
+//! - `alloc`: If the `std` feature is disabled, this can be used to re-enable string
+//!   formatting and some other items that require the alloc crate.
 //! - `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
 //! - [`serde`][]: Enable serialization/deserialization via serde.
 //! - `unstable-locales`: Enable localization. This adds various methods with a
