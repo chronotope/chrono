@@ -1329,6 +1329,7 @@ impl str::FromStr for NaiveTime {
             Item::Literal(":"),
             Item::Numeric(Numeric::Minute, Pad::Zero),
             Item::Space(""),
+            Item::Truncated,
             Item::Literal(":"),
             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond),
@@ -1777,12 +1778,17 @@ mod tests {
         assert!("".parse::<NaiveTime>().is_err());
         assert!("x".parse::<NaiveTime>().is_err());
         assert!("15".parse::<NaiveTime>().is_err());
-        assert!("15:8".parse::<NaiveTime>().is_err());
         assert!("15:8:x".parse::<NaiveTime>().is_err());
         assert!("15:8:9x".parse::<NaiveTime>().is_err());
         assert!("23:59:61".parse::<NaiveTime>().is_err());
         assert!("12:34:56.x".parse::<NaiveTime>().is_err());
         assert!("12:34:56. 0".parse::<NaiveTime>().is_err());
+    }
+
+    #[test]
+    fn test_time_from_str() {
+        assert_eq! ("23:58:59".parse::<NaiveTime> (), Ok (NaiveTime::from_hms (23, 58, 59)));
+        assert_eq! ("23:58".parse::<NaiveTime> (), Ok (NaiveTime::from_hms (23, 58, 0)));
     }
 
     #[test]

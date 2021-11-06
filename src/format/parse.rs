@@ -441,6 +441,10 @@ where
                 }
             }
 
+            Item::Truncated => {
+                if s.is_empty() { break }
+            },
+
             Item::Error => {
                 return Err((s, BAD_FORMAT));
             }

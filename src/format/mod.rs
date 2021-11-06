@@ -294,6 +294,8 @@ pub enum Item<'a> {
     Numeric(Numeric, Pad),
     /// Fixed-format item.
     Fixed(Fixed),
+    /// Succeed if the entire input has been parsed.
+    Truncated,
     /// Issues a formatting error. Used to signal an invalid format string.
     Error,
 }
@@ -695,6 +697,8 @@ fn format_inner<'a>(
                 None => return Err(fmt::Error), // insufficient arguments for given format
             }
         }
+
+        Item::Truncated => (),
 
         Item::Error => return Err(fmt::Error),
     }

@@ -19,6 +19,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Implement `DurationRound` for `NaiveDateTime`
 * Add `DateTime::from_local()` to construct from given local date and time (#572)
 * Correct build for wasm32-unknown-emscripten target (#568)
+* Add support for "HH:MM" format in `NaiveTime::from_str()`
 
 ## 0.4.19
 
