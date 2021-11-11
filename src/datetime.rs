@@ -1573,7 +1573,7 @@ pub mod serde {
             S: ser::Serializer,
         {
             match *opt {
-                Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos()),
+                Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos().unwrap()),
                 None => serializer.serialize_none(),
             }
         }
