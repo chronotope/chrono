@@ -1506,10 +1506,10 @@ mod serde {
         type Value = NaiveTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "a formatted time string")
+            formatter.write_str("a formatted time string")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<NaiveTime, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {

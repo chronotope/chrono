@@ -18,6 +18,9 @@ Versions with only mechanical changes will be omitted from the following list.
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
 * Bump `time` dependency to 0.3 (#578)
+* Add `DateTime::from_local()` to construct from given local date and time (#572)
+* Correct build for wasm32-unknown-emscripten target (#568)
+
 
 ## 0.4.19
 
