@@ -342,6 +342,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Retrieve the elapsed years from now to the given [`DateTime`].
+    #[cfg(feature = "clock")]
     pub fn elapsed_years(&self) -> u32 {
         let now = Utc::now().with_timezone(&self.timezone());
 
@@ -3018,6 +3019,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "clock")]
     fn test_datetime_format_alignment() {
         let datetime = Utc.ymd(2007, 01, 02);
 
@@ -3048,6 +3050,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "clock")]
     fn test_years_elapsed() {
         // This is always at least one year because 1 year = 52.1775 weeks.
         let one_year_ago =
