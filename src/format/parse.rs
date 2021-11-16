@@ -441,7 +441,7 @@ where
                 }
             }
 
-            Item::Error => {
+            Item::Error(_) => {
                 return Err((s, BAD_FORMAT));
             }
         }

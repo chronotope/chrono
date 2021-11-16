@@ -1019,8 +1019,7 @@ impl NaiveDate {
     /// (In this way it avoids the redundant memory allocation.)
     ///
     /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    /// Rather, converting or formatting the `DelayedFormat` will return a wrong result.
     ///
     /// # Example
     ///
@@ -2388,6 +2387,15 @@ mod tests {
             NaiveDate::from_ymd(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(),
             "2009,09,01,00,53"
         );
+
+        // let's have some improper formats
+        assert_eq!(
+            NaiveDate::from_ymd(2007, 12, 31).format("%Y %{whatever} %d").to_string(),
+            "2007 %{whatever} 31"
+        );
+        assert_eq!(NaiveDate::from_ymd(2011, 3, 23).format("%").to_string(), "%");
+        // try to format something that the instance doesn't have
+        assert_eq!(NaiveDate::from_ymd(2010, 1, 3).format("%r").to_string(), String::from(":: "));
     }
 
     #[test]

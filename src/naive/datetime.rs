@@ -698,8 +698,7 @@ impl NaiveDateTime {
     /// (In this way it avoids the redundant memory allocation.)
     ///
     /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    /// Rather, converting or formatting the `DelayedFormat` will return a wrong result.
     ///
     /// # Example
     ///
@@ -2501,6 +2500,10 @@ mod tests {
         let dt = NaiveDate::from_ymd(2012, 6, 30).and_hms_milli(23, 59, 59, 1_000);
         assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
         assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
+
+        // let's have some improper formats
+        assert_eq!(dt.format("%{whatever}").to_string(), "%{whatever}");
+        assert_eq!(dt.format("%%%").to_string(), "%%");
     }
 
     #[test]

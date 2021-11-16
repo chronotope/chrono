@@ -763,8 +763,7 @@ impl NaiveTime {
     /// (In this way it avoids the redundant memory allocation.)
     ///
     /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    /// Rather, converting or formatting the `DelayedFormat` will return a wrong result.
     ///
     /// # Example
     ///
@@ -1826,5 +1825,14 @@ mod tests {
             NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(),
             "23:59:60"
         );
+
+        // let's have some improper formats
+        assert_eq!(
+            NaiveTime::from_hms(4, 32, 8).format("%r%{whatever}").to_string(),
+            "04:32:08 AM%{whatever}"
+        );
+        assert_eq!(NaiveTime::from_hms(10, 3, 0).format("%%%").to_string(), "%%");
+        // try to format something that the instance doesn't have
+        assert_eq!(NaiveTime::from_hms(12, 0, 0).format("%F").to_string(), "--");
     }
 }

@@ -295,7 +295,7 @@ pub enum Item<'a> {
     /// Fixed-format item.
     Fixed(Fixed),
     /// Issues a formatting error. Used to signal an invalid format string.
-    Error,
+    Error(&'a str),
 }
 
 macro_rules! lit {
@@ -534,7 +534,7 @@ fn format_inner<'a>(
                     }
                 }?
             }
-            // do nothing if the arguments is insufficent
+            // do nothing if insufficient
         }
 
         Item::Fixed(ref spec) => {
@@ -694,8 +694,7 @@ fn format_inner<'a>(
             }
         }
 
-        // do nothing, if the format is in wrong format
-        Item::Error => (),
+        Item::Error(str) => result.push_str(str),
     }
     Ok(())
 }

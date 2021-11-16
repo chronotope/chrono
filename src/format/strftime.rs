@@ -282,24 +282,36 @@ impl<'a> Iterator for StrftimeItems<'a> {
             return Some(item);
         }
 
-        match self.remainder.chars().next() {
+        let mut iter = self.remainder.chars();
+        match iter.next() {
             // we are done
             None => None,
 
             // the next item is a specifier
             Some('%') => {
-                self.remainder = &self.remainder[1..];
-
                 macro_rules! next {
                     () => {
-                        match self.remainder.chars().next() {
-                            Some(x) => {
-                                self.remainder = &self.remainder[x.len_utf8()..];
-                                x
+                        match iter.next() {
+                            Some(x) => x,
+                            None => {
+                                // reach the end of remainder
+                                let old_remainder = self.remainder;
+                                // update self.remainder
+                                self.remainder = iter.as_str();
+                                return Some(Item::Error(old_remainder));
                             }
-                            None => return Some(Item::Error), // premature end of string
                         }
                     };
+                }
+
+                // If an error happens, say an improper format starting with '%',
+                // let `self.remainder` step only 1 char to take '%' as Item::Error,
+                // so the rest of the format can be taken as normal literals.
+                macro_rules! item_error {
+                    () => {{
+                        self.remainder = &self.remainder[1..];
+                        return Some(Item::Error("%"));
+                    }};
                 }
 
                 let spec = next!();
@@ -312,7 +324,9 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let is_alternate = spec == '#';
                 let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
-                    return Some(Item::Error);
+                    let ret = self.remainder;
+                    self.remainder = iter.as_str();
+                    return Some(Item::Error(ret));
                 }
 
                 macro_rules! recons {
@@ -409,49 +423,52 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     '+' => fix!(RFC3339),
                     ':' => match next!() {
                         'z' => fix!(TimezoneOffsetColon),
-                        _ => Item::Error,
+                        _ => item_error!(),
                     },
                     '.' => match next!() {
                         '3' => match next!() {
                             'f' => fix!(Nanosecond3),
-                            _ => Item::Error,
+                            _ => item_error!(),
                         },
                         '6' => match next!() {
                             'f' => fix!(Nanosecond6),
-                            _ => Item::Error,
+                            _ => item_error!(),
                         },
                         '9' => match next!() {
                             'f' => fix!(Nanosecond9),
-                            _ => Item::Error,
+                            _ => item_error!(),
                         },
                         'f' => fix!(Nanosecond),
-                        _ => Item::Error,
+                        _ => item_error!(),
                     },
                     '3' => match next!() {
                         'f' => internal_fix!(Nanosecond3NoDot),
-                        _ => Item::Error,
+                        _ => item_error!(),
                     },
                     '6' => match next!() {
                         'f' => internal_fix!(Nanosecond6NoDot),
-                        _ => Item::Error,
+                        _ => item_error!(),
                     },
                     '9' => match next!() {
                         'f' => internal_fix!(Nanosecond9NoDot),
-                        _ => Item::Error,
+                        _ => item_error!(),
                     },
                     '%' => lit!("%"),
-                    _ => Item::Error, // no such specifier
+                    _ => item_error!(), // no such specifier
                 };
 
                 // adjust `item` if we have any padding modifier
                 if let Some(new_pad) = pad_override {
                     match item {
                         Item::Numeric(ref kind, _pad) if self.recons.is_empty() => {
+                            // update self.remainder
+                            self.remainder = iter.as_str();
                             Some(Item::Numeric(kind.clone(), new_pad))
                         }
-                        _ => Some(Item::Error), // no reconstructed or non-numeric item allowed
+                        _ => item_error!(), // no reconstructed or non-numeric item allowed
                     }
                 } else {
+                    self.remainder = iter.as_str();
                     Some(item)
                 }
             }
@@ -488,10 +505,9 @@ impl<'a> Iterator for StrftimeItems<'a> {
 #[test]
 fn test_strftime_items() {
     fn parse_and_collect<'a>(s: &'a str) -> Vec<Item<'a>> {
-        // map any error into `[Item::Error]`. useful for easy testing.
+        // parse given string, and a list of items
         let items = StrftimeItems::new(s);
-        let items = items.map(|spec| if spec == Item::Error { None } else { Some(spec) });
-        items.collect::<Option<Vec<_>>>().unwrap_or(vec![Item::Error])
+        items.map(|spec| Some(spec)).collect::<Option<Vec<_>>>().unwrap()
     }
 
     assert_eq!(parse_and_collect(""), []);
@@ -503,38 +519,37 @@ fn test_strftime_items() {
     );
     assert_eq!(parse_and_collect("100%%"), [lit!("100"), lit!("%")]);
     assert_eq!(parse_and_collect("100%% ok"), [lit!("100"), lit!("%"), sp!(" "), lit!("ok")]);
-    assert_eq!(parse_and_collect("%%PDF-1.0"), [lit!("%"), lit!("PDF-1.0")]);
     assert_eq!(
         parse_and_collect("%Y-%m-%d"),
         [num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)]
     );
     assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
     assert_eq!(parse_and_collect("%m %d"), [num0!(Month), sp!(" "), num0!(Day)]);
-    assert_eq!(parse_and_collect("%"), [Item::Error]);
+    assert_eq!(parse_and_collect("%"), [Item::Error("%")]);
     assert_eq!(parse_and_collect("%%"), [lit!("%")]);
-    assert_eq!(parse_and_collect("%%%"), [Item::Error]);
+    assert_eq!(parse_and_collect("%%%"), [lit!("%"), Item::Error("%")]);
     assert_eq!(parse_and_collect("%%%%"), [lit!("%"), lit!("%")]);
-    assert_eq!(parse_and_collect("foo%?"), [Item::Error]);
-    assert_eq!(parse_and_collect("bar%42"), [Item::Error]);
-    assert_eq!(parse_and_collect("quux% +"), [Item::Error]);
-    assert_eq!(parse_and_collect("%.Z"), [Item::Error]);
-    assert_eq!(parse_and_collect("%:Z"), [Item::Error]);
-    assert_eq!(parse_and_collect("%-Z"), [Item::Error]);
-    assert_eq!(parse_and_collect("%0Z"), [Item::Error]);
-    assert_eq!(parse_and_collect("%_Z"), [Item::Error]);
-    assert_eq!(parse_and_collect("%.j"), [Item::Error]);
-    assert_eq!(parse_and_collect("%:j"), [Item::Error]);
+    assert_eq!(parse_and_collect("foo%?"), [lit!("foo"), Item::Error("%"), lit!("?")]);
+    assert_eq!(parse_and_collect("bar%42"), [lit!("bar"), Item::Error("%"), lit!("42")]);
+    assert_eq!(parse_and_collect("quux% +"), [lit!("quux"), Item::Error("%"), sp!(" "), lit!("+")]);
+    assert_eq!(parse_and_collect("%.Z"), [Item::Error("%"), lit!(".Z")]);
+    assert_eq!(parse_and_collect("%:Z"), [Item::Error("%"), lit!(":Z")]);
+    assert_eq!(parse_and_collect("%-Z"), [Item::Error("%"), lit!("-Z")]);
+    assert_eq!(parse_and_collect("%0Z"), [Item::Error("%"), lit!("0Z")]);
+    assert_eq!(parse_and_collect("%_Z"), [Item::Error("%"), lit!("_Z")]);
+    assert_eq!(parse_and_collect("%.j"), [Item::Error("%"), lit!(".j")]);
+    assert_eq!(parse_and_collect("%:j"), [Item::Error("%"), lit!(":j")]);
     assert_eq!(parse_and_collect("%-j"), [num!(Ordinal)]);
     assert_eq!(parse_and_collect("%0j"), [num0!(Ordinal)]);
     assert_eq!(parse_and_collect("%_j"), [nums!(Ordinal)]);
-    assert_eq!(parse_and_collect("%.e"), [Item::Error]);
-    assert_eq!(parse_and_collect("%:e"), [Item::Error]);
+    assert_eq!(parse_and_collect("%.e"), [Item::Error("%"), lit!(".e")]);
+    assert_eq!(parse_and_collect("%:e"), [Item::Error("%"), lit!(":e")]);
     assert_eq!(parse_and_collect("%-e"), [num!(Day)]);
     assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
     assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
     assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
     assert_eq!(parse_and_collect("%#z"), [internal_fix!(TimezoneOffsetPermissive)]);
-    assert_eq!(parse_and_collect("%#m"), [Item::Error]);
+    assert_eq!(parse_and_collect("%#m"), [Item::Error("%#m")]);
 }
 
 #[cfg(test)]
