@@ -47,6 +47,16 @@ impl Timespec {
     }
 
     /// Converts this timespec into the system's local time.
+    ///
+    /// # Thread Safety Warning
+    ///
+    /// If, on a Unix OS, a thread sets any environment variable while another
+    /// thread tries to determine the local time your program may get a
+    /// segfault or crash in other interesting ways. Conversation in [chrono]
+    /// and [rust-std].
+    ///
+    /// [chrono]: https://github.com/chronotope/chrono/pull/578
+    /// [rust-std]: https://github.com/rust-lang/rust/issues/27970
     pub fn local(self) -> Tm {
         let mut tm = Tm {
             tm_sec: 0,

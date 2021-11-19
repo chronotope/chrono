@@ -97,12 +97,32 @@ impl Local {
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
+    ///
+    /// # Thread Safety Warning
+    ///
+    /// If, on a Unix OS, a thread sets any environment variable while another
+    /// thread tries to determine the local time your program may get a
+    /// segfault or crash in other interesting ways. Conversation in [chrono]
+    /// and [rust-std].
+    ///
+    /// [chrono]: https://github.com/chronotope/chrono/pull/578
+    /// [rust-std]: https://github.com/rust-lang/rust/issues/27970
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Local> {
         tm_to_datetime(Timespec::now().local())
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
+    ///
+    /// # Thread Safety Warning
+    ///
+    /// If, on a Unix OS, a thread sets any environment variable while another
+    /// thread tries to determine the local time your program may get a
+    /// segfault or crash in other interesting ways. Conversation in [chrono]
+    /// and [rust-std].
+    ///
+    /// [chrono]: https://github.com/chronotope/chrono/pull/578
+    /// [rust-std]: https://github.com/rust-lang/rust/issues/27970
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Local> {
         use super::Utc;
