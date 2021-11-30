@@ -781,6 +781,25 @@ impl Weekday {
             Weekday::Sun => 0,
         }
     }
+
+    /// Get the full name of the day-of-week
+    ///
+    /// ```
+    /// use chrono::Weekday;
+    ///
+    /// assert_eq!(Weekday::Monday.name(), "Monday")
+    /// ```
+    pub fn full_name(&self) -> &'static str {
+        match *self {
+            Weekday::Mon => "Monday",
+            Weekday::Tue => "Tuesday",
+            Weekday::Wed => "Wednesday",
+            Weekday::Thu => "Thursday",
+            Weekday::Fri => "Friday",
+            Weekday::Sat => "Saturday",
+            Weekday::Sun => "Sunday",
+        }
+    }
 }
 
 impl fmt::Display for Weekday {
