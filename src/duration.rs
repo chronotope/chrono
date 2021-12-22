@@ -1144,6 +1144,40 @@ mod tests {
     }
 
     #[test]
+    fn test_duration_const() {
+        const ONE_WEEK: Duration = Duration::weeks(1);
+        const ONE_DAY: Duration = Duration::days(1);
+        const ONE_HOUR: Duration = Duration::hours(1);
+        const ONE_MINUTE: Duration = Duration::minutes(1);
+        const ONE_SECOND: Duration = Duration::seconds(1);
+        const ONE_MILLI: Duration = Duration::milliseconds(1);
+        const ONE_MICRO: Duration = Duration::microseconds(1);
+        const ONE_NANO: Duration = Duration::nanoseconds(1);
+        let combo: Duration = ONE_WEEK
+            + ONE_DAY
+            + ONE_HOUR
+            + ONE_MINUTE
+            + ONE_SECOND
+            + ONE_MILLI
+            + ONE_MICRO
+            + ONE_NANO;
+
+        assert!(ONE_WEEK != Duration::zero());
+        assert!(ONE_DAY != Duration::zero());
+        assert!(ONE_HOUR != Duration::zero());
+        assert!(ONE_MINUTE != Duration::zero());
+        assert!(ONE_SECOND != Duration::zero());
+        assert!(ONE_MILLI != Duration::zero());
+        assert!(ONE_MICRO != Duration::zero());
+        assert!(ONE_NANO != Duration::zero());
+        assert_eq!(
+            combo,
+            Duration::seconds(86400 * 7 + 86400 + 3600 + 60 + 1)
+                + Duration::nanoseconds(1 + 1_000 + 1_000_000)
+        );
+    }
+
+    #[test]
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
         let duration = Duration::seconds(1);
