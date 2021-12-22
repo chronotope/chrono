@@ -70,53 +70,74 @@ impl Duration {
     /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
-    pub fn weeks(weeks: i64) -> Duration {
-        let secs = weeks.checked_mul(SECS_PER_WEEK).expect("Duration::weeks out of bounds");
-        Duration::seconds(secs)
+    pub const fn weeks(weeks: i64) -> Duration {
+        let secs = weeks.checked_mul(SECS_PER_WEEK);
+        if let Some(secs) = secs {
+            Duration::seconds(secs)
+        } else {
+            panic!("Duration::weeks out of bounds");
+        }
     }
 
     /// Makes a new `Duration` with given number of days.
     /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
-    pub fn days(days: i64) -> Duration {
-        let secs = days.checked_mul(SECS_PER_DAY).expect("Duration::days out of bounds");
-        Duration::seconds(secs)
+    pub const fn days(days: i64) -> Duration {
+        let secs = days.checked_mul(SECS_PER_DAY);
+        if let Some(secs) = secs {
+            Duration::seconds(secs)
+        } else {
+            panic!("Duration::days out of bounds");
+        }
     }
 
     /// Makes a new `Duration` with given number of hours.
     /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
-    pub fn hours(hours: i64) -> Duration {
-        let secs = hours.checked_mul(SECS_PER_HOUR).expect("Duration::hours ouf of bounds");
-        Duration::seconds(secs)
+    pub const fn hours(hours: i64) -> Duration {
+        let secs = hours.checked_mul(SECS_PER_HOUR);
+        if let Some(secs) = secs {
+            Duration::seconds(secs)
+        } else {
+            panic!("Duration::hours out of bounds");
+        }
     }
 
     /// Makes a new `Duration` with given number of minutes.
     /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
-    pub fn minutes(minutes: i64) -> Duration {
-        let secs = minutes.checked_mul(SECS_PER_MINUTE).expect("Duration::minutes out of bounds");
-        Duration::seconds(secs)
+    pub const fn minutes(minutes: i64) -> Duration {
+        let secs = minutes.checked_mul(SECS_PER_MINUTE);
+        if let Some(secs) = secs {
+            Duration::seconds(secs)
+        } else {
+            panic!("Duration::minutes out of bounds");
+        }
     }
 
     /// Makes a new `Duration` with given number of seconds.
     /// Panics when the duration is more than `i64::MAX` seconds
     /// or less than `i64::MIN` seconds.
     #[inline]
-    pub fn seconds(seconds: i64) -> Duration {
-        let d = Duration { secs: seconds, nanos: 0 };
-        if d < MIN || d > MAX {
+    pub const fn seconds(seconds: i64) -> Duration {
+        // Using the equivalent d < MIN || d > MAX isn't const
+        if seconds < MIN.secs
+            || seconds > MAX.secs
+            || (seconds == MIN.secs && 0 < MIN.nanos)
+            || (seconds == MAX.secs && 0 > MAX.nanos)
+        {
             panic!("Duration::seconds out of bounds");
+        } else {
+            Duration { secs: seconds, nanos: 0 }
         }
-        d
     }
 
     /// Makes a new `Duration` with given number of milliseconds.
     #[inline]
-    pub fn milliseconds(milliseconds: i64) -> Duration {
+    pub const fn milliseconds(milliseconds: i64) -> Duration {
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
         let nanos = millis as i32 * NANOS_PER_MILLI;
         Duration { secs: secs, nanos: nanos }
@@ -124,7 +145,7 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of microseconds.
     #[inline]
-    pub fn microseconds(microseconds: i64) -> Duration {
+    pub const fn microseconds(microseconds: i64) -> Duration {
         let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
         let nanos = micros as i32 * NANOS_PER_MICRO;
         Duration { secs: secs, nanos: nanos }
@@ -132,7 +153,7 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of nanoseconds.
     #[inline]
-    pub fn nanoseconds(nanos: i64) -> Duration {
+    pub const fn nanoseconds(nanos: i64) -> Duration {
         let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
         Duration { secs: secs, nanos: nanos as i32 }
     }
@@ -432,12 +453,12 @@ impl Error for OutOfRangeError {
 
 // Copied from libnum
 #[inline]
-fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
+const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
     (div_floor_64(this, other), mod_floor_64(this, other))
 }
 
 #[inline]
-fn div_floor_64(this: i64, other: i64) -> i64 {
+const fn div_floor_64(this: i64, other: i64) -> i64 {
     match div_rem_64(this, other) {
         (d, r) if (r > 0 && other < 0) || (r < 0 && other > 0) => d - 1,
         (d, _) => d,
@@ -445,7 +466,7 @@ fn div_floor_64(this: i64, other: i64) -> i64 {
 }
 
 #[inline]
-fn mod_floor_64(this: i64, other: i64) -> i64 {
+const fn mod_floor_64(this: i64, other: i64) -> i64 {
     match this % other {
         r if (r > 0 && other < 0) || (r < 0 && other > 0) => r + other,
         r => r,
@@ -453,7 +474,7 @@ fn mod_floor_64(this: i64, other: i64) -> i64 {
 }
 
 #[inline]
-fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
+const fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
     (this / other, this % other)
 }
 
@@ -683,6 +704,40 @@ mod tests {
         assert_eq!(
             Duration::from_std(StdDuration::new(9223372036854775, 807000001)),
             Err(OutOfRangeError(()))
+        );
+    }
+
+    #[test]
+    fn test_duration_const() {
+        const ONE_WEEK: Duration = Duration::weeks(1);
+        const ONE_DAY: Duration = Duration::days(1);
+        const ONE_HOUR: Duration = Duration::hours(1);
+        const ONE_MINUTE: Duration = Duration::minutes(1);
+        const ONE_SECOND: Duration = Duration::seconds(1);
+        const ONE_MILLI: Duration = Duration::milliseconds(1);
+        const ONE_MICRO: Duration = Duration::microseconds(1);
+        const ONE_NANO: Duration = Duration::nanoseconds(1);
+        let combo: Duration = ONE_WEEK
+            + ONE_DAY
+            + ONE_HOUR
+            + ONE_MINUTE
+            + ONE_SECOND
+            + ONE_MILLI
+            + ONE_MICRO
+            + ONE_NANO;
+
+        assert!(ONE_WEEK != Duration::zero());
+        assert!(ONE_DAY != Duration::zero());
+        assert!(ONE_HOUR != Duration::zero());
+        assert!(ONE_MINUTE != Duration::zero());
+        assert!(ONE_SECOND != Duration::zero());
+        assert!(ONE_MILLI != Duration::zero());
+        assert!(ONE_MICRO != Duration::zero());
+        assert!(ONE_NANO != Duration::zero());
+        assert_eq!(
+            combo,
+            Duration::seconds(86400 * 7 + 86400 + 3600 + 60 + 1)
+                + Duration::nanoseconds(1 + 1_000 + 1_000_000)
         );
     }
 }
