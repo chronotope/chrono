@@ -123,15 +123,12 @@ impl Duration {
     /// or less than `i64::MIN` seconds.
     #[inline]
     pub const fn seconds(seconds: i64) -> Duration {
+        let d = Duration { secs: seconds, nanos: 0 };
         // Using the equivalent d < MIN || d > MAX isn't const
-        if seconds < MIN.secs
-            || seconds > MAX.secs
-            || (seconds == MIN.secs && 0 < MIN.nanos)
-            || (seconds == MAX.secs && 0 > MAX.nanos)
-        {
+        if d.out_of_bounds() {
             panic!("Duration::seconds out of bounds");
         } else {
-            Duration { secs: seconds, nanos: 0 }
+            d
         }
     }
 
@@ -297,13 +294,13 @@ impl Duration {
     ///
     /// This function errors when original duration is larger than the maximum
     /// value supported for this type.
-    pub fn from_std(duration: StdDuration) -> Result<Duration, OutOfRangeError> {
+    pub const fn from_std(duration: StdDuration) -> Result<Duration, OutOfRangeError> {
         // We need to check secs as u64 before coercing to i64
         if duration.as_secs() > MAX.secs as u64 {
             return Err(OutOfRangeError(()));
         }
         let d = Duration { secs: duration.as_secs() as i64, nanos: duration.subsec_nanos() as i32 };
-        if d > MAX {
+        if d.out_of_bounds() {
             return Err(OutOfRangeError(()));
         }
         Ok(d)
@@ -318,6 +315,14 @@ impl Duration {
             return Err(OutOfRangeError(()));
         }
         Ok(StdDuration::new(self.secs as u64, self.nanos as u32))
+    }
+
+    /// Returns true if and only if d < MIN || d > MAX
+    const fn out_of_bounds(&self) -> bool {
+        self.secs < MIN.secs
+            || self.secs > MAX.secs
+            || (self.secs == MAX.secs && self.nanos > MAX.nanos)
+            || (self.secs == MIN.secs && self.nanos < MIN.nanos)
     }
 }
 
@@ -739,5 +744,13 @@ mod tests {
             Duration::seconds(86400 * 7 + 86400 + 3600 + 60 + 1)
                 + Duration::nanoseconds(1 + 1_000 + 1_000_000)
         );
+    }
+
+    #[test]
+    fn test_from_std_const() {
+        const ONE_SECOND: StdDuration = StdDuration::from_secs(1);
+        const ONE_SECOND_CHRONO: Result<Duration, OutOfRangeError> = Duration::from_std(ONE_SECOND);
+
+        assert_eq!(Ok(Duration::seconds(1)), ONE_SECOND_CHRONO);
     }
 }
