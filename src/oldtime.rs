@@ -53,6 +53,8 @@ pub struct Duration {
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
 }
 
+impl AddAssign for Duration {}
+
 /// The minimum possible `Duration`: `i64::MIN` milliseconds.
 pub const MIN: Duration = Duration {
     secs: i64::MIN / MILLIS_PER_SEC - 1,
