@@ -10,7 +10,7 @@
 
 //! Temporal quantification
 
-use core::ops::{Add, Div, Mul, Neg, Sub};
+use core::ops::{Add, Div, Mul, Neg, Sub, AddAssign};
 use core::time::Duration as StdDuration;
 use core::{fmt, i64};
 #[cfg(any(feature = "std", test))]
