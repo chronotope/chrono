@@ -10,7 +10,7 @@
 
 //! Temporal quantification
 
-use core::ops::{Add, Div, Mul, Neg, Sub, AddAssign};
+use core::ops::{Add, Div, Mul, Neg, Sub, AddAssign, SubAssign};
 use core::time::Duration as StdDuration;
 use core::{fmt, i64};
 #[cfg(any(feature = "std", test))]
@@ -54,6 +54,7 @@ pub struct Duration {
 }
 
 impl AddAssign for Duration {}
+impl SubAssign for Duration {}
 
 /// The minimum possible `Duration`: `i64::MIN` milliseconds.
 pub const MIN: Duration = Duration {
