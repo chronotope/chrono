@@ -179,31 +179,28 @@ fn duration_round<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        let delta_down = stamp % span;
-        if delta_down == 0 {
-            Ok(original)
-        } else {
-            let (delta_up, delta_down) = if delta_down < 0 {
-                (delta_down.abs(), span - delta_down.abs())
-            } else {
-                (span - delta_down, delta_down)
-            };
-            if delta_up <= delta_down {
-                Ok(original + Duration::nanoseconds(delta_up))
-            } else {
-                Ok(original - Duration::nanoseconds(delta_down))
-            }
-        }
+    let span = duration.whole_nanoseconds();
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = naive.timestamp_nanos();
+    if span > stamp.abs() as i128 {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    let delta_down = (stamp as i128) % span;
+    if delta_down == 0 {
+        Ok(original)
     } else {
-        Err(RoundingError::DurationExceedsLimit)
+        let (delta_up, delta_down) = if delta_down < 0 {
+            (delta_down.abs(), span - delta_down.abs())
+        } else {
+            (span - delta_down, delta_down)
+        };
+        if delta_up <= delta_down {
+            Ok(original + Duration::nanoseconds(delta_up as i64))
+        } else {
+            Ok(original - Duration::nanoseconds(delta_down as i64))
+        }
     }
 }
 
@@ -215,7 +212,7 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
+    if let Some(span) = duration.whole_nanoseconds().unwrap() {
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
