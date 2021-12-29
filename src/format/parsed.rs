@@ -23,7 +23,7 @@ use {Datelike, Timelike};
 /// - `to_*` methods try to make a concrete date and time value out of set fields.
 ///   It fully checks any remaining out-of-range conditions and inconsistent/impossible fields.
 #[allow(missing_copy_implementations)]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct Parsed {
     /// Year.
     ///
@@ -123,34 +123,6 @@ fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<(
     } else {
         *old = Some(new);
         Ok(())
-    }
-}
-
-impl Default for Parsed {
-    fn default() -> Parsed {
-        Parsed {
-            year: None,
-            year_div_100: None,
-            year_mod_100: None,
-            isoyear: None,
-            isoyear_div_100: None,
-            isoyear_mod_100: None,
-            month: None,
-            week_from_sun: None,
-            week_from_mon: None,
-            isoweek: None,
-            weekday: None,
-            ordinal: None,
-            day: None,
-            hour_div_12: None,
-            hour_mod_12: None,
-            minute: None,
-            second: None,
-            nanosecond: None,
-            timestamp: None,
-            offset: None,
-            _dummy: (),
-        }
     }
 }
 
