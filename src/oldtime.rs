@@ -9,7 +9,7 @@
 // except according to those terms.
 
 //! Temporal quantification
-
+#[allow(clippy::assign_op_pattern)]
 use core::ops::{Add, Div, Mul, Neg, Sub};
 use core::time::Duration as StdDuration;
 use core::{fmt, i64};
