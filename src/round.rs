@@ -5,6 +5,7 @@ use core::cmp::Ordering;
 use core::fmt;
 use core::marker::Sized;
 use core::ops::{Add, Sub};
+use std::convert::TryInto;
 use datetime::DateTime;
 use naive::NaiveDateTime;
 use oldtime::Duration;
@@ -212,22 +213,19 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.whole_nanoseconds().unwrap() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        let delta_down = stamp % span;
-        match delta_down.cmp(&0) {
-            Ordering::Equal => Ok(original),
-            Ordering::Greater => Ok(original - Duration::nanoseconds(delta_down)),
-            Ordering::Less => Ok(original - Duration::nanoseconds(span - delta_down.abs())),
-        }
-    } else {
-        Err(RoundingError::DurationExceedsLimit)
+    let span = duration.whole_nanoseconds();
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = naive.timestamp_nanos();
+    if span > stamp.abs().into() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    let delta_down = stamp % span as i64;
+    match delta_down.cmp(&0) {
+        Ordering::Equal => Ok(original),
+        Ordering::Greater => Ok(original - Duration::nanoseconds(delta_down)),
+        Ordering::Less => Ok(original - Duration::nanoseconds((span - (delta_down.abs() as i128)).try_into().unwrap())),
     }
 }
 

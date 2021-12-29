@@ -539,11 +539,11 @@ impl NaiveTime {
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
             if rhs >= OldDuration::nanoseconds(i64::from(rfrac)) {
-                rhs = rhs - OldDuration::nanoseconds(i64::from(rfrac));
+                rhs -= OldDuration::nanoseconds(i64::from(rfrac));
                 secs += 1;
                 frac = 0;
             } else if rhs < OldDuration::nanoseconds(-i64::from(frac)) {
-                rhs = rhs + OldDuration::nanoseconds(i64::from(frac));
+                rhs += OldDuration::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
                 frac = (i64::from(frac) + rhs.whole_nanoseconds() as i64) as u32;
