@@ -744,3 +744,4 @@ and replaced by 0.2.25 very shortly. Duh.)
 ## 0.1.0 (2014-11-20)
 
 The initial version that was available to `crates.io`.
+
