@@ -1751,10 +1751,10 @@ pub mod serde {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            write!(formatter, "a formatted date and time string")
+            formatter.write_str("a formatted date and time string")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<NaiveDateTime, E>
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
@@ -1887,7 +1887,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)?)
+            d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)
         }
 
         struct NaiveDateTimeFromNanoSecondsVisitor;
@@ -1899,7 +1899,7 @@ pub mod serde {
                 formatter.write_str("a unix timestamp")
             }
 
-            fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -1910,7 +1910,7 @@ pub mod serde {
                 .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
-            fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2039,7 +2039,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)?)
+            d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)
         }
 
         struct NaiveDateTimeFromMilliSecondsVisitor;
@@ -2051,7 +2051,7 @@ pub mod serde {
                 formatter.write_str("a unix timestamp")
             }
 
-            fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2059,7 +2059,7 @@ pub mod serde {
                     .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
-            fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2188,7 +2188,7 @@ pub mod serde {
         where
             D: de::Deserializer<'de>,
         {
-            Ok(d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)?)
+            d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)
         }
 
         struct NaiveDateTimeFromSecondsVisitor;
@@ -2200,7 +2200,7 @@ pub mod serde {
                 formatter.write_str("a unix timestamp")
             }
 
-            fn visit_i64<E>(self, value: i64) -> Result<NaiveDateTime, E>
+            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -2208,7 +2208,7 @@ pub mod serde {
                     .ok_or_else(|| E::custom(ne_timestamp(value)))
             }
 
-            fn visit_u64<E>(self, value: u64) -> Result<NaiveDateTime, E>
+            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
             where
                 E: de::Error,
             {

@@ -881,7 +881,7 @@ mod weekday_serde {
         type Value = Weekday;
 
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "Weekday")
+            f.write_str("Weekday")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
@@ -1183,7 +1183,7 @@ mod month_serde {
         type Value = Month;
 
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "Month")
+            f.write_str("Month")
         }
 
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
