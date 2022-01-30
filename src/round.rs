@@ -179,15 +179,15 @@ fn duration_round<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    let span = duration.whole_nanoseconds();
+    let span: i128 = duration.num_nanoseconds().unwrap().into();
     if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
         return Err(RoundingError::TimestampExceedsLimit);
     }
-    let stamp = naive.timestamp_nanos();
-    if span > stamp.abs() as i128 {
+    let stamp: i128 = naive.timestamp_nanos().into();
+    if span > stamp.abs() {
         return Err(RoundingError::DurationExceedsTimestamp);
     }
-    let delta_down = (stamp as i128) % span;
+    let delta_down: i128 = stamp % span;
     if delta_down == 0 {
         Ok(original)
     } else {
@@ -212,7 +212,7 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    let span = duration.whole_nanoseconds() as i64;
+    let span = duration.num_nanoseconds().unwrap() as i64;
     if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
         return Err(RoundingError::TimestampExceedsLimit);
     }
