@@ -546,7 +546,7 @@ impl NaiveTime {
                 rhs = rhs + OldDuration::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
-                frac = (i64::from(frac) + rhs.whole_nanoseconds() as i64) as u32;
+                frac = (i64::from(frac) + rhs.num_nanoseconds() as i64) as u32;
                 debug_assert!(frac < 2_000_000_000);
                 return (NaiveTime { secs, frac }, 0);
             }
@@ -554,8 +554,8 @@ impl NaiveTime {
         debug_assert!(secs <= 86_400);
         debug_assert!(frac < 1_000_000_000);
 
-        let rhssecs = rhs.whole_seconds();
-        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).whole_nanoseconds();
+        let rhssecs = rhs.num_seconds();
+        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds();
         debug_assert_eq!(
             OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac as i64),
             rhs
