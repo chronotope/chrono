@@ -529,6 +529,7 @@ impl NaiveTime {
     /// # }
     /// ```
     #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
+    #[allow(deprecated)]
     pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
         let mut secs = self.secs;
         let mut frac = self.frac;
@@ -553,8 +554,9 @@ impl NaiveTime {
         }
         debug_assert!(secs <= 86_400);
         debug_assert!(frac < 1_000_000_000);
-
+        #[allow(deprecated)]
         let rhssecs = rhs.num_seconds();
+        #[allow(deprecated)]
         let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
         debug_assert_eq!(
             OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac as i64),
