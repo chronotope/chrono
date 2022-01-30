@@ -124,7 +124,7 @@ fn test_date_bounds() {
 
     // let's also check that the entire range do not exceed 2^44 seconds
     // (sometimes used for bounding `Duration` against overflow)
-    let maxsecs = MAX_DATE.signed_duration_since(MIN_DATE).whole_seconds();
+    let maxsecs = MAX_DATE.signed_duration_since(MIN_DATE).num_seconds();
     let maxsecs = maxsecs + 86401; // also take care of DateTime
     assert!(
         maxsecs < (1 << MAX_BITS),
@@ -1605,7 +1605,7 @@ impl Iterator for NaiveDateWeeksIterator {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = MAX_DATE.signed_duration_since(self.value).whole_weeks();
+        let exact_size = MAX_DATE.signed_duration_since(self.value).num_weeks();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
