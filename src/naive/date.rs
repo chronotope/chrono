@@ -892,7 +892,11 @@ impl NaiveDate {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = try_opt!((cycle as i32).checked_add(try_opt!(rhs.whole_days().to_i32())));
+        #[cfg(feture = "old_time")]
+        let num_days = rhs.num_days().to_i32();
+        #[cfg(not(feture = "old_time"))]
+        let num_days = rhs.whole_days().to_i32();
+        let cycle = try_opt!((cycle as i32).checked_add(try_opt!(num_days)));
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
@@ -926,7 +930,11 @@ impl NaiveDate {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = try_opt!((cycle as i32).checked_sub(try_opt!(rhs.whole_days().to_i32())));
+        #[cfg(feture = "old_time")]
+        let num_days = rhs.num_days().to_i32();
+        #[cfg(not(feture = "old_time"))]
+        let num_days = rhs.whole_days().to_i32();
+        let cycle = try_opt!((cycle as i32).checked_sub(try_opt!(num_days)));
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
@@ -1578,6 +1586,9 @@ impl Iterator for NaiveDateDaysIterator {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
+        #[cfg(feture = "old_time")]
+        let exact_size = MAX_DATE.signed_duration_since(self.value).num_days();
+        #[cfg(not(feture = "old_time"))]
         let exact_size = MAX_DATE.signed_duration_since(self.value).whole_days();
         (exact_size as usize, Some(exact_size as usize))
     }
