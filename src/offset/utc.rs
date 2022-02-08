@@ -42,7 +42,7 @@ impl Utc {
         Utc::now().date()
     }
 
-    /// Returns a `DateTime` which corresponds to the current date.
+    /// Returns a `DateTime` which corresponds to the current date and time.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Utc> {
         let now =
