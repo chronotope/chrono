@@ -51,7 +51,7 @@ impl Utc {
         DateTime::from_utc(naive, Utc)
     }
 
-    /// Returns a `DateTime` which corresponds to the current date.
+    /// Returns a `DateTime` which corresponds to the current date and time.
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
