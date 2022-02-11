@@ -50,6 +50,9 @@ js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi"], optional = true }
 
+[target.'cfg(unix)'.dependencies]
+rl_localtime = "0.1.1"
+
 [dev-dependencies]
 serde_json = { version = "1" }
 serde_derive = { version = "1", default-features = false }
