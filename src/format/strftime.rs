@@ -462,7 +462,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let nextspec = self
                     .remainder
                     .find(|c: char| !c.is_whitespace())
-                    .unwrap_or_else(|| self.remainder.len());
+                    .unwrap_or(self.remainder.len());
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -474,7 +474,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let nextspec = self
                     .remainder
                     .find(|c: char| c.is_whitespace() || c == '%')
-                    .unwrap_or_else(|| self.remainder.len());
+                    .unwrap_or(self.remainder.len());
                 assert!(nextspec > 0);
                 let item = lit!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
