@@ -309,17 +309,17 @@ mod tests {
     #[test]
     fn test_round_subsecs() {
         let pst = FixedOffset::east(8 * 60 * 60);
-        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_684);
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 84_660_684);
 
         assert_eq!(dt.round_subsecs(10), dt);
         assert_eq!(dt.round_subsecs(9), dt);
-        assert_eq!(dt.round_subsecs(8).nanosecond(), 084_660_680);
-        assert_eq!(dt.round_subsecs(7).nanosecond(), 084_660_700);
-        assert_eq!(dt.round_subsecs(6).nanosecond(), 084_661_000);
-        assert_eq!(dt.round_subsecs(5).nanosecond(), 084_660_000);
-        assert_eq!(dt.round_subsecs(4).nanosecond(), 084_700_000);
-        assert_eq!(dt.round_subsecs(3).nanosecond(), 085_000_000);
-        assert_eq!(dt.round_subsecs(2).nanosecond(), 080_000_000);
+        assert_eq!(dt.round_subsecs(8).nanosecond(), 84_660_680);
+        assert_eq!(dt.round_subsecs(7).nanosecond(), 84_660_700);
+        assert_eq!(dt.round_subsecs(6).nanosecond(), 84_661_000);
+        assert_eq!(dt.round_subsecs(5).nanosecond(), 84_660_000);
+        assert_eq!(dt.round_subsecs(4).nanosecond(), 84_700_000);
+        assert_eq!(dt.round_subsecs(3).nanosecond(), 85_000_000);
+        assert_eq!(dt.round_subsecs(2).nanosecond(), 80_000_000);
         assert_eq!(dt.round_subsecs(1).nanosecond(), 100_000_000);
 
         assert_eq!(dt.round_subsecs(0).nanosecond(), 0);
@@ -352,17 +352,17 @@ mod tests {
     #[test]
     fn test_trunc_subsecs() {
         let pst = FixedOffset::east(8 * 60 * 60);
-        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_684);
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 84_660_684);
 
         assert_eq!(dt.trunc_subsecs(10), dt);
         assert_eq!(dt.trunc_subsecs(9), dt);
-        assert_eq!(dt.trunc_subsecs(8).nanosecond(), 084_660_680);
-        assert_eq!(dt.trunc_subsecs(7).nanosecond(), 084_660_600);
-        assert_eq!(dt.trunc_subsecs(6).nanosecond(), 084_660_000);
-        assert_eq!(dt.trunc_subsecs(5).nanosecond(), 084_660_000);
-        assert_eq!(dt.trunc_subsecs(4).nanosecond(), 084_600_000);
-        assert_eq!(dt.trunc_subsecs(3).nanosecond(), 084_000_000);
-        assert_eq!(dt.trunc_subsecs(2).nanosecond(), 080_000_000);
+        assert_eq!(dt.trunc_subsecs(8).nanosecond(), 84_660_680);
+        assert_eq!(dt.trunc_subsecs(7).nanosecond(), 84_660_600);
+        assert_eq!(dt.trunc_subsecs(6).nanosecond(), 84_660_000);
+        assert_eq!(dt.trunc_subsecs(5).nanosecond(), 84_660_000);
+        assert_eq!(dt.trunc_subsecs(4).nanosecond(), 84_600_000);
+        assert_eq!(dt.trunc_subsecs(3).nanosecond(), 84_000_000);
+        assert_eq!(dt.trunc_subsecs(2).nanosecond(), 80_000_000);
         assert_eq!(dt.trunc_subsecs(1).nanosecond(), 0);
 
         assert_eq!(dt.trunc_subsecs(0).nanosecond(), 0);
@@ -432,7 +432,7 @@ mod tests {
         );
 
         // timezone east
-        let dt = FixedOffset::east(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        let dt = FixedOffset::east(3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
         assert_eq!(
             dt.duration_round(Duration::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
@@ -443,7 +443,7 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        let dt = FixedOffset::west(3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
         assert_eq!(
             dt.duration_round(Duration::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
@@ -505,7 +505,7 @@ mod tests {
 
     #[test]
     fn test_duration_trunc() {
-        let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 1_75_500_000);
+        let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000);
 
         assert_eq!(
             dt.duration_trunc(Duration::milliseconds(10)).unwrap().to_string(),
@@ -542,7 +542,7 @@ mod tests {
         );
 
         // timezone east
-        let dt = FixedOffset::east(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        let dt = FixedOffset::east(3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
         assert_eq!(
             dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
@@ -553,7 +553,7 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west(1 * 3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
+        let dt = FixedOffset::west(3600).ymd(2020, 10, 27).and_hms(15, 0, 0);
         assert_eq!(
             dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"
@@ -566,7 +566,7 @@ mod tests {
 
     #[test]
     fn test_duration_trunc_naive() {
-        let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 1_75_500_000).naive_utc();
+        let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000).naive_utc();
 
         assert_eq!(
             dt.duration_trunc(Duration::milliseconds(10)).unwrap().to_string(),

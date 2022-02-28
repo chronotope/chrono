@@ -317,7 +317,7 @@ pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
             b'a'...b'z' | b'A'...b'Z' => false,
             _ => true,
         })
-        .unwrap_or_else(|| s.len());
+        .unwrap_or(s.len());
     if upto > 0 {
         let name = &s[..upto];
         let s = &s[upto..];

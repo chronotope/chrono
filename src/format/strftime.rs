@@ -462,7 +462,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let nextspec = self
                     .remainder
                     .find(|c: char| !c.is_whitespace())
-                    .unwrap_or_else(|| self.remainder.len());
+                    .unwrap_or(self.remainder.len());
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -474,7 +474,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let nextspec = self
                     .remainder
                     .find(|c: char| c.is_whitespace() || c == '%')
-                    .unwrap_or_else(|| self.remainder.len());
+                    .unwrap_or(self.remainder.len());
                 assert!(nextspec > 0);
                 let item = lit!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -487,11 +487,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
 #[cfg(test)]
 #[test]
 fn test_strftime_items() {
-    fn parse_and_collect<'a>(s: &'a str) -> Vec<Item<'a>> {
+    fn parse_and_collect(s: &str) -> Vec<Item<'_>> {
         // map any error into `[Item::Error]`. useful for easy testing.
         let items = StrftimeItems::new(s);
         let items = items.map(|spec| if spec == Item::Error { None } else { Some(spec) });
-        items.collect::<Option<Vec<_>>>().unwrap_or(vec![Item::Error])
+        items.collect::<Option<Vec<_>>>().unwrap_or_else(|| vec![Item::Error])
     }
 
     assert_eq!(parse_and_collect(""), []);

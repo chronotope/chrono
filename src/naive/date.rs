@@ -42,7 +42,7 @@ const MAX_DAYS_FROM_YEAR_0: i32 =
 const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 + (MIN_YEAR + 400_000) / 4
     - (MIN_YEAR + 400_000) / 100
     + (MIN_YEAR + 400_000) / 400
-    - 146097_000;
+    - 146_097_000;
 
 #[cfg(test)] // only used for testing, but duplicated in naive::datetime
 const MAX_BITS: usize = 44;
@@ -1912,7 +1912,7 @@ mod tests {
 
     #[test]
     fn test_date_from_ymd() {
-        let ymd_opt = |y, m, d| NaiveDate::from_ymd_opt(y, m, d);
+        let ymd_opt = NaiveDate::from_ymd_opt;
 
         assert!(ymd_opt(2012, 0, 1).is_none());
         assert!(ymd_opt(2012, 1, 1).is_some());
@@ -1928,8 +1928,8 @@ mod tests {
 
     #[test]
     fn test_date_from_yo() {
-        let yo_opt = |y, o| NaiveDate::from_yo_opt(y, o);
-        let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d);
+        let yo_opt = NaiveDate::from_yo_opt;
+        let ymd = NaiveDate::from_ymd;
 
         assert_eq!(yo_opt(2012, 0), None);
         assert_eq!(yo_opt(2012, 1), Some(ymd(2012, 1, 1)));
@@ -1958,8 +1958,8 @@ mod tests {
 
     #[test]
     fn test_date_from_isoywd() {
-        let isoywd_opt = |y, w, d| NaiveDate::from_isoywd_opt(y, w, d);
-        let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d);
+        let isoywd_opt = NaiveDate::from_isoywd_opt;
+        let ymd = NaiveDate::from_ymd;
 
         assert_eq!(isoywd_opt(2004, 0, Weekday::Sun), None);
         assert_eq!(isoywd_opt(2004, 1, Weekday::Mon), Some(ymd(2003, 12, 29)));
@@ -2001,8 +2001,7 @@ mod tests {
                 .iter()
                 {
                     let d = NaiveDate::from_isoywd_opt(year, week, weekday);
-                    if d.is_some() {
-                        let d = d.unwrap();
+                    if let Some(d) = d {
                         assert_eq!(d.weekday(), weekday);
                         let w = d.iso_week();
                         assert_eq!(w.year(), year);
@@ -2016,8 +2015,7 @@ mod tests {
             for month in 1..13 {
                 for day in 1..32 {
                     let d = NaiveDate::from_ymd_opt(year, month, day);
-                    if d.is_some() {
-                        let d = d.unwrap();
+                    if let Some(d) = d {
                         let w = d.iso_week();
                         let d_ = NaiveDate::from_isoywd(w.year(), w.week(), d.weekday());
                         assert_eq!(d, d_);
@@ -2029,7 +2027,7 @@ mod tests {
 
     #[test]
     fn test_date_from_num_days_from_ce() {
-        let from_ndays_from_ce = |days| NaiveDate::from_num_days_from_ce_opt(days);
+        let from_ndays_from_ce = NaiveDate::from_num_days_from_ce_opt;
         assert_eq!(from_ndays_from_ce(1), Some(NaiveDate::from_ymd(1, 1, 1)));
         assert_eq!(from_ndays_from_ce(2), Some(NaiveDate::from_ymd(1, 1, 2)));
         assert_eq!(from_ndays_from_ce(31), Some(NaiveDate::from_ymd(1, 1, 31)));
@@ -2037,7 +2035,7 @@ mod tests {
         assert_eq!(from_ndays_from_ce(59), Some(NaiveDate::from_ymd(1, 2, 28)));
         assert_eq!(from_ndays_from_ce(60), Some(NaiveDate::from_ymd(1, 3, 1)));
         assert_eq!(from_ndays_from_ce(365), Some(NaiveDate::from_ymd(1, 12, 31)));
-        assert_eq!(from_ndays_from_ce(365 * 1 + 1), Some(NaiveDate::from_ymd(2, 1, 1)));
+        assert_eq!(from_ndays_from_ce(365 + 1), Some(NaiveDate::from_ymd(2, 1, 1)));
         assert_eq!(from_ndays_from_ce(365 * 2 + 1), Some(NaiveDate::from_ymd(3, 1, 1)));
         assert_eq!(from_ndays_from_ce(365 * 3 + 1), Some(NaiveDate::from_ymd(4, 1, 1)));
         assert_eq!(from_ndays_from_ce(365 * 4 + 2), Some(NaiveDate::from_ymd(5, 1, 1)));
@@ -2060,7 +2058,7 @@ mod tests {
 
     #[test]
     fn test_date_from_weekday_of_month_opt() {
-        let ymwd = |y, m, w, n| NaiveDate::from_weekday_of_month_opt(y, m, w, n);
+        let ymwd = NaiveDate::from_weekday_of_month_opt;
         assert_eq!(ymwd(2018, 8, Weekday::Tue, 0), None);
         assert_eq!(ymwd(2018, 8, Weekday::Wed, 1), Some(NaiveDate::from_ymd(2018, 8, 1)));
         assert_eq!(ymwd(2018, 8, Weekday::Thu, 1), Some(NaiveDate::from_ymd(2018, 8, 2)));
@@ -2176,7 +2174,7 @@ mod tests {
 
     #[test]
     fn test_date_succ() {
-        let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d);
+        let ymd = NaiveDate::from_ymd;
         assert_eq!(ymd(2014, 5, 6).succ_opt(), Some(ymd(2014, 5, 7)));
         assert_eq!(ymd(2014, 5, 31).succ_opt(), Some(ymd(2014, 6, 1)));
         assert_eq!(ymd(2014, 12, 31).succ_opt(), Some(ymd(2015, 1, 1)));
@@ -2186,7 +2184,7 @@ mod tests {
 
     #[test]
     fn test_date_pred() {
-        let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d);
+        let ymd = NaiveDate::from_ymd;
         assert_eq!(ymd(2016, 3, 1).pred_opt(), Some(ymd(2016, 2, 29)));
         assert_eq!(ymd(2015, 1, 1).pred_opt(), Some(ymd(2014, 12, 31)));
         assert_eq!(ymd(2014, 6, 1).pred_opt(), Some(ymd(2014, 5, 31)));
@@ -2334,7 +2332,7 @@ mod tests {
 
     #[test]
     fn test_date_parse_from_str() {
-        let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d);
+        let ymd = NaiveDate::from_ymd;
         assert_eq!(
             NaiveDate::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
             Ok(ymd(2014, 5, 7))
@@ -2392,17 +2390,11 @@ mod tests {
 
     #[test]
     fn test_day_iterator_limit() {
-        assert_eq!(
-            NaiveDate::from_ymd(262143, 12, 29).iter_days().take(4).collect::<Vec<_>>().len(),
-            2
-        );
+        assert_eq!(NaiveDate::from_ymd(262143, 12, 29).iter_days().take(4).count(), 2);
     }
 
     #[test]
     fn test_week_iterator_limit() {
-        assert_eq!(
-            NaiveDate::from_ymd(262143, 12, 12).iter_weeks().take(4).collect::<Vec<_>>().len(),
-            2
-        );
+        assert_eq!(NaiveDate::from_ymd(262143, 12, 12).iter_weeks().take(4).count(), 2);
     }
 }
