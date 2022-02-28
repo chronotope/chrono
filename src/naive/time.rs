@@ -528,7 +528,10 @@ impl NaiveTime {
     ///            (from_hms(20, 4, 5), -86_400));
     /// # }
     /// ```
-    #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity, deprecated, clippy::assign_op_pattern))]
+    #[cfg_attr(
+        feature = "cargo-clippy",
+        allow(cyclomatic_complexity, deprecated, clippy::assign_op_pattern)
+    )]
     pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
         let mut secs = self.secs;
         let mut frac = self.frac;
