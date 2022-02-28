@@ -2776,7 +2776,7 @@ mod tests {
     fn test_rfc3339_opts() {
         use SecondsFormat::*;
         let pst = FixedOffset::east(8 * 60 * 60);
-        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 084_660_000);
+        let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 84_660_000);
         assert_eq!(dt.to_rfc3339_opts(Secs, false), "2018-01-11T10:05:13+08:00");
         assert_eq!(dt.to_rfc3339_opts(Secs, true), "2018-01-11T10:05:13+08:00");
         assert_eq!(dt.to_rfc3339_opts(Millis, false), "2018-01-11T10:05:13.084+08:00");
@@ -3003,7 +3003,7 @@ mod tests {
 
     #[test]
     fn test_datetime_format_alignment() {
-        let datetime = Utc.ymd(2007, 01, 02);
+        let datetime = Utc.ymd(2007, 1, 2);
 
         // Item::Literal
         let percent = datetime.format("%%");

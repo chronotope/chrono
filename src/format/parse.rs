@@ -568,7 +568,7 @@ fn test_parse() {
     check!(" \t987",      [num!(Year)]; year:  987);
     check!("5",           [num!(Year)]; year:    5);
     check!("5\0",         [num!(Year)]; TOO_LONG);
-    check!("\05",         [num!(Year)]; INVALID);
+    check!("\x005",       [num!(Year)]; INVALID);
     check!("",            [num!(Year)]; TOO_SHORT);
     check!("12345",       [num!(Year), lit!("5")]; year: 1234);
     check!("12345",       [nums!(Year), lit!("5")]; year: 1234);
