@@ -15,6 +15,7 @@ categories = ["date-and-time"]
 readme = "README.md"
 license = "MIT/Apache-2.0"
 exclude = ["/ci/*", "/.travis.yml", "/appveyor.yml", "/Makefile"]
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "chronotope/chrono" }

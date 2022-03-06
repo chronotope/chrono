@@ -47,22 +47,22 @@ use core::str::FromStr;
 use std::error::Error;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use naive::{NaiveDate, NaiveTime};
+use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use offset::{FixedOffset, Offset};
+use crate::offset::{FixedOffset, Offset};
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use {Datelike, Timelike};
-use {Month, ParseMonthError, ParseWeekdayError, Weekday};
+use crate::{Datelike, Timelike};
+use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 
 #[cfg(feature = "unstable-locales")]
 pub(crate) mod locales;
 
-pub use self::parse::parse;
-pub use self::parsed::Parsed;
-pub use self::strftime::StrftimeItems;
+pub use parse::parse;
+pub use parsed::Parsed;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
 pub use pure_rust_locales::Locale;
+pub use strftime::StrftimeItems;
 
 #[cfg(not(feature = "unstable-locales"))]
 #[derive(Debug)]
@@ -465,8 +465,8 @@ fn format_inner<'a>(
         )
     };
 
+    use crate::div::{div_floor, mod_floor};
     use core::fmt::Write;
-    use div::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),

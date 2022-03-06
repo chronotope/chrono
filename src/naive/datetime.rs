@@ -3,22 +3,22 @@
 
 //! ISO 8601 date and time without timezone.
 
+use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 use num_traits::ToPrimitive;
-use oldtime::Duration as OldDuration;
 
-use div::div_mod_floor;
+use crate::div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item, Numeric, Pad};
-use naive::date::{MAX_DATE, MIN_DATE};
-use naive::time::{MAX_TIME, MIN_TIME};
-use naive::{IsoWeek, NaiveDate, NaiveTime};
-use {Datelike, Timelike, Weekday};
+use crate::format::DelayedFormat;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::naive::date::{MAX_DATE, MIN_DATE};
+use crate::naive::time::{MAX_TIME, MIN_TIME};
+use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
+use crate::{Datelike, Timelike, Weekday};
 
 /// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
@@ -1401,7 +1401,7 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
 }
 
 /// The `Debug` output of the naive date and time `dt` is the same as
-/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](::format::strftime).
+/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1434,7 +1434,7 @@ impl fmt::Debug for NaiveDateTime {
 }
 
 /// The `Display` output of the naive date and time `dt` is the same as
-/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](::format::strftime).
+/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// It should be noted that, for leap seconds not on the minute boundary,
 /// it may print a representation not distinguishable from non-leap seconds.
@@ -1465,7 +1465,7 @@ impl fmt::Display for NaiveDateTime {
 }
 
 /// Parsing a `str` into a `NaiveDateTime` uses the same format,
-/// [`%Y-%m-%dT%H:%M:%S%.f`](::format::strftime), as in `Debug`.
+/// [`%Y-%m-%dT%H:%M:%S%.f`](crate::format::strftime), as in `Debug`.
 ///
 /// # Example
 ///
@@ -1810,7 +1810,7 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use {ne_timestamp, NaiveDateTime};
+        use crate::{ne_timestamp, NaiveDateTime};
 
         /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
         ///
@@ -1962,7 +1962,7 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use {ne_timestamp, NaiveDateTime};
+        use crate::{ne_timestamp, NaiveDateTime};
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
         ///
@@ -2111,7 +2111,7 @@ pub mod serde {
         use core::fmt;
         use serdelib::{de, ser};
 
-        use {ne_timestamp, NaiveDateTime};
+        use crate::{ne_timestamp, NaiveDateTime};
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch
         ///
@@ -2240,7 +2240,7 @@ pub mod serde {
     #[test]
     fn test_serde_bincode() {
         use self::bincode::{deserialize, serialize, Infinite};
-        use naive::NaiveDate;
+        use crate::naive::NaiveDate;
 
         let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
         let encoded = serialize(&dt, Infinite).unwrap();
@@ -2252,8 +2252,8 @@ pub mod serde {
     fn test_serde_bincode_optional() {
         use self::bincode::{deserialize, serialize, Infinite};
         use self::serde_derive::{Deserialize, Serialize};
-        use prelude::*;
-        use serde::ts_nanoseconds_option;
+        use crate::prelude::*;
+        use crate::serde::ts_nanoseconds_option;
 
         #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
         struct Test {
@@ -2273,10 +2273,10 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
-    use naive::{NaiveDate, MAX_DATE, MIN_DATE};
-    use oldtime::Duration;
+    use crate::naive::{NaiveDate, MAX_DATE, MIN_DATE};
+    use crate::oldtime::Duration;
+    use crate::Datelike;
     use std::i64;
-    use Datelike;
 
     #[test]
     fn test_datetime_from_timestamp() {
