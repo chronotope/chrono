@@ -96,13 +96,13 @@ impl Local {
         Local::now().date()
     }
 
-    /// Returns a `DateTime` which corresponds to the current date and time.
+    /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Local> {
         tm_to_datetime(Timespec::now().local())
     }
 
-    /// Returns a `DateTime` which corresponds to the current date and time.
+    /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Local> {
         use super::Utc;
