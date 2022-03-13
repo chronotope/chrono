@@ -468,7 +468,7 @@ extern crate libc;
 extern crate winapi;
 #[cfg(all(
     feature = "clock",
-    not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
+    not(any(unix, all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))
 ))]
 mod sys;
 

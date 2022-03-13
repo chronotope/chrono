@@ -16,6 +16,11 @@ readme = "README.md"
 license = "MIT/Apache-2.0"
 exclude = ["/ci/*", "/.travis.yml", "/appveyor.yml", "/Makefile"]
 
+[workspace]
+members = [
+    "crates/local",
+]
+
 [badges]
 travis-ci = { repository = "chronotope/chrono" }
 appveyor = { repository = "chronotope/chrono" }
@@ -27,7 +32,7 @@ name = "chrono"
 default = ["clock", "std", "oldtime"]
 alloc = []
 std = []
-clock = ["libc", "std", "winapi"]
+clock = ["libc", "std", "winapi", "libtzfile"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
@@ -42,6 +47,7 @@ num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.5.2", optional = true }
+libtzfile = { version = "2.0.4", optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
@@ -57,6 +63,11 @@ bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
 criterion = { version = "0.3" }
 doc-comment = { version = "0.3" }
+
+[dev-dependencies.old_chrono]
+package = "chrono"
+version = "=0.4.19"
+features = ["clock"]
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
 wasm-bindgen-test = "0.3"
