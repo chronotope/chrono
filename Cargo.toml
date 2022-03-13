@@ -12,11 +12,6 @@ license = "MIT/Apache-2.0"
 exclude = ["/ci/*", "/.travis.yml", "/appveyor.yml", "/Makefile"]
 edition = "2018"
 
-[workspace]
-members = [
-    "crates/local",
-]
-
 [badges]
 travis-ci = { repository = "chronotope/chrono" }
 appveyor = { repository = "chronotope/chrono" }
