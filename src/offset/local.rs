@@ -36,68 +36,49 @@ use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
 mod libtz_localtime {
     use super::*;
-    use std::convert::TryFrom;
     use std::path;
+    use tz::{error, timezone};
 
     const LOCALTIME_LOCATION: &str = "/etc/localtime";
 
-    fn current_offset(info: &libtzfile::Tz, now: DateTime<Utc>) -> Option<FixedOffset> {
-        // find the index of the latest timezone change prior to the current timestamp.
-        // this assumes that the vector is ordered lowest-highest, however if it is not
-        // then we can't assume the mapping to tzh_timecnt_indices is sensible either
-        let idx = info
-            .tzh_timecnt_data
-            .iter()
-            .filter(|ts| **ts < now.timestamp())
-            .count()
-            // this is justified as if we are earlier than all the timezones
-            // then we have to pick one, and it makes sense to pick the earliest one
-            // rather than panic or error
-            .saturating_sub(1);
-
-        // find the index of the current offset given the timezone change index
-        let tz_index = info.tzh_timecnt_indices.get(idx)?;
-
-        // get the information about the current offset
-        let current_offset = info.tzh_typecnt.get(usize::from(*tz_index))?;
-
-        // convert to i32 to use with the FixedOffset constructor
-        let offset_i32 = i32::try_from(current_offset.tt_gmtoff).unwrap();
+    fn current_offset(
+        tz: &tz::TimeZone,
+        now: DateTime<Utc>,
+    ) -> Result<FixedOffset, error::TzError> {
+        let local = tz.find_local_time_type(now.timestamp())?;
 
         // create and return a FixedOffset which will be used to create the local time
-        Some(FixedOffset::east(offset_i32))
+        Ok(FixedOffset::east(local.ut_offset()))
     }
 
-    fn offset_from_local(info: &libtzfile::Tz, local: NaiveDateTime) -> Option<FixedOffset> {
-        let mut prev_offset = None;
-        for (idx, ts) in info.tzh_timecnt_data.iter().enumerate() {
-            let tt_idx = info.tzh_timecnt_indices.get(idx)?;
-            let tt = info.tzh_typecnt.get(usize::from(*tt_idx))?;
-            prev_offset = Some(tt.tt_gmtoff);
+    fn offset_from_local(
+        tz: &tz::TimeZone,
+        local: NaiveDateTime,
+    ) -> Result<FixedOffset, error::TzError> {
+        // ignoring extra rules for now
+        // also its not clear whether the given `local` includes or doesn't include leap seconds?
 
-            if *ts + i64::try_from(tt.tt_gmtoff).ok()? > local.timestamp() {
+        let mut prev_offset = None;
+        for tt in tz.as_ref().transitions() {
+            let local_offset = tz.as_ref().local_time_types()[tt.local_time_type_index()];
+
+            if tt.unix_leap_time() + i64::from(local_offset.ut_offset()) > local.timestamp() {
                 break;
+            } else {
+                prev_offset = Some(local_offset.ut_offset());
             }
         }
 
-        // convert to i32 to use with the FixedOffset constructor
-        let offset_i32 = i32::try_from(prev_offset?).unwrap();
-
         // create and return a FixedOffset which will be used to create the local time
-        Some(FixedOffset::east(offset_i32))
+        Ok(FixedOffset::east(prev_offset.ok_or(error::OutOfRangeError("The given local time is either too early or too late for the range of transitions available"))?))
     }
 
-    fn try_now() -> Result<DateTime<Local>, libtzfile::TzError> {
+    fn try_now() -> Result<DateTime<Local>, error::TzError> {
         if path::Path::new(LOCALTIME_LOCATION).exists() {
-            let info = libtzfile::Tz::new(LOCALTIME_LOCATION)?;
-
-            // calculate the current time after reading the TzFile as that is likely the most expensive operation
             let base = Utc::now();
-
-            let current_offset = current_offset(&info, base).ok_or(libtzfile::TzError::NoData)?;
-
+            let tz = timezone::TimeZone::local()?;
+            let current_offset = current_offset(&tz, base)?;
             let local = DateTime::<Local>::from_utc(base.naive_local(), current_offset);
-
             Ok(local)
         } else {
             // no file found, tz assumed to be UTC.
@@ -114,15 +95,11 @@ mod libtz_localtime {
         }
     }
 
-    fn try_from_utc(utc: NaiveDateTime) -> Result<DateTime<Local>, libtzfile::TzError> {
+    fn try_from_utc(utc: NaiveDateTime) -> Result<DateTime<Local>, error::TzError> {
         if path::Path::new(LOCALTIME_LOCATION).exists() {
-            let info = libtzfile::Tz::new(LOCALTIME_LOCATION)?;
-
-            let current_offset = current_offset(&info, DateTime::from_utc(utc, Utc))
-                .ok_or(libtzfile::TzError::NoData)?;
-
+            let tz = timezone::TimeZone::local()?;
+            let current_offset = current_offset(&tz, DateTime::from_utc(utc, Utc))?;
             let local = DateTime::<Local>::from_utc(utc, current_offset);
-
             Ok(local)
         } else {
             // no file found, tz assumed to be UTC.
@@ -138,12 +115,11 @@ mod libtz_localtime {
         }
     }
 
-    fn try_from_local(local: NaiveDateTime) -> Result<DateTime<Local>, libtzfile::TzError> {
+    fn try_from_local(local: NaiveDateTime) -> Result<DateTime<Local>, error::TzError> {
         if path::Path::new(LOCALTIME_LOCATION).exists() {
-            let info = libtzfile::Tz::new(LOCALTIME_LOCATION)?;
+            let tz = timezone::TimeZone::local()?;
 
-            let relevant_offset =
-                offset_from_local(&info, local).ok_or(libtzfile::TzError::NoData)?;
+            let relevant_offset = offset_from_local(&tz, local)?;
 
             let local = DateTime::<Local>::from_utc(local - relevant_offset, relevant_offset);
 
@@ -202,7 +178,6 @@ impl Local {
     pub fn now() -> DateTime<Local> {
         tm_to_datetime(Timespec::now().local())
     }
-
 
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(all(target_arch = "wasm32", feature = "wasmbind"))]
@@ -451,17 +426,15 @@ mod tests {
     use crate::Datelike;
 
     #[test]
-    fn from_local_roundtrip() {
-        let now = Utc::now().naive_local();
-        let local = Local.from_local_datetime(&now).unwrap();
-        assert_eq!(local.naive_local(), now);
-    }
+    fn verify_correct_offsets() {
+        let now = Local::now();
+        let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&now.naive_utc());
+        assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
-    #[test]
-    fn from_utc_roundtrip() {
-        let now = Utc::now().naive_local();
-        let local = Local.from_utc_datetime(&now);
-        assert_eq!(local.naive_utc(), now);
+        assert_eq!(now, from_local);
+        assert_eq!(now, from_utc);
     }
 
     #[test]

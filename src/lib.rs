@@ -433,6 +433,9 @@ pub use oldtime::Duration;
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 use doc_comment::doctest;
 
+#[cfg(feature = "clock")]
+extern crate tz;
+
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 doctest!("../README.md");
