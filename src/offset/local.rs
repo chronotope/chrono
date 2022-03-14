@@ -34,7 +34,7 @@ mod inner;
 use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 
 #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
-mod libtz_localtime {
+mod tz_localtime {
     use super::*;
     use std::path;
     use tz::{error, timezone};
@@ -169,7 +169,7 @@ impl Local {
     /// Returns a `DateTime` which corresponds to the current date.
     #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
     pub fn now() -> DateTime<Local> {
-        libtz_localtime::now()
+        tz_localtime::now()
     }
 
     /// Returns a `DateTime` which corresponds to the current date.
@@ -235,7 +235,7 @@ impl TimeZone for Local {
 
     #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
-        LocalResult::Single(libtz_localtime::from_local(*local))
+        LocalResult::Single(tz_localtime::from_local(*local))
     }
 
     #[cfg(windows)]
@@ -257,7 +257,7 @@ impl TimeZone for Local {
 
     #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
-        libtz_localtime::from_utc(*utc)
+        tz_localtime::from_utc(*utc)
     }
 
     #[cfg(windows)]
