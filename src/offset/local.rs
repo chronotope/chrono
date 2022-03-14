@@ -114,10 +114,11 @@ mod libtz_localtime {
         for (idx, ts) in info.tzh_timecnt_data.iter().enumerate() {
             let tt_idx = info.tzh_timecnt_indices.get(idx)?;
             let tt = info.tzh_typecnt.get(usize::from(*tt_idx))?;
-            prev_offset = Some(tt.tt_gmtoff);
-
+            
             if *ts + i64::try_from(tt.tt_gmtoff).ok()? > local.timestamp() {
                 break;
+            } else {
+                prev_offset = Some(tt.tt_gmtoff);
             }
         }
 
@@ -347,22 +348,20 @@ impl TimeZone for Local {
 
 #[cfg(test)]
 mod tests {
-    use super::{Local, Utc};
+    use super::Local;
     use offset::TimeZone;
     use Datelike;
 
     #[test]
-    fn from_local_roundtrip() {
-        let now = Utc::now().naive_local();
-        let local = Local.from_local_datetime(&now).unwrap();
-        assert_eq!(local.naive_local(), now);
-    }
+    fn verify_correct_offsets() {
+        let now = Local::now();
+        let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&now.naive_utc());
+        assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
-    #[test]
-    fn from_utc_roundtrip() {
-        let now = Utc::now().naive_local();
-        let local = Local.from_utc_datetime(&now);
-        assert_eq!(local.naive_utc(), now);
+        assert_eq!(now, from_local);
+        assert_eq!(now, from_utc);
     }
 
     #[test]
