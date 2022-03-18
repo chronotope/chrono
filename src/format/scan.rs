@@ -8,13 +8,13 @@
 #![allow(deprecated)]
 
 use super::{ParseResult, INVALID, OUT_OF_RANGE, TOO_SHORT};
-use Weekday;
+use crate::Weekday;
 
 /// Returns true when two slices are equal case-insensitively (in ASCII).
 /// Assumes that the `pattern` is already converted to lower case.
 fn equals(s: &str, pattern: &str) -> bool {
     let mut xs = s.as_bytes().iter().map(|&c| match c {
-        b'A'...b'Z' => c + 32,
+        b'A'..=b'Z' => c + 32,
         _ => c,
     });
     let mut ys = pattern.as_bytes().iter().cloned();
@@ -240,7 +240,7 @@ where
 
     // hours (00--99)
     let hours = match digits(s)? {
-        (h1 @ b'0'...b'9', h2 @ b'0'...b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
+        (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
         _ => return Err(INVALID),
     };
     s = &s[2..];
@@ -252,8 +252,8 @@ where
     // if the next two items are digits then we have to add minutes
     let minutes = if let Ok(ds) = digits(s) {
         match ds {
-            (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
-            (b'6'...b'9', b'0'...b'9') => return Err(OUT_OF_RANGE),
+            (m1 @ b'0'..=b'5', m2 @ b'0'..=b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
+            (b'6'..=b'9', b'0'..=b'9') => return Err(OUT_OF_RANGE),
             _ => return Err(INVALID),
         }
     } else if allow_missing_minutes {
@@ -314,7 +314,7 @@ pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
         .as_bytes()
         .iter()
         .position(|&c| match c {
-            b'a'...b'z' | b'A'...b'Z' => false,
+            b'a'..=b'z' | b'A'..=b'Z' => false,
             _ => true,
         })
         .unwrap_or(s.len());

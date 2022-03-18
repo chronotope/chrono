@@ -227,13 +227,7 @@ impl<'a> StrftimeItems<'a> {
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
         let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
 
-        StrftimeItems {
-            remainder: s,
-            recons: Vec::new(),
-            d_fmt: d_fmt,
-            d_t_fmt: d_t_fmt,
-            t_fmt: t_fmt,
-        }
+        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
     }
 
     #[cfg(not(feature = "unstable-locales"))]
@@ -540,7 +534,7 @@ fn test_strftime_items() {
 #[cfg(test)]
 #[test]
 fn test_strftime_docs() {
-    use {FixedOffset, TimeZone, Timelike};
+    use crate::{FixedOffset, TimeZone, Timelike};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 
@@ -618,7 +612,7 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use {FixedOffset, TimeZone};
+    use crate::{FixedOffset, TimeZone};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 

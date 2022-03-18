@@ -496,47 +496,47 @@ extern crate wasm_bindgen;
 doctest!("../README.md");
 
 // this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
+pub use crate::oldtime::Duration;
 
-pub use date::{Date, MAX_DATE, MIN_DATE};
+pub use crate::date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
-pub use datetime::rustc_serialize::TsSeconds;
-pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+pub use crate::datetime::rustc_serialize::TsSeconds;
+pub use crate::datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
-pub use format::Locale;
-pub use format::{ParseError, ParseResult};
+pub use crate::format::Locale;
+pub use crate::format::{ParseError, ParseResult};
 #[doc(no_inline)]
-pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+pub use crate::naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 #[doc(no_inline)]
-pub use offset::Local;
+pub use crate::offset::Local;
 #[doc(no_inline)]
-pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
-pub use round::{DurationRound, RoundingError, SubsecRound};
+pub use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+pub use crate::round::{DurationRound, RoundingError, SubsecRound};
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
     #[doc(no_inline)]
-    pub use Date;
+    pub use crate::Date;
     #[cfg(feature = "clock")]
     #[doc(no_inline)]
-    pub use Local;
+    pub use crate::Local;
     #[cfg(feature = "unstable-locales")]
     #[doc(no_inline)]
-    pub use Locale;
+    pub use crate::Locale;
     #[doc(no_inline)]
-    pub use SubsecRound;
+    pub use crate::SubsecRound;
     #[doc(no_inline)]
-    pub use {DateTime, SecondsFormat};
+    pub use crate::{DateTime, SecondsFormat};
     #[doc(no_inline)]
-    pub use {Datelike, Month, Timelike, Weekday};
+    pub use crate::{Datelike, Month, Timelike, Weekday};
     #[doc(no_inline)]
-    pub use {FixedOffset, Utc};
+    pub use crate::{FixedOffset, Utc};
     #[doc(no_inline)]
-    pub use {NaiveDate, NaiveDateTime, NaiveTime};
+    pub use crate::{NaiveDate, NaiveDateTime, NaiveTime};
     #[doc(no_inline)]
-    pub use {Offset, TimeZone};
+    pub use crate::{Offset, TimeZone};
 }
 
 // useful throughout the codebase
@@ -596,7 +596,7 @@ mod round;
 
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]
-pub use naive::__BenchYearFlags;
+pub use crate::naive::__BenchYearFlags;
 
 /// Serialization/Deserialization in alternate formats
 ///

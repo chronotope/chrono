@@ -3,10 +3,10 @@
 
 //! ISO 8601 date and time with time zone.
 
+use crate::oldtime::Duration as OldDuration;
 use core::cmp::Ordering;
 use core::ops::{Add, Sub};
 use core::{fmt, hash, str};
-use oldtime::Duration as OldDuration;
 #[cfg(any(feature = "std", test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -16,19 +16,19 @@ use alloc::string::{String, ToString};
 use std::string::ToString;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use core::borrow::Borrow;
-#[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
+use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
-use format::Locale;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item};
-use naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+use crate::format::Locale;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item};
+use crate::naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
-use offset::Local;
-use offset::{FixedOffset, Offset, TimeZone, Utc};
-use Date;
-use {Datelike, Timelike, Weekday};
+use crate::offset::Local;
+use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::Date;
+use crate::{Datelike, Timelike, Weekday};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use core::borrow::Borrow;
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -543,9 +543,9 @@ where
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
-        use format::Numeric::*;
-        use format::Pad::Zero;
-        use SecondsFormat::*;
+        use crate::format::Numeric::*;
+        use crate::format::Pad::Zero;
+        use crate::SecondsFormat::*;
 
         debug_assert!(secform != __NonExhaustive, "Do not use __NonExhaustive!");
 
@@ -2614,14 +2614,14 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
-    use naive::{NaiveDate, NaiveTime};
+    use crate::naive::{NaiveDate, NaiveTime};
     #[cfg(feature = "clock")]
-    use offset::Local;
-    use offset::{FixedOffset, TimeZone, Utc};
-    use oldtime::Duration;
+    use crate::offset::Local;
+    use crate::offset::{FixedOffset, TimeZone, Utc};
+    use crate::oldtime::Duration;
+    #[cfg(feature = "clock")]
+    use crate::Datelike;
     use std::time::{SystemTime, UNIX_EPOCH};
-    #[cfg(feature = "clock")]
-    use Datelike;
 
     #[test]
     #[allow(non_snake_case)]
@@ -2774,7 +2774,7 @@ mod tests {
 
     #[test]
     fn test_rfc3339_opts() {
-        use SecondsFormat::*;
+        use crate::SecondsFormat::*;
         let pst = FixedOffset::east(8 * 60 * 60);
         let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 84_660_000);
         assert_eq!(dt.to_rfc3339_opts(Secs, false), "2018-01-11T10:05:13+08:00");
@@ -2797,7 +2797,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_rfc3339_opts_nonexhaustive() {
-        use SecondsFormat;
+        use crate::SecondsFormat;
         let dt = Utc.ymd(1999, 10, 9).and_hms(1, 2, 3);
         dt.to_rfc3339_opts(SecondsFormat::__NonExhaustive, true);
     }

@@ -3,18 +3,18 @@
 
 //! ISO 8601 time without timezone.
 
+use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
-use oldtime::Duration as OldDuration;
 
-use div::div_mod_floor;
+use crate::div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item, Numeric, Pad};
-use Timelike;
+use crate::format::DelayedFormat;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::Timelike;
 
 pub const MIN_TIME: NaiveTime = NaiveTime { secs: 0, frac: 0 };
 pub const MAX_TIME: NaiveTime = NaiveTime { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
@@ -437,7 +437,7 @@ impl NaiveTime {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return None;
         }
-        Some(NaiveTime { secs: secs, frac: nano })
+        Some(NaiveTime { secs, frac: nano })
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
@@ -548,7 +548,7 @@ impl NaiveTime {
             } else {
                 frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
                 debug_assert!(frac < 2_000_000_000);
-                return (NaiveTime { secs: secs, frac: frac }, 0);
+                return (NaiveTime { secs, frac }, 0);
             }
         }
         debug_assert!(secs <= 86_400);
@@ -904,7 +904,7 @@ impl Timelike for NaiveTime {
             return None;
         }
         let secs = hour * 3600 + self.secs % 3600;
-        Some(NaiveTime { secs: secs, ..*self })
+        Some(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the minute number changed.
@@ -926,7 +926,7 @@ impl Timelike for NaiveTime {
             return None;
         }
         let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
-        Some(NaiveTime { secs: secs, ..*self })
+        Some(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the second number changed.
@@ -950,7 +950,7 @@ impl Timelike for NaiveTime {
             return None;
         }
         let secs = self.secs / 60 * 60 + sec;
-        Some(NaiveTime { secs: secs, ..*self })
+        Some(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
@@ -1541,9 +1541,9 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::NaiveTime;
-    use oldtime::Duration;
+    use crate::oldtime::Duration;
+    use crate::Timelike;
     use std::u32;
-    use Timelike;
 
     #[test]
     fn test_time_from_hms_milli() {

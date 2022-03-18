@@ -14,7 +14,7 @@ use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseErrorKind, ParseResult};
 use super::{BAD_FORMAT, INVALID, NOT_ENOUGH, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
-use {DateTime, FixedOffset, Weekday};
+use crate::{DateTime, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
     p.set_weekday(match v {
@@ -117,10 +117,10 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     let mut year = try_consume!(scan::number(s, 2, usize::MAX));
     let yearlen = prevlen - s.len();
     match (yearlen, year) {
-        (2, 0...49) => {
+        (2, 0..=49) => {
             year += 2000;
         } //   47 -> 2047,   05 -> 2005
-        (2, 50...99) => {
+        (2, 50..=99) => {
             year += 1900;
         } //   79 -> 1979
         (3, _) => {
@@ -809,8 +809,8 @@ fn test_parse() {
 fn test_rfc2822() {
     use super::NOT_ENOUGH;
     use super::*;
-    use offset::FixedOffset;
-    use DateTime;
+    use crate::offset::FixedOffset;
+    use crate::DateTime;
 
     // Test data - (input, Ok(expected result after parse and format) or Err(error code))
     let testdates = [
@@ -864,7 +864,7 @@ fn test_rfc2822() {
 #[cfg(test)]
 #[test]
 fn parse_rfc850() {
-    use {TimeZone, Utc};
+    use crate::{TimeZone, Utc};
 
     static RFC850_FMT: &'static str = "%A, %d-%b-%y %T GMT";
 
@@ -897,8 +897,8 @@ fn parse_rfc850() {
 #[test]
 fn test_rfc3339() {
     use super::*;
-    use offset::FixedOffset;
-    use DateTime;
+    use crate::offset::FixedOffset;
+    use crate::DateTime;
 
     // Test data - (input, Ok(expected result after parse and format) or Err(error code))
     let testdates = [

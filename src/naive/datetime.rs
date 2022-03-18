@@ -3,22 +3,22 @@
 
 //! ISO 8601 date and time without timezone.
 
+use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 use num_traits::ToPrimitive;
-use oldtime::Duration as OldDuration;
 
-use div::div_mod_floor;
+use crate::div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item, Numeric, Pad};
-use naive::date::{MAX_DATE, MIN_DATE};
-use naive::time::{MAX_TIME, MIN_TIME};
-use naive::{IsoWeek, NaiveDate, NaiveTime};
-use {Datelike, Timelike, Weekday};
+use crate::format::DelayedFormat;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::naive::date::{MAX_DATE, MIN_DATE};
+use crate::naive::time::{MAX_TIME, MIN_TIME};
+use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
+use crate::{Datelike, Timelike, Weekday};
 
 /// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
@@ -83,7 +83,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime { date: date, time: time }
+        NaiveDateTime { date, time }
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -151,7 +151,7 @@ impl NaiveDateTime {
             .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
-            (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
+            (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
             (_, _) => None,
         }
     }
@@ -522,7 +522,7 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -601,7 +601,7 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_sub_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -2273,10 +2273,10 @@ pub mod serde {
 #[cfg(test)]
 mod tests {
     use super::NaiveDateTime;
-    use naive::{NaiveDate, MAX_DATE, MIN_DATE};
-    use oldtime::Duration;
+    use crate::naive::{NaiveDate, MAX_DATE, MIN_DATE};
+    use crate::oldtime::Duration;
+    use crate::Datelike;
     use std::i64;
-    use Datelike;
 
     #[test]
     fn test_datetime_from_timestamp() {
