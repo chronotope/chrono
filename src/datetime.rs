@@ -2861,6 +2861,10 @@ mod tests {
             Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
             Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35))
         );
+
+        let input_from_fuzzing = "1%Z%I%A%Z%I%A\u{7f}\u{1c} 4ThuP0\u{7f}\n\u{2000}\n\n\u{2000}\n\nJ \u{0} %Z%s%Z%\u{0}%s%Zsssssssssssssssssss%sZ%I\nJ \n3%Z%";
+        let result = crate::DateTime::parse_from_str(input_from_fuzzing, input_from_fuzzing);
+        assert!(result.is_err());
     }
 
     #[test]
