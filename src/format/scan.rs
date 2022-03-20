@@ -8,7 +8,7 @@
 #![allow(deprecated)]
 
 use super::{ParseResult, INVALID, OUT_OF_RANGE, TOO_SHORT};
-use Weekday;
+use crate::Weekday;
 
 /// Returns true when two slices are equal case-insensitively (in ASCII).
 /// Assumes that the `pattern` is already converted to lower case.
@@ -62,7 +62,7 @@ pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
         };
     }
 
-    Ok((&s[::core::cmp::min(max, bytes.len())..], n))
+    Ok((&s[core::cmp::min(max, bytes.len())..], n))
 }
 
 /// Tries to consume at least one digits as a fractional second.

@@ -1,4 +1,5 @@
 //! Benchmarks for chrono that just depend on std
+#![cfg(feature = "__internal_bench")]
 
 extern crate chrono;
 extern crate criterion;
