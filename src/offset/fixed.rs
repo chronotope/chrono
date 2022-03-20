@@ -1,7 +1,7 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-//! The time zone which has a fixed offset from UTC.
+//! Timezone as offset from `UTC`.
 
 use crate::oldtime::Duration as OldDuration;
 use core::fmt;
@@ -13,12 +13,16 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::DateTime;
 use crate::Timelike;
 
-/// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
+/// The timezone with fixed offset, from `UTC-23:59:59` to `UTC+23:59:59`.
 ///
-/// Using the [`TimeZone`](./trait.TimeZone.html) methods
-/// on a `FixedOffset` struct is the preferred way to construct
-/// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
-/// [`west`](#method.west) methods for examples.
+/// This often results from the parsed textual date and time. Since it stores
+/// the most information and does not depend on the system environment, you
+/// would want to normalize other `TimeZone`s into this type.
+///
+/// Using the [`TimeZone`](./trait.TimeZone.html) methods on a `FixedOffset`
+/// struct is the preferred way to construct `DateTime<FixedOffset>` instances.
+/// See the [`east`](#method.east) and [`west`](#method.west) methods for
+/// examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub struct FixedOffset {
     local_minus_utc: i32,
