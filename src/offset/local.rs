@@ -36,6 +36,7 @@ use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
 mod tz_localtime {
     use super::*;
+    use crate::{Datelike, NaiveTime, Duration};
     use std::path;
     use tz::{error, timezone};
 
@@ -58,6 +59,52 @@ mod tz_localtime {
         // ignoring extra rules for now
         // also its not clear whether the given `local` includes or doesn't include leap seconds?
 
+        // get the last transition time
+        let last = tz.as_ref().transitions().last().ok_or(error::OutOfRangeError("No available transition times"))?;
+        let last_local_time_type = tz.as_ref().local_time_types()[last.local_time_type_index()];
+        // if we are later than the last transition, then we must try to use the extra rule
+        if last.unix_leap_time() + i64::from(last_local_time_type.ut_offset()) < local.timestamp() {
+            match tz.as_ref().extra_rule() {
+                Some(timezone::TransitionRule::Fixed(fix)) => {
+                    return Ok(FixedOffset::east(fix.ut_offset()));
+                }
+                Some(timezone::TransitionRule::Alternate(alt) ) => {
+                    match (alt.dst_start(), alt.dst_end()) {
+                        (
+                            timezone::RuleDay::MonthWeekDay(start @ timezone::MonthWeekDay { .. }),
+                            timezone::RuleDay::MonthWeekDay(end @ timezone::MonthWeekDay { .. }),
+                        ) => {
+                            let start = naivedatetime_from_mwd(local, start, alt.dst_start_time());
+                            let end = naivedatetime_from_mwd(local, end, alt.dst_end_time());
+
+                            use std::cmp::Ordering;
+                            match start.cmp(&end) {
+                                Ordering::Less if local >= start && local < end => {
+                                    // southern hemisphere
+                                    return Ok(FixedOffset::east(alt.dst().ut_offset()));
+                                }
+                                Ordering::Equal | Ordering::Greater if local >= start || local < end => {
+                                    // northern hemisphere
+                                    return Ok(FixedOffset::east(alt.dst().ut_offset()));
+                                }
+                                _ => {
+                                    return Ok(FixedOffset::east(alt.std().ut_offset()));
+                                }
+                               
+                            }
+                        }
+                        _ => {
+                            todo!("Handle non month-week-day alt rule")
+                        }
+                    }
+                }  
+                None => {
+                    return Err(error::OutOfRangeError("The given local time is either too early or too late for the range of transitions available and there is no extra rule to find the timezone").into());
+                }
+            }
+        } 
+
+        // otherwise we go throuhg all of the local times
         let mut prev_offset = None;
         for tt in tz.as_ref().transitions() {
             let local_offset = tz.as_ref().local_time_types()[tt.local_time_type_index()];
@@ -70,7 +117,131 @@ mod tz_localtime {
         }
 
         // create and return a FixedOffset which will be used to create the local time
-        Ok(FixedOffset::east(prev_offset.ok_or(error::OutOfRangeError("The given local time is either too early or too late for the range of transitions available"))?))
+        if let Some(offset) = prev_offset {
+            Ok(FixedOffset::east(offset))
+        } else {
+            // in this case we were earlier than the earliest time. we should use the first one in this case.
+            let first_local_time_type = tz.as_ref().local_time_types().get(0).ok_or(error::OutOfRangeError("No available transition times"))?;
+
+            Ok(FixedOffset::east(first_local_time_type.ut_offset()))
+
+        }
+
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_naive_time_from_seconds() {
+            assert_eq!(
+                naive_time_from_seconds(1),
+                NaiveTime::from_hms(0, 0, 1),
+            );
+            assert_eq!(
+                naive_time_from_seconds(3661),
+                NaiveTime::from_hms(1, 1, 1),
+            );
+            assert_eq!(
+                naive_time_from_seconds(22 * 60 * 60 + 15 * 60 + 7),
+                NaiveTime::from_hms(22, 15, 7),
+            );
+        }
+
+        #[test]
+        fn test_naive_date_from_mwd_parts() {
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 1, 1, 5),
+                NaiveDate::from_ymd(2022, 1, 7)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 1, 1, 3),
+                NaiveDate::from_ymd(2022, 1, 5)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 1, 1, 6),
+                NaiveDate::from_ymd(2022, 1, 1)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 1, 2, 1),
+                NaiveDate::from_ymd(2022, 1, 10)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 1, 2, 3),
+                NaiveDate::from_ymd(2022, 1, 12)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 1, 2, 6),
+                NaiveDate::from_ymd(2022, 1, 8)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 0),
+                NaiveDate::from_ymd(2022, 3, 6)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 1),
+                NaiveDate::from_ymd(2022, 3, 7)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 2),
+                NaiveDate::from_ymd(2022, 3, 1)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 3),
+                NaiveDate::from_ymd(2022, 3, 2)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 4),
+                NaiveDate::from_ymd(2022, 3, 3)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 5),
+                NaiveDate::from_ymd(2022, 3, 4)
+            );
+            assert_eq!(
+                naive_date_from_mwd_parts(2022, 3, 1, 6),
+                NaiveDate::from_ymd(2022, 3, 5)
+            );
+        }
+
+    }
+
+    fn naive_time_from_seconds(start_time: i32) -> NaiveTime {
+        use std::convert::TryFrom;
+        let h = start_time / 3600;
+        let m = (start_time - 3600 * h) / 60;
+        let s = start_time - 3600 * h - 60 * m;
+        NaiveTime::from_hms(u32::try_from(h).unwrap(), u32::try_from(m).unwrap(), u32::try_from(s).unwrap())
+    }
+
+    fn naive_date_from_mwd_parts(year: i32, month: u32, week_num: u32, week_day: u32) -> NaiveDate {
+
+        // get the first day of the relevant week
+        let base = (week_num.saturating_sub(1)) * 7 + 1; 
+
+        // build a date from the first day of the relevant week. 
+        // this is the earliest possible date that it will be
+        let base_date = NaiveDate::from_ymd(year, month, base);
+
+        let base_from_sunday = base_date.weekday().num_days_from_sunday();
+
+        use std::cmp::Ordering;
+        match base_from_sunday.cmp(&week_day) {
+            Ordering::Equal => base_date,
+            Ordering::Greater => {
+                base_date + Duration::days(i64::from(7 - (base_from_sunday - week_day)))
+            }
+            Ordering::Less => {
+                base_date + Duration::days(i64::from(week_day - base_from_sunday))
+            }
+        }
+     
+    }
+
+    fn naivedatetime_from_mwd(local: NaiveDateTime, mwd: &timezone::MonthWeekDay, start_time: i32) -> NaiveDateTime {
+        naive_date_from_mwd_parts(local.year(), local.month(), mwd.week().into(), mwd.week_day().into())
+        .and_time(naive_time_from_seconds(start_time))
     }
 
     fn try_now() -> Result<DateTime<Local>, error::TzError> {
@@ -421,9 +592,10 @@ pub(crate) struct Tm {
 
 #[cfg(test)]
 mod tests {
-    use super::{Local, Utc};
+    use super::Local;
     use crate::offset::TimeZone;
-    use crate::Datelike;
+    use crate::{Datelike, Duration};
+
 
     #[test]
     fn verify_correct_offsets() {
@@ -435,6 +607,30 @@ mod tests {
 
         assert_eq!(now, from_local);
         assert_eq!(now, from_utc);
+    }
+
+    #[test]
+    fn verify_correct_offsets_distant_past() {
+        let distant_past = Local::now() - Duration::days(365 * 10000);
+        let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
+        assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        assert_eq!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        assert_eq!(distant_past, from_local);
+        assert_eq!(distant_past, from_utc);
+    }
+
+    #[test]
+    fn verify_correct_offsets_distant_future() {
+        let distant_future = Local::now() + Duration::days(365 * 10000);
+        let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
+        assert_eq!(distant_future.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        assert_eq!(distant_future.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        assert_eq!(distant_future, from_local);
+        assert_eq!(distant_future, from_utc);
     }
 
     #[test]
