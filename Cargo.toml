@@ -1,11 +1,6 @@
 [package]
 name = "chrono"
 version = "0.4.19"
-authors = [
-    "Kang Seonghoon <public+rust@mearie.org>",
-    "Brandon W Maister <quodlibetor@gmail.com>",
-]
-
 description = "Date and time library for Rust"
 homepage = "https://github.com/chronotope/chrono"
 documentation = "https://docs.rs/chrono/"
@@ -15,6 +10,7 @@ categories = ["date-and-time"]
 readme = "README.md"
 license = "MIT/Apache-2.0"
 exclude = ["/ci/*", "/.travis.yml", "/appveyor.yml", "/Makefile"]
+edition = "2018"
 
 [badges]
 travis-ci = { repository = "chronotope/chrono" }
@@ -31,7 +27,7 @@ clock = ["libc", "std", "winapi"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
-__internal_bench = []
+__internal_bench = ["criterion"]
 __doctest = []
 
 [dependencies]
@@ -42,6 +38,7 @@ num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.5.2", optional = true }
+criterion = { version = "0.3", optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
@@ -55,7 +52,6 @@ serde_json = { version = "1" }
 serde_derive = { version = "1", default-features = false }
 bincode = { version = "0.8.0" }
 num-iter = { version = "0.1.35", default-features = false }
-criterion = { version = "0.3" }
 doc-comment = { version = "0.3" }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
@@ -74,5 +70,5 @@ harness = false
 
 [[bench]]
 name = "serde"
+required-features = ["__internal_bench", "serde"]
 harness = false
-required-features = ["serde"]
