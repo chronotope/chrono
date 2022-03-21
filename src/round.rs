@@ -185,6 +185,9 @@ where
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
+        if span == 0 {
+            return Ok(original);
+        }
         let delta_down = stamp % span;
         if delta_down == 0 {
             Ok(original)
@@ -395,6 +398,11 @@ mod tests {
         let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000);
 
         assert_eq!(
+            dt.duration_round(Duration::zero()).unwrap().to_string(),
+            "2016-12-31 23:59:59.175500 UTC"
+        );
+
+        assert_eq!(
             dt.duration_round(Duration::milliseconds(10)).unwrap().to_string(),
             "2016-12-31 23:59:59.180 UTC"
         );
@@ -455,6 +463,11 @@ mod tests {
     #[test]
     fn test_duration_round_naive() {
         let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000).naive_utc();
+
+        assert_eq!(
+            dt.duration_round(Duration::zero()).unwrap().to_string(),
+            "2016-12-31 23:59:59.175500"
+        );
 
         assert_eq!(
             dt.duration_round(Duration::milliseconds(10)).unwrap().to_string(),
