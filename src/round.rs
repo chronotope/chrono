@@ -186,7 +186,7 @@ where
             return Err(RoundingError::DurationExceedsTimestamp);
         }
         if span == 0 {
-            return Ok(original)
+            return Ok(original);
         }
         let delta_down = stamp % span;
         if delta_down == 0 {
