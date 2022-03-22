@@ -942,11 +942,3 @@ fn test_num_days_from_ce_against_alternative_impl() {
         assert_eq!(mid_year.num_days_from_ce(), num_days_from_ce(&mid_year), "on {:?}", mid_year);
     }
 }
-
-#[test]
-fn test_month_enum_succ_pred() {
-    assert_eq!(Month::January.succ(), Month::February);
-    assert_eq!(Month::December.succ(), Month::January);
-    assert_eq!(Month::January.pred(), Month::December);
-    assert_eq!(Month::February.pred(), Month::January);
-}

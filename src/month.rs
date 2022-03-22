@@ -304,3 +304,16 @@ mod month_serde {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Month;
+
+    #[test]
+    fn test_month_enum_succ_pred() {
+        assert_eq!(Month::January.succ(), Month::February);
+        assert_eq!(Month::December.succ(), Month::January);
+        assert_eq!(Month::January.pred(), Month::December);
+        assert_eq!(Month::February.pred(), Month::January);
+    }
+}
