@@ -487,14 +487,12 @@ impl fmt::Debug for Mdf {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(test)]
-    extern crate num_iter;
+    use num_iter::range_inclusive;
+    use std::u32;
 
-    use self::num_iter::range_inclusive;
     use super::{Mdf, Of};
     use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
     use crate::Weekday;
-    use std::u32;
 
     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
     const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];

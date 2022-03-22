@@ -3,17 +3,20 @@
 
 //! ISO 8601 date and time with time zone.
 
-use crate::oldtime::Duration as OldDuration;
-use core::cmp::Ordering;
-use core::ops::{Add, Sub};
-use core::{fmt, hash, str};
-#[cfg(any(feature = "std", test))]
-use std::time::{SystemTime, UNIX_EPOCH};
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::string::{String, ToString};
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::ops::{Add, Sub};
+use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::string::ToString;
+#[cfg(any(feature = "std", test))]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
@@ -25,10 +28,9 @@ use crate::naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::oldtime::Duration as OldDuration;
 use crate::Date;
 use crate::{Datelike, Timelike, Weekday};
-#[cfg(any(feature = "alloc", feature = "std", test))]
-use core::borrow::Borrow;
 
 /// Specific formatting options for seconds. This may be extended in the
 /// future, so exhaustive matching in external code is not recommended.
@@ -1214,9 +1216,9 @@ pub(super) mod serde {
     #[cfg(feature = "clock")]
     use crate::offset::Local;
     use crate::offset::{FixedOffset, LocalResult, TimeZone, Utc};
-    use crate::serdelib::{de, ser};
     use crate::{ne_timestamp, SerdeError};
     use core::fmt;
+    use serde::{de, ser};
 
     #[doc(hidden)]
     #[derive(Debug)]
@@ -1377,7 +1379,7 @@ pub(super) mod serde {
     /// ```
     pub mod ts_nanoseconds {
         use core::fmt;
-        use serdelib::{de, ser};
+        use serde::{de, ser};
 
         use crate::offset::TimeZone;
         use crate::{DateTime, Utc};
@@ -1530,7 +1532,7 @@ pub(super) mod serde {
     /// ```
     pub mod ts_nanoseconds_option {
         use core::fmt;
-        use serdelib::{de, ser};
+        use serde::{de, ser};
 
         use crate::{DateTime, Utc};
 
@@ -1686,13 +1688,11 @@ pub(super) mod serde {
     /// ```
     pub mod ts_microseconds {
         use core::fmt;
-
-        use serdelib::{de, ser};
-
-        use crate::offset::TimeZone;
-        use crate::{DateTime, Utc};
+        use serde::{de, ser};
 
         use super::{serde_from, MicroSecondsTimestampVisitor};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         /// Serialize a UTC datetime into an integer number of microseconds since the epoch
         ///
@@ -1840,11 +1840,10 @@ pub(super) mod serde {
     /// ```
     pub mod ts_microseconds_option {
         use core::fmt;
-        use serdelib::{de, ser};
-
-        use crate::{DateTime, Utc};
+        use serde::{de, ser};
 
         use super::MicroSecondsTimestampVisitor;
+        use crate::{DateTime, Utc};
 
         /// Serialize a UTC datetime into an integer number of microseconds since the epoch or none
         ///
@@ -1996,12 +1995,11 @@ pub(super) mod serde {
     /// ```
     pub mod ts_milliseconds {
         use core::fmt;
-        use serdelib::{de, ser};
-
-        use crate::offset::TimeZone;
-        use crate::{DateTime, Utc};
+        use serde::{de, ser};
 
         use super::{serde_from, MilliSecondsTimestampVisitor};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
         ///
@@ -2146,11 +2144,10 @@ pub(super) mod serde {
     /// ```
     pub mod ts_milliseconds_option {
         use core::fmt;
-        use serdelib::{de, ser};
-
-        use crate::{DateTime, Utc};
+        use serde::{de, ser};
 
         use super::MilliSecondsTimestampVisitor;
+        use crate::{DateTime, Utc};
 
         /// Serialize a UTC datetime into an integer number of milliseconds since the epoch or none
         ///
@@ -2315,12 +2312,11 @@ pub(super) mod serde {
     /// ```
     pub mod ts_seconds {
         use core::fmt;
-        use serdelib::{de, ser};
-
-        use crate::offset::TimeZone;
-        use crate::{DateTime, Utc};
+        use serde::{de, ser};
 
         use super::{serde_from, SecondsTimestampVisitor};
+        use crate::offset::TimeZone;
+        use crate::{DateTime, Utc};
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch
         ///
@@ -2459,11 +2455,10 @@ pub(super) mod serde {
     /// ```
     pub mod ts_seconds_option {
         use core::fmt;
-        use serdelib::{de, ser};
-
-        use crate::{DateTime, Utc};
+        use serde::{de, ser};
 
         use super::SecondsTimestampVisitor;
+        use crate::{DateTime, Utc};
 
         /// Serialize a UTC datetime into an integer number of seconds since the epoch or none
         ///

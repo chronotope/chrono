@@ -201,7 +201,7 @@ impl fmt::Debug for ParseMonthError {
 #[cfg(feature = "serde")]
 mod month_serde {
     use super::Month;
-    use serdelib::{de, ser};
+    use serde::{de, ser};
 
     use core::fmt;
 
@@ -240,12 +240,9 @@ mod month_serde {
         }
     }
 
-    #[cfg(test)]
-    extern crate serde_json;
-
     #[test]
     fn test_serde_serialize() {
-        use self::serde_json::to_string;
+        use serde_json::to_string;
         use Month::*;
 
         let cases: Vec<(Month, &str)> = vec![
@@ -271,7 +268,7 @@ mod month_serde {
 
     #[test]
     fn test_serde_deserialize() {
-        use self::serde_json::from_str;
+        use serde_json::from_str;
         use Month::*;
 
         let cases: Vec<(&str, Month)> = vec![

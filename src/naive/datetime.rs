@@ -3,11 +3,11 @@
 
 //! ISO 8601 date and time without timezone.
 
-use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
+
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
 
@@ -18,6 +18,7 @@ use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::date::{MAX_DATE, MIN_DATE};
 use crate::naive::time::{MAX_TIME, MIN_TIME};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
+use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Timelike, Weekday};
 
 /// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
@@ -1720,7 +1721,7 @@ pub(super) mod rustc_serialize {
 pub(super) mod serde {
     use super::NaiveDateTime;
     use core::fmt;
-    use serdelib::{de, ser};
+    use serde::{de, ser};
 
     /// Serialize a `NaiveDateTime` as an RFC 3339 string
     ///
@@ -1808,7 +1809,7 @@ pub(super) mod serde {
     /// ```
     pub mod ts_nanoseconds {
         use core::fmt;
-        use serdelib::{de, ser};
+        use serde::{de, ser};
 
         use crate::{ne_timestamp, NaiveDateTime};
 
@@ -1960,7 +1961,7 @@ pub(super) mod serde {
     /// ```
     pub mod ts_milliseconds {
         use core::fmt;
-        use serdelib::{de, ser};
+        use serde::{de, ser};
 
         use crate::{ne_timestamp, NaiveDateTime};
 
@@ -2109,7 +2110,7 @@ pub(super) mod serde {
     /// ```
     pub mod ts_seconds {
         use core::fmt;
-        use serdelib::{de, ser};
+        use serde::{de, ser};
 
         use crate::{ne_timestamp, NaiveDateTime};
 
@@ -2218,29 +2219,22 @@ pub(super) mod serde {
         }
     }
 
-    #[cfg(test)]
-    extern crate bincode;
-    #[cfg(test)]
-    extern crate serde_derive;
-    #[cfg(test)]
-    extern crate serde_json;
-
     #[test]
     fn test_serde_serialize() {
-        super::test_encodable_json(self::serde_json::to_string);
+        super::test_encodable_json(serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(|input| self::serde_json::from_str(&input));
+        super::test_decodable_json(|input| serde_json::from_str(&input));
     }
 
     // Bincode is relevant to test separately from JSON because
     // it is not self-describing.
     #[test]
     fn test_serde_bincode() {
-        use self::bincode::{deserialize, serialize, Infinite};
         use crate::naive::NaiveDate;
+        use bincode::{deserialize, serialize, Infinite};
 
         let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
         let encoded = serialize(&dt, Infinite).unwrap();
@@ -2250,10 +2244,10 @@ pub(super) mod serde {
 
     #[test]
     fn test_serde_bincode_optional() {
-        use self::bincode::{deserialize, serialize, Infinite};
-        use self::serde_derive::{Deserialize, Serialize};
         use crate::prelude::*;
         use crate::serde::ts_nanoseconds_option;
+        use bincode::{deserialize, serialize, Infinite};
+        use serde_derive::{Deserialize, Serialize};
 
         #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
         struct Test {

@@ -9,6 +9,7 @@ use num_integer::div_mod_floor;
 
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::Timelike;
 

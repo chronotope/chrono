@@ -181,7 +181,7 @@ pub trait Timelike: Sized {
 mod tests {
     use super::Datelike;
     use crate::naive::{MAX_DATE, MIN_DATE};
-    use crate::{NaiveDate, Duration};
+    use crate::{Duration, NaiveDate};
 
     /// Tests `Datelike::num_days_from_ce` against an alternative implementation.
     ///

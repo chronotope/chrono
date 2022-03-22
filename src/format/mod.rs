@@ -36,6 +36,9 @@
 #![allow(ellipsis_inclusive_range_patterns)]
 
 #[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::string::{String, ToString};
@@ -466,6 +469,7 @@ fn format_inner<'a>(
     };
 
     use core::fmt::Write;
+    use num_integer::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),

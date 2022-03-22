@@ -199,7 +199,7 @@ impl fmt::Debug for ParseWeekdayError {
 mod weekday_serde {
     use super::Weekday;
     use core::fmt;
-    use serdelib::{de, ser};
+    use serde::{de, ser};
 
     impl ser::Serialize for Weekday {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -236,12 +236,9 @@ mod weekday_serde {
         }
     }
 
-    #[cfg(test)]
-    extern crate serde_json;
-
     #[test]
     fn test_serde_serialize() {
-        use self::serde_json::to_string;
+        use serde_json::to_string;
         use Weekday::*;
 
         let cases: Vec<(Weekday, &str)> = vec![
@@ -262,7 +259,7 @@ mod weekday_serde {
 
     #[test]
     fn test_serde_deserialize() {
-        use self::serde_json::from_str;
+        use serde_json::from_str;
         use Weekday::*;
 
         let cases: Vec<(&str, Weekday)> = vec![

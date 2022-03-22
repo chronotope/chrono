@@ -1471,7 +1471,7 @@ mod rustc_serialize {
 mod serde {
     use super::NaiveTime;
     use core::fmt;
-    use serdelib::{de, ser};
+    use serde::{de, ser};
 
     // TODO not very optimized for space (binary formats would want something better)
     // TODO round-trip for general leap seconds (not just those with second = 60)
@@ -1511,26 +1511,21 @@ mod serde {
         }
     }
 
-    #[cfg(test)]
-    extern crate bincode;
-    #[cfg(test)]
-    extern crate serde_json;
-
     #[test]
     fn test_serde_serialize() {
-        super::test_encodable_json(self::serde_json::to_string);
+        super::test_encodable_json(serde_json::to_string);
     }
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(|input| self::serde_json::from_str(&input));
+        super::test_decodable_json(|input| serde_json::from_str(&input));
     }
 
     #[test]
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use self::bincode::{deserialize, serialize, Infinite};
+        use bincode::{deserialize, serialize, Infinite};
 
         let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
         let encoded = serialize(&t, Infinite).unwrap();

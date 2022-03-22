@@ -451,55 +451,26 @@
     manual_range_contains,
 ))]
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-#[cfg(all(feature = "std", not(feature = "alloc")))]
-extern crate std as alloc;
-#[cfg(any(feature = "std", test))]
-extern crate std as core;
-
 #[cfg(feature = "oldtime")]
 extern crate time as oldtime;
 #[cfg(not(feature = "oldtime"))]
 mod oldtime;
+// this reexport is to aid the transition and should not be in the prelude!
+pub use oldtime::Duration;
 
-#[cfg(feature = "clock")]
-extern crate libc;
-#[cfg(all(feature = "clock", windows))]
-extern crate winapi;
 #[cfg(all(
     feature = "clock",
     not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
 ))]
 mod sys;
 
-extern crate num_integer;
-extern crate num_traits;
-#[cfg(feature = "rustc-serialize")]
-extern crate rustc_serialize;
-#[cfg(feature = "serde")]
-extern crate serde as serdelib;
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
-#[macro_use]
-extern crate doc_comment;
-#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
-extern crate js_sys;
-#[cfg(feature = "unstable-locales")]
-extern crate pure_rust_locales;
-#[cfg(feature = "bench")]
-extern crate test;
-#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
-extern crate wasm_bindgen;
+use doc_comment::doctest;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 doctest!("../README.md");
-
-use core::fmt;
-
-// this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
 
 pub use date::{Date, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
@@ -579,6 +550,9 @@ pub mod serde {
 // Until rust 1.18 there  is no "pub(crate)" so to share this we need it in the root
 
 #[cfg(feature = "serde")]
+use core::fmt;
+
+#[cfg(feature = "serde")]
 enum SerdeError<V: fmt::Display, D: fmt::Display> {
     NonExistent { timestamp: V },
     Ambiguous { timestamp: V, min: D, max: D },
@@ -622,9 +596,6 @@ pub use month::{Month, ParseMonthError};
 
 mod traits;
 pub use traits::{Datelike, Timelike};
-
-#[cfg(test)]
-extern crate num_iter;
 
 mod test {
     #[allow(unused_imports)]
