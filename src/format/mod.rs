@@ -33,8 +33,6 @@
 //! # }
 //! ```
 
-#![allow(ellipsis_inclusive_range_patterns)]
-
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
@@ -749,7 +747,7 @@ pub struct DelayedFormat<I> {
     /// Locale used for text.
     // TODO: Only used with the locale feature. We should make this property
     // only present when the feature is enabled.
-    #[allow(dead_code)]
+    #[cfg(feature = "unstable-locales")]
     locale: Option<Locale>,
 }
 
@@ -757,7 +755,14 @@ pub struct DelayedFormat<I> {
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
-        DelayedFormat { date, time, off: None, items, locale: None }
+        DelayedFormat {
+            date,
+            time,
+            off: None,
+            items,
+            #[cfg(feature = "unstable-locales")]
+            locale: None,
+        }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
@@ -771,7 +776,14 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         Off: Offset + fmt::Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date, time, off: Some(name_and_diff), items, locale: None }
+        DelayedFormat {
+            date,
+            time,
+            off: Some(name_and_diff),
+            items,
+            #[cfg(feature = "unstable-locales")]
+            locale: None,
+        }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.

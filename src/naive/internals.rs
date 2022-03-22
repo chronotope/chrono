@@ -13,7 +13,6 @@
 //! but the conversion keeps the valid value valid and the invalid value invalid
 //! so that the user-facing `NaiveDate` can validate the input as late as possible.
 
-#![allow(dead_code)] // some internal methods have been left for consistency
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use crate::Weekday;
@@ -175,7 +174,6 @@ impl fmt::Debug for YearFlags {
 
 pub(super) const MIN_OL: u32 = 1 << 1;
 pub(super) const MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(365 << 1) | 1`
-pub(super) const MIN_MDL: u32 = (1 << 6) | (1 << 1);
 pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
 const XX: i8 = -128;
@@ -322,12 +320,6 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn with_flags(&self, YearFlags(flags): YearFlags) -> Of {
-        let Of(of) = *self;
-        Of((of & !0b1111) | u32::from(flags))
-    }
-
-    #[inline]
     pub(super) fn weekday(&self) -> Weekday {
         let Of(of) = *self;
         Weekday::from_u32(((of >> 4) + (of & 0b111)) % 7).unwrap()
@@ -416,7 +408,7 @@ impl Mdf {
         }
     }
 
-    #[inline]
+    #[cfg(test)]
     pub(super) fn valid(&self) -> bool {
         let Mdf(mdf) = *self;
         let mdl = mdf >> 3;
@@ -450,12 +442,6 @@ impl Mdf {
         let day = Mdf::clamp_day(day);
         let Mdf(mdf) = *self;
         Mdf((mdf & !0b1_1111_0000) | (day << 4))
-    }
-
-    #[inline]
-    pub(super) fn flags(&self) -> YearFlags {
-        let Mdf(mdf) = *self;
-        YearFlags((mdf & 0b1111) as u8)
     }
 
     #[inline]

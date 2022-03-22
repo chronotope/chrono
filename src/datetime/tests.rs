@@ -1,3 +1,5 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(feature = "clock")]
@@ -6,68 +8,45 @@ use crate::offset::{FixedOffset, TimeZone, Utc};
 use crate::oldtime::Duration;
 #[cfg(feature = "clock")]
 use crate::Datelike;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[test]
-#[allow(non_snake_case)]
 fn test_datetime_offset() {
-    let Est = FixedOffset::west(5 * 60 * 60);
-    let Edt = FixedOffset::west(4 * 60 * 60);
-    let Kst = FixedOffset::east(9 * 60 * 60);
+    let est = FixedOffset::west(5 * 60 * 60);
+    let edt = FixedOffset::west(4 * 60 * 60);
+    let kst = FixedOffset::east(9 * 60 * 60);
 
     assert_eq!(format!("{}", Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06 07:08:09 UTC");
-    assert_eq!(
-        format!("{}", Edt.ymd(2014, 5, 6).and_hms(7, 8, 9)),
-        "2014-05-06 07:08:09 -04:00"
-    );
-    assert_eq!(
-        format!("{}", Kst.ymd(2014, 5, 6).and_hms(7, 8, 9)),
-        "2014-05-06 07:08:09 +09:00"
-    );
+    assert_eq!(format!("{}", edt.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06 07:08:09 -04:00");
+    assert_eq!(format!("{}", kst.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06 07:08:09 +09:00");
     assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06T07:08:09Z");
-    assert_eq!(
-        format!("{:?}", Edt.ymd(2014, 5, 6).and_hms(7, 8, 9)),
-        "2014-05-06T07:08:09-04:00"
-    );
-    assert_eq!(
-        format!("{:?}", Kst.ymd(2014, 5, 6).and_hms(7, 8, 9)),
-        "2014-05-06T07:08:09+09:00"
-    );
+    assert_eq!(format!("{:?}", edt.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06T07:08:09-04:00");
+    assert_eq!(format!("{:?}", kst.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06T07:08:09+09:00");
 
     // edge cases
     assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(0, 0, 0)), "2014-05-06T00:00:00Z");
+    assert_eq!(format!("{:?}", edt.ymd(2014, 5, 6).and_hms(0, 0, 0)), "2014-05-06T00:00:00-04:00");
+    assert_eq!(format!("{:?}", kst.ymd(2014, 5, 6).and_hms(0, 0, 0)), "2014-05-06T00:00:00+09:00");
+    assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(23, 59, 59)), "2014-05-06T23:59:59Z");
     assert_eq!(
-        format!("{:?}", Edt.ymd(2014, 5, 6).and_hms(0, 0, 0)),
-        "2014-05-06T00:00:00-04:00"
-    );
-    assert_eq!(
-        format!("{:?}", Kst.ymd(2014, 5, 6).and_hms(0, 0, 0)),
-        "2014-05-06T00:00:00+09:00"
-    );
-    assert_eq!(
-        format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(23, 59, 59)),
-        "2014-05-06T23:59:59Z"
-    );
-    assert_eq!(
-        format!("{:?}", Edt.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        format!("{:?}", edt.ymd(2014, 5, 6).and_hms(23, 59, 59)),
         "2014-05-06T23:59:59-04:00"
     );
     assert_eq!(
-        format!("{:?}", Kst.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        format!("{:?}", kst.ymd(2014, 5, 6).and_hms(23, 59, 59)),
         "2014-05-06T23:59:59+09:00"
     );
 
     let dt = Utc.ymd(2014, 5, 6).and_hms(7, 8, 9);
-    assert_eq!(dt, Edt.ymd(2014, 5, 6).and_hms(3, 8, 9));
+    assert_eq!(dt, edt.ymd(2014, 5, 6).and_hms(3, 8, 9));
     assert_eq!(dt + Duration::seconds(3600 + 60 + 1), Utc.ymd(2014, 5, 6).and_hms(8, 9, 10));
     assert_eq!(
-        dt.signed_duration_since(Edt.ymd(2014, 5, 6).and_hms(10, 11, 12)),
+        dt.signed_duration_since(edt.ymd(2014, 5, 6).and_hms(10, 11, 12)),
         Duration::seconds(-7 * 3600 - 3 * 60 - 3)
     );
 
     assert_eq!(*Utc.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), Utc);
-    assert_eq!(*Edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), Edt);
-    assert!(*Edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != Est);
+    assert_eq!(*edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), edt);
+    assert!(*edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != est);
 }
 
 #[test]
@@ -107,31 +86,27 @@ fn test_datetime_with_timezone() {
 }
 
 #[test]
-#[allow(non_snake_case)]
 fn test_datetime_rfc2822_and_rfc3339() {
-    let EDT = FixedOffset::east(5 * 60 * 60);
+    let edt = FixedOffset::east(5 * 60 * 60);
     assert_eq!(
         Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0000"
     );
+    assert_eq!(Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
     assert_eq!(
-        Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc3339(),
-        "2015-02-18T23:16:09+00:00"
-    );
-    assert_eq!(
-        EDT.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc2822(),
+        edt.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0500"
     );
     assert_eq!(
-        EDT.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc3339(),
+        edt.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc3339(),
         "2015-02-18T23:16:09.150+05:00"
     );
     assert_eq!(
-        EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc2822(),
+        edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc2822(),
         "Wed, 18 Feb 2015 23:59:60 +0500"
     );
     assert_eq!(
-        EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc3339(),
+        edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc3339(),
         "2015-02-18T23:59:60.234567+05:00"
     );
 
@@ -149,11 +124,11 @@ fn test_datetime_rfc2822_and_rfc3339() {
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
-        Ok(EDT.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000))
+        Ok(edt.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000))
     );
     assert_eq!(
         DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
-        Ok(EDT.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567))
+        Ok(edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567))
     );
 }
 
@@ -237,11 +212,8 @@ fn test_datetime_parse_from_str() {
         Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570 * 60))
     ); // ignore offset
     assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
-    assert!(DateTime::parse_from_str(
-        "Fri, 09 Aug 2013 23:54:35 GMT",
-        "%a, %d %b %Y %H:%M:%S GMT"
-    )
-    .is_err());
+    assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
+        .is_err());
     assert_eq!(
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35))

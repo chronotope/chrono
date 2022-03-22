@@ -117,10 +117,10 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     let mut year = try_consume!(scan::number(s, 2, usize::MAX));
     let yearlen = prevlen - s.len();
     match (yearlen, year) {
-        (2, 0...49) => {
+        (2, 0..=49) => {
             year += 2000;
         } //   47 -> 2047,   05 -> 2005
-        (2, 50...99) => {
+        (2, 50..=99) => {
             year += 1900;
         } //   79 -> 1979
         (3, _) => {

@@ -424,8 +424,6 @@
 #![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
 #![deny(dead_code)]
-// lints are added all the time, we test on 1.13
-#![allow(unknown_lints)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 
 #[cfg(feature = "oldtime")]
