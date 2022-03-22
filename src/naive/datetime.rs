@@ -6,7 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::{fmt, hash, str};
+use core::{fmt, str};
 
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
@@ -59,7 +59,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MA
 /// assert_eq!(dt.weekday(), Weekday::Fri);
 /// assert_eq!(dt.num_seconds_from_midnight(), 33011);
 /// ```
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
@@ -84,7 +84,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime { date: date, time: time }
+        NaiveDateTime { date, time }
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -152,7 +152,7 @@ impl NaiveDateTime {
             .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
-            (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
+            (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
             (_, _) => None,
         }
     }
@@ -523,7 +523,7 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -602,7 +602,7 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_sub_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -1201,17 +1201,6 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-/// `NaiveDateTime` can be used as a key to the hash maps (in principle).
-///
-/// Practically this also takes account of fractional seconds, so it is not recommended.
-/// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
-impl hash::Hash for NaiveDateTime {
-    fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        self.date.hash(state);
-        self.time.hash(state);
-    }
-}
-
 /// An addition of `Duration` to `NaiveDateTime` yields another `NaiveDateTime`.
 ///
 /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
@@ -1485,7 +1474,7 @@ impl str::FromStr for NaiveDateTime {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
-        const ITEMS: &'static [Item<'static>] = &[
+        const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""),
             Item::Literal("-"),
@@ -2231,7 +2220,7 @@ pub(crate) mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(|input| serde_json::from_str(&input));
+        super::test_decodable_json(|input| serde_json::from_str(input));
     }
 
     // Bincode is relevant to test separately from JSON because
@@ -2278,7 +2267,7 @@ pub(crate) mod serde {
         match me {
             LocalResult::None => Err(E::custom(ne_timestamp(ts))),
             LocalResult::Ambiguous(min, max) => {
-                Err(E::custom(SerdeError::Ambiguous { timestamp: ts, min: min, max: max }))
+                Err(E::custom(SerdeError::Ambiguous { timestamp: ts, min, max }))
             }
             LocalResult::Single(val) => Ok(val),
         }
@@ -2308,10 +2297,10 @@ pub(crate) mod serde {
     impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match self {
-                &SerdeError::NonExistent { ref timestamp } => {
+                SerdeError::NonExistent { timestamp } => {
                     write!(f, "value is not a legal timestamp: {}", timestamp)
                 }
-                &SerdeError::Ambiguous { ref timestamp, ref min, ref max } => write!(
+                SerdeError::Ambiguous { timestamp, min, max } => write!(
                     f,
                     "value is an ambiguous timestamp: {}, could be either of {}, {}",
                     timestamp, min, max

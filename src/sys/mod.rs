@@ -123,6 +123,6 @@ impl Tm {
             0 => utc_tm_to_time(self),
             _ => local_tm_to_time(self),
         };
-        Timespec { sec: sec, nsec: self.tm_nsec }
+        Timespec { sec, nsec: self.tm_nsec }
     }
 }

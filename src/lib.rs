@@ -427,29 +427,6 @@
 // lints are added all the time, we test on 1.13
 #![allow(unknown_lints)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
-#![cfg_attr(feature = "cargo-clippy", allow(
-    renamed_and_removed_lints,
-    // The explicit 'static lifetimes are still needed for rustc 1.13-16
-    // backward compatibility, and this appeases clippy. If minimum rustc
-    // becomes 1.17, should be able to remove this, those 'static lifetimes,
-    // and use `static` in a lot of places `const` is used now.
-    redundant_static_lifetimes,
-    // the field-init shorthand (which this lint recommends) was stabilized in rust 1.17.
-    redundant_field_names,
-    // #[non_exhaustive] was introduced in 1.40
-    manual_non_exhaustive,
-    // `matches!` was stabilized in 1.42
-    match_like_matches_macro,
-    // Changing trivially_copy_pass_by_ref would require an incompatible version
-    // bump.
-    trivially_copy_pass_by_ref,
-    try_err,
-    // Currently deprecated, we use the separate implementation to add docs
-    // warning that putting a time in a hash table is probably a bad idea
-    derive_hash_xor_eq,
-    // Range contains was stabilized in 1.35.
-    manual_range_contains,
-))]
 
 #[cfg(feature = "oldtime")]
 extern crate time as oldtime;

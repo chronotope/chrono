@@ -95,7 +95,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
-        DateTime { datetime: datetime, offset: offset }
+        DateTime { datetime, offset }
     }
 
     /// Makes a new `DateTime` with given **local** datetime and offset that
@@ -126,7 +126,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         let datetime_utc = datetime - offset.fix();
 
-        DateTime { datetime: datetime_utc, offset: offset }
+        DateTime { datetime: datetime_utc, offset }
     }
 
     /// Retrieves a date component
@@ -454,7 +454,7 @@ impl DateTime<FixedOffset> {
     /// );
     /// ```
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
+        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, ITEMS.iter())?;
         parsed.to_datetime()
@@ -466,7 +466,7 @@ impl DateTime<FixedOffset> {
     /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows some freedom
     /// over the syntax and RFC 3339 exercises that freedom to rigidly define a fixed format.
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
+        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, ITEMS.iter())?;
         parsed.to_datetime()
@@ -508,14 +508,14 @@ where
     /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc2822(&self) -> String {
-        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
+        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         self.format_with_items(ITEMS.iter()).to_string()
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     pub fn to_rfc3339(&self) -> String {
-        const ITEMS: &'static [Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
+        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         self.format_with_items(ITEMS.iter()).to_string()
     }
 
@@ -551,7 +551,7 @@ where
 
         debug_assert!(secform != __NonExhaustive, "Do not use __NonExhaustive!");
 
-        const PREFIX: &'static [Item<'static>] = &[
+        const PREFIX: &[Item<'static>] = &[
             Item::Numeric(Year, Zero),
             Item::Literal("-"),
             Item::Numeric(Month, Zero),
@@ -2571,9 +2571,9 @@ pub(super) mod serde {
     #[test]
     fn test_serde_deserialize() {
         super::test_decodable_json(
-            |input| self::serde_json::from_str(&input),
-            |input| self::serde_json::from_str(&input),
-            |input| self::serde_json::from_str(&input),
+            |input| self::serde_json::from_str(input),
+            |input| self::serde_json::from_str(input),
+            |input| self::serde_json::from_str(input),
         );
     }
 

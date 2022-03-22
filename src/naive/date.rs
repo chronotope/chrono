@@ -1697,7 +1697,7 @@ impl str::FromStr for NaiveDate {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveDate> {
-        const ITEMS: &'static [Item<'static>] = &[
+        const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""),
             Item::Literal("-"),
@@ -1880,7 +1880,7 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(|input| serde_json::from_str(&input));
+        super::test_decodable_json(|input| serde_json::from_str(input));
     }
 
     #[test]

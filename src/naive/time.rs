@@ -6,7 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::{fmt, hash, str};
+use core::{fmt, str};
 use num_integer::div_mod_floor;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
@@ -179,7 +179,7 @@ pub(super) const MAX_TIME: NaiveTime =
 ///
 /// Since Chrono alone cannot determine any existence of leap seconds,
 /// **there is absolutely no guarantee that the leap second read has actually happened**.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
@@ -387,7 +387,7 @@ impl NaiveTime {
             return None;
         }
         let secs = hour * 3600 + min * 60 + sec;
-        Some(NaiveTime { secs: secs, frac: nano })
+        Some(NaiveTime { secs, frac: nano })
     }
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
@@ -438,7 +438,7 @@ impl NaiveTime {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return None;
         }
-        Some(NaiveTime { secs: secs, frac: nano })
+        Some(NaiveTime { secs, frac: nano })
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
@@ -549,7 +549,7 @@ impl NaiveTime {
             } else {
                 frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
                 debug_assert!(frac < 2_000_000_000);
-                return (NaiveTime { secs: secs, frac: frac }, 0);
+                return (NaiveTime { secs, frac }, 0);
             }
         }
         debug_assert!(secs <= 86_400);
@@ -905,7 +905,7 @@ impl Timelike for NaiveTime {
             return None;
         }
         let secs = hour * 3600 + self.secs % 3600;
-        Some(NaiveTime { secs: secs, ..*self })
+        Some(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the minute number changed.
@@ -927,7 +927,7 @@ impl Timelike for NaiveTime {
             return None;
         }
         let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
-        Some(NaiveTime { secs: secs, ..*self })
+        Some(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the second number changed.
@@ -951,7 +951,7 @@ impl Timelike for NaiveTime {
             return None;
         }
         let secs = self.secs / 60 * 60 + sec;
-        Some(NaiveTime { secs: secs, ..*self })
+        Some(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
@@ -1007,17 +1007,6 @@ impl Timelike for NaiveTime {
     #[inline]
     fn num_seconds_from_midnight(&self) -> u32 {
         self.secs // do not repeat the calculation!
-    }
-}
-
-/// `NaiveTime` can be used as a key to the hash maps (in principle).
-///
-/// Practically this also takes account of fractional seconds, so it is not recommended.
-/// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
-impl hash::Hash for NaiveTime {
-    fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        self.secs.hash(state);
-        self.frac.hash(state);
     }
 }
 
@@ -1324,7 +1313,7 @@ impl str::FromStr for NaiveTime {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveTime> {
-        const ITEMS: &'static [Item<'static>] = &[
+        const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""),
             Item::Literal(":"),
@@ -1518,7 +1507,7 @@ mod serde {
 
     #[test]
     fn test_serde_deserialize() {
-        super::test_decodable_json(|input| serde_json::from_str(&input));
+        super::test_decodable_json(|input| serde_json::from_str(input));
     }
 
     #[test]

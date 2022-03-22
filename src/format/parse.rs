@@ -470,7 +470,7 @@ impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const DATE_ITEMS: &'static [Item<'static>] = &[
+        const DATE_ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""),
             Item::Literal("-"),
@@ -479,7 +479,7 @@ impl str::FromStr for DateTime<FixedOffset> {
             Item::Literal("-"),
             Item::Numeric(Numeric::Day, Pad::Zero),
         ];
-        const TIME_ITEMS: &'static [Item<'static>] = &[
+        const TIME_ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""),
             Item::Literal(":"),
@@ -499,11 +499,11 @@ impl str::FromStr for DateTime<FixedOffset> {
                 if remainder.starts_with('T') || remainder.starts_with(' ') {
                     parse(&mut parsed, &remainder[1..], TIME_ITEMS.iter())?;
                 } else {
-                    Err(INVALID)?;
+                    return Err(INVALID);
                 }
             }
-            Err((_s, e)) => Err(e)?,
-            Ok(_) => Err(NOT_ENOUGH)?,
+            Err((_s, e)) => return Err(e),
+            Ok(_) => return Err(NOT_ENOUGH),
         };
         parsed.to_datetime()
     }
@@ -866,7 +866,7 @@ fn test_rfc2822() {
 fn parse_rfc850() {
     use crate::{TimeZone, Utc};
 
-    static RFC850_FMT: &'static str = "%A, %d-%b-%y %T GMT";
+    static RFC850_FMT: &str = "%A, %d-%b-%y %T GMT";
 
     let dt_str = "Sunday, 06-Nov-94 08:49:37 GMT";
     let dt = Utc.ymd(1994, 11, 6).and_hms(8, 49, 37);

@@ -145,7 +145,7 @@ pub(super) fn short_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
 /// It prefers long month names to short month names when both are possible.
 pub(super) fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
     // lowercased month names, minus first three chars
-    static LONG_MONTH_SUFFIXES: [&'static str; 12] =
+    static LONG_MONTH_SUFFIXES: [&str; 12] =
         ["uary", "ruary", "ch", "il", "", "e", "y", "ust", "tember", "ober", "ember", "ember"];
 
     let (mut s, month0) = short_month0(s)?;
@@ -163,7 +163,7 @@ pub(super) fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
 /// It prefers long weekday names to short weekday names when both are possible.
 pub(super) fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
     // lowercased weekday names, minus first three chars
-    static LONG_WEEKDAY_SUFFIXES: [&'static str; 7] =
+    static LONG_WEEKDAY_SUFFIXES: [&str; 7] =
         ["day", "sday", "nesday", "rsday", "day", "urday", "day"];
 
     let (mut s, weekday) = short_weekday(s)?;
