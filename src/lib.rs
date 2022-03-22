@@ -552,7 +552,6 @@ macro_rules! try_opt {
     };
 }
 
-mod div;
 pub mod offset;
 pub mod naive {
     //! Date and time types unconcerned with timezones.

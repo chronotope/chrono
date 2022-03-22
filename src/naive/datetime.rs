@@ -8,9 +8,9 @@ use crate::oldtime::Duration as OldDuration;
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
+use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
 
-use crate::div::div_mod_floor;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};

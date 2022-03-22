@@ -16,9 +16,9 @@
 #![allow(dead_code)] // some internal methods have been left for consistency
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
-use crate::div::{div_rem, mod_floor};
 use crate::Weekday;
 use core::{fmt, i32};
+use num_integer::{div_rem, mod_floor};
 use num_traits::FromPrimitive;
 
 /// The internal date representation. This also includes the packed `Mdf` value.

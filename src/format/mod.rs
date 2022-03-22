@@ -465,7 +465,6 @@ fn format_inner<'a>(
         )
     };
 
-    use crate::div::{div_floor, mod_floor};
     use core::fmt::Write;
 
     match *item {

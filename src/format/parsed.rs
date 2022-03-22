@@ -4,13 +4,13 @@
 //! A collection of parsed date and time items.
 //! They can be constructed incrementally while being checked for consistency.
 
-use crate::oldtime::Duration as OldDuration;
+use num_integer::div_rem;
 use num_traits::ToPrimitive;
 
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
-use crate::div::div_rem;
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
+use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::Weekday;
 use crate::{Datelike, Timelike};
