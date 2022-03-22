@@ -1212,13 +1212,14 @@ pub(super) mod rustc_serialize {
 /// documented at re-export site
 #[cfg(feature = "serde")]
 pub(super) mod serde {
-    use super::DateTime;
-    #[cfg(feature = "clock")]
-    use crate::offset::Local;
-    use crate::offset::{FixedOffset, LocalResult, TimeZone, Utc};
-    use crate::{ne_timestamp, SerdeError};
     use core::fmt;
     use serde::{de, ser};
+
+    use super::DateTime;
+    use crate::naive::datetime::serde::serde_from;
+    #[cfg(feature = "clock")]
+    use crate::offset::Local;
+    use crate::offset::{FixedOffset, TimeZone, Utc};
 
     #[doc(hidden)]
     #[derive(Debug)]
@@ -1235,22 +1236,6 @@ pub(super) mod serde {
     #[doc(hidden)]
     #[derive(Debug)]
     pub struct MilliSecondsTimestampVisitor;
-
-    // lik? function to convert a LocalResult into a serde-ish Result
-    fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
-    where
-        E: de::Error,
-        V: fmt::Display,
-        T: fmt::Display,
-    {
-        match me {
-            LocalResult::None => Err(E::custom(ne_timestamp(ts))),
-            LocalResult::Ambiguous(min, max) => {
-                Err(E::custom(SerdeError::Ambiguous { timestamp: ts, min: min, max: max }))
-            }
-            LocalResult::Single(val) => Ok(val),
-        }
-    }
 
     /// Serialize into a rfc3339 time string
     ///

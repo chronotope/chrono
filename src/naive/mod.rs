@@ -5,7 +5,7 @@
 //! but can be also used for the simpler date and time handling.
 
 mod date;
-mod datetime;
+pub(crate) mod datetime;
 mod internals;
 mod isoweek;
 mod time;
