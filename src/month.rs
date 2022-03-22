@@ -305,6 +305,28 @@ mod month_serde {
 #[cfg(test)]
 mod tests {
     use super::Month;
+    use crate::{Datelike, TimeZone, Utc};
+
+    #[test]
+    fn test_month_enum_primitive_parse() {
+        use num_traits::FromPrimitive;
+
+        let jan_opt = Month::from_u32(1);
+        let feb_opt = Month::from_u64(2);
+        let dec_opt = Month::from_i64(12);
+        let no_month = Month::from_u32(13);
+        assert_eq!(jan_opt, Some(Month::January));
+        assert_eq!(feb_opt, Some(Month::February));
+        assert_eq!(dec_opt, Some(Month::December));
+        assert_eq!(no_month, None);
+
+        let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11);
+        assert_eq!(Month::from_u32(date.month()), Some(Month::October));
+
+        let month = Month::January;
+        let dt = Utc.ymd(2019, month.number_from_month(), 28).and_hms(9, 10, 11);
+        assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
+    }
 
     #[test]
     fn test_month_enum_succ_pred() {

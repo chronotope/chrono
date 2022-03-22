@@ -1906,6 +1906,33 @@ mod tests {
     use std::{i32, u32};
 
     #[test]
+    fn test_readme_doomsday() {
+        use num_iter::range_inclusive;
+
+        for y in range_inclusive(MIN_DATE.year(), MAX_DATE.year()) {
+            // even months
+            let d4 = NaiveDate::from_ymd(y, 4, 4);
+            let d6 = NaiveDate::from_ymd(y, 6, 6);
+            let d8 = NaiveDate::from_ymd(y, 8, 8);
+            let d10 = NaiveDate::from_ymd(y, 10, 10);
+            let d12 = NaiveDate::from_ymd(y, 12, 12);
+
+            // nine to five, seven-eleven
+            let d59 = NaiveDate::from_ymd(y, 5, 9);
+            let d95 = NaiveDate::from_ymd(y, 9, 5);
+            let d711 = NaiveDate::from_ymd(y, 7, 11);
+            let d117 = NaiveDate::from_ymd(y, 11, 7);
+
+            // "March 0"
+            let d30 = NaiveDate::from_ymd(y, 3, 1).pred();
+
+            let weekday = d30.weekday();
+            let other_dates = [d4, d6, d8, d10, d12, d59, d95, d711, d117];
+            assert!(other_dates.iter().all(|d| d.weekday() == weekday));
+        }
+    }
+
+    #[test]
     fn test_date_from_ymd() {
         let ymd_opt = NaiveDate::from_ymd_opt;
 
