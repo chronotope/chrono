@@ -17,16 +17,18 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(any(target_arch = "wasm32", target_env = "sgx"))]
-#[path = "sys/stub.rs"]
+#[path = "stub.rs"]
 mod inner;
 
 #[cfg(all(unix, not(target_arch = "wasm32"), not(target_env = "sgx")))]
-#[path = "sys/unix.rs"]
+#[path = "unix.rs"]
 mod inner;
 
 #[cfg(all(windows, not(target_arch = "wasm32"), not(target_env = "sgx")))]
-#[path = "sys/windows.rs"]
+#[path = "windows.rs"]
 mod inner;
+
+use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 
 /// A record specifying a time value in seconds and nanoseconds, where
 /// nanoseconds represent the offset from the given second.
@@ -61,7 +63,7 @@ impl Timespec {
             tm_utcoff: 0,
             tm_nsec: 0,
         };
-        inner::time_to_local_tm(self.sec, &mut tm);
+        time_to_local_tm(self.sec, &mut tm);
         tm.tm_nsec = self.nsec;
         tm
     }
@@ -118,8 +120,8 @@ impl Tm {
     /// Convert time to the seconds from January 1, 1970
     pub(crate) fn to_timespec(&self) -> Timespec {
         let sec = match self.tm_utcoff {
-            0 => inner::utc_tm_to_time(self),
-            _ => inner::local_tm_to_time(self),
+            0 => utc_tm_to_time(self),
+            _ => local_tm_to_time(self),
         };
         Timespec { sec: sec, nsec: self.tm_nsec }
     }
