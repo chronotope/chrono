@@ -177,9 +177,9 @@ type Fmt<'a> = Vec<Item<'a>>;
 #[cfg(not(feature = "unstable-locales"))]
 type Fmt<'a> = &'static [Item<'static>];
 
-static D_FMT: &'static [Item<'static>] =
+static D_FMT: &[Item<'static>] =
     &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-static D_T_FMT: &'static [Item<'static>] = &[
+static D_T_FMT: &[Item<'static>] = &[
     fix!(ShortWeekdayName),
     sp!(" "),
     fix!(ShortMonthName),
@@ -194,8 +194,7 @@ static D_T_FMT: &'static [Item<'static>] = &[
     sp!(" "),
     num0!(Year),
 ];
-static T_FMT: &'static [Item<'static>] =
-    &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -227,18 +226,12 @@ impl<'a> StrftimeItems<'a> {
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
         let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
 
-        StrftimeItems {
-            remainder: s,
-            recons: Vec::new(),
-            d_fmt: d_fmt,
-            d_t_fmt: d_t_fmt,
-            t_fmt: t_fmt,
-        }
+        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
     }
 
     #[cfg(not(feature = "unstable-locales"))]
     fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
-        static FMT_NONE: &'static [Item<'static>; 0] = &[];
+        static FMT_NONE: &[Item<'static>; 0] = &[];
 
         StrftimeItems {
             remainder: s,
@@ -261,7 +254,7 @@ impl<'a> StrftimeItems<'a> {
     }
 }
 
-const HAVE_ALTERNATES: &'static str = "z";
+const HAVE_ALTERNATES: &str = "z";
 
 impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;

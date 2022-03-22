@@ -65,7 +65,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> sys::Timespec {
         tm_wday: 0,                // to_local ignores this
         tm_yday: 0,                // and this
         tm_isdst: -1,
-        tm_utcoff: tm_utcoff,
+        tm_utcoff,
         // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
         tm_nsec: 0,
     };

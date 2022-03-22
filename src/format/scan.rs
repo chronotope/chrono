@@ -14,7 +14,7 @@ use crate::Weekday;
 /// Assumes that the `pattern` is already converted to lower case.
 fn equals(s: &str, pattern: &str) -> bool {
     let mut xs = s.as_bytes().iter().map(|&c| match c {
-        b'A'...b'Z' => c + 32,
+        b'A'..=b'Z' => c + 32,
         _ => c,
     });
     let mut ys = pattern.as_bytes().iter().cloned();
@@ -34,7 +34,7 @@ fn equals(s: &str, pattern: &str) -> bool {
 /// More than `max` digits are consumed up to the first `max` digits.
 /// Any number that does not fit in `i64` is an error.
 #[inline]
-pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
+pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     assert!(min <= max);
 
     // We are only interested in ascii numbers, so we can work with the `str` as bytes. We stop on
@@ -67,7 +67,7 @@ pub fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
 
 /// Tries to consume at least one digits as a fractional second.
 /// Returns the number of whole nanoseconds (0--999,999,999).
-pub fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
+pub(super) fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
     // record the number of digits consumed for later scaling.
     let origlen = s.len();
     let (s, v) = number(s, 1, 9)?;
@@ -86,7 +86,7 @@ pub fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
 
 /// Tries to consume a fixed number of digits as a fractional second.
 /// Returns the number of whole nanoseconds (0--999,999,999).
-pub fn nanosecond_fixed(s: &str, digits: usize) -> ParseResult<(&str, i64)> {
+pub(super) fn nanosecond_fixed(s: &str, digits: usize) -> ParseResult<(&str, i64)> {
     // record the number of digits consumed for later scaling.
     let (s, v) = number(s, digits, digits)?;
 
@@ -99,7 +99,7 @@ pub fn nanosecond_fixed(s: &str, digits: usize) -> ParseResult<(&str, i64)> {
 }
 
 /// Tries to parse the month index (0 through 11) with the first three ASCII letters.
-pub fn short_month0(s: &str) -> ParseResult<(&str, u8)> {
+pub(super) fn short_month0(s: &str) -> ParseResult<(&str, u8)> {
     if s.len() < 3 {
         return Err(TOO_SHORT);
     }
@@ -123,7 +123,7 @@ pub fn short_month0(s: &str) -> ParseResult<(&str, u8)> {
 }
 
 /// Tries to parse the weekday with the first three ASCII letters.
-pub fn short_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
+pub(super) fn short_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
     if s.len() < 3 {
         return Err(TOO_SHORT);
     }
@@ -143,9 +143,9 @@ pub fn short_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
 
 /// Tries to parse the month index (0 through 11) with short or long month names.
 /// It prefers long month names to short month names when both are possible.
-pub fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
+pub(super) fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
     // lowercased month names, minus first three chars
-    static LONG_MONTH_SUFFIXES: [&'static str; 12] =
+    static LONG_MONTH_SUFFIXES: [&str; 12] =
         ["uary", "ruary", "ch", "il", "", "e", "y", "ust", "tember", "ober", "ember", "ember"];
 
     let (mut s, month0) = short_month0(s)?;
@@ -161,9 +161,9 @@ pub fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
 
 /// Tries to parse the weekday with short or long weekday names.
 /// It prefers long weekday names to short weekday names when both are possible.
-pub fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
+pub(super) fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
     // lowercased weekday names, minus first three chars
-    static LONG_WEEKDAY_SUFFIXES: [&'static str; 7] =
+    static LONG_WEEKDAY_SUFFIXES: [&str; 7] =
         ["day", "sday", "nesday", "rsday", "day", "urday", "day"];
 
     let (mut s, weekday) = short_weekday(s)?;
@@ -178,7 +178,7 @@ pub fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
 }
 
 /// Tries to consume exactly one given character.
-pub fn char(s: &str, c1: u8) -> ParseResult<&str> {
+pub(super) fn char(s: &str, c1: u8) -> ParseResult<&str> {
     match s.as_bytes().first() {
         Some(&c) if c == c1 => Ok(&s[1..]),
         Some(_) => Err(INVALID),
@@ -187,7 +187,7 @@ pub fn char(s: &str, c1: u8) -> ParseResult<&str> {
 }
 
 /// Tries to consume one or more whitespace.
-pub fn space(s: &str) -> ParseResult<&str> {
+pub(super) fn space(s: &str) -> ParseResult<&str> {
     let s_ = s.trim_left();
     if s_.len() < s.len() {
         Ok(s_)
@@ -199,7 +199,7 @@ pub fn space(s: &str) -> ParseResult<&str> {
 }
 
 /// Consumes any number (including zero) of colon or spaces.
-pub fn colon_or_space(s: &str) -> ParseResult<&str> {
+pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_left_matches(|c: char| c == ':' || c.is_whitespace()))
 }
 
@@ -207,7 +207,7 @@ pub fn colon_or_space(s: &str) -> ParseResult<&str> {
 ///
 /// The additional `colon` may be used to parse a mandatory or optional `:`
 /// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
-pub fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
+pub(super) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
@@ -240,7 +240,7 @@ where
 
     // hours (00--99)
     let hours = match digits(s)? {
-        (h1 @ b'0'...b'9', h2 @ b'0'...b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
+        (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
         _ => return Err(INVALID),
     };
     s = &s[2..];
@@ -252,8 +252,8 @@ where
     // if the next two items are digits then we have to add minutes
     let minutes = if let Ok(ds) = digits(s) {
         match ds {
-            (m1 @ b'0'...b'5', m2 @ b'0'...b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
-            (b'6'...b'9', b'0'...b'9') => return Err(OUT_OF_RANGE),
+            (m1 @ b'0'..=b'5', m2 @ b'0'..=b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
+            (b'6'..=b'9', b'0'..=b'9') => return Err(OUT_OF_RANGE),
             _ => return Err(INVALID),
         }
     } else if allow_missing_minutes {
@@ -272,7 +272,7 @@ where
 }
 
 /// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as `+00:00`.
-pub fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
+pub(super) fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
@@ -296,7 +296,7 @@ where
 
 /// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as
 /// `+00:00`, and allows missing minutes entirely.
-pub fn timezone_offset_permissive<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
+pub(super) fn timezone_offset_permissive<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
@@ -308,13 +308,13 @@ where
 
 /// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
 /// May return `None` which indicates an insufficient offset data (i.e. `-0000`).
-pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
+pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names
     let upto = s
         .as_bytes()
         .iter()
         .position(|&c| match c {
-            b'a'...b'z' | b'A'...b'Z' => false,
+            b'a'..=b'z' | b'A'..=b'Z' => false,
             _ => true,
         })
         .unwrap_or(s.len());
@@ -345,6 +345,6 @@ pub fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
 
 /// Tries to consume everyting until next whitespace-like symbol.
 /// Does not provide any offset information from the consumed data.
-pub fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
+pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
     Ok((s.trim_left_matches(|c: char| !c.is_whitespace()), ()))
 }

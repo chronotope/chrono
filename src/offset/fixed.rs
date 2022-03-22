@@ -3,13 +3,13 @@
 
 //! The time zone which has a fixed offset from UTC.
 
-use crate::oldtime::Duration as OldDuration;
 use core::fmt;
 use core::ops::{Add, Sub};
+use num_integer::div_mod_floor;
 
 use super::{LocalResult, Offset, TimeZone};
-use crate::div::div_mod_floor;
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::Timelike;
 

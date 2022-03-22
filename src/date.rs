@@ -68,7 +68,7 @@ impl<Tz: TimeZone> Date<Tz> {
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     pub fn from_utc(date: NaiveDate, offset: Tz::Offset) -> Date<Tz> {
-        Date { date: date, offset: offset }
+        Date { date, offset }
     }
 
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
@@ -234,7 +234,7 @@ impl<Tz: TimeZone> Date<Tz> {
     #[inline]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
         let date = try_opt!(self.date.checked_add_signed(rhs));
-        Some(Date { date: date, offset: self.offset })
+        Some(Date { date, offset: self.offset })
     }
 
     /// Subtracts given `Duration` from the current date.
@@ -243,7 +243,7 @@ impl<Tz: TimeZone> Date<Tz> {
     #[inline]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
         let date = try_opt!(self.date.checked_sub_signed(rhs));
-        Some(Date { date: date, offset: self.offset })
+        Some(Date { date, offset: self.offset })
     }
 
     /// Subtracts another `Date` from the current date.
