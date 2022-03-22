@@ -422,6 +422,7 @@
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
+#![warn(unreachable_pub)]
 #![deny(dead_code)]
 // lints are added all the time, we test on 1.13
 #![allow(unknown_lints)]
@@ -652,7 +653,7 @@ impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
 }
 
 mod weekday;
-pub use weekday::{Weekday, ParseWeekdayError};
+pub use weekday::{ParseWeekdayError, Weekday};
 
 /// The month of the year.
 ///

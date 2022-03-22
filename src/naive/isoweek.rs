@@ -27,7 +27,7 @@ pub struct IsoWeek {
 // because the year range for the week date and the calendar date do not match and
 // it is confusing to have a date that is out of range in one and not in another.
 // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-pub fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
+pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
     let (rawweek, _) = of.isoweekdate_raw();
     let (year, week) = if rawweek < 1 {
         // previous year

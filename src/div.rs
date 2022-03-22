@@ -7,7 +7,7 @@
 // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
 // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
 
-pub use num_integer::{div_floor, div_mod_floor, div_rem, mod_floor};
+pub(super) use num_integer::{div_floor, div_mod_floor, div_rem, mod_floor};
 
 #[cfg(test)]
 mod tests {

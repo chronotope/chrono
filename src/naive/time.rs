@@ -16,8 +16,9 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::Timelike;
 
-pub const MIN_TIME: NaiveTime = NaiveTime { secs: 0, frac: 0 };
-pub const MAX_TIME: NaiveTime = NaiveTime { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
+pub(super) const MIN_TIME: NaiveTime = NaiveTime { secs: 0, frac: 0 };
+pub(super) const MAX_TIME: NaiveTime =
+    NaiveTime { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.

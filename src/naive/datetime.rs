@@ -1641,7 +1641,7 @@ where
 }
 
 #[cfg(feature = "rustc-serialize")]
-pub mod rustc_serialize {
+pub(super) mod rustc_serialize {
     use super::NaiveDateTime;
     use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
     use std::ops::Deref;
@@ -1717,7 +1717,7 @@ pub mod rustc_serialize {
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
-pub mod serde {
+pub(super) mod serde {
     use super::NaiveDateTime;
     use core::fmt;
     use serdelib::{de, ser};

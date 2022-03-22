@@ -1082,7 +1082,7 @@ fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(
 }
 
 #[cfg(feature = "rustc-serialize")]
-pub mod rustc_serialize {
+pub(super) mod rustc_serialize {
     use super::DateTime;
     #[cfg(feature = "clock")]
     use crate::offset::Local;
@@ -1209,7 +1209,7 @@ pub mod rustc_serialize {
 
 /// documented at re-export site
 #[cfg(feature = "serde")]
-pub mod serde {
+pub(super) mod serde {
     use super::DateTime;
     #[cfg(feature = "clock")]
     use crate::offset::Local;
