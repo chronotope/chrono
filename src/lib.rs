@@ -472,23 +472,6 @@ use doc_comment::doctest;
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 doctest!("../README.md");
 
-pub use date::{Date, MAX_DATE, MIN_DATE};
-#[cfg(feature = "rustc-serialize")]
-pub use datetime::rustc_serialize::TsSeconds;
-pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
-/// L10n locales.
-#[cfg(feature = "unstable-locales")]
-pub use format::Locale;
-pub use format::{ParseError, ParseResult};
-#[doc(no_inline)]
-pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
-#[cfg(feature = "clock")]
-#[doc(no_inline)]
-pub use offset::Local;
-#[doc(no_inline)]
-pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
-pub use round::{DurationRound, RoundingError, SubsecRound};
-
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
     #[doc(no_inline)]
@@ -524,11 +507,41 @@ macro_rules! try_opt {
 }
 
 mod date;
+pub use date::{Date, MAX_DATE, MIN_DATE};
+
 mod datetime;
+#[cfg(feature = "rustc-serialize")]
+pub use datetime::rustc_serialize::TsSeconds;
+pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+
 pub mod format;
+/// L10n locales.
+#[cfg(feature = "unstable-locales")]
+pub use format::Locale;
+pub use format::{ParseError, ParseResult};
+
 pub mod naive;
+#[doc(no_inline)]
+pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+
 pub mod offset;
+#[cfg(feature = "clock")]
+#[doc(no_inline)]
+pub use offset::Local;
+#[doc(no_inline)]
+pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+
 mod round;
+pub use round::{DurationRound, RoundingError, SubsecRound};
+
+mod weekday;
+pub use weekday::{ParseWeekdayError, Weekday};
+
+mod month;
+pub use month::{Month, ParseMonthError};
+
+mod traits;
+pub use traits::{Datelike, Timelike};
 
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]
@@ -546,12 +559,3 @@ pub use naive::__BenchYearFlags;
 pub mod serde {
     pub use super::datetime::serde::*;
 }
-
-mod weekday;
-pub use weekday::{ParseWeekdayError, Weekday};
-
-mod month;
-pub use month::{Month, ParseMonthError};
-
-mod traits;
-pub use traits::{Datelike, Timelike};
