@@ -22,6 +22,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Change `Local::now()` and `Utc::now()` documentation from "current date" to "current date and time" (#647)
 * Fix `duration_round` panic on rounding by `Duration::zero()` (#658)
 * Add optional rkyv support.
+* Add support for microseconds timestamps serde serialization for `NaiveDateTime`.
 
 ## 0.4.19
 
