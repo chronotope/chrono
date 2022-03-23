@@ -66,7 +66,7 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 /// # extern crate serde_json;
 /// # extern crate serde;
 /// # extern crate chrono;
-/// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
+/// # use chrono::{NaiveDate, NaiveDateTime};
 /// use chrono::naive::serde::ts_nanoseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -110,7 +110,7 @@ pub mod ts_nanoseconds {
     /// # #[macro_use] extern crate serde_json;
     /// # #[macro_use] extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
+    /// # use chrono::{NaiveDate, NaiveDateTime};
     /// # use serde::Serialize;
     /// use chrono::naive::serde::ts_nanoseconds::serialize as to_nano_ts;
     /// #[derive(Serialize)]
@@ -151,7 +151,7 @@ pub mod ts_nanoseconds {
     /// # #[macro_use] extern crate serde_json;
     /// # extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{NaiveDateTime, Utc};
+    /// # use chrono::NaiveDateTime;
     /// # use serde::Deserialize;
     /// use chrono::naive::serde::ts_nanoseconds::deserialize as from_nano_ts;
     /// #[derive(Deserialize)]
@@ -216,7 +216,7 @@ pub mod ts_nanoseconds {
 /// # extern crate serde_json;
 /// # extern crate serde;
 /// # extern crate chrono;
-/// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
+/// # use chrono::{NaiveDate, NaiveDateTime};
 /// use chrono::naive::serde::ts_milliseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -260,7 +260,7 @@ pub mod ts_milliseconds {
     /// # #[macro_use] extern crate serde_json;
     /// # #[macro_use] extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
+    /// # use chrono::{NaiveDate, NaiveDateTime};
     /// # use serde::Serialize;
     /// use chrono::naive::serde::ts_milliseconds::serialize as to_milli_ts;
     /// #[derive(Serialize)]
@@ -301,7 +301,7 @@ pub mod ts_milliseconds {
     /// # #[macro_use] extern crate serde_json;
     /// # extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{NaiveDateTime, Utc};
+    /// # use chrono::NaiveDateTime;
     /// # use serde::Deserialize;
     /// use chrono::naive::serde::ts_milliseconds::deserialize as from_milli_ts;
     /// #[derive(Deserialize)]
@@ -366,7 +366,7 @@ pub mod ts_milliseconds {
 /// # extern crate serde_json;
 /// # extern crate serde;
 /// # extern crate chrono;
-/// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
+/// # use chrono::{NaiveDate, NaiveDateTime};
 /// use chrono::naive::serde::ts_seconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -410,7 +410,7 @@ pub mod ts_seconds {
     /// # #[macro_use] extern crate serde_json;
     /// # #[macro_use] extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
+    /// # use chrono::{NaiveDate, NaiveDateTime};
     /// # use serde::Serialize;
     /// use chrono::naive::serde::ts_seconds::serialize as to_ts;
     /// #[derive(Serialize)]
@@ -451,7 +451,7 @@ pub mod ts_seconds {
     /// # #[macro_use] extern crate serde_json;
     /// # extern crate serde;
     /// # extern crate chrono;
-    /// # use chrono::{NaiveDateTime, Utc};
+    /// # use chrono::NaiveDateTime;
     /// # use serde::Deserialize;
     /// use chrono::naive::serde::ts_seconds::deserialize as from_ts;
     /// #[derive(Deserialize)]
