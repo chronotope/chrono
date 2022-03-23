@@ -12,7 +12,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-16.04, ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-18.04, ubuntu-latest, macos-latest, windows-latest]
         rust_version: [stable]
         include:
         # check all tzs on most-recent OS's
@@ -30,11 +30,12 @@ jobs:
           rust_version: beta
         - os: ubuntu-latest
           rust_version: nightly
-        - os: ubuntu-16.04
-          rust_version: 1.13.0
+        - os: ubuntu-18.04
+          rust_version: 1.32.0
         - os: macos-latest
-          rust_version: 1.13.0
-          # time doesn't work on windows with 1.13
+          rust_version: 1.32.0
+        - os: windows-latest
+          rust_version: 1.32.0
 
     runs-on: ${{ matrix.os }}
 
@@ -46,6 +47,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build and Test
         run: bash ci/github.sh
@@ -69,6 +71,7 @@ jobs:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build no_std lib
         run: cargo build --target thumbv6m-none-eabi --color=always
@@ -90,6 +93,7 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install node
         uses: actions/setup-node@v1
