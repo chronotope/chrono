@@ -95,7 +95,7 @@ pub mod ts_nanoseconds {
     use super::ne_timestamp;
     use crate::NaiveDateTime;
 
-    /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
+    /// Serialize a datetime into an integer number of nanoseconds since the epoch
     ///
     /// Intended for use with `serde`s `serialize_with` attribute.
     ///
@@ -136,7 +136,7 @@ pub mod ts_nanoseconds {
         serializer.serialize_i64(dt.timestamp_nanos())
     }
 
-    /// Deserialize a `DateTime` from a nanoseconds timestamp
+    /// Deserialize a `NaiveDateTime` from a nanoseconds timestamp
     ///
     /// Intended for use with `serde`s `deserialize_with` attribute.
     ///
@@ -245,7 +245,7 @@ pub mod ts_milliseconds {
     use super::ne_timestamp;
     use crate::NaiveDateTime;
 
-    /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
+    /// Serialize a datetime into an integer number of milliseconds since the epoch
     ///
     /// Intended for use with `serde`s `serialize_with` attribute.
     ///
@@ -286,7 +286,7 @@ pub mod ts_milliseconds {
         serializer.serialize_i64(dt.timestamp_millis())
     }
 
-    /// Deserialize a `DateTime` from a milliseconds timestamp
+    /// Deserialize a `NaiveDateTime` from a milliseconds timestamp
     ///
     /// Intended for use with `serde`s `deserialize_with` attribute.
     ///
@@ -395,7 +395,7 @@ pub mod ts_seconds {
     use super::ne_timestamp;
     use crate::NaiveDateTime;
 
-    /// Serialize a UTC datetime into an integer number of seconds since the epoch
+    /// Serialize a datetime into an integer number of seconds since the epoch
     ///
     /// Intended for use with `serde`s `serialize_with` attribute.
     ///
@@ -436,7 +436,7 @@ pub mod ts_seconds {
         serializer.serialize_i64(dt.timestamp())
     }
 
-    /// Deserialize a `DateTime` from a seconds timestamp
+    /// Deserialize a `NaiveDateTime` from a seconds timestamp
     ///
     /// Intended for use with `serde`s `deserialize_with` attribute.
     ///

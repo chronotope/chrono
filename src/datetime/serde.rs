@@ -262,7 +262,7 @@ pub mod ts_nanoseconds {
     }
 }
 
-/// Ser/de to/from timestamps in nanoseconds
+/// Ser/de to/from optional timestamps in nanoseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
@@ -392,7 +392,7 @@ pub mod ts_nanoseconds_option {
             formatter.write_str("a unix timestamp in nanoseconds or none")
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in nanoseconds since the epoch
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -400,7 +400,7 @@ pub mod ts_nanoseconds_option {
             d.deserialize_i64(NanoSecondsTimestampVisitor).map(Some)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in nanoseconds since the epoch
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -408,7 +408,7 @@ pub mod ts_nanoseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in nanoseconds since the epoch
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -696,7 +696,7 @@ pub mod ts_microseconds_option {
             formatter.write_str("a unix timestamp in microseconds or none")
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -704,7 +704,7 @@ pub mod ts_microseconds_option {
             d.deserialize_i64(MicroSecondsTimestampVisitor).map(Some)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -712,7 +712,7 @@ pub mod ts_microseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1010,7 +1010,7 @@ pub mod ts_milliseconds_option {
             formatter.write_str("a unix timestamp in milliseconds or none")
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in milliseconds since the epoch
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -1018,7 +1018,7 @@ pub mod ts_milliseconds_option {
             d.deserialize_i64(MilliSecondsTimestampVisitor).map(Some)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in milliseconds since the epoch
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1026,7 +1026,7 @@ pub mod ts_milliseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in milliseconds since the epoch
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
