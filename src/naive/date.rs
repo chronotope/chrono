@@ -3,22 +3,23 @@
 
 //! ISO 8601 calendar date without timezone.
 
-use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
+
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
+use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Weekday};
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;

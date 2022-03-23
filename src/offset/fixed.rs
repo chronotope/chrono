@@ -5,15 +5,16 @@
 
 use core::fmt;
 use core::ops::{Add, Sub};
+
 use num_integer::div_mod_floor;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::Timelike;
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///

@@ -10,6 +10,8 @@ use core::{fmt, str};
 
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
@@ -20,8 +22,6 @@ use crate::naive::time::{MAX_TIME, MIN_TIME};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Timelike, Weekday};
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
