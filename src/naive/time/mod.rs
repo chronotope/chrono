@@ -7,7 +7,10 @@
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
+
 use num_integer::div_mod_floor;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
@@ -15,8 +18,6 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::oldtime::Duration as OldDuration;
 use crate::Timelike;
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize;

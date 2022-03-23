@@ -3,12 +3,14 @@
 
 //! ISO 8601 calendar date with time zone.
 
-use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, Sub};
 use core::{fmt, hash};
+
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
@@ -16,10 +18,10 @@ use crate::format::Locale;
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{self, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
+use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::{Datelike, Weekday};
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
+
 /// ISO 8601 calendar date with time zone.
 ///
 /// You almost certainly want to be using a [`NaiveDate`] instead of this type.
