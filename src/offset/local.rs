@@ -37,7 +37,7 @@ use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 mod tz_localtime {
     use super::*;
     use crate::{Datelike, Duration, NaiveTime};
-    use std::path;
+    use std::{env, path};
     use tz::{error, timezone};
 
     const LOCALTIME_LOCATION: &str = "/etc/localtime";
@@ -230,7 +230,7 @@ mod tz_localtime {
             let local = DateTime::<Local>::from_utc(base.naive_local(), current_offset);
             Ok(local)
         } else {
-            // no file found, tz assumed to be UTC.
+            // error while getting tz, tz assumed to be UTC.
             Ok(utc_now())
         }
     }
@@ -243,14 +243,23 @@ mod tz_localtime {
         }
     }
 
+    fn get_local_tz() -> Result<tz::TimeZone, error::TzError> {
+        if let Ok(tz_val) = env::var("TZ") {
+            timezone::TimeZone::from_posix_tz(&tz_val)
+        } else if path::Path::new(LOCALTIME_LOCATION).exists() {
+            timezone::TimeZone::local()
+        } else {
+            Ok(tz::TimeZone::utc())
+        }
+    }
+
     fn try_from_utc(utc: NaiveDateTime) -> Result<DateTime<Local>, error::TzError> {
-        if path::Path::new(LOCALTIME_LOCATION).exists() {
-            let tz = timezone::TimeZone::local()?;
+        if let Ok(tz) = get_local_tz() {
             let current_offset = current_offset(&tz, DateTime::from_utc(utc, Utc))?;
             let local = DateTime::<Local>::from_utc(utc, current_offset);
             Ok(local)
         } else {
-            // no file found, tz assumed to be UTC.
+            // error while getting tz, tz assumed to be UTC.
             let local = DateTime::<Local>::from_utc(utc, FixedOffset::east(0));
             Ok(local)
         }
@@ -264,9 +273,7 @@ mod tz_localtime {
     }
 
     fn try_from_local(local: NaiveDateTime) -> Result<DateTime<Local>, error::TzError> {
-        if path::Path::new(LOCALTIME_LOCATION).exists() {
-            let tz = timezone::TimeZone::local()?;
-
+        if let Ok(tz) = get_local_tz() {
             let relevant_offset = offset_from_local(&tz, local)?;
 
             let local = DateTime::<Local>::from_utc(local - relevant_offset, relevant_offset);
@@ -573,12 +580,11 @@ mod tests {
     use crate::offset::TimeZone;
     use crate::{Datelike, Duration, NaiveDate};
 
-    use std::process;
+    use std::{path, process};
 
-    #[test]
     #[cfg(unix)]
-    fn verify_against_date_command() {
-        let output = process::Command::new("/usr/bin/date")
+    fn verify_against_date_command(path: path::PathBuf) {
+        let output = process::Command::new(path)
             .arg("-d")
             .arg("2021-03-05 22:05:01")
             .arg("+%Y-%m-%d %H:%M:%S %:z")
@@ -591,6 +597,17 @@ mod tests {
             Local.from_local_datetime(&NaiveDate::from_ymd(2021, 3, 5).and_hms(22, 5, 1)).unwrap();
 
         assert_eq!(format!("{}\n", local), date_command_str)
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn try_verify_against_date_command() {
+        for date_path in ["/usr/bin/date", "/bin/date"] {
+            if path::Path::new(date_path).exists() {
+                verify_against_date_command(date_path.into())
+            }
+        }
+        // date command not found, skipping
     }
 
     #[test]
