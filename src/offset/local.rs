@@ -58,16 +58,21 @@ mod tz_localtime {
     ) -> Result<FixedOffset, error::TzError> {
         // ignoring extra rules for now
         // also its not clear whether the given `local` includes or doesn't include leap seconds?
-
         // get the last transition time
-        let last = tz
-            .as_ref()
-            .transitions()
-            .last()
-            .ok_or(error::OutOfRangeError("No available transition times"))?;
-        let last_local_time_type = tz.as_ref().local_time_types()[last.local_time_type_index()];
-        // if we are later than the last transition, then we must try to use the extra rule
-        if last.unix_leap_time() + i64::from(last_local_time_type.ut_offset()) < local.timestamp() {
+        let last = tz.as_ref().transitions().last();
+
+        // if there is no transitions, or if we are later than the last transition,
+        // then we must try to use the extra rule(s)
+        if last
+            .map(|last_tt| {
+                last_tt.unix_leap_time()
+                    + i64::from(
+                        tz.as_ref().local_time_types()[last_tt.local_time_type_index()].ut_offset(),
+                    )
+                    < local.timestamp()
+            })
+            .unwrap_or(true)
+        {
             match tz.as_ref().extra_rule() {
                 Some(timezone::TransitionRule::Fixed(fix)) => {
                     return Ok(FixedOffset::east(fix.ut_offset()));
@@ -109,7 +114,7 @@ mod tz_localtime {
             }
         }
 
-        // otherwise we go throuhg all of the local times
+        // otherwise we go through all of the local times
         let mut prev_offset = None;
         for tt in tz.as_ref().transitions() {
             let local_offset = tz.as_ref().local_time_types()[tt.local_time_type_index()];
@@ -223,9 +228,8 @@ mod tz_localtime {
     }
 
     fn try_now() -> Result<DateTime<Local>, error::TzError> {
-        if path::Path::new(LOCALTIME_LOCATION).exists() {
+        if let Ok(tz) = get_local_tz() {
             let base = Utc::now();
-            let tz = timezone::TimeZone::local()?;
             let current_offset = current_offset(&tz, base)?;
             let local = DateTime::<Local>::from_utc(base.naive_local(), current_offset);
             Ok(local)
@@ -249,6 +253,7 @@ mod tz_localtime {
         } else if path::Path::new(LOCALTIME_LOCATION).exists() {
             timezone::TimeZone::local()
         } else {
+            eprintln!("Falling back to UTC as no TZ env var or /etc/localtime is available");
             Ok(tz::TimeZone::utc())
         }
     }
@@ -260,6 +265,7 @@ mod tz_localtime {
             Ok(local)
         } else {
             // error while getting tz, tz assumed to be UTC.
+            eprintln!("Error while determining local time zone, falling back to UTC");
             let local = DateTime::<Local>::from_utc(utc, FixedOffset::east(0));
             Ok(local)
         }
@@ -281,6 +287,7 @@ mod tz_localtime {
             Ok(local)
         } else {
             // no file found, tz assumed to be UTC.
+            eprintln!("Error while determining local time zone, falling back to UTC");
             Ok(utc_from_local(local))
         }
     }
@@ -289,7 +296,7 @@ mod tz_localtime {
         match try_from_local(local) {
             Ok(n) => n,
             // #TODO: could use log/tracing to have a warning show here
-            Err(_) => utc_from_local(local),
+            Err(e) => panic!("Unable to calculate local time offset due to: {}", e),
         }
     }
 }
@@ -615,6 +622,7 @@ mod tests {
         let now = Local::now();
         let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&now.naive_utc());
+
         assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
