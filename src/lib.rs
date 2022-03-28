@@ -173,8 +173,6 @@
 //! The following illustrates most supported operations to the date and time:
 //!
 //! ```rust
-//! # extern crate chrono;
-//!
 //! # fn main() {
 //! use chrono::prelude::*;
 //! use chrono::Duration;

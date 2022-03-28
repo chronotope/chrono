@@ -878,7 +878,7 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
+    /// # fn main() {
     /// use chrono::{Duration, NaiveDate};
     /// use chrono::naive::MAX_DATE;
     ///
@@ -912,7 +912,7 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
+    /// # fn main() {
     /// use chrono::{Duration, NaiveDate};
     /// use chrono::naive::MIN_DATE;
     ///
@@ -948,7 +948,7 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
+    /// # fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
@@ -1454,7 +1454,7 @@ impl Datelike for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
+/// # fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1495,7 +1495,7 @@ impl AddAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
+/// # fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1538,7 +1538,7 @@ impl SubAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
+/// # fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;

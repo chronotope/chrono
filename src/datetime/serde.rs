@@ -119,14 +119,8 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -164,14 +158,8 @@ pub mod ts_nanoseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds::serialize as to_nano_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -203,14 +191,8 @@ pub mod ts_nanoseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_nanoseconds::deserialize as from_nano_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -269,14 +251,8 @@ pub mod ts_nanoseconds {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -313,14 +289,8 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds_option::serialize as to_nano_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -355,14 +325,8 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_nanoseconds_option::deserialize as from_nano_tsopt;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -425,14 +389,8 @@ pub mod ts_nanoseconds_option {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -469,14 +427,8 @@ pub mod ts_microseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds::serialize as to_micro_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -508,14 +460,8 @@ pub mod ts_microseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_microseconds::deserialize as from_micro_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -574,14 +520,8 @@ pub mod ts_microseconds {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -617,14 +557,8 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds_option::serialize as to_micro_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -659,14 +593,8 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_microseconds_option::deserialize as from_micro_tsopt;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -729,14 +657,8 @@ pub mod ts_microseconds_option {
 /// # Example
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -773,14 +695,8 @@ pub mod ts_milliseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds::serialize as to_milli_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -812,14 +728,8 @@ pub mod ts_milliseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_milliseconds::deserialize as from_milli_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -875,14 +785,8 @@ pub mod ts_milliseconds {
 /// # Example
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -918,14 +822,8 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds_option::serialize as to_milli_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -960,14 +858,8 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
-    /// # use chrono::prelude::*;
+    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
     ///
     /// #[derive(Deserialize, PartialEq, Debug)]
@@ -1043,14 +935,8 @@ pub mod ts_milliseconds_option {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_seconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -1087,14 +973,8 @@ pub mod ts_seconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_seconds::serialize as to_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -1126,14 +1006,8 @@ pub mod ts_seconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_seconds::deserialize as from_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -1186,14 +1060,8 @@ pub mod ts_seconds {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_seconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -1229,14 +1097,8 @@ pub mod ts_seconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_seconds_option::serialize as to_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -1271,14 +1133,8 @@ pub mod ts_seconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_seconds_option::deserialize as from_tsopt;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -1334,23 +1190,18 @@ pub mod ts_seconds_option {
     }
 }
 
-#[cfg(test)]
-extern crate bincode;
-#[cfg(test)]
-extern crate serde_json;
-
 #[test]
 fn test_serde_serialize() {
-    super::test_encodable_json(self::serde_json::to_string, self::serde_json::to_string);
+    super::test_encodable_json(serde_json::to_string, serde_json::to_string);
 }
 
 #[cfg(feature = "clock")]
 #[test]
 fn test_serde_deserialize() {
     super::test_decodable_json(
-        |input| self::serde_json::from_str(input),
-        |input| self::serde_json::from_str(input),
-        |input| self::serde_json::from_str(input),
+        |input| serde_json::from_str(input),
+        |input| serde_json::from_str(input),
+        |input| serde_json::from_str(input),
     );
 }
 
@@ -1358,7 +1209,7 @@ fn test_serde_deserialize() {
 fn test_serde_bincode() {
     // Bincode is relevant to test separately from JSON because
     // it is not self-describing.
-    use self::bincode::{deserialize, serialize, Infinite};
+    use bincode::{deserialize, serialize, Infinite};
 
     let dt = Utc.ymd(2014, 7, 24).and_hms(12, 34, 6);
     let encoded = serialize(&dt, Infinite).unwrap();
