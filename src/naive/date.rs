@@ -878,7 +878,6 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # fn main() {
     /// use chrono::{Duration, NaiveDate};
     /// use chrono::naive::MAX_DATE;
     ///
@@ -890,7 +889,6 @@ impl NaiveDate {
     /// assert_eq!(d.checked_add_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_add_signed(Duration::days(-1_000_000_000)), None);
     /// assert_eq!(MAX_DATE.checked_add_signed(Duration::days(1)), None);
-    /// # }
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
@@ -912,7 +910,6 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # fn main() {
     /// use chrono::{Duration, NaiveDate};
     /// use chrono::naive::MIN_DATE;
     ///
@@ -924,7 +921,6 @@ impl NaiveDate {
     /// assert_eq!(d.checked_sub_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_sub_signed(Duration::days(-1_000_000_000)), None);
     /// assert_eq!(MIN_DATE.checked_sub_signed(Duration::days(1)), None);
-    /// # }
     /// ```
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
@@ -948,7 +944,6 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
@@ -961,7 +956,6 @@ impl NaiveDate {
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)), Duration::days(365));
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)), Duration::days(365*4 + 1));
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), Duration::days(365*400 + 97));
-    /// # }
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDate) -> OldDuration {
         let year1 = self.year();
@@ -1454,7 +1448,6 @@ impl Datelike for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1467,7 +1460,6 @@ impl Datelike for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(364),          from_ymd(2014, 12, 31));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*4 + 1),    from_ymd(2018, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*400 + 97), from_ymd(2414, 1, 1));
-/// # }
 /// ```
 impl Add<OldDuration> for NaiveDate {
     type Output = NaiveDate;
@@ -1495,7 +1487,6 @@ impl AddAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1508,7 +1499,6 @@ impl AddAssign<OldDuration> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(364),          from_ymd(2013, 1, 2));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*4 + 1),    from_ymd(2010, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*400 + 97), from_ymd(1614, 1, 1));
-/// # }
 /// ```
 impl Sub<OldDuration> for NaiveDate {
     type Output = NaiveDate;
@@ -1538,7 +1528,6 @@ impl SubAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1550,7 +1539,6 @@ impl SubAssign<OldDuration> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), Duration::days(365));
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1), Duration::days(365*4 + 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1), Duration::days(365*400 + 97));
-/// # }
 /// ```
 impl Sub<NaiveDate> for NaiveDate {
     type Output = OldDuration;
