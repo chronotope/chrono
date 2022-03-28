@@ -38,12 +38,14 @@ jobs:
           rust_version: beta
         - os: ubuntu-latest
           rust_version: nightly
-        - os: ubuntu-18.04
-          rust_version: 1.32.0
-        - os: macos-latest
-          rust_version: 1.32.0
-        - os: windows-latest
-          rust_version: 1.32.0
+        
+        # Temporarily avoid these tests
+        # - os: ubuntu-18.04
+        #   rust_version: 1.32.0
+        # - os: macos-latest
+        #   rust_version: 1.32.0
+        # - os: windows-latest
+        #   rust_version: 1.32.0
 
     runs-on: ${{ matrix.os }}
 
