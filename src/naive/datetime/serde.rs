@@ -67,7 +67,6 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 ///     time: NaiveDateTime
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -77,9 +76,7 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_nanoseconds {
     use core::fmt;
@@ -104,15 +101,12 @@ pub mod ts_nanoseconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -137,11 +131,8 @@ pub mod ts_nanoseconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -196,7 +187,6 @@ pub mod ts_nanoseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -206,9 +196,7 @@ pub mod ts_nanoseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_nanoseconds_option {
     use core::fmt;
@@ -233,15 +221,12 @@ pub mod ts_nanoseconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -269,11 +254,8 @@ pub mod ts_nanoseconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -331,7 +313,6 @@ pub mod ts_nanoseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -341,9 +322,7 @@ pub mod ts_nanoseconds_option {
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_microseconds {
     use core::fmt;
@@ -368,15 +347,12 @@ pub mod ts_microseconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -401,11 +377,8 @@ pub mod ts_microseconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -463,7 +436,6 @@ pub mod ts_microseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -473,9 +445,7 @@ pub mod ts_microseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_microseconds_option {
     use core::fmt;
@@ -500,15 +470,12 @@ pub mod ts_microseconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -536,11 +503,8 @@ pub mod ts_microseconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -598,7 +562,6 @@ pub mod ts_microseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -608,9 +571,7 @@ pub mod ts_microseconds_option {
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_milliseconds {
     use core::fmt;
@@ -635,15 +596,12 @@ pub mod ts_milliseconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -668,11 +626,8 @@ pub mod ts_milliseconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -727,7 +682,6 @@ pub mod ts_milliseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -737,9 +691,7 @@ pub mod ts_milliseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_milliseconds_option {
     use core::fmt;
@@ -764,15 +716,12 @@ pub mod ts_milliseconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -800,11 +749,8 @@ pub mod ts_milliseconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -862,7 +808,6 @@ pub mod ts_milliseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = NaiveDate::from_ymd(2015, 5, 15).and_hms(10, 0, 0);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -872,9 +817,7 @@ pub mod ts_milliseconds_option {
 /// assert_eq!(as_string, r#"{"time":1431684000}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_seconds {
     use core::fmt;
@@ -899,15 +842,12 @@ pub mod ts_seconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2015, 5, 15).and_hms(10, 0, 0),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -932,11 +872,8 @@ pub mod ts_seconds {
     ///     time: NaiveDateTime
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -988,7 +925,6 @@ pub mod ts_seconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms(02, 04, 59));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -998,9 +934,7 @@ pub mod ts_seconds {
 /// assert_eq!(as_string, r#"{"time":1526522699}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_seconds_option {
     use core::fmt;
@@ -1025,15 +959,12 @@ pub mod ts_seconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms(02, 04, 59)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1061,11 +992,8 @@ pub mod ts_seconds_option {
     ///     time: Option<NaiveDateTime>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
