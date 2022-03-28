@@ -529,7 +529,6 @@ impl NaiveTime {
     /// # Example
     ///
     /// ```
-    /// # fn main() {
     /// use chrono::{Duration, NaiveTime};
     ///
     /// let from_hms = NaiveTime::from_hms;
@@ -540,7 +539,6 @@ impl NaiveTime {
     ///            (from_hms(2, 4, 5), 86_400));
     /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(-7)),
     ///            (from_hms(20, 4, 5), -86_400));
-    /// # }
     /// ```
     #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
     pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
@@ -614,7 +612,6 @@ impl NaiveTime {
     /// # Example
     ///
     /// ```
-    /// # fn main() {
     /// use chrono::{Duration, NaiveTime};
     ///
     /// let from_hms = NaiveTime::from_hms;
@@ -625,7 +622,6 @@ impl NaiveTime {
     ///            (from_hms(10, 4, 5), 86_400));
     /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(Duration::hours(-22)),
     ///            (from_hms(1, 4, 5), -86_400));
-    /// # }
     /// ```
     #[inline]
     pub fn overflowing_sub_signed(&self, rhs: OldDuration) -> (NaiveTime, i64) {
@@ -646,7 +642,6 @@ impl NaiveTime {
     /// # Example
     ///
     /// ```
-    /// # fn main() {
     /// use chrono::{Duration, NaiveTime};
     ///
     /// let from_hmsm = NaiveTime::from_hms_milli;
@@ -668,14 +663,12 @@ impl NaiveTime {
     ///            Duration::seconds(-3600));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(2, 4, 6, 800)),
     ///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
-    /// # }
     /// ```
     ///
     /// Leap seconds are handled, but the subtraction assumes that
     /// there were no other leap seconds happened.
     ///
     /// ```
-    /// # fn main() {
     /// # use chrono::{Duration, NaiveTime};
     /// # let from_hmsm = NaiveTime::from_hms_milli;
     /// # let since = NaiveTime::signed_duration_since;
@@ -689,7 +682,6 @@ impl NaiveTime {
     ///            Duration::seconds(1));
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(2, 59, 59, 1_000)),
     ///            Duration::seconds(61));
-    /// # }
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveTime) -> OldDuration {
         //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
@@ -1034,7 +1026,6 @@ impl Timelike for NaiveTime {
 /// # Example
 ///
 /// ```
-/// # fn main() {
 /// use chrono::{Duration, NaiveTime};
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
@@ -1047,25 +1038,21 @@ impl Timelike for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::milliseconds(80),        from_hmsm(3, 5, 7, 80));
 /// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::milliseconds(280),     from_hmsm(3, 5, 8, 230));
 /// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::milliseconds(-980),    from_hmsm(3, 5, 6, 970));
-/// # }
 /// ```
 ///
 /// The addition wraps around.
 ///
 /// ```
-/// # fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(22*60*60), from_hmsm(1, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(-8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::days(800),         from_hmsm(3, 5, 7, 0));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
 ///
 /// ```
-/// # fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
@@ -1076,7 +1063,6 @@ impl Timelike for NaiveTime {
 /// assert_eq!(leap + Duration::seconds(10),        from_hmsm(3, 6, 9, 300));
 /// assert_eq!(leap + Duration::seconds(-10),       from_hmsm(3, 5, 50, 300));
 /// assert_eq!(leap + Duration::days(1),            from_hmsm(3, 5, 59, 300));
-/// # }
 /// ```
 impl Add<OldDuration> for NaiveTime {
     type Output = NaiveTime;
@@ -1106,7 +1092,6 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// # Example
 ///
 /// ```
-/// # fn main() {
 /// use chrono::{Duration, NaiveTime};
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
@@ -1117,24 +1102,20 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::milliseconds(80),        from_hmsm(3, 5, 6, 920));
 /// assert_eq!(from_hmsm(3, 5, 7, 950) - Duration::milliseconds(280),     from_hmsm(3, 5, 7, 670));
-/// # }
 /// ```
 ///
 /// The subtraction wraps around.
 ///
 /// ```
-/// # fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::days(800),        from_hmsm(3, 5, 7, 0));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
 ///
 /// ```
-/// # fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
@@ -1143,7 +1124,6 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// assert_eq!(leap - Duration::milliseconds(500), from_hmsm(3, 5, 59, 800));
 /// assert_eq!(leap - Duration::seconds(60),       from_hmsm(3, 5, 0, 300));
 /// assert_eq!(leap - Duration::days(1),           from_hmsm(3, 6, 0, 300));
-/// # }
 /// ```
 impl Sub<OldDuration> for NaiveTime {
     type Output = NaiveTime;
@@ -1177,7 +1157,6 @@ impl SubAssign<OldDuration> for NaiveTime {
 /// # Example
 ///
 /// ```
-/// # fn main() {
 /// use chrono::{Duration, NaiveTime};
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
@@ -1191,14 +1170,12 @@ impl SubAssign<OldDuration> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), Duration::seconds(-3600));
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(2, 4, 6, 800),
 ///            Duration::seconds(3600 + 60 + 1) + Duration::milliseconds(100));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that
 /// there were no other leap seconds happened.
 ///
 /// ```
-/// # fn main() {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), Duration::seconds(1));
@@ -1208,7 +1185,6 @@ impl SubAssign<OldDuration> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), Duration::seconds(1));
 /// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(2, 59, 59, 1_000),
 ///            Duration::seconds(61));
-/// # }
 /// ```
 impl Sub<NaiveTime> for NaiveTime {
     type Output = OldDuration;

@@ -184,7 +184,6 @@ Addition and subtraction is also supported.
 The following illustrates most supported operations to the date and time:
 
 ```rust
-
 use chrono::prelude::*;
 use chrono::Duration;
 
