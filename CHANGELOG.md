@@ -30,6 +30,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Make `ParseErrorKind` public and available through `ParseError::kind()` (#588)
 * Implement `DoubleEndedIterator` for `NaiveDateDaysIterator` and `NaiveDateWeeksIterator`
 * Fix panicking when parsing a `DateTime` (@botahamec)
+* Add support for getting week bounds based on a specific date and a `Weekday` for `NaiveDate` and `Date` (#666)
 
 ## 0.4.19
 

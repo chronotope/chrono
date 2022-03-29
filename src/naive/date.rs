@@ -5,7 +5,7 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign, RangeInclusive};
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
@@ -19,7 +19,7 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Weekday};
+use crate::{Datelike, Duration, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
@@ -49,6 +49,69 @@ const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 + (MIN_YEAR + 400_0
 
 #[cfg(test)] // only used for testing, but duplicated in naive::datetime
 const MAX_BITS: usize = 44;
+
+/// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
+/// day of the week.
+#[derive(Debug)]
+pub struct NaiveWeek {
+    date: NaiveDate,
+    start: Weekday,
+}
+
+impl NaiveWeek {
+    /// Returns a date representing the first day of the week.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::from_ymd(2022, 4, 18);
+    /// let week = date.week(Weekday::Mon);
+    /// assert!(week.first_day() <= date);
+    /// ```
+    #[inline]
+    pub fn first_day(&self) -> NaiveDate {
+        let start = self.start.num_days_from_monday();
+        let end = self.date.weekday().num_days_from_monday();
+        let days = if start > end { 7 - start + end } else { end - start };
+        self.date - Duration::days(days.into())
+    }
+
+    /// Returns a date representing the last day of the week.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::from_ymd(2022, 4, 18);
+    /// let week = date.week(Weekday::Mon);
+    /// assert!(week.last_day() >= date);
+    /// ```
+    #[inline]
+    pub fn last_day(&self) -> NaiveDate {
+        self.first_day() + Duration::days(6)
+    }
+
+    /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
+    /// [first_day()] and [last_day()] functions.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::from_ymd(2022, 4, 18);
+    /// let week = date.week(Weekday::Mon);
+    /// let days = week.days();
+    /// assert!(days.contains(&date));
+    /// ```
+    #[inline]
+    pub fn days(&self) -> RangeInclusive<NaiveDate> {
+        self.first_day()..=self.last_day()
+    }
+}
 
 /// ISO 8601 calendar date without timezone.
 /// Allows for every [proleptic Gregorian date](#calendar-date)
@@ -1104,6 +1167,13 @@ impl NaiveDate {
     #[inline]
     pub fn iter_weeks(&self) -> NaiveDateWeeksIterator {
         NaiveDateWeeksIterator { value: *self }
+    }
+
+    /// Returns the [`NaiveWeek`] that the date belongs to, starting with the [`Weekday`]
+    /// specified.
+    #[inline]
+    pub fn week(&self, start: Weekday) -> NaiveWeek {
+        NaiveWeek { date: *self, start }
     }
 }
 
@@ -2444,5 +2514,26 @@ mod tests {
     fn test_week_iterator_limit() {
         assert_eq!(NaiveDate::from_ymd(262143, 12, 12).iter_weeks().take(4).count(), 2);
         assert_eq!(NaiveDate::from_ymd(-262144, 1, 15).iter_weeks().rev().take(4).count(), 2);
+    }
+
+    #[test]
+    fn test_naiveweek_first_and_last_day() {
+        let date = NaiveDate::from_ymd(2022, 5, 18);
+        let asserts = vec![
+            (Weekday::Mon, "2022-05-16", "2022-05-22"),
+            (Weekday::Tue, "2022-05-17", "2022-05-23"),
+            (Weekday::Wed, "2022-05-18", "2022-05-24"),
+            (Weekday::Thu, "2022-05-12", "2022-05-18"),
+            (Weekday::Fri, "2022-05-13", "2022-05-19"),
+            (Weekday::Sat, "2022-05-14", "2022-05-20"),
+            (Weekday::Sun, "2022-05-15", "2022-05-21"),
+        ];
+        for (start, first_day, last_day) in asserts {
+            let week = date.week(start);
+            let days = week.days();
+            assert_eq!(Ok(week.first_day()), NaiveDate::parse_from_str(first_day, "%Y-%m-%d"));
+            assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%Y-%m-%d"));
+            assert!(days.contains(&date));
+        }
     }
 }
