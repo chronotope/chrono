@@ -3,17 +3,19 @@
 
 //! The local (system) time zone.
 
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-use sys::{self, Timespec};
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-use naive::NaiveTime;
-use naive::{NaiveDate, NaiveDateTime};
-use {Date, DateTime};
+use crate::naive::NaiveTime;
+use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-use {Datelike, Timelike};
+use crate::sys::{self, Timespec};
+use crate::{Date, DateTime};
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+use crate::{Datelike, Timelike};
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
@@ -65,7 +67,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> sys::Timespec {
         tm_wday: 0,                // to_local ignores this
         tm_yday: 0,                // and this
         tm_isdst: -1,
-        tm_utcoff: tm_utcoff,
+        tm_utcoff,
         // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
         tm_nsec: 0,
     };
@@ -88,6 +90,7 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> sys::Timespec {
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
 /// ```
 #[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Local;
 
 impl Local {
@@ -96,13 +99,13 @@ impl Local {
         Local::now().date()
     }
 
-    /// Returns a `DateTime` which corresponds to the current date.
+    /// Returns a `DateTime` which corresponds to the current date and time.
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     pub fn now() -> DateTime<Local> {
         tm_to_datetime(Timespec::now().local())
     }
 
-    /// Returns a `DateTime` which corresponds to the current date.
+    /// Returns a `DateTime` which corresponds to the current date and time.
     #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
     pub fn now() -> DateTime<Local> {
         use super::Utc;
@@ -196,8 +199,8 @@ impl TimeZone for Local {
 #[cfg(test)]
 mod tests {
     use super::Local;
-    use offset::TimeZone;
-    use Datelike;
+    use crate::offset::TimeZone;
+    use crate::Datelike;
 
     #[test]
     fn test_local_date_sanity_check() {

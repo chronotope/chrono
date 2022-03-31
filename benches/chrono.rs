@@ -1,7 +1,5 @@
 //! Benchmarks for chrono that just depend on std
-
-extern crate chrono;
-extern crate criterion;
+#![cfg(feature = "__internal_bench")]
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 

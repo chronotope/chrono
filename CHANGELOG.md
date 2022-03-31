@@ -20,6 +20,13 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
+* Add `DateTime::from_local()` to construct from given local date and time (#572)
+* Correct build for wasm32-unknown-emscripten target (#568)
+* Change `Local::now()` and `Utc::now()` documentation from "current date" to "current date and time" (#647)
+* Fix `duration_round` panic on rounding by `Duration::zero()` (#658)
+* Add optional rkyv support.
+* Add support for microseconds timestamps serde serialization for `NaiveDateTime`.
+* Add support for optional timestamps serde serialization for `NaiveDateTime`.
 
 ## 0.4.19
 

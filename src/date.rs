@@ -8,16 +8,19 @@ use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, Sub};
 use core::{fmt, hash};
-use oldtime::Duration as OldDuration;
+
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "unstable-locales")]
-use format::Locale;
+use crate::format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::{DelayedFormat, Item, StrftimeItems};
-use naive::{self, IsoWeek, NaiveDate, NaiveTime};
-use offset::{TimeZone, Utc};
-use DateTime;
-use {Datelike, Weekday};
+use crate::format::{DelayedFormat, Item, StrftimeItems};
+use crate::naive::{self, IsoWeek, NaiveDate, NaiveTime};
+use crate::offset::{TimeZone, Utc};
+use crate::oldtime::Duration as OldDuration;
+use crate::DateTime;
+use crate::{Datelike, Weekday};
 
 /// ISO 8601 calendar date with time zone.
 ///
@@ -36,7 +39,7 @@ use {Datelike, Weekday};
 ///   the corresponding local date should exist for at least a moment.
 ///   (It may still have a gap from the offset changes.)
 ///
-/// - The `TimeZone` is free to assign *any* [`Offset`](::offset::Offset) to the
+/// - The `TimeZone` is free to assign *any* [`Offset`](crate::offset::Offset) to the
 ///   local date, as long as that offset did occur in given day.
 ///
 ///   For example, if `2015-03-08T01:59-08:00` is followed by `2015-03-08T03:00-07:00`,
@@ -51,6 +54,7 @@ use {Datelike, Weekday};
 ///   so the local date and UTC date should be equal for most cases
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
 #[derive(Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,
@@ -68,7 +72,7 @@ impl<Tz: TimeZone> Date<Tz> {
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     pub fn from_utc(date: NaiveDate, offset: Tz::Offset) -> Date<Tz> {
-        Date { date: date, offset: offset }
+        Date { date, offset }
     }
 
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
@@ -234,7 +238,7 @@ impl<Tz: TimeZone> Date<Tz> {
     #[inline]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
         let date = try_opt!(self.date.checked_add_signed(rhs));
-        Some(Date { date: date, offset: self.offset })
+        Some(Date { date, offset: self.offset })
     }
 
     /// Subtracts given `Duration` from the current date.
@@ -243,7 +247,7 @@ impl<Tz: TimeZone> Date<Tz> {
     #[inline]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
         let date = try_opt!(self.date.checked_sub_signed(rhs));
-        Some(Date { date: date, offset: self.offset })
+        Some(Date { date, offset: self.offset })
     }
 
     /// Subtracts another `Date` from the current date.
@@ -297,7 +301,7 @@ where
     }
 
     /// Formats the date with the specified format string.
-    /// See the [`::format::strftime`] module
+    /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
     ///
     /// # Example

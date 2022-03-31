@@ -88,7 +88,7 @@ macro_rules! call {
     }
 }
 
-pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
+pub(super) fn time_to_local_tm(sec: i64, tm: &mut Tm) {
     let ft = time_to_file_time(sec);
     unsafe {
         let mut utc = mem::zeroed();
@@ -110,7 +110,7 @@ pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
     }
 }
 
-pub fn utc_tm_to_time(tm: &Tm) -> i64 {
+pub(super) fn utc_tm_to_time(tm: &Tm) -> i64 {
     unsafe {
         let mut ft = mem::zeroed();
         let sys_time = tm_to_system_time(tm);
@@ -119,7 +119,7 @@ pub fn utc_tm_to_time(tm: &Tm) -> i64 {
     }
 }
 
-pub fn local_tm_to_time(tm: &Tm) -> i64 {
+pub(super) fn local_tm_to_time(tm: &Tm) -> i64 {
     unsafe {
         let mut ft = mem::zeroed();
         let mut utc = mem::zeroed();

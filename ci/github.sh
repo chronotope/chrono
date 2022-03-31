@@ -8,7 +8,7 @@ source "${BASH_SOURCE[0]%/*}/_shlib.sh"
 TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
 FEATURES=(std serde clock "alloc serde" unstable-locales)
 CHECK_FEATURES=(alloc "std unstable-locales" "serde clock" "clock unstable-locales")
-RUST_113_FEATURES=(rustc-serialize serde)
+RUST_132_FEATURES=(rustc-serialize serde)
 
 main() {
     if [[ "$*" =~ "-h" ]]; then
@@ -29,7 +29,7 @@ meaningful in the github actions feature matrix UI.
 
     runv cargo --version
 
-    if [[ ${RUST_VERSION:-} != 1.13.0 ]]; then
+    if [[ ${RUST_VERSION:-} != 1.32.0 ]]; then
         if [[ ${WASM:-} == yes_wasm ]]; then
             test_wasm
         elif [[ ${WASM:-} == wasm_simple ]]; then
@@ -43,8 +43,8 @@ meaningful in the github actions feature matrix UI.
         else
             test_regular UTC0
         fi
-    elif [[ ${RUST_VERSION:-} == 1.13.0 ]]; then
-        test_113
+    elif [[ ${RUST_VERSION:-} == 1.32.0 ]]; then
+        test_132
     else
         echo "ERROR: didn't run any tests"
         exit 1
@@ -74,9 +74,9 @@ check_combinatoric() {
     done
 }
 
-test_113() {
+test_132() {
     runv cargo build --color=always
-    for feature in "${RUST_113_FEATURES[@]}"; do
+    for feature in "${RUST_132_FEATURES[@]}"; do
         runt cargo build --features "$feature" --color=always
     done
 }
