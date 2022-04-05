@@ -1052,10 +1052,10 @@ fn test_serde_deserialize() {
 #[test]
 fn test_serde_bincode() {
     use crate::naive::NaiveDate;
-    use bincode::{deserialize, serialize, Infinite};
+    use bincode::{deserialize, serialize};
 
     let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
-    let encoded = serialize(&dt, Infinite).unwrap();
+    let encoded = serialize(&dt).unwrap();
     let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
     assert_eq!(dt, decoded);
 }
@@ -1064,7 +1064,7 @@ fn test_serde_bincode() {
 fn test_serde_bincode_optional() {
     use crate::prelude::*;
     use crate::serde::ts_nanoseconds_option;
-    use bincode::{deserialize, serialize, Infinite};
+    use bincode::{deserialize, serialize};
     use serde_derive::{Deserialize, Serialize};
 
     #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -1075,7 +1075,7 @@ fn test_serde_bincode_optional() {
     }
 
     let expected = Test { one: Some(1), two: Some(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1)) };
-    let bytes: Vec<u8> = serialize(&expected, Infinite).unwrap();
+    let bytes: Vec<u8> = serialize(&expected).unwrap();
     let actual = deserialize::<Test>(&(bytes)).unwrap();
 
     assert_eq!(expected, actual);
