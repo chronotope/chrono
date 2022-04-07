@@ -35,21 +35,21 @@ use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 ///
 /// For example a timespec of 1.2 seconds after the beginning of the epoch would
 /// be represented as {sec: 1, nsec: 200000000}.
-pub(crate) struct Timespec {
-    pub(crate) sec: i64,
-    pub(crate) nsec: i32,
+pub(super) struct Timespec {
+    sec: i64,
+    nsec: i32,
 }
 
 impl Timespec {
     /// Constructs a timespec representing the current time in UTC.
-    pub(crate) fn now() -> Timespec {
+    pub(super) fn now() -> Timespec {
         let st =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
         Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 }
     }
 
     /// Converts this timespec into the system's local time.
-    pub(crate) fn local(self) -> Tm {
+    pub(super) fn local(self) -> Tm {
         let mut tm = Tm {
             tm_sec: 0,
             tm_min: 0,
@@ -118,7 +118,7 @@ pub(crate) struct Tm {
 
 impl Tm {
     /// Convert time to the seconds from January 1, 1970
-    pub(crate) fn to_timespec(&self) -> Timespec {
+    pub(super) fn to_timespec(&self) -> Timespec {
         let sec = match self.tm_utcoff {
             0 => utc_tm_to_time(self),
             _ => local_tm_to_time(self),

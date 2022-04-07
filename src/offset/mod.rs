@@ -25,6 +25,12 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Weekday;
 use crate::{Date, DateTime};
 
+#[cfg(all(
+    feature = "clock",
+    not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
+))]
+mod sys;
+
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
 pub enum LocalResult<T> {
