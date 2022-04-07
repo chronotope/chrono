@@ -7,12 +7,12 @@
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+use super::sys::{self, Timespec};
 use super::{LocalResult, TimeZone};
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 use crate::naive::NaiveTime;
 use crate::naive::{NaiveDate, NaiveDateTime};
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-use crate::sys::{self, Timespec};
 use crate::{Date, DateTime};
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 use crate::{Datelike, Timelike};
