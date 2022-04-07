@@ -25,11 +25,16 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Weekday;
 use crate::{Date, DateTime};
 
-#[cfg(all(
-    feature = "clock",
-    not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
-))]
-mod sys;
+mod fixed;
+pub use self::fixed::FixedOffset;
+
+#[cfg(feature = "clock")]
+mod local;
+#[cfg(feature = "clock")]
+pub use self::local::Local;
+
+mod utc;
+pub use self::utc::Utc;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
@@ -471,16 +476,6 @@ pub trait TimeZone: Sized + Clone {
         DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc))
     }
 }
-
-mod fixed;
-#[cfg(feature = "clock")]
-mod local;
-mod utc;
-
-pub use self::fixed::FixedOffset;
-#[cfg(feature = "clock")]
-pub use self::local::Local;
-pub use self::utc::Utc;
 
 #[cfg(test)]
 mod tests {
