@@ -7,6 +7,7 @@
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
+use std::convert::TryInto;
 
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
@@ -147,11 +148,18 @@ impl NaiveDateTime {
     ///
     /// let got = NaiveDateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap();
     /// assert_eq!(dt, got);
+    /// let dt = NaiveDate::from_ymd(3015, 9, 5).and_hms(23, 56, 4);
+    /// let ms = dt.timestamp_millis();
+    /// assert_eq!(NaiveDateTime::from_timestamp_millis(ms), Some(dt));
     /// ```
     #[inline]
-    pub fn from_timestamp_millis(milliseconds: i64) -> Option<NaiveDateTime> {
+    pub fn from_timestamp_millis<T: Into<i64>>(milliseconds: T) -> Option<NaiveDateTime> {
+        let milliseconds = milliseconds.into();
         let timestamp_seconds = milliseconds / 1000;
-        NaiveDateTime::from_timestamp_opt(timestamp_seconds, (milliseconds % 1000 * 1000000) as u32)
+        NaiveDateTime::from_timestamp_opt(
+            timestamp_seconds,
+            ((milliseconds.abs() % 1000) * 1_000_000) as u32,
+        )
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -170,14 +178,18 @@ impl NaiveDateTime {
     ///
     /// let got = NaiveDateTime::from_timestamp_micros(dt.timestamp_micros()).unwrap();
     /// assert_eq!(dt, got);
-    ///
+    /// let dt = NaiveDate::from_ymd(3015, 9, 5).and_hms(23, 56, 4);
+    /// let mcs = dt.timestamp_micros();
+    /// assert_eq!(NaiveDateTime::from_timestamp_micros(mcs), Some(dt));
     /// ```
     #[inline]
-    pub fn from_timestamp_micros(microseconds: i64) -> Option<NaiveDateTime> {
+    pub fn from_timestamp_micros<T: Into<i64>>(microseconds: T) -> Option<NaiveDateTime> {
+        let microseconds = microseconds.into();
         let timestamp_seconds = microseconds / 1_000_000;
+
         NaiveDateTime::from_timestamp_opt(
             timestamp_seconds,
-            ((microseconds % 1_000_000) * 1000) as u32,
+            ((microseconds.abs() % 1_000_000) * 1000) as u32,
         )
     }
 
@@ -192,17 +204,22 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDateTime, NaiveDate};
     ///
-    ///
     /// let dt = NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 0, 42);
     ///
     /// let got = NaiveDateTime::from_timestamp_nanos(dt.timestamp_nanos()).unwrap();
     /// assert_eq!(dt, got);
-    ///
+    /// let dt = NaiveDate::from_ymd(3015, 9, 5).and_hms(23, 56, 4);
+    /// let ns = dt.timestamp() as i128 * 1_000_000_000 + i128::from(dt.timestamp_subsec_nanos());
+    /// assert_eq!(NaiveDateTime::from_timestamp_nanos(ns), Some(dt));
     /// ```
     #[inline]
-    pub fn from_timestamp_nanos(nanoseconds: i64) -> Option<NaiveDateTime> {
-        let timestamp_seconds = nanoseconds / 1_000_000_000;
-        NaiveDateTime::from_timestamp_opt(timestamp_seconds, (nanoseconds % 1_000_000_000) as u32)
+    pub fn from_timestamp_nanos<T: Into<i128>>(nanoseconds: T) -> Option<NaiveDateTime> {
+        let nanoseconds = nanoseconds.into();
+        let timestamp_seconds = (nanoseconds / 1_000_000_000).try_into().ok()?;
+        NaiveDateTime::from_timestamp_opt(
+            timestamp_seconds,
+            (nanoseconds.abs() % 1_000_000_000) as u32,
+        )
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
