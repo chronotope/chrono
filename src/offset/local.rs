@@ -66,11 +66,6 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> Timespec {
-    // well, this exploits an undocumented `Tm::to_timespec` behavior
-    // to get the exact function we want (either `timegm` or `mktime`).
-    // the number 1 is arbitrary but should be non-zero to trigger `mktime`.
-    let tm_utcoff = if local { 1 } else { 0 };
-
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -81,12 +76,19 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> Timespec {
         tm_wday: 0,                // to_local ignores this
         tm_yday: 0,                // and this
         tm_isdst: -1,
-        tm_utcoff,
+        // This seems pretty fake?
+        tm_utcoff: if local { 1 } else { 0 },
         // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
         tm_nsec: 0,
     };
 
-    tm.to_timespec()
+    Timespec {
+        sec: match local {
+            false => utc_tm_to_time(&tm),
+            true => local_tm_to_time(&tm),
+        },
+        nsec: tm.tm_nsec,
+    }
 }
 
 /// The local timescale. This is implemented via the standard `time` crate.
@@ -294,17 +296,6 @@ pub(crate) struct Tm {
 
     /// Nanoseconds after the second - [0, 10<sup>9</sup> - 1]
     pub(crate) tm_nsec: i32,
-}
-
-impl Tm {
-    /// Convert time to the seconds from January 1, 1970
-    pub(super) fn to_timespec(&self) -> Timespec {
-        let sec = match self.tm_utcoff {
-            0 => utc_tm_to_time(self),
-            _ => local_tm_to_time(self),
-        };
-        Timespec { sec, nsec: self.tm_nsec }
-    }
 }
 
 #[cfg(test)]
