@@ -31,73 +31,6 @@ mod inner;
 
 use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 
-/// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
-/// This assumes that `time` is working correctly, i.e. any error is fatal.
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
-    if tm.tm_sec >= 60 {
-        tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
-        tm.tm_sec = 59;
-    }
-
-    #[cfg(not(windows))]
-    fn tm_to_naive_date(tm: &Tm) -> NaiveDate {
-        // from_yo is more efficient than from_ymd (since it's the internal representation).
-        NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1)
-    }
-
-    #[cfg(windows)]
-    fn tm_to_naive_date(tm: &Tm) -> NaiveDate {
-        // ...but tm_yday is broken in Windows (issue #85)
-        NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
-    }
-
-    let date = tm_to_naive_date(&tm);
-    let time = NaiveTime::from_hms_nano(
-        tm.tm_hour as u32,
-        tm.tm_min as u32,
-        tm.tm_sec as u32,
-        tm.tm_nsec as u32,
-    );
-    let offset = FixedOffset::east(tm.tm_utcoff);
-    DateTime::from_utc(date.and_time(time) - offset, offset)
-}
-
-/// Converts a local `NaiveDateTime` to the `time::Timespec`.
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
-    let tm = Tm {
-        tm_sec: d.second() as i32,
-        tm_min: d.minute() as i32,
-        tm_hour: d.hour() as i32,
-        tm_mday: d.day() as i32,
-        tm_mon: d.month0() as i32, // yes, C is that strange...
-        tm_year: d.year() - 1900,  // this doesn't underflow, we know that d is `NaiveDateTime`.
-        tm_wday: 0,                // to_local ignores this
-        tm_yday: 0,                // and this
-        tm_isdst: -1,
-        // This seems pretty fake?
-        tm_utcoff: if local { 1 } else { 0 },
-        // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
-        tm_nsec: 0,
-    };
-
-    let spec = Timespec {
-        sec: match local {
-            false => utc_tm_to_time(&tm),
-            true => local_tm_to_time(&tm),
-        },
-        nsec: tm.tm_nsec,
-    };
-
-    // Adjust for leap seconds
-    let mut tm = spec.local();
-    assert_eq!(tm.tm_nsec, 0);
-    tm.tm_nsec = d.nanosecond() as i32;
-
-    tm_to_datetime(tm)
-}
-
 /// The local timescale. This is implemented via the standard `time` crate.
 ///
 /// Using the [`TimeZone`](./trait.TimeZone.html) methods
@@ -203,6 +136,73 @@ impl TimeZone for Local {
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         naive_to_local(utc, false)
     }
+}
+
+/// Converts a local `NaiveDateTime` to the `time::Timespec`.
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
+    let tm = Tm {
+        tm_sec: d.second() as i32,
+        tm_min: d.minute() as i32,
+        tm_hour: d.hour() as i32,
+        tm_mday: d.day() as i32,
+        tm_mon: d.month0() as i32, // yes, C is that strange...
+        tm_year: d.year() - 1900,  // this doesn't underflow, we know that d is `NaiveDateTime`.
+        tm_wday: 0,                // to_local ignores this
+        tm_yday: 0,                // and this
+        tm_isdst: -1,
+        // This seems pretty fake?
+        tm_utcoff: if local { 1 } else { 0 },
+        // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
+        tm_nsec: 0,
+    };
+
+    let spec = Timespec {
+        sec: match local {
+            false => utc_tm_to_time(&tm),
+            true => local_tm_to_time(&tm),
+        },
+        nsec: tm.tm_nsec,
+    };
+
+    // Adjust for leap seconds
+    let mut tm = spec.local();
+    assert_eq!(tm.tm_nsec, 0);
+    tm.tm_nsec = d.nanosecond() as i32;
+
+    tm_to_datetime(tm)
+}
+
+/// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
+/// This assumes that `time` is working correctly, i.e. any error is fatal.
+#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
+    if tm.tm_sec >= 60 {
+        tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
+        tm.tm_sec = 59;
+    }
+
+    #[cfg(not(windows))]
+    fn tm_to_naive_date(tm: &Tm) -> NaiveDate {
+        // from_yo is more efficient than from_ymd (since it's the internal representation).
+        NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1)
+    }
+
+    #[cfg(windows)]
+    fn tm_to_naive_date(tm: &Tm) -> NaiveDate {
+        // ...but tm_yday is broken in Windows (issue #85)
+        NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
+    }
+
+    let date = tm_to_naive_date(&tm);
+    let time = NaiveTime::from_hms_nano(
+        tm.tm_hour as u32,
+        tm.tm_min as u32,
+        tm.tm_sec as u32,
+        tm.tm_nsec as u32,
+    );
+    let offset = FixedOffset::east(tm.tm_utcoff);
+    DateTime::from_utc(date.and_time(time) - offset, offset)
 }
 
 /// A record specifying a time value in seconds and nanoseconds, where
