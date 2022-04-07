@@ -65,7 +65,7 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> Timespec {
+fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -82,13 +82,20 @@ fn datetime_to_timespec(d: &NaiveDateTime, local: bool) -> Timespec {
         tm_nsec: 0,
     };
 
-    Timespec {
+    let spec = Timespec {
         sec: match local {
             false => utc_tm_to_time(&tm),
             true => local_tm_to_time(&tm),
         },
         nsec: tm.tm_nsec,
-    }
+    };
+
+    // Adjust for leap seconds
+    let mut tm = spec.local();
+    assert_eq!(tm.tm_nsec, 0);
+    tm.tm_nsec = d.nanosecond() as i32;
+
+    tm_to_datetime(tm)
 }
 
 /// The local timescale. This is implemented via the standard `time` crate.
@@ -177,14 +184,7 @@ impl TimeZone for Local {
 
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
-        let timespec = datetime_to_timespec(local, true);
-
-        // datetime_to_timespec completely ignores leap seconds, so we need to adjust for them
-        let mut tm = timespec.local();
-        assert_eq!(tm.tm_nsec, 0);
-        tm.tm_nsec = local.nanosecond() as i32;
-
-        LocalResult::Single(tm_to_datetime(tm))
+        LocalResult::Single(naive_to_local(local, true))
     }
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
@@ -201,14 +201,7 @@ impl TimeZone for Local {
 
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
-        let timespec = datetime_to_timespec(utc, false);
-
-        // datetime_to_timespec completely ignores leap seconds, so we need to adjust for them
-        let mut tm = timespec.local();
-        assert_eq!(tm.tm_nsec, 0);
-        tm.tm_nsec = utc.nanosecond() as i32;
-
-        tm_to_datetime(tm)
+        naive_to_local(utc, false)
     }
 }
 
