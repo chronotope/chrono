@@ -33,6 +33,9 @@ mod local;
 #[cfg(feature = "clock")]
 pub use self::local::Local;
 
+#[cfg(all(unix, feature = "clock"))]
+mod tz_info;
+
 mod utc;
 pub use self::utc::Utc;
 
