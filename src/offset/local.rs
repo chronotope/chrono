@@ -8,8 +8,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-use crate::naive::NaiveTime;
 use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::{Date, DateTime};
 
