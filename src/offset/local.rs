@@ -155,7 +155,7 @@ impl TimeZone for Local {
         let mut local = local.clone();
         // Get the offset from the js runtime
         let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
-        local -= ::Duration::seconds(offset.local_minus_utc() as i64);
+        local -= crate::Duration::seconds(offset.local_minus_utc() as i64);
         LocalResult::Single(DateTime::from_utc(local, offset))
     }
 
