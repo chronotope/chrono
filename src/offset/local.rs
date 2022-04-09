@@ -60,7 +60,6 @@ mod tz_localtime {
         // also its not clear whether the given `local` includes or doesn't include leap seconds?
         // get the last transition time
         let last = tz.as_ref().transitions().last();
-
         // if there is no transitions, or if we are later than the last transition,
         // then we must try to use the extra rule(s)
         if last
@@ -83,8 +82,9 @@ mod tz_localtime {
                             timezone::RuleDay::MonthWeekDay(start @ timezone::MonthWeekDay { .. }),
                             timezone::RuleDay::MonthWeekDay(end @ timezone::MonthWeekDay { .. }),
                         ) => {
-                            let start = naivedatetime_from_mwd(local, start, alt.dst_start_time());
-                            let end = naivedatetime_from_mwd(local, end, alt.dst_end_time());
+                            let start =
+                                naivedatetime_from_mwd(local.year(), start, alt.dst_start_time());
+                            let end = naivedatetime_from_mwd(local.year(), end, alt.dst_end_time());
 
                             use std::cmp::Ordering;
                             match start.cmp(&end) {
@@ -206,13 +206,13 @@ mod tz_localtime {
     }
 
     fn naivedatetime_from_mwd(
-        local: NaiveDateTime,
+        local_year: i32,
         mwd: &timezone::MonthWeekDay,
         start_time: i32,
     ) -> NaiveDateTime {
         naive_date_from_mwd_parts(
-            local.year(),
-            local.month(),
+            local_year,
+            mwd.month().into(),
             mwd.week().into(),
             mwd.week_day().into(),
         )
@@ -635,7 +635,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_past() {
-        let distant_past = Local::now() - Duration::days(365 * 10000);
+        let distant_past = Local::now() - Duration::days(365 * 100);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
         assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
@@ -647,7 +647,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + Duration::days(365 * 10000);
+        let distant_future = Local::now() + Duration::days(365 * 100);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
         assert_eq!(
