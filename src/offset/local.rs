@@ -3,6 +3,7 @@
 
 //! The local (system) time zone.
 
+#[cfg(not(unix))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "rkyv")]
@@ -23,14 +24,11 @@ use crate::{Datelike, Timelike};
 #[path = "sys/stub.rs"]
 mod inner;
 
-#[cfg(unix)]
-#[path = "sys/unix.rs"]
-mod inner;
-
 #[cfg(windows)]
 #[path = "sys/windows.rs"]
 mod inner;
 
+#[cfg(not(unix))]
 use inner::{local_tm_to_time, time_to_local_tm, utc_tm_to_time};
 
 #[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind"))))]
@@ -429,7 +427,7 @@ impl TimeZone for Local {
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+#[cfg(not(any(unix, all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))))]
 fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
     let tm = Tm {
         tm_sec: d.second() as i32,
@@ -465,7 +463,7 @@ fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
-#[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+#[cfg(not(any(unix, all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))))]
 fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
@@ -500,11 +498,13 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
 ///
 /// For example a timespec of 1.2 seconds after the beginning of the epoch would
 /// be represented as {sec: 1, nsec: 200000000}.
+#[cfg(not(unix))]
 pub(super) struct Timespec {
     sec: i64,
     nsec: i32,
 }
 
+#[cfg(not(unix))]
 impl Timespec {
     /// Constructs a timespec representing the current time in UTC.
     pub(super) fn now() -> Timespec {
@@ -537,6 +537,7 @@ impl Timespec {
 /// Holds a calendar date and time broken down into its components (year, month,
 /// day, and so on), also called a broken-down time value.
 // FIXME: use c_int instead of i32?
+#[cfg(not(unix))]
 #[cfg(feature = "clock")]
 #[repr(C)]
 pub(crate) struct Tm {
