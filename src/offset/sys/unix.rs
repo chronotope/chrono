@@ -32,12 +32,28 @@ pub(super) fn now() -> DateTime<Local> {
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
-    let unix = match local {
-        false => utc_naive_to_unix(d),
-        true => local_naive_to_unix(d),
+    let mut tm = libc::tm {
+        tm_sec: d.second() as i32,
+        tm_min: d.minute() as i32,
+        tm_hour: d.hour() as i32,
+        tm_mday: d.day() as i32,
+        tm_mon: d.month0() as i32,
+        tm_year: d.year() - 1900,
+        tm_wday: 0, // to_local ignores this
+        tm_yday: 0, // and this
+        tm_isdst: -1,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_gmtoff: 0,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_zone: ptr::null_mut(),
     };
 
-    localize(unix, d.nanosecond() as i32)
+    let unix = match local {
+        false => unsafe { timegm(&mut tm) },
+        true => unsafe { libc::mktime(&mut tm) },
+    };
+
+    localize(unix as i64, d.nanosecond() as i32)
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
@@ -96,34 +112,6 @@ fn localize(unix: i64, mut nanos: i32) -> DateTime<Local> {
 
     let offset = FixedOffset::east(offset as i32);
     DateTime::from_utc(date.and_time(time) - offset, offset)
-}
-
-fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
-    let mut tm = naive_to_tm(d);
-    unsafe { timegm(&mut tm) as i64 }
-}
-
-fn local_naive_to_unix(d: &NaiveDateTime) -> i64 {
-    let mut tm = naive_to_tm(d);
-    unsafe { libc::mktime(&mut tm) as i64 }
-}
-
-fn naive_to_tm(d: &NaiveDateTime) -> libc::tm {
-    libc::tm {
-        tm_sec: d.second() as i32,
-        tm_min: d.minute() as i32,
-        tm_hour: d.hour() as i32,
-        tm_mday: d.day() as i32,
-        tm_mon: d.month0() as i32,
-        tm_year: d.year() - 1900,
-        tm_wday: 0, // to_local ignores this
-        tm_yday: 0, // and this
-        tm_isdst: -1,
-        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-        tm_gmtoff: 0,
-        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-        tm_zone: ptr::null_mut(),
-    }
 }
 
 #[cfg(any(target_os = "nacl", target_os = "solaris", target_os = "illumos"))]
