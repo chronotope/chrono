@@ -11,6 +11,15 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{io, ptr};
 
+#[cfg(not(any(
+    all(target_os = "android", target_pointer_width = "32"),
+    target_os = "nacl",
+    target_os = "solaris",
+    target_os = "illumos"
+)))]
+use libc::timegm;
+#[cfg(all(target_os = "android", target_pointer_width = "32"))]
+use libc::timegm64 as timegm;
 use libc::{self, time_t};
 
 use super::{DateTime, FixedOffset, Local, NaiveDate, NaiveDateTime, NaiveTime};
@@ -129,16 +138,6 @@ unsafe fn timegm(tm: *mut libc::tm) -> time_t {
 }
 
 fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
-    #[cfg(not(any(
-        all(target_os = "android", target_pointer_width = "32"),
-        target_os = "nacl",
-        target_os = "solaris",
-        target_os = "illumos"
-    )))]
-    use libc::timegm;
-    #[cfg(all(target_os = "android", target_pointer_width = "32"))]
-    use libc::timegm64 as timegm;
-
     let mut tm = naive_to_tm(d);
     unsafe { timegm(&mut tm) as i64 }
 }
