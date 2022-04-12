@@ -17,21 +17,21 @@ use super::{DateTime, FixedOffset, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use crate::{Datelike, Timelike};
 
 pub(super) fn now() -> DateTime<Local> {
-    tm_to_datetime(Timespec::now().local())
+    let st = SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
+    let mut tm = time_to_local_tm(st.as_secs() as i64);
+    tm.tm_nsec = st.subsec_nanos() as i32;
+    tm_to_datetime(tm)
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
-    let spec = Timespec {
-        sec: match local {
-            false => utc_naive_to_unix(d),
-            true => local_naive_to_unix(d),
-        },
-        nsec: 0,
+    let unix = match local {
+        false => utc_naive_to_unix(d),
+        true => local_naive_to_unix(d),
     };
 
     // Adjust for leap seconds
-    let mut tm = spec.local();
+    let mut tm = time_to_local_tm(unix);
     assert_eq!(tm.tm_nsec, 0);
     tm.tm_nsec = d.nanosecond() as i32;
 
@@ -56,32 +56,6 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
 
     let offset = FixedOffset::east(tm.tm_utcoff);
     DateTime::from_utc(date.and_time(time) - offset, offset)
-}
-
-/// A record specifying a time value in seconds and nanoseconds, where
-/// nanoseconds represent the offset from the given second.
-///
-/// For example a timespec of 1.2 seconds after the beginning of the epoch would
-/// be represented as {sec: 1, nsec: 200000000}.
-struct Timespec {
-    sec: i64,
-    nsec: i32,
-}
-
-impl Timespec {
-    /// Constructs a timespec representing the current time in UTC.
-    fn now() -> Timespec {
-        let st =
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 }
-    }
-
-    /// Converts this timespec into the system's local time.
-    fn local(self) -> Tm {
-        let mut tm = time_to_local_tm(self.sec);
-        tm.tm_nsec = self.nsec;
-        tm
-    }
 }
 
 /// Holds a calendar date and time broken down into its components (year, month,
