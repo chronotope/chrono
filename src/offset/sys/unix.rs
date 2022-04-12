@@ -8,6 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use std::sync::Once;
+
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
 use crate::offset::tz_info::TimeZone;
 use crate::Utc;
@@ -27,11 +29,17 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> 
 }
 
 fn offset(unix: i64) -> FixedOffset {
+    let info = unsafe {
+        INIT.call_once(|| {
+            INFO = Some(TimeZone::local().expect("unable to parse localtime info"));
+        });
+        INFO.as_ref().unwrap()
+    };
+
     FixedOffset::east(
-        TimeZone::local()
-            .expect("unable to parse localtime info")
-            .find_local_time_type(unix)
-            .expect("unable to select local time type")
-            .offset(),
+        info.find_local_time_type(unix).expect("unable to select local time type").offset(),
     )
 }
+
+static mut INFO: Option<TimeZone> = None;
+static INIT: Once = Once::new();
