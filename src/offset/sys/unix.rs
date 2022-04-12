@@ -98,18 +98,32 @@ fn localize(unix: i64, mut nanos: i32) -> DateTime<Local> {
     DateTime::from_utc(date.and_time(time) - offset, offset)
 }
 
-#[cfg(any(target_os = "solaris", target_os = "illumos"))]
-extern "C" {
-    static timezone: time_t;
-    static altzone: time_t;
+fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
+    let mut tm = naive_to_tm(d);
+    unsafe { timegm(&mut tm) as i64 }
 }
 
-#[cfg(any(target_os = "solaris", target_os = "illumos"))]
-fn tzset() {
-    extern "C" {
-        fn tzset();
+fn local_naive_to_unix(d: &NaiveDateTime) -> i64 {
+    let mut tm = naive_to_tm(d);
+    unsafe { libc::mktime(&mut tm) as i64 }
+}
+
+fn naive_to_tm(d: &NaiveDateTime) -> libc::tm {
+    libc::tm {
+        tm_sec: d.second() as i32,
+        tm_min: d.minute() as i32,
+        tm_hour: d.hour() as i32,
+        tm_mday: d.day() as i32,
+        tm_mon: d.month0() as i32,
+        tm_year: d.year() - 1900,
+        tm_wday: 0, // to_local ignores this
+        tm_yday: 0, // and this
+        tm_isdst: -1,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_gmtoff: 0,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_zone: ptr::null_mut(),
     }
-    unsafe { tzset() }
 }
 
 #[cfg(any(target_os = "nacl", target_os = "solaris", target_os = "illumos"))]
@@ -137,30 +151,16 @@ unsafe fn timegm(tm: *mut libc::tm) -> time_t {
     ret
 }
 
-fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
-    let mut tm = naive_to_tm(d);
-    unsafe { timegm(&mut tm) as i64 }
-}
-
-fn local_naive_to_unix(d: &NaiveDateTime) -> i64 {
-    let mut tm = naive_to_tm(d);
-    unsafe { libc::mktime(&mut tm) as i64 }
-}
-
-fn naive_to_tm(d: &NaiveDateTime) -> libc::tm {
-    libc::tm {
-        tm_sec: d.second() as i32,
-        tm_min: d.minute() as i32,
-        tm_hour: d.hour() as i32,
-        tm_mday: d.day() as i32,
-        tm_mon: d.month0() as i32,
-        tm_year: d.year() - 1900,
-        tm_wday: 0, // to_local ignores this
-        tm_yday: 0, // and this
-        tm_isdst: -1,
-        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-        tm_gmtoff: 0,
-        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-        tm_zone: ptr::null_mut(),
+#[cfg(any(target_os = "solaris", target_os = "illumos"))]
+fn tzset() {
+    extern "C" {
+        fn tzset();
     }
+    unsafe { tzset() }
+}
+
+#[cfg(any(target_os = "solaris", target_os = "illumos"))]
+extern "C" {
+    static timezone: time_t;
+    static altzone: time_t;
 }
