@@ -18,9 +18,7 @@ use crate::{Datelike, Timelike};
 
 pub(super) fn now() -> DateTime<Local> {
     let st = SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-    let mut tm = time_to_local_tm(st.as_secs() as i64);
-    tm.tm_nsec = st.subsec_nanos() as i32;
-    tm_to_datetime(tm)
+    localize(st.as_secs() as i64, st.subsec_nanos() as i32)
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
@@ -30,17 +28,15 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> 
         true => local_naive_to_unix(d),
     };
 
-    // Adjust for leap seconds
-    let mut tm = time_to_local_tm(unix);
-    assert_eq!(tm.tm_nsec, 0);
-    tm.tm_nsec = d.nanosecond() as i32;
-
-    tm_to_datetime(tm)
+    localize(unix, d.nanosecond() as i32)
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
-fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
+fn localize(unix: i64, nanos: i32) -> DateTime<Local> {
+    let mut tm = time_to_local_tm(unix);
+    tm.tm_nsec = nanos;
+
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
