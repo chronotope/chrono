@@ -9,7 +9,7 @@
 // except according to those terms.
 
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{io, mem, ptr};
+use std::{io, ptr};
 
 use libc::{self, time_t};
 
@@ -33,8 +33,8 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> 
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
-fn localize(unix: i64, nanos: i32) -> DateTime<Local> {
-    let mut tm = Tm {
+fn localize(unix: i64, mut nanos: i32) -> DateTime<Local> {
+    let mut tm = libc::tm {
         tm_sec: 0,
         tm_min: 0,
         tm_hour: 0,
@@ -44,46 +44,36 @@ fn localize(unix: i64, nanos: i32) -> DateTime<Local> {
         tm_wday: 0,
         tm_yday: 0,
         tm_isdst: 0,
-        tm_utcoff: 0,
-        tm_nsec: 0,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_gmtoff: 0,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_zone: ptr::null_mut(),
     };
 
     unsafe {
-        let mut out = mem::zeroed();
-        if libc::localtime_r(&(unix as time_t), &mut out).is_null() {
+        if libc::localtime_r(&(unix as time_t), &mut tm).is_null() {
             panic!("localtime_r failed: {}", io::Error::last_os_error());
         }
-        #[cfg(any(target_os = "solaris", target_os = "illumos"))]
-        let gmtoff = {
-            tzset();
-            // < 0 means we don't know; assume we're not in DST.
-            if out.tm_isdst == 0 {
-                // timezone is seconds west of UTC, tm_gmtoff is seconds east
-                -timezone
-            } else if out.tm_isdst > 0 {
-                -altzone
-            } else {
-                -timezone
-            }
-        };
-        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-        let gmtoff = out.tm_gmtoff;
-
-        tm.tm_sec = out.tm_sec;
-        tm.tm_min = out.tm_min;
-        tm.tm_hour = out.tm_hour;
-        tm.tm_mday = out.tm_mday;
-        tm.tm_mon = out.tm_mon;
-        tm.tm_year = out.tm_year;
-        tm.tm_wday = out.tm_wday;
-        tm.tm_yday = out.tm_yday;
-        tm.tm_isdst = out.tm_isdst;
-        tm.tm_utcoff = gmtoff as i32;
     }
 
-    tm.tm_nsec = nanos;
+    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
+    let offset = unsafe {
+        tzset();
+        // < 0 means we don't know; assume we're not in DST.
+        if tm.tm_isdst == 0 {
+            // timezone is seconds west of UTC, tm_gmtoff is seconds east
+            -timezone
+        } else if tm.tm_isdst > 0 {
+            -altzone
+        } else {
+            -timezone
+        }
+    };
+    #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+    let offset = tm.tm_gmtoff;
+
     if tm.tm_sec >= 60 {
-        tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
+        nanos += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
     }
 
@@ -92,57 +82,11 @@ fn localize(unix: i64, nanos: i32) -> DateTime<Local> {
         tm.tm_hour as u32,
         tm.tm_min as u32,
         tm.tm_sec as u32,
-        tm.tm_nsec as u32,
+        nanos as u32,
     );
 
-    let offset = FixedOffset::east(tm.tm_utcoff);
+    let offset = FixedOffset::east(offset as i32);
     DateTime::from_utc(date.and_time(time) - offset, offset)
-}
-
-/// Holds a calendar date and time broken down into its components (year, month,
-/// day, and so on), also called a broken-down time value.
-// FIXME: use c_int instead of i32?
-#[repr(C)]
-struct Tm {
-    /// Seconds after the minute - [0, 60]
-    tm_sec: i32,
-
-    /// Minutes after the hour - [0, 59]
-    tm_min: i32,
-
-    /// Hours after midnight - [0, 23]
-    tm_hour: i32,
-
-    /// Day of the month - [1, 31]
-    tm_mday: i32,
-
-    /// Months since January - [0, 11]
-    tm_mon: i32,
-
-    /// Years since 1900
-    tm_year: i32,
-
-    /// Days since Sunday - [0, 6]. 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
-    tm_wday: i32,
-
-    /// Days since January 1 - [0, 365]
-    tm_yday: i32,
-
-    /// Daylight Saving Time flag.
-    ///
-    /// This value is positive if Daylight Saving Time is in effect, zero if
-    /// Daylight Saving Time is not in effect, and negative if this information
-    /// is not available.
-    tm_isdst: i32,
-
-    /// Identifies the time zone that was used to compute this broken-down time
-    /// value, including any adjustment for Daylight Saving Time. This is the
-    /// number of seconds east of UTC. For example, for U.S. Pacific Daylight
-    /// Time, the value is `-7*60*60 = -25200`.
-    tm_utcoff: i32,
-
-    /// Nanoseconds after the second - [0, 10<sup>9</sup> - 1]
-    tm_nsec: i32,
 }
 
 #[cfg(any(target_os = "solaris", target_os = "illumos"))]
