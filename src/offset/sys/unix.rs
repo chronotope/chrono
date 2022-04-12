@@ -8,9 +8,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::io;
-use std::mem;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::{io, mem, ptr};
 
 use libc::{self, time_t};
 
@@ -24,28 +23,12 @@ pub(super) fn now() -> DateTime<Local> {
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
-    let tm = Tm {
-        tm_sec: d.second() as i32,
-        tm_min: d.minute() as i32,
-        tm_hour: d.hour() as i32,
-        tm_mday: d.day() as i32,
-        tm_mon: d.month0() as i32, // yes, C is that strange...
-        tm_year: d.year() - 1900,  // this doesn't underflow, we know that d is `NaiveDateTime`.
-        tm_wday: 0,                // to_local ignores this
-        tm_yday: 0,                // and this
-        tm_isdst: -1,
-        // This seems pretty fake?
-        tm_utcoff: if local { 1 } else { 0 },
-        // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
-        tm_nsec: 0,
-    };
-
     let spec = Timespec {
         sec: match local {
-            false => utc_tm_to_time(&tm),
-            true => local_tm_to_time(&tm),
+            false => utc_naive_to_unix(d),
+            true => local_naive_to_unix(d),
         },
-        nsec: tm.tm_nsec,
+        nsec: 0,
     };
 
     // Adjust for leap seconds
@@ -176,18 +159,6 @@ fn tzset() {
     unsafe { tzset() }
 }
 
-fn rust_tm_to_tm(rust_tm: &Tm, tm: &mut libc::tm) {
-    tm.tm_sec = rust_tm.tm_sec;
-    tm.tm_min = rust_tm.tm_min;
-    tm.tm_hour = rust_tm.tm_hour;
-    tm.tm_mday = rust_tm.tm_mday;
-    tm.tm_mon = rust_tm.tm_mon;
-    tm.tm_year = rust_tm.tm_year;
-    tm.tm_wday = rust_tm.tm_wday;
-    tm.tm_yday = rust_tm.tm_yday;
-    tm.tm_isdst = rust_tm.tm_isdst;
-}
-
 fn tm_to_rust_tm(tm: &libc::tm, utcoff: i32, rust_tm: &mut Tm) {
     rust_tm.tm_sec = tm.tm_sec;
     rust_tm.tm_min = tm.tm_min;
@@ -252,7 +223,7 @@ fn time_to_local_tm(sec: i64, tm: &mut Tm) {
     }
 }
 
-fn utc_tm_to_time(rust_tm: &Tm) -> i64 {
+fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
     #[cfg(not(any(
         all(target_os = "android", target_pointer_width = "32"),
         target_os = "nacl",
@@ -263,13 +234,29 @@ fn utc_tm_to_time(rust_tm: &Tm) -> i64 {
     #[cfg(all(target_os = "android", target_pointer_width = "32"))]
     use libc::timegm64 as timegm;
 
-    let mut tm = unsafe { mem::zeroed() };
-    rust_tm_to_tm(rust_tm, &mut tm);
+    let mut tm = naive_to_tm(d);
     unsafe { timegm(&mut tm) as i64 }
 }
 
-fn local_tm_to_time(rust_tm: &Tm) -> i64 {
-    let mut tm = unsafe { mem::zeroed() };
-    rust_tm_to_tm(rust_tm, &mut tm);
+fn local_naive_to_unix(d: &NaiveDateTime) -> i64 {
+    let mut tm = naive_to_tm(d);
     unsafe { libc::mktime(&mut tm) as i64 }
+}
+
+fn naive_to_tm(d: &NaiveDateTime) -> libc::tm {
+    libc::tm {
+        tm_sec: d.second() as i32,
+        tm_min: d.minute() as i32,
+        tm_hour: d.hour() as i32,
+        tm_mday: d.day() as i32,
+        tm_mon: d.month0() as i32,
+        tm_year: d.year() - 1900,
+        tm_wday: 0, // to_local ignores this
+        tm_yday: 0, // and this
+        tm_isdst: -1,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_gmtoff: 0,
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        tm_zone: ptr::null_mut(),
+    }
 }
