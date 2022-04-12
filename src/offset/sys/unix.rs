@@ -34,9 +34,54 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
 fn localize(unix: i64, nanos: i32) -> DateTime<Local> {
-    let mut tm = time_to_local_tm(unix);
-    tm.tm_nsec = nanos;
+    let mut tm = Tm {
+        tm_sec: 0,
+        tm_min: 0,
+        tm_hour: 0,
+        tm_mday: 0,
+        tm_mon: 0,
+        tm_year: 0,
+        tm_wday: 0,
+        tm_yday: 0,
+        tm_isdst: 0,
+        tm_utcoff: 0,
+        tm_nsec: 0,
+    };
 
+    unsafe {
+        let mut out = mem::zeroed();
+        if libc::localtime_r(&(unix as time_t), &mut out).is_null() {
+            panic!("localtime_r failed: {}", io::Error::last_os_error());
+        }
+        #[cfg(any(target_os = "solaris", target_os = "illumos"))]
+        let gmtoff = {
+            tzset();
+            // < 0 means we don't know; assume we're not in DST.
+            if out.tm_isdst == 0 {
+                // timezone is seconds west of UTC, tm_gmtoff is seconds east
+                -timezone
+            } else if out.tm_isdst > 0 {
+                -altzone
+            } else {
+                -timezone
+            }
+        };
+        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+        let gmtoff = out.tm_gmtoff;
+
+        tm.tm_sec = out.tm_sec;
+        tm.tm_min = out.tm_min;
+        tm.tm_hour = out.tm_hour;
+        tm.tm_mday = out.tm_mday;
+        tm.tm_mon = out.tm_mon;
+        tm.tm_year = out.tm_year;
+        tm.tm_wday = out.tm_wday;
+        tm.tm_yday = out.tm_yday;
+        tm.tm_isdst = out.tm_isdst;
+        tm.tm_utcoff = gmtoff as i32;
+    }
+
+    tm.tm_nsec = nanos;
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
@@ -114,19 +159,6 @@ fn tzset() {
     unsafe { tzset() }
 }
 
-fn tm_to_rust_tm(tm: &libc::tm, utcoff: i32, rust_tm: &mut Tm) {
-    rust_tm.tm_sec = tm.tm_sec;
-    rust_tm.tm_min = tm.tm_min;
-    rust_tm.tm_hour = tm.tm_hour;
-    rust_tm.tm_mday = tm.tm_mday;
-    rust_tm.tm_mon = tm.tm_mon;
-    rust_tm.tm_year = tm.tm_year;
-    rust_tm.tm_wday = tm.tm_wday;
-    rust_tm.tm_yday = tm.tm_yday;
-    rust_tm.tm_isdst = tm.tm_isdst;
-    rust_tm.tm_utcoff = utcoff;
-}
-
 #[cfg(any(target_os = "nacl", target_os = "solaris", target_os = "illumos"))]
 unsafe fn timegm(tm: *mut libc::tm) -> time_t {
     use std::env::{remove_var, set_var, var_os};
@@ -150,48 +182,6 @@ unsafe fn timegm(tm: *mut libc::tm) -> time_t {
     tzset();
 
     ret
-}
-
-fn time_to_local_tm(sec: i64) -> Tm {
-    let mut tm = Tm {
-        tm_sec: 0,
-        tm_min: 0,
-        tm_hour: 0,
-        tm_mday: 0,
-        tm_mon: 0,
-        tm_year: 0,
-        tm_wday: 0,
-        tm_yday: 0,
-        tm_isdst: 0,
-        tm_utcoff: 0,
-        tm_nsec: 0,
-    };
-
-    unsafe {
-        let sec = sec as time_t;
-        let mut out = mem::zeroed();
-        if libc::localtime_r(&sec, &mut out).is_null() {
-            panic!("localtime_r failed: {}", io::Error::last_os_error());
-        }
-        #[cfg(any(target_os = "solaris", target_os = "illumos"))]
-        let gmtoff = {
-            tzset();
-            // < 0 means we don't know; assume we're not in DST.
-            if out.tm_isdst == 0 {
-                // timezone is seconds west of UTC, tm_gmtoff is seconds east
-                -timezone
-            } else if out.tm_isdst > 0 {
-                -altzone
-            } else {
-                -timezone
-            }
-        };
-        #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-        let gmtoff = out.tm_gmtoff;
-        tm_to_rust_tm(&out, gmtoff as i32, &mut tm);
-    }
-
-    tm
 }
 
 fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
