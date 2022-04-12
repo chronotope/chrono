@@ -12,16 +12,19 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::{Date, DateTime};
 
 #[cfg(all(not(unix), not(windows)))]
-#[path = "sys/stub.rs"]
+#[path = "stub.rs"]
 mod inner;
 
 #[cfg(unix)]
-#[path = "sys/unix.rs"]
+#[path = "unix.rs"]
 mod inner;
 
 #[cfg(windows)]
-#[path = "sys/windows.rs"]
+#[path = "windows.rs"]
 mod inner;
+
+#[cfg(unix)]
+mod tz_info;
 
 /// The local timescale. This is implemented via the standard `time` crate.
 ///
