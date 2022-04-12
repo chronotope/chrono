@@ -639,10 +639,10 @@ pub(crate) fn is_leap_year(year: i32) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use super::super::timezone::Transition;
+    use super::super::{Error, TimeZone};
     use super::{AlternateTime, LocalTimeType, RuleDay, TransitionRule};
     use crate::matches;
-    use crate::offset::tz_info::timezone::Transition;
-    use crate::offset::tz_info::{Error, TimeZone};
 
     #[test]
     fn test_quoted() -> Result<(), Error> {

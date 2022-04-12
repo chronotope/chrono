@@ -10,8 +10,8 @@
 
 use std::sync::Once;
 
+use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
-use crate::offset::tz_info::TimeZone;
 use crate::Utc;
 
 pub(super) fn now() -> DateTime<Local> {
