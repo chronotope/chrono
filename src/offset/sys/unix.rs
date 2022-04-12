@@ -78,20 +78,7 @@ impl Timespec {
 
     /// Converts this timespec into the system's local time.
     fn local(self) -> Tm {
-        let mut tm = Tm {
-            tm_sec: 0,
-            tm_min: 0,
-            tm_hour: 0,
-            tm_mday: 0,
-            tm_mon: 0,
-            tm_year: 0,
-            tm_wday: 0,
-            tm_yday: 0,
-            tm_isdst: 0,
-            tm_utcoff: 0,
-            tm_nsec: 0,
-        };
-        time_to_local_tm(self.sec, &mut tm);
+        let mut tm = time_to_local_tm(self.sec);
         tm.tm_nsec = self.nsec;
         tm
     }
@@ -195,7 +182,21 @@ unsafe fn timegm(tm: *mut libc::tm) -> time_t {
     ret
 }
 
-fn time_to_local_tm(sec: i64, tm: &mut Tm) {
+fn time_to_local_tm(sec: i64) -> Tm {
+    let mut tm = Tm {
+        tm_sec: 0,
+        tm_min: 0,
+        tm_hour: 0,
+        tm_mday: 0,
+        tm_mon: 0,
+        tm_year: 0,
+        tm_wday: 0,
+        tm_yday: 0,
+        tm_isdst: 0,
+        tm_utcoff: 0,
+        tm_nsec: 0,
+    };
+
     unsafe {
         let sec = sec as time_t;
         let mut out = mem::zeroed();
@@ -217,8 +218,10 @@ fn time_to_local_tm(sec: i64, tm: &mut Tm) {
         };
         #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
         let gmtoff = out.tm_gmtoff;
-        tm_to_rust_tm(&out, gmtoff as i32, tm);
+        tm_to_rust_tm(&out, gmtoff as i32, &mut tm);
     }
+
+    tm
 }
 
 fn utc_naive_to_unix(d: &NaiveDateTime) -> i64 {
