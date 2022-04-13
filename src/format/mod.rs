@@ -63,7 +63,6 @@ pub use pure_rust_locales::Locale;
 pub use strftime::StrftimeItems;
 
 #[cfg(not(feature = "unstable-locales"))]
-#[cfg(feature = "std")]
 #[derive(Debug)]
 struct Locale;
 
