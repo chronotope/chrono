@@ -15,20 +15,20 @@ use super::{DateTime, FixedOffset, Local, NaiveDateTime};
 use crate::Utc;
 
 pub(super) fn now() -> DateTime<Local> {
-    let now = Utc::now();
-    DateTime::from_utc(now.naive_utc(), offset(now.timestamp()))
+    let now = Utc::now().naive_utc();
+    DateTime::from_utc(now, offset(now, false))
 }
 
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
-    let offset = match local {
-        true => offset(d.timestamp()),
+    let subtract = match local {
+        true => offset(*d, local),
         false => FixedOffset::east(0),
     };
 
-    DateTime::from_utc(*d - offset, offset)
+    DateTime::from_utc(*d - subtract, offset(*d, local))
 }
 
-fn offset(unix: i64) -> FixedOffset {
+fn offset(d: NaiveDateTime, local: bool) -> FixedOffset {
     let info = unsafe {
         INIT.call_once(|| {
             INFO = Some(TimeZone::local().expect("unable to parse localtime info"));
@@ -36,9 +36,15 @@ fn offset(unix: i64) -> FixedOffset {
         INFO.as_ref().unwrap()
     };
 
-    FixedOffset::east(
-        info.find_local_time_type(unix).expect("unable to select local time type").offset(),
-    )
+    if local {
+        FixedOffset::east(
+            info.find_local_time_type_from_local(d.timestamp()).expect("unable to select local time type").offset(),
+        )
+    } else {
+        FixedOffset::east(
+            info.find_local_time_type(d.timestamp()).expect("unable to select local time type").offset(),
+        )
+    }
 }
 
 static mut INFO: Option<TimeZone> = None;

@@ -114,6 +114,10 @@ impl TimeZone {
         self.as_ref().find_local_time_type(unix_time)
     }
 
+    pub(crate) fn find_local_time_type_from_local(&self, local_time: i64) -> Result<&LocalTimeType, Error> {
+        self.as_ref().find_local_time_type_from_local(local_time)
+    }
+
     /// Returns a reference to the time zone
     fn as_ref(&self) -> TimeZoneRef {
         TimeZoneRef {
@@ -182,6 +186,59 @@ impl<'a> TimeZoneRef<'a> {
         };
 
         match extra_rule.find_local_time_type(unix_time) {
+            Ok(local_time_type) => Ok(local_time_type),
+            Err(Error::OutOfRange(error)) => Err(Error::FindLocalTimeType(error)),
+            err => err,
+        }
+    }
+
+    pub(crate) fn find_local_time_type_from_local(&self, local_time: i64) -> Result<&'a LocalTimeType, Error> {
+        let extra_rule = match self.transitions.last() {
+            None => match self.extra_rule {
+                Some(extra_rule) => extra_rule,
+                None => return Ok(&self.local_time_types[0]),
+            },
+            Some(last_transition) => {
+                // #TODO: this is wrong as we need 'local_time_to_local_leap_time ?
+                // but ... does the local time even include leap seconds ??
+                // let unix_leap_time = match self.unix_time_to_unix_leap_time(local_time) {
+                //     Ok(unix_leap_time) => unix_leap_time,
+                //     Err(Error::OutOfRange(error)) => return Err(Error::FindLocalTimeType(error)),
+                //     Err(err) => return Err(err),
+                // };
+                let local_leap_time = local_time;
+
+                let transition_offset = self.local_time_types[last_transition.local_time_type_index].ut_offset;
+
+                if local_leap_time >= last_transition.unix_leap_time + i64::from(transition_offset) {
+                    match self.extra_rule {
+                        Some(extra_rule) => extra_rule,
+                        None => {
+                            return Err(Error::FindLocalTimeType(
+                                "no local time type is available for the specified timestamp",
+                            ))
+                        }
+                    }
+                } else {
+                    let index = match self
+                        .transitions
+                        .binary_search_by_key(&local_leap_time, |t| t.unix_leap_time() + i64::from(transition_offset))
+                    {
+                        Ok(x) => x + 1,
+                        Err(x) => x,
+                    };
+
+                    let local_time_type_index = if index > 0 {
+                        self.transitions[index - 1].local_time_type_index
+                    } else {
+                        0
+                    };
+                    return Ok(&self.local_time_types[local_time_type_index]);
+                }
+            }
+        };
+
+        match extra_rule.find_local_time_type(local_time) {
             Ok(local_time_type) => Ok(local_time_type),
             Err(Error::OutOfRange(error)) => Err(Error::FindLocalTimeType(error)),
             err => err,

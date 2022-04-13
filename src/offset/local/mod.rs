@@ -137,7 +137,111 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::Datelike;
+    use crate::{Datelike, Duration, NaiveDate};
+
+    use std::{path, process};
+
+    #[cfg(unix)]
+    fn verify_against_date_command(path: &'static str, year: i32, month: u32) {
+        let output = process::Command::new(path)
+            .arg("-d")
+            .arg(format!("{year}-{month:02}-05 22:05:01"))
+            .arg("+%Y-%m-%d %H:%M:%S %:z")
+            .output()
+            .unwrap();
+
+        let date_command_str = String::from_utf8(output.stdout).unwrap();
+
+        let local =
+            Local.from_local_datetime(&NaiveDate::from_ymd(year, month, 5).and_hms(22, 5, 1)).unwrap();
+
+        assert_eq!(format!("{}\n", local), date_command_str);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn try_verify_against_date_command() {
+        // #TODO: investigate /bin/date command behaviour on macOS
+        // avoid running this on macOS, temporarily
+        // for date_path in ["/usr/bin/date", "/bin/date"] {
+        for date_path in ["/usr/bin/date"] {
+            if path::Path::new(date_path).exists() {
+                for year in 1975..=2075 {
+                    for month in 1..=12 {
+                        verify_against_date_command(date_path, year, month)
+                    }
+                }
+            }
+        }
+        // date command not found, skipping
+    }
+
+    #[test]
+    fn verify_correct_offsets() {
+        let now = Local::now();
+        let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&now.naive_utc());
+
+        dbg!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        dbg!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        dbg!(now, from_local);
+        dbg!(now, from_utc);
+
+        assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        assert_eq!(now, from_local);
+        assert_eq!(now, from_utc);
+    }
+
+    #[test]
+    fn verify_correct_offsets_distant_past() {
+        // let distant_past = Local::now() - Duration::days(365 * 100);
+        let distant_past = Local::now() - Duration::days(250 * 31);
+        let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
+
+        dbg!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        dbg!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        dbg!(distant_past, from_local);
+        dbg!(distant_past, from_utc);
+
+
+        assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
+        assert_eq!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        assert_eq!(distant_past, from_local);
+        assert_eq!(distant_past, from_utc);
+    }
+
+    #[test]
+    fn verify_correct_offsets_distant_future() {
+        let distant_future = Local::now() + Duration::days(250 * 31);
+        let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
+
+        dbg!(
+            distant_future.offset().local_minus_utc(),
+            from_local.offset().local_minus_utc()
+        );
+        dbg!(distant_future.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        dbg!(distant_future, from_local);
+        dbg!(distant_future, from_utc);
+
+
+        assert_eq!(
+            distant_future.offset().local_minus_utc(),
+            from_local.offset().local_minus_utc()
+        );
+        assert_eq!(distant_future.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
+
+        assert_eq!(distant_future, from_local);
+        assert_eq!(distant_future, from_utc);
+    }
+
 
     #[test]
     fn test_local_date_sanity_check() {
