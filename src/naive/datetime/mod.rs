@@ -5,7 +5,6 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -215,7 +214,12 @@ impl NaiveDateTime {
     #[inline]
     pub fn from_timestamp_nanos<T: Into<i128>>(nanoseconds: T) -> Option<NaiveDateTime> {
         let nanoseconds = nanoseconds.into();
-        let timestamp_seconds = (nanoseconds / 1_000_000_000).try_into().ok()?;
+        let timestamp_seconds = nanoseconds / 1_000_000_000;
+        if timestamp_seconds >= core::i64::MAX as i128 {
+            // because of compatibility with rustc 1.32
+            return None;
+        }
+        let timestamp_seconds = timestamp_seconds as i64;
         NaiveDateTime::from_timestamp_opt(
             timestamp_seconds,
             (nanoseconds.abs() % 1_000_000_000) as u32,
