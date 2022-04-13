@@ -429,12 +429,6 @@ mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
-#[cfg(all(
-    feature = "clock",
-    not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
-))]
-mod sys;
-
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 use doc_comment::doctest;
