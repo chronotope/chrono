@@ -112,7 +112,7 @@ impl TimeZone for Local {
 
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
-        LocalResult::Single(inner::naive_to_local(local, true))
+        inner::naive_to_local(local, true)
     }
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
@@ -129,7 +129,7 @@ impl TimeZone for Local {
 
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
-        inner::naive_to_local(utc, false)
+        inner::naive_to_local(utc, false).unwrap()
     }
 }
 
@@ -152,8 +152,9 @@ mod tests {
 
         let date_command_str = String::from_utf8(output.stdout).unwrap();
 
-        let local =
-            Local.from_local_datetime(&NaiveDate::from_ymd(year, month, 5).and_hms(22, 5, 1)).unwrap();
+        let local = Local
+            .from_local_datetime(&NaiveDate::from_ymd(year, month, 5).and_hms(22, 5, 1))
+            .unwrap();
 
         assert_eq!(format!("{}\n", local), date_command_str);
     }
@@ -208,7 +209,6 @@ mod tests {
         dbg!(distant_past, from_local);
         dbg!(distant_past, from_utc);
 
-
         assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
@@ -222,15 +222,11 @@ mod tests {
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 
-        dbg!(
-            distant_future.offset().local_minus_utc(),
-            from_local.offset().local_minus_utc()
-        );
+        dbg!(distant_future.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         dbg!(distant_future.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
         dbg!(distant_future, from_local);
         dbg!(distant_future, from_utc);
-
 
         assert_eq!(
             distant_future.offset().local_minus_utc(),
@@ -241,7 +237,6 @@ mod tests {
         assert_eq!(distant_future, from_local);
         assert_eq!(distant_future, from_utc);
     }
-
 
     #[test]
     fn test_local_date_sanity_check() {

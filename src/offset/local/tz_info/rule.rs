@@ -80,11 +80,17 @@ impl TransitionRule {
     }
 
     /// Find the local time type associated to the transition rule at the specified Unix time in seconds
-    pub(super) fn find_local_time_type_from_local(&self, local_time: i64) -> Result<&LocalTimeType, Error> {
+    pub(super) fn find_local_time_type_from_local(
+        &self,
+        local_time: i64,
+        year: i32,
+    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
         match self {
-            TransitionRule::Fixed(local_time_type) => Ok(local_time_type),
+            TransitionRule::Fixed(local_time_type) => {
+                Ok(crate::LocalResult::Single(*local_time_type))
+            }
             TransitionRule::Alternate(alternate_time) => {
-                alternate_time.find_local_time_type_from_local(local_time)
+                alternate_time.find_local_time_type_from_local(local_time, year)
             }
         }
     }
@@ -223,85 +229,84 @@ impl AlternateTime {
     }
 
     // #TODO - this is not yet correctly implemented
-    fn find_local_time_type_from_local(&self, local_time: i64) -> Result<&LocalTimeType, Error> {
-        // Overflow is not possible
-        let dst_start_time_in_utc = self.dst_start_time as i64 - self.std.ut_offset as i64;
-        let dst_end_time_in_utc = self.dst_end_time as i64 - self.dst.ut_offset as i64;
-
-        let current_year = match UtcDateTime::from_timespec(local_time) {
-            Ok(dt) => dt.year,
-            Err(error) => return Err(error),
-        };
-
+    fn find_local_time_type_from_local(
+        &self,
+        local_time: i64,
+        current_year: i32,
+    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
         // Check if the current year is valid for the following computations
         if !(i32::min_value() + 2 <= current_year && current_year <= i32::max_value() - 2) {
             return Err(Error::OutOfRange("out of range date time"));
         }
 
-        let current_year_dst_start_unix_time =
-            self.dst_start.unix_time(current_year, dst_start_time_in_utc);
-        let current_year_dst_end_unix_time =
-            self.dst_end.unix_time(current_year, dst_end_time_in_utc);
+        // figure out where we are first - northern or southern hemisphere;
+        if self.dst_start.transition_date(current_year).0
+            < self.dst_end.transition_date(current_year).0
+        {
+            // northern hemisphere
 
-        // Check DST start/end Unix times for previous/current/next years to support for transition day times outside of [0h, 24h] range
-        let is_dst =
-            match Ord::cmp(&current_year_dst_start_unix_time, &current_year_dst_end_unix_time) {
-                Ordering::Less | Ordering::Equal => {
-                    if local_time < current_year_dst_start_unix_time {
-                        let previous_year_dst_end_unix_time =
-                            self.dst_end.unix_time(current_year - 1, dst_end_time_in_utc);
-                        if local_time < previous_year_dst_end_unix_time {
-                            let previous_year_dst_start_unix_time =
-                                self.dst_start.unix_time(current_year - 1, dst_start_time_in_utc);
-                            previous_year_dst_start_unix_time <= local_time
-                        } else {
-                            false
-                        }
-                    } else if local_time < current_year_dst_end_unix_time {
-                        true
-                    } else {
-                        let next_year_dst_start_unix_time =
-                            self.dst_start.unix_time(current_year + 1, dst_start_time_in_utc);
-                        if next_year_dst_start_unix_time <= local_time {
-                            let next_year_dst_end_unix_time =
-                                self.dst_end.unix_time(current_year + 1, dst_end_time_in_utc);
-                            local_time < next_year_dst_end_unix_time
-                        } else {
-                            false
-                        }
-                    }
-                }
-                Ordering::Greater => {
-                    if local_time < current_year_dst_end_unix_time {
-                        let previous_year_dst_start_unix_time =
-                            self.dst_start.unix_time(current_year - 1, dst_start_time_in_utc);
-                        if local_time < previous_year_dst_start_unix_time {
-                            let previous_year_dst_end_unix_time =
-                                self.dst_end.unix_time(current_year - 1, dst_end_time_in_utc);
-                            local_time < previous_year_dst_end_unix_time
-                        } else {
-                            true
-                        }
-                    } else if local_time < current_year_dst_start_unix_time {
-                        false
-                    } else {
-                        let next_year_dst_end_unix_time =
-                            self.dst_end.unix_time(current_year + 1, dst_end_time_in_utc);
-                        if next_year_dst_end_unix_time <= local_time {
-                            let next_year_dst_start_unix_time =
-                                self.dst_start.unix_time(current_year + 1, dst_start_time_in_utc);
-                            next_year_dst_start_unix_time <= local_time
-                        } else {
-                            true
-                        }
-                    }
-                }
-            };
+            let dst_start_transition_start = self.dst_start.unix_time(current_year, 0)
+                + i64::from(self.dst_start_time)
+                + i64::from(self.std.ut_offset);
+            let dst_start_transition_end = self.dst_start.unix_time(current_year, 0)
+                + i64::from(self.dst_start_time)
+                + i64::from(self.dst.ut_offset);
 
-        if is_dst {
-            Ok(&self.dst)
+            let dst_end_transition_start = self.dst_end.unix_time(current_year, 0)
+                + i64::from(self.dst_end_time)
+                + i64::from(self.dst.ut_offset);
+            let dst_end_transition_end = self.dst_end.unix_time(current_year, 0)
+                + i64::from(self.dst_end_time)
+                + i64::from(self.std.ut_offset);
+
+            if local_time <= dst_start_transition_start {
+                Ok(crate::LocalResult::Single(self.std))
+            } else if local_time > dst_start_transition_start
+                && local_time < dst_start_transition_end
+            {
+                Ok(crate::LocalResult::None)
+            } else if local_time >= dst_start_transition_end
+                && local_time < dst_end_transition_start
+            {
+                Ok(crate::LocalResult::Single(self.dst))
+            } else if local_time >= dst_end_transition_start && local_time <= dst_end_transition_end
+            {
+                Ok(crate::LocalResult::Ambiguous(self.dst, self.std))
+            } else {
+                Ok(crate::LocalResult::Single(self.std))
+            }
         } else {
-            Ok(&self.std)
+            // southern hemisphere
+
+            let dst_end_transition_start = self.dst_end.unix_time(current_year, 0)
+                + i64::from(self.dst_end_time)
+                + i64::from(self.dst.ut_offset);
+            let dst_end_transition_end = self.dst_end.unix_time(current_year, 0)
+                + i64::from(self.dst_end_time)
+                + i64::from(self.std.ut_offset);
+
+            let dst_start_transition_start = self.dst_start.unix_time(current_year, 0)
+                + i64::from(self.dst_start_time)
+                + i64::from(self.std.ut_offset);
+            let dst_start_transition_end = self.dst_start.unix_time(current_year, 0)
+                + i64::from(self.dst_start_time)
+                + i64::from(self.dst.ut_offset);
+
+            if local_time <= dst_end_transition_start {
+                Ok(crate::LocalResult::Single(self.dst))
+            } else if local_time > dst_end_transition_start && local_time <= dst_end_transition_end
+            {
+                Ok(crate::LocalResult::Ambiguous(self.dst, self.std))
+            } else if local_time > dst_end_transition_end && local_time < dst_start_transition_start
+            {
+                Ok(crate::LocalResult::Single(self.std))
+            } else if local_time >= dst_start_transition_start
+                && local_time < dst_start_transition_end
+            {
+                Ok(crate::LocalResult::None)
+            } else {
+                Ok(crate::LocalResult::Single(self.dst))
+            }
         }
     }
 }
