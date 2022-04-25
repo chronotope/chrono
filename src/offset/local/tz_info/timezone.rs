@@ -27,7 +27,11 @@ impl TimeZone {
     /// This method in not supported on non-UNIX platforms, and returns the UTC time zone instead.
     ///
     pub(crate) fn local() -> Result<Self, Error> {
-        Self::from_posix_tz("localtime")
+        if let Ok(tz) = std::env::var("TZ") {
+            Self::from_posix_tz(&tz)
+        } else {
+            Self::from_posix_tz("localtime")
+        }
     }
 
     /// Construct a time zone from a POSIX TZ string, as described in [the POSIX documentation of the `TZ` environment variable](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html).
@@ -225,6 +229,8 @@ impl<'a> TimeZoneRef<'a> {
                 let transition_start =
                     transition.unix_leap_time + i64::from(prev.unwrap().ut_offset);
 
+                // dbg!(crate::NaiveDateTime::from_timestamp(local_time, 0), crate::NaiveDateTime::from_timestamp(transition_end,0), crate::NaiveDateTime::from_timestamp(transition_start,0));
+
                 match transition_start.cmp(&transition_end) {
                     Ordering::Greater => {
                         // bakwards transition, eg from DST to regular
@@ -235,7 +241,11 @@ impl<'a> TimeZoneRef<'a> {
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
-                            return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
+                                return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            } else {
+                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
+                            }
                         }
                     }
                     Ordering::Equal => {
@@ -244,7 +254,11 @@ impl<'a> TimeZoneRef<'a> {
                         if local_leap_time < transition_start {
                             return Ok(crate::LocalResult::Single(prev.unwrap()));
                         } else if local_leap_time == transition_end {
-                            return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
+                                return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            } else {
+                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
+                            }
                         }
                     }
                     Ordering::Less => {

@@ -228,7 +228,6 @@ impl AlternateTime {
         }
     }
 
-    // #TODO - this is not yet correctly implemented
     fn find_local_time_type_from_local(
         &self,
         local_time: i64,
@@ -245,19 +244,27 @@ impl AlternateTime {
         {
             // northern hemisphere
 
-            let dst_start_transition_start = self.dst_start.unix_time(current_year, 0)
-                + i64::from(self.dst_start_time)
-                + i64::from(self.std.ut_offset);
+            let dst_start_transition_start =
+                self.dst_start.unix_time(current_year, 0) + i64::from(self.dst_start_time);
             let dst_start_transition_end = self.dst_start.unix_time(current_year, 0)
                 + i64::from(self.dst_start_time)
-                + i64::from(self.dst.ut_offset);
+                + i64::from(self.dst.ut_offset)
+                - i64::from(self.std.ut_offset);
 
-            let dst_end_transition_start = self.dst_end.unix_time(current_year, 0)
-                + i64::from(self.dst_end_time)
-                + i64::from(self.dst.ut_offset);
+            let dst_end_transition_start =
+                self.dst_end.unix_time(current_year, 0) + i64::from(self.dst_end_time);
             let dst_end_transition_end = self.dst_end.unix_time(current_year, 0)
                 + i64::from(self.dst_end_time)
-                + i64::from(self.std.ut_offset);
+                + i64::from(self.std.ut_offset)
+                - i64::from(self.dst.ut_offset);
+
+            // dbg!(crate::NaiveDateTime::from_timestamp(local_time, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_start_transition_start, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_start_transition_end, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_end_transition_start, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_end_transition_end, 0));
+
+            // For the DST END transition, the `start` happens at a later timestamp than the `end`.
 
             if local_time <= dst_start_transition_start {
                 Ok(crate::LocalResult::Single(self.std))
@@ -265,46 +272,62 @@ impl AlternateTime {
                 && local_time < dst_start_transition_end
             {
                 Ok(crate::LocalResult::None)
-            } else if local_time >= dst_start_transition_end
-                && local_time < dst_end_transition_start
+            } else if local_time >= dst_start_transition_end && local_time < dst_end_transition_end
+            // the `end` occurs earlier in time
             {
                 Ok(crate::LocalResult::Single(self.dst))
-            } else if local_time >= dst_end_transition_start && local_time <= dst_end_transition_end
+            } else if local_time >= dst_end_transition_end && local_time <= dst_end_transition_start
             {
-                Ok(crate::LocalResult::Ambiguous(self.dst, self.std))
+                // dbg!("ambiguous");
+                Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
             } else {
+                // dbg!("default", self.std, self.dst);
                 Ok(crate::LocalResult::Single(self.std))
             }
         } else {
             // southern hemisphere
 
-            let dst_end_transition_start = self.dst_end.unix_time(current_year, 0)
-                + i64::from(self.dst_end_time)
-                + i64::from(self.dst.ut_offset);
+            let dst_end_transition_start =
+                self.dst_end.unix_time(current_year, 0) + i64::from(self.dst_end_time);
             let dst_end_transition_end = self.dst_end.unix_time(current_year, 0)
                 + i64::from(self.dst_end_time)
-                + i64::from(self.std.ut_offset);
+                + i64::from(self.std.ut_offset)
+                - i64::from(self.dst.ut_offset);
 
-            let dst_start_transition_start = self.dst_start.unix_time(current_year, 0)
-                + i64::from(self.dst_start_time)
-                + i64::from(self.std.ut_offset);
+            let dst_start_transition_start =
+                self.dst_start.unix_time(current_year, 0) + i64::from(self.dst_start_time);
             let dst_start_transition_end = self.dst_start.unix_time(current_year, 0)
                 + i64::from(self.dst_start_time)
-                + i64::from(self.dst.ut_offset);
+                + i64::from(self.dst.ut_offset)
+                - i64::from(self.std.ut_offset);
 
-            if local_time <= dst_end_transition_start {
+            // dbg!(crate::NaiveDateTime::from_timestamp(local_time, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_start_transition_start, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_start_transition_end, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_end_transition_start, 0),
+            //     crate::NaiveDateTime::from_timestamp(dst_end_transition_end, 0));
+
+            // For the DST END transition, the `start` happens at a later timestamp than the `end`.
+
+            if local_time < dst_end_transition_end {
+                // dbg!("single dst early year");
                 Ok(crate::LocalResult::Single(self.dst))
-            } else if local_time > dst_end_transition_start && local_time <= dst_end_transition_end
+            } else if local_time >= dst_end_transition_end && local_time <= dst_end_transition_start
             {
-                Ok(crate::LocalResult::Ambiguous(self.dst, self.std))
+                // dbg!("ambiguous");
+                Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
             } else if local_time > dst_end_transition_end && local_time < dst_start_transition_start
             {
+                // dbg!("single std");
+
                 Ok(crate::LocalResult::Single(self.std))
             } else if local_time >= dst_start_transition_start
                 && local_time < dst_start_transition_end
             {
+                // dbg!("invalid");
                 Ok(crate::LocalResult::None)
             } else {
+                // dbg!("single dst late year");
                 Ok(crate::LocalResult::Single(self.dst))
             }
         }

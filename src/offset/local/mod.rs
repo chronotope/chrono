@@ -142,10 +142,16 @@ mod tests {
     use std::{path, process};
 
     #[cfg(unix)]
-    fn verify_against_date_command(path: &'static str, year: i32, month: u32) {
+    fn verify_against_date_command_local(
+        path: &'static str,
+        year: i32,
+        month: u32,
+        day: u32,
+        hour: u32,
+    ) {
         let output = process::Command::new(path)
             .arg("-d")
-            .arg(format!("{year}-{month:02}-05 22:05:01"))
+            .arg(format!("{year}-{month:02}-{day:02} {hour:02}:05:01"))
             .arg("+%Y-%m-%d %H:%M:%S %:z")
             .output()
             .unwrap();
@@ -153,10 +159,16 @@ mod tests {
         let date_command_str = String::from_utf8(output.stdout).unwrap();
 
         let local = Local
-            .from_local_datetime(&NaiveDate::from_ymd(year, month, 5).and_hms(22, 5, 1))
-            .unwrap();
+            .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
+            // looks like the "date" command always returns a given time when it is ambiguous
+            .earliest();
 
-        assert_eq!(format!("{}\n", local), date_command_str);
+        if let Some(local) = local {
+            assert_eq!(format!("{}\n", local), date_command_str);
+        } else {
+            // we are in a "Spring forward gap" due to DST, and so date also returns ""
+            assert_eq!("", date_command_str);
+        }
     }
 
     #[test]
@@ -167,9 +179,39 @@ mod tests {
         // for date_path in ["/usr/bin/date", "/bin/date"] {
         for date_path in ["/usr/bin/date"] {
             if path::Path::new(date_path).exists() {
-                for year in 1975..=2075 {
+                for year in 1975..=1977 {
                     for month in 1..=12 {
-                        verify_against_date_command(date_path, year, month)
+                        for day in 1..28 {
+                            for hour in 0..23 {
+                                verify_against_date_command_local(
+                                    date_path, year, month, day, hour,
+                                );
+                            }
+                        }
+                    }
+                }
+
+                for year in 2020..=2022 {
+                    for month in 1..=12 {
+                        for day in 1..28 {
+                            for hour in 0..23 {
+                                verify_against_date_command_local(
+                                    date_path, year, month, day, hour,
+                                );
+                            }
+                        }
+                    }
+                }
+
+                for year in 2073..=2075 {
+                    for month in 1..=12 {
+                        for day in 1..28 {
+                            for hour in 0..23 {
+                                verify_against_date_command_local(
+                                    date_path, year, month, day, hour,
+                                );
+                            }
+                        }
                     }
                 }
             }
