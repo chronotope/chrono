@@ -343,7 +343,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
     }
 }
 
-/// Tries to consume everyting until next whitespace-like symbol.
+/// Tries to consume everything until next whitespace-like symbol.
 /// Does not provide any offset information from the consumed data.
 pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
     Ok((s.trim_left_matches(|c: char| !c.is_whitespace()), ()))
