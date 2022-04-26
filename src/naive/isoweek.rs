@@ -10,7 +10,7 @@ use super::internals::{DateImpl, Of, YearFlags};
 /// ISO 8601 week.
 ///
 /// This type, combined with [`Weekday`](../enum.Weekday.html),
-/// constitues the ISO 8601 [week date](./struct.NaiveDate.html#week-date).
+/// constitutes the ISO 8601 [week date](./struct.NaiveDate.html#week-date).
 /// One can retrieve this type from the existing [`Datelike`](../trait.Datelike.html) types
 /// via the [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) method.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]

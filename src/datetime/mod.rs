@@ -221,7 +221,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Note that this does reduce the number of years that can be represented
     /// from ~584 Billion to ~584 Thousand. (If this is a problem, please file
     /// an issue to let me know what domain needs microsecond precision over
-    /// millenia, I'm curious.)
+    /// millennia, I'm curious.)
     ///
     /// # Example
     ///
@@ -453,7 +453,7 @@ impl DateTime<FixedOffset> {
     /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
     /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
     ///
-    /// RFC 2822 is the internet message standard that specifices the
+    /// RFC 2822 is the internet message standard that specifies the
     /// representation of times in HTTP and email headers.
     ///
     /// ```
