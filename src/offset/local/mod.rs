@@ -158,16 +158,35 @@ mod tests {
 
         let date_command_str = String::from_utf8(output.stdout).unwrap();
 
-        let local = Local
-            .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
-            // looks like the "date" command always returns a given time when it is ambiguous
-            .earliest();
+        // let local = Local
+        //     .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
+        //     // looks like the "date" command always returns a given time when it is ambiguous
+        //     .earliest();
 
-        if let Some(local) = local {
-            assert_eq!(format!("{}\n", local), date_command_str);
-        } else {
-            // we are in a "Spring forward gap" due to DST, and so date also returns ""
-            assert_eq!("", date_command_str);
+        // if let Some(local) = local {
+        //     assert_eq!(format!("{}\n", local), date_command_str);
+        // } else {
+        //     // we are in a "Spring forward gap" due to DST, and so date also returns ""
+        //     assert_eq!("", date_command_str);
+        // }
+
+        match Local
+        .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
+        {
+            crate::LocalResult::Ambiguous(a, b) => {
+                assert!(
+                    format!("{}\n", a)  == date_command_str
+                    ||
+                    format!("{}\n", b)  == date_command_str
+                )
+            }
+            crate::LocalResult::Single(a) => {
+                assert_eq!(format!("{}\n", a), date_command_str);
+
+            }
+            crate::LocalResult::None => {
+                assert_eq!("", date_command_str);
+            }
         }
     }
 

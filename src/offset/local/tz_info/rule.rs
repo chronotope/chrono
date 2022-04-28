@@ -242,7 +242,7 @@ impl AlternateTime {
         if self.dst_start.transition_date(current_year).0
             < self.dst_end.transition_date(current_year).0
         {
-            // northern hemisphere
+            // northern hemisphere or southern hemisphere reverse DST
 
             let dst_start_transition_start =
                 self.dst_start.unix_time(current_year, 0) + i64::from(self.dst_start_time);
@@ -265,27 +265,53 @@ impl AlternateTime {
             //     crate::NaiveDateTime::from_timestamp(dst_end_transition_end, 0));
 
             // For the DST END transition, the `start` happens at a later timestamp than the `end`.
+            if self.dst.ut_offset > self.std.ut_offset {
 
-            if local_time <= dst_start_transition_start {
-                Ok(crate::LocalResult::Single(self.std))
-            } else if local_time > dst_start_transition_start
-                && local_time < dst_start_transition_end
-            {
-                Ok(crate::LocalResult::None)
-            } else if local_time >= dst_start_transition_end && local_time < dst_end_transition_end
-            // the `end` occurs earlier in time
-            {
-                Ok(crate::LocalResult::Single(self.dst))
-            } else if local_time >= dst_end_transition_end && local_time <= dst_end_transition_start
-            {
-                // dbg!("ambiguous");
-                Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                if local_time <= dst_start_transition_start {
+                    Ok(crate::LocalResult::Single(self.std))
+                } else if local_time > dst_start_transition_start
+                    && local_time < dst_start_transition_end
+                {
+                    Ok(crate::LocalResult::None)
+                } else if local_time >= dst_start_transition_end && local_time < dst_end_transition_end
+                // the `end` occurs earlier in time
+                {
+                    Ok(crate::LocalResult::Single(self.dst))
+                } else if local_time >= dst_end_transition_end && local_time <= dst_end_transition_start
+                {
+                    // dbg!("ambiguous");
+                    Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                } else {
+                    // dbg!("default", self.std, self.dst);
+                    Ok(crate::LocalResult::Single(self.std))
+                }
             } else {
-                // dbg!("default", self.std, self.dst);
-                Ok(crate::LocalResult::Single(self.std))
+                // 
+                if local_time < dst_start_transition_end {
+                    // dbg!("single dst early year");
+                    Ok(crate::LocalResult::Single(self.std))
+                } else if local_time >= dst_start_transition_end && local_time <= dst_start_transition_start
+                {
+                    // dbg!("ambiguous");
+                    Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                } else if local_time > dst_start_transition_start && local_time < dst_end_transition_start
+                {
+                    // dbg!("single std");
+    
+                    Ok(crate::LocalResult::Single(self.dst))
+                } else if local_time >= dst_end_transition_start
+                    && local_time < dst_end_transition_end
+                {
+                    // dbg!("invalid");
+                    Ok(crate::LocalResult::None)
+                } else {
+                    // dbg!("single dst late year");
+                    Ok(crate::LocalResult::Single(self.std))
+                }
+
             }
         } else {
-            // southern hemisphere
+            // southern hemisphere regular DST or northern hemisphere reverse DST
 
             let dst_end_transition_start =
                 self.dst_end.unix_time(current_year, 0) + i64::from(self.dst_end_time);
@@ -308,27 +334,50 @@ impl AlternateTime {
             //     crate::NaiveDateTime::from_timestamp(dst_end_transition_end, 0));
 
             // For the DST END transition, the `start` happens at a later timestamp than the `end`.
+            if self.dst.ut_offset > self.std.ut_offset {
 
-            if local_time < dst_end_transition_end {
-                // dbg!("single dst early year");
-                Ok(crate::LocalResult::Single(self.dst))
-            } else if local_time >= dst_end_transition_end && local_time <= dst_end_transition_start
-            {
-                // dbg!("ambiguous");
-                Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
-            } else if local_time > dst_end_transition_end && local_time < dst_start_transition_start
-            {
-                // dbg!("single std");
+                if local_time < dst_end_transition_end {
+                    // dbg!("single dst early year");
+                    Ok(crate::LocalResult::Single(self.dst))
+                } else if local_time >= dst_end_transition_end && local_time <= dst_end_transition_start
+                {
+                    // dbg!("ambiguous");
+                    Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                } else if local_time > dst_end_transition_end && local_time < dst_start_transition_start
+                {
+                    // dbg!("single std");
+    
+                    Ok(crate::LocalResult::Single(self.std))
+                } else if local_time >= dst_start_transition_start
+                    && local_time < dst_start_transition_end
+                {
+                    // dbg!("invalid");
+                    Ok(crate::LocalResult::None)
+                } else {
+                    // dbg!("single dst late year");
+                    Ok(crate::LocalResult::Single(self.dst))
+                }
 
-                Ok(crate::LocalResult::Single(self.std))
-            } else if local_time >= dst_start_transition_start
-                && local_time < dst_start_transition_end
-            {
-                // dbg!("invalid");
-                Ok(crate::LocalResult::None)
             } else {
-                // dbg!("single dst late year");
-                Ok(crate::LocalResult::Single(self.dst))
+                // 
+                if local_time <= dst_end_transition_start {
+                    Ok(crate::LocalResult::Single(self.dst))
+                } else if local_time > dst_end_transition_start
+                    && local_time < dst_end_transition_end
+                {
+                    Ok(crate::LocalResult::None)
+                } else if local_time >= dst_end_transition_end && local_time < dst_start_transition_end
+                // the `end` occurs earlier in time
+                {
+                    Ok(crate::LocalResult::Single(self.std))
+                } else if local_time >= dst_start_transition_end && local_time <= dst_start_transition_start
+                {
+                    // dbg!("ambiguous");
+                    Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                } else {
+                    Ok(crate::LocalResult::Single(self.dst))
+                }
+
             }
         }
     }

@@ -241,7 +241,7 @@ impl<'a> TimeZoneRef<'a> {
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
-                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
+                            if prev.unwrap().ut_offset.abs() < after_ltt.ut_offset.abs() {
                                 return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
                             } else {
                                 return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
@@ -254,7 +254,7 @@ impl<'a> TimeZoneRef<'a> {
                         if local_leap_time < transition_start {
                             return Ok(crate::LocalResult::Single(prev.unwrap()));
                         } else if local_leap_time == transition_end {
-                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
+                            if prev.unwrap().ut_offset.abs() < after_ltt.ut_offset.abs() {
                                 return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
                             } else {
                                 return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
