@@ -158,6 +158,9 @@ mod tests {
 
         let date_command_str = String::from_utf8(output.stdout).unwrap();
 
+        // The below would be preferred. At this stage neither earliest() or latest()
+        // seems to be consistent with the output of the `date` command, so we simply
+        // compare both.
         // let local = Local
         //     .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
         //     // looks like the "date" command always returns a given time when it is ambiguous
@@ -170,19 +173,16 @@ mod tests {
         //     assert_eq!("", date_command_str);
         // }
 
-        match Local
-        .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
+        match Local.from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
         {
             crate::LocalResult::Ambiguous(a, b) => {
                 assert!(
-                    format!("{}\n", a)  == date_command_str
-                    ||
-                    format!("{}\n", b)  == date_command_str
+                    format!("{}\n", a) == date_command_str
+                        || format!("{}\n", b) == date_command_str
                 )
             }
             crate::LocalResult::Single(a) => {
                 assert_eq!(format!("{}\n", a), date_command_str);
-
             }
             crate::LocalResult::None => {
                 assert_eq!("", date_command_str);
@@ -244,12 +244,6 @@ mod tests {
         let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&now.naive_utc());
 
-        dbg!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
-        dbg!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
-
-        dbg!(now, from_local);
-        dbg!(now, from_utc);
-
         assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
@@ -264,12 +258,6 @@ mod tests {
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
-        dbg!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
-        dbg!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
-
-        dbg!(distant_past, from_local);
-        dbg!(distant_past, from_utc);
-
         assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
 
@@ -282,12 +270,6 @@ mod tests {
         let distant_future = Local::now() + Duration::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
-
-        dbg!(distant_future.offset().local_minus_utc(), from_local.offset().local_minus_utc());
-        dbg!(distant_future.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
-
-        dbg!(distant_future, from_local);
-        dbg!(distant_future, from_utc);
 
         assert_eq!(
             distant_future.offset().local_minus_utc(),

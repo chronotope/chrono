@@ -229,19 +229,16 @@ impl<'a> TimeZoneRef<'a> {
                 let transition_start =
                     transition.unix_leap_time + i64::from(prev.unwrap().ut_offset);
 
-                // dbg!(crate::NaiveDateTime::from_timestamp(local_time, 0), crate::NaiveDateTime::from_timestamp(transition_end,0), crate::NaiveDateTime::from_timestamp(transition_start,0));
-
                 match transition_start.cmp(&transition_end) {
                     Ordering::Greater => {
                         // bakwards transition, eg from DST to regular
                         // this means a given local time could have one of two possible offsets
-
                         if local_leap_time < transition_end {
                             return Ok(crate::LocalResult::Single(prev.unwrap()));
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
-                            if prev.unwrap().ut_offset.abs() < after_ltt.ut_offset.abs() {
+                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
                                 return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
                             } else {
                                 return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
@@ -250,11 +247,10 @@ impl<'a> TimeZoneRef<'a> {
                     }
                     Ordering::Equal => {
                         // should this ever happen? presumably we have to handle it anyway.
-
                         if local_leap_time < transition_start {
                             return Ok(crate::LocalResult::Single(prev.unwrap()));
                         } else if local_leap_time == transition_end {
-                            if prev.unwrap().ut_offset.abs() < after_ltt.ut_offset.abs() {
+                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
                                 return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
                             } else {
                                 return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
@@ -264,7 +260,6 @@ impl<'a> TimeZoneRef<'a> {
                     Ordering::Less => {
                         // forwards transition, eg from regular to DST
                         // this means that times that are skipped are invalid local times
-
                         if local_leap_time <= transition_start {
                             return Ok(crate::LocalResult::Single(prev.unwrap()));
                         } else if local_leap_time < transition_end {
