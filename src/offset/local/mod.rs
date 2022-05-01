@@ -137,21 +137,15 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::{Datelike, Duration, NaiveDate};
+    use crate::{Datelike, Duration, NaiveDate, NaiveDateTime, Timelike};
 
     use std::{path, process};
 
     #[cfg(unix)]
-    fn verify_against_date_command_local(
-        path: &'static str,
-        year: i32,
-        month: u32,
-        day: u32,
-        hour: u32,
-    ) {
+    fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
         let output = process::Command::new(path)
             .arg("-d")
-            .arg(format!("{year}-{month:02}-{day:02} {hour:02}:05:01"))
+            .arg(format!("{}-{:02}-{:02} {:02}:05:01", dt.year(), dt.month(), dt.day(), dt.hour()))
             .arg("+%Y-%m-%d %H:%M:%S %:z")
             .output()
             .unwrap();
@@ -173,8 +167,12 @@ mod tests {
         //     assert_eq!("", date_command_str);
         // }
 
-        match Local.from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
-        {
+        // This is used while a decision is made wheter the `date` output needs to 
+        // be exactly matched, or whether LocalResult::Ambigious should be handled
+        // differently
+        match Local.from_local_datetime(
+            &NaiveDate::from_ymd(dt.year(), dt.month(), dt.day()).and_hms(dt.hour(), 5, 1),
+        ) {
             crate::LocalResult::Ambiguous(a, b) => {
                 assert!(
                     format!("{}\n", a) == date_command_str
@@ -193,49 +191,28 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn try_verify_against_date_command() {
-        // #TODO: investigate /bin/date command behaviour on macOS
-        // avoid running this on macOS, temporarily
-        // for date_path in ["/usr/bin/date", "/bin/date"] {
-        for date_path in ["/usr/bin/date"] {
-            if path::Path::new(date_path).exists() {
-                for year in 1975..=1977 {
-                    for month in 1..=12 {
-                        for day in 1..28 {
-                            for hour in 0..23 {
-                                verify_against_date_command_local(
-                                    date_path, year, month, day, hour,
-                                );
-                            }
-                        }
-                    }
-                }
+        let date_path = "/usr/bin/date";
 
-                for year in 2020..=2022 {
-                    for month in 1..=12 {
-                        for day in 1..28 {
-                            for hour in 0..23 {
-                                verify_against_date_command_local(
-                                    date_path, year, month, day, hour,
-                                );
-                            }
-                        }
-                    }
-                }
-
-                for year in 2073..=2075 {
-                    for month in 1..=12 {
-                        for day in 1..28 {
-                            for hour in 0..23 {
-                                verify_against_date_command_local(
-                                    date_path, year, month, day, hour,
-                                );
-                            }
-                        }
-                    }
-                }
-            }
+        if !path::Path::new(date_path).exists() {
+            // date command not found, skipping
+            // avoid running this on macOS, which has path /bin/date
+            // as the required CLI arguments are not present in the
+            // macOS build.
+            return;
         }
-        // date command not found, skipping
+
+        let mut date = NaiveDate::from_ymd(1975, 1, 1).and_hms(0, 0, 0);
+
+        while date.year() < 2078 {
+            if (1975..=1977).contains(&date.year())
+                || (2020..=2022).contains(&date.year())
+                || (2073..=2077).contains(&date.year())
+            {
+                verify_against_date_command_local(date_path, date);
+            }
+
+            date += crate::Duration::hours(1);
+        }
     }
 
     #[test]
