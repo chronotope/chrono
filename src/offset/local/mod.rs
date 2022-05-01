@@ -167,7 +167,7 @@ mod tests {
         //     assert_eq!("", date_command_str);
         // }
 
-        // This is used while a decision is made wheter the `date` output needs to 
+        // This is used while a decision is made wheter the `date` output needs to
         // be exactly matched, or whether LocalResult::Ambigious should be handled
         // differently
         match Local.from_local_datetime(
