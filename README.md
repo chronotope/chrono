@@ -3,6 +3,7 @@
 
 [![Chrono GitHub Actions][gh-image]][gh-checks]
 [![Chrono on crates.io][cratesio-image]][cratesio]
+[![Chrono Dependencies][depsrs-image]][depsrs]
 [![Chrono on docs.rs][docsrs-image]][docsrs]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
 
@@ -10,6 +11,8 @@
 [gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
+[depsrs-image]: https://deps.rs/repo/github/chronotope/chrono/status.svg
+[depsrs]: https://deps.rs/repo/github/chronotope/chrono
 [docsrs-image]: https://docs.rs/chrono/badge.svg
 [docsrs]: https://docs.rs/chrono
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
