@@ -808,14 +808,25 @@ mod tests {
     fn test_time_zone_from_posix_tz() -> Result<(), Error> {
         #[cfg(unix)]
         {
-            let time_zone_local = TimeZone::local()?;
-            let time_zone_local_1 = TimeZone::from_posix_tz("localtime")?;
-            let time_zone_local_2 = TimeZone::from_posix_tz("/etc/localtime")?;
-            let time_zone_local_3 = TimeZone::from_posix_tz(":/etc/localtime")?;
+            // if the TZ var is set, this essentially _overrides_ the 
+            // time set by the localtime symlink
+            // so just ensure that ::local() acts as expected
+            // in this case
+            if let Ok(tz) = std::env::var("TZ") {
+                let time_zone_local = TimeZone::local()?;
+                let time_zone_local_1 = TimeZone::from_posix_tz(&tz)?;
+                assert_eq!(time_zone_local, time_zone_local_1);
+            } else {
 
-            assert_eq!(time_zone_local, time_zone_local_1);
-            assert_eq!(time_zone_local, time_zone_local_2);
-            assert_eq!(time_zone_local, time_zone_local_3);
+                let time_zone_local = TimeZone::local()?;
+                let time_zone_local_1 = TimeZone::from_posix_tz("localtime")?;
+                let time_zone_local_2 = TimeZone::from_posix_tz("/etc/localtime")?;
+                let time_zone_local_3 = TimeZone::from_posix_tz(":/etc/localtime")?;
+    
+                assert_eq!(time_zone_local, time_zone_local_1);
+                assert_eq!(time_zone_local, time_zone_local_2);
+                assert_eq!(time_zone_local, time_zone_local_3);
+            }
 
             let time_zone_utc = TimeZone::from_posix_tz("UTC")?;
             assert_eq!(time_zone_utc.find_local_time_type(0)?.offset(), 0);
