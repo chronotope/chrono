@@ -36,6 +36,8 @@ meaningful in the github actions feature matrix UI.
             test_wasm_simple
         elif [[ ${WASM:-} == wasm_emscripten ]]; then
             test_wasm_emscripten
+        elif [[ ${WASM:-} == wasm_unknown ]]; then
+            test_wasm_unknown
         elif [[ ${CORE:-} == no_std ]]; then
             test_core
         elif [[ ${EXHAUSTIVE_TZ:-} == all_tzs ]]; then
@@ -116,6 +118,10 @@ test_wasm_simple() {
 
 test_wasm_emscripten() {
     runt cargo build --target wasm32-unknown-emscripten
+}
+
+test_wasm_unknown() {
+    runt cargo build --target wasm32-unknown-unknown
 }
 
 main "$@"
