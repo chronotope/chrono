@@ -102,6 +102,7 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+          default: true
       - uses: Swatinem/rust-cache@v1
 
       - name: Install node
