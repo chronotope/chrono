@@ -165,6 +165,7 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+          default: true
 
       - name: Build and Test
         run: bash ci/github.sh
