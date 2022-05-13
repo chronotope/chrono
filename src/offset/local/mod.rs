@@ -112,7 +112,7 @@ impl TimeZone for Local {
 
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
-        LocalResult::Single(inner::naive_to_local(local, true))
+        inner::naive_to_local(local, true)
     }
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
@@ -129,7 +129,9 @@ impl TimeZone for Local {
 
     #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
-        inner::naive_to_local(utc, false)
+        // this is OK to unwrap as getting local time from a UTC
+        // timestamp is never ambiguous
+        inner::naive_to_local(utc, false).unwrap()
     }
 }
 
