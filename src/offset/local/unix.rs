@@ -12,23 +12,31 @@ use std::sync::Once;
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
-use crate::Utc;
+use crate::{Datelike, LocalResult, Utc};
 
 pub(super) fn now() -> DateTime<Local> {
-    let now = Utc::now();
-    DateTime::from_utc(now.naive_utc(), offset(now.timestamp()))
+    let now = Utc::now().naive_utc();
+    DateTime::from_utc(now, offset(now, false).unwrap())
 }
 
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
-    let offset = match local {
-        true => offset(d.timestamp()),
-        false => FixedOffset::east(0),
-    };
-
-    DateTime::from_utc(*d - offset, offset)
+pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+    if local {
+        match offset(*d, true) {
+            LocalResult::None => LocalResult::None,
+            LocalResult::Ambiguous(early, late) => LocalResult::Ambiguous(
+                DateTime::from_utc(*d - early, early),
+                DateTime::from_utc(*d - late, late),
+            ),
+            LocalResult::Single(offset) => {
+                LocalResult::Single(DateTime::from_utc(*d - offset, offset))
+            }
+        }
+    } else {
+        LocalResult::Single(DateTime::from_utc(*d, offset(*d, false).unwrap()))
+    }
 }
 
-fn offset(unix: i64) -> FixedOffset {
+fn offset(d: NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
     let info = unsafe {
         INIT.call_once(|| {
             INFO = Some(TimeZone::local().expect("unable to parse localtime info"));
@@ -36,9 +44,27 @@ fn offset(unix: i64) -> FixedOffset {
         INFO.as_ref().unwrap()
     };
 
-    FixedOffset::east(
-        info.find_local_time_type(unix).expect("unable to select local time type").offset(),
-    )
+    if local {
+        // we pass through the year as the year of a local point in time must either be valid in that locale, or
+        // the entire time was skipped in which case we will return LocalResult::None anywa.
+        match info
+            .find_local_time_type_from_local(d.timestamp(), d.year())
+            .expect("unable to select local time type")
+        {
+            LocalResult::None => LocalResult::None,
+            LocalResult::Ambiguous(early, late) => LocalResult::Ambiguous(
+                FixedOffset::east(early.offset()),
+                FixedOffset::east(late.offset()),
+            ),
+            LocalResult::Single(tt) => LocalResult::Single(FixedOffset::east(tt.offset())),
+        }
+    } else {
+        LocalResult::Single(FixedOffset::east(
+            info.find_local_time_type(d.timestamp())
+                .expect("unable to select local time type")
+                .offset(),
+        ))
+    }
 }
 
 static mut INFO: Option<TimeZone> = None;

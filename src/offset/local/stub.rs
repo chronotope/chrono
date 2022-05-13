@@ -11,7 +11,7 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{FixedOffset, Local};
-use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 pub(super) fn now() -> DateTime<Local> {
     tm_to_datetime(Timespec::now().local())
@@ -19,7 +19,7 @@ pub(super) fn now() -> DateTime<Local> {
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
+pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -49,7 +49,7 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> 
     assert_eq!(tm.tm_nsec, 0);
     tm.tm_nsec = d.nanosecond() as i32;
 
-    tm_to_datetime(tm)
+    LocalResult::Single(tm_to_datetime(tm))
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
@@ -116,7 +116,7 @@ impl Timespec {
 /// day, and so on), also called a broken-down time value.
 // FIXME: use c_int instead of i32?
 #[repr(C)]
-struct Tm {
+pub(super) struct Tm {
     /// Seconds after the minute - [0, 60]
     tm_sec: i32,
 
