@@ -3,7 +3,7 @@
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
-use std::{fmt, str};
+use std::{cmp::Ordering, fmt, str};
 
 use super::rule::{AlternateTime, TransitionRule};
 use super::{parser, Error, DAYS_PER_WEEK, SECONDS_PER_DAY};
@@ -27,7 +27,11 @@ impl TimeZone {
     /// This method in not supported on non-UNIX platforms, and returns the UTC time zone instead.
     ///
     pub(crate) fn local() -> Result<Self, Error> {
-        Self::from_posix_tz("localtime")
+        if let Ok(tz) = std::env::var("TZ") {
+            Self::from_posix_tz(&tz)
+        } else {
+            Self::from_posix_tz("localtime")
+        }
     }
 
     /// Construct a time zone from a POSIX TZ string, as described in [the POSIX documentation of the `TZ` environment variable](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html).
@@ -114,6 +118,15 @@ impl TimeZone {
         self.as_ref().find_local_time_type(unix_time)
     }
 
+    // should we pass NaiveDateTime all the way through to this fn?
+    pub(crate) fn find_local_time_type_from_local(
+        &self,
+        local_time: i64,
+        year: i32,
+    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
+        self.as_ref().find_local_time_type_from_local(local_time, year)
+    }
+
     /// Returns a reference to the time zone
     fn as_ref(&self) -> TimeZoneRef {
         TimeZoneRef {
@@ -185,6 +198,91 @@ impl<'a> TimeZoneRef<'a> {
             Ok(local_time_type) => Ok(local_time_type),
             Err(Error::OutOfRange(error)) => Err(Error::FindLocalTimeType(error)),
             err => err,
+        }
+    }
+
+    pub(crate) fn find_local_time_type_from_local(
+        &self,
+        local_time: i64,
+        year: i32,
+    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
+        // #TODO: this is wrong as we need 'local_time_to_local_leap_time ?
+        // but ... does the local time even include leap seconds ??
+        // let unix_leap_time = match self.unix_time_to_unix_leap_time(local_time) {
+        //     Ok(unix_leap_time) => unix_leap_time,
+        //     Err(Error::OutOfRange(error)) => return Err(Error::FindLocalTimeType(error)),
+        //     Err(err) => return Err(err),
+        // };
+        let local_leap_time = local_time;
+
+        // if we have at least one transition,
+        // we must check _all_ of them, incase of any Overlapping (LocalResult::Ambiguous) or Skipping (LocalResult::None) transitions
+        if !self.transitions.is_empty() {
+            let mut prev = Some(self.local_time_types[0]);
+
+            for transition in self.transitions {
+                let after_ltt = self.local_time_types[transition.local_time_type_index];
+
+                // the end and start here refers to where the time starts prior to the transition
+                // and where it ends up after. not the temporal relationship.
+                let transition_end = transition.unix_leap_time + i64::from(after_ltt.ut_offset);
+                let transition_start =
+                    transition.unix_leap_time + i64::from(prev.unwrap().ut_offset);
+
+                match transition_start.cmp(&transition_end) {
+                    Ordering::Greater => {
+                        // bakwards transition, eg from DST to regular
+                        // this means a given local time could have one of two possible offsets
+                        if local_leap_time < transition_end {
+                            return Ok(crate::LocalResult::Single(prev.unwrap()));
+                        } else if local_leap_time >= transition_end
+                            && local_leap_time <= transition_start
+                        {
+                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
+                                return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            } else {
+                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
+                            }
+                        }
+                    }
+                    Ordering::Equal => {
+                        // should this ever happen? presumably we have to handle it anyway.
+                        if local_leap_time < transition_start {
+                            return Ok(crate::LocalResult::Single(prev.unwrap()));
+                        } else if local_leap_time == transition_end {
+                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
+                                return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            } else {
+                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
+                            }
+                        }
+                    }
+                    Ordering::Less => {
+                        // forwards transition, eg from regular to DST
+                        // this means that times that are skipped are invalid local times
+                        if local_leap_time <= transition_start {
+                            return Ok(crate::LocalResult::Single(prev.unwrap()));
+                        } else if local_leap_time < transition_end {
+                            return Ok(crate::LocalResult::None);
+                        } else if local_leap_time == transition_end {
+                            return Ok(crate::LocalResult::Single(after_ltt));
+                        }
+                    }
+                }
+
+                // try the next transition, we are fully after this one
+                prev = Some(after_ltt);
+            }
+        };
+
+        if let Some(extra_rule) = self.extra_rule {
+            match extra_rule.find_local_time_type_from_local(local_time, year) {
+                Ok(local_time_type) => Ok(local_time_type),
+                Err(Error::OutOfRange(error)) => Err(Error::FindLocalTimeType(error)),
+                err => err,
+            }
+        } else {
+            Ok(crate::LocalResult::Single(self.local_time_types[0]))
         }
     }
 
@@ -710,14 +808,24 @@ mod tests {
     fn test_time_zone_from_posix_tz() -> Result<(), Error> {
         #[cfg(unix)]
         {
-            let time_zone_local = TimeZone::local()?;
-            let time_zone_local_1 = TimeZone::from_posix_tz("localtime")?;
-            let time_zone_local_2 = TimeZone::from_posix_tz("/etc/localtime")?;
-            let time_zone_local_3 = TimeZone::from_posix_tz(":/etc/localtime")?;
+            // if the TZ var is set, this essentially _overrides_ the
+            // time set by the localtime symlink
+            // so just ensure that ::local() acts as expected
+            // in this case
+            if let Ok(tz) = std::env::var("TZ") {
+                let time_zone_local = TimeZone::local()?;
+                let time_zone_local_1 = TimeZone::from_posix_tz(&tz)?;
+                assert_eq!(time_zone_local, time_zone_local_1);
+            } else {
+                let time_zone_local = TimeZone::local()?;
+                let time_zone_local_1 = TimeZone::from_posix_tz("localtime")?;
+                let time_zone_local_2 = TimeZone::from_posix_tz("/etc/localtime")?;
+                let time_zone_local_3 = TimeZone::from_posix_tz(":/etc/localtime")?;
 
-            assert_eq!(time_zone_local, time_zone_local_1);
-            assert_eq!(time_zone_local, time_zone_local_2);
-            assert_eq!(time_zone_local, time_zone_local_3);
+                assert_eq!(time_zone_local, time_zone_local_1);
+                assert_eq!(time_zone_local, time_zone_local_2);
+                assert_eq!(time_zone_local, time_zone_local_3);
+            }
 
             let time_zone_utc = TimeZone::from_posix_tz("UTC")?;
             assert_eq!(time_zone_utc.find_local_time_type(0)?.offset(), 0);

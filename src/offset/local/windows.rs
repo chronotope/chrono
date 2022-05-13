@@ -17,14 +17,14 @@ use winapi::um::minwinbase::SYSTEMTIME;
 use winapi::um::timezoneapi::*;
 
 use super::{FixedOffset, Local};
-use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 pub(super) fn now() -> DateTime<Local> {
     tm_to_datetime(Timespec::now().local())
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> {
+pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -54,7 +54,8 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> DateTime<Local> 
     assert_eq!(tm.tm_nsec, 0);
     tm.tm_nsec = d.nanosecond() as i32;
 
-    tm_to_datetime(tm)
+    // #TODO - there should be ambiguous cases, investigate?
+    LocalResult::Single(tm_to_datetime(tm))
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
