@@ -808,7 +808,7 @@ mod tests {
     fn test_time_zone_from_posix_tz() -> Result<(), Error> {
         #[cfg(unix)]
         {
-            // if the TZ var is set, this essentially _overrides_ the 
+            // if the TZ var is set, this essentially _overrides_ the
             // time set by the localtime symlink
             // so just ensure that ::local() acts as expected
             // in this case
@@ -817,12 +817,11 @@ mod tests {
                 let time_zone_local_1 = TimeZone::from_posix_tz(&tz)?;
                 assert_eq!(time_zone_local, time_zone_local_1);
             } else {
-
                 let time_zone_local = TimeZone::local()?;
                 let time_zone_local_1 = TimeZone::from_posix_tz("localtime")?;
                 let time_zone_local_2 = TimeZone::from_posix_tz("/etc/localtime")?;
                 let time_zone_local_3 = TimeZone::from_posix_tz(":/etc/localtime")?;
-    
+
                 assert_eq!(time_zone_local, time_zone_local_1);
                 assert_eq!(time_zone_local, time_zone_local_2);
                 assert_eq!(time_zone_local, time_zone_local_3);
