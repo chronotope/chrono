@@ -18,8 +18,6 @@
 //! # Example
 //! ```rust
 //! # use std::error::Error;
-//! #
-//! # fn main() -> Result<(), Box<dyn Error>> {
 //! use chrono::prelude::*;
 //!
 //! let date_time = Utc.ymd(2020, 11, 10).and_hms(0, 1, 32);
@@ -29,8 +27,7 @@
 //!
 //! let parsed = Utc.datetime_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?;
 //! assert_eq!(parsed, date_time);
-//! # Ok(())
-//! # }
+//! # Ok::<(), chrono::ParseError>(())
 //! ```
 
 #[cfg(feature = "alloc")]

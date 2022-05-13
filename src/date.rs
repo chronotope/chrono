@@ -3,12 +3,14 @@
 
 //! ISO 8601 calendar date with time zone.
 
-use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, Sub};
 use core::{fmt, hash};
+
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
@@ -16,6 +18,7 @@ use crate::format::Locale;
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{self, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
+use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::{Datelike, Weekday};
 
@@ -51,6 +54,7 @@ use crate::{Datelike, Weekday};
 ///   so the local date and UTC date should be equal for most cases
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
 #[derive(Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,

@@ -4,16 +4,19 @@
 //! The UTC (Coordinated Universal Time) time zone.
 
 use core::fmt;
-
-use super::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::naive::{NaiveDate, NaiveDateTime};
-#[cfg(feature = "clock")]
-use crate::{Date, DateTime};
 #[cfg(all(
     feature = "clock",
     not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
+
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
+use super::{FixedOffset, LocalResult, Offset, TimeZone};
+use crate::naive::{NaiveDate, NaiveDateTime};
+#[cfg(feature = "clock")]
+use crate::{Date, DateTime};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -33,6 +36,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Utc;
 
 #[cfg(feature = "clock")]

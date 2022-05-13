@@ -5,7 +5,10 @@
 
 use core::fmt;
 use core::ops::{Add, Sub};
+
 use num_integer::div_mod_floor;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -20,6 +23,7 @@ use crate::Timelike;
 /// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
 /// [`west`](#method.west) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }

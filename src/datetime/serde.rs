@@ -119,14 +119,8 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -134,7 +128,6 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -144,9 +137,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_nanoseconds {
     use core::fmt;
@@ -164,14 +155,8 @@ pub mod ts_nanoseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds::serialize as to_nano_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -179,15 +164,12 @@ pub mod ts_nanoseconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -203,14 +185,8 @@ pub mod ts_nanoseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_nanoseconds::deserialize as from_nano_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -218,11 +194,8 @@ pub mod ts_nanoseconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
@@ -262,21 +235,15 @@ pub mod ts_nanoseconds {
     }
 }
 
-/// Ser/de to/from timestamps in nanoseconds
+/// Ser/de to/from optional timestamps in nanoseconds
 ///
 /// Intended for use with `serde`'s `with` attribute.
 ///
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -284,7 +251,6 @@ pub mod ts_nanoseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -294,9 +260,7 @@ pub mod ts_nanoseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_nanoseconds_option {
     use core::fmt;
@@ -313,14 +277,8 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds_option::serialize as to_nano_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -328,15 +286,12 @@ pub mod ts_nanoseconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -355,14 +310,8 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_nanoseconds_option::deserialize as from_nano_tsopt;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -370,11 +319,8 @@ pub mod ts_nanoseconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
@@ -392,7 +338,7 @@ pub mod ts_nanoseconds_option {
             formatter.write_str("a unix timestamp in nanoseconds or none")
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in nanoseconds since the epoch
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -400,7 +346,7 @@ pub mod ts_nanoseconds_option {
             d.deserialize_i64(NanoSecondsTimestampVisitor).map(Some)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in nanoseconds since the epoch
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -408,7 +354,7 @@ pub mod ts_nanoseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in nanoseconds since the epoch
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -425,14 +371,8 @@ pub mod ts_nanoseconds_option {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -440,7 +380,6 @@ pub mod ts_nanoseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -450,9 +389,7 @@ pub mod ts_nanoseconds_option {
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_microseconds {
     use core::fmt;
@@ -469,14 +406,8 @@ pub mod ts_microseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds::serialize as to_micro_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -484,15 +415,12 @@ pub mod ts_microseconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -508,14 +436,8 @@ pub mod ts_microseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_microseconds::deserialize as from_micro_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -523,11 +445,8 @@ pub mod ts_microseconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
@@ -574,14 +493,8 @@ pub mod ts_microseconds {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -589,7 +502,6 @@ pub mod ts_microseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -599,9 +511,7 @@ pub mod ts_microseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_microseconds_option {
     use core::fmt;
@@ -617,14 +527,8 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds_option::serialize as to_micro_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -632,15 +536,12 @@ pub mod ts_microseconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -659,14 +560,8 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_microseconds_option::deserialize as from_micro_tsopt;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -674,11 +569,8 @@ pub mod ts_microseconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
@@ -696,7 +588,7 @@ pub mod ts_microseconds_option {
             formatter.write_str("a unix timestamp in microseconds or none")
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -704,7 +596,7 @@ pub mod ts_microseconds_option {
             d.deserialize_i64(MicroSecondsTimestampVisitor).map(Some)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -712,7 +604,7 @@ pub mod ts_microseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -729,14 +621,8 @@ pub mod ts_microseconds_option {
 /// # Example
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -744,7 +630,6 @@ pub mod ts_microseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -754,9 +639,7 @@ pub mod ts_microseconds_option {
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_milliseconds {
     use core::fmt;
@@ -773,14 +656,8 @@ pub mod ts_milliseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds::serialize as to_milli_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -788,15 +665,12 @@ pub mod ts_milliseconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -812,14 +686,8 @@ pub mod ts_milliseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_milliseconds::deserialize as from_milli_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -827,11 +695,8 @@ pub mod ts_milliseconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
@@ -875,14 +740,8 @@ pub mod ts_milliseconds {
 /// # Example
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -890,7 +749,6 @@ pub mod ts_milliseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -900,9 +758,7 @@ pub mod ts_milliseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_milliseconds_option {
     use core::fmt;
@@ -918,14 +774,8 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds_option::serialize as to_milli_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -933,15 +783,12 @@ pub mod ts_milliseconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -960,14 +807,8 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
-    /// # use chrono::prelude::*;
+    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
     ///
     /// #[derive(Deserialize, PartialEq, Debug)]
@@ -982,16 +823,13 @@ pub mod ts_milliseconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<(), serde_json::Error> {
     /// let my_s: E<S> = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
     /// assert_eq!(my_s, E::V(S { time: Some(Utc.timestamp(1526522699, 918000000)) }));
     /// let s: E<S> = serde_json::from_str(r#"{ "time": null }"#)?;
     /// assert_eq!(s, E::V(S { time: None }));
     /// let t: E<S> = serde_json::from_str(r#"{}"#)?;
     /// assert_eq!(t, E::V(S { time: None }));
-    /// # Ok(())
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
@@ -1010,7 +848,7 @@ pub mod ts_milliseconds_option {
             formatter.write_str("a unix timestamp in milliseconds or none")
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in milliseconds since the epoch
         fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
         where
             D: de::Deserializer<'de>,
@@ -1018,7 +856,7 @@ pub mod ts_milliseconds_option {
             d.deserialize_i64(MilliSecondsTimestampVisitor).map(Some)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in milliseconds since the epoch
         fn visit_none<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1026,7 +864,7 @@ pub mod ts_milliseconds_option {
             Ok(None)
         }
 
-        /// Deserialize a timestamp in seconds since the epoch
+        /// Deserialize a timestamp in milliseconds since the epoch
         fn visit_unit<E>(self) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -1043,14 +881,8 @@ pub mod ts_milliseconds_option {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_seconds;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -1058,7 +890,6 @@ pub mod ts_milliseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Utc.ymd(2015, 5, 15).and_hms(10, 0, 0);
 /// let my_s = S {
 ///     time: time.clone(),
@@ -1068,9 +899,7 @@ pub mod ts_milliseconds_option {
 /// assert_eq!(as_string, r#"{"time":1431684000}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_seconds {
     use core::fmt;
@@ -1087,14 +916,8 @@ pub mod ts_seconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_seconds::serialize as to_ts;
     /// #[derive(Serialize)]
     /// struct S {
@@ -1102,15 +925,12 @@ pub mod ts_seconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Utc.ymd(2015, 5, 15).and_hms(10, 0, 0),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1126,14 +946,8 @@ pub mod ts_seconds {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_seconds::deserialize as from_ts;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -1141,11 +955,8 @@ pub mod ts_seconds {
     ///     time: DateTime<Utc>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
@@ -1186,14 +997,8 @@ pub mod ts_seconds {
 /// # Example:
 ///
 /// ```rust
-/// # // We mark this ignored so that we can test on 1.13 (which does not
-/// # // support custom derive), and run tests with --ignored on beta and
-/// # // nightly to actually trigger these.
-/// #
-/// # #[macro_use] extern crate serde_derive;
-/// # #[macro_use] extern crate serde_json;
-/// # extern crate chrono;
 /// # use chrono::{TimeZone, DateTime, Utc};
+/// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_seconds_option;
 /// #[derive(Deserialize, Serialize)]
 /// struct S {
@@ -1201,7 +1006,6 @@ pub mod ts_seconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// # fn example() -> Result<S, serde_json::Error> {
 /// let time = Some(Utc.ymd(2015, 5, 15).and_hms(10, 0, 0));
 /// let my_s = S {
 ///     time: time.clone(),
@@ -1211,9 +1015,7 @@ pub mod ts_seconds {
 /// assert_eq!(as_string, r#"{"time":1431684000}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok(my_s)
-/// # }
-/// # fn main() { example().unwrap(); }
+/// # Ok::<(), serde_json::Error>(())
 /// ```
 pub mod ts_seconds_option {
     use core::fmt;
@@ -1229,14 +1031,8 @@ pub mod ts_seconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_seconds_option::serialize as to_tsopt;
     /// #[derive(Serialize)]
     /// struct S {
@@ -1244,15 +1040,12 @@ pub mod ts_seconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<String, serde_json::Error> {
     /// let my_s = S {
     ///     time: Some(Utc.ymd(2015, 5, 15).and_hms(10, 0, 0)),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-    /// # Ok(as_string)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -1271,14 +1064,8 @@ pub mod ts_seconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # #[macro_use] extern crate serde_json;
-    /// # extern crate chrono;
     /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
     /// use chrono::serde::ts_seconds_option::deserialize as from_tsopt;
     /// #[derive(Deserialize)]
     /// struct S {
@@ -1286,11 +1073,8 @@ pub mod ts_seconds_option {
     ///     time: Option<DateTime<Utc>>
     /// }
     ///
-    /// # fn example() -> Result<S, serde_json::Error> {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
+    /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
@@ -1334,23 +1118,18 @@ pub mod ts_seconds_option {
     }
 }
 
-#[cfg(test)]
-extern crate bincode;
-#[cfg(test)]
-extern crate serde_json;
-
 #[test]
 fn test_serde_serialize() {
-    super::test_encodable_json(self::serde_json::to_string, self::serde_json::to_string);
+    super::test_encodable_json(serde_json::to_string, serde_json::to_string);
 }
 
 #[cfg(feature = "clock")]
 #[test]
 fn test_serde_deserialize() {
     super::test_decodable_json(
-        |input| self::serde_json::from_str(input),
-        |input| self::serde_json::from_str(input),
-        |input| self::serde_json::from_str(input),
+        |input| serde_json::from_str(input),
+        |input| serde_json::from_str(input),
+        |input| serde_json::from_str(input),
     );
 }
 
@@ -1358,10 +1137,10 @@ fn test_serde_deserialize() {
 fn test_serde_bincode() {
     // Bincode is relevant to test separately from JSON because
     // it is not self-describing.
-    use self::bincode::{deserialize, serialize, Infinite};
+    use bincode::{deserialize, serialize};
 
     let dt = Utc.ymd(2014, 7, 24).and_hms(12, 34, 6);
-    let encoded = serialize(&dt, Infinite).unwrap();
+    let encoded = serialize(&dt).unwrap();
     let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
     assert_eq!(dt, decoded);
     assert_eq!(dt.offset(), decoded.offset());

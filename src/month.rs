@@ -7,7 +7,6 @@ use core::fmt;
 ///
 /// It is possible to convert from a date to a month independently
 /// ```
-/// # extern crate num_traits;
 /// use num_traits::FromPrimitive;
 /// use chrono::prelude::*;
 /// let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11);

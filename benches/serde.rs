@@ -1,8 +1,5 @@
 #![cfg(feature = "__internal_bench")]
 
-extern crate chrono;
-extern crate criterion;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use chrono::NaiveDateTime;

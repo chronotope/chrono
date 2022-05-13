@@ -21,7 +21,11 @@ Versions with only mechanical changes will be omitted from the following list.
 * Correct build for wasm32-unknown-emscripten target (#568)
 * Change `Local::now()` and `Utc::now()` documentation from "current date" to "current date and time" (#647)
 * Fix `duration_round` panic on rounding by `Duration::zero()` (#658)
-* Make `ParseErrorKind` public and available through `ParseError::kind()`
+* Add optional rkyv support.
+* Add support for microseconds timestamps serde serialization for `NaiveDateTime`.
+* Add support for optional timestamps serde serialization for `NaiveDateTime`.
+* Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
+* Make `ParseErrorKind` public and available through `ParseError::kind()` (#588)
 
 ## 0.4.19
 

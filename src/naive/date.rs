@@ -3,19 +3,22 @@
 
 //! ISO 8601 calendar date without timezone.
 
-use crate::oldtime::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
+
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
+use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
@@ -96,6 +99,7 @@ const MAX_BITS: usize = 44;
 ///
 /// This is currently the internal format of Chrono's date types.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -874,7 +878,6 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     /// use chrono::naive::MAX_DATE;
     ///
@@ -886,7 +889,6 @@ impl NaiveDate {
     /// assert_eq!(d.checked_add_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_add_signed(Duration::days(-1_000_000_000)), None);
     /// assert_eq!(MAX_DATE.checked_add_signed(Duration::days(1)), None);
-    /// # }
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
@@ -908,7 +910,6 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     /// use chrono::naive::MIN_DATE;
     ///
@@ -920,7 +921,6 @@ impl NaiveDate {
     /// assert_eq!(d.checked_sub_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_sub_signed(Duration::days(-1_000_000_000)), None);
     /// assert_eq!(MIN_DATE.checked_sub_signed(Duration::days(1)), None);
-    /// # }
     /// ```
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
@@ -944,7 +944,6 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
@@ -957,7 +956,6 @@ impl NaiveDate {
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)), Duration::days(365));
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)), Duration::days(365*4 + 1));
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), Duration::days(365*400 + 97));
-    /// # }
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDate) -> OldDuration {
         let year1 = self.year();
@@ -1450,7 +1448,6 @@ impl Datelike for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1463,7 +1460,6 @@ impl Datelike for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(364),          from_ymd(2014, 12, 31));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*4 + 1),    from_ymd(2018, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*400 + 97), from_ymd(2414, 1, 1));
-/// # }
 /// ```
 impl Add<OldDuration> for NaiveDate {
     type Output = NaiveDate;
@@ -1491,7 +1487,6 @@ impl AddAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1504,7 +1499,6 @@ impl AddAssign<OldDuration> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(364),          from_ymd(2013, 1, 2));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*4 + 1),    from_ymd(2010, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*400 + 97), from_ymd(1614, 1, 1));
-/// # }
 /// ```
 impl Sub<OldDuration> for NaiveDate {
     type Output = NaiveDate;
@@ -1534,7 +1528,6 @@ impl SubAssign<OldDuration> for NaiveDate {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1546,7 +1539,6 @@ impl SubAssign<OldDuration> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), Duration::days(365));
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1), Duration::days(365*4 + 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1), Duration::days(365*400 + 97));
-/// # }
 /// ```
 impl Sub<NaiveDate> for NaiveDate {
     type Output = OldDuration;
@@ -1887,10 +1879,10 @@ mod serde {
     fn test_serde_bincode() {
         // Bincode is relevant to test separately from JSON because
         // it is not self-describing.
-        use bincode::{deserialize, serialize, Infinite};
+        use bincode::{deserialize, serialize};
 
         let d = NaiveDate::from_ymd(2014, 7, 24);
-        let encoded = serialize(&d, Infinite).unwrap();
+        let encoded = serialize(&d).unwrap();
         let decoded: NaiveDate = deserialize(&encoded).unwrap();
         assert_eq!(d, decoded);
     }
