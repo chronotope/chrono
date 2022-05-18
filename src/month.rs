@@ -81,7 +81,7 @@ impl Month {
     ///
     /// `m`:        | `January`  | `February` | `...` | `December`
     /// ----------- | ---------  | ---------- | --- | ---------
-    /// `m.succ()`: | `December` | `January`  | `...` | `November`
+    /// `m.pred()`: | `December` | `January`  | `...` | `November`
     #[inline]
     pub fn pred(&self) -> Month {
         match *self {
