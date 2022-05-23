@@ -6,7 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::ops::{Add, Sub};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash};
 
 #[cfg(feature = "rkyv")]
@@ -479,12 +479,26 @@ impl<Tz: TimeZone> Add<OldDuration> for Date<Tz> {
     }
 }
 
+impl<Tz: TimeZone> AddAssign<OldDuration> for Date<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: OldDuration) {
+        self.date += rhs;
+    }
+}
+
 impl<Tz: TimeZone> Sub<OldDuration> for Date<Tz> {
     type Output = Date<Tz>;
 
     #[inline]
     fn sub(self, rhs: OldDuration) -> Date<Tz> {
         self.checked_sub_signed(rhs).expect("`Date - Duration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<OldDuration> for Date<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: OldDuration) {
+        self.date -= rhs;
     }
 }
 
