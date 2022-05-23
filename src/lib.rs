@@ -112,16 +112,20 @@
 //! * [**`Local`**](./offset/struct.Local.html) specifies the system local time zone.
 //!
 //! * [**`FixedOffset`**](./offset/struct.FixedOffset.html) specifies
-//!   an arbitrary, fixed time zone such as UTC+09:00 or UTC-10:30.
+//!   an arbitrary, fixed time zone _offset_ such as UTC+09:00 or UTC-10:30.
 //!   This often results from the parsed textual date and time.
 //!   Since it stores the most information and does not depend on the system environment,
 //!   you would want to normalize other `TimeZone`s into this type.
+//!
+//! * Furthermore, implementations based on concrete time zones (e.g. "Europe/Berlin)" are currently
+//!   provided by third-party crates (e.g. [Chrono-tz](https://github.com/chronotope/chrono-tz/)).
 //!
 //! `DateTime`s with different `TimeZone` types are distinct and do not mix,
 //! but can be converted to each other using
 //! the [`DateTime::with_timezone`](./struct.DateTime.html#method.with_timezone) method.
 //!
-//! You can get the current date and time in the UTC time zone
+//! There are several ways to construct a  `DateTime`. Constructing it from the current point
+//! in time is simplest: You can get the current date and time in the UTC time zone
 //! ([`Utc::now()`](./offset/struct.Utc.html#method.now))
 //! or in the local time zone
 //! ([`Local::now()`](./offset/struct.Local.html#method.now)).
@@ -386,6 +390,34 @@
 //! a view to the naive local time,
 //! and [`naive_utc`](./struct.DateTime.html#method.naive_utc) returns
 //! a view to the naive UTC time.
+//!
+//! When converting a `NaiveDateTime` to a `DateTime`, you have to pass the `NaiveDateTime` object
+//! to a `TimeZone` implementation, which defines the offset to UTC at the specific time.
+//! Similar to converting a `DateTime` to a `NaiveDateTime`,
+//! each `TimeZone` implementation has the methods
+//! [`from_local_datetime`](./offset/trait.TimeZone.html#method.from_local_datetime)
+//! and [`from_utc_datetime`](./offset/trait.TimeZone.html#method.from_utc_datetime).
+//! Note that `from_local_datetime` can return ambiguous results in case of timezone switches.
+//!
+//! ```rust
+//! use chrono::prelude::*;
+//! let naive_dt = NaiveDate::from_ymd(2022,10,30).and_hms(02,30,00);
+//! let dt = FixedOffset::east(3600).from_local_datetime(&naive_dt);
+//!
+//! // Note how this only returns a single value, as we are specifying an offset
+//! assert_eq!("2022-10-30T02:30:00+01:00", dt.single().unwrap().to_rfc3339());
+//! ```
+//!
+//! ```ignore
+//! use chrono::prelude::*;
+//! use chrono_tz::Europe::Berlin;
+//! let naive_dt = NaiveDate::from_ymd(2022,10,30).and_hms(02,30,00);
+//! let dt = Berlin.from_local_datetime(&naive_dt);
+//!
+//! // This naive datetime occurs during a DST switch and thus has two results
+//! assert_eq!("2022-10-30T02:30:00+02:00", dt.earliest().unwrap().to_rfc3339());
+//! assert_eq!("2022-10-30T02:30:00+01:00", dt.latest().unwrap().to_rfc3339());
+//! ```
 //!
 //! ## Limitations
 //!
