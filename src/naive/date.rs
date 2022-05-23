@@ -1044,7 +1044,7 @@ impl NaiveDate {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
-    /// Returns an iterator that steps by days until the last representable date.
+    /// Returns an iterator that steps by days across all representable dates.
     ///
     /// # Example
     ///
@@ -1064,13 +1064,18 @@ impl NaiveDate {
     ///    count += 1;
     /// }
     /// assert_eq!(count, 4);
+    ///
+    /// for d in NaiveDate::from_ymd(2016, 3, 1).iter_days().rev().take(4) {
+    ///     count -= 1;
+    ///     assert_eq!(d, expected[count]);
+    /// }
     /// ```
     #[inline]
     pub fn iter_days(&self) -> NaiveDateDaysIterator {
         NaiveDateDaysIterator { value: *self }
     }
 
-    /// Returns an iterator that steps by weeks until the last representable date.
+    /// Returns an iterator that steps by weeks across all representable dates.
     ///
     /// # Example
     ///
@@ -1090,6 +1095,11 @@ impl NaiveDate {
     ///    count += 1;
     /// }
     /// assert_eq!(count, 4);
+    ///
+    /// for d in NaiveDate::from_ymd(2016, 3, 19).iter_weeks().rev().take(4) {
+    ///     count -= 1;
+    ///     assert_eq!(d, expected[count]);
+    /// }
     /// ```
     #[inline]
     pub fn iter_weeks(&self) -> NaiveDateWeeksIterator {
@@ -1577,6 +1587,17 @@ impl Iterator for NaiveDateDaysIterator {
 
 impl ExactSizeIterator for NaiveDateDaysIterator {}
 
+impl DoubleEndedIterator for NaiveDateDaysIterator {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.value == MIN_DATE {
+            return None;
+        }
+        let current = self.value;
+        self.value = current.pred();
+        Some(current)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateWeeksIterator {
     value: NaiveDate,
@@ -1601,6 +1622,17 @@ impl Iterator for NaiveDateWeeksIterator {
 }
 
 impl ExactSizeIterator for NaiveDateWeeksIterator {}
+
+impl DoubleEndedIterator for NaiveDateWeeksIterator {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.value - MIN_DATE < OldDuration::weeks(1) {
+            return None;
+        }
+        let current = self.value;
+        self.value = current - OldDuration::weeks(1);
+        Some(current)
+    }
+}
 
 // TODO: NaiveDateDaysIterator and NaiveDateWeeksIterator should implement FusedIterator,
 // TrustedLen, and Step once they becomes stable.
@@ -2405,10 +2437,12 @@ mod tests {
     #[test]
     fn test_day_iterator_limit() {
         assert_eq!(NaiveDate::from_ymd(262143, 12, 29).iter_days().take(4).count(), 2);
+        assert_eq!(NaiveDate::from_ymd(-262144, 1, 3).iter_days().rev().take(4).count(), 2);
     }
 
     #[test]
     fn test_week_iterator_limit() {
         assert_eq!(NaiveDate::from_ymd(262143, 12, 12).iter_weeks().take(4).count(), 2);
+        assert_eq!(NaiveDate::from_ymd(-262144, 1, 15).iter_weeks().rev().take(4).count(), 2);
     }
 }
