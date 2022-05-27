@@ -77,7 +77,7 @@ unsafe fn timegm(tm: *mut libc::tm) -> time_t {
     ret
 }
 
-pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
+pub(super) fn time_to_local_tm(sec: i64, tm: &mut Tm) {
     unsafe {
         let sec = sec as time_t;
         let mut out = mem::zeroed();
@@ -103,7 +103,7 @@ pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
     }
 }
 
-pub fn utc_tm_to_time(rust_tm: &Tm) -> i64 {
+pub(super) fn utc_tm_to_time(rust_tm: &Tm) -> i64 {
     #[cfg(not(any(
         all(target_os = "android", target_pointer_width = "32"),
         target_os = "nacl",
@@ -119,7 +119,7 @@ pub fn utc_tm_to_time(rust_tm: &Tm) -> i64 {
     unsafe { timegm(&mut tm) as i64 }
 }
 
-pub fn local_tm_to_time(rust_tm: &Tm) -> i64 {
+pub(super) fn local_tm_to_time(rust_tm: &Tm) -> i64 {
     let mut tm = unsafe { mem::zeroed() };
     rust_tm_to_tm(rust_tm, &mut tm);
     unsafe { libc::mktime(&mut tm) as i64 }

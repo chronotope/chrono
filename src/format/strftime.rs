@@ -177,9 +177,9 @@ type Fmt<'a> = Vec<Item<'a>>;
 #[cfg(not(feature = "unstable-locales"))]
 type Fmt<'a> = &'static [Item<'static>];
 
-static D_FMT: &'static [Item<'static>] =
+static D_FMT: &[Item<'static>] =
     &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-static D_T_FMT: &'static [Item<'static>] = &[
+static D_T_FMT: &[Item<'static>] = &[
     fix!(ShortWeekdayName),
     sp!(" "),
     fix!(ShortMonthName),
@@ -194,8 +194,7 @@ static D_T_FMT: &'static [Item<'static>] = &[
     sp!(" "),
     num0!(Year),
 ];
-static T_FMT: &'static [Item<'static>] =
-    &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -227,18 +226,12 @@ impl<'a> StrftimeItems<'a> {
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
         let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
 
-        StrftimeItems {
-            remainder: s,
-            recons: Vec::new(),
-            d_fmt: d_fmt,
-            d_t_fmt: d_t_fmt,
-            t_fmt: t_fmt,
-        }
+        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
     }
 
     #[cfg(not(feature = "unstable-locales"))]
     fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
-        static FMT_NONE: &'static [Item<'static>; 0] = &[];
+        static FMT_NONE: &[Item<'static>; 0] = &[];
 
         StrftimeItems {
             remainder: s,
@@ -261,7 +254,7 @@ impl<'a> StrftimeItems<'a> {
     }
 }
 
-const HAVE_ALTERNATES: &'static str = "z";
+const HAVE_ALTERNATES: &str = "z";
 
 impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;
@@ -462,7 +455,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let nextspec = self
                     .remainder
                     .find(|c: char| !c.is_whitespace())
-                    .unwrap_or_else(|| self.remainder.len());
+                    .unwrap_or(self.remainder.len());
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -474,7 +467,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let nextspec = self
                     .remainder
                     .find(|c: char| c.is_whitespace() || c == '%')
-                    .unwrap_or_else(|| self.remainder.len());
+                    .unwrap_or(self.remainder.len());
                 assert!(nextspec > 0);
                 let item = lit!(&self.remainder[..nextspec]);
                 self.remainder = &self.remainder[nextspec..];
@@ -487,11 +480,11 @@ impl<'a> Iterator for StrftimeItems<'a> {
 #[cfg(test)]
 #[test]
 fn test_strftime_items() {
-    fn parse_and_collect<'a>(s: &'a str) -> Vec<Item<'a>> {
+    fn parse_and_collect(s: &str) -> Vec<Item<'_>> {
         // map any error into `[Item::Error]`. useful for easy testing.
         let items = StrftimeItems::new(s);
         let items = items.map(|spec| if spec == Item::Error { None } else { Some(spec) });
-        items.collect::<Option<Vec<_>>>().unwrap_or(vec![Item::Error])
+        items.collect::<Option<Vec<_>>>().unwrap_or_else(|| vec![Item::Error])
     }
 
     assert_eq!(parse_and_collect(""), []);
@@ -540,7 +533,7 @@ fn test_strftime_items() {
 #[cfg(test)]
 #[test]
 fn test_strftime_docs() {
-    use {FixedOffset, TimeZone, Timelike};
+    use crate::{FixedOffset, TimeZone, Timelike};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 
@@ -618,7 +611,7 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use {FixedOffset, TimeZone};
+    use crate::{FixedOffset, TimeZone};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 

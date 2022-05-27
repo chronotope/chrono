@@ -6,19 +6,32 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::{fmt, hash, str};
-use num_traits::ToPrimitive;
-use oldtime::Duration as OldDuration;
+use core::{fmt, str};
 
-use div::div_mod_floor;
+use num_integer::div_mod_floor;
+use num_traits::ToPrimitive;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use format::DelayedFormat;
-use format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
-use format::{Fixed, Item, Numeric, Pad};
-use naive::date::{MAX_DATE, MIN_DATE};
-use naive::time::{MAX_TIME, MIN_TIME};
-use naive::{IsoWeek, NaiveDate, NaiveTime};
-use {Datelike, Timelike, Weekday};
+use crate::format::DelayedFormat;
+use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::naive::date::{MAX_DATE, MIN_DATE};
+use crate::naive::time::{MAX_TIME, MIN_TIME};
+use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
+use crate::oldtime::Duration as OldDuration;
+use crate::{Datelike, Timelike, Weekday};
+
+#[cfg(feature = "rustc-serialize")]
+pub(super) mod rustc_serialize;
+
+/// Tools to help serializing/deserializing `NaiveDateTime`s
+#[cfg(feature = "serde")]
+pub(crate) mod serde;
+
+#[cfg(test)]
+mod tests;
 
 /// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
@@ -58,7 +71,8 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MA
 /// assert_eq!(dt.weekday(), Weekday::Fri);
 /// assert_eq!(dt.num_seconds_from_midnight(), 33011);
 /// ```
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
@@ -83,7 +97,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime { date: date, time: time }
+        NaiveDateTime { date, time }
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -151,7 +165,7 @@ impl NaiveDateTime {
             .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
-            (Some(date), Some(time)) => Some(NaiveDateTime { date: date, time: time }),
+            (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
             (_, _) => None,
         }
     }
@@ -321,7 +335,7 @@ impl NaiveDateTime {
     /// Note also that this does reduce the number of years that can be
     /// represented from ~584 Billion to ~584 Thousand. (If this is a problem,
     /// please file an issue to let me know what domain needs microsecond
-    /// precision over millenia, I'm curious.)
+    /// precision over millennia, I'm curious.)
     ///
     /// # Example
     ///
@@ -454,7 +468,6 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
@@ -475,24 +488,20 @@ impl NaiveDateTime {
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
     /// assert_eq!(hmsm(3, 5, 7, 980).checked_add_signed(Duration::milliseconds(450)),
     ///            Some(hmsm(3, 5, 8, 430)));
-    /// # }
     /// ```
     ///
     /// Overflow returns `None`.
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
     /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::days(1_000_000_000)), None);
-    /// # }
     /// ```
     ///
     /// Leap seconds are handled,
     /// but the addition assumes that it is the only leap second happened.
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
@@ -511,7 +520,6 @@ impl NaiveDateTime {
     ///            Some(hmsm(3, 5, 50, 300)));
     /// assert_eq!(leap.checked_add_signed(Duration::days(1)),
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300)));
-    /// # }
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
@@ -522,7 +530,7 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -537,7 +545,6 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
@@ -558,24 +565,20 @@ impl NaiveDateTime {
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
     /// assert_eq!(hmsm(3, 5, 7, 450).checked_sub_signed(Duration::milliseconds(670)),
     ///            Some(hmsm(3, 5, 6, 780)));
-    /// # }
     /// ```
     ///
     /// Overflow returns `None`.
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
     /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::days(1_000_000_000)), None);
-    /// # }
     /// ```
     ///
     /// Leap seconds are handled,
     /// but the subtraction assumes that it is the only leap second happened.
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
@@ -590,7 +593,6 @@ impl NaiveDateTime {
     ///            Some(hmsm(3, 5, 0, 300)));
     /// assert_eq!(leap.checked_sub_signed(Duration::days(1)),
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300)));
-    /// # }
     /// ```
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
@@ -601,7 +603,7 @@ impl NaiveDateTime {
         }
 
         let date = try_opt!(self.date.checked_sub_signed(OldDuration::seconds(rhs)));
-        Some(NaiveDateTime { date: date, time: time })
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -616,7 +618,6 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// use chrono::{Duration, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
@@ -629,14 +630,12 @@ impl NaiveDateTime {
     /// let d0 = from_ymd(2016, 1, 1);
     /// assert_eq!(d.and_hms_milli(0, 7, 6, 500).signed_duration_since(d0.and_hms(0, 0, 0)),
     ///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
-    /// # }
     /// ```
     ///
     /// Leap seconds are handled, but the subtraction assumes that
     /// there were no other leap seconds happened.
     ///
     /// ```
-    /// # extern crate chrono; fn main() {
     /// # use chrono::{Duration, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
@@ -644,7 +643,6 @@ impl NaiveDateTime {
     ///            Duration::seconds(3600) + Duration::milliseconds(500));
     /// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0).signed_duration_since(leap),
     ///            Duration::seconds(3600) - Duration::milliseconds(500));
-    /// # }
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
         self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
@@ -1200,17 +1198,6 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-/// `NaiveDateTime` can be used as a key to the hash maps (in principle).
-///
-/// Practically this also takes account of fractional seconds, so it is not recommended.
-/// (For the obvious reason this also distinguishes leap seconds from non-leap seconds.)
-impl hash::Hash for NaiveDateTime {
-    fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        self.date.hash(state);
-        self.time.hash(state);
-    }
-}
-
 /// An addition of `Duration` to `NaiveDateTime` yields another `NaiveDateTime`.
 ///
 /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
@@ -1224,7 +1211,6 @@ impl hash::Hash for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1242,14 +1228,12 @@ impl hash::Hash for NaiveDateTime {
 ///
 /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
 /// assert_eq!(hmsm(3, 5, 7, 980) + Duration::milliseconds(450), hmsm(3, 5, 8, 430));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled,
 /// but the addition assumes that it is the only leap second happened.
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
@@ -1262,7 +1246,6 @@ impl hash::Hash for NaiveDateTime {
 /// assert_eq!(leap + Duration::seconds(-10),       hmsm(3, 5, 50, 300));
 /// assert_eq!(leap + Duration::days(1),
 ///            from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300));
-/// # }
 /// ```
 impl Add<OldDuration> for NaiveDateTime {
     type Output = NaiveDateTime;
@@ -1294,7 +1277,6 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1312,14 +1294,12 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 ///
 /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
 /// assert_eq!(hmsm(3, 5, 7, 450) - Duration::milliseconds(670), hmsm(3, 5, 6, 780));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled,
 /// but the subtraction assumes that it is the only leap second happened.
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
@@ -1330,7 +1310,6 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// assert_eq!(leap - Duration::seconds(60),       hmsm(3, 5, 0, 300));
 /// assert_eq!(leap - Duration::days(1),
 ///            from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300));
-/// # }
 /// ```
 impl Sub<OldDuration> for NaiveDateTime {
     type Output = NaiveDateTime;
@@ -1362,7 +1341,6 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// use chrono::{Duration, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
@@ -1374,14 +1352,12 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// let d0 = from_ymd(2016, 1, 1);
 /// assert_eq!(d.and_hms_milli(0, 7, 6, 500) - d0.and_hms(0, 0, 0),
 ///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
-/// # }
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that no other leap
 /// seconds happened.
 ///
 /// ```
-/// # extern crate chrono; fn main() {
 /// # use chrono::{Duration, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
@@ -1389,7 +1365,6 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 ///            Duration::seconds(3600) + Duration::milliseconds(500));
 /// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0) - leap,
 ///            Duration::seconds(3600) - Duration::milliseconds(500));
-/// # }
 /// ```
 impl Sub<NaiveDateTime> for NaiveDateTime {
     type Output = OldDuration;
@@ -1401,7 +1376,7 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
 }
 
 /// The `Debug` output of the naive date and time `dt` is the same as
-/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](::format::strftime).
+/// [`dt.format("%Y-%m-%dT%H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1434,7 +1409,7 @@ impl fmt::Debug for NaiveDateTime {
 }
 
 /// The `Display` output of the naive date and time `dt` is the same as
-/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](::format::strftime).
+/// [`dt.format("%Y-%m-%d %H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// It should be noted that, for leap seconds not on the minute boundary,
 /// it may print a representation not distinguishable from non-leap seconds.
@@ -1465,7 +1440,7 @@ impl fmt::Display for NaiveDateTime {
 }
 
 /// Parsing a `str` into a `NaiveDateTime` uses the same format,
-/// [`%Y-%m-%dT%H:%M:%S%.f`](::format::strftime), as in `Debug`.
+/// [`%Y-%m-%dT%H:%M:%S%.f`](crate::format::strftime), as in `Debug`.
 ///
 /// # Example
 ///
@@ -1484,7 +1459,7 @@ impl str::FromStr for NaiveDateTime {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
-        const ITEMS: &'static [Item<'static>] = &[
+        const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""),
             Item::Literal("-"),
@@ -1638,897 +1613,4 @@ where
         NaiveDate::from_ymd(1969, 12, 31).and_hms(23, 59, 59),
         "should parse integers as timestamps"
     );
-}
-
-#[cfg(feature = "rustc-serialize")]
-pub mod rustc_serialize {
-    use super::NaiveDateTime;
-    use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-    use std::ops::Deref;
-
-    impl Encodable for NaiveDateTime {
-        fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            format!("{:?}", self).encode(s)
-        }
-    }
-
-    impl Decodable for NaiveDateTime {
-        fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDateTime, D::Error> {
-            d.read_str()?.parse().map_err(|_| d.error("invalid date time string"))
-        }
-    }
-
-    /// A `DateTime` that can be deserialized from a seconds-based timestamp
-    #[derive(Debug)]
-    #[deprecated(
-        since = "1.4.2",
-        note = "RustcSerialize will be removed before chrono 1.0, use Serde instead"
-    )]
-    pub struct TsSeconds(NaiveDateTime);
-
-    #[allow(deprecated)]
-    impl From<TsSeconds> for NaiveDateTime {
-        /// Pull the internal NaiveDateTime out
-        #[allow(deprecated)]
-        fn from(obj: TsSeconds) -> NaiveDateTime {
-            obj.0
-        }
-    }
-
-    #[allow(deprecated)]
-    impl Deref for TsSeconds {
-        type Target = NaiveDateTime;
-
-        #[allow(deprecated)]
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
-
-    #[allow(deprecated)]
-    impl Decodable for TsSeconds {
-        #[allow(deprecated)]
-        fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds, D::Error> {
-            Ok(TsSeconds(
-                NaiveDateTime::from_timestamp_opt(d.read_i64()?, 0)
-                    .ok_or_else(|| d.error("invalid timestamp"))?,
-            ))
-        }
-    }
-
-    #[cfg(test)]
-    use rustc_serialize::json;
-
-    #[test]
-    fn test_encodable() {
-        super::test_encodable_json(json::encode);
-    }
-
-    #[test]
-    fn test_decodable() {
-        super::test_decodable_json(json::decode);
-    }
-
-    #[test]
-    fn test_decodable_timestamps() {
-        super::test_decodable_json_timestamp(json::decode);
-    }
-}
-
-/// Tools to help serializing/deserializing `NaiveDateTime`s
-#[cfg(feature = "serde")]
-pub mod serde {
-    use super::NaiveDateTime;
-    use core::fmt;
-    use serdelib::{de, ser};
-
-    /// Serialize a `NaiveDateTime` as an RFC 3339 string
-    ///
-    /// See [the `serde` module](./serde/index.html) for alternate
-    /// serialization formats.
-    impl ser::Serialize for NaiveDateTime {
-        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            struct FormatWrapped<'a, D: 'a> {
-                inner: &'a D,
-            }
-
-            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
-                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                    self.inner.fmt(f)
-                }
-            }
-
-            serializer.collect_str(&FormatWrapped { inner: &self })
-        }
-    }
-
-    struct NaiveDateTimeVisitor;
-
-    impl<'de> de::Visitor<'de> for NaiveDateTimeVisitor {
-        type Value = NaiveDateTime;
-
-        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("a formatted date and time string")
-        }
-
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            value.parse().map_err(E::custom)
-        }
-    }
-
-    impl<'de> de::Deserialize<'de> for NaiveDateTime {
-        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            deserializer.deserialize_str(NaiveDateTimeVisitor)
-        }
-    }
-
-    /// Used to serialize/deserialize from nanosecond-precision timestamps
-    ///
-    /// # Example:
-    ///
-    /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # extern crate serde_json;
-    /// # extern crate serde;
-    /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
-    /// use chrono::naive::serde::ts_nanoseconds;
-    /// #[derive(Deserialize, Serialize)]
-    /// struct S {
-    ///     #[serde(with = "ts_nanoseconds")]
-    ///     time: NaiveDateTime
-    /// }
-    ///
-    /// # fn example() -> Result<S, serde_json::Error> {
-    /// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733);
-    /// let my_s = S {
-    ///     time: time.clone(),
-    /// };
-    ///
-    /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// let my_s: S = serde_json::from_str(&as_string)?;
-    /// assert_eq!(my_s.time, time);
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
-    /// ```
-    pub mod ts_nanoseconds {
-        use core::fmt;
-        use serdelib::{de, ser};
-
-        use {ne_timestamp, NaiveDateTime};
-
-        /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
-        ///
-        /// Intended for use with `serde`s `serialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # #[macro_use] extern crate serde;
-        /// # extern crate chrono;
-        /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
-        /// # use serde::Serialize;
-        /// use chrono::naive::serde::ts_nanoseconds::serialize as to_nano_ts;
-        /// #[derive(Serialize)]
-        /// struct S {
-        ///     #[serde(serialize_with = "to_nano_ts")]
-        ///     time: NaiveDateTime
-        /// }
-        ///
-        /// # fn example() -> Result<String, serde_json::Error> {
-        /// let my_s = S {
-        ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733),
-        /// };
-        /// let as_string = serde_json::to_string(&my_s)?;
-        /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-        /// # Ok(as_string)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            serializer.serialize_i64(dt.timestamp_nanos())
-        }
-
-        /// Deserialize a `DateTime` from a nanoseconds timestamp
-        ///
-        /// Intended for use with `serde`s `deserialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # extern crate serde;
-        /// # extern crate chrono;
-        /// # use chrono::{NaiveDateTime, Utc};
-        /// # use serde::Deserialize;
-        /// use chrono::naive::serde::ts_nanoseconds::deserialize as from_nano_ts;
-        /// #[derive(Deserialize)]
-        /// struct S {
-        ///     #[serde(deserialize_with = "from_nano_ts")]
-        ///     time: NaiveDateTime
-        /// }
-        ///
-        /// # fn example() -> Result<S, serde_json::Error> {
-        /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-        /// # Ok(my_s)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            d.deserialize_i64(NaiveDateTimeFromNanoSecondsVisitor)
-        }
-
-        struct NaiveDateTimeFromNanoSecondsVisitor;
-
-        impl<'de> de::Visitor<'de> for NaiveDateTimeFromNanoSecondsVisitor {
-            type Value = NaiveDateTime;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a unix timestamp")
-            }
-
-            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                NaiveDateTime::from_timestamp_opt(
-                    value / 1_000_000_000,
-                    (value % 1_000_000_000) as u32,
-                )
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
-            }
-
-            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                NaiveDateTime::from_timestamp_opt(
-                    value as i64 / 1_000_000_000,
-                    (value as i64 % 1_000_000_000) as u32,
-                )
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
-            }
-        }
-    }
-
-    /// Used to serialize/deserialize from millisecond-precision timestamps
-    ///
-    /// # Example:
-    ///
-    /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # extern crate serde_json;
-    /// # extern crate serde;
-    /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
-    /// use chrono::naive::serde::ts_milliseconds;
-    /// #[derive(Deserialize, Serialize)]
-    /// struct S {
-    ///     #[serde(with = "ts_milliseconds")]
-    ///     time: NaiveDateTime
-    /// }
-    ///
-    /// # fn example() -> Result<S, serde_json::Error> {
-    /// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918);
-    /// let my_s = S {
-    ///     time: time.clone(),
-    /// };
-    ///
-    /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// let my_s: S = serde_json::from_str(&as_string)?;
-    /// assert_eq!(my_s.time, time);
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
-    /// ```
-    pub mod ts_milliseconds {
-        use core::fmt;
-        use serdelib::{de, ser};
-
-        use {ne_timestamp, NaiveDateTime};
-
-        /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
-        ///
-        /// Intended for use with `serde`s `serialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # #[macro_use] extern crate serde;
-        /// # extern crate chrono;
-        /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
-        /// # use serde::Serialize;
-        /// use chrono::naive::serde::ts_milliseconds::serialize as to_milli_ts;
-        /// #[derive(Serialize)]
-        /// struct S {
-        ///     #[serde(serialize_with = "to_milli_ts")]
-        ///     time: NaiveDateTime
-        /// }
-        ///
-        /// # fn example() -> Result<String, serde_json::Error> {
-        /// let my_s = S {
-        ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918),
-        /// };
-        /// let as_string = serde_json::to_string(&my_s)?;
-        /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-        /// # Ok(as_string)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            serializer.serialize_i64(dt.timestamp_millis())
-        }
-
-        /// Deserialize a `DateTime` from a milliseconds timestamp
-        ///
-        /// Intended for use with `serde`s `deserialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # extern crate serde;
-        /// # extern crate chrono;
-        /// # use chrono::{NaiveDateTime, Utc};
-        /// # use serde::Deserialize;
-        /// use chrono::naive::serde::ts_milliseconds::deserialize as from_milli_ts;
-        /// #[derive(Deserialize)]
-        /// struct S {
-        ///     #[serde(deserialize_with = "from_milli_ts")]
-        ///     time: NaiveDateTime
-        /// }
-        ///
-        /// # fn example() -> Result<S, serde_json::Error> {
-        /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-        /// # Ok(my_s)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            d.deserialize_i64(NaiveDateTimeFromMilliSecondsVisitor)
-        }
-
-        struct NaiveDateTimeFromMilliSecondsVisitor;
-
-        impl<'de> de::Visitor<'de> for NaiveDateTimeFromMilliSecondsVisitor {
-            type Value = NaiveDateTime;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a unix timestamp")
-            }
-
-            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                NaiveDateTime::from_timestamp_opt(value / 1000, ((value % 1000) * 1_000_000) as u32)
-                    .ok_or_else(|| E::custom(ne_timestamp(value)))
-            }
-
-            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                NaiveDateTime::from_timestamp_opt(
-                    (value / 1000) as i64,
-                    ((value % 1000) * 1_000_000) as u32,
-                )
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
-            }
-        }
-    }
-
-    /// Used to serialize/deserialize from second-precision timestamps
-    ///
-    /// # Example:
-    ///
-    /// ```rust
-    /// # // We mark this ignored so that we can test on 1.13 (which does not
-    /// # // support custom derive), and run tests with --ignored on beta and
-    /// # // nightly to actually trigger these.
-    /// #
-    /// # #[macro_use] extern crate serde_derive;
-    /// # extern crate serde_json;
-    /// # extern crate serde;
-    /// # extern crate chrono;
-    /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
-    /// use chrono::naive::serde::ts_seconds;
-    /// #[derive(Deserialize, Serialize)]
-    /// struct S {
-    ///     #[serde(with = "ts_seconds")]
-    ///     time: NaiveDateTime
-    /// }
-    ///
-    /// # fn example() -> Result<S, serde_json::Error> {
-    /// let time = NaiveDate::from_ymd(2015, 5, 15).and_hms(10, 0, 0);
-    /// let my_s = S {
-    ///     time: time.clone(),
-    /// };
-    ///
-    /// let as_string = serde_json::to_string(&my_s)?;
-    /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-    /// let my_s: S = serde_json::from_str(&as_string)?;
-    /// assert_eq!(my_s.time, time);
-    /// # Ok(my_s)
-    /// # }
-    /// # fn main() { example().unwrap(); }
-    /// ```
-    pub mod ts_seconds {
-        use core::fmt;
-        use serdelib::{de, ser};
-
-        use {ne_timestamp, NaiveDateTime};
-
-        /// Serialize a UTC datetime into an integer number of seconds since the epoch
-        ///
-        /// Intended for use with `serde`s `serialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # #[macro_use] extern crate serde;
-        /// # extern crate chrono;
-        /// # use chrono::{TimeZone, NaiveDate, NaiveDateTime, Utc};
-        /// # use serde::Serialize;
-        /// use chrono::naive::serde::ts_seconds::serialize as to_ts;
-        /// #[derive(Serialize)]
-        /// struct S {
-        ///     #[serde(serialize_with = "to_ts")]
-        ///     time: NaiveDateTime
-        /// }
-        ///
-        /// # fn example() -> Result<String, serde_json::Error> {
-        /// let my_s = S {
-        ///     time: NaiveDate::from_ymd(2015, 5, 15).and_hms(10, 0, 0),
-        /// };
-        /// let as_string = serde_json::to_string(&my_s)?;
-        /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-        /// # Ok(as_string)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
-        {
-            serializer.serialize_i64(dt.timestamp())
-        }
-
-        /// Deserialize a `DateTime` from a seconds timestamp
-        ///
-        /// Intended for use with `serde`s `deserialize_with` attribute.
-        ///
-        /// # Example:
-        ///
-        /// ```rust
-        /// # // We mark this ignored so that we can test on 1.13 (which does not
-        /// # // support custom derive), and run tests with --ignored on beta and
-        /// # // nightly to actually trigger these.
-        /// #
-        /// # #[macro_use] extern crate serde_derive;
-        /// # #[macro_use] extern crate serde_json;
-        /// # extern crate serde;
-        /// # extern crate chrono;
-        /// # use chrono::{NaiveDateTime, Utc};
-        /// # use serde::Deserialize;
-        /// use chrono::naive::serde::ts_seconds::deserialize as from_ts;
-        /// #[derive(Deserialize)]
-        /// struct S {
-        ///     #[serde(deserialize_with = "from_ts")]
-        ///     time: NaiveDateTime
-        /// }
-        ///
-        /// # fn example() -> Result<S, serde_json::Error> {
-        /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-        /// # Ok(my_s)
-        /// # }
-        /// # fn main() { example().unwrap(); }
-        /// ```
-        pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
-        where
-            D: de::Deserializer<'de>,
-        {
-            d.deserialize_i64(NaiveDateTimeFromSecondsVisitor)
-        }
-
-        struct NaiveDateTimeFromSecondsVisitor;
-
-        impl<'de> de::Visitor<'de> for NaiveDateTimeFromSecondsVisitor {
-            type Value = NaiveDateTime;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a unix timestamp")
-            }
-
-            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                NaiveDateTime::from_timestamp_opt(value, 0)
-                    .ok_or_else(|| E::custom(ne_timestamp(value)))
-            }
-
-            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                NaiveDateTime::from_timestamp_opt(value as i64, 0)
-                    .ok_or_else(|| E::custom(ne_timestamp(value)))
-            }
-        }
-    }
-
-    #[cfg(test)]
-    extern crate bincode;
-    #[cfg(test)]
-    extern crate serde_derive;
-    #[cfg(test)]
-    extern crate serde_json;
-
-    #[test]
-    fn test_serde_serialize() {
-        super::test_encodable_json(self::serde_json::to_string);
-    }
-
-    #[test]
-    fn test_serde_deserialize() {
-        super::test_decodable_json(|input| self::serde_json::from_str(&input));
-    }
-
-    // Bincode is relevant to test separately from JSON because
-    // it is not self-describing.
-    #[test]
-    fn test_serde_bincode() {
-        use self::bincode::{deserialize, serialize, Infinite};
-        use naive::NaiveDate;
-
-        let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
-        let encoded = serialize(&dt, Infinite).unwrap();
-        let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
-        assert_eq!(dt, decoded);
-    }
-
-    #[test]
-    fn test_serde_bincode_optional() {
-        use self::bincode::{deserialize, serialize, Infinite};
-        use self::serde_derive::{Deserialize, Serialize};
-        use prelude::*;
-        use serde::ts_nanoseconds_option;
-
-        #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-        struct Test {
-            one: Option<i64>,
-            #[serde(with = "ts_nanoseconds_option")]
-            two: Option<DateTime<Utc>>,
-        }
-
-        let expected = Test { one: Some(1), two: Some(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1)) };
-        let bytes: Vec<u8> = serialize(&expected, Infinite).unwrap();
-        let actual = deserialize::<Test>(&(bytes)).unwrap();
-
-        assert_eq!(expected, actual);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::NaiveDateTime;
-    use naive::{NaiveDate, MAX_DATE, MIN_DATE};
-    use oldtime::Duration;
-    use std::i64;
-    use Datelike;
-
-    #[test]
-    fn test_datetime_from_timestamp() {
-        let from_timestamp = |secs| NaiveDateTime::from_timestamp_opt(secs, 0);
-        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-        assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
-        assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
-        assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
-        assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
-        assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
-        assert_eq!(from_timestamp(i64::MIN), None);
-        assert_eq!(from_timestamp(i64::MAX), None);
-    }
-
-    #[test]
-    fn test_datetime_add() {
-        fn check(
-            (y, m, d, h, n, s): (i32, u32, u32, u32, u32, u32),
-            rhs: Duration,
-            result: Option<(i32, u32, u32, u32, u32, u32)>,
-        ) {
-            let lhs = NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-            let sum =
-                result.map(|(y, m, d, h, n, s)| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
-            assert_eq!(lhs.checked_add_signed(rhs), sum);
-            assert_eq!(lhs.checked_sub_signed(-rhs), sum);
-        }
-
-        check(
-            (2014, 5, 6, 7, 8, 9),
-            Duration::seconds(3600 + 60 + 1),
-            Some((2014, 5, 6, 8, 9, 10)),
-        );
-        check(
-            (2014, 5, 6, 7, 8, 9),
-            Duration::seconds(-(3600 + 60 + 1)),
-            Some((2014, 5, 6, 6, 7, 8)),
-        );
-        check((2014, 5, 6, 7, 8, 9), Duration::seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
-        check((2014, 5, 6, 7, 8, 9), Duration::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
-        check((2014, 5, 6, 7, 8, 9), Duration::seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
-        check((2014, 5, 6, 7, 8, 9), Duration::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
-
-        // overflow check
-        // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
-        // (they are private constants, but the equivalence is tested in that module.)
-        let max_days_from_year_0 = MAX_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
-        check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((MAX_DATE.year(), 12, 31, 0, 0, 0)));
-        check(
-            (0, 1, 1, 0, 0, 0),
-            max_days_from_year_0 + Duration::seconds(86399),
-            Some((MAX_DATE.year(), 12, 31, 23, 59, 59)),
-        );
-        check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
-        check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
-
-        let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
-        check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((MIN_DATE.year(), 1, 1, 0, 0, 0)));
-        check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
-        check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
-    }
-
-    #[test]
-    fn test_datetime_sub() {
-        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-        let since = NaiveDateTime::signed_duration_since;
-        assert_eq!(
-            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
-            Duration::zero()
-        );
-        assert_eq!(
-            since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
-            Duration::seconds(1)
-        );
-        assert_eq!(
-            since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-            Duration::seconds(-1)
-        );
-        assert_eq!(
-            since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-            Duration::seconds(86399)
-        );
-        assert_eq!(
-            since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
-            Duration::seconds(999_999_999)
-        );
-    }
-
-    #[test]
-    fn test_datetime_addassignment() {
-        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
-        date += Duration::minutes(10_000_000);
-        assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
-        date += Duration::days(10);
-        assert_eq!(date, ymdhms(2035, 10, 16, 20, 50, 10));
-    }
-
-    #[test]
-    fn test_datetime_subassignment() {
-        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
-        date -= Duration::minutes(10_000_000);
-        assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
-        date -= Duration::days(10);
-        assert_eq!(date, ymdhms(1997, 9, 16, 23, 30, 10));
-    }
-
-    #[test]
-    fn test_datetime_timestamp() {
-        let to_timestamp =
-            |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s).timestamp();
-        assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
-        assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
-        assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
-        assert_eq!(to_timestamp(2001, 9, 9, 1, 46, 40), 1_000_000_000);
-        assert_eq!(to_timestamp(2038, 1, 19, 3, 14, 7), 0x7fffffff);
-    }
-
-    #[test]
-    fn test_datetime_from_str() {
-        // valid cases
-        let valid = [
-            "2015-2-18T23:16:9.15",
-            "-77-02-18T23:16:09",
-            "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ",
-        ];
-        for &s in &valid {
-            let d = match s.parse::<NaiveDateTime>() {
-                Ok(d) => d,
-                Err(e) => panic!("parsing `{}` has failed: {}", s, e),
-            };
-            let s_ = format!("{:?}", d);
-            // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
-            let d_ = match s_.parse::<NaiveDateTime>() {
-                Ok(d) => d,
-                Err(e) => {
-                    panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}", s, d, e)
-                }
-            };
-            assert!(
-                d == d_,
-                "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match",
-                s,
-                d,
-                d_
-            );
-        }
-
-        // some invalid cases
-        // since `ParseErrorKind` is private, all we can do is to check if there was an error
-        assert!("".parse::<NaiveDateTime>().is_err());
-        assert!("x".parse::<NaiveDateTime>().is_err());
-        assert!("15".parse::<NaiveDateTime>().is_err());
-        assert!("15:8:9".parse::<NaiveDateTime>().is_err());
-        assert!("15-8-9".parse::<NaiveDateTime>().is_err());
-        assert!("2015-15-15T15:15:15".parse::<NaiveDateTime>().is_err());
-        assert!("2012-12-12T12:12:12x".parse::<NaiveDateTime>().is_err());
-        assert!("2012-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
-        assert!("+ 82701-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
-        assert!("+802701-123-12T12:12:12".parse::<NaiveDateTime>().is_err()); // out-of-bound
-    }
-
-    #[test]
-    fn test_datetime_parse_from_str() {
-        let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
-        let ymdhmsn =
-            |y, m, d, h, n, s, nano| NaiveDate::from_ymd(y, m, d).and_hms_nano(h, n, s, nano);
-        assert_eq!(
-            NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-            Ok(ymdhms(2014, 5, 7, 12, 34, 56))
-        ); // ignore offset
-        assert_eq!(
-            NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
-            Ok(ymdhms(2015, 2, 2, 0, 0, 0))
-        );
-        assert_eq!(
-            NaiveDateTime::parse_from_str(
-                "Fri, 09 Aug 2013 23:54:35 GMT",
-                "%a, %d %b %Y %H:%M:%S GMT"
-            ),
-            Ok(ymdhms(2013, 8, 9, 23, 54, 35))
-        );
-        assert!(NaiveDateTime::parse_from_str(
-            "Sat, 09 Aug 2013 23:54:35 GMT",
-            "%a, %d %b %Y %H:%M:%S GMT"
-        )
-        .is_err());
-        assert!(NaiveDateTime::parse_from_str("2014-5-7 12:3456", "%Y-%m-%d %H:%M:%S").is_err());
-        assert!(NaiveDateTime::parse_from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
-        assert_eq!(
-            NaiveDateTime::parse_from_str("1441497364", "%s"),
-            Ok(ymdhms(2015, 9, 5, 23, 56, 4))
-        );
-        assert_eq!(
-            NaiveDateTime::parse_from_str("1283929614.1234", "%s.%f"),
-            Ok(ymdhmsn(2010, 9, 8, 7, 6, 54, 1234))
-        );
-        assert_eq!(
-            NaiveDateTime::parse_from_str("1441497364.649", "%s%.3f"),
-            Ok(ymdhmsn(2015, 9, 5, 23, 56, 4, 649000000))
-        );
-        assert_eq!(
-            NaiveDateTime::parse_from_str("1497854303.087654", "%s%.6f"),
-            Ok(ymdhmsn(2017, 6, 19, 6, 38, 23, 87654000))
-        );
-        assert_eq!(
-            NaiveDateTime::parse_from_str("1437742189.918273645", "%s%.9f"),
-            Ok(ymdhmsn(2015, 7, 24, 12, 49, 49, 918273645))
-        );
-    }
-
-    #[test]
-    fn test_datetime_format() {
-        let dt = NaiveDate::from_ymd(2010, 9, 8).and_hms_milli(7, 6, 54, 321);
-        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
-        assert_eq!(dt.format("%s").to_string(), "1283929614");
-        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
-
-        // a horror of leap second: coming near to you.
-        let dt = NaiveDate::from_ymd(2012, 6, 30).and_hms_milli(23, 59, 59, 1_000);
-        assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
-        assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
-    }
-
-    #[test]
-    fn test_datetime_add_sub_invariant() {
-        // issue #37
-        let base = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
-        let t = -946684799990000;
-        let time = base + Duration::microseconds(t);
-        assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
-    }
-
-    #[test]
-    fn test_nanosecond_range() {
-        const A_BILLION: i64 = 1_000_000_000;
-        let maximum = "2262-04-11T23:47:16.854775804";
-        let parsed: NaiveDateTime = maximum.parse().unwrap();
-        let nanos = parsed.timestamp_nanos();
-        assert_eq!(
-            parsed,
-            NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
-        );
-
-        let minimum = "1677-09-21T00:12:44.000000000";
-        let parsed: NaiveDateTime = minimum.parse().unwrap();
-        let nanos = parsed.timestamp_nanos();
-        assert_eq!(
-            parsed,
-            NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
-        );
-    }
 }
