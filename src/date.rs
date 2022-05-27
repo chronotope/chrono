@@ -516,8 +516,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use consts::f64;
-    use offset::Utc;
+    use crate::consts::f64;
+    use crate::offset::Utc;
     use oldtime::Duration;
 
     #[test]

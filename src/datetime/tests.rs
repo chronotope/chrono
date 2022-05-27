@@ -1,6 +1,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::DateTime;
+#[cfg(feature = "clock")]
+use crate::consts::f64;
 use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -417,7 +419,7 @@ fn test_years_elapsed() {
     let two_year_ago = Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 2.5).ceil() as i64);
 
     assert_eq!(one_year_ago.elapsed_years(), 1);
-    assert_eq!(one_year_ago.elapsed_years(), 2);
+    assert_eq!(two_year_ago.elapsed_years(), 2);
 
     // If the given DateTime is later than now, the function will always return 0.
     assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
