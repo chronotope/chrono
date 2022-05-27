@@ -351,6 +351,21 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn naive_local(&self) -> NaiveDateTime {
         self.datetime + self.offset.fix()
     }
+
+    /// Retrieve the elapsed years from now to the given [`DateTime`].
+    #[cfg(feature = "clock")]
+    pub fn elapsed_years(&self) -> u32 {
+        let now = Utc::now().with_timezone(&self.timezone());
+
+        let years =
+            if (now.month(), now.day(), now.time()) < (self.month(), self.day(), self.time()) {
+                now.year() - self.year() - 1
+            } else {
+                now.year() - self.year()
+            };
+
+        u32::try_from(years).unwrap_or(0)
+    }
 }
 
 impl Default for DateTime<Utc> {
