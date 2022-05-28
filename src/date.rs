@@ -518,7 +518,7 @@ where
 mod tests {
     use crate::consts::f64;
     use crate::offset::Utc;
-    use oldtime::Duration;
+    use crate::oldtime::Duration;
 
     #[test]
     #[cfg(feature = "clock")]
