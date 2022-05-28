@@ -277,7 +277,7 @@ impl<Tz: TimeZone> Date<Tz> {
         self.date
     }
 
-    /// Retrieve the elapsed years from now to the given [`Date`].
+    /// Retrieves the elapsed years from now to the given [`Date`].
     #[cfg(feature = "clock")]
     pub fn elapsed_years(&self) -> u32 {
         let now = Utc::today().with_timezone(&self.timezone());
