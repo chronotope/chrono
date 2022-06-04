@@ -447,6 +447,12 @@ fn test_datetime_add_assign() {
     let datetime_add = datetime_add.with_timezone(&timezone);
 
     assert_eq!(datetime_add, datetime + Duration::seconds(60));
+
+    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let mut datetime_add = datetime;
+
+    datetime_add += Duration::seconds(60);
+    assert_eq!(datetime_add, datetime + Duration::seconds(60));
 }
 
 #[test]
@@ -468,5 +474,11 @@ fn test_datetime_sub_assign() {
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
+    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+
+    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let mut datetime_sub = datetime;
+
+    datetime_sub -= Duration::minutes(90);
     assert_eq!(datetime_sub, datetime - Duration::minutes(90));
 }
