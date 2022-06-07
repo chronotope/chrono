@@ -26,6 +26,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for optional timestamps serde serialization for `NaiveDateTime`.
 * Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
 * Implement `DoubleEndedIterator` for `NaiveDateDaysIterator` and `NaiveDateWeeksIterator`
+* Update `time` crate version to `0.2.27` due to security vulnerabilities.
 
 ## 0.4.19
 
