@@ -7,6 +7,9 @@ use core::fmt;
 
 use super::internals::{DateImpl, Of, YearFlags};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 /// ISO 8601 week.
 ///
 /// This type, combined with [`Weekday`](../enum.Weekday.html),
@@ -14,6 +17,7 @@ use super::internals::{DateImpl, Of, YearFlags};
 /// One can retrieve this type from the existing [`Datelike`](../trait.Datelike.html) types
 /// via the [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) method.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct IsoWeek {
     // note that this allows for larger year range than `NaiveDate`.
     // this is crucial because we have an edge case for the first and last week supported,
