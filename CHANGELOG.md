@@ -26,6 +26,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for optional timestamps serde serialization for `NaiveDateTime`.
 * Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
 * Implement `DoubleEndedIterator` for `NaiveDateDaysIterator` and `NaiveDateWeeksIterator`
+* Fix `.second()` and `.nanosecond()` normalisation on `Timelike` (#702)
 
 ## 0.4.19
 
