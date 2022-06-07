@@ -800,7 +800,13 @@ impl NaiveTime {
 
     /// Returns a triple of the hour, minute and second numbers.
     fn hms(&self) -> (u32, u32, u32) {
-        let (mins, sec) = div_mod_floor(self.secs, 60);
+        // self.frac cannot exceed 2_000_000_000 as per `from_hms_nano_opt` and `with_nanosecond` above
+        let total_secs = if self.frac > 1_000_000_000 {
+            self.secs + 1
+        } else {
+            self.secs
+        };
+        let (mins, sec) = div_mod_floor(total_secs, 60);
         let (hour, min) = div_mod_floor(mins, 60);
         (hour, min, sec)
     }
@@ -888,7 +894,7 @@ impl Timelike for NaiveTime {
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {
-        self.frac
+        self.frac % 1_000_000_000
     }
 
     /// Makes a new `NaiveTime` with the hour number changed.

@@ -276,3 +276,17 @@ fn test_time_format() {
     assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(), "01:57:09 PM");
     assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(), "23:59:60");
 }
+
+
+#[test]
+fn test_timelike_normalisation() {
+    let t = NaiveTime::from_hms_nano(0, 0, 0, 1_123_456_789);
+    assert_eq!(t.second(), 1);
+    assert_eq!(t.nanosecond(), 123_456_789);
+
+    let t = NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999);
+    assert_eq!(t.hour(), 24);
+    assert_eq!(t.minute(), 0);
+    assert_eq!(t.second(), 0);
+    assert_eq!(t.nanosecond(), 999_999_999);
+}
