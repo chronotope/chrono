@@ -1,8 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::DateTime;
-#[cfg(feature = "clock")]
-use crate::consts::f64;
 use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -413,14 +411,17 @@ fn test_datetime_from_local() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_years_elapsed() {
-    // This is always at least one year because 1 year = 52.1775 weeks.
-    let one_year_ago = Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 1.5).ceil() as i64);
-    // A bit more than 2 years.
-    let two_year_ago = Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 2.5).ceil() as i64);
+    const WEEKS_PER_YEAR: f32 = 52.1775;
 
-    assert_eq!(one_year_ago.elapsed_years(), 1);
-    assert_eq!(two_year_ago.elapsed_years(), 2);
+    // This is always at least one year because 1 year = 52.1775 weeks.
+    let one_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+    // A bit more than 2 years.
+    let two_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+
+    assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
+    assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
 
     // If the given DateTime is later than now, the function will always return 0.
-    assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
+    let future = Utc::today() + Duration::weeks(12);
+    assert_eq!(Utc::today().years_since(future), None);
 }

@@ -276,21 +276,16 @@ impl<Tz: TimeZone> Date<Tz> {
         self.date
     }
 
-    /// Retrieves the elapsed years from now to the given [`Date`].
-    #[cfg(feature = "clock")]
-    pub fn elapsed_years(&self) -> u32 {
-        let now = Utc::today().with_timezone(&self.timezone());
+    /// Returns the number of whole years from the given `base` until `self`.
+    pub fn years_since(&self, base: Self) -> Option<u32> {
+        let mut years = self.year() - base.year();
+        if (self.month(), self.day()) < (base.month(), base.day()) {
+            years -= 1;
+        }
 
-        let years = if (now.month(), now.day()) < (self.month(), self.day()) {
-            now.year() - self.year() - 1
-        } else {
-            now.year() - self.year()
-        };
-
-        if years.is_positive() {
-            years as u32
-        } else {
-            0
+        match years >= 0 {
+            true => Some(years as u32),
+            false => None,
         }
     }
 }
@@ -519,23 +514,23 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::consts::f64;
-    use crate::offset::Utc;
-    use crate::oldtime::Duration;
+    use crate::{Duration, Utc};
 
     #[test]
     #[cfg(feature = "clock")]
     fn test_years_elapsed() {
-        // This is always at least one year because 1 year = 52.1775 weeks.
-        let one_year_ago =
-            Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 1.5).ceil() as i64);
-        // A bit more than 2 years.
-        let two_year_ago =
-            Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 2.5).ceil() as i64);
+        const WEEKS_PER_YEAR: f32 = 52.1775;
 
-        assert_eq!(one_year_ago.elapsed_years(), 1);
-        assert_eq!(two_year_ago.elapsed_years(), 2);
-        // if the given Date is later than now, the function will always return 0.
-        assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
+        // This is always at least one year because 1 year = 52.1775 weeks.
+        let one_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        // A bit more than 2 years.
+        let two_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+
+        assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
+        assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
+
+        // If the given DateTime is later than now, the function will always return 0.
+        let future = Utc::today() + Duration::weeks(12);
+        assert_eq!(Utc::today().years_since(future), None);
     }
 }
