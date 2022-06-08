@@ -531,7 +531,10 @@ mod tests {
     use super::Date;
 
     use crate::oldtime::Duration;
-    use crate::{FixedOffset, Local, NaiveDate, TimeZone, Utc};
+    use crate::{FixedOffset, NaiveDate, Utc};
+
+    #[cfg(feature = "clock")]
+    use crate::offset::{Local, TimeZone};
 
     #[test]
     #[cfg(feature = "clock")]
@@ -571,6 +574,12 @@ mod tests {
         let date_add = date_add.with_timezone(&timezone);
 
         assert_eq!(date_add, date + Duration::days(5));
+    }
+
+    #[test]
+    #[cfg(feature = "clock")]
+    fn test_date_add_assign_local() {
+        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
 
         let date = Local.from_utc_date(&naivedate);
         let mut date_add = date;
@@ -599,6 +608,12 @@ mod tests {
         let date_sub = date_sub.with_timezone(&timezone);
 
         assert_eq!(date_sub, date - Duration::days(5));
+    }
+
+    #[test]
+    #[cfg(feature = "clock")]
+    fn test_date_sub_assign_local() {
+        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
 
         let date = Local.from_utc_date(&naivedate);
         let mut date_sub = date;
