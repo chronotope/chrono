@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '**.rs'
+      - "**.rs"
       - .github/**
       - Cargo.toml
 
@@ -19,31 +19,31 @@ jobs:
         exhaustive_tz: [onetz]
         check_combinatoric: [no_combinatoric]
         include:
-        # check all tzs on most-recent OS's
-        - os: ubuntu-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        - os: windows-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        - os: macos-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        # compilation check
-        - os: ubuntu-latest
-          rust_version: stable
-          check_combinatoric: 'combinatoric'
-        # test other rust versions
-        - os: ubuntu-latest
-          rust_version: beta
-        - os: ubuntu-latest
-          rust_version: nightly
-        - os: ubuntu-20.04
-          rust_version: 1.32.0
-        - os: macos-latest
-          rust_version: 1.32.0
-        - os: windows-latest
-          rust_version: 1.32.0
+          # check all tzs on most-recent OS's
+          - os: ubuntu-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          - os: windows-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          - os: macos-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          # compilation check
+          - os: ubuntu-latest
+            rust_version: stable
+            check_combinatoric: "combinatoric"
+          # test other rust versions
+          - os: ubuntu-latest
+            rust_version: beta
+          - os: ubuntu-latest
+            rust_version: nightly
+          - os: ubuntu-20.04
+            rust_version: 1.32.0
+          - os: macos-latest
+            rust_version: 1.32.0
+          - os: windows-latest
+            rust_version: 1.32.0
 
     runs-on: ${{ matrix.os }}
 
@@ -107,7 +107,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v1
         with:
-          node-version: '12'
+          node-version: "12"
 
       - name: Install wasm-pack
         run: |
@@ -141,7 +141,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v1
         with:
-          node-version: '12'
+          node-version: "12"
 
       - name: Build and Test
         run: bash ci/github.sh
@@ -203,5 +203,5 @@ jobs:
           override: true
       - name: Check docs build without warnings
         env:
-          RUSTDOCFLAGS: '-D warnings'
+          RUSTDOCFLAGS: "-D warnings"
         run: cargo +nightly doc
