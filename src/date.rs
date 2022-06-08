@@ -275,6 +275,24 @@ impl<Tz: TimeZone> Date<Tz> {
     pub fn naive_local(&self) -> NaiveDate {
         self.date
     }
+
+    /// Retrieves the elapsed years from now to the given [`Date`].
+    #[cfg(feature = "clock")]
+    pub fn elapsed_years(&self) -> u32 {
+        let now = Utc::today().with_timezone(&self.timezone());
+
+        let years = if (now.month(), now.day()) < (self.month(), self.day()) {
+            now.year() - self.year() - 1
+        } else {
+            now.year() - self.year()
+        };
+
+        if years.is_positive() {
+            years as u32
+        } else {
+            0
+        }
+    }
 }
 
 /// Maps the local date to other date with given conversion function.
@@ -496,5 +514,28 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.naive_local(), self.offset)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::consts::f64;
+    use crate::offset::Utc;
+    use crate::oldtime::Duration;
+
+    #[test]
+    #[cfg(feature = "clock")]
+    fn test_years_elapsed() {
+        // This is always at least one year because 1 year = 52.1775 weeks.
+        let one_year_ago =
+            Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        // A bit more than 2 years.
+        let two_year_ago =
+            Utc::today() - Duration::weeks((f64::WEEKS_PER_YEAR * 2.5).ceil() as i64);
+
+        assert_eq!(one_year_ago.elapsed_years(), 1);
+        assert_eq!(two_year_ago.elapsed_years(), 2);
+        // if the given Date is later than now, the function will always return 0.
+        assert_eq!((Utc::today() + Duration::weeks(12)).elapsed_years(), 0);
     }
 }
