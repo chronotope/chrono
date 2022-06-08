@@ -2,9 +2,9 @@ name: Release Test
 
 on:
   push:
-    branches: ['rel*']
+    branches: ["rel*"]
   pull_request:
-    branches: ['rel*']
+    branches: ["rel*"]
 
 # From here down this should be exactly the same as test.yml
 
@@ -12,30 +12,30 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-latest]
         rust_version: [stable]
         include:
-        # check all tzs on most-recent OS's
-        - os: ubuntu-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        - os: windows-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        - os: macos-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        # test other rust versions
-        - os: ubuntu-latest
-          rust_version: beta
-        - os: ubuntu-latest
-          rust_version: nightly
-        - os: ubuntu-18.04
-          rust_version: 1.32.0
-        - os: macos-latest
-          rust_version: 1.32.0
-        - os: windows-latest
-          rust_version: 1.32.0
+          # check all tzs on most-recent OS's
+          - os: ubuntu-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          - os: windows-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          - os: macos-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          # test other rust versions
+          - os: ubuntu-latest
+            rust_version: beta
+          - os: ubuntu-latest
+            rust_version: nightly
+          - os: ubuntu-20.04
+            rust_version: 1.32.0
+          - os: macos-latest
+            rust_version: 1.32.0
+          - os: windows-latest
+            rust_version: 1.32.0
 
     runs-on: ${{ matrix.os }}
 
@@ -98,7 +98,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v1
         with:
-          node-version: '12'
+          node-version: "12"
 
       - name: Install wasm-pack
         run: |

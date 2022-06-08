@@ -32,6 +32,9 @@ use crate::oldtime::Duration as OldDuration;
 use crate::Date;
 use crate::{Datelike, Timelike, Weekday};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
 
@@ -79,6 +82,7 @@ pub enum SecondsFormat {
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
