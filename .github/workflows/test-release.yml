@@ -12,7 +12,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-18.04, ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-latest]
         rust_version: [stable]
         include:
         # check all tzs on most-recent OS's
@@ -30,7 +30,7 @@ jobs:
           rust_version: beta
         - os: ubuntu-latest
           rust_version: nightly
-        - os: ubuntu-18.04
+        - os: ubuntu-20.04
           rust_version: 1.32.0
         - os: macos-latest
           rust_version: 1.32.0
