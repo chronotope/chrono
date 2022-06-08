@@ -357,20 +357,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Retrieve the elapsed years from now to the given [`DateTime`].
-    #[cfg(feature = "clock")]
-    pub fn elapsed_years(&self) -> u32 {
-        let now = Utc::now().with_timezone(&self.timezone());
+    pub fn years_since(&self, base: Self) -> Option<u32> {
+        let mut years = self.year() - base.year();
+        let earlier_time =
+            (self.month(), self.day(), self.time()) < (base.month(), base.day(), base.time());
 
-        let years =
-            if (now.month(), now.day(), now.time()) < (self.month(), self.day(), self.time()) {
-                now.year() - self.year() - 1
-            } else {
-                now.year() - self.year()
-            };
-        if years.is_positive() {
-            years as u32
-        } else {
-            0
+        years -= match earlier_time {
+            true => 1,
+            false => 0,
+        };
+
+        match years >= 0 {
+            true => Some(years as u32),
+            false => None,
         }
     }
 }
