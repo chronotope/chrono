@@ -6,7 +6,6 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::convert::TryFrom;
 use core::ops::{Add, Sub};
 use core::{fmt, hash};
 
@@ -288,7 +287,11 @@ impl<Tz: TimeZone> Date<Tz> {
             now.year() - self.year()
         };
 
-        u32::try_from(years).unwrap_or(0)
+        if years.is_positive() {
+            years as u32
+        } else {
+            0
+        }
     }
 }
 
