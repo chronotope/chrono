@@ -452,13 +452,16 @@ fn test_datetime_add_assign() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_add_assign_local() {
-    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
-    let mut datetime_add = datetime;
+    let mut datetime_add = Local.from_utc_datetime(&naivedatetime);
 
-    datetime_add += Duration::seconds(60);
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    // ensure we cross a DST transition
+    for i in 1..=365 {
+        datetime_add += Duration::days(1);
+        assert_eq!(datetime_add, datetime + Duration::days(i))
+    }
 }
 
 #[test]
@@ -486,11 +489,14 @@ fn test_datetime_sub_assign() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_sub_assign_local() {
-    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).and_hms(12, 0, 0);
+    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
-    let mut datetime_sub = datetime;
+    let mut datetime_sub = Local.from_utc_datetime(&naivedatetime);
 
-    datetime_sub -= Duration::minutes(90);
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    // ensure we cross a DST transition
+    for i in 1..=365 {
+        datetime_sub -= Duration::days(1);
+        assert_eq!(datetime_sub, datetime - Duration::days(i))
+    }
 }
