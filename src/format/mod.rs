@@ -336,9 +336,16 @@ macro_rules! internal_fix {
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub struct ParseError(ParseErrorKind);
 
+impl ParseError {
+    /// The category of parse error
+    pub fn kind(&self) -> ParseErrorKind {
+        self.0
+    }
+}
+
 /// The category of parse error
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
-enum ParseErrorKind {
+pub enum ParseErrorKind {
     /// Given field is out of permitted range.
     OutOfRange,
 
@@ -366,6 +373,10 @@ enum ParseErrorKind {
 
     /// There was an error on the formatting string, or there were non-supported formating items.
     BadFormat,
+
+    // TODO: Change this to `#[non_exhaustive]` (on the enum) when MSRV is increased
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 /// Same as `Result<T, ParseError>`.
@@ -381,6 +392,7 @@ impl fmt::Display for ParseError {
             ParseErrorKind::TooShort => write!(f, "premature end of input"),
             ParseErrorKind::TooLong => write!(f, "trailing input"),
             ParseErrorKind::BadFormat => write!(f, "bad or unsupported format string"),
+            _ => unreachable!(),
         }
     }
 }
