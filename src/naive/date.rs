@@ -5,7 +5,7 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::ops::{Add, AddAssign, Sub, SubAssign, RangeInclusive};
+use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
