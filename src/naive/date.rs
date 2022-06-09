@@ -2517,7 +2517,7 @@ mod tests {
     }
 
     #[test]
-    fn test_naiveweek_first_and_last_day() {
+    fn test_naiveweek() {
         let date = NaiveDate::from_ymd(2022, 5, 18);
         let asserts = vec![
             (Weekday::Mon, "2022-05-16", "2022-05-22"),
