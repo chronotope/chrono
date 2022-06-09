@@ -7,13 +7,17 @@ use core::fmt;
 
 use super::internals::{DateImpl, Of, YearFlags};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 /// ISO 8601 week.
 ///
 /// This type, combined with [`Weekday`](../enum.Weekday.html),
-/// constitues the ISO 8601 [week date](./struct.NaiveDate.html#week-date).
+/// constitutes the ISO 8601 [week date](./struct.NaiveDate.html#week-date).
 /// One can retrieve this type from the existing [`Datelike`](../trait.Datelike.html) types
 /// via the [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) method.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct IsoWeek {
     // note that this allows for larger year range than `NaiveDate`.
     // this is crucial because we have an edge case for the first and last week supported,
@@ -27,7 +31,7 @@ pub struct IsoWeek {
 // because the year range for the week date and the calendar date do not match and
 // it is confusing to have a date that is out of range in one and not in another.
 // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-pub fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
+pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
     let (rawweek, _) = of.isoweekdate_raw();
     let (year, week) = if rawweek < 1 {
         // previous year
@@ -142,8 +146,8 @@ impl fmt::Debug for IsoWeek {
 
 #[cfg(test)]
 mod tests {
-    use naive::{internals, MAX_DATE, MIN_DATE};
-    use Datelike;
+    use crate::naive::{internals, MAX_DATE, MIN_DATE};
+    use crate::Datelike;
 
     #[test]
     fn test_iso_week_extremes() {

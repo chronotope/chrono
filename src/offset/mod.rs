@@ -20,10 +20,21 @@
 
 use core::fmt;
 
-use format::{parse, ParseResult, Parsed, StrftimeItems};
-use naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use Weekday;
-use {Date, DateTime};
+use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
+use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::Weekday;
+use crate::{Date, DateTime};
+
+mod fixed;
+pub use self::fixed::FixedOffset;
+
+#[cfg(feature = "clock")]
+mod local;
+#[cfg(feature = "clock")]
+pub use self::local::Local;
+
+mod utc;
+pub use self::utc::Utc;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
@@ -406,7 +417,7 @@ pub trait TimeZone: Sized + Clone {
     /// Parses a string with the specified format string and returns a
     /// `DateTime` with the current offset.
     ///
-    /// See the [`::format::strftime`] module on the
+    /// See the [`crate::format::strftime`] module on the
     /// supported escape sequences.
     ///
     /// If the to-be-parsed string includes an offset, it *must* match the
@@ -430,6 +441,7 @@ pub trait TimeZone: Sized + Clone {
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<Self::Offset>;
 
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
+    #[allow(clippy::wrong_self_convention)]
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>> {
         self.offset_from_local_date(local).map(|offset| {
             // since FixedOffset is within +/- 1 day, the date is never affected
@@ -438,6 +450,7 @@ pub trait TimeZone: Sized + Clone {
     }
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
+    #[allow(clippy::wrong_self_convention)]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
         self.offset_from_local_datetime(local)
             .map(|offset| DateTime::from_utc(*local - offset.fix(), offset))
@@ -451,26 +464,18 @@ pub trait TimeZone: Sized + Clone {
 
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
+    #[allow(clippy::wrong_self_convention)]
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Self> {
         Date::from_utc(*utc, self.offset_from_utc_date(utc))
     }
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
+    #[allow(clippy::wrong_self_convention)]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
         DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc))
     }
 }
-
-mod fixed;
-#[cfg(feature = "clock")]
-mod local;
-mod utc;
-
-pub use self::fixed::FixedOffset;
-#[cfg(feature = "clock")]
-pub use self::local::Local;
-pub use self::utc::Utc;
 
 #[cfg(test)]
 mod tests {

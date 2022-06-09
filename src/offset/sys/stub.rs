@@ -65,16 +65,16 @@ fn tm_to_time(tm: &Tm) -> i64 {
         + s
 }
 
-pub fn time_to_local_tm(sec: i64, tm: &mut Tm) {
+pub(super) fn time_to_local_tm(sec: i64, tm: &mut Tm) {
     // FIXME: Add timezone logic
     time_to_tm(sec, tm);
 }
 
-pub fn utc_tm_to_time(tm: &Tm) -> i64 {
+pub(super) fn utc_tm_to_time(tm: &Tm) -> i64 {
     tm_to_time(tm)
 }
 
-pub fn local_tm_to_time(tm: &Tm) -> i64 {
+pub(super) fn local_tm_to_time(tm: &Tm) -> i64 {
     // FIXME: Add timezone logic
     tm_to_time(tm)
 }

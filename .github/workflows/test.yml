@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '**.rs'
+      - "**.rs"
       - .github/**
       - Cargo.toml
 
@@ -14,35 +14,36 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-16.04, ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-latest]
         rust_version: [stable]
         exhaustive_tz: [onetz]
         check_combinatoric: [no_combinatoric]
         include:
-        # check all tzs on most-recent OS's
-        - os: ubuntu-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        - os: windows-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        - os: macos-latest
-          rust_version: stable
-          exhaustive_tz: all_tzs
-        # compilation check
-        - os: ubuntu-latest
-          rust_version: stable
-          check_combinatoric: 'combinatoric'
-        # test other rust versions
-        - os: ubuntu-latest
-          rust_version: beta
-        - os: ubuntu-latest
-          rust_version: nightly
-        - os: ubuntu-16.04
-          rust_version: 1.13.0
-        - os: macos-latest
-          rust_version: 1.13.0
-          # time doesn't work on windows with 1.13
+          # check all tzs on most-recent OS's
+          - os: ubuntu-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          - os: windows-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          - os: macos-latest
+            rust_version: stable
+            exhaustive_tz: all_tzs
+          # compilation check
+          - os: ubuntu-latest
+            rust_version: stable
+            check_combinatoric: "combinatoric"
+          # test other rust versions
+          - os: ubuntu-latest
+            rust_version: beta
+          - os: ubuntu-latest
+            rust_version: nightly
+          - os: ubuntu-20.04
+            rust_version: 1.32.0
+          - os: macos-latest
+            rust_version: 1.32.0
+          - os: windows-latest
+            rust_version: 1.32.0
 
     runs-on: ${{ matrix.os }}
 
@@ -55,6 +56,7 @@ jobs:
           toolchain: ${{ matrix.rust_version }}
           override: true
 
+      - uses: Swatinem/rust-cache@v1
       - name: Build and Test
         run: bash ci/github.sh
         env:
@@ -78,6 +80,7 @@ jobs:
           toolchain: stable
           target: thumbv6m-none-eabi
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build no_std lib
         run: cargo build --target thumbv6m-none-eabi --color=always
@@ -99,11 +102,12 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
           override: true
+      - uses: Swatinem/rust-cache@v1
 
       - name: Install node
         uses: actions/setup-node@v1
         with:
-          node-version: '12'
+          node-version: "12"
 
       - name: Install wasm-pack
         run: |
@@ -117,6 +121,58 @@ jobs:
           RUST_VERSION: stable
           WASM: wasm_simple
 
+  wasm_emscripten:
+    strategy:
+      matrix:
+        os: [macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-emscripten
+          override: true
+
+      - name: Install node
+        uses: actions/setup-node@v1
+        with:
+          node-version: "12"
+
+      - name: Build and Test
+        run: bash ci/github.sh
+        env:
+          RUST_VERSION: stable
+          WASM: wasm_emscripten
+
+  wasm_unknown:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+          default: true
+
+      - name: Build and Test
+        run: bash ci/github.sh
+        env:
+          RUST_VERSION: stable
+          WASM: wasm_unknown
+
   cross-targets:
     strategy:
       matrix:
@@ -129,6 +185,8 @@ jobs:
 
       - name: Install cross
         run: bash ci/install-cross.sh
+
+      - uses: Swatinem/rust-cache@v1
 
       - name: Build static library
         run: cross check --target ${{ matrix.target }}
@@ -145,5 +203,5 @@ jobs:
           override: true
       - name: Check docs build without warnings
         env:
-          RUSTDOCFLAGS: '-D warnings'
+          RUSTDOCFLAGS: "-D warnings"
         run: cargo +nightly doc
