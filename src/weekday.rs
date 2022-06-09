@@ -1,5 +1,8 @@
 use core::fmt;
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 /// The day of week.
 ///
 /// The order of the days of week depends on the context.
@@ -7,6 +10,7 @@ use core::fmt;
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

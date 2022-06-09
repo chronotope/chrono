@@ -17,7 +17,9 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
 * Implement `DurationRound` for `NaiveDateTime`
+* Implement `std::iter::Sum` for `Duration`
 * Add `DateTime::from_local()` to construct from given local date and time (#572)
+* Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
 * Correct build for wasm32-unknown-emscripten target (#568)
 * Change `Local::now()` and `Utc::now()` documentation from "current date" to "current date and time" (#647)
 * Fix `duration_round` panic on rounding by `Duration::zero()` (#658)
@@ -26,6 +28,8 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for optional timestamps serde serialization for `NaiveDateTime`.
 * Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
 * Make `ParseErrorKind` public and available through `ParseError::kind()` (#588)
+* Implement `DoubleEndedIterator` for `NaiveDateDaysIterator` and `NaiveDateWeeksIterator`
+* Fix panicking when parsing a `DateTime` (@botahamec)
 
 ## 0.4.19
 

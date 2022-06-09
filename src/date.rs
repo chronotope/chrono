@@ -275,6 +275,19 @@ impl<Tz: TimeZone> Date<Tz> {
     pub fn naive_local(&self) -> NaiveDate {
         self.date
     }
+
+    /// Returns the number of whole years from the given `base` until `self`.
+    pub fn years_since(&self, base: Self) -> Option<u32> {
+        let mut years = self.year() - base.year();
+        if (self.month(), self.day()) < (base.month(), base.day()) {
+            years -= 1;
+        }
+
+        match years >= 0 {
+            true => Some(years as u32),
+            false => None,
+        }
+    }
 }
 
 /// Maps the local date to other date with given conversion function.
@@ -496,5 +509,28 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{}", self.naive_local(), self.offset)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Duration, Utc};
+
+    #[test]
+    #[cfg(feature = "clock")]
+    fn test_years_elapsed() {
+        const WEEKS_PER_YEAR: f32 = 52.1775;
+
+        // This is always at least one year because 1 year = 52.1775 weeks.
+        let one_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        // A bit more than 2 years.
+        let two_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+
+        assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
+        assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
+
+        // If the given DateTime is later than now, the function will always return 0.
+        let future = Utc::today() + Duration::weeks(12);
+        assert_eq!(Utc::today().years_since(future), None);
     }
 }

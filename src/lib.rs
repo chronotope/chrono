@@ -524,3 +524,15 @@ pub use naive::__BenchYearFlags;
 pub mod serde {
     pub use super::datetime::serde::*;
 }
+
+/// MSRV 1.42
+#[cfg(test)]
+#[macro_export]
+macro_rules! matches {
+    ($expression:expr, $(|)? $( $pattern:pat )|+ $( if $guard: expr )? $(,)?) => {
+        match $expression {
+            $( $pattern )|+ $( if $guard )? => true,
+            _ => false
+        }
+    }
+}

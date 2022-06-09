@@ -126,6 +126,7 @@ fn test_datetime_rfc2822_and_rfc3339() {
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
         Ok(edt.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000))
     );
+    assert!(DateTime::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
     assert_eq!(
         DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
         Ok(edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567))
@@ -406,4 +407,22 @@ fn test_datetime_from_local() {
 
     assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
     assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
+}
+
+#[test]
+#[cfg(feature = "clock")]
+fn test_years_elapsed() {
+    const WEEKS_PER_YEAR: f32 = 52.1775;
+
+    // This is always at least one year because 1 year = 52.1775 weeks.
+    let one_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+    // A bit more than 2 years.
+    let two_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+
+    assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
+    assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
+
+    // If the given DateTime is later than now, the function will always return 0.
+    let future = Utc::today() + Duration::weeks(12);
+    assert_eq!(Utc::today().years_since(future), None);
 }

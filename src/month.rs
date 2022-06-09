@@ -1,5 +1,8 @@
 use core::fmt;
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 /// The month of the year.
 ///
 /// This enum is just a convenience implementation.
@@ -26,6 +29,7 @@ use core::fmt;
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub enum Month {
     /// January
     January = 0,
@@ -81,7 +85,7 @@ impl Month {
     ///
     /// `m`:        | `January`  | `February` | `...` | `December`
     /// ----------- | ---------  | ---------- | --- | ---------
-    /// `m.succ()`: | `December` | `January`  | `...` | `November`
+    /// `m.pred()`: | `December` | `January`  | `...` | `November`
     #[inline]
     pub fn pred(&self) -> Month {
         match *self {

@@ -32,6 +32,9 @@ use crate::oldtime::Duration as OldDuration;
 use crate::Date;
 use crate::{Datelike, Timelike, Weekday};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
 
@@ -79,6 +82,7 @@ pub enum SecondsFormat {
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
@@ -350,6 +354,23 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     pub fn naive_local(&self) -> NaiveDateTime {
         self.datetime + self.offset.fix()
+    }
+
+    /// Retrieve the elapsed years from now to the given [`DateTime`].
+    pub fn years_since(&self, base: Self) -> Option<u32> {
+        let mut years = self.year() - base.year();
+        let earlier_time =
+            (self.month(), self.day(), self.time()) < (base.month(), base.day(), base.time());
+
+        years -= match earlier_time {
+            true => 1,
+            false => 0,
+        };
+
+        match years >= 0 {
+            true => Some(years as u32),
+            false => None,
+        }
     }
 }
 
