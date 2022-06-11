@@ -11,7 +11,7 @@ use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::ops::{Add, Sub};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::string::ToString;
@@ -852,12 +852,32 @@ impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: OldDuration) {
+        let datetime =
+            self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime);
+    }
+}
+
 impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
     fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
         self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: OldDuration) {
+        let datetime =
+            self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime)
     }
 }
 

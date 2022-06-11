@@ -426,3 +426,77 @@ fn test_years_elapsed() {
     let future = Utc::today() + Duration::weeks(12);
     assert_eq!(Utc::today().years_since(future), None);
 }
+
+#[test]
+fn test_datetime_add_assign() {
+    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+    let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
+    let mut datetime_add = datetime;
+
+    datetime_add += Duration::seconds(60);
+    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+
+    let timezone = FixedOffset::east(60 * 60);
+    let datetime = datetime.with_timezone(&timezone);
+    let datetime_add = datetime_add.with_timezone(&timezone);
+
+    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+
+    let timezone = FixedOffset::west(2 * 60 * 60);
+    let datetime = datetime.with_timezone(&timezone);
+    let datetime_add = datetime_add.with_timezone(&timezone);
+
+    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+}
+
+#[test]
+#[cfg(feature = "clock")]
+fn test_datetime_add_assign_local() {
+    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
+
+    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let mut datetime_add = Local.from_utc_datetime(&naivedatetime);
+
+    // ensure we cross a DST transition
+    for i in 1..=365 {
+        datetime_add += Duration::days(1);
+        assert_eq!(datetime_add, datetime + Duration::days(i))
+    }
+}
+
+#[test]
+fn test_datetime_sub_assign() {
+    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).and_hms(12, 0, 0);
+    let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
+    let mut datetime_sub = datetime;
+
+    datetime_sub -= Duration::minutes(90);
+    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+
+    let timezone = FixedOffset::east(60 * 60);
+    let datetime = datetime.with_timezone(&timezone);
+    let datetime_sub = datetime_sub.with_timezone(&timezone);
+
+    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+
+    let timezone = FixedOffset::west(2 * 60 * 60);
+    let datetime = datetime.with_timezone(&timezone);
+    let datetime_sub = datetime_sub.with_timezone(&timezone);
+
+    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+}
+
+#[test]
+#[cfg(feature = "clock")]
+fn test_datetime_sub_assign_local() {
+    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
+
+    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let mut datetime_sub = Local.from_utc_datetime(&naivedatetime);
+
+    // ensure we cross a DST transition
+    for i in 1..=365 {
+        datetime_sub -= Duration::days(1);
+        assert_eq!(datetime_sub, datetime - Duration::days(i))
+    }
+}
