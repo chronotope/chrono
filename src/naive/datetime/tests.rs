@@ -1,7 +1,7 @@
 use super::NaiveDateTime;
 use crate::naive::{NaiveDate, MAX_DATE, MIN_DATE};
 use crate::oldtime::Duration;
-use crate::{Datelike, Utc, FixedOffset};
+use crate::{Datelike, FixedOffset, Utc};
 use std::i64;
 
 #[test]

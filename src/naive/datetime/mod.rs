@@ -21,7 +21,7 @@ use crate::naive::date::{MAX_DATE, MIN_DATE};
 use crate::naive::time::{MAX_TIME, MIN_TIME};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Timelike, Weekday, DateTime, LocalResult, TimeZone};
+use crate::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
