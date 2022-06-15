@@ -29,11 +29,10 @@ Versions with only mechanical changes will be omitted from the following list.
 * Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
 * Make `ParseErrorKind` public and available through `ParseError::kind()` (#588)
 * Implement `DoubleEndedIterator` for `NaiveDateDaysIterator` and `NaiveDateWeeksIterator`
-<<<<<<< HEAD
 * Fix panicking when parsing a `DateTime` (@botahamec)
 * Add support for getting week bounds based on a specific `NaiveDate` and a `Weekday` (#666)
 * Remove libc dependency from Cargo.toml.
-* Add the `with_timezone` method to `NaiveDateTime`
+* Add the `and_timezone` method to `NaiveDateTime`
 
 ## 0.4.19
 
