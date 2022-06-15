@@ -95,7 +95,8 @@ impl NaiveWeek {
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
-    /// [first_day()] and [last_day()] functions.
+    /// [first_day](./struct.NaiveWeek.html#method.first_day) and
+    /// [last_day](./struct.NaiveWeek.html#method.last_day) functions.
     ///
     /// # Examples
     ///
