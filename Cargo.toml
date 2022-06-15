@@ -23,7 +23,7 @@ name = "chrono"
 default = ["clock", "std", "oldtime"]
 alloc = []
 std = []
-clock = ["libc", "std", "winapi"]
+clock = ["std", "winapi"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
@@ -31,7 +31,6 @@ __internal_bench = ["criterion"]
 __doctest = []
 
 [dependencies]
-libc = { version = "0.2.69", optional = true }
 time = { version = "0.1.43", optional = true }
 num-integer = { version = "0.1.36", default-features = false }
 num-traits = { version = "0.2", default-features = false }
