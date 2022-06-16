@@ -22,6 +22,7 @@ name = "chrono"
 [features]
 default = ["clock", "std", "oldtime"]
 alloc = []
+libc = []
 std = []
 clock = ["std", "winapi"]
 oldtime = ["time"]
