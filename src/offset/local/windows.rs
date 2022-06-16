@@ -10,6 +10,7 @@
 
 use std::io;
 use std::mem;
+use std::ptr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use winapi::shared::minwindef::*;
@@ -20,7 +21,8 @@ use super::{FixedOffset, Local};
 use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 pub(super) fn now() -> DateTime<Local> {
-    tm_to_datetime(Timespec::now().local())
+    let datetime = tm_to_datetime(Timespec::now().local());
+    datetime.single().expect("invalid time")
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
@@ -36,7 +38,7 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
         tm_yday: 0,                // and this
         tm_isdst: -1,
         // This seems pretty fake?
-        tm_utcoff: if local { 1 } else { 0 },
+        tm_utcoff: i32::from(local),
         // do not set this, OS APIs are heavily inconsistent in terms of leap second handling
         tm_nsec: 0,
     };
@@ -54,12 +56,11 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
     assert_eq!(tm.tm_nsec, 0);
     tm.tm_nsec = d.nanosecond() as i32;
 
-    // #TODO - there should be ambiguous cases, investigate?
-    LocalResult::Single(tm_to_datetime(tm))
+    tm_to_datetime(tm)
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
-fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
+fn tm_to_datetime(mut tm: Tm) -> LocalResult<DateTime<Local>> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
@@ -67,15 +68,23 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
 
     let date = NaiveDate::from_ymd_opt(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
         .unwrap();
-    let time = NaiveTime::from_hms_nano(
+
+    let time = NaiveTime::from_hms_nano_opt(
         tm.tm_hour as u32,
         tm.tm_min as u32,
         tm.tm_sec as u32,
         tm.tm_nsec as u32,
     );
 
-    let offset = FixedOffset::east_opt(tm.tm_utcoff).unwrap();
-    DateTime::from_utc(date.and_time(time) - offset, offset)
+    match time {
+        Some(time) => {
+            let offset = FixedOffset::east_opt(tm.tm_utcoff).unwrap();
+            let datetime = DateTime::from_utc(date.and_time(time) - offset, offset);
+            // #TODO - there should be ambiguous cases, investigate?
+            LocalResult::Single(datetime)
+        }
+        None => LocalResult::None,
+    }
 }
 
 /// A record specifying a time value in seconds and nanoseconds, where
@@ -220,7 +229,7 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
         } else {
             0
         };
-        let july = if month > 7 { 1 } else { 0 };
+        let july = i32::from(month > 7);
 
         (month - 1) * 30 + month / 2 + (day - 1) - leap + july
     }
@@ -241,7 +250,7 @@ fn time_to_local_tm(sec: i64, tm: &mut Tm) {
         let mut utc = mem::zeroed();
         let mut local = mem::zeroed();
         call!(FileTimeToSystemTime(&ft, &mut utc));
-        call!(SystemTimeToTzSpecificLocalTime(0 as *const _, &mut utc, &mut local));
+        call!(SystemTimeToTzSpecificLocalTime(ptr::null(), &utc, &mut local));
         system_time_to_tm(&local, tm);
 
         let local = system_time_to_file_time(&local);
@@ -270,8 +279,8 @@ fn local_tm_to_time(tm: &Tm) -> i64 {
     unsafe {
         let mut ft = mem::zeroed();
         let mut utc = mem::zeroed();
-        let mut sys_time = tm_to_system_time(tm);
-        call!(TzSpecificLocalTimeToSystemTime(0 as *mut _, &mut sys_time, &mut utc));
+        let sys_time = tm_to_system_time(tm);
+        call!(TzSpecificLocalTimeToSystemTime(ptr::null(), &sys_time, &mut utc));
         call!(SystemTimeToFileTime(&utc, &mut ft));
         file_time_to_unix_seconds(&ft)
     }
