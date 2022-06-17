@@ -55,8 +55,8 @@ Default features:
 - `std`: Enables functionality that depends on the standard library. This
   is a superset of `alloc` and adds interoperation with standard library types
   and traits.
-- `clock`: enables reading the system time (`now`), independent of whether
-  `std::time::SystemTime` is present, depends on having a libc.
+- `clock`: Enables reading the system time (`now`) that depends on the standard library for
+UNIX-like operating systems and the Windows API (`winapi`) for Windows.
 
 Optional features:
 
