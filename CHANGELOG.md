@@ -32,7 +32,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Fix panicking when parsing a `DateTime` (@botahamec)
 * Add support for getting week bounds based on a specific `NaiveDate` and a `Weekday` (#666)
 * Remove libc dependency from Cargo.toml.
-* Add the `and_timezone` method to `NaiveDateTime`
+* Add the `and_local_timezone` method to `NaiveDateTime`
 
 ## 0.4.19
 

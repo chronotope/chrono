@@ -244,12 +244,12 @@ fn test_nanosecond_range() {
 #[test]
 fn test_and_timezone() {
     let ndt = NaiveDate::from_ymd(2022, 6, 15).and_hms(18, 59, 36);
-    let dt_utc = ndt.and_timezone(Utc).unwrap();
+    let dt_utc = ndt.and_local_timezone(Utc).unwrap();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 
     let offset_tz = FixedOffset::west(4 * 3600);
-    let dt_offset = ndt.and_timezone(offset_tz).unwrap();
+    let dt_offset = ndt.and_local_timezone(offset_tz).unwrap();
     assert_eq!(dt_offset.naive_local(), ndt);
     assert_eq!(dt_offset.timezone(), offset_tz);
 }

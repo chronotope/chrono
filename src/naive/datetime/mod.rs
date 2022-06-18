@@ -732,7 +732,7 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, Utc};
     /// let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4).and_timezone(Utc).unwrap();
     /// assert_eq!(dt.timezone(), Utc);
-    pub fn and_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
+    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
         tz.from_local_datetime(self)
     }
 }
