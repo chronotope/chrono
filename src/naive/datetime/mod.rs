@@ -21,7 +21,7 @@ use crate::naive::date::{MAX_DATE, MIN_DATE};
 use crate::naive::time::{MAX_TIME, MIN_TIME};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Timelike, Weekday};
+use crate::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -721,6 +721,22 @@ impl NaiveDateTime {
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Tz>`
+    /// with the provided timezone, if possible.
+    ///
+    /// This is experimental and might be removed in the future. Feel free to
+    /// let us know what you think about this API.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Utc};
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5).and_hms(23, 56, 4).and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timezone(), Utc);
+    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
+        tz.from_local_datetime(self)
     }
 }
 
