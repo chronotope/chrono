@@ -16,7 +16,7 @@ pub use self::date::{NaiveDate, NaiveWeek, MAX_DATE, MIN_DATE};
 pub use self::datetime::rustc_serialize::TsSeconds;
 pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
 pub use self::isoweek::IsoWeek;
-pub use self::time::NaiveTime;
+pub use self::time::{NaiveTime, MAX_TIME, MIN_TIME};
 
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]

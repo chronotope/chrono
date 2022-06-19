@@ -487,7 +487,7 @@ pub use format::{ParseError, ParseResult};
 
 pub mod naive;
 #[doc(no_inline)]
-pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
+pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek, MAX_TIME, MIN_TIME};
 
 pub mod offset;
 #[cfg(feature = "clock")]
