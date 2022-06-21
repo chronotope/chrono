@@ -726,8 +726,13 @@ impl NaiveDateTime {
     /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Tz>`
     /// with the provided timezone, if possible.
     ///
-    /// This is experimental and might be removed in the future. Feel free to
-    /// let us know what you think about this API.
+    /// This can fail in cases where the local time represented by the `NaiveDateTime`
+    /// is not a valid local timestamp in the target timezone due to an offset transition
+    /// for example if the target timezone had a change from +00:00 to +01:00
+    /// occuring at 2015-09-05 22:59:59, then a local time of 2015-09-05 23:56:04
+    /// could never occur. Similarly, if the offset transitioned in the opposite direction
+    /// then there would be two local times of 2015-09-05 23:56:04, one at +00:00 and one
+    /// at +01:00.
     ///
     /// # Example
     ///
