@@ -1,5 +1,5 @@
 use super::NaiveDateTime;
-use crate::naive::{NaiveDate, MAX_DATE, MIN_DATE};
+use crate::naive::NaiveDate;
 use crate::oldtime::Duration;
 use crate::{Datelike, FixedOffset, Utc};
 use std::i64;
@@ -40,18 +40,18 @@ fn test_datetime_add() {
     // overflow check
     // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
     // (they are private constants, but the equivalence is tested in that module.)
-    let max_days_from_year_0 = MAX_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
-    check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((MAX_DATE.year(), 12, 31, 0, 0, 0)));
+    let max_days_from_year_0 = NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
     check(
         (0, 1, 1, 0, 0, 0),
         max_days_from_year_0 + Duration::seconds(86399),
-        Some((MAX_DATE.year(), 12, 31, 23, 59, 59)),
+        Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
     check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
 
-    let min_days_from_year_0 = MIN_DATE.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
-    check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((MIN_DATE.year(), 1, 1, 0, 0, 0)));
+    let min_days_from_year_0 = NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
+    check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
     check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
     check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
 }

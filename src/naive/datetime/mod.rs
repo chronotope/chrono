@@ -17,8 +17,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::naive::date::{MAX_DATE, MIN_DATE};
-use crate::naive::time::{MAX_TIME, MIN_TIME};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Weekday};
@@ -42,9 +40,11 @@ mod tests;
 const MAX_SECS_BITS: usize = 44;
 
 /// The minimum possible `NaiveDateTime`.
-pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime { date: MIN_DATE, time: MIN_TIME };
+#[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MIN instead")]
+pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime::MIN;
 /// The maximum possible `NaiveDateTime`.
-pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime { date: MAX_DATE, time: MAX_TIME };
+#[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MAX instead")]
+pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 
 /// ISO 8601 combined date and time without timezone.
 ///
@@ -743,6 +743,11 @@ impl NaiveDateTime {
     pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
         tz.from_local_datetime(self)
     }
+
+    /// The minimum possible `NaiveDateTime`.
+    pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
+    /// The maximum possible `NaiveDateTime`.
+    pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
 }
 
 impl Datelike for NaiveDateTime {
@@ -1547,11 +1552,11 @@ where
         Some(r#""-0001-12-31T23:59:59.000000007""#.into())
     );
     assert_eq!(
-        to_string(&MIN_DATE.and_hms(0, 0, 0)).ok(),
+        to_string(&NaiveDate::MIN.and_hms(0, 0, 0)).ok(),
         Some(r#""-262144-01-01T00:00:00""#.into())
     );
     assert_eq!(
-        to_string(&MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
+        to_string(&NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999)).ok(),
         Some(r#""+262143-12-31T23:59:60.999999999""#.into())
     );
 }
@@ -1586,14 +1591,14 @@ where
         from_str(r#""-0001-12-31T23:59:59.000000007""#).ok(),
         Some(NaiveDate::from_ymd(-1, 12, 31).and_hms_nano(23, 59, 59, 7))
     );
-    assert_eq!(from_str(r#""-262144-01-01T00:00:00""#).ok(), Some(MIN_DATE.and_hms(0, 0, 0)));
+    assert_eq!(from_str(r#""-262144-01-01T00:00:00""#).ok(), Some(NaiveDate::MIN.and_hms(0, 0, 0)));
     assert_eq!(
         from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
-        Some(MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999))
+        Some(NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999))
     );
     assert_eq!(
         from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
-        Some(MAX_DATE.and_hms_nano(23, 59, 59, 1_999_999_999))
+        Some(NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999))
     );
 
     // bad formats

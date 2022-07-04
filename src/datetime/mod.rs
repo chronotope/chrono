@@ -24,7 +24,7 @@ use crate::format::DelayedFormat;
 use crate::format::Locale;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item};
-use crate::naive::{self, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+use crate::naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -89,9 +89,11 @@ pub struct DateTime<Tz: TimeZone> {
 }
 
 /// The minimum possible `DateTime<Utc>`.
-pub const MIN_DATETIME: DateTime<Utc> = DateTime { datetime: naive::MIN_DATETIME, offset: Utc };
+#[deprecated(since = "0.4.20", note = "Use DateTime::MIN_UTC instead")]
+pub const MIN_DATETIME: DateTime<Utc> = DateTime::<Utc>::MIN_UTC;
 /// The maximum possible `DateTime<Utc>`.
-pub const MAX_DATETIME: DateTime<Utc> = DateTime { datetime: naive::MAX_DATETIME, offset: Utc };
+#[deprecated(since = "0.4.20", note = "Use DateTime::MAX_UTC instead")]
+pub const MAX_DATETIME: DateTime<Utc> = DateTime::<Utc>::MAX_UTC;
 
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` with given *UTC* datetime and offset.
@@ -372,6 +374,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
             false => None,
         }
     }
+
+    /// The minimum possible `DateTime<Utc>`.
+    pub const MIN_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
+    /// The maximum possible `DateTime<Utc>`.
+    pub const MAX_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MAX, offset: Utc };
 }
 
 impl Default for DateTime<Utc> {

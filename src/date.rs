@@ -16,7 +16,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::{DelayedFormat, Item, StrftimeItems};
-use crate::naive::{self, IsoWeek, NaiveDate, NaiveTime};
+use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
 use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
@@ -61,9 +61,13 @@ pub struct Date<Tz: TimeZone> {
 }
 
 /// The minimum possible `Date`.
-pub const MIN_DATE: Date<Utc> = Date { date: naive::MIN_DATE, offset: Utc };
+#[allow(deprecated)]
+#[deprecated(since = "0.4.20", note = "Use Date::MAX_UTC instead")]
+pub const MIN_DATE: Date<Utc> = Date::<Utc>::MIN_UTC;
 /// The maximum possible `Date`.
-pub const MAX_DATE: Date<Utc> = Date { date: naive::MAX_DATE, offset: Utc };
+#[allow(deprecated)]
+#[deprecated(since = "0.4.20", note = "Use Date::MAX_UTC instead")]
+pub const MAX_DATE: Date<Utc> = Date::<Utc>::MAX_UTC;
 
 impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` with given *UTC* date and offset.
@@ -288,6 +292,11 @@ impl<Tz: TimeZone> Date<Tz> {
             false => None,
         }
     }
+
+    /// The minimum possible `Date`.
+    pub const MIN_UTC: Date<Utc> = Date { date: NaiveDate::MIN, offset: Utc };
+    /// The maximum possible `Date`.
+    pub const MAX_UTC: Date<Utc> = Date { date: NaiveDate::MAX, offset: Utc };
 }
 
 /// Maps the local date to other date with given conversion function.

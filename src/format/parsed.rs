@@ -698,7 +698,7 @@ impl Parsed {
 mod tests {
     use super::super::{IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
     use super::Parsed;
-    use crate::naive::{NaiveDate, NaiveTime, MAX_DATE, MIN_DATE};
+    use crate::naive::{NaiveDate, NaiveTime};
     use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::Datelike;
     use crate::Weekday::*;
@@ -828,7 +828,7 @@ mod tests {
         assert_eq!(parse!(year_div_100: 19, year_mod_100: -1, month: 1, day: 1), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year_div_100: 0, year_mod_100: 0, month: 1, day: 1), ymd(0, 1, 1));
         assert_eq!(parse!(year_div_100: -1, year_mod_100: 42, month: 1, day: 1), Err(OUT_OF_RANGE));
-        let max_year = MAX_DATE.year();
+        let max_year = NaiveDate::MAX.year();
         assert_eq!(
             parse!(year_div_100: max_year / 100,
                           year_mod_100: max_year % 100, month: 1, day: 1),
@@ -1081,14 +1081,14 @@ mod tests {
 
         // more timestamps
         let max_days_from_year_1970 =
-            MAX_DATE.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
+            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
         let year_0_from_year_1970 =
             NaiveDate::from_ymd(0, 1, 1).signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
         let min_days_from_year_1970 =
-            MIN_DATE.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
+            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
         assert_eq!(
             parse!(timestamp: min_days_from_year_1970.num_seconds()),
-            ymdhms(MIN_DATE.year(), 1, 1, 0, 0, 0)
+            ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0)
         );
         assert_eq!(
             parse!(timestamp: year_0_from_year_1970.num_seconds()),
@@ -1096,7 +1096,7 @@ mod tests {
         );
         assert_eq!(
             parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
-            ymdhms(MAX_DATE.year(), 12, 31, 23, 59, 59)
+            ymdhms(NaiveDate::MAX.year(), 12, 31, 23, 59, 59)
         );
 
         // leap seconds #1: partial fields
