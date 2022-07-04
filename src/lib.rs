@@ -472,11 +472,13 @@ macro_rules! try_opt {
 }
 
 mod date;
+#[allow(deprecated)]
 pub use date::{Date, MAX_DATE, MIN_DATE};
 
 mod datetime;
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
+#[allow(deprecated)]
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 
 pub mod format;

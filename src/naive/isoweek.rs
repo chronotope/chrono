@@ -146,22 +146,22 @@ impl fmt::Debug for IsoWeek {
 
 #[cfg(test)]
 mod tests {
-    use crate::naive::{internals, MAX_DATE, MIN_DATE};
+    use crate::naive::{internals, NaiveDate};
     use crate::Datelike;
 
     #[test]
     fn test_iso_week_extremes() {
-        let minweek = MIN_DATE.iso_week();
-        let maxweek = MAX_DATE.iso_week();
+        let minweek = NaiveDate::MIN.iso_week();
+        let maxweek = NaiveDate::MAX.iso_week();
 
         assert_eq!(minweek.year(), internals::MIN_YEAR);
         assert_eq!(minweek.week(), 1);
         assert_eq!(minweek.week0(), 0);
-        assert_eq!(format!("{:?}", minweek), MIN_DATE.format("%G-W%V").to_string());
+        assert_eq!(format!("{:?}", minweek), NaiveDate::MIN.format("%G-W%V").to_string());
 
         assert_eq!(maxweek.year(), internals::MAX_YEAR + 1);
         assert_eq!(maxweek.week(), 1);
         assert_eq!(maxweek.week0(), 0);
-        assert_eq!(format!("{:?}", maxweek), MAX_DATE.format("%G-W%V").to_string());
+        assert_eq!(format!("{:?}", maxweek), NaiveDate::MAX.format("%G-W%V").to_string());
     }
 }

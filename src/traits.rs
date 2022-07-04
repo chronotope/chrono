@@ -180,7 +180,6 @@ pub trait Timelike: Sized {
 #[cfg(test)]
 mod tests {
     use super::Datelike;
-    use crate::naive::{MAX_DATE, MIN_DATE};
     use crate::{Duration, NaiveDate};
 
     /// Tests `Datelike::num_days_from_ce` against an alternative implementation.
@@ -222,7 +221,7 @@ mod tests {
 
         use num_iter::range_inclusive;
 
-        for year in range_inclusive(MIN_DATE.year(), MAX_DATE.year()) {
+        for year in range_inclusive(NaiveDate::MIN.year(), NaiveDate::MAX.year()) {
             let jan1_year = NaiveDate::from_ymd(year, 1, 1);
             assert_eq!(
                 jan1_year.num_days_from_ce(),

@@ -169,30 +169,32 @@ pub struct NaiveDate {
 }
 
 /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
-pub const MIN_DATE: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+#[deprecated(since = "0.4.20", note = "Use NaiveDate::MIN instead")]
+pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
 /// The maximum possible `NaiveDate` (December 31, 262143 CE).
-pub const MAX_DATE: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+#[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
+pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
 
-// as it is hard to verify year flags in `MIN_DATE` and `MAX_DATE`,
+// as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
 // we use a separate run-time test.
 #[test]
 fn test_date_bounds() {
     let calculated_min = NaiveDate::from_ymd(MIN_YEAR, 1, 1);
     let calculated_max = NaiveDate::from_ymd(MAX_YEAR, 12, 31);
     assert!(
-        MIN_DATE == calculated_min,
-        "`MIN_DATE` should have a year flag {:?}",
+        NaiveDate::MIN == calculated_min,
+        "`NaiveDate::MIN` should have a year flag {:?}",
         calculated_min.of().flags()
     );
     assert!(
-        MAX_DATE == calculated_max,
-        "`MAX_DATE` should have a year flag {:?}",
+        NaiveDate::MAX == calculated_max,
+        "`NaiveDate::MAX` should have a year flag {:?}",
         calculated_max.of().flags()
     );
 
     // let's also check that the entire range do not exceed 2^44 seconds
     // (sometimes used for bounding `Duration` against overflow)
-    let maxsecs = MAX_DATE.signed_duration_since(MIN_DATE).num_seconds();
+    let maxsecs = NaiveDate::MAX.signed_duration_since(NaiveDate::MIN).num_seconds();
     let maxsecs = maxsecs + 86401; // also take care of DateTime
     assert!(
         maxsecs < (1 << MAX_BITS),
@@ -887,11 +889,10 @@ impl NaiveDate {
     ///
     /// ```
     /// use chrono::NaiveDate;
-    /// use chrono::naive::MAX_DATE;
     ///
     /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).succ_opt(),
     ///            Some(NaiveDate::from_ymd(2015, 6, 4)));
-    /// assert_eq!(MAX_DATE.succ_opt(), None);
+    /// assert_eq!(NaiveDate::MAX.succ_opt(), None);
     /// ```
     #[inline]
     pub fn succ_opt(&self) -> Option<NaiveDate> {
@@ -924,11 +925,10 @@ impl NaiveDate {
     ///
     /// ```
     /// use chrono::NaiveDate;
-    /// use chrono::naive::MIN_DATE;
     ///
     /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).pred_opt(),
     ///            Some(NaiveDate::from_ymd(2015, 6, 2)));
-    /// assert_eq!(MIN_DATE.pred_opt(), None);
+    /// assert_eq!(NaiveDate::MIN.pred_opt(), None);
     /// ```
     #[inline]
     pub fn pred_opt(&self) -> Option<NaiveDate> {
@@ -943,7 +943,6 @@ impl NaiveDate {
     ///
     /// ```
     /// use chrono::{Duration, NaiveDate};
-    /// use chrono::naive::MAX_DATE;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.checked_add_signed(Duration::days(40)),
@@ -952,7 +951,7 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2015, 7, 27)));
     /// assert_eq!(d.checked_add_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_add_signed(Duration::days(-1_000_000_000)), None);
-    /// assert_eq!(MAX_DATE.checked_add_signed(Duration::days(1)), None);
+    /// assert_eq!(NaiveDate::MAX.checked_add_signed(Duration::days(1)), None);
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
@@ -975,7 +974,6 @@ impl NaiveDate {
     ///
     /// ```
     /// use chrono::{Duration, NaiveDate};
-    /// use chrono::naive::MIN_DATE;
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5);
     /// assert_eq!(d.checked_sub_signed(Duration::days(40)),
@@ -984,7 +982,7 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2015, 10, 15)));
     /// assert_eq!(d.checked_sub_signed(Duration::days(1_000_000_000)), None);
     /// assert_eq!(d.checked_sub_signed(Duration::days(-1_000_000_000)), None);
-    /// assert_eq!(MIN_DATE.checked_sub_signed(Duration::days(1)), None);
+    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(Duration::days(1)), None);
     /// ```
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
         let year = self.year();
@@ -1176,6 +1174,11 @@ impl NaiveDate {
     pub fn week(&self, start: Weekday) -> NaiveWeek {
         NaiveWeek { date: *self, start }
     }
+
+    /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
+    pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+    /// The maximum possible `NaiveDate` (December 31, 262143 CE).
+    pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
 }
 
 impl Datelike for NaiveDate {
@@ -1640,18 +1643,18 @@ impl Iterator for NaiveDateDaysIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.value == MAX_DATE {
+        if self.value == NaiveDate::MAX {
             return None;
         }
-        // current < MAX_DATE from here on:
+        // current < NaiveDate::MAX from here on:
         let current = self.value;
-        // This can't panic because current is < MAX_DATE:
+        // This can't panic because current is < NaiveDate::MAX:
         self.value = current.succ();
         Some(current)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = MAX_DATE.signed_duration_since(self.value).num_days();
+        let exact_size = NaiveDate::MAX.signed_duration_since(self.value).num_days();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
@@ -1660,7 +1663,7 @@ impl ExactSizeIterator for NaiveDateDaysIterator {}
 
 impl DoubleEndedIterator for NaiveDateDaysIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.value == MIN_DATE {
+        if self.value == NaiveDate::MIN {
             return None;
         }
         let current = self.value;
@@ -1678,7 +1681,7 @@ impl Iterator for NaiveDateWeeksIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if MAX_DATE - self.value < OldDuration::weeks(1) {
+        if NaiveDate::MAX - self.value < OldDuration::weeks(1) {
             return None;
         }
         let current = self.value;
@@ -1687,7 +1690,7 @@ impl Iterator for NaiveDateWeeksIterator {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = MAX_DATE.signed_duration_since(self.value).num_weeks();
+        let exact_size = NaiveDate::MAX.signed_duration_since(self.value).num_weeks();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
@@ -1696,7 +1699,7 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.value - MIN_DATE < OldDuration::weeks(1) {
+        if self.value - NaiveDate::MIN < OldDuration::weeks(1) {
             return None;
         }
         let current = self.value;
@@ -1834,8 +1837,8 @@ where
     assert_eq!(to_string(&NaiveDate::from_ymd(2014, 7, 24)).ok(), Some(r#""2014-07-24""#.into()));
     assert_eq!(to_string(&NaiveDate::from_ymd(0, 1, 1)).ok(), Some(r#""0000-01-01""#.into()));
     assert_eq!(to_string(&NaiveDate::from_ymd(-1, 12, 31)).ok(), Some(r#""-0001-12-31""#.into()));
-    assert_eq!(to_string(&MIN_DATE).ok(), Some(r#""-262144-01-01""#.into()));
-    assert_eq!(to_string(&MAX_DATE).ok(), Some(r#""+262143-12-31""#.into()));
+    assert_eq!(to_string(&NaiveDate::MIN).ok(), Some(r#""-262144-01-01""#.into()));
+    assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+262143-12-31""#.into()));
 }
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
@@ -1852,8 +1855,8 @@ where
     assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
     assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1)));
     assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31)));
-    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(MIN_DATE));
-    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(MAX_DATE));
+    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(NaiveDate::MIN));
+    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(NaiveDate::MAX));
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
@@ -1994,8 +1997,7 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::NaiveDate;
-    use super::{MAX_DATE, MAX_DAYS_FROM_YEAR_0, MAX_YEAR};
-    use super::{MIN_DATE, MIN_DAYS_FROM_YEAR_0, MIN_YEAR};
+    use super::{MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR};
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
     use std::{i32, u32};
@@ -2004,7 +2006,7 @@ mod tests {
     fn test_readme_doomsday() {
         use num_iter::range_inclusive;
 
-        for y in range_inclusive(MIN_DATE.year(), MAX_DATE.year()) {
+        for y in range_inclusive(NaiveDate::MIN.year(), NaiveDate::MAX.year()) {
             // even months
             let d4 = NaiveDate::from_ymd(y, 4, 4);
             let d6 = NaiveDate::from_ymd(y, 6, 6);
@@ -2167,10 +2169,10 @@ mod tests {
             assert_eq!(from_ndays_from_ce(days).map(|d| d.num_days_from_ce()), Some(days));
         }
 
-        assert_eq!(from_ndays_from_ce(MIN_DATE.num_days_from_ce()), Some(MIN_DATE));
-        assert_eq!(from_ndays_from_ce(MIN_DATE.num_days_from_ce() - 1), None);
-        assert_eq!(from_ndays_from_ce(MAX_DATE.num_days_from_ce()), Some(MAX_DATE));
-        assert_eq!(from_ndays_from_ce(MAX_DATE.num_days_from_ce() + 1), None);
+        assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce()), Some(NaiveDate::MIN));
+        assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce() - 1), None);
+        assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce()), Some(NaiveDate::MAX));
+        assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce() + 1), None);
     }
 
     #[test]
@@ -2296,7 +2298,7 @@ mod tests {
         assert_eq!(ymd(2014, 5, 31).succ_opt(), Some(ymd(2014, 6, 1)));
         assert_eq!(ymd(2014, 12, 31).succ_opt(), Some(ymd(2015, 1, 1)));
         assert_eq!(ymd(2016, 2, 28).succ_opt(), Some(ymd(2016, 2, 29)));
-        assert_eq!(ymd(MAX_DATE.year(), 12, 31).succ_opt(), None);
+        assert_eq!(ymd(NaiveDate::MAX.year(), 12, 31).succ_opt(), None);
     }
 
     #[test]
@@ -2306,7 +2308,7 @@ mod tests {
         assert_eq!(ymd(2015, 1, 1).pred_opt(), Some(ymd(2014, 12, 31)));
         assert_eq!(ymd(2014, 6, 1).pred_opt(), Some(ymd(2014, 5, 31)));
         assert_eq!(ymd(2014, 5, 7).pred_opt(), Some(ymd(2014, 5, 6)));
-        assert_eq!(ymd(MIN_DATE.year(), 1, 1).pred_opt(), None);
+        assert_eq!(ymd(NaiveDate::MIN.year(), 1, 1).pred_opt(), None);
     }
 
     #[test]

@@ -28,10 +28,6 @@ mod serde;
 #[cfg(test)]
 mod tests;
 
-pub(super) const MIN_TIME: NaiveTime = NaiveTime { secs: 0, frac: 0 };
-pub(super) const MAX_TIME: NaiveTime =
-    NaiveTime { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
-
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
 ///
@@ -804,6 +800,9 @@ impl NaiveTime {
         let (hour, min) = div_mod_floor(mins, 60);
         (hour, min, sec)
     }
+
+    pub(super) const MIN: Self = Self { secs: 0, frac: 0 };
+    pub(super) const MAX: Self = Self { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
 }
 
 impl Timelike for NaiveTime {
