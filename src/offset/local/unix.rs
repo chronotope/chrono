@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::sync::Once;
+use std::{cell::RefCell, env, fs, time::SystemTime};
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
@@ -16,56 +16,126 @@ use crate::{Datelike, LocalResult, Utc};
 
 pub(super) fn now() -> DateTime<Local> {
     let now = Utc::now().naive_utc();
-    DateTime::from_utc(now, offset(now, false).unwrap())
+    naive_to_local(&now, false).unwrap()
 }
 
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
-    if local {
-        match offset(*d, true) {
-            LocalResult::None => LocalResult::None,
-            LocalResult::Ambiguous(early, late) => LocalResult::Ambiguous(
-                DateTime::from_utc(*d - early, early),
-                DateTime::from_utc(*d - late, late),
-            ),
-            LocalResult::Single(offset) => {
-                LocalResult::Single(DateTime::from_utc(*d - offset, offset))
-            }
+    TZ_INFO.with(|maybe_cache| {
+        maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
+    })
+}
+
+// we have to store the `Cache` in an option as it can't
+// be initalized in a static context.
+thread_local! {
+    static TZ_INFO: RefCell<Option<Cache>> = Default::default();
+}
+
+enum Source {
+    LocalTime { mtime: SystemTime, last_checked: SystemTime },
+    // we don't bother storing the contents of the environment variable in this case.
+    // changing the environment while the process is running is generally not reccomended
+    Environment,
+}
+
+impl Default for Source {
+    fn default() -> Source {
+        // use of var_os avoids allocating, which is nice
+        // as we are only going to discard the string anyway
+        // but we must ensure the contents are valid unicode
+        // otherwise the behaivour here would be different
+        // to that in `naive_to_local`
+        match env::var_os("TZ") {
+            Some(ref s) if s.to_str().is_some() => Source::Environment,
+            Some(_) | None => Source::LocalTime {
+                mtime: fs::symlink_metadata("/etc/localtime")
+                    .expect("localtime should exist")
+                    .modified()
+                    .unwrap(),
+                last_checked: SystemTime::now(),
+            },
         }
-    } else {
-        LocalResult::Single(DateTime::from_utc(*d, offset(*d, false).unwrap()))
     }
 }
 
-fn offset(d: NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
-    let info = unsafe {
-        INIT.call_once(|| {
-            INFO = Some(TimeZone::local().expect("unable to parse localtime info"));
-        });
-        INFO.as_ref().unwrap()
-    };
+impl Source {
+    fn out_of_date(&mut self) -> bool {
+        let now = SystemTime::now();
+        let prev = match self {
+            Source::LocalTime { mtime, last_checked } => match now.duration_since(*last_checked) {
+                Ok(d) if d.as_secs() < 1 => return false,
+                Ok(_) | Err(_) => *mtime,
+            },
+            Source::Environment => return false,
+        };
 
-    if local {
+        match Source::default() {
+            Source::LocalTime { mtime, .. } => {
+                *self = Source::LocalTime { mtime, last_checked: now };
+                prev != mtime
+            }
+            // will only reach here if TZ has been set while
+            // the process is running
+            Source::Environment => {
+                *self = Source::Environment;
+                true
+            }
+        }
+    }
+}
+
+struct Cache {
+    zone: TimeZone,
+    source: Source,
+}
+
+impl Default for Cache {
+    fn default() -> Cache {
+        Cache {
+            zone: TimeZone::local().expect("unable to parse localtime info"),
+            source: Source::default(),
+        }
+    }
+}
+
+impl Cache {
+    fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+        if self.source.out_of_date() {
+            *self = Cache::default();
+        }
+
+        if !local {
+            let offset = FixedOffset::east(
+                self.zone
+                    .find_local_time_type(d.timestamp())
+                    .expect("unable to select local time type")
+                    .offset(),
+            );
+
+            return LocalResult::Single(DateTime::from_utc(d, offset));
+        }
+
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
         // the entire time was skipped in which case we will return LocalResult::None anywa.
-        match info
+        match self
+            .zone
             .find_local_time_type_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
         {
             LocalResult::None => LocalResult::None,
-            LocalResult::Ambiguous(early, late) => LocalResult::Ambiguous(
-                FixedOffset::east(early.offset()),
-                FixedOffset::east(late.offset()),
-            ),
-            LocalResult::Single(tt) => LocalResult::Single(FixedOffset::east(tt.offset())),
+            LocalResult::Ambiguous(early, late) => {
+                let early_offset = FixedOffset::east(early.offset());
+                let late_offset = FixedOffset::east(late.offset());
+
+                LocalResult::Ambiguous(
+                    DateTime::from_utc(d - early_offset, early_offset),
+                    DateTime::from_utc(d - late_offset, late_offset),
+                )
+            }
+            LocalResult::Single(tt) => {
+                let offset = FixedOffset::east(tt.offset());
+                LocalResult::Single(DateTime::from_utc(d - offset, offset))
+            }
         }
-    } else {
-        LocalResult::Single(FixedOffset::east(
-            info.find_local_time_type(d.timestamp())
-                .expect("unable to select local time type")
-                .offset(),
-        ))
     }
 }
-
-static mut INFO: Option<TimeZone> = None;
-static INIT: Once = Once::new();
