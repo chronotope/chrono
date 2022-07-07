@@ -7,6 +7,7 @@
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
+use std::convert::TryFrom;
 
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
@@ -594,6 +595,64 @@ impl NaiveDate {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_date()
+    }
+
+    /// An addition of months to `NaiveDate` clamped to valid days in resulting month.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDate};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// assert_eq!(from_ymd(2014, 1, 1).add_months(1),                  from_ymd(2014, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 31).add_months(1),                 from_ymd(2014, 2, 28));
+    /// assert_eq!(from_ymd(2020, 1, 31).add_months(1),                 from_ymd(2020, 2, 29));
+    /// assert_eq!(from_ymd(2014, 1, 1).add_months(-11),                from_ymd(2013, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1).add_months(-12),                from_ymd(2013, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1).add_months(-13),                from_ymd(2012, 12, 1));
+    /// ```
+    pub fn add_months(&self, months: i32) -> NaiveDate {
+        let target = self.add_months_get_first_day(months);
+        let target_plus = target.add_months_get_first_day(1);
+        let last_day = target_plus.sub(Duration::days(1));
+        let day = core::cmp::min(self.day(), last_day.day());
+        NaiveDate::from_ymd(target.year(), target.month(), day)
+    }
+
+    /// Private function to calculate necessary primitives for `add_months()`
+    ///
+    /// # Arguments
+    ///
+    /// * `delta` - Number of months (+/-) to add
+    ///
+    /// # Returns
+    ///
+    /// A new NaiveDate on the first day of the resulting year & month
+    fn add_months_get_first_day(&self, delta: i32) -> NaiveDate {
+        let zeroed_months =
+            i32::try_from(self.month()) // zero-based for modulo operations
+                .expect("add_months_get_first_day does not support extreme values")
+                - 1;
+        let res_months = zeroed_months + delta;
+        let delta_years = if res_months < 0 {
+            // no f32::floor when no_std
+            if (-res_months) % 12 > 0 {
+                res_months / 12 - 1
+            } else {
+                res_months / 12
+            }
+        } else {
+            res_months / 12
+        };
+        let res_years = self.year() + delta_years;
+        let res_months = res_months % 12;
+        let res_months = if res_months < 0 { res_months + 12 } else { res_months };
+        let res_months = u32::try_from(res_months)
+            .expect("add_month_get_first_day should never have a negative result")
+            + 1;
+        NaiveDate::from_ymd(res_years, res_months, 1)
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -2001,6 +2060,46 @@ mod tests {
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
     use std::{i32, u32};
+
+    #[test]
+    fn test_add_months_get_first_day() {
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 1).add_months_get_first_day(1),
+            NaiveDate::from_ymd(2014, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 31).add_months_get_first_day(1),
+            NaiveDate::from_ymd(2014, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2020, 1, 10).add_months_get_first_day(1),
+            NaiveDate::from_ymd(2020, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 1).add_months_get_first_day(-1),
+            NaiveDate::from_ymd(2013, 12, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 31).add_months_get_first_day(-1),
+            NaiveDate::from_ymd(2013, 12, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2020, 1, 10).add_months_get_first_day(-1),
+            NaiveDate::from_ymd(2019, 12, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-11),
+            NaiveDate::from_ymd(2013, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-12),
+            NaiveDate::from_ymd(2013, 1, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-13),
+            NaiveDate::from_ymd(2012, 12, 1)
+        );
+    }
 
     #[test]
     fn test_readme_doomsday() {
