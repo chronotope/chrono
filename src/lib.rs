@@ -421,6 +421,9 @@
 #![warn(unreachable_pub)]
 #![deny(dead_code)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
+// can remove this if/when rustc-serialize support is removed
+// keeps clippy happy in the meantime
+#![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
 
 #[cfg(feature = "oldtime")]
 extern crate time as oldtime;
