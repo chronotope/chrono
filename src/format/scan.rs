@@ -353,44 +353,42 @@ pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
 pub(super) fn comment_2822(mut s: &str) -> ParseResult<(&str, ())> {
     macro_rules! next_char {
         () => {{
-            s.bytes().nth(0).map(|c| {
-                s = &s[1..];
-                c
-            })
+            let c = s.bytes().nth(0).ok_or(TOO_SHORT)?;
+            s = &s[1..];
+            c
         }};
     }
 
     // Make sure the first letter is a `(`
-    match next_char!() {
-        None => Err(TOO_SHORT),
-        Some(b'(') => Ok(()),
-        Some(_) => Err(INVALID),
-    }?;
+    if b'(' != next_char!() {
+        Err(INVALID)?;
+    }
 
     let mut depth = 1; // start with 1 as we already encountered a '('
     loop {
         match next_char!() {
-            // If we ran out of characters, then we are still inside of a `()` but missing the `)`.
-            None => Err(TOO_SHORT),
-            // If we encounter a `\`, ignore the next character as it is escaped.
-            Some(b'\\') => next_char!().map(|_| ()).ok_or(TOO_SHORT),
-            // If we encounter `(`, open a parantheses context.
-            Some(b'(') => {
-                depth += 1;
-                Ok(())
+            // If we encounter `\`, ignore the next character as it is escaped.
+            b'\\' => {
+                next_char!();
             }
+
+            // If we encounter `(`, open a parantheses context.
+            b'(' => {
+                depth += 1;
+            }
+
             // If we encounter `)`, close a parentheses context.
             // If all are closed, we found the end of the comment.
-            Some(b')') => {
+            b')' => {
                 depth -= 1;
                 if depth == 0 {
                     break;
                 }
-                Ok(())
             }
+
             // Ignore all other characters
-            Some(_) => Ok(()),
-        }?;
+            _ => (),
+        };
     }
 
     Ok((s, ()))
