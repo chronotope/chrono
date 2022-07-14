@@ -33,6 +33,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add support for getting week bounds based on a specific `NaiveDate` and a `Weekday` (#666)
 * Remove libc dependency from Cargo.toml.
 * Add the `and_local_timezone` method to `NaiveDateTime`
+* Fix the behavior of `Duration::abs()` for negative durations with non-zero nanos
 
 ## 0.4.19
 
