@@ -249,7 +249,11 @@ impl Duration {
     /// Returns the duration as an absolute (non-negative) value.
     #[inline]
     pub fn abs(&self) -> Duration {
-        Duration { secs: self.secs.abs(), nanos: self.nanos }
+        if self.secs < 0 && self.nanos != 0 {
+            Duration { secs: (self.secs + 1).abs(), nanos: NANOS_PER_SEC - self.nanos }
+        } else {
+            Duration { secs: self.secs.abs(), nanos: self.nanos }
+        }
     }
 
     /// The minimum possible `Duration`: `i64::MIN` milliseconds.
@@ -608,6 +612,19 @@ mod tests {
             Some(Duration::milliseconds(i64::MIN))
         );
         assert!(Duration::milliseconds(i64::MIN).checked_sub(&Duration::milliseconds(1)).is_none());
+    }
+
+    #[test]
+    fn test_duration_abs() {
+        assert_eq!(Duration::milliseconds(1300).abs(), Duration::milliseconds(1300));
+        assert_eq!(Duration::milliseconds(1000).abs(), Duration::milliseconds(1000));
+        assert_eq!(Duration::milliseconds(300).abs(), Duration::milliseconds(300));
+        assert_eq!(Duration::milliseconds(0).abs(), Duration::milliseconds(0));
+        assert_eq!(Duration::milliseconds(-300).abs(), Duration::milliseconds(300));
+        assert_eq!(Duration::milliseconds(-700).abs(), Duration::milliseconds(700));
+        assert_eq!(Duration::milliseconds(-1000).abs(), Duration::milliseconds(1000));
+        assert_eq!(Duration::milliseconds(-1300).abs(), Duration::milliseconds(1300));
+        assert_eq!(Duration::milliseconds(-1700).abs(), Duration::milliseconds(1700));
     }
 
     #[test]
