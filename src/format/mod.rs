@@ -55,6 +55,10 @@ use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 #[cfg(feature = "unstable-locales")]
 pub(crate) mod locales;
 
+/// Convenience functions and macros to make it easy to
+/// create valid formatting items at compile time
+pub mod literal;
+
 pub use parse::parse;
 pub use parsed::Parsed;
 /// L10n locales.

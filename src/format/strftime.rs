@@ -219,6 +219,11 @@ impl<'a> StrftimeItems<'a> {
         Self::with_remainer(s)
     }
 
+    /// Check if a given strftime string is valid
+    pub fn valid(s: &'a str) -> bool {
+        StrftimeItems::new(s).all(|i| i != Item::Error)
+    }
+
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[cfg(feature = "unstable-locales")]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
