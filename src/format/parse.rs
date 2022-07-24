@@ -53,7 +53,10 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 
     // an adapted RFC 2822 syntax from Section 3.3 and 4.3:
     //
-    // date-time   = [ day-of-week "," ] date 1*S time *S
+    // c-char      = <any char except '(', ')' and '\\'>
+    // c-escape    = "\" <any char>
+    // comment     = "(" *(comment / c-char / c-escape) ")" *S
+    // date-time   = [ day-of-week "," ] date 1*S time *S *comment
     // day-of-week = *S day-name *S
     // day-name    = "Mon" / "Tue" / "Wed" / "Thu" / "Fri" / "Sat" / "Sun"
     // date        = day month year
@@ -79,9 +82,10 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     //
     // - we do not recognize a folding white space (FWS) or comment (CFWS).
     //   for our purposes, instead, we accept any sequence of Unicode
-    //   white space characters (denoted here to `S`). any actual RFC 2822
-    //   parser is expected to parse FWS and/or CFWS themselves and replace
-    //   it with a single SP (`%x20`); this is legitimate.
+    //   white space characters (denoted here to `S`). For comments, we accept
+    //   any text within parentheses while respecting escaped parentheses.
+    //   Any actual RFC 2822 parser is expected to parse FWS and/or CFWS themselves
+    //   and replace it with a single SP (`%x20`); this is legitimate.
     //
     // - two-digit year < 50 should be interpreted by adding 2000.
     //   two-digit year >= 50 or three-digit year should be interpreted
@@ -143,6 +147,14 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     if let Some(offset) = try_consume!(scan::timezone_offset_2822(s)) {
         // only set the offset when it is definitely known (i.e. not `-0000`)
         parsed.set_offset(i64::from(offset))?;
+    }
+
+    // optional comments
+    s = s.trim_left();
+    while let Ok((s_out, ())) = scan::comment_2822(s) {
+        // Trim left after every found comment, as comments are allowed to have whitespace
+        // between them
+        s = s_out.trim_left();
     }
 
     Ok((s, ()))
@@ -817,6 +829,12 @@ fn test_rfc2822() {
         ("Tue, 20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // normal case
         ("Fri,  2 Jan 2015 17:35:20 -0800", Ok("Fri, 02 Jan 2015 17:35:20 -0800")), // folding whitespace
         ("Fri, 02 Jan 2015 17:35:20 -0800", Ok("Fri, 02 Jan 2015 17:35:20 -0800")), // leading zero
+        ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // trailing comment
+        (
+            "Tue, 20 Jan 2015 17:35:20 -0800 ( (UTC ) (\\( (a)\\(( \\t ) ) \\\\( \\) ))",
+            Ok("Tue, 20 Jan 2015 17:35:20 -0800"),
+        ), // complex trailing comment
+        ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC\\)", Err(TOO_LONG)), // incorrect comment, not enough closing parentheses
         ("20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // no day of week
         ("20 JAN 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // upper case month
         ("Tue, 20 Jan 2015 17:35 -0800", Ok("Tue, 20 Jan 2015 17:35:00 -0800")), // no second

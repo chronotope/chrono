@@ -348,3 +348,76 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
 pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
     Ok((s.trim_left_matches(|c: char| !c.is_whitespace()), ()))
 }
+
+/// Tries to consume an RFC2822 comment
+pub(super) fn comment_2822(mut s: &str) -> ParseResult<(&str, ())> {
+    macro_rules! next_char {
+        () => {{
+            let c = s.bytes().nth(0).ok_or(TOO_SHORT)?;
+            s = &s[1..];
+            c
+        }};
+    }
+
+    // Make sure the first letter is a `(`
+    if b'(' != next_char!() {
+        Err(INVALID)?;
+    }
+
+    let mut depth = 1; // start with 1 as we already encountered a '('
+    loop {
+        match next_char!() {
+            // If we encounter `\`, ignore the next character as it is escaped.
+            b'\\' => {
+                next_char!();
+            }
+
+            // If we encounter `(`, open a parantheses context.
+            b'(' => {
+                depth += 1;
+            }
+
+            // If we encounter `)`, close a parentheses context.
+            // If all are closed, we found the end of the comment.
+            b')' => {
+                depth -= 1;
+                if depth == 0 {
+                    break;
+                }
+            }
+
+            // Ignore all other characters
+            _ => (),
+        };
+    }
+
+    Ok((s, ()))
+}
+
+#[cfg(test)]
+#[test]
+fn test_rfc2822_comments() {
+    let testdata = [
+        ("", Err(TOO_SHORT)),
+        ("x", Err(INVALID)),
+        ("(", Err(TOO_SHORT)),
+        ("()", Ok("")),
+        ("()z", Ok("z")),
+        ("(x)", Ok("")),
+        ("(())", Ok("")),
+        ("((()))", Ok("")),
+        ("(x(x(x)x)x)", Ok("")),
+        ("( x ( x ( x ) x ) x )", Ok("")),
+        ("(\\)", Err(TOO_SHORT)),
+        ("(\\()", Ok("")),
+        ("(\\))", Ok("")),
+        ("(\\\\)", Ok("")),
+        ("(()())", Ok("")),
+        ("( x ( x ) x ( x ) x )", Ok("")),
+    ];
+
+    for (test_in, expected) in testdata {
+        let actual = comment_2822(test_in).map(|(s, _)| s);
+        assert_eq!(expected, actual);
+    }
+}
