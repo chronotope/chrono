@@ -832,6 +832,11 @@ fn test_rfc2822() {
             Ok("Tue, 20 Jan 2015 17:35:20 -0800"),
         ), // complex trailing comment
         (r"Tue, 20 Jan 2015 17:35:20 -0800 (UTC\)", Err(TOO_LONG)), // incorrect comment, not enough closing parentheses
+        (
+            "Tue, 20 Jan 2015 17:35:20 -0800 (UTC)\t \r\n(Anothercomment)",
+            Ok("Tue, 20 Jan 2015 17:35:20 -0800"),
+        ), // multiple comments
+        ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC) ", Err(TOO_LONG)), // trailing whitespace after comment
         ("20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // no day of week
         ("20 JAN 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // upper case month
         ("Tue, 20 Jan 2015 17:35 -0800", Ok("Tue, 20 Jan 2015 17:35:00 -0800")), // no second
