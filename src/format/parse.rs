@@ -150,11 +150,8 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     // optional comments
-    s = s.trim_left();
     while let Ok((s_out, ())) = scan::comment_2822(s) {
-        // Trim left after every found comment, as comments are allowed to have whitespace
-        // between them
-        s = s_out.trim_left();
+        s = s_out;
     }
 
     Ok((s, ()))

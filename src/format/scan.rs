@@ -349,49 +349,33 @@ pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
     Ok((s.trim_left_matches(|c: char| !c.is_whitespace()), ()))
 }
 
-/// Tries to consume an RFC2822 comment
-pub(super) fn comment_2822(mut s: &str) -> ParseResult<(&str, ())> {
-    macro_rules! next_char {
-        () => {{
-            let c = s.bytes().nth(0).ok_or(TOO_SHORT)?;
-            s = &s[1..];
-            c
-        }};
-    }
+/// Tries to consume an RFC2822 comment including preceding ` `.
+///
+/// Returns the remaining string after the closing parenthesis.
+pub(super) fn comment_2822(s: &str) -> ParseResult<(&str, ())> {
+    use CommentState::*;
 
-    // Make sure the first letter is a `(`
-    if b'(' != next_char!() {
-        Err(INVALID)?;
-    }
-
-    let mut depth = 1; // start with 1 as we already encountered a '('
-    loop {
-        match next_char!() {
-            // If we encounter `\`, ignore the next character as it is escaped.
-            b'\\' => {
-                next_char!();
-            }
-
-            // If we encounter `(`, open a parantheses context.
-            b'(' => {
-                depth += 1;
-            }
-
-            // If we encounter `)`, close a parentheses context.
-            // If all are closed, we found the end of the comment.
-            b')' => {
-                depth -= 1;
-                if depth == 0 {
-                    break;
-                }
-            }
-
-            // Ignore all other characters
-            _ => (),
+    let mut state = Start;
+    for (i, c) in s.bytes().enumerate() {
+        state = match (state, c) {
+            (Start, b' ') => Start,
+            (Start, b'(') => Next(1),
+            (Next(1), b')') => return Ok((&s[i + 1..], ())),
+            (Next(depth), b'\\') => Escape(depth),
+            (Next(depth), b'(') => Next(depth + 1),
+            (Next(depth), b')') => Next(depth - 1),
+            (Next(depth), _) | (Escape(depth), _) => Next(depth),
+            _ => return Err(INVALID),
         };
     }
 
-    Ok((s, ()))
+    Err(TOO_SHORT)
+}
+
+enum CommentState {
+    Start,
+    Next(usize),
+    Escape(usize),
 }
 
 #[cfg(test)]
