@@ -547,14 +547,14 @@ impl NaiveTime {
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
             if rhs >= OldDuration::nanoseconds(i64::from(rfrac)) {
-                rhs = rhs - OldDuration::nanoseconds(i64::from(rfrac));
+                rhs -= OldDuration::nanoseconds(i64::from(rfrac));
                 secs += 1;
                 frac = 0;
             } else if rhs < OldDuration::nanoseconds(-i64::from(frac)) {
-                rhs = rhs + OldDuration::nanoseconds(i64::from(frac));
+                rhs += OldDuration::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
-                frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
+                frac = (i64::from(frac) + rhs.whole_nanoseconds() as i64) as u32;
                 debug_assert!(frac < 2_000_000_000);
                 return (NaiveTime { secs, frac }, 0);
             }
@@ -562,8 +562,8 @@ impl NaiveTime {
         debug_assert!(secs <= 86_400);
         debug_assert!(frac < 1_000_000_000);
 
-        let rhssecs = rhs.num_seconds();
-        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
+        let rhssecs = rhs.whole_seconds();
+        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).whole_nanoseconds() as i64;
         debug_assert_eq!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac), rhs);
         let rhssecsinday = rhssecs % 86_400;
         let mut morerhssecs = rhssecs - rhssecsinday;
@@ -644,7 +644,7 @@ impl NaiveTime {
     /// let since = NaiveTime::signed_duration_since;
     ///
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 900)),
-    ///            Duration::zero());
+    ///            Duration::ZERO);
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 875)),
     ///            Duration::milliseconds(25));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 6, 925)),
@@ -1029,7 +1029,7 @@ impl Timelike for NaiveTime {
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::zero(),                  from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::ZERO,                  from_hmsm(3, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(1),              from_hmsm(3, 5, 8, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(-1),             from_hmsm(3, 5, 6, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::seconds(60 + 4),         from_hmsm(3, 6, 11, 0));
@@ -1055,7 +1055,7 @@ impl Timelike for NaiveTime {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap + Duration::zero(),             from_hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap + Duration::ZERO,             from_hmsm(3, 5, 59, 1_300));
 /// assert_eq!(leap + Duration::milliseconds(-500), from_hmsm(3, 5, 59, 800));
 /// assert_eq!(leap + Duration::milliseconds(500),  from_hmsm(3, 5, 59, 1_800));
 /// assert_eq!(leap + Duration::milliseconds(800),  from_hmsm(3, 6, 0, 100));
@@ -1095,7 +1095,7 @@ impl AddAssign<OldDuration> for NaiveTime {
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::zero(),                  from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::ZERO,                  from_hmsm(3, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(1),              from_hmsm(3, 5, 6, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(60 + 5),         from_hmsm(3, 4, 2, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::seconds(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0));
@@ -1118,7 +1118,7 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// # use chrono::{Duration, NaiveTime};
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap - Duration::zero(),            from_hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap - Duration::ZERO,            from_hmsm(3, 5, 59, 1_300));
 /// assert_eq!(leap - Duration::milliseconds(200), from_hmsm(3, 5, 59, 1_100));
 /// assert_eq!(leap - Duration::milliseconds(500), from_hmsm(3, 5, 59, 800));
 /// assert_eq!(leap - Duration::seconds(60),       from_hmsm(3, 5, 0, 300));
@@ -1160,7 +1160,7 @@ impl SubAssign<OldDuration> for NaiveTime {
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), Duration::zero());
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), Duration::ZERO);
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), Duration::milliseconds(25));
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), Duration::milliseconds(975));
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), Duration::seconds(7));

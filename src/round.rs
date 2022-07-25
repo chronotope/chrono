@@ -177,34 +177,31 @@ fn duration_round<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        if span == 0 {
-            return Ok(original);
-        }
-        let delta_down = stamp % span;
-        if delta_down == 0 {
-            Ok(original)
-        } else {
-            let (delta_up, delta_down) = if delta_down < 0 {
-                (delta_down.abs(), span - delta_down.abs())
-            } else {
-                (span - delta_down, delta_down)
-            };
-            if delta_up <= delta_down {
-                Ok(original + Duration::nanoseconds(delta_up))
-            } else {
-                Ok(original - Duration::nanoseconds(delta_down))
-            }
-        }
+    let span = duration.whole_nanoseconds() as i64;
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = naive.timestamp_nanos();
+    if span > stamp.abs() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    if span == 0 {
+        return Ok(original);
+    }
+    let delta_down = stamp % span;
+    if delta_down == 0 {
+        Ok(original)
     } else {
-        Err(RoundingError::DurationExceedsLimit)
+        let (delta_up, delta_down) = if delta_down < 0 {
+            (delta_down.abs(), span - delta_down.abs())
+        } else {
+            (span - delta_down, delta_down)
+        };
+        if delta_up <= delta_down {
+            Ok(original + Duration::nanoseconds(delta_up))
+        } else {
+            Ok(original - Duration::nanoseconds(delta_down))
+        }
     }
 }
 
@@ -216,22 +213,19 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        let delta_down = stamp % span;
-        match delta_down.cmp(&0) {
-            Ordering::Equal => Ok(original),
-            Ordering::Greater => Ok(original - Duration::nanoseconds(delta_down)),
-            Ordering::Less => Ok(original - Duration::nanoseconds(span - delta_down.abs())),
-        }
-    } else {
-        Err(RoundingError::DurationExceedsLimit)
+    let span = duration.whole_nanoseconds() as i64;
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = naive.timestamp_nanos();
+    if span > stamp.abs() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    let delta_down = stamp % span;
+    match delta_down.cmp(&0) {
+        Ordering::Equal => Ok(original),
+        Ordering::Greater => Ok(original - Duration::nanoseconds(delta_down)),
+        Ordering::Less => Ok(original - Duration::nanoseconds(span - delta_down.abs())),
     }
 }
 
@@ -398,7 +392,7 @@ mod tests {
         let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000);
 
         assert_eq!(
-            dt.duration_round(Duration::zero()).unwrap().to_string(),
+            dt.duration_round(Duration::ZERO).unwrap().to_string(),
             "2016-12-31 23:59:59.175500 UTC"
         );
 
@@ -465,7 +459,7 @@ mod tests {
         let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000).naive_utc();
 
         assert_eq!(
-            dt.duration_round(Duration::zero()).unwrap().to_string(),
+            dt.duration_round(Duration::ZERO).unwrap().to_string(),
             "2016-12-31 23:59:59.175500"
         );
 

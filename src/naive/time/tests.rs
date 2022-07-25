@@ -77,7 +77,7 @@ fn test_time_add() {
 
     let hmsm = NaiveTime::from_hms_milli;
 
-    check!(hmsm(3, 5, 7, 900), Duration::zero(), hmsm(3, 5, 7, 900));
+    check!(hmsm(3, 5, 7, 900), Duration::ZERO, hmsm(3, 5, 7, 900));
     check!(hmsm(3, 5, 7, 900), Duration::milliseconds(100), hmsm(3, 5, 8, 0));
     check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-1800), hmsm(3, 5, 6, 500));
     check!(hmsm(3, 5, 7, 1_300), Duration::milliseconds(-800), hmsm(3, 5, 7, 500));
@@ -156,7 +156,7 @@ fn test_time_sub() {
 
     let hmsm = NaiveTime::from_hms_milli;
 
-    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::zero());
+    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), Duration::ZERO);
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), Duration::milliseconds(300));
     check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), Duration::seconds(3600 + 60 + 1));
     check!(
