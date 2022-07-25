@@ -828,10 +828,10 @@ fn test_rfc2822() {
         ("Fri, 02 Jan 2015 17:35:20 -0800", Ok("Fri, 02 Jan 2015 17:35:20 -0800")), // leading zero
         ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // trailing comment
         (
-            "Tue, 20 Jan 2015 17:35:20 -0800 ( (UTC ) (\\( (a)\\(( \\t ) ) \\\\( \\) ))",
+            r"Tue, 20 Jan 2015 17:35:20 -0800 ( (UTC ) (\( (a)\(( \t ) ) \\( \) ))",
             Ok("Tue, 20 Jan 2015 17:35:20 -0800"),
         ), // complex trailing comment
-        ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC\\)", Err(TOO_LONG)), // incorrect comment, not enough closing parentheses
+        (r"Tue, 20 Jan 2015 17:35:20 -0800 (UTC\)", Err(TOO_LONG)), // incorrect comment, not enough closing parentheses
         ("20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // no day of week
         ("20 JAN 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // upper case month
         ("Tue, 20 Jan 2015 17:35 -0800", Ok("Tue, 20 Jan 2015 17:35:00 -0800")), // no second
