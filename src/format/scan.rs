@@ -355,10 +355,11 @@ pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
 pub(super) fn comment_2822(s: &str) -> ParseResult<(&str, ())> {
     use CommentState::*;
 
+    let s = s.trim_start();
+
     let mut state = Start;
     for (i, c) in s.bytes().enumerate() {
         state = match (state, c) {
-            (Start, b' ') => Start,
             (Start, b'(') => Next(1),
             (Next(1), b')') => return Ok((&s[i + 1..], ())),
             (Next(depth), b'\\') => Escape(depth),
@@ -383,9 +384,12 @@ enum CommentState {
 fn test_rfc2822_comments() {
     let testdata = [
         ("", Err(TOO_SHORT)),
+        (" ", Err(TOO_SHORT)),
         ("x", Err(INVALID)),
         ("(", Err(TOO_SHORT)),
         ("()", Ok("")),
+        (" \r\n\t()", Ok("")),
+        ("() ", Ok(" ")),
         ("()z", Ok("z")),
         ("(x)", Ok("")),
         ("(())", Ok("")),
@@ -402,6 +406,10 @@ fn test_rfc2822_comments() {
 
     for (test_in, expected) in testdata {
         let actual = comment_2822(test_in).map(|(s, _)| s);
-        assert_eq!(expected, actual);
+        assert_eq!(
+            expected, actual,
+            "{:?} expected to produce {:?}, but produced {:?}.",
+            test_in, expected, actual
+        );
     }
 }
