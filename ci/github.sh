@@ -121,7 +121,7 @@ test_wasm_emscripten() {
 }
 
 test_wasm_unknown() {
-    runt cargo build --target wasm32-unknown-unknown
+    runt cargo build --target wasm32-unknown-unknown --features wasmbind
 }
 
 main "$@"
