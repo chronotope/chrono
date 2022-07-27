@@ -5,9 +5,9 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
-use std::convert::TryFrom;
 
 use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
