@@ -62,7 +62,7 @@ pub struct Date<Tz: TimeZone> {
 
 /// The minimum possible `Date`.
 #[allow(deprecated)]
-#[deprecated(since = "0.4.20", note = "Use Date::MAX_UTC instead")]
+#[deprecated(since = "0.4.20", note = "Use Date::MIN_UTC instead")]
 pub const MIN_DATE: Date<Utc> = Date::<Utc>::MIN_UTC;
 /// The maximum possible `Date`.
 #[allow(deprecated)]
