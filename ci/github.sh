@@ -38,6 +38,8 @@ meaningful in the github actions feature matrix UI.
             test_wasm_emscripten
         elif [[ ${WASM:-} == wasm_unknown ]]; then
             test_wasm_unknown
+        elif [[ ${WASM:-} == wasm_wasi ]]; then
+            test_wasm_wasi
         elif [[ ${CORE:-} == no_std ]]; then
             test_core
         elif [[ ${EXHAUSTIVE_TZ:-} == all_tzs ]]; then
@@ -106,13 +108,13 @@ test_wasm() {
 }
 
 test_wasm_simple() {
-    if ! runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind ; then
+    if ! runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node ; then
         # sometimes on github the initial build takes 8-10 minutes, and we
         # check that the time makes sense inside the test by approximately
         # comparing it to the env var,
         #
         # so re-run the test in case it took too long
-        runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind
+        runt env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node
     fi
 }
 
@@ -122,6 +124,10 @@ test_wasm_emscripten() {
 
 test_wasm_unknown() {
     runt cargo build --target wasm32-unknown-unknown
+}
+
+test_wasm_wasi() {
+    runt cargo build --target wasm32-wasi
 }
 
 main "$@"

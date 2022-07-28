@@ -26,7 +26,7 @@ libc = []
 std = []
 clock = ["std", "winapi"]
 oldtime = ["time"]
-wasmbind = ["wasm-bindgen", "js-sys"]
+wasmbind = [] # TODO: empty feature to avoid breaking change in 0.4.20, can be removed later
 unstable-locales = ["pure-rust-locales", "alloc"]
 __internal_bench = ["criterion"]
 __doctest = []
@@ -42,8 +42,8 @@ criterion = { version = "0.3", optional = true }
 rkyv = {version = "0.7", optional = true}
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
-wasm-bindgen = { version = "0.2", optional = true }
-js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
+wasm-bindgen = { version = "0.2" }
+js-sys = { version = "0.3" } # contains FFI bindings for the JS Date API
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi"], optional = true }

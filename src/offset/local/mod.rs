@@ -11,7 +11,13 @@ use super::{LocalResult, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::{Date, DateTime};
 
-#[cfg(all(not(unix), not(windows)))]
+// we don't want `stub.rs` when the target_os is not wasi or emscripten
+// as we use js-sys to get the date instead
+#[cfg(all(
+    not(unix),
+    not(windows),
+    not(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))
+))]
 #[path = "stub.rs"]
 mod inner;
 
@@ -51,13 +57,16 @@ impl Local {
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
-    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+    #[cfg(not(all(
+        target_arch = "wasm32",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))]
     pub fn now() -> DateTime<Local> {
         inner::now()
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
-    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+    #[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
     pub fn now() -> DateTime<Local> {
         use super::Utc;
         let now: DateTime<Utc> = super::Utc::now();
@@ -101,7 +110,7 @@ impl TimeZone for Local {
         midnight.map(|datetime| Date::from_utc(*local, *datetime.offset()))
     }
 
-    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+    #[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let mut local = local.clone();
         // Get the offset from the js runtime
@@ -110,7 +119,10 @@ impl TimeZone for Local {
         LocalResult::Single(DateTime::from_utc(local, offset))
     }
 
-    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+    #[cfg(not(all(
+        target_arch = "wasm32",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         inner::naive_to_local(local, true)
     }
@@ -120,14 +132,17 @@ impl TimeZone for Local {
         Date::from_utc(*utc, *midnight.offset())
     }
 
-    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+    #[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         // Get the offset from the js runtime
         let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
         DateTime::from_utc(*utc, offset)
     }
 
-    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+    #[cfg(not(all(
+        target_arch = "wasm32",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         // this is OK to unwrap as getting local time from a UTC
         // timestamp is never ambiguous

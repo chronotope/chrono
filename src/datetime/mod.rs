@@ -994,21 +994,21 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     }
 }
 
-#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+#[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
 impl From<js_sys::Date> for DateTime<Utc> {
     fn from(date: js_sys::Date) -> DateTime<Utc> {
         DateTime::<Utc>::from(&date)
     }
 }
 
-#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+#[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
         Utc.timestamp_millis(date.get_time() as i64)
     }
 }
 
-#[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+#[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
 impl From<DateTime<Utc>> for js_sys::Date {
     /// Converts a `DateTime<Utc>` to a JS `Date`. The resulting value may be lossy,
     /// any values that have a millisecond timestamp value greater/less than ±8,640,000,000,000,000

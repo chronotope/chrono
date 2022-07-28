@@ -60,7 +60,6 @@ UNIX-like operating systems and the Windows API (`winapi`) for Windows.
 
 Optional features:
 
-- `wasmbind`: Enable integration with [wasm-bindgen][] and its `js-sys` project
 - [`serde`][]: Enable serialization/deserialization via serde.
 - `unstable-locales`: Enable localization. This adds various methods with a
   `_localized` suffix. The implementation and API may change or even be
