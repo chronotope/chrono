@@ -12,7 +12,6 @@ There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.20 (unreleased)
-
 * Add more formatting documentation and examples.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
 * Fix `DurationRound` is not TZ aware (#495)
@@ -35,6 +34,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add the `and_local_timezone` method to `NaiveDateTime`
 * Fix the behavior of `Duration::abs()` for negative durations with non-zero nanos
 * Add compatibility with rfc2822 comments (#733)
+* Update time dependency to mitigate RUSTSEC-2020-0071
 
 ## 0.4.19
 

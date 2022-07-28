@@ -48,19 +48,19 @@ fn test_datetime_add() {
         Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
-    check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
+    check((0, 1, 1, 0, 0, 0), Duration::MAX, None);
 
     let min_days_from_year_0 = NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(0, 1, 1));
     check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
     check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
-    check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
+    check((0, 1, 1, 0, 0, 0), Duration::MIN, None);
 }
 
 #[test]
 fn test_datetime_sub() {
     let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
     let since = NaiveDateTime::signed_duration_since;
-    assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), Duration::zero());
+    assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), Duration::ZERO);
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
         Duration::seconds(1)
@@ -218,7 +218,7 @@ fn test_datetime_add_sub_invariant() {
     let base = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
     let t = -946684799990000;
     let time = base + Duration::microseconds(t);
-    assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
+    assert_eq!(t, time.signed_duration_since(base).whole_microseconds() as i64);
 }
 
 #[test]

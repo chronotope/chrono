@@ -177,7 +177,9 @@ fn duration_round<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
+    let span = duration.whole_nanoseconds();
+    if span <= i64::MAX.into() {
+        let span = span as i64;
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
@@ -216,7 +218,9 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
+    let span = duration.whole_nanoseconds();
+    if span <= i64::MAX.into() {
+        let span = span as i64;
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
@@ -398,7 +402,7 @@ mod tests {
         let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000);
 
         assert_eq!(
-            dt.duration_round(Duration::zero()).unwrap().to_string(),
+            dt.duration_round(Duration::ZERO).unwrap().to_string(),
             "2016-12-31 23:59:59.175500 UTC"
         );
 
@@ -465,7 +469,7 @@ mod tests {
         let dt = Utc.ymd(2016, 12, 31).and_hms_nano(23, 59, 59, 175_500_000).naive_utc();
 
         assert_eq!(
-            dt.duration_round(Duration::zero()).unwrap().to_string(),
+            dt.duration_round(Duration::ZERO).unwrap().to_string(),
             "2016-12-31 23:59:59.175500"
         );
 
