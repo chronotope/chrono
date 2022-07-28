@@ -5,7 +5,6 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -631,10 +630,7 @@ impl NaiveDate {
     ///
     /// A new NaiveDate on the first day of the resulting year & month
     fn add_months_get_first_day(&self, delta: i32) -> NaiveDate {
-        let zeroed_months =
-            i32::try_from(self.month()) // zero-based for modulo operations
-                .expect("add_months_get_first_day does not support extreme values")
-                - 1;
+        let zeroed_months = self.month() as i32 - 1; // zero-based for modulo operations
         let res_months = zeroed_months + delta;
         let delta_years = if res_months < 0 {
             // no f32::floor when no_std
@@ -649,10 +645,7 @@ impl NaiveDate {
         let res_years = self.year() + delta_years;
         let res_months = res_months % 12;
         let res_months = if res_months < 0 { res_months + 12 } else { res_months };
-        let res_months = u32::try_from(res_months)
-            .expect("add_month_get_first_day should never have a negative result")
-            + 1;
-        NaiveDate::from_ymd(res_years, res_months, 1)
+        NaiveDate::from_ymd(res_years, res_months as u32 + 1, 1)
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
