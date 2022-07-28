@@ -4,10 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
     paths:
       - "**.rs"
       - .github/**
+      - .ci/**
       - Cargo.toml
 
 jobs:
