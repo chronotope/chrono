@@ -36,7 +36,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Fix the behavior of `Duration::abs()` for negative durations with non-zero nanos
 * Add compatibility with rfc2822 comments (#733)
 * Make `js-sys` and `wasm-bindgen` enabled by default when target is `wasm32-unknown-unknown` for ease of API discovery
-* Add the `add_months` method to `NaiveDate`
+* Add the `Months` struct and associated `Add` and `Sub` impls
 
 ## 0.4.19
 
