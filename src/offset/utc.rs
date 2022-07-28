@@ -6,7 +6,7 @@
 use core::fmt;
 #[cfg(all(
     feature = "clock",
-    not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))
+    not(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -47,7 +47,10 @@ impl Utc {
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
-    #[cfg(not(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind")))]
+    #[cfg(not(all(
+        target_arch = "wasm32",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))]
     pub fn now() -> DateTime<Utc> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
@@ -56,7 +59,7 @@ impl Utc {
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
-    #[cfg(all(target_arch = "wasm32", not(target_os = "wasi"), feature = "wasmbind"))]
+    #[cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
         DateTime::<Utc>::from(now)

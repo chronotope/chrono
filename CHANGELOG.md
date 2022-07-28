@@ -35,6 +35,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add the `and_local_timezone` method to `NaiveDateTime`
 * Fix the behavior of `Duration::abs()` for negative durations with non-zero nanos
 * Add compatibility with rfc2822 comments (#733)
+* Make `js-sys` and `wasm-bindgen` enabled by default when target is `wasm32-unknown-unknown` for ease of API discovery
 
 ## 0.4.19
 
