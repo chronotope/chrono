@@ -189,6 +189,10 @@ impl num_traits::FromPrimitive for Month {
     }
 }
 
+/// A duration in calendar months
+#[derive(Clone, Debug, PartialEq)]
+pub struct Months(pub usize);
+
 /// An error resulting from reading `<Month>` value with `FromStr`.
 #[derive(Clone, PartialEq)]
 pub struct ParseMonthError {

@@ -17,6 +17,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
+use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Duration, Weekday};
@@ -596,31 +597,7 @@ impl NaiveDate {
         parsed.to_naive_date()
     }
 
-    /// An addition of months to `NaiveDate` clamped to valid days in resulting month.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Duration, NaiveDate};
-    ///
-    /// let from_ymd = NaiveDate::from_ymd;
-    ///
-    /// assert_eq!(from_ymd(2014, 1, 1).add_months(1),                  from_ymd(2014, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 31).add_months(1),                 from_ymd(2014, 2, 28));
-    /// assert_eq!(from_ymd(2020, 1, 31).add_months(1),                 from_ymd(2020, 2, 29));
-    /// assert_eq!(from_ymd(2014, 1, 1).add_months(-11),                from_ymd(2013, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1).add_months(-12),                from_ymd(2013, 1, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1).add_months(-13),                from_ymd(2012, 12, 1));
-    /// ```
-    pub fn add_months(&self, months: i32) -> NaiveDate {
-        let target = self.add_months_get_first_day(months);
-        let target_plus = target.add_months_get_first_day(1);
-        let last_day = target_plus.sub(Duration::days(1));
-        let day = core::cmp::min(self.day(), last_day.day());
-        NaiveDate::from_ymd(target.year(), target.month(), day)
-    }
-
-    /// Private function to calculate necessary primitives for `add_months()`
+    /// Private function to calculate necessary primitives for `Add<Month>`
     ///
     /// # Arguments
     ///
@@ -1610,6 +1587,59 @@ impl AddAssign<OldDuration> for NaiveDate {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
         *self = self.add(rhs);
+    }
+}
+
+impl Add<Months> for NaiveDate {
+    type Output = NaiveDate;
+
+    /// An addition of months to `NaiveDate` clamped to valid days in resulting month.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDate, Months};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(1), from_ymd(2014, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(11), from_ymd(2014, 12, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(12), from_ymd(2015, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(13), from_ymd(2015, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 31) + Months(1), from_ymd(2014, 2, 28));
+    /// assert_eq!(from_ymd(2020, 1, 31) + Months(1), from_ymd(2020, 2, 29));
+    /// ```
+    fn add(self, months: Months) -> Self::Output {
+        let target = self.add_months_get_first_day(months.0 as i32);
+        let target_plus = target.add_months_get_first_day(1);
+        let last_day = target_plus.sub(Duration::days(1));
+        let day = core::cmp::min(self.day(), last_day.day());
+        NaiveDate::from_ymd(target.year(), target.month(), day)
+    }
+}
+
+impl Sub<Months> for NaiveDate {
+    type Output = NaiveDate;
+
+    /// A subtraction of Months from `NaiveDate` clamped to valid days in resulting month.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDate, Months};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months(11), from_ymd(2013, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months(12), from_ymd(2013, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months(13), from_ymd(2012, 12, 1));
+    /// ```
+    fn sub(self, months: Months) -> Self::Output {
+        let target = self.add_months_get_first_day(-(months.0 as i32));
+        let target_plus = target.add_months_get_first_day(1);
+        let last_day = target_plus.sub(Duration::days(1));
+        let day = core::cmp::min(self.day(), last_day.day());
+        NaiveDate::from_ymd(target.year(), target.month(), day)
     }
 }
 
