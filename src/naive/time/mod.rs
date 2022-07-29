@@ -590,7 +590,7 @@ impl NaiveTime {
 
         if secs < 0 {
             secs += 86_400;
-            morerhssecs -= 86_400;
+            (morerhssecs, _) = morerhssecs.overflowing_sub(86_400);
         } else if secs >= 86_400 {
             secs -= 86_400;
             morerhssecs += 86_400;

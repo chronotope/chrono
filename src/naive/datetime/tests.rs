@@ -27,7 +27,9 @@ fn test_datetime_add() {
         let lhs = NaiveDate::from_ymd(y, m, d).and_hms(h, n, s);
         let sum = result.map(|(y, m, d, h, n, s)| NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
         assert_eq!(lhs.checked_add_signed(rhs), sum);
-        assert_eq!(lhs.checked_sub_signed(-rhs), sum);
+        if let Some(rhs) = rhs.checked_mul(-1) {
+            assert_eq!(lhs.checked_sub_signed(rhs), sum);
+        }
     }
 
     check((2014, 5, 6, 7, 8, 9), Duration::seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
