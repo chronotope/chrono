@@ -2,5 +2,5 @@ target
 Cargo.lock
 .tool-versions
 
-# for jetrains users
+# for jetbrains users
 .idea/

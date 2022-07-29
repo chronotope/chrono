@@ -610,7 +610,6 @@ impl NaiveDate {
         let zeroed_months = self.month() as i32 - 1; // zero-based for modulo operations
         let res_months = zeroed_months + delta;
         let delta_years = if res_months < 0 {
-            // no f32::floor when no_std
             if (-res_months) % 12 > 0 {
                 res_months / 12 - 1
             } else {
