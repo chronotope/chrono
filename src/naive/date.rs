@@ -17,6 +17,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
+use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Duration, Weekday};
@@ -594,6 +595,33 @@ impl NaiveDate {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_date()
+    }
+
+    /// Private function to calculate necessary primitives for `Add<Month>`
+    ///
+    /// # Arguments
+    ///
+    /// * `delta` - Number of months (+/-) to add
+    ///
+    /// # Returns
+    ///
+    /// A new NaiveDate on the first day of the resulting year & month
+    fn add_months_get_first_day(&self, delta: i32) -> NaiveDate {
+        let zeroed_months = self.month() as i32 - 1; // zero-based for modulo operations
+        let res_months = zeroed_months + delta;
+        let delta_years = if res_months < 0 {
+            if (-res_months) % 12 > 0 {
+                res_months / 12 - 1
+            } else {
+                res_months / 12
+            }
+        } else {
+            res_months / 12
+        };
+        let res_years = self.year() + delta_years;
+        let res_months = res_months % 12;
+        let res_months = if res_months < 0 { res_months + 12 } else { res_months };
+        NaiveDate::from_ymd(res_years, res_months as u32 + 1, 1)
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -1561,6 +1589,59 @@ impl AddAssign<OldDuration> for NaiveDate {
     }
 }
 
+impl Add<Months> for NaiveDate {
+    type Output = NaiveDate;
+
+    /// An addition of months to `NaiveDate` clamped to valid days in resulting month.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDate, Months};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(1), from_ymd(2014, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(11), from_ymd(2014, 12, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(12), from_ymd(2015, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months(13), from_ymd(2015, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 31) + Months(1), from_ymd(2014, 2, 28));
+    /// assert_eq!(from_ymd(2020, 1, 31) + Months(1), from_ymd(2020, 2, 29));
+    /// ```
+    fn add(self, months: Months) -> Self::Output {
+        let target = self.add_months_get_first_day(months.0 as i32);
+        let target_plus = target.add_months_get_first_day(1);
+        let last_day = target_plus.sub(Duration::days(1));
+        let day = core::cmp::min(self.day(), last_day.day());
+        NaiveDate::from_ymd(target.year(), target.month(), day)
+    }
+}
+
+impl Sub<Months> for NaiveDate {
+    type Output = NaiveDate;
+
+    /// A subtraction of Months from `NaiveDate` clamped to valid days in resulting month.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDate, Months};
+    ///
+    /// let from_ymd = NaiveDate::from_ymd;
+    ///
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months(11), from_ymd(2013, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months(12), from_ymd(2013, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months(13), from_ymd(2012, 12, 1));
+    /// ```
+    fn sub(self, months: Months) -> Self::Output {
+        let target = self.add_months_get_first_day(-(months.0 as i32));
+        let target_plus = target.add_months_get_first_day(1);
+        let last_day = target_plus.sub(Duration::days(1));
+        let day = core::cmp::min(self.day(), last_day.day());
+        NaiveDate::from_ymd(target.year(), target.month(), day)
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 /// It is the same as the addition with a negated `Duration`.
@@ -2001,6 +2082,46 @@ mod tests {
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
     use std::{i32, u32};
+
+    #[test]
+    fn test_add_months_get_first_day() {
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 1).add_months_get_first_day(1),
+            NaiveDate::from_ymd(2014, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 31).add_months_get_first_day(1),
+            NaiveDate::from_ymd(2014, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2020, 1, 10).add_months_get_first_day(1),
+            NaiveDate::from_ymd(2020, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 1).add_months_get_first_day(-1),
+            NaiveDate::from_ymd(2013, 12, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 31).add_months_get_first_day(-1),
+            NaiveDate::from_ymd(2013, 12, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2020, 1, 10).add_months_get_first_day(-1),
+            NaiveDate::from_ymd(2019, 12, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-11),
+            NaiveDate::from_ymd(2013, 2, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-12),
+            NaiveDate::from_ymd(2013, 1, 1)
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-13),
+            NaiveDate::from_ymd(2012, 12, 1)
+        );
+    }
 
     #[test]
     fn test_readme_doomsday() {
