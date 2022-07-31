@@ -495,11 +495,11 @@ pub mod naive;
 pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
 
 pub mod offset;
-#[cfg(feature = "clock")]
-#[doc(no_inline)]
-pub use offset::Local;
 #[doc(no_inline)]
 pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+#[cfg(feature = "clock")]
+#[doc(no_inline)]
+pub use offset::{Local, LocalOffset};
 
 mod round;
 pub use round::{DurationRound, RoundingError, SubsecRound};

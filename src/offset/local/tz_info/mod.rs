@@ -8,7 +8,7 @@ use std::time::SystemTimeError;
 use std::{error, fmt, io};
 
 mod timezone;
-pub(crate) use timezone::TimeZone;
+pub(crate) use timezone::{LocalTimeType, TimeZone, TimeZoneName};
 
 mod parser;
 mod rule;

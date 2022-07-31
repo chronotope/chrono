@@ -10,8 +10,8 @@
 
 use std::{cell::RefCell, env, fs, time::SystemTime};
 
-use super::tz_info::TimeZone;
-use super::{DateTime, FixedOffset, Local, NaiveDateTime};
+use super::tz_info::{LocalTimeType, TimeZone};
+use super::{DateTime, FixedOffset, Local, LocalOffset, NaiveDateTime};
 use crate::{Datelike, LocalResult, Utc};
 
 pub(super) fn now() -> DateTime<Local> {
@@ -105,14 +105,12 @@ impl Cache {
         }
 
         if !local {
-            let offset = FixedOffset::east(
-                self.zone
-                    .find_local_time_type(d.timestamp())
-                    .expect("unable to select local time type")
-                    .offset(),
-            );
+            let ltt = self
+                .zone
+                .find_local_time_type(d.timestamp())
+                .expect("unable to select local time type");
 
-            return LocalResult::Single(DateTime::from_utc(d, offset));
+            return LocalResult::Single(DateTime::from_utc(d, ltt_to_local_offset(ltt)));
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
@@ -124,18 +122,22 @@ impl Cache {
         {
             LocalResult::None => LocalResult::None,
             LocalResult::Ambiguous(early, late) => {
-                let early_offset = FixedOffset::east(early.offset());
-                let late_offset = FixedOffset::east(late.offset());
-
+                let early = ltt_to_local_offset(&early);
+                let late = ltt_to_local_offset(&late);
                 LocalResult::Ambiguous(
-                    DateTime::from_utc(d - early_offset, early_offset),
-                    DateTime::from_utc(d - late_offset, late_offset),
+                    DateTime::from_utc(d - early.offset, early),
+                    DateTime::from_utc(d - late.offset, late),
                 )
             }
             LocalResult::Single(tt) => {
-                let offset = FixedOffset::east(tt.offset());
-                LocalResult::Single(DateTime::from_utc(d - offset, offset))
+                let offset = ltt_to_local_offset(&tt);
+
+                LocalResult::Single(DateTime::from_utc(d - offset.offset, offset))
             }
         }
     }
+}
+
+fn ltt_to_local_offset(tt: &LocalTimeType) -> LocalOffset {
+    LocalOffset { name: tt.name, offset: FixedOffset::east(tt.offset()) }
 }

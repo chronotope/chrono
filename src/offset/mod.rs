@@ -31,7 +31,7 @@ pub use self::fixed::FixedOffset;
 #[cfg(feature = "clock")]
 mod local;
 #[cfg(feature = "clock")]
-pub use self::local::Local;
+pub use self::local::{Local, LocalOffset};
 
 mod utc;
 pub use self::utc::Utc;

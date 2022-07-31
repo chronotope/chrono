@@ -472,14 +472,14 @@ impl LeapSecond {
 
 /// ASCII-encoded fixed-capacity string, used for storing time zone names
 #[derive(Copy, Clone, Eq, PartialEq)]
-struct TimeZoneName {
+pub(crate) struct TimeZoneName {
     /// Length-prefixed string buffer
     bytes: [u8; 8],
 }
 
 impl TimeZoneName {
     /// Construct a time zone name
-    fn new(input: &[u8]) -> Result<Self, Error> {
+    pub(crate) fn new(input: &[u8]) -> Result<Self, Error> {
         let len = input.len();
 
         if len < 3 || len > 7 {
@@ -545,7 +545,7 @@ pub(crate) struct LocalTimeType {
     /// Daylight Saving Time indicator
     is_dst: bool,
     /// Time zone name
-    name: Option<TimeZoneName>,
+    pub(crate) name: Option<TimeZoneName>,
 }
 
 impl LocalTimeType {

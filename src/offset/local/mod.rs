@@ -3,13 +3,13 @@
 
 //! The local (system) time zone.
 
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
-
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::{Date, DateTime};
+use core::fmt;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(all(not(unix), not(windows)))]
 #[path = "stub.rs"]
@@ -23,7 +23,6 @@ mod inner;
 #[path = "windows.rs"]
 mod inner;
 
-#[cfg(unix)]
 mod tz_info;
 
 /// The local timescale. This is implemented via the standard `time` crate.
@@ -68,27 +67,59 @@ impl Local {
     }
 }
 
-impl TimeZone for Local {
-    type Offset = FixedOffset;
+/// Local Offset
+#[derive(Debug, Clone, Copy)]
+pub struct LocalOffset {
+    pub(crate) name: Option<tz_info::TimeZoneName>,
+    pub(crate) offset: FixedOffset,
+}
 
-    fn from_offset(_offset: &FixedOffset) -> Local {
+impl super::Offset for LocalOffset {
+    fn fix(&self) -> FixedOffset {
+        self.offset
+    }
+}
+
+impl fmt::Display for LocalOffset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(zone) = self.name {
+            f.write_str(zone.as_ref())
+        } else {
+            write!(f, "{}", self.offset)
+        }
+    }
+}
+
+#[cfg(test)]
+impl LocalOffset {
+    /// Returns the number of seconds to add to convert from UTC to the local time.
+    #[inline]
+    pub(crate) fn local_minus_utc(&self) -> i32 {
+        self.offset.local_minus_utc
+    }
+}
+
+impl TimeZone for Local {
+    type Offset = LocalOffset;
+
+    fn from_offset(_offset: &LocalOffset) -> Local {
         Local
     }
 
     // they are easier to define in terms of the finished date and time unlike other offsets
-    fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
+    fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<LocalOffset> {
         self.from_local_date(local).map(|date| *date.offset())
     }
 
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<LocalOffset> {
         self.from_local_datetime(local).map(|datetime| *datetime.offset())
     }
 
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
+    fn offset_from_utc_date(&self, utc: &NaiveDate) -> LocalOffset {
         *self.from_utc_date(utc).offset()
     }
 
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
+    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> LocalOffset {
         *self.from_utc_datetime(utc).offset()
     }
 
@@ -145,15 +176,17 @@ mod tests {
 
     #[cfg(unix)]
     fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
+        let formatted =
+            format!("{}-{:02}-{:02} {:02}:05:01", dt.year(), dt.month(), dt.day(), dt.hour());
+        dbg!(&formatted);
         let output = process::Command::new(path)
             .arg("-d")
-            .arg(format!("{}-{:02}-{:02} {:02}:05:01", dt.year(), dt.month(), dt.day(), dt.hour()))
-            .arg("+%Y-%m-%d %H:%M:%S %:z")
+            .arg(formatted)
+            .arg("+%Y-%m-%d %H:%M:%S %Z")
             .output()
             .unwrap();
 
         let date_command_str = String::from_utf8(output.stdout).unwrap();
-
         // The below would be preferred. At this stage neither earliest() or latest()
         // seems to be consistent with the output of the `date` command, so we simply
         // compare both.
@@ -162,8 +195,8 @@ mod tests {
         //     // looks like the "date" command always returns a given time when it is ambiguous
         //     .earliest();
 
-        // if let Some(local) = local {
         //     assert_eq!(format!("{}\n", local), date_command_str);
+        // if let Some(local) = local {
         // } else {
         //     // we are in a "Spring forward gap" due to DST, and so date also returns ""
         //     assert_eq!("", date_command_str);

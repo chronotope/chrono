@@ -25,7 +25,7 @@ use crate::Timelike;
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct FixedOffset {
-    local_minus_utc: i32,
+    pub(crate) local_minus_utc: i32,
 }
 
 impl FixedOffset {
