@@ -16,7 +16,7 @@ use winapi::shared::minwindef::*;
 use winapi::um::minwinbase::SYSTEMTIME;
 use winapi::um::timezoneapi::*;
 
-use super::{FixedOffset, Local};
+use super::{FixedOffset, Local, LocalOffset};
 use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 pub(super) fn now() -> DateTime<Local> {
@@ -74,7 +74,7 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
     );
 
     let offset = FixedOffset::east(tm.tm_utcoff);
-    DateTime::from_utc(date.and_time(time) - offset, offset)
+    DateTime::from_utc(date.and_time(time) - offset, LocalOffset { name: None, offset })
 }
 
 /// A record specifying a time value in seconds and nanoseconds, where
