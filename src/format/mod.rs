@@ -300,6 +300,24 @@ pub enum Item<'a> {
     Error,
 }
 
+impl<'a> From<(Numeric, Pad)> for Item<'a> {
+    fn from((n, p): (Numeric, Pad)) -> Self {
+        Item::Numeric(n, p)
+    }
+}
+
+impl<'a> From<Fixed> for Item<'a> {
+    fn from(f: Fixed) -> Self {
+        Item::Fixed(f)
+    }
+}
+
+impl<'a> From<&'a str> for Item<'a> {
+    fn from(s: &'a str) -> Self {
+        Item::Literal(s)
+    }
+}
+
 macro_rules! lit {
     ($x:expr) => {
         Item::Literal($x)

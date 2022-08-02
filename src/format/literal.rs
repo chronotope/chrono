@@ -4,36 +4,42 @@ use super::{Fixed, Item, Numeric, Pad};
 #[macro_export]
 macro_rules! items {
 
-    ( $pad:expr;   $( $i:tt ),+  ) => {
-        &[
-            $(
-                __item_with_pad!($pad, $i),
-            )*
-        ]
+    ( $pad:expr;   $( $i:tt ),+  $(,)?) => {
+        {
+            #[allow(unused_imports)]
+            use $crate::format::Item::{*, Numeric as N, Fixed as F};
+            #[allow(unused_imports)]
+            use $crate::format::Fixed::*;
+            #[allow(unused_imports)]
+            use $crate::format::Numeric::*;
+            #[allow(unused_imports)]
+            use $crate::format::Pad::{Zero, Space, None as NoPadding};
+            &[
+                $(
+                    __item_with_pad!($pad, $i),
+                )*
+            ]
+        }
     };
 
-    ( $pad:expr;   $( $i:tt ),+  ,) => {
-        &[
-            $(
-                item_with_pad!($pad, $i),
-            )*
-        ]
+    ( $( $i:expr ),+ $(,)?) => {
+        {
+            #[allow(unused_imports)]
+            use $crate::format::Item::{*, Numeric as N, Fixed as F};
+            #[allow(unused_imports)]
+            use $crate::format::Fixed::*;
+            #[allow(unused_imports)]
+            use $crate::format::Numeric::*;
+            #[allow(unused_imports)]
+            use $crate::format::Pad::{Zero, Space, None as NoPadding};
+            &[
+                $(
+                    __item!($i),
+                )*
+            ]
+        }
     };
 
-    ( $( $i:expr ),+ ) => {
-        &[
-            $(
-                __item!($i),
-            )*
-        ]
-    };
-    ( $( $i:expr ),+ ,) => {
-        &[
-            $(
-                __item!($i),
-            )*
-        ]
-    };
 }
 
 #[doc(hidden)]
@@ -73,21 +79,21 @@ mod tests {
     use crate::format::{Item, Numeric, Pad, StrftimeItems};
 
     const ISO8601_A: &[Item<'static>] = items![
-        Pad::Zero; year, "-", month, "-", day, "T", hour, ":", minute, ":", second, "Z"
+        Zero; year, "-", month, "-", day, "T", hour, ":", minute, ":", second, "Z"
     ];
 
     const ISO8601_B: &[Item<'static>] = items![
-        super::year(Pad::Zero),
+        super::year(Zero),
         "-",
-        super::month(Pad::Zero),
+        super::month(Zero),
         "-",
-        super::day(Pad::Zero),
+        super::day(Zero),
         "T",
-        super::hour(Pad::Zero),
+        super::hour(Zero),
         ":",
-        super::minute(Pad::Zero),
+        super::minute(Zero),
         ":",
-        super::second(Pad::Zero),
+        super::second(Zero),
         "Z"
     ];
 
@@ -106,7 +112,37 @@ mod tests {
         super::lit("Z"),
     ];
 
-    const ISO8601_D: &[Item<'static>] = &[
+    const ISO8601_D: &[Item<'static>] = items![
+        Numeric(Year, Zero),
+        "-",
+        Numeric(Month, Zero),
+        "-",
+        Numeric(Day, Zero),
+        "T",
+        Numeric(Hour, Zero),
+        ":",
+        Numeric(Minute, Zero),
+        ":",
+        Numeric(Second, Zero),
+        "Z",
+    ];
+
+    const ISO8601_E: &[Item<'static>] = items![
+        N(Year, Zero),
+        "-",
+        N(Month, Zero),
+        "-",
+        N(Day, Zero),
+        "T",
+        N(Hour, Zero),
+        ":",
+        N(Minute, Zero),
+        ":",
+        N(Second, Zero),
+        "Z",
+    ];
+
+    const ISO8601_F: &[Item<'static>] = &[
         Item::Numeric(Numeric::Year, Pad::Zero),
         Item::Literal("-"),
         Item::Numeric(Numeric::Month, Pad::Zero),
@@ -137,6 +173,14 @@ mod tests {
         );
         assert_eq!(
             ISO8601_D.to_vec(),
+            StrftimeItems::new("%Y-%m-%dT%H:%M:%SZ").collect::<Vec<_>>(),
+        );
+        assert_eq!(
+            ISO8601_E.to_vec(),
+            StrftimeItems::new("%Y-%m-%dT%H:%M:%SZ").collect::<Vec<_>>(),
+        );
+        assert_eq!(
+            ISO8601_F.to_vec(),
             StrftimeItems::new("%Y-%m-%dT%H:%M:%SZ").collect::<Vec<_>>(),
         );
     }
