@@ -190,8 +190,15 @@ impl num_traits::FromPrimitive for Month {
 }
 
 /// A duration in calendar months
-#[derive(Clone, Debug, PartialEq)]
-pub struct Months(pub usize);
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+pub struct Months(pub(crate) u32);
+
+impl Months {
+    /// Construct a new `Months` from a number of months
+    pub fn new(num: u32) -> Self {
+        Self(num)
+    }
+}
 
 /// An error resulting from reading `<Month>` value with `FromStr`.
 #[derive(Clone, PartialEq)]
