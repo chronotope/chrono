@@ -620,7 +620,7 @@ impl NaiveDate {
         }
 
         match months.0 <= core::i32::MAX as u32 {
-            true => self.diff_months(months.0 as i32),
+            true => self.diff_months(months, true),
             false => None,
         }
     }
@@ -645,42 +645,32 @@ impl NaiveDate {
 
         // Copy `i32::MIN` here so we don't have to do a complicated cast
         match months.0 <= 2_147_483_648 {
-            true => self.diff_months(-(months.0 as i32)),
+            true => self.diff_months(months, false),
             false => None,
         }
     }
 
-    fn diff_months(self, months: i32) -> Option<Self> {
-        let (years, left) = ((months / 12), (months % 12));
+    fn diff_months(self, months: Months, forwards: bool) -> Option<Self> {
+        // safe as .month() returns [1..12]
+        // can be further improved when .month() returns a Month
+        let month: crate::Month = num_traits::FromPrimitive::from_u32(self.month()).unwrap();
 
-        // Determine new year (without taking months into account for now
+        let (years, month) = match forwards {
+            true => month.overflowing_add(months),
+            false => month.overflowing_sub(months),
+        };
 
-        let year = if (years > 0 && years > (MAX_YEAR - self.year()))
-            || (years < 0 && years < (MIN_YEAR - self.year()))
-        {
+        // Add the delta years to the current year
+
+        let year = self.year() + years;
+
+        // Check whether the target year is in the valid range
+
+        if year < MIN_YEAR || year > MAX_YEAR {
             return None;
-        } else {
-            self.year() + years
-        };
+        }
 
-        // Determine new month
-
-        let month = self.month() as i32 + left;
-        let (year, month) = if month <= 0 {
-            if year == MIN_YEAR {
-                return None;
-            }
-
-            (year - 1, month + 12)
-        } else if month > 12 {
-            if year == MAX_YEAR {
-                return None;
-            }
-
-            (year + 1, month - 12)
-        } else {
-            (year, month)
-        };
+        let month = month.number_from_month();
 
         // Clamp original day in case new month is shorter
 
@@ -689,7 +679,7 @@ impl NaiveDate {
         let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         let day = Ord::min(self.day(), days[(month - 1) as usize]);
 
-        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -2158,19 +2148,6 @@ mod tests {
         assert_eq!(
             NaiveDate::from_ymd(2022, 8, 3).checked_add_months(Months::new(0)),
             Some(NaiveDate::from_ymd(2022, 8, 3))
-        );
-
-        // add with months exceeding `i32::MAX`
-        assert_eq!(
-            NaiveDate::from_ymd(2022, 8, 3).checked_add_months(Months::new(i32::MAX as u32 + 1)),
-            None
-        );
-
-        // sub with months exceeindg `i32::MIN`
-        assert_eq!(
-            NaiveDate::from_ymd(2022, 8, 3)
-                .checked_sub_months(Months::new((i32::MIN as i64).abs() as u32 + 1)),
-            None
         );
 
         // add overflowing year

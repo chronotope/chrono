@@ -81,6 +81,52 @@ impl Month {
         }
     }
 
+    /// Add `Months` to the current `Month` returning the new `Month`
+    /// and any years that have been crossed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Month, Months};
+    ///
+    /// assert_eq!(Month::January.overflowing_add(Months::new(3)), (0, Month::April));
+    /// assert_eq!(Month::January.overflowing_add(Months::new(15)), (1, Month::April));
+    /// ```
+    pub fn overflowing_add(&self, months: Months) -> (i32, Month) {
+        let month = self.number_from_month() + months.0 % 12;
+
+        let (years, month) = if month > 12 {
+            (months.as_i32() / 12 + 1, month % 12)
+        } else {
+            (months.as_i32() / 12, month)
+        };
+
+        (years, num_traits::FromPrimitive::from_u32(month).unwrap())
+    }
+
+    /// Subtract `Months` from the current `Month` returning the new `Month`
+    /// and any years that have been crossed
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Month, Months};
+    ///
+    /// assert_eq!(Month::April.overflowing_sub(Months::new(3)), (0, Month::January));
+    /// assert_eq!(Month::April.overflowing_sub(Months::new(15)), (-1, Month::January));
+    /// ```
+    pub fn overflowing_sub(&self, months: Months) -> (i32, Month) {
+        let rem_mths = months.0 % 12;
+
+        let (years, month) = if self.number_from_month() <= rem_mths {
+            (-months.as_i32() / 12 - 1, (12 + self.number_from_month()) - rem_mths)
+        } else {
+            (-months.as_i32() / 12, self.number_from_month() - rem_mths)
+        };
+
+        (years, num_traits::FromPrimitive::from_u32(month).unwrap())
+    }
+
     /// The previous month.
     ///
     /// `m`:        | `January`  | `February` | `...` | `December`
@@ -196,7 +242,11 @@ pub struct Months(pub(crate) u32);
 impl Months {
     /// Construct a new `Months` from a number of months
     pub fn new(num: u32) -> Self {
-        Self(num)
+        Months(num)
+    }
+
+    fn as_i32(&self) -> i32 {
+        self.0 as i32
     }
 }
 
@@ -318,7 +368,7 @@ mod month_serde {
 
 #[cfg(test)]
 mod tests {
-    use super::Month;
+    use super::{Month, Months};
     use crate::{Datelike, TimeZone, Utc};
 
     #[test]
@@ -340,6 +390,28 @@ mod tests {
         let month = Month::January;
         let dt = Utc.ymd(2019, month.number_from_month(), 28).and_hms(9, 10, 11);
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
+    }
+
+    #[test]
+    fn test_overflowing_add() {
+        assert_eq!(Month::December.overflowing_add(Months::new(5)), (1, Month::May));
+        assert_eq!(Month::December.overflowing_add(Months::new(15)), (2, Month::March));
+        assert_eq!(
+            Month::December.overflowing_add(Months::new(15 + 12 * 200)),
+            (202, Month::March)
+        );
+        assert_eq!(Month::January.overflowing_add(Months::new(3)), (0, Month::April));
+    }
+
+    #[test]
+    fn test_overflowing_sub() {
+        assert_eq!(Month::December.overflowing_sub(Months::new(5)), (0, Month::July));
+        assert_eq!(Month::January.overflowing_sub(Months::new(15)), (-2, Month::October));
+        assert_eq!(
+            Month::January.overflowing_sub(Months::new(15 + 12 * 200)),
+            (-2 - 200, Month::October)
+        );
+        assert_eq!(Month::January.overflowing_sub(Months::new(3)), (-1, Month::October));
     }
 
     #[test]
