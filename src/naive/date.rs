@@ -597,31 +597,99 @@ impl NaiveDate {
         parsed.to_naive_date()
     }
 
-    /// Private function to calculate necessary primitives for `Add<Month>`
+    /// Add a duration in [`Months`] to the date
     ///
-    /// # Arguments
+    /// If the day would be out of range for the resulting month, use the last day for that month.
     ///
-    /// * `delta` - Number of months (+/-) to add
+    /// Returns `None` if the resulting date would be out of range.
     ///
-    /// # Returns
+    /// ```
+    /// # use chrono::{NaiveDate, Months};
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 2, 20).checked_add_months(Months::new(6)),
+    ///     Some(NaiveDate::from_ymd(2022, 8, 20))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 7, 31).checked_add_months(Months::new(2)),
+    ///     Some(NaiveDate::from_ymd(2022, 9, 30))
+    /// );
+    /// ```
+    pub fn checked_add_months(self, months: Months) -> Option<Self> {
+        if months.0 == 0 {
+            return Some(self);
+        }
+
+        match months.0 <= core::i32::MAX as u32 {
+            true => self.diff_months(months.0 as i32),
+            false => None,
+        }
+    }
+
+    /// Subtract a duration in [`Months`] from the date
     ///
-    /// A new NaiveDate on the first day of the resulting year & month
-    fn add_months_get_first_day(&self, delta: i32) -> NaiveDate {
-        let zeroed_months = self.month() as i32 - 1; // zero-based for modulo operations
-        let res_months = zeroed_months + delta;
-        let delta_years = if res_months < 0 {
-            if (-res_months) % 12 > 0 {
-                res_months / 12 - 1
-            } else {
-                res_months / 12
-            }
+    /// If the day would be out of range for the resulting month, use the last day for that month.
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, Months};
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 2, 20).checked_sub_months(Months::new(6)),
+    ///     Some(NaiveDate::from_ymd(2021, 8, 20))
+    /// );
+    /// ```
+    pub fn checked_sub_months(self, months: Months) -> Option<Self> {
+        if months.0 == 0 {
+            return Some(self);
+        }
+
+        // Copy `i32::MIN` here so we don't have to do a complicated cast
+        match months.0 <= 2_147_483_648 {
+            true => self.diff_months(-(months.0 as i32)),
+            false => None,
+        }
+    }
+
+    fn diff_months(self, months: i32) -> Option<Self> {
+        let (years, left) = ((months / 12), (months % 12));
+
+        // Determine new year (without taking months into account for now
+
+        let year = if (years > 0 && years > (MAX_YEAR - self.year()))
+            || (years < 0 && years < (MIN_YEAR - self.year()))
+        {
+            return None;
         } else {
-            res_months / 12
+            self.year() + years
         };
-        let res_years = self.year() + delta_years;
-        let res_months = res_months % 12;
-        let res_months = if res_months < 0 { res_months + 12 } else { res_months };
-        NaiveDate::from_ymd(res_years, res_months as u32 + 1, 1)
+
+        // Determine new month
+
+        let month = self.month() as i32 + left;
+        let (year, month) = if month <= 0 {
+            if year == MIN_YEAR {
+                return None;
+            }
+
+            (year - 1, month + 12)
+        } else if month > 12 {
+            if year == MAX_YEAR {
+                return None;
+            }
+
+            (year + 1, month - 12)
+        } else {
+            (year, month)
+        };
+
+        // Clamp original day in case new month is shorter
+
+        let flags = YearFlags::from_year(year);
+        let feb_days = if flags.ndays() == 366 { 29 } else { 28 };
+        let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        let day = Ord::min(self.day(), days[(month - 1) as usize]);
+
+        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -1594,6 +1662,10 @@ impl Add<Months> for NaiveDate {
 
     /// An addition of months to `NaiveDate` clamped to valid days in resulting month.
     ///
+    /// # Panics
+    ///
+    /// Panics if the resulting date would be out of range.
+    ///
     /// # Example
     ///
     /// ```
@@ -1601,19 +1673,15 @@ impl Add<Months> for NaiveDate {
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months(1), from_ymd(2014, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months(11), from_ymd(2014, 12, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months(12), from_ymd(2015, 1, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months(13), from_ymd(2015, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 31) + Months(1), from_ymd(2014, 2, 28));
-    /// assert_eq!(from_ymd(2020, 1, 31) + Months(1), from_ymd(2020, 2, 29));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(1), from_ymd(2014, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(11), from_ymd(2014, 12, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(12), from_ymd(2015, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(13), from_ymd(2015, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 31) + Months::new(1), from_ymd(2014, 2, 28));
+    /// assert_eq!(from_ymd(2020, 1, 31) + Months::new(1), from_ymd(2020, 2, 29));
     /// ```
     fn add(self, months: Months) -> Self::Output {
-        let target = self.add_months_get_first_day(months.0 as i32);
-        let target_plus = target.add_months_get_first_day(1);
-        let last_day = target_plus.sub(Duration::days(1));
-        let day = core::cmp::min(self.day(), last_day.day());
-        NaiveDate::from_ymd(target.year(), target.month(), day)
+        self.checked_add_months(months).unwrap()
     }
 }
 
@@ -1622,6 +1690,10 @@ impl Sub<Months> for NaiveDate {
 
     /// A subtraction of Months from `NaiveDate` clamped to valid days in resulting month.
     ///
+    /// # Panics
+    ///
+    /// Panics if the resulting date would be out of range.
+    ///
     /// # Example
     ///
     /// ```
@@ -1629,16 +1701,12 @@ impl Sub<Months> for NaiveDate {
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
-    /// assert_eq!(from_ymd(2014, 1, 1) - Months(11), from_ymd(2013, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) - Months(12), from_ymd(2013, 1, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) - Months(13), from_ymd(2012, 12, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(11), from_ymd(2013, 2, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(12), from_ymd(2013, 1, 1));
+    /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(13), from_ymd(2012, 12, 1));
     /// ```
     fn sub(self, months: Months) -> Self::Output {
-        let target = self.add_months_get_first_day(-(months.0 as i32));
-        let target_plus = target.add_months_get_first_day(1);
-        let last_day = target_plus.sub(Duration::days(1));
-        let day = core::cmp::min(self.day(), last_day.day());
-        NaiveDate::from_ymd(target.year(), target.month(), day)
+        self.checked_sub_months(months).unwrap()
     }
 }
 
@@ -2077,49 +2145,92 @@ mod serde {
 
 #[cfg(test)]
 mod tests {
-    use super::NaiveDate;
-    use super::{MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR};
+    use super::{
+        Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
+    };
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
     use std::{i32, u32};
 
     #[test]
-    fn test_add_months_get_first_day() {
+    fn diff_months() {
+        // identity
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 1).add_months_get_first_day(1),
-            NaiveDate::from_ymd(2014, 2, 1)
+            NaiveDate::from_ymd(2022, 8, 3).checked_add_months(Months::new(0)),
+            Some(NaiveDate::from_ymd(2022, 8, 3))
         );
+
+        // add with months exceeding `i32::MAX`
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 31).add_months_get_first_day(1),
-            NaiveDate::from_ymd(2014, 2, 1)
+            NaiveDate::from_ymd(2022, 8, 3).checked_add_months(Months::new(i32::MAX as u32 + 1)),
+            None
         );
+
+        // sub with months exceeindg `i32::MIN`
         assert_eq!(
-            NaiveDate::from_ymd(2020, 1, 10).add_months_get_first_day(1),
-            NaiveDate::from_ymd(2020, 2, 1)
+            NaiveDate::from_ymd(2022, 8, 3)
+                .checked_sub_months(Months::new((i32::MIN as i64).abs() as u32 + 1)),
+            None
         );
+
+        // add overflowing year
+        assert_eq!(NaiveDate::MAX.checked_add_months(Months::new(1)), None);
+
+        // add underflowing year
+        assert_eq!(NaiveDate::MIN.checked_sub_months(Months::new(1)), None);
+
+        // sub crossing year 0 boundary
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 1).add_months_get_first_day(-1),
-            NaiveDate::from_ymd(2013, 12, 1)
+            NaiveDate::from_ymd(2022, 8, 3).checked_sub_months(Months::new(2050 * 12)),
+            Some(NaiveDate::from_ymd(-28, 8, 3))
         );
+
+        // add crossing year boundary
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 31).add_months_get_first_day(-1),
-            NaiveDate::from_ymd(2013, 12, 1)
+            NaiveDate::from_ymd(2022, 8, 3).checked_add_months(Months::new(6)),
+            Some(NaiveDate::from_ymd(2023, 2, 3))
         );
+
+        // sub crossing year boundary
         assert_eq!(
-            NaiveDate::from_ymd(2020, 1, 10).add_months_get_first_day(-1),
-            NaiveDate::from_ymd(2019, 12, 1)
+            NaiveDate::from_ymd(2022, 8, 3).checked_sub_months(Months::new(10)),
+            Some(NaiveDate::from_ymd(2021, 10, 3))
         );
+
+        // add clamping day, non-leap year
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-11),
-            NaiveDate::from_ymd(2013, 2, 1)
+            NaiveDate::from_ymd(2022, 1, 29).checked_add_months(Months::new(1)),
+            Some(NaiveDate::from_ymd(2022, 2, 28))
         );
+
+        // add to leap day
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-12),
-            NaiveDate::from_ymd(2013, 1, 1)
+            NaiveDate::from_ymd(2022, 10, 29).checked_add_months(Months::new(16)),
+            Some(NaiveDate::from_ymd(2024, 2, 29))
         );
+
+        // add into december
         assert_eq!(
-            NaiveDate::from_ymd(2014, 1, 10).add_months_get_first_day(-13),
-            NaiveDate::from_ymd(2012, 12, 1)
+            NaiveDate::from_ymd(2022, 10, 31).checked_add_months(Months::new(2)),
+            Some(NaiveDate::from_ymd(2022, 12, 31))
+        );
+
+        // sub into december
+        assert_eq!(
+            NaiveDate::from_ymd(2022, 10, 31).checked_sub_months(Months::new(10)),
+            Some(NaiveDate::from_ymd(2021, 12, 31))
+        );
+
+        // add into january
+        assert_eq!(
+            NaiveDate::from_ymd(2022, 8, 3).checked_add_months(Months::new(5)),
+            Some(NaiveDate::from_ymd(2023, 1, 3))
+        );
+
+        // sub into january
+        assert_eq!(
+            NaiveDate::from_ymd(2022, 8, 3).checked_sub_months(Months::new(7)),
+            Some(NaiveDate::from_ymd(2022, 1, 3))
         );
     }
 
