@@ -58,13 +58,13 @@ pub struct Duration {
 }
 
 /// The minimum possible `Duration`: `i64::MIN` milliseconds.
-pub const MIN: Duration = Duration {
+pub(crate) const MIN: Duration = Duration {
     secs: i64::MIN / MILLIS_PER_SEC - 1,
     nanos: NANOS_PER_SEC + (i64::MIN % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
 };
 
 /// The maximum possible `Duration`: `i64::MAX` milliseconds.
-pub const MAX: Duration = Duration {
+pub(crate) const MAX: Duration = Duration {
     secs: i64::MAX / MILLIS_PER_SEC,
     nanos: (i64::MAX % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
 };
