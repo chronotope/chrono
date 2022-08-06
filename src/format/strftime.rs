@@ -71,6 +71,8 @@ The following specifiers are available both to formatting and parsing.
 | `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. [^9] |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
 | `%:z` | `+09:30` | Same as `%z` but with a colon.                                             |
+| `%::z` | `+09:30:00` | Offset from the local time to UTC with seconds.
+| `%:::z` | `+09` | Offset from the local time to UTC without minutes.
 | `%#z` | `+09`    | *Parsing only:* Same as `%z` but allows minutes to be missing or present.  |
 |       |          |                                                                            |
 |       |          | **DATE & TIME SPECIFIERS:**                                                |
@@ -400,10 +402,33 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         }
                     }
                     '+' => fix!(RFC3339),
-                    ':' => match next!() {
-                        'z' => fix!(TimezoneOffsetColon),
-                        _ => Item::Error,
-                    },
+                    ':' => {
+                        let mut num_colon = 1;
+
+                        let result = loop {
+                            match next!() {
+                                ':' => {
+                                    num_colon += 1;
+                                }
+                                'z' => {
+                                    break Ok(());
+                                }
+                                _ => {
+                                    break Err(Item::Error);
+                                }
+                            }
+                        };
+
+                        match result {
+                            Ok(_) => match num_colon {
+                                1 => fix!(TimezoneOffsetColon),
+                                2 => fix!(TimezoneOffsetDoubleColon),
+                                3 => fix!(TimezoneOffsetTripleColon),
+                                _ => Item::Error,
+                            },
+                            Err(e) => e,
+                        }
+                    }
                     '.' => match next!() {
                         '3' => match next!() {
                             'f' => fix!(Nanosecond3),
@@ -592,6 +617,8 @@ fn test_strftime_docs() {
     //assert_eq!(dt.format("%Z").to_string(), "ACST");
     assert_eq!(dt.format("%z").to_string(), "+0930");
     assert_eq!(dt.format("%:z").to_string(), "+09:30");
+    assert_eq!(dt.format("%::z").to_string(), "+09:30:00");
+    assert_eq!(dt.format("%:::z").to_string(), "+09");
 
     // date & time specifiers
     assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
