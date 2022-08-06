@@ -236,7 +236,7 @@ pub enum Fixed {
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetTripleColon,
-    /// Offset from the local time to UTC without minutes (`+09` or `-04` or `+00`).
+    /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
     /// and `Z` can be either in upper case or in lower case.
