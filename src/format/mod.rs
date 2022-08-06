@@ -288,10 +288,10 @@ enum InternalInternal {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ColonType {
-    NoColon,
-    SingleColon,
-    DoubleColon,
-    TripleColon,
+    None,
+    Single,
+    Double,
+    Triple,
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
@@ -583,14 +583,14 @@ fn format_inner<'a>(
                 if !allow_zulu || off != 0 {
                     let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
 
-                    match colon_type.unwrap_or(ColonType::NoColon) {
-                        ColonType::NoColon => {
+                    match colon_type.unwrap_or(ColonType::None) {
+                        ColonType::None => {
                             write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
                         }
-                        ColonType::SingleColon => {
+                        ColonType::Single => {
                             write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
                         }
-                        ColonType::DoubleColon => {
+                        ColonType::Double => {
                             write!(
                                 result,
                                 "{}{:02}:{:02}:{:02}",
@@ -600,7 +600,7 @@ fn format_inner<'a>(
                                 off % 60
                             )
                         }
-                        ColonType::TripleColon => {
+                        ColonType::Triple => {
                             write!(result, "{}{:02}", sign, off / 3600)
                         }
                     }
@@ -688,16 +688,16 @@ fn format_inner<'a>(
                         Ok(())
                     }),
                     TimezoneOffsetColon => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, false, Some(ColonType::SingleColon))
+                        write_local_minus_utc(result, off, false, Some(ColonType::Single))
                     }),
                     TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, false, Some(ColonType::DoubleColon))
+                        write_local_minus_utc(result, off, false, Some(ColonType::Double))
                     }),
                     TimezoneOffsetTripleColon => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, false, Some(ColonType::TripleColon))
+                        write_local_minus_utc(result, off, false, Some(ColonType::Triple))
                     }),
                     TimezoneOffsetColonZ => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, true, Some(ColonType::SingleColon))
+                        write_local_minus_utc(result, off, true, Some(ColonType::Single))
                     }),
                     TimezoneOffset => {
                         off.map(|&(_, off)| write_local_minus_utc(result, off, false, None))
@@ -736,12 +736,7 @@ fn format_inner<'a>(
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
                             write!(result, "{:?}T{:?}", d, t)?;
-                            Some(write_local_minus_utc(
-                                result,
-                                off,
-                                false,
-                                Some(ColonType::SingleColon),
-                            ))
+                            Some(write_local_minus_utc(result, off, false, Some(ColonType::Single)))
                         } else {
                             None
                         }
