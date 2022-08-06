@@ -224,13 +224,13 @@ pub enum Fixed {
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
-    /// Offset from the local time to UTC (`+09:00` or `-04:00` or `+00:00`).
+    /// Offset from the local time to UTC with seconds (`+09:00:00` or `-04:00:00` or `+00:00:00`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetDoubleColon,
-    /// Offset from the local time to UTC with seconds (`+09:00:00` or `-04:00:00` or `+00:00:00`).
+    /// Offset from the local time to UTC without minutes (`+09` or `-04` or `+00`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
     /// The offset is limited from `-24:00` to `+24:00`,
