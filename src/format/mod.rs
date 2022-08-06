@@ -286,6 +286,7 @@ enum InternalInternal {
     Nanosecond9NoDot,
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ColonType {
     None,
