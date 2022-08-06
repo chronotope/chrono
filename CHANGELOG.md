@@ -37,6 +37,7 @@ Versions with only mechanical changes will be omitted from the following list.
 * Add compatibility with rfc2822 comments (#733)
 * Make `js-sys` and `wasm-bindgen` enabled by default when target is `wasm32-unknown-unknown` for ease of API discovery
 * Add the `Months` struct and associated `Add` and `Sub` impls
+* Add `GNU` `coreutils` `date`-like time zone formatting
 
 ## 0.4.19
 
@@ -762,4 +763,3 @@ and replaced by 0.2.25 very shortly. Duh.)
 ## 0.1.0 (2014-11-20)
 
 The initial version that was available to `crates.io`.
-
