@@ -324,7 +324,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns `None` when it will result in overflow.
     #[inline]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
-        let datetime = try_opt!(self.datetime.checked_add_signed(rhs));
+        let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
@@ -334,7 +334,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns `None` when it will result in overflow.
     #[inline]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
-        let datetime = try_opt!(self.datetime.checked_sub_signed(rhs));
+        let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }

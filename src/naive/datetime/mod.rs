@@ -529,7 +529,7 @@ impl NaiveDateTime {
             return None;
         }
 
-        let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
+        let date = self.date.checked_add_signed(OldDuration::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
@@ -602,7 +602,7 @@ impl NaiveDateTime {
             return None;
         }
 
-        let date = try_opt!(self.date.checked_sub_signed(OldDuration::seconds(rhs)));
+        let date = self.date.checked_sub_signed(OldDuration::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
