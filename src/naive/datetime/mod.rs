@@ -72,7 +72,11 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// assert_eq!(dt.num_seconds_from_midnight(), 33011);
 /// ```
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(Archive, Deserialize, Serialize),
+    cfg_attr(not(any(feature = "archive_le", feature = "archive_be")), archive(as = "Self"))
+)]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,

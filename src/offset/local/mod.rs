@@ -47,7 +47,11 @@ mod tz_info;
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
 /// ```
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(Archive, Deserialize, Serialize),
+    cfg_attr(not(any(feature = "archive_le", feature = "archive_be")), archive(as = "Self"))
+)]
 pub struct Local;
 
 impl Local {

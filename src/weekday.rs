@@ -10,7 +10,11 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(Archive, Deserialize, Serialize),
+    cfg_attr(not(any(feature = "archive_le", feature = "archive_be")), archive(as = "Self"))
+)]
 pub enum Weekday {
     /// Monday.
     Mon = 0,

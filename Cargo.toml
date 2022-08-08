@@ -28,6 +28,8 @@ clock = ["std", "winapi"]
 oldtime = ["time"]
 wasmbind = [] # TODO: empty feature to avoid breaking change in 0.4.20, can be removed later
 unstable-locales = ["pure-rust-locales", "alloc"]
+archive_le = ["rkyv", "rkyv/archive_le"]
+archive_be = ["rkyv", "rkyv/archive_be"]
 __internal_bench = ["criterion"]
 __doctest = []
 

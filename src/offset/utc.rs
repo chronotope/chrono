@@ -36,7 +36,11 @@ use crate::{Date, DateTime};
 /// assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    derive(Archive, Deserialize, Serialize),
+    cfg_attr(not(any(feature = "archive_le", feature = "archive_be")), archive(as = "Self"))
+)]
 pub struct Utc;
 
 #[cfg(feature = "clock")]
