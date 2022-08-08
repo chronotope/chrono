@@ -463,16 +463,6 @@ pub mod prelude {
     pub use crate::{Offset, TimeZone};
 }
 
-// useful throughout the codebase
-macro_rules! try_opt {
-    ($e:expr) => {
-        match $e {
-            Some(v) => v,
-            None => return None,
-        }
-    };
-}
-
 mod date;
 #[allow(deprecated)]
 pub use date::{Date, MAX_DATE, MIN_DATE};
