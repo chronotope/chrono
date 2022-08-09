@@ -89,7 +89,7 @@ impl TimeZone {
     /// Construct a time zone from the contents of a time zone file
     ///
     /// Parse TZif data as described in [RFC 8536](https://datatracker.ietf.org/doc/html/rfc8536).
-    pub(super) fn from_tz_data(bytes: &[u8]) -> Result<Self, Error> {
+    pub(crate) fn from_tz_data(bytes: &[u8]) -> Result<Self, Error> {
         parser::parse(bytes)
     }
 
@@ -104,7 +104,7 @@ impl TimeZone {
     }
 
     /// Construct the time zone associated to UTC
-    fn utc() -> Self {
+    pub(crate) fn utc() -> Self {
         Self {
             transitions: Vec::new(),
             local_time_types: vec![LocalTimeType::UTC],
@@ -816,15 +816,6 @@ mod tests {
                 let time_zone_local = TimeZone::local()?;
                 let time_zone_local_1 = TimeZone::from_posix_tz(&tz)?;
                 assert_eq!(time_zone_local, time_zone_local_1);
-            } else {
-                let time_zone_local = TimeZone::local()?;
-                let time_zone_local_1 = TimeZone::from_posix_tz("localtime")?;
-                let time_zone_local_2 = TimeZone::from_posix_tz("/etc/localtime")?;
-                let time_zone_local_3 = TimeZone::from_posix_tz(":/etc/localtime")?;
-
-                assert_eq!(time_zone_local, time_zone_local_1);
-                assert_eq!(time_zone_local, time_zone_local_2);
-                assert_eq!(time_zone_local, time_zone_local_3);
             }
 
             let time_zone_utc = TimeZone::from_posix_tz("UTC")?;

@@ -47,12 +47,19 @@ impl Default for Source {
         // to that in `naive_to_local`
         match env::var_os("TZ") {
             Some(ref s) if s.to_str().is_some() => Source::Environment,
-            Some(_) | None => Source::LocalTime {
-                mtime: fs::symlink_metadata("/etc/localtime")
-                    .expect("localtime should exist")
-                    .modified()
-                    .unwrap(),
-                last_checked: SystemTime::now(),
+            Some(_) | None => match fs::symlink_metadata("/etc/localtime") {
+                Ok(data) => Source::LocalTime {
+                    // we have to pick a sensible default when the mtime fails
+                    // by picking SystemTime::now() we raise the probability of
+                    // the cache being invalidated if/when the mtime starts working
+                    mtime: data.modified().unwrap_or_else(|_| SystemTime::now()),
+                    last_checked: SystemTime::now(),
+                },
+                Err(_) => {
+                    // as above, now() should be a better default than some constant
+                    // TODO: see if we can improve caching in the case where the fallback is a valid timezone
+                    Source::LocalTime { mtime: SystemTime::now(), last_checked: SystemTime::now() }
+                }
             },
         }
     }
@@ -89,10 +96,30 @@ struct Cache {
     source: Source,
 }
 
+#[cfg(target_os = "android")]
+const TZDB_LOCATION: &str = " /system/usr/share/zoneinfo";
+
+#[allow(dead_code)] // keeps the cfg simpler
+#[cfg(not(target_os = "android"))]
+const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
+
+#[cfg(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris"))]
+fn fallback_timezone() -> Option<TimeZone> {
+    Some(TimeZone::utc())
+}
+
+#[cfg(not(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris")))]
+fn fallback_timezone() -> Option<TimeZone> {
+    let tz_name = iana_time_zone::get_timezone().ok()?;
+    let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).ok()?;
+    TimeZone::from_tz_data(&bytes).ok()
+}
+
 impl Default for Cache {
     fn default() -> Cache {
+        // default to UTC if no local timezone can be found
         Cache {
-            zone: TimeZone::local().expect("unable to parse localtime info"),
+            zone: TimeZone::local().ok().or_else(fallback_timezone).unwrap_or_else(TimeZone::utc),
             source: Source::default(),
         }
     }
