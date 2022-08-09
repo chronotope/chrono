@@ -232,7 +232,7 @@ impl Parsed {
     /// given hour number in 12-hour clocks.
     #[inline]
     pub fn set_hour12(&mut self, value: i64) -> ParseResult<()> {
-        if value < 1 || value > 12 {
+        if !(1..=12).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
         set_if_consistent(&mut self.hour_mod_12, value as u32 % 12)

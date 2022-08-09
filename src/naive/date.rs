@@ -1887,7 +1887,7 @@ impl fmt::Debug for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
         let mdf = self.mdf();
-        if 0 <= year && year <= 9999 {
+        if (0..=9999).contains(&year) {
             write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years

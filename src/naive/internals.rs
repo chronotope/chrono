@@ -297,7 +297,7 @@ impl Of {
     pub(super) fn valid(&self) -> bool {
         let Of(of) = *self;
         let ol = of >> 3;
-        MIN_OL <= ol && ol <= MAX_OL
+        (MIN_OL..=MAX_OL).contains(&ol)
     }
 
     #[inline]
