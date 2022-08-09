@@ -365,13 +365,13 @@ fn parse_name<'a>(cursor: &mut Cursor<'a>) -> Result<&'a [u8], Error> {
 fn parse_offset(cursor: &mut Cursor) -> Result<i32, Error> {
     let (sign, hour, minute, second) = parse_signed_hhmmss(cursor)?;
 
-    if hour < 0 || hour > 24 {
+    if !(0..=24).contains(&hour) {
         return Err(Error::InvalidTzString("invalid offset hour"));
     }
-    if minute < 0 || minute > 59 {
+    if !(0..=59).contains(&minute) {
         return Err(Error::InvalidTzString("invalid offset minute"));
     }
-    if second < 0 || second > 59 {
+    if !(0..=59).contains(&second) {
         return Err(Error::InvalidTzString("invalid offset second"));
     }
 
@@ -382,13 +382,13 @@ fn parse_offset(cursor: &mut Cursor) -> Result<i32, Error> {
 fn parse_rule_time(cursor: &mut Cursor) -> Result<i32, Error> {
     let (hour, minute, second) = parse_hhmmss(cursor)?;
 
-    if hour < 0 || hour > 24 {
+    if !(0..=24).contains(&hour) {
         return Err(Error::InvalidTzString("invalid day time hour"));
     }
-    if minute < 0 || minute > 59 {
+    if !(0..=59).contains(&minute) {
         return Err(Error::InvalidTzString("invalid day time minute"));
     }
-    if second < 0 || second > 59 {
+    if !(0..=59).contains(&second) {
         return Err(Error::InvalidTzString("invalid day time second"));
     }
 
@@ -402,10 +402,10 @@ fn parse_rule_time_extended(cursor: &mut Cursor) -> Result<i32, Error> {
     if hour < -167 || hour > 167 {
         return Err(Error::InvalidTzString("invalid day time hour"));
     }
-    if minute < 0 || minute > 59 {
+    if !(0..=59).contains(&minute) {
         return Err(Error::InvalidTzString("invalid day time minute"));
     }
-    if second < 0 || second > 59 {
+    if !(0..=59).contains(&second) {
         return Err(Error::InvalidTzString("invalid day time second"));
     }
 
@@ -496,7 +496,7 @@ impl RuleDay {
 
     /// Construct a transition rule day represented by a Julian day in `[1, 365]`, without taking occasional Feb 29 into account, which is not referenceable
     fn julian_1(julian_day_1: u16) -> Result<Self, Error> {
-        if julian_day_1 < 1 || julian_day_1 > 365 {
+        if !(1..=365).contains(&julian_day_1) {
             return Err(Error::TransitionRule("invalid rule day julian day"));
         }
 
@@ -514,11 +514,11 @@ impl RuleDay {
 
     /// Construct a transition rule day represented by a month, a month week and a week day
     fn month_weekday(month: u8, week: u8, week_day: u8) -> Result<Self, Error> {
-        if month < 1 || month > 12 {
+        if !(1..=12).contains(&month) {
             return Err(Error::TransitionRule("invalid rule day month"));
         }
 
-        if week < 1 || week > 5 {
+        if !(1..=5).contains(&week) {
             return Err(Error::TransitionRule("invalid rule day week"));
         }
 

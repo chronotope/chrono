@@ -24,7 +24,7 @@ default = ["clock", "std", "oldtime"]
 alloc = []
 libc = []
 std = []
-clock = ["std", "winapi"]
+clock = ["std", "winapi", "iana-time-zone"]
 oldtime = ["time"]
 wasmbind = [] # TODO: empty feature to avoid breaking change in 0.4.20, can be removed later
 unstable-locales = ["pure-rust-locales", "alloc"]
@@ -44,6 +44,9 @@ rkyv = {version = "0.7", optional = true}
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2" }
 js-sys = { version = "0.3" } # contains FFI bindings for the JS Date API
+
+[target.'cfg(not(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris")))'.dependencies]
+iana-time-zone = { version = "0.1.41", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi"], optional = true }

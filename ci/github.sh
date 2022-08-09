@@ -29,7 +29,7 @@ meaningful in the github actions feature matrix UI.
 
     runv cargo --version
 
-    if [[ ${RUST_VERSION:-} != 1.32.0 ]]; then
+    if [[ ${RUST_VERSION:-} != 1.38.0 ]]; then
         if [[ ${WASM:-} == yes_wasm ]]; then
             test_wasm
         elif [[ ${WASM:-} == wasm_simple ]]; then
@@ -49,7 +49,7 @@ meaningful in the github actions feature matrix UI.
         else
             test_regular UTC0
         fi
-    elif [[ ${RUST_VERSION:-} == 1.32.0 ]]; then
+    elif [[ ${RUST_VERSION:-} == 1.38.0 ]]; then
         test_132
     else
         echo "ERROR: didn't run any tests"

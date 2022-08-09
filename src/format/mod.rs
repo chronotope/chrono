@@ -529,7 +529,7 @@ fn format_inner<'a>(
             };
 
             if let Some(v) = v {
-                if (spec == &Year || spec == &IsoYear) && !(0 <= v && v < 10_000) {
+                if (spec == &Year || spec == &IsoYear) && !(0..10_000).contains(&v) {
                     // non-four-digit years require an explicit sign as per ISO 8601
                     match *pad {
                         Pad::None => write!(result, "{:+}", v),

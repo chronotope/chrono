@@ -31,11 +31,11 @@ jobs:
           - os: ubuntu-latest
             rust_version: nightly
           - os: ubuntu-20.04
-            rust_version: 1.32.0
+            rust_version: 1.38.0
           - os: macos-latest
-            rust_version: 1.32.0
+            rust_version: 1.38.0
           - os: windows-latest
-            rust_version: 1.32.0
+            rust_version: 1.38.0
 
     runs-on: ${{ matrix.os }}
 

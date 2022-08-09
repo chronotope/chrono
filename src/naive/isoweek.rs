@@ -135,7 +135,7 @@ impl fmt::Debug for IsoWeek {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let year = self.year();
         let week = self.week();
-        if 0 <= year && year <= 9999 {
+        if (0..=9999).contains(&year) {
             write!(f, "{:04}-W{:02}", year, week)
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
