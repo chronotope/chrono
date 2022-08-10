@@ -103,12 +103,6 @@ const TZDB_LOCATION: &str = " /system/usr/share/zoneinfo";
 #[cfg(not(target_os = "android"))]
 const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
 
-#[cfg(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris"))]
-fn fallback_timezone() -> Option<TimeZone> {
-    Some(TimeZone::utc())
-}
-
-#[cfg(not(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris")))]
 fn fallback_timezone() -> Option<TimeZone> {
     let tz_name = iana_time_zone::get_timezone().ok()?;
     let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).ok()?;
