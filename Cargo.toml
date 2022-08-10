@@ -45,7 +45,7 @@ rkyv = {version = "0.7", optional = true}
 wasm-bindgen = { version = "0.2" }
 js-sys = { version = "0.3" } # contains FFI bindings for the JS Date API
 
-[target.'cfg(not(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris")))'.dependencies]
+[target.'cfg(not(any(target_os = "emscripten", target_os = "wasi", target_os = "solaris", target_env = "sgx")))'.dependencies]
 iana-time-zone = { version = "0.1.41", optional = true }
 
 [target.'cfg(windows)'.dependencies]
