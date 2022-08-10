@@ -113,6 +113,13 @@ Notes:
    digits for seconds and colons in the time zone offset.
    <br>
    <br>
+   This format also supports having a `Z` or `UTC` in place of `%:z`. They
+   are equivalent to `+00:00`.
+   <br>
+   <br>
+   Note that all `T`, `Z`, and `UTC` are parsed case-insensitively.
+   <br>
+   <br>
    The typical `strftime` implementations have different (and locale-dependent)
    formats for this specifier. While Chrono's format for `%+` is far more
    stable, it is best to avoid this specifier if you want to control the exact
