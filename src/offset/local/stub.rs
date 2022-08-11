@@ -18,7 +18,11 @@ pub(super) fn now() -> DateTime<Local> {
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-#[cfg(not(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi")))))]
+#[cfg(not(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi"))
+)))]
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
     let tm = Tm {
         tm_sec: d.second() as i32,
@@ -54,7 +58,11 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
 /// This assumes that `time` is working correctly, i.e. any error is fatal.
-#[cfg(not(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi")))))]
+#[cfg(not(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi"))
+)))]
 fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;

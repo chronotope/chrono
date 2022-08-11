@@ -173,6 +173,30 @@ jobs:
           RUST_VERSION: stable
           WASM: wasm_unknown
 
+  wasm_unknown_no_wasmbind:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+          override: true
+          default: true
+
+      - name: Build and Test
+        run: bash ci/github.sh
+        env:
+          RUST_VERSION: stable
+          WASM: wasm_unknown_no_wasmbind
+
   wasm_wasi:
     strategy:
       matrix:
