@@ -1,4 +1,8 @@
-#![cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))]
+#![cfg(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi"))
+))]
 
 use self::chrono::prelude::*;
 use self::wasm_bindgen_test::*;

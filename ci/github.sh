@@ -38,6 +38,8 @@ meaningful in the github actions feature matrix UI.
             test_wasm_emscripten
         elif [[ ${WASM:-} == wasm_unknown ]]; then
             test_wasm_unknown
+        elif [[ ${WASM:-} == wasm_unknown_no_wasmbind ]]; then
+            test_wasm_unknown_no_wasmbind
         elif [[ ${WASM:-} == wasm_wasi ]]; then
             test_wasm_wasi
         elif [[ ${CORE:-} == no_std ]]; then
@@ -124,6 +126,10 @@ test_wasm_emscripten() {
 
 test_wasm_unknown() {
     runt cargo build --target wasm32-unknown-unknown
+}
+
+test_wasm_unknown_no_wasmbind() {
+    runt cargo build --target wasm32-unknown-unknown --no-default-features --features clock,std
 }
 
 test_wasm_wasi() {
