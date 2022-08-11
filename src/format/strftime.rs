@@ -530,7 +530,7 @@ fn test_strftime_items() {
 #[cfg(test)]
 #[test]
 fn test_strftime_docs() {
-    use crate::{FixedOffset, TimeZone, Timelike};
+    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 
@@ -593,6 +593,24 @@ fn test_strftime_docs() {
     // date & time specifiers
     assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
     assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
+
+    assert_eq!(
+        dt.with_timezone(&Utc).format("%+").to_string(),
+        "2001-07-07T15:04:60.026490708+00:00"
+    );
+    assert_eq!(
+        dt.with_timezone(&Utc),
+        DateTime::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
+    );
+    assert_eq!(
+        dt.with_timezone(&Utc),
+        DateTime::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
+    );
+    assert_eq!(
+        dt.with_timezone(&Utc),
+        DateTime::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
+    );
+
     assert_eq!(
         dt.with_nanosecond(1_026_490_000).unwrap().format("%+").to_string(),
         "2001-07-08T00:34:60.026490+09:30"
