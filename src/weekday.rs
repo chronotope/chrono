@@ -186,7 +186,7 @@ impl num_traits::FromPrimitive for Weekday {
 }
 
 /// An error resulting from reading `Weekday` value with `FromStr`.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ParseWeekdayError {
     pub(crate) _dummy: (),
 }

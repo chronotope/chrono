@@ -207,7 +207,7 @@ fn test_date_bounds() {
 impl NaiveDate {
     /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
     fn from_of(year: i32, of: Of) -> Option<NaiveDate> {
-        if year >= MIN_YEAR && year <= MAX_YEAR && of.valid() {
+        if (MIN_YEAR..=MAX_YEAR).contains(&year) && of.valid() {
             let Of(of) = of;
             Some(NaiveDate { ymdf: (year << 13) | (of as DateImpl) })
         } else {
