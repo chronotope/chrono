@@ -399,7 +399,7 @@ fn parse_rule_time(cursor: &mut Cursor) -> Result<i32, Error> {
 fn parse_rule_time_extended(cursor: &mut Cursor) -> Result<i32, Error> {
     let (sign, hour, minute, second) = parse_signed_hhmmss(cursor)?;
 
-    if hour < -167 || hour > 167 {
+    if !(-167..=167).contains(&hour) {
         return Err(Error::InvalidTzString("invalid day time hour"));
     }
     if !(0..=59).contains(&minute) {

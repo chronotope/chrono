@@ -201,7 +201,7 @@ impl Months {
 }
 
 /// An error resulting from reading `<Month>` value with `FromStr`.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct ParseMonthError {
     pub(crate) _dummy: (),
 }

@@ -536,7 +536,6 @@ impl NaiveTime {
     /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(-7)),
     ///            (from_hms(20, 4, 5), -86_400));
     /// ```
-    #[cfg_attr(feature = "cargo-clippy", allow(cyclomatic_complexity))]
     pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
         let mut secs = self.secs;
         let mut frac = self.frac;
@@ -585,7 +584,7 @@ impl NaiveTime {
             frac -= 1_000_000_000;
             secs += 1;
         }
-        debug_assert!(-86_400 <= secs && secs < 2 * 86_400);
+        debug_assert!((-86_400..2 * 86_400).contains(&secs));
         debug_assert!((0..1_000_000_000).contains(&frac));
 
         if secs < 0 {

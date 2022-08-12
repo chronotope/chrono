@@ -229,7 +229,7 @@ impl<'a> Cursor<'a> {
     }
 
     pub(crate) fn peek(&self) -> Option<&u8> {
-        self.remaining().get(0)
+        self.remaining().first()
     }
 
     /// Returns remaining data
