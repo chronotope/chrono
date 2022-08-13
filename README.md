@@ -15,10 +15,6 @@
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
 [gitter]: https://gitter.im/chrono-rs/chrono
 
-It aims to be a feature-complete superset of
-the [time](https://github.com/rust-lang-deprecated/time) library.
-In particular,
-
 * Chrono strictly adheres to ISO 8601.
 * Chrono is timezone-aware by default, with separate timezone-naive types.
 * Chrono is space-optimal and (while not being the primary goal) reasonably efficient.
@@ -74,32 +70,17 @@ See the [cargo docs][] for examples of specifying features.
 
 ## Overview
 
-### Duration
+### TimeDelta
 
-Chrono currently uses its own [`Duration`] type to represent the magnitude
-of a time span. Since this has the same name as the newer, standard type for
-duration, the reference will refer this type as `OldDuration`.
+Chrono currently uses its own [`TimeDelta`] type to represent the magnitude
+of a time span. This is seperate from the [`Duration`] type in the `std`/`core` library as it
+supports negative and positive durations. This type can be converted losslessly from [`Duration`]
+but when converting into a [`Duration`] you must take the absolute value.
 
-Note that this is an "accurate" duration represented as seconds and
+Note that this is an "accurate" TimeDelta represented as seconds and
 nanoseconds and does not represent "nominal" components such as days or
-months.
-
-When the `oldtime` feature is enabled, [`Duration`] is an alias for the
-[`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html)
-type from v0.1 of the time crate. time v0.1 is deprecated, so new code
-should disable the `oldtime` feature and use the `chrono::Duration` type
-instead. The `oldtime` feature is enabled by default for backwards
-compatibility, but future versions of Chrono are likely to remove the
-feature entirely.
-
-Chrono does not yet natively support
-the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
-but it will be supported in the future.
-Meanwhile you can convert between two types with
-[`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
-and
-[`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
-methods.
+months. These are supported via the [`NaiveDate::succ`] and [`NaiveDate::pred`] functions
+as well as the [`Months`] data type.
 
 ### Date and Time
 
@@ -184,7 +165,7 @@ The following illustrates most supported operations to the date and time:
 
 ```rust
 use chrono::prelude::*;
-use chrono::Duration;
+use chrono::TimeDelta;
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
@@ -211,11 +192,11 @@ assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November
 // arithmetic operations
 let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
 let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
-assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
-assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
+assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
+assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
+assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + TimeDelta::seconds(1_000_000_000),
            Utc.ymd(2001, 9, 9).and_hms(1, 46, 40));
-assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
+assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - TimeDelta::seconds(1_000_000_000),
            Utc.ymd(1938, 4, 24).and_hms(22, 13, 20));
 ```
 

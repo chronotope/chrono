@@ -12,6 +12,7 @@ use alloc::string::{String, ToString};
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::string::ToString;
@@ -28,8 +29,8 @@ use crate::naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-use crate::oldtime::Duration as OldDuration;
 use crate::Date;
+use crate::TimeDelta;
 use crate::{Datelike, Timelike, Weekday};
 
 #[cfg(feature = "rkyv")]
@@ -319,21 +320,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
         tz.from_utc_datetime(&self.datetime)
     }
 
-    /// Adds given `Duration` to the current date and time.
+    /// Adds given `TimeDelta` to the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
+
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
 
-    /// Subtracts given `Duration` from the current date and time.
+    /// Subtracts given `TimeDelta` from the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
@@ -342,7 +344,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
     #[inline]
-    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> TimeDelta {
         self.datetime.signed_duration_since(rhs.datetime)
     }
 
@@ -850,49 +852,91 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
-impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: OldDuration) -> DateTime<Tz> {
-        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+    fn add(self, rhs: TimeDelta) -> DateTime<Tz> {
+        self.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed")
     }
 }
 
-impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
     #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
+    fn add(self, rhs: Duration) -> DateTime<Tz> {
+        self.checked_add_signed(rhs.into()).expect("`DateTime + core::timeDuration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: TimeDelta) {
         let datetime =
-            self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
+            self.datetime.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime);
     }
 }
 
-impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
-    type Output = DateTime<Tz>;
-
+impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     #[inline]
-    fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
-        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+    fn add_assign(&mut self, rhs: Duration) {
+        let datetime = self
+            .datetime
+            .checked_add_signed(rhs.into())
+            .expect("`DateTime + core::timeDuration` overflowed");
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime);
     }
 }
 
-impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Sub<TimeDelta> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
     #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
+    fn sub(self, rhs: TimeDelta) -> DateTime<Tz> {
+        self.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> DateTime<Tz> {
+        self.checked_sub_signed(rhs.into()).expect("`DateTime - core::timeDuration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: TimeDelta) {
         let datetime =
-            self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
+            self.datetime.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed");
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime)
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        let datetime = self
+            .datetime
+            .checked_sub_signed(rhs.into())
+            .expect("`DateTime - core::timeDuration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
     }
 }
 
 impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: DateTime<Tz>) -> OldDuration {
+    fn sub(self, rhs: DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }
@@ -981,15 +1025,16 @@ impl From<SystemTime> for DateTime<Local> {
 #[cfg(any(feature = "std", test))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
-        use std::time::Duration;
+        use std::convert::TryFrom;
 
         let sec = dt.timestamp();
         let nsec = dt.timestamp_subsec_nanos();
         if sec < 0 {
             // unlikely but should be handled
-            UNIX_EPOCH - Duration::new(-sec as u64, 0) + Duration::new(0, nsec)
+            UNIX_EPOCH - core::time::Duration::new(u64::try_from(i128::from(sec).abs()).unwrap(), 0)
+                + core::time::Duration::new(0, nsec)
         } else {
-            UNIX_EPOCH + Duration::new(sec as u64, nsec)
+            UNIX_EPOCH + core::time::Duration::new(u64::try_from(sec).unwrap(), nsec)
         }
     }
 }

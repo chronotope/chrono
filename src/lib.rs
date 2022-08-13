@@ -3,10 +3,6 @@
 
 //! # Chrono: Date and Time for Rust
 //!
-//! It aims to be a feature-complete superset of
-//! the [time](https://github.com/rust-lang-deprecated/time) library.
-//! In particular,
-//!
 //! * Chrono strictly adheres to ISO 8601.
 //! * Chrono is timezone-aware by default, with separate timezone-naive types.
 //! * Chrono is space-optimal and (while not being the primary goal) reasonably efficient.
@@ -61,32 +57,17 @@
 //!
 //! ## Overview
 //!
-//! ### Duration
+//! ### TimeDelta
 //!
-//! Chrono currently uses its own [`Duration`] type to represent the magnitude
-//! of a time span. Since this has the same name as the newer, standard type for
-//! duration, the reference will refer this type as `OldDuration`.
+//! Chrono currently uses its own [`TimeDelta`] type to represent the magnitude
+//! of a time span. This is seperate from the [`Duration`] type in the `std`/`core` library as it
+//! supports negative and positive durations. This type can be converted losslessly from [`Duration`]
+//! but when converting into a [`Duration`] you must take the absolute value.
 //!
-//! Note that this is an "accurate" duration represented as seconds and
+//! Note that this is an "accurate" TimeDelta represented as seconds and
 //! nanoseconds and does not represent "nominal" components such as days or
-//! months.
-//!
-//! When the `oldtime` feature is enabled, [`Duration`] is an alias for the
-//! [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html)
-//! type from v0.1 of the time crate. time v0.1 is deprecated, so new code
-//! should disable the `oldtime` feature and use the `chrono::Duration` type
-//! instead. The `oldtime` feature is enabled by default for backwards
-//! compatibility, but future versions of Chrono are likely to remove the
-//! feature entirely.
-//!
-//! Chrono does not yet natively support
-//! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
-//! but it will be supported in the future.
-//! Meanwhile you can convert between two types with
-//! [`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
-//! and
-//! [`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
-//! methods.
+//! months. These are supported via the [`NaiveDate::succ`] and [`NaiveDate::pred`] functions
+//! as well as the [`Months`] data type.
 //!
 //! ### Date and Time
 //!
@@ -173,7 +154,7 @@
 //!
 //! ```rust
 //! use chrono::prelude::*;
-//! use chrono::Duration;
+//! use chrono::TimeDelta;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 //! let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
@@ -200,11 +181,11 @@
 //! // arithmetic operations
 //! let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
 //! let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
-//! assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
-//! assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
+//! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
+//! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(2001, 9, 9).and_hms(1, 46, 40));
-//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(1938, 4, 24).and_hms(22, 13, 20));
 //! ```
 //!
@@ -424,12 +405,8 @@
 // keeps clippy happy in the meantime
 #![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
 
-#[cfg(feature = "oldtime")]
-extern crate time as oldtime;
-#[cfg(not(feature = "oldtime"))]
-mod oldtime;
-// this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
+mod duration;
+pub use duration::TimeDelta;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
@@ -491,7 +468,7 @@ pub use offset::Local;
 pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 
 mod round;
-pub use round::{DurationRound, RoundingError, SubsecRound};
+pub use round::{RoundingError, SubsecRound, TimeDeltaRound};
 
 mod weekday;
 pub use weekday::{ParseWeekdayError, Weekday};
@@ -519,6 +496,12 @@ pub use naive::__BenchYearFlags;
 pub mod serde {
     pub use super::datetime::serde::*;
 }
+
+#[deprecated(since = "0.5.0", note = "Please use chrono::TimeDelta instead")]
+/// This is a convenience alias for the `TimeDelta` type
+/// of which previous versions were called `Duration`.
+/// This will be removed in a future version.
+pub type Duration = TimeDelta;
 
 /// MSRV 1.42
 #[cfg(test)]

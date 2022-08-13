@@ -12,8 +12,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
+use crate::TimeDelta;
 use crate::Timelike;
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -157,12 +157,12 @@ impl fmt::Display for FixedOffset {
 
 fn add_with_leapsecond<T>(lhs: &T, rhs: i32) -> T
 where
-    T: Timelike + Add<OldDuration, Output = T>,
+    T: Timelike + Add<TimeDelta, Output = T>,
 {
     // extract and temporarily remove the fractional part and later recover it
     let nanos = lhs.nanosecond();
     let lhs = lhs.with_nanosecond(0).unwrap();
-    (lhs + OldDuration::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
+    (lhs + TimeDelta::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
 }
 
 impl Add<FixedOffset> for NaiveTime {

@@ -6,6 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
@@ -18,7 +19,7 @@ use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
-use crate::oldtime::Duration as OldDuration;
+use crate::TimeDelta;
 use crate::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
@@ -31,10 +32,10 @@ pub(crate) mod serde;
 #[cfg(test)]
 mod tests;
 
-/// The tight upper bound guarantees that a duration with `|Duration| >= 2^MAX_SECS_BITS`
+/// The tight upper bound guarantees that a TimeDelta with `|TimeDelta| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
 ///
-/// So why is this needed? `Duration::seconds(rhs)` may overflow, and we don't have
+/// So why is this needed? `TimeDelta::seconds(rhs)` may overflow, and we don't have
 /// an alternative returning `Option` or `Result`. Thus we need some early bound to avoid
 /// touching that call when we are already sure that it WILL overflow...
 const MAX_SECS_BITS: usize = 44;
@@ -456,7 +457,7 @@ impl NaiveDateTime {
         self.time.nanosecond()
     }
 
-    /// Adds given `Duration` to the current date and time.
+    /// Adds given `TimeDelta` to the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
     /// the addition assumes that **there is no leap second ever**,
@@ -468,72 +469,72 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDate};
+    /// use chrono::{TimeDelta, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
     /// let d = from_ymd(2016, 7, 8);
     /// let hms = |h, m, s| d.and_hms(h, m, s);
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::zero()),
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::ZERO),
     ///            Some(hms(3, 5, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(1)),
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(1)),
     ///            Some(hms(3, 5, 8)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(-1)),
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(-1)),
     ///            Some(hms(3, 5, 6)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(3600 + 60)),
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(3600 + 60)),
     ///            Some(hms(4, 6, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::seconds(86_400)),
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(86_400)),
     ///            Some(from_ymd(2016, 7, 9).and_hms(3, 5, 7)));
     ///
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
-    /// assert_eq!(hmsm(3, 5, 7, 980).checked_add_signed(Duration::milliseconds(450)),
+    /// assert_eq!(hmsm(3, 5, 7, 980).checked_add_signed(TimeDelta::milliseconds(450)),
     ///            Some(hmsm(3, 5, 8, 430)));
     /// ```
     ///
     /// Overflow returns `None`.
     ///
     /// ```
-    /// # use chrono::{Duration, NaiveDate};
+    /// # use chrono::{TimeDelta, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(Duration::days(1_000_000_000)), None);
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::days(1_000_000_000)), None);
     /// ```
     ///
     /// Leap seconds are handled,
     /// but the addition assumes that it is the only leap second happened.
     ///
     /// ```
-    /// # use chrono::{Duration, NaiveDate};
+    /// # use chrono::{TimeDelta, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
     /// let leap = hmsm(3, 5, 59, 1_300);
-    /// assert_eq!(leap.checked_add_signed(Duration::zero()),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::ZERO),
     ///            Some(hmsm(3, 5, 59, 1_300)));
-    /// assert_eq!(leap.checked_add_signed(Duration::milliseconds(-500)),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(-500)),
     ///            Some(hmsm(3, 5, 59, 800)));
-    /// assert_eq!(leap.checked_add_signed(Duration::milliseconds(500)),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(500)),
     ///            Some(hmsm(3, 5, 59, 1_800)));
-    /// assert_eq!(leap.checked_add_signed(Duration::milliseconds(800)),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(800)),
     ///            Some(hmsm(3, 6, 0, 100)));
-    /// assert_eq!(leap.checked_add_signed(Duration::seconds(10)),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(10)),
     ///            Some(hmsm(3, 6, 9, 300)));
-    /// assert_eq!(leap.checked_add_signed(Duration::seconds(-10)),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(-10)),
     ///            Some(hmsm(3, 5, 50, 300)));
-    /// assert_eq!(leap.checked_add_signed(Duration::days(1)),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::days(1)),
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300)));
     /// ```
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
 
-        // early checking to avoid overflow in OldDuration::seconds
+        // early checking to avoid overflow in TimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
             return None;
         }
 
-        let date = self.date.checked_add_signed(OldDuration::seconds(rhs))?;
+        let date = self.date.checked_add_signed(TimeDelta::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
-    /// Subtracts given `Duration` from the current date and time.
+    /// Subtracts given `TimeDelta` from the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
     /// the subtraction assumes that **there is no leap second ever**,
@@ -545,64 +546,64 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDate};
+    /// use chrono::{TimeDelta, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
     /// let d = from_ymd(2016, 7, 8);
     /// let hms = |h, m, s| d.and_hms(h, m, s);
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::zero()),
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::ZERO),
     ///            Some(hms(3, 5, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(1)),
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(1)),
     ///            Some(hms(3, 5, 6)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(-1)),
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(-1)),
     ///            Some(hms(3, 5, 8)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(3600 + 60)),
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(3600 + 60)),
     ///            Some(hms(2, 4, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::seconds(86_400)),
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(86_400)),
     ///            Some(from_ymd(2016, 7, 7).and_hms(3, 5, 7)));
     ///
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
-    /// assert_eq!(hmsm(3, 5, 7, 450).checked_sub_signed(Duration::milliseconds(670)),
+    /// assert_eq!(hmsm(3, 5, 7, 450).checked_sub_signed(TimeDelta::milliseconds(670)),
     ///            Some(hmsm(3, 5, 6, 780)));
     /// ```
     ///
     /// Overflow returns `None`.
     ///
     /// ```
-    /// # use chrono::{Duration, NaiveDate};
+    /// # use chrono::{TimeDelta, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).and_hms(h, m, s);
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(Duration::days(1_000_000_000)), None);
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
     /// ```
     ///
     /// Leap seconds are handled,
     /// but the subtraction assumes that it is the only leap second happened.
     ///
     /// ```
-    /// # use chrono::{Duration, NaiveDate};
+    /// # use chrono::{TimeDelta, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
     /// let leap = hmsm(3, 5, 59, 1_300);
-    /// assert_eq!(leap.checked_sub_signed(Duration::zero()),
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::ZERO),
     ///            Some(hmsm(3, 5, 59, 1_300)));
-    /// assert_eq!(leap.checked_sub_signed(Duration::milliseconds(200)),
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(200)),
     ///            Some(hmsm(3, 5, 59, 1_100)));
-    /// assert_eq!(leap.checked_sub_signed(Duration::milliseconds(500)),
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(500)),
     ///            Some(hmsm(3, 5, 59, 800)));
-    /// assert_eq!(leap.checked_sub_signed(Duration::seconds(60)),
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::seconds(60)),
     ///            Some(hmsm(3, 5, 0, 300)));
-    /// assert_eq!(leap.checked_sub_signed(Duration::days(1)),
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::days(1)),
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300)));
     /// ```
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
 
-        // early checking to avoid overflow in OldDuration::seconds
+        // early checking to avoid overflow in TimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
             return None;
         }
 
-        let date = self.date.checked_sub_signed(OldDuration::seconds(rhs))?;
+        let date = self.date.checked_sub_signed(TimeDelta::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
@@ -618,33 +619,33 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDate};
+    /// use chrono::{TimeDelta, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
     /// let d = from_ymd(2016, 7, 8);
     /// assert_eq!(d.and_hms(3, 5, 7).signed_duration_since(d.and_hms(2, 4, 6)),
-    ///            Duration::seconds(3600 + 60 + 1));
+    ///            TimeDelta::seconds(3600 + 60 + 1));
     ///
     /// // July 8 is 190th day in the year 2016
     /// let d0 = from_ymd(2016, 1, 1);
     /// assert_eq!(d.and_hms_milli(0, 7, 6, 500).signed_duration_since(d0.and_hms(0, 0, 0)),
-    ///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
+    ///            TimeDelta::seconds(189 * 86_400 + 7 * 60 + 6) + TimeDelta::milliseconds(500));
     /// ```
     ///
     /// Leap seconds are handled, but the subtraction assumes that
     /// there were no other leap seconds happened.
     ///
     /// ```
-    /// # use chrono::{Duration, NaiveDate};
+    /// # use chrono::{TimeDelta, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
     /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
     /// assert_eq!(leap.signed_duration_since(from_ymd(2015, 6, 30).and_hms(23, 0, 0)),
-    ///            Duration::seconds(3600) + Duration::milliseconds(500));
+    ///            TimeDelta::seconds(3600) + TimeDelta::milliseconds(500));
     /// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0).signed_duration_since(leap),
-    ///            Duration::seconds(3600) - Duration::milliseconds(500));
+    ///            TimeDelta::seconds(3600) - TimeDelta::milliseconds(500));
     /// ```
-    pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
+    pub fn signed_duration_since(self, rhs: NaiveDateTime) -> TimeDelta {
         self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
     }
 
@@ -1224,7 +1225,7 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-/// An addition of `Duration` to `NaiveDateTime` yields another `NaiveDateTime`.
+/// An addition of `TimeDelta` to `NaiveDateTime` yields another `NaiveDateTime`.
 ///
 /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
@@ -1237,60 +1238,77 @@ impl Timelike for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{Duration, NaiveDate};
+/// use chrono::{TimeDelta, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
 /// let d = from_ymd(2016, 7, 8);
 /// let hms = |h, m, s| d.and_hms(h, m, s);
-/// assert_eq!(hms(3, 5, 7) + Duration::zero(),             hms(3, 5, 7));
-/// assert_eq!(hms(3, 5, 7) + Duration::seconds(1),         hms(3, 5, 8));
-/// assert_eq!(hms(3, 5, 7) + Duration::seconds(-1),        hms(3, 5, 6));
-/// assert_eq!(hms(3, 5, 7) + Duration::seconds(3600 + 60), hms(4, 6, 7));
-/// assert_eq!(hms(3, 5, 7) + Duration::seconds(86_400),
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::ZERO,             hms(3, 5, 7));
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(1),         hms(3, 5, 8));
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(-1),        hms(3, 5, 6));
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(3600 + 60), hms(4, 6, 7));
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(86_400),
 ///            from_ymd(2016, 7, 9).and_hms(3, 5, 7));
-/// assert_eq!(hms(3, 5, 7) + Duration::days(365),
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::days(365),
 ///            from_ymd(2017, 7, 8).and_hms(3, 5, 7));
 ///
 /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 980) + Duration::milliseconds(450), hmsm(3, 5, 8, 430));
+/// assert_eq!(hmsm(3, 5, 7, 980) + TimeDelta::milliseconds(450), hmsm(3, 5, 8, 430));
 /// ```
 ///
 /// Leap seconds are handled,
 /// but the addition assumes that it is the only leap second happened.
 ///
 /// ```
-/// # use chrono::{Duration, NaiveDate};
+/// # use chrono::{TimeDelta, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
 /// let leap = hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap + Duration::zero(),             hmsm(3, 5, 59, 1_300));
-/// assert_eq!(leap + Duration::milliseconds(-500), hmsm(3, 5, 59, 800));
-/// assert_eq!(leap + Duration::milliseconds(500),  hmsm(3, 5, 59, 1_800));
-/// assert_eq!(leap + Duration::milliseconds(800),  hmsm(3, 6, 0, 100));
-/// assert_eq!(leap + Duration::seconds(10),        hmsm(3, 6, 9, 300));
-/// assert_eq!(leap + Duration::seconds(-10),       hmsm(3, 5, 50, 300));
-/// assert_eq!(leap + Duration::days(1),
+/// assert_eq!(leap + TimeDelta::ZERO,             hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap + TimeDelta::milliseconds(-500), hmsm(3, 5, 59, 800));
+/// assert_eq!(leap + TimeDelta::milliseconds(500),  hmsm(3, 5, 59, 1_800));
+/// assert_eq!(leap + TimeDelta::milliseconds(800),  hmsm(3, 6, 0, 100));
+/// assert_eq!(leap + TimeDelta::seconds(10),        hmsm(3, 6, 9, 300));
+/// assert_eq!(leap + TimeDelta::seconds(-10),       hmsm(3, 5, 50, 300));
+/// assert_eq!(leap + TimeDelta::days(1),
 ///            from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300));
 /// ```
-impl Add<OldDuration> for NaiveDateTime {
+impl Add<TimeDelta> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     #[inline]
-    fn add(self, rhs: OldDuration) -> NaiveDateTime {
-        self.checked_add_signed(rhs).expect("`NaiveDateTime + Duration` overflowed")
+    fn add(self, rhs: TimeDelta) -> NaiveDateTime {
+        self.checked_add_signed(rhs).expect("`NaiveDateTime + TimeDelta` overflowed")
     }
 }
 
-impl AddAssign<OldDuration> for NaiveDateTime {
+impl Add<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
     #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
+    fn add(self, rhs: Duration) -> NaiveDateTime {
+        self.checked_add_signed(rhs.into())
+            .expect("`NaiveDateTime + core::time::Duration` overflowed")
+    }
+}
+
+impl AddAssign<TimeDelta> for NaiveDateTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: TimeDelta) {
         *self = self.add(rhs);
     }
 }
 
-/// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
-/// It is the same as the addition with a negated `Duration`.
+impl AddAssign<Duration> for NaiveDateTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        *self = self.add(rhs);
+    }
+}
+
+/// A subtraction of `TimeDelta` from `NaiveDateTime` yields another `NaiveDateTime`.
+/// It is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
@@ -1303,52 +1321,69 @@ impl AddAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{Duration, NaiveDate};
+/// use chrono::{TimeDelta, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
 /// let d = from_ymd(2016, 7, 8);
 /// let hms = |h, m, s| d.and_hms(h, m, s);
-/// assert_eq!(hms(3, 5, 7) - Duration::zero(),             hms(3, 5, 7));
-/// assert_eq!(hms(3, 5, 7) - Duration::seconds(1),         hms(3, 5, 6));
-/// assert_eq!(hms(3, 5, 7) - Duration::seconds(-1),        hms(3, 5, 8));
-/// assert_eq!(hms(3, 5, 7) - Duration::seconds(3600 + 60), hms(2, 4, 7));
-/// assert_eq!(hms(3, 5, 7) - Duration::seconds(86_400),
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::ZERO,             hms(3, 5, 7));
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(1),         hms(3, 5, 6));
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(-1),        hms(3, 5, 8));
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(3600 + 60), hms(2, 4, 7));
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(86_400),
 ///            from_ymd(2016, 7, 7).and_hms(3, 5, 7));
-/// assert_eq!(hms(3, 5, 7) - Duration::days(365),
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::days(365),
 ///            from_ymd(2015, 7, 9).and_hms(3, 5, 7));
 ///
 /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
-/// assert_eq!(hmsm(3, 5, 7, 450) - Duration::milliseconds(670), hmsm(3, 5, 6, 780));
+/// assert_eq!(hmsm(3, 5, 7, 450) - TimeDelta::milliseconds(670), hmsm(3, 5, 6, 780));
 /// ```
 ///
 /// Leap seconds are handled,
 /// but the subtraction assumes that it is the only leap second happened.
 ///
 /// ```
-/// # use chrono::{Duration, NaiveDate};
+/// # use chrono::{TimeDelta, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli(h, m, s, milli);
 /// let leap = hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap - Duration::zero(),            hmsm(3, 5, 59, 1_300));
-/// assert_eq!(leap - Duration::milliseconds(200), hmsm(3, 5, 59, 1_100));
-/// assert_eq!(leap - Duration::milliseconds(500), hmsm(3, 5, 59, 800));
-/// assert_eq!(leap - Duration::seconds(60),       hmsm(3, 5, 0, 300));
-/// assert_eq!(leap - Duration::days(1),
+/// assert_eq!(leap - TimeDelta::ZERO,            hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap - TimeDelta::milliseconds(200), hmsm(3, 5, 59, 1_100));
+/// assert_eq!(leap - TimeDelta::milliseconds(500), hmsm(3, 5, 59, 800));
+/// assert_eq!(leap - TimeDelta::seconds(60),       hmsm(3, 5, 0, 300));
+/// assert_eq!(leap - TimeDelta::days(1),
 ///            from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300));
 /// ```
-impl Sub<OldDuration> for NaiveDateTime {
+impl Sub<TimeDelta> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     #[inline]
-    fn sub(self, rhs: OldDuration) -> NaiveDateTime {
-        self.checked_sub_signed(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    fn sub(self, rhs: TimeDelta) -> NaiveDateTime {
+        self.checked_sub_signed(rhs).expect("`NaiveDateTime - TimeDelta` overflowed")
     }
 }
 
-impl SubAssign<OldDuration> for NaiveDateTime {
+impl Sub<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
     #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
+    fn sub(self, rhs: Duration) -> NaiveDateTime {
+        self.checked_sub_signed(rhs.into())
+            .expect("`NaiveDateTime - core::time::Duration` overflowed")
+    }
+}
+
+impl SubAssign<TimeDelta> for NaiveDateTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: TimeDelta) {
+        *self = self.sub(rhs);
+    }
+}
+
+impl SubAssign<Duration> for NaiveDateTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
         *self = self.sub(rhs);
     }
 }
@@ -1367,36 +1402,36 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{Duration, NaiveDate};
+/// use chrono::{TimeDelta, NaiveDate};
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
 /// let d = from_ymd(2016, 7, 8);
-/// assert_eq!(d.and_hms(3, 5, 7) - d.and_hms(2, 4, 6), Duration::seconds(3600 + 60 + 1));
+/// assert_eq!(d.and_hms(3, 5, 7) - d.and_hms(2, 4, 6), TimeDelta::seconds(3600 + 60 + 1));
 ///
 /// // July 8 is 190th day in the year 2016
 /// let d0 = from_ymd(2016, 1, 1);
 /// assert_eq!(d.and_hms_milli(0, 7, 6, 500) - d0.and_hms(0, 0, 0),
-///            Duration::seconds(189 * 86_400 + 7 * 60 + 6) + Duration::milliseconds(500));
+///            TimeDelta::seconds(189 * 86_400 + 7 * 60 + 6) + TimeDelta::milliseconds(500));
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that no other leap
 /// seconds happened.
 ///
 /// ```
-/// # use chrono::{Duration, NaiveDate};
+/// # use chrono::{TimeDelta, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
 /// let leap = from_ymd(2015, 6, 30).and_hms_milli(23, 59, 59, 1_500);
 /// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms(23, 0, 0),
-///            Duration::seconds(3600) + Duration::milliseconds(500));
+///            TimeDelta::seconds(3600) + TimeDelta::milliseconds(500));
 /// assert_eq!(from_ymd(2015, 7, 1).and_hms(1, 0, 0) - leap,
-///            Duration::seconds(3600) - Duration::milliseconds(500));
+///            TimeDelta::seconds(3600) - TimeDelta::milliseconds(500));
 /// ```
 impl Sub<NaiveDateTime> for NaiveDateTime {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: NaiveDateTime) -> OldDuration {
+    fn sub(self, rhs: NaiveDateTime) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }

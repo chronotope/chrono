@@ -7,6 +7,7 @@
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, hash};
 
 #[cfg(feature = "rkyv")]
@@ -18,8 +19,8 @@ use crate::format::Locale;
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
-use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
+use crate::TimeDelta;
 use crate::{Datelike, Weekday};
 
 /// ISO 8601 calendar date with time zone.
@@ -52,7 +53,7 @@ use crate::{Datelike, Weekday};
 ///
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
-///   even though the raw calculation between `NaiveDate` and `Duration` may not.
+///   even though the raw calculation between `NaiveDate` and `TimeDelta` may not.
 #[derive(Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Date<Tz: TimeZone> {
@@ -236,31 +237,31 @@ impl<Tz: TimeZone> Date<Tz> {
         tz.from_utc_date(&self.date)
     }
 
-    /// Adds given `Duration` to the current date.
+    /// Adds given `TimeDelta` to the current date.
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Date<Tz>> {
         let date = self.date.checked_add_signed(rhs)?;
         Some(Date { date, offset: self.offset })
     }
 
-    /// Subtracts given `Duration` from the current date.
+    /// Subtracts given `TimeDelta` from the current date.
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Date<Tz>> {
         let date = self.date.checked_sub_signed(rhs)?;
         Some(Date { date, offset: self.offset })
     }
 
     /// Subtracts another `Date` from the current date.
-    /// Returns a `Duration` of integral numbers.
+    /// Returns a `TimeDelta` of integral numbers.
     ///
     /// This does not overflow or underflow at all,
-    /// as all possible output fits in the range of `Duration`.
+    /// as all possible output fits in the range of `TimeDelta`.
     #[inline]
-    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: Date<Tz2>) -> OldDuration {
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: Date<Tz2>) -> TimeDelta {
         self.date.signed_duration_since(rhs.date)
     }
 
@@ -479,43 +480,80 @@ impl<Tz: TimeZone> hash::Hash for Date<Tz> {
     }
 }
 
-impl<Tz: TimeZone> Add<OldDuration> for Date<Tz> {
+impl<Tz: TimeZone> Add<TimeDelta> for Date<Tz> {
     type Output = Date<Tz>;
 
     #[inline]
-    fn add(self, rhs: OldDuration) -> Date<Tz> {
-        self.checked_add_signed(rhs).expect("`Date + Duration` overflowed")
+    fn add(self, rhs: TimeDelta) -> Date<Tz> {
+        self.checked_add_signed(rhs).expect("`Date + TimeDelta` overflowed")
     }
 }
-
-impl<Tz: TimeZone> AddAssign<OldDuration> for Date<Tz> {
-    #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
-        self.date = self.date.checked_add_signed(rhs).expect("`Date + Duration` overflowed");
-    }
-}
-
-impl<Tz: TimeZone> Sub<OldDuration> for Date<Tz> {
+impl<Tz: TimeZone> Add<Duration> for Date<Tz> {
     type Output = Date<Tz>;
 
     #[inline]
-    fn sub(self, rhs: OldDuration) -> Date<Tz> {
-        self.checked_sub_signed(rhs).expect("`Date - Duration` overflowed")
+    fn add(self, rhs: Duration) -> Date<Tz> {
+        self.checked_add_signed(rhs.into()).expect("`Date + core::time::Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone> SubAssign<OldDuration> for Date<Tz> {
+impl<Tz: TimeZone> AddAssign<TimeDelta> for Date<Tz> {
     #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
-        self.date = self.date.checked_sub_signed(rhs).expect("`Date - Duration` overflowed");
+    fn add_assign(&mut self, rhs: TimeDelta) {
+        self.date = self.date.checked_add_signed(rhs).expect("`Date + TimeDelta` overflowed");
+    }
+}
+
+impl<Tz: TimeZone> AddAssign<Duration> for Date<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        self.date = self
+            .date
+            .checked_add_signed(rhs.into())
+            .expect("`Date + core::time::Duration` overflowed");
+    }
+}
+
+impl<Tz: TimeZone> Sub<TimeDelta> for Date<Tz> {
+    type Output = Date<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: TimeDelta) -> Date<Tz> {
+        self.checked_sub_signed(rhs).expect("`Date - TimeDelta` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> Sub<Duration> for Date<Tz> {
+    type Output = Date<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> Date<Tz> {
+        self.checked_sub_signed(rhs.into()).expect("`Date - core::time::Duration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<TimeDelta> for Date<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: TimeDelta) {
+        self.date = self.date.checked_sub_signed(rhs).expect("`Date - TimeDelta` overflowed");
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<Duration> for Date<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        self.date = self
+            .date
+            .checked_sub_signed(rhs.into())
+            .expect("`Date - core::time::Duration` overflowed");
     }
 }
 
 impl<Tz: TimeZone> Sub<Date<Tz>> for Date<Tz> {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: Date<Tz>) -> OldDuration {
+    fn sub(self, rhs: Date<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }
@@ -539,7 +577,7 @@ where
 mod tests {
     use super::Date;
 
-    use crate::oldtime::Duration;
+    use crate::TimeDelta;
     use crate::{FixedOffset, NaiveDate, Utc};
 
     #[cfg(feature = "clock")]
@@ -551,15 +589,15 @@ mod tests {
         const WEEKS_PER_YEAR: f32 = 52.1775;
 
         // This is always at least one year because 1 year = 52.1775 weeks.
-        let one_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        let one_year_ago = Utc::today() - TimeDelta::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
         // A bit more than 2 years.
-        let two_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+        let two_year_ago = Utc::today() - TimeDelta::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
 
         assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
         assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
 
         // If the given DateTime is later than now, the function will always return 0.
-        let future = Utc::today() + Duration::weeks(12);
+        let future = Utc::today() + TimeDelta::weeks(12);
         assert_eq!(Utc::today().years_since(future), None);
     }
 
@@ -569,20 +607,20 @@ mod tests {
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_add = date;
 
-        date_add += Duration::days(5);
-        assert_eq!(date_add, date + Duration::days(5));
+        date_add += TimeDelta::days(5);
+        assert_eq!(date_add, date + TimeDelta::days(5));
 
         let timezone = FixedOffset::east(60 * 60);
         let date = date.with_timezone(&timezone);
         let date_add = date_add.with_timezone(&timezone);
 
-        assert_eq!(date_add, date + Duration::days(5));
+        assert_eq!(date_add, date + TimeDelta::days(5));
 
         let timezone = FixedOffset::west(2 * 60 * 60);
         let date = date.with_timezone(&timezone);
         let date_add = date_add.with_timezone(&timezone);
 
-        assert_eq!(date_add, date + Duration::days(5));
+        assert_eq!(date_add, date + TimeDelta::days(5));
     }
 
     #[test]
@@ -593,8 +631,8 @@ mod tests {
         let date = Local.from_utc_date(&naivedate);
         let mut date_add = date;
 
-        date_add += Duration::days(5);
-        assert_eq!(date_add, date + Duration::days(5));
+        date_add += TimeDelta::days(5);
+        assert_eq!(date_add, date + TimeDelta::days(5));
     }
 
     #[test]
@@ -603,20 +641,20 @@ mod tests {
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_sub = date;
 
-        date_sub -= Duration::days(5);
-        assert_eq!(date_sub, date - Duration::days(5));
+        date_sub -= TimeDelta::days(5);
+        assert_eq!(date_sub, date - TimeDelta::days(5));
 
         let timezone = FixedOffset::east(60 * 60);
         let date = date.with_timezone(&timezone);
         let date_sub = date_sub.with_timezone(&timezone);
 
-        assert_eq!(date_sub, date - Duration::days(5));
+        assert_eq!(date_sub, date - TimeDelta::days(5));
 
         let timezone = FixedOffset::west(2 * 60 * 60);
         let date = date.with_timezone(&timezone);
         let date_sub = date_sub.with_timezone(&timezone);
 
-        assert_eq!(date_sub, date - Duration::days(5));
+        assert_eq!(date_sub, date - TimeDelta::days(5));
     }
 
     #[test]
@@ -627,7 +665,7 @@ mod tests {
         let date = Local.from_utc_date(&naivedate);
         let mut date_sub = date;
 
-        date_sub -= Duration::days(5);
-        assert_eq!(date_sub, date - Duration::days(5));
+        date_sub -= TimeDelta::days(5);
+        assert_eq!(date_sub, date - TimeDelta::days(5));
     }
 }
