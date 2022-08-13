@@ -11,7 +11,19 @@ breakage if you use `no-default-features`.
 There were/are numerous minor versions before 1.0 due to the language changes.
 Versions with only mechanical changes will be omitted from the following list.
 
-## 0.4.20 (unreleased)
+## 0.4.22
+
+* Allow wasmbindgen to be optional on `wasm32-unknown-unknown` target [(#771)](https://github.com/chronotope/chrono/pull/771)
+* Fix compile error for `x86_64-fortanix-unknown-sgx` [(#767)](https://github.com/chronotope/chrono/pull/767)
+* Update `iana-time-zone` version to 1.44 [(#773)](https://github.com/chronotope/chrono/pull/773)
+
+## 0.4.21
+
+* Fall back to UTC timezone in cases where no timezone is found [(#756)](https://github.com/chronotope/chrono/pull/756)
+* Correctly detect timezone on Android [(#756)](https://github.com/chronotope/chrono/pull/756)
+* Improve documentation for strftime `%Y` specifier [(#760)](https://github.com/chronotope/chrono/pull/760)
+
+## 0.4.20
 
 * Add more formatting documentation and examples.
 * Add support for microseconds timestamps serde serialization/deserialization (#304)
