@@ -506,14 +506,13 @@ pub use traits::{Datelike, Timelike};
 #[doc(hidden)]
 pub use naive::__BenchYearFlags;
 
-/// Serialization/Deserialization in alternate formats
+/// Serialization/Deserialization with serde.
 ///
-/// The various modules in here are intended to be used with serde's [`with`
-/// annotation][1] to serialize as something other than the default [RFC
-/// 3339][2] format.
+/// This module provides default implementations for `DateTime` using the [RFC 3339][1] format and various
+/// alternatives for use with serde's [`with` annotation][1].
 ///
-/// [1]: https://serde.rs/attributes.html#field-attributes
-/// [2]: https://tools.ietf.org/html/rfc3339
+/// [1]: https://tools.ietf.org/html/rfc3339
+/// [2]: https://serde.rs/attributes.html#field-attributes
 #[cfg(feature = "serde")]
 pub mod serde {
     pub use super::datetime::serde::*;
