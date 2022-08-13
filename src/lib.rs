@@ -511,6 +511,8 @@ pub use naive::__BenchYearFlags;
 /// This module provides default implementations for `DateTime` using the [RFC 3339][1] format and various
 /// alternatives for use with serde's [`with` annotation][1].
 ///
+/// *Available on crate feature 'serde' only.*
+///
 /// [1]: https://tools.ietf.org/html/rfc3339
 /// [2]: https://serde.rs/attributes.html#field-attributes
 #[cfg(feature = "serde")]
