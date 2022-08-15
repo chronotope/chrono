@@ -19,7 +19,7 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Weekday};
+use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -1289,6 +1289,37 @@ impl AddAssign<OldDuration> for NaiveDateTime {
     }
 }
 
+impl Add<Months> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    /// An addition of months to `NaiveDateTime` clamped to valid days in resulting month.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the resulting date would be out of range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDateTime, Months};
+    /// use std::str::FromStr;
+    ///
+    /// let dt = NaiveDateTime::from_str;
+    /// let m = Months::new;
+    ///
+    /// assert_eq!(dt("2014-01-01T01:00:00").unwrap() + m(1), dt("2014-02-01T01:00:00").unwrap());
+    /// assert_eq!(dt("2014-01-01T00:02:00").unwrap() + m(11), dt("2014-12-01T00:02:00").unwrap());
+    /// assert_eq!(dt("2014-01-01T00:00:03").unwrap() + m(12), dt("2015-01-01T00:00:03").unwrap());
+    /// assert_eq!(dt("2014-01-01T00:00:04").unwrap() + m(13), dt("2015-02-01T00:00:04").unwrap());
+    /// assert_eq!(dt("2014-01-31T00:05:00").unwrap() + m(1), dt("2014-02-28T00:05:00").unwrap());
+    /// assert_eq!(dt("2020-01-31T06:00:00").unwrap() + m(1), dt("2020-02-29T06:00:00").unwrap());
+    /// ```
+    fn add(self, rhs: Months) -> Self::Output {
+        let new_date = self.date() + rhs;
+        new_date.and_time(self.time())
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
 /// It is the same as the addition with a negated `Duration`.
 ///
@@ -1350,6 +1381,34 @@ impl SubAssign<OldDuration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
         *self = self.sub(rhs);
+    }
+}
+
+/// A subtraction of Months from `NaiveDateTime` clamped to valid days in resulting month.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+///
+/// # Example
+///
+/// ```
+/// use chrono::{Duration, NaiveDateTime, Months};
+/// use std::str::FromStr;
+///
+/// let dt = NaiveDateTime::from_str;
+/// let m = Months::new;
+///
+/// assert_eq!(dt("2014-01-01T01:00:00").unwrap() - m(11), dt("2013-02-01T01:00:00").unwrap());
+/// assert_eq!(dt("2014-01-01T00:02:00").unwrap() - m(12), dt("2013-01-01T00:02:00").unwrap());
+/// assert_eq!(dt("2014-01-01T00:00:03").unwrap() - m(13), dt("2012-12-01T00:00:03").unwrap());
+/// ```
+impl Sub<Months> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    fn sub(self, rhs: Months) -> Self::Output {
+        let new_date = self.date() - rhs;
+        new_date.and_time(self.time())
     }
 }
 
