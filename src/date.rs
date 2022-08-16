@@ -362,7 +362,7 @@ where
     }
 
     /// Formats the date with the specified format string and locale.
-    /// See the [`::format::strftime`] module
+    /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
     #[cfg(feature = "unstable-locales")]
     #[inline]
