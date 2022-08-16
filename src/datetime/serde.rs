@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+
 use core::fmt;
 use serde::{de, ser};
 
@@ -103,6 +105,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Utc> {
 /// See [the `serde` module](./serde/index.html) for alternate
 /// serialization formats.
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl<'de> de::Deserialize<'de> for DateTime<Local> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

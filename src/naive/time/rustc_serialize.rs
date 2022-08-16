@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
+
 use super::NaiveTime;
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 

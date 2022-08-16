@@ -382,6 +382,7 @@ impl Div<i32> for Duration {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<'a> std::iter::Sum<&'a Duration> for Duration {
     fn sum<I: Iterator<Item = &'a Duration>>(iter: I) -> Duration {
         iter.fold(Duration::zero(), |acc, x| acc + *x)
@@ -389,6 +390,7 @@ impl<'a> std::iter::Sum<&'a Duration> for Duration {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::iter::Sum<Duration> for Duration {
     fn sum<I: Iterator<Item = Duration>>(iter: I) -> Duration {
         iter.fold(Duration::zero(), |acc, x| acc + x)
@@ -445,6 +447,7 @@ impl fmt::Display for OutOfRangeError {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Error for OutOfRangeError {
     #[allow(deprecated)]
     fn description(&self) -> &str {

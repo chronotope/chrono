@@ -294,6 +294,7 @@ impl fmt::Display for RoundingError {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for RoundingError {
     #[allow(deprecated)]
     fn description(&self) -> &str {

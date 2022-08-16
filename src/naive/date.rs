@@ -1161,6 +1161,7 @@ impl NaiveDate {
     /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
@@ -1203,6 +1204,7 @@ impl NaiveDate {
     /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -2034,6 +2036,7 @@ where
 }
 
 #[cfg(feature = "rustc-serialize")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
 mod rustc_serialize {
     use super::NaiveDate;
     use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -2065,6 +2068,7 @@ mod rustc_serialize {
 }
 
 #[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 mod serde {
     use super::NaiveDate;
     use core::fmt;
