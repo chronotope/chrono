@@ -213,6 +213,7 @@ impl fmt::Debug for ParseMonthError {
 }
 
 #[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 mod month_serde {
     use super::Month;
     use serde::{de, ser};

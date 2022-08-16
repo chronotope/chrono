@@ -62,6 +62,7 @@ wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
 features = ["serde"]
+rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.playground]
 features = ["serde"]

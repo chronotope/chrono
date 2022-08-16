@@ -44,6 +44,7 @@ use crate::{Date, DateTime};
 pub struct Utc;
 
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
     pub fn today() -> Date<Utc> {

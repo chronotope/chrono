@@ -313,6 +313,7 @@ where
 {
     /// Formats the date with the specified formatting items.
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
@@ -335,6 +336,7 @@ where
     /// assert_eq!(formatted, "02/04/2017");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -342,6 +344,7 @@ where
 
     /// Formats the date with the specified formatting items and locale.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
@@ -365,6 +368,7 @@ where
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
     pub fn format_localized<'a>(
         &self,
