@@ -629,14 +629,20 @@ impl NaiveDate {
     ///
     /// If the day would be out of range for the resulting month, use the last day for that month.
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    ///
     /// ```
     /// # use chrono::{NaiveDate, Months};
     /// assert_eq!(
     ///     NaiveDate::from_ymd(2022, 2, 20).checked_sub_months(Months::new(6)),
     ///     Some(NaiveDate::from_ymd(2021, 8, 20))
     /// );
+    /// ```
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// ```
+    /// use chrono::{Months, NaiveDate};
+    /// let m = Months::new(core::i32::MAX as u32 + 1);
+    /// assert_eq!(NaiveDate::from_ymd(2014, 1, 0).checked_sub_months(m), None);
     /// ```
     pub fn checked_sub_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
