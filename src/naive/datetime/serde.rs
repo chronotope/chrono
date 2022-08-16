@@ -1097,19 +1097,16 @@ where
     }
 }
 
-#[cfg(feature = "serde")]
 enum SerdeError<V: fmt::Display, D: fmt::Display> {
     NonExistent { timestamp: V },
     Ambiguous { timestamp: V, min: D, max: D },
 }
 
 /// Construct a [`SerdeError::NonExistent`]
-#[cfg(feature = "serde")]
 fn ne_timestamp<T: fmt::Display>(ts: T) -> SerdeError<T, u8> {
     SerdeError::NonExistent::<T, u8> { timestamp: ts }
 }
 
-#[cfg(feature = "serde")]
 impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "ChronoSerdeError({})", self)
@@ -1117,7 +1114,6 @@ impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
 }
 
 // impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
-#[cfg(feature = "serde")]
 impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
