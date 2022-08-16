@@ -19,7 +19,7 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday, Month};
+use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -558,12 +558,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt("2014-01-01T01:00:00").checked_add_months(m), None);
     /// ```
     pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        match self.date().checked_add_months(rhs) {
-            None => None,
-            Some(dt) => {
-                Some(dt.and_time(self.time()))
-            }
-        }
+        self.date().checked_add_months(rhs).map(|dt| dt.and_time(self.time()))
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -664,12 +659,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt("2014-01-01T01:00:00").checked_sub_months(m), None);
     /// ```
     pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        match self.date().checked_sub_months(rhs) {
-            None => None,
-            Some(dt) => {
-                Some(dt.and_time(self.time()))
-            }
-        }
+        self.date().checked_sub_months(rhs).map(|dt| dt.and_time(self.time()))
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
