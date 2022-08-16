@@ -273,5 +273,5 @@ jobs:
           override: true
       - name: Check docs build without warnings
         env:
-          RUSTDOCFLAGS: "-D warnings"
-        run: cargo +nightly doc
+          RUSTDOCFLAGS: "-D warnings --cfg docsrs"
+        run: cargo +nightly doc --all-features --no-deps
