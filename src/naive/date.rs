@@ -642,7 +642,7 @@ impl NaiveDate {
     /// ```
     /// use chrono::{Months, NaiveDate};
     /// let m = Months::new(core::i32::MAX as u32 + 1);
-    /// assert_eq!(NaiveDate::from_ymd(2014, 1, 0).checked_sub_months(m), None);
+    /// assert_eq!(NaiveDate::from_ymd(2014, 1, 1).checked_sub_months(m), None);
     /// ```
     pub fn checked_sub_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
