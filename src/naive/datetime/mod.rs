@@ -19,7 +19,7 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
+use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday, Month};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -533,6 +533,39 @@ impl NaiveDateTime {
         Some(NaiveDateTime { date, time })
     }
 
+    /// Adds given `Months` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDateTime};
+    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
+    /// let ca = |dt: NaiveDateTime, m: Months| dt.checked_add_months(m).unwrap();
+    /// let m = Months::new;
+    /// assert_eq!(ca(dt("2014-01-01T01:00:00"), m(1)), dt("2014-02-01T01:00:00"));
+    /// ```
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDateTime};
+    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
+    /// let m = Months::new(core::i32::MAX as u32 + 1);
+    /// assert_eq!(dt("2014-01-01T01:00:00").checked_add_months(m), None);
+    /// ```
+    pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        match self.date().checked_add_months(rhs) {
+            None => None,
+            Some(dt) => {
+                Some(dt.and_time(self.time()))
+            }
+        }
+    }
+
     /// Subtracts given `Duration` from the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
@@ -604,6 +637,39 @@ impl NaiveDateTime {
 
         let date = self.date.checked_sub_signed(OldDuration::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
+    }
+
+    /// Subtracts given `Months` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDateTime};
+    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
+    /// let ca = |dt: NaiveDateTime, m: Months| dt.checked_sub_months(m).unwrap();
+    /// let m = Months::new;
+    /// assert_eq!(ca(dt("2014-01-01T01:00:00"), m(1)), dt("2013-12-01T01:00:00"));
+    /// ```
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDateTime};
+    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
+    /// let m = Months::new(core::i32::MAX as u32 + 1);
+    /// assert_eq!(dt("2014-01-01T01:00:00").checked_sub_months(m), None);
+    /// ```
+    pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        match self.date().checked_sub_months(rhs) {
+            None => None,
+            Some(dt) => {
+                Some(dt.and_time(self.time()))
+            }
+        }
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
