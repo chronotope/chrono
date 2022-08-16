@@ -649,8 +649,8 @@ impl NaiveDate {
             return Some(self);
         }
 
-        // Copy `i32::MIN` here so we don't have to do a complicated cast
-        match months.0 <= 2_147_483_648 {
+        // Copy `i32::MAX` here so we don't have to do a complicated cast
+        match months.0 <= 2_147_483_647 {
             true => self.diff_months(-(months.0 as i32)),
             false => None,
         }
