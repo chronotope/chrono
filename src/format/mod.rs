@@ -288,7 +288,7 @@ enum InternalInternal {
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum ColonType {
+enum Colons {
     None,
     Single,
     Double,
@@ -578,20 +578,20 @@ fn format_inner<'a>(
                 result: &mut String,
                 off: FixedOffset,
                 allow_zulu: bool,
-                colon_type: Option<ColonType>,
+                colon_type: Colons,
             ) -> fmt::Result {
                 let off = off.local_minus_utc();
                 if !allow_zulu || off != 0 {
                     let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
 
-                    match colon_type.unwrap_or(ColonType::None) {
-                        ColonType::None => {
+                    match colon_type {
+                        Colons::None => {
                             write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
                         }
-                        ColonType::Single => {
+                        Colons::Single => {
                             write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
                         }
-                        ColonType::Double => {
+                        Colons::Double => {
                             write!(
                                 result,
                                 "{}{:02}:{:02}:{:02}",
@@ -601,7 +601,7 @@ fn format_inner<'a>(
                                 off % 60
                             )
                         }
-                        ColonType::Triple => {
+                        Colons::Triple => {
                             write!(result, "{}{:02}", sign, off / 3600)
                         }
                     }
@@ -688,23 +688,19 @@ fn format_inner<'a>(
                         result.push_str(name);
                         Ok(())
                     }),
-                    TimezoneOffsetColon => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, false, Some(ColonType::Single))
-                    }),
-                    TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, false, Some(ColonType::Double))
-                    }),
-                    TimezoneOffsetTripleColon => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, false, Some(ColonType::Triple))
-                    }),
-                    TimezoneOffsetColonZ => off.map(|&(_, off)| {
-                        write_local_minus_utc(result, off, true, Some(ColonType::Single))
-                    }),
+                    TimezoneOffsetColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
+                    TimezoneOffsetDoubleColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
+                    TimezoneOffsetTripleColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
+                    TimezoneOffsetColonZ => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
                     TimezoneOffset => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, None))
+                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::None))
                     }
                     TimezoneOffsetZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, None))
+                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
                     }
                     Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         panic!("Do not try to write %#z it is undefined")
@@ -725,7 +721,7 @@ fn format_inner<'a>(
                                 t.minute(),
                                 sec
                             )?;
-                            Some(write_local_minus_utc(result, off, false, None))
+                            Some(write_local_minus_utc(result, off, false, Colons::None))
                         } else {
                             None
                         }
@@ -737,7 +733,7 @@ fn format_inner<'a>(
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
                             write!(result, "{:?}T{:?}", d, t)?;
-                            Some(write_local_minus_utc(result, off, false, Some(ColonType::Single)))
+                            Some(write_local_minus_utc(result, off, false, Colons::Single))
                         } else {
                             None
                         }
