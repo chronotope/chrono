@@ -706,7 +706,7 @@ where
     /// Formats the combined date and time with the specified format string and
     /// locale.
     ///
-    /// See the [`::format::strftime`] module on the supported escape
+    /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
     #[cfg(feature = "unstable-locales")]
     #[inline]
