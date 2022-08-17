@@ -1371,8 +1371,7 @@ impl Add<Months> for NaiveDateTime {
     /// assert_eq!(dt("2020-01-31T06:00:00").unwrap() + m(1), dt("2020-02-29T06:00:00").unwrap());
     /// ```
     fn add(self, rhs: Months) -> Self::Output {
-        let new_date = self.date() + rhs;
-        new_date.and_time(self.time())
+        Self { date: self.date.checked_add_months(rhs).unwrap(), time: self.time }
     }
 }
 
@@ -1463,8 +1462,7 @@ impl Sub<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn sub(self, rhs: Months) -> Self::Output {
-        let new_date = self.date() - rhs;
-        new_date.and_time(self.time())
+        Self { date: self.date.checked_sub_months(rhs).unwrap(), time: self.time }
     }
 }
 
