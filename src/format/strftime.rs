@@ -403,30 +403,17 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     }
                     '+' => fix!(RFC3339),
                     ':' => {
-                        let mut num_colon = 1;
-
-                        let result = loop {
-                            match next!() {
-                                ':' => {
-                                    num_colon += 1;
-                                }
-                                'z' => {
-                                    break Ok(());
-                                }
-                                _ => {
-                                    break Err(Item::Error);
-                                }
-                            }
-                        };
-
-                        match result {
-                            Ok(_) => match num_colon {
-                                1 => fix!(TimezoneOffsetColon),
-                                2 => fix!(TimezoneOffsetDoubleColon),
-                                3 => fix!(TimezoneOffsetTripleColon),
-                                _ => Item::Error,
-                            },
-                            Err(e) => e,
+                        if self.remainder.starts_with("::z") {
+                            self.remainder = &self.remainder[3..];
+                            fix!(TimezoneOffsetTripleColon)
+                        } else if self.remainder.starts_with(":z") {
+                            self.remainder = &self.remainder[2..];
+                            fix!(TimezoneOffsetDoubleColon)
+                        } else if self.remainder.starts_with('z') {
+                            self.remainder = &self.remainder[1..];
+                            fix!(TimezoneOffsetColon)
+                        } else {
+                            Item::Error
                         }
                     }
                     '.' => match next!() {
