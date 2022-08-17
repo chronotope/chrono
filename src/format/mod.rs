@@ -224,6 +224,18 @@ pub enum Fixed {
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
+    /// Offset from the local time to UTC with seconds (`+09:00:00` or `-04:00:00` or `+00:00:00`).
+    ///
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// The offset is limited from `-24:00:00` to `+24:00:00`,
+    /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
+    TimezoneOffsetDoubleColon,
+    /// Offset from the local time to UTC without minutes (`+09` or `-04` or `+00`).
+    ///
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// The offset is limited from `-24` to `+24`,
+    /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
+    TimezoneOffsetTripleColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
@@ -272,6 +284,15 @@ enum InternalInternal {
     Nanosecond6NoDot,
     /// Same as [`Nanosecond`](#variant.Nanosecond) but the accuracy is fixed to 9 and there is no leading dot.
     Nanosecond9NoDot,
+}
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Colons {
+    None,
+    Single,
+    Double,
+    Triple,
 }
 
 /// A single formatting item. This is used for both formatting and parsing.
@@ -557,15 +578,32 @@ fn format_inner<'a>(
                 result: &mut String,
                 off: FixedOffset,
                 allow_zulu: bool,
-                use_colon: bool,
+                colon_type: Colons,
             ) -> fmt::Result {
                 let off = off.local_minus_utc();
                 if !allow_zulu || off != 0 {
                     let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
-                    if use_colon {
-                        write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
-                    } else {
-                        write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
+
+                    match colon_type {
+                        Colons::None => {
+                            write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
+                        }
+                        Colons::Single => {
+                            write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
+                        }
+                        Colons::Double => {
+                            write!(
+                                result,
+                                "{}{:02}:{:02}:{:02}",
+                                sign,
+                                off / 3600,
+                                off / 60 % 60,
+                                off % 60
+                            )
+                        }
+                        Colons::Triple => {
+                            write!(result, "{}{:02}", sign, off / 3600)
+                        }
                     }
                 } else {
                     result.push('Z');
@@ -650,17 +688,19 @@ fn format_inner<'a>(
                         result.push_str(name);
                         Ok(())
                     }),
-                    TimezoneOffsetColon => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, true))
-                    }
-                    TimezoneOffsetColonZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, true))
-                    }
+                    TimezoneOffsetColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
+                    TimezoneOffsetDoubleColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
+                    TimezoneOffsetTripleColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
+                    TimezoneOffsetColonZ => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
                     TimezoneOffset => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, false))
+                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::None))
                     }
                     TimezoneOffsetZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, false))
+                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
                     }
                     Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         panic!("Do not try to write %#z it is undefined")
@@ -681,7 +721,7 @@ fn format_inner<'a>(
                                 t.minute(),
                                 sec
                             )?;
-                            Some(write_local_minus_utc(result, off, false, false))
+                            Some(write_local_minus_utc(result, off, false, Colons::None))
                         } else {
                             None
                         }
@@ -693,7 +733,7 @@ fn format_inner<'a>(
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
                             write!(result, "{:?}T{:?}", d, t)?;
-                            Some(write_local_minus_utc(result, off, false, true))
+                            Some(write_local_minus_utc(result, off, false, Colons::Single))
                         } else {
                             None
                         }

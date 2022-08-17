@@ -420,7 +420,10 @@ where
                         try_consume!(scan::timezone_name_skip(s));
                     }
 
-                    &TimezoneOffsetColon | &TimezoneOffset => {
+                    &TimezoneOffsetColon
+                    | &TimezoneOffsetDoubleColon
+                    | &TimezoneOffsetTripleColon
+                    | &TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(
                             s.trim_left(),
                             scan::colon_or_space
