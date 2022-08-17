@@ -558,7 +558,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt("2014-01-01T01:00:00").checked_add_months(m), None);
     /// ```
     pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        self.date().checked_add_months(rhs).map(|dt| dt.and_time(self.time()))
+        Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
     }
 
     /// Subtracts given `Duration` from the current date and time.
@@ -659,7 +659,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt("2014-01-01T01:00:00").checked_sub_months(m), None);
     /// ```
     pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        self.date().checked_sub_months(rhs).map(|dt| dt.and_time(self.time()))
+        Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
