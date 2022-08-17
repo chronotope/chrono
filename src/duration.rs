@@ -54,7 +54,7 @@ impl TimeDelta {
     pub fn min() -> TimeDelta {
         TimeDelta::Backwards(Duration::new(
             #[allow(deprecated)]
-            core::u64::MAX,
+            u64::try_from(core::i64::MAX - 86_400).unwrap(),
             MAX_NANOS_NON_LEAP,
         ))
     }
@@ -67,7 +67,7 @@ impl TimeDelta {
     pub fn max() -> TimeDelta {
         TimeDelta::Forwards(Duration::new(
             #[allow(deprecated)]
-            core::u64::MAX,
+            u64::try_from(core::i64::MAX - 86_400).unwrap(),
             MAX_NANOS_NON_LEAP,
         ))
     }
@@ -213,6 +213,14 @@ impl TimeDelta {
     }
 
     /// Returns the total number of whole seconds in the duration.
+    /// # Panics
+    /// If the underlying is too large this can panic. If you think that
+    /// might be the case you can instead use:
+    ///
+    /// ```rust
+    /// let chrono_duration: chrono::TimeDelta = core::time::Duration::MAX.into();  
+    /// chrono_duration.abs_std().as_secs()
+    /// ```
     pub fn num_seconds(&self) -> i64 {
         match self {
             TimeDelta::Forwards(d) => i64::try_from(d.as_secs()).expect(""),
