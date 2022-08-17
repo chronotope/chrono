@@ -11,7 +11,7 @@ mod isoweek;
 mod time;
 
 #[allow(deprecated)]
-pub use self::date::{NaiveDate, NaiveWeek, MAX_DATE, MIN_DATE};
+pub use self::date::{Days, NaiveDate, NaiveWeek, MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
 #[allow(deprecated)]
 pub use self::datetime::rustc_serialize::TsSeconds;
