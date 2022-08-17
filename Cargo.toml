@@ -25,6 +25,7 @@ alloc = []
 libc = []
 std = []
 clock = ["std", "winapi", "iana-time-zone"]
+with-core-foundation = ["core-foundation"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
@@ -49,6 +50,9 @@ js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi"], optional = true }
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+core-foundation = { optional = true, git = "https://github.com/esheppa/core-foundation-rs", rev = "ce2a8b65f6bdee6f8d9e8d71d11b0a0cfdbf44c0" }
 
 [dev-dependencies]
 serde_json = { version = "1" }

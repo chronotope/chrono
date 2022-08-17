@@ -431,6 +431,10 @@ mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::Duration;
 
+/// Integartion between `core_foundation`'s `CFDate` and `chrono`'s `NaiveDateTime`
+#[cfg(all(feature = "with-core-foundation", any(target_os = "macos", target_os = "ios")))]
+pub mod core_foundation;
+
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 use doc_comment::doctest;
