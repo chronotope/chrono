@@ -637,14 +637,20 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd(2022, 2, 20).checked_sub_months(Months::new(6)),
     ///     Some(NaiveDate::from_ymd(2021, 8, 20))
     /// );
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1)
+    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_sub_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
             return Some(self);
         }
 
-        // Copy `i32::MIN` here so we don't have to do a complicated cast
-        match months.0 <= 2_147_483_648 {
+        // Copy `i32::MAX` here so we don't have to do a complicated cast
+        match months.0 <= 2_147_483_647 {
             true => self.diff_months(-(months.0 as i32)),
             false => None,
         }

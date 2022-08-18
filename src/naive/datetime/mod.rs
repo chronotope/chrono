@@ -19,7 +19,7 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{DateTime, Datelike, LocalResult, TimeZone, Timelike, Weekday};
+use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -533,6 +533,34 @@ impl NaiveDateTime {
         Some(NaiveDateTime { date, time })
     }
 
+    /// Adds given `Months` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDate, NaiveDateTime};
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_add_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd(2014, 2, 1).and_hms(1, 0, 0))
+    /// );
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///     None
+    /// );
+    /// ```
+    pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    }
+
     /// Subtracts given `Duration` from the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
@@ -604,6 +632,34 @@ impl NaiveDateTime {
 
         let date = self.date.checked_sub_signed(OldDuration::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
+    }
+
+    /// Subtracts given `Months` from the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    ///
+    /// Overflow returns `None`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDate, NaiveDateTime};
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_sub_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd(2013, 12, 1).and_hms(1, 0, 0))
+    /// );
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///     None
+    /// );
+    /// ```
+    pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -1289,6 +1345,51 @@ impl AddAssign<OldDuration> for NaiveDateTime {
     }
 }
 
+impl Add<Months> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    /// An addition of months to `NaiveDateTime` clamped to valid days in resulting month.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the resulting date would be out of range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Duration, NaiveDateTime, Months, NaiveDate};
+    /// use std::str::FromStr;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0) + Months::new(1),
+    ///     NaiveDate::from_ymd(2014, 2, 1).and_hms(1, 0, 0)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(0, 2, 0) + Months::new(11),
+    ///     NaiveDate::from_ymd(2014, 12, 1).and_hms(0, 2, 0)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(0, 0, 3) + Months::new(12),
+    ///     NaiveDate::from_ymd(2015, 1, 1).and_hms(0, 0, 3)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(0, 0, 4) + Months::new(13),
+    ///     NaiveDate::from_ymd(2015, 2, 1).and_hms(0, 0, 4)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 31).and_hms(0, 5, 0) + Months::new(1),
+    ///     NaiveDate::from_ymd(2014, 2, 28).and_hms(0, 5, 0)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2020, 1, 31).and_hms(6, 0, 0) + Months::new(1),
+    ///     NaiveDate::from_ymd(2020, 2, 29).and_hms(6, 0, 0)
+    /// );
+    /// ```
+    fn add(self, rhs: Months) -> Self::Output {
+        Self { date: self.date.checked_add_months(rhs).unwrap(), time: self.time }
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
 /// It is the same as the addition with a negated `Duration`.
 ///
@@ -1350,6 +1451,39 @@ impl SubAssign<OldDuration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
         *self = self.sub(rhs);
+    }
+}
+
+/// A subtraction of Months from `NaiveDateTime` clamped to valid days in resulting month.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+///
+/// # Example
+///
+/// ```
+/// use chrono::{Duration, NaiveDateTime, Months, NaiveDate};
+/// use std::str::FromStr;
+///
+/// assert_eq!(
+///     NaiveDate::from_ymd(2014, 01, 01).and_hms(01, 00, 00) - Months::new(11),
+///     NaiveDate::from_ymd(2013, 02, 01).and_hms(01, 00, 00)
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd(2014, 01, 01).and_hms(00, 02, 00) - Months::new(12),
+///     NaiveDate::from_ymd(2013, 01, 01).and_hms(00, 02, 00)
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd(2014, 01, 01).and_hms(00, 00, 03) - Months::new(13),
+///     NaiveDate::from_ymd(2012, 12, 01).and_hms(00, 00, 03)
+/// );
+/// ```
+impl Sub<Months> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    fn sub(self, rhs: Months) -> Self::Output {
+        Self { date: self.date.checked_sub_months(rhs).unwrap(), time: self.time }
     }
 }
 
