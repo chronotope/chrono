@@ -1360,15 +1360,30 @@ impl Add<Months> for NaiveDateTime {
     /// use chrono::{Duration, NaiveDateTime, Months};
     /// use std::str::FromStr;
     ///
-    /// let dt = NaiveDateTime::from_str;
-    /// let m = Months::new;
-    ///
-    /// assert_eq!(dt("2014-01-01T01:00:00").unwrap() + m(1), dt("2014-02-01T01:00:00").unwrap());
-    /// assert_eq!(dt("2014-01-01T00:02:00").unwrap() + m(11), dt("2014-12-01T00:02:00").unwrap());
-    /// assert_eq!(dt("2014-01-01T00:00:03").unwrap() + m(12), dt("2015-01-01T00:00:03").unwrap());
-    /// assert_eq!(dt("2014-01-01T00:00:04").unwrap() + m(13), dt("2015-02-01T00:00:04").unwrap());
-    /// assert_eq!(dt("2014-01-31T00:05:00").unwrap() + m(1), dt("2014-02-28T00:05:00").unwrap());
-    /// assert_eq!(dt("2020-01-31T06:00:00").unwrap() + m(1), dt("2020-02-29T06:00:00").unwrap());
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0) + Months::new(1),
+    ///     NaiveDate::from_ymd(2014, 2, 1).and_hms(1, 0, 0)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(0, 2, 0) + Months::new(11),
+    ///     NaiveDate::from_ymd(2014, 12, 1).and_hms(0, 2, 0)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(0, 0, 3) + Months::new(12),
+    ///     NaiveDate::from_ymd(2015, 1, 1).and_hms(0, 0, 3)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(0, 0, 4) + Months::new(13),
+    ///     NaiveDate::from_ymd(2015, 2, 1).and_hms(0, 0, 4)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 31).and_hms(0, 5, 0) + Months::new(1),
+    ///     NaiveDate::from_ymd(2014, 2, 28).and_hms(0, 5, 0)
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2020, 1, 31).and_hms(6, 0, 0) + Months::new(1),
+    ///     NaiveDate::from_ymd(2020, 2, 29).and_hms(6, 0, 0)
+    /// );
     /// ```
     fn add(self, rhs: Months) -> Self::Output {
         Self { date: self.date.checked_add_months(rhs).unwrap(), time: self.time }
@@ -1451,12 +1466,18 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// use chrono::{Duration, NaiveDateTime, Months};
 /// use std::str::FromStr;
 ///
-/// let dt = NaiveDateTime::from_str;
-/// let m = Months::new;
-///
-/// assert_eq!(dt("2014-01-01T01:00:00").unwrap() - m(11), dt("2013-02-01T01:00:00").unwrap());
-/// assert_eq!(dt("2014-01-01T00:02:00").unwrap() - m(12), dt("2013-01-01T00:02:00").unwrap());
-/// assert_eq!(dt("2014-01-01T00:00:03").unwrap() - m(13), dt("2012-12-01T00:00:03").unwrap());
+/// assert_eq!(
+///     NaiveDate::from_ymd(2014, 01, 01).and_hms(01, 00, 00) - Months::new(11),
+///     NaiveDate::from_ymd(2013, 02, 01).and_hms(01, 00, 00)
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd(2014, 01, 01).and_hms(00, 02, 00) - Months::new(12),
+///     NaiveDate::from_ymd(2013, 01, 01).and_hms(00, 02, 00)
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd(2014, 01, 01).and_hms(00, 00, 03) - Months::new(13),
+///     NaiveDate::from_ymd(2012, 12, 01).and_hms(00, 00, 03)
+/// );
 /// ```
 impl Sub<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
