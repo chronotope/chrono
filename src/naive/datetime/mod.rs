@@ -537,25 +537,25 @@ impl NaiveDateTime {
     ///
     /// Returns `None` when it will result in overflow.
     ///
+    /// Overflow returns `None`.
+    ///
     /// # Example
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use chrono::{Months, NaiveDateTime};
-    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
-    /// let ca = |dt: NaiveDateTime, m: Months| dt.checked_add_months(m).unwrap();
-    /// let m = Months::new;
-    /// assert_eq!(ca(dt("2014-01-01T01:00:00"), m(1)), dt("2014-02-01T01:00:00"));
-    /// ```
+    /// use chrono::{Months, NaiveDate, NaiveDateTime};
     ///
-    /// Overflow returns `None`.
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_add_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd(2014, 2, 1).and_hms(1, 0, 0))
+    /// );
     ///
-    /// ```
-    /// use std::str::FromStr;
-    /// use chrono::{Months, NaiveDateTime};
-    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
-    /// let m = Months::new(core::i32::MAX as u32 + 1);
-    /// assert_eq!(dt("2014-01-01T01:00:00").checked_add_months(m), None);
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
@@ -638,25 +638,25 @@ impl NaiveDateTime {
     ///
     /// Returns `None` when it will result in overflow.
     ///
+    /// Overflow returns `None`.
+    ///
     /// # Example
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use chrono::{Months, NaiveDateTime};
-    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
-    /// let ca = |dt: NaiveDateTime, m: Months| dt.checked_sub_months(m).unwrap();
-    /// let m = Months::new;
-    /// assert_eq!(ca(dt("2014-01-01T01:00:00"), m(1)), dt("2013-12-01T01:00:00"));
-    /// ```
+    /// use chrono::{Months, NaiveDate, NaiveDateTime};
     ///
-    /// Overflow returns `None`.
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_sub_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd(2013, 12, 1).and_hms(1, 0, 0))
+    /// );
     ///
-    /// ```
-    /// use std::str::FromStr;
-    /// use chrono::{Months, NaiveDateTime};
-    /// let dt = |s| NaiveDateTime::from_str(s).unwrap();
-    /// let m = Months::new(core::i32::MAX as u32 + 1);
-    /// assert_eq!(dt("2014-01-01T01:00:00").checked_sub_months(m), None);
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2014, 1, 1).and_hms(1, 0, 0)
+    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
@@ -1357,7 +1357,7 @@ impl Add<Months> for NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDateTime, Months};
+    /// use chrono::{Duration, NaiveDateTime, Months, NaiveDate};
     /// use std::str::FromStr;
     ///
     /// assert_eq!(
@@ -1463,7 +1463,7 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{Duration, NaiveDateTime, Months};
+/// use chrono::{Duration, NaiveDateTime, Months, NaiveDate};
 /// use std::str::FromStr;
 ///
 /// assert_eq!(
