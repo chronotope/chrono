@@ -634,7 +634,7 @@ impl NaiveDateTime {
         Some(NaiveDateTime { date, time })
     }
 
-    /// Subtracts given `Months` to the current date and time.
+    /// Subtracts given `Months` from the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
     ///
