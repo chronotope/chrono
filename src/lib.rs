@@ -429,7 +429,7 @@ extern crate time as oldtime;
 #[cfg(not(feature = "oldtime"))]
 mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
+pub use oldtime::{Duration, OutOfRangeError};
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]

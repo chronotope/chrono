@@ -13,6 +13,7 @@ Versions with only mechanical changes will be omitted from the following list.
 
 ## 0.4.23
 * Impl Add<Month> + Sub<Month> for NaiveDateTime
+* Export `oldtime::OutOfRangeError` to the public API
 
 ## 0.4.22
 
