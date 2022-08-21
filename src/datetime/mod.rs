@@ -30,6 +30,7 @@ use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::oldtime::Duration as OldDuration;
 use crate::Date;
+use crate::Months;
 use crate::{Datelike, Timelike, Weekday};
 
 #[cfg(feature = "rkyv")]
@@ -329,6 +330,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
         Some(tz.from_utc_datetime(&datetime))
     }
 
+    /// Adds given `Months` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow, or if the
+    /// local time is not valid on the newly calculated date.
+    ///
+    /// See [`NaiveDate::checked_add_months`] for more details on behavior
+    pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
+        self.naive_local()
+            .checked_add_months(rhs)?
+            .and_local_timezone(Tz::from_offset(&self.offset))
+            .single()
+    }
+
     /// Subtracts given `Duration` from the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
@@ -337,6 +351,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
+    }
+
+    /// Subtracts given `Months` from the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow, or if the
+    /// local time is not valid on the newly calculated date.
+    ///
+    /// See [`NaiveDate::checked_sub_months`] for more details on behavior
+    pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
+        self.naive_local()
+            .checked_sub_months(rhs)?
+            .and_local_timezone(Tz::from_offset(&self.offset))
+            .single()
     }
 
     /// Subtracts another `DateTime` from the current date and time.
@@ -869,6 +896,14 @@ impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn add(self, rhs: Months) -> Self::Output {
+        self.checked_add_months(rhs).unwrap()
+    }
+}
+
 impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -885,6 +920,14 @@ impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
+    }
+}
+
+impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn sub(self, rhs: Months) -> Self::Output {
+        self.checked_sub_months(rhs).unwrap()
     }
 }
 
@@ -1029,6 +1072,23 @@ impl From<DateTime<Utc>> for js_sys::Date {
         let js_millis = wasm_bindgen::JsValue::from_f64(date.timestamp_millis() as f64);
         js_sys::Date::new(&js_millis)
     }
+}
+
+#[test]
+fn test_add_sub_months() {
+    let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
+    assert_eq!(utc_dt + Months::new(15), Utc.ymd(2019, 12, 5).and_hms(23, 58, 0));
+
+    let utc_dt = Utc.ymd(2020, 1, 31).and_hms(23, 58, 0);
+    assert_eq!(utc_dt + Months::new(1), Utc.ymd(2020, 2, 29).and_hms(23, 58, 0));
+    assert_eq!(utc_dt + Months::new(2), Utc.ymd(2020, 3, 31).and_hms(23, 58, 0));
+
+    let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
+    assert_eq!(utc_dt - Months::new(15), Utc.ymd(2017, 6, 5).and_hms(23, 58, 0));
+
+    let utc_dt = Utc.ymd(2020, 3, 31).and_hms(23, 58, 0);
+    assert_eq!(utc_dt - Months::new(1), Utc.ymd(2020, 2, 29).and_hms(23, 58, 0));
+    assert_eq!(utc_dt - Months::new(2), Utc.ymd(2020, 1, 31).and_hms(23, 58, 0));
 }
 
 #[test]
