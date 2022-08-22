@@ -292,8 +292,41 @@ where
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
-                s = s.trim_left();
+            Item::Space(space) => {
+                eprintln!("match Item::Space({:?})", space);
+                eprintln!("            s {:?}", s);
+                eprint!("                match s.chars().next() ");
+                match &s.chars().next() {
+                    Some(c) => {
+                        eprintln!("c {:?}", c);
+                        if ! c.is_whitespace() {
+                            // `s` whitespace must match each `item`
+                            eprintln!("\n    ~~Err(INVALID, {:?})", s);
+                            return Err((s, INVALID));
+                        }
+                        // whitespace character must match
+                        match &space.chars().next() {
+                            Some(spacec) => {
+                                if c != spacec {
+                                    eprintln!("\n    ~~Err(INVALID, {:?})", s);
+                                    return Err((s, INVALID));
+                                }
+                            }
+                            None => {
+                                eprintln!("\n    ~~Err(INVALID, {:?})", s);
+                                return Err((s, INVALID));
+                            }
+                        }
+                        s = &s[1..];
+                    },
+                    None => {
+                        eprintln!("None");
+                        // `s` whitespace must match each `items`
+                        eprintln!("\n    ~~Err(INVALID, {:?})", s);
+                        return Err((s, INVALID));
+                    }
+                }
+                eprintln!("            s {:?}", s);
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]

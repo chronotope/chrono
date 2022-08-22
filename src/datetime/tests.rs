@@ -206,19 +206,64 @@ fn test_datetime_from_str() {
 }
 
 #[test]
-fn test_datetime_parse_from_str() {
-    let ymdhms = |y, m, d, h, n, s, off| FixedOffset::east(off).ymd(y, m, d).and_hms(h, n, s);
+fn test_datetime_from_str_with_spaces() {
+    // should succeed
     assert_eq!(
-        DateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-        Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570 * 60))
-    ); // ignore offset
-    assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
-    assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
-        .is_err());
-    assert_eq!(
-        Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
-        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35))
+        Utc.datetime_from_str(" Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
     );
+    assert_eq!(
+        Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S "),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str(" Aug 09 2013 23:54:35 ", " %b %d %Y %H:%M:%S "),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str("  Aug 09 2013 23:54:35", "  %b %d %Y %H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str("   Aug 09 2013 23:54:35", "   %b %d %Y %H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str("\tAug 09 2013 23:54:35", "\t%b %d %Y %H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str("\tAug 09 2013 23:54:35\t", "\t%b %d %Y %H:%M:%S\t"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str("Aug  09 2013 23:54:35", "%b  %d %Y %H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    assert_eq!(
+        Utc.datetime_from_str("Aug    09 2013 23:54:35", "%b    %d %Y %H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+
+    assert_eq!(
+        Utc.datetime_from_str("Aug  09 2013\t23:54:35", "%b  %d %Y\t%H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+
+    assert_eq!(
+        Utc.datetime_from_str("Aug  09 2013\t\t23:54:35", "%b  %d %Y\t\t%H:%M:%S"),
+        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35)),
+    );
+    // should fail
+    assert!(Utc.datetime_from_str(" Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35\t", "%b %d %Y %H:%M:%S").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
+    assert!(Utc.datetime_from_str("\nAug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S\n").is_err());
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y\t%H:%M:%S").is_err());
 }
 
 #[test]

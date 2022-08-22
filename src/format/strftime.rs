@@ -467,14 +467,21 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
             // the next item is space
             Some(c) if c.is_whitespace() => {
+                eprintln!("match c.is_whitespace()");
                 // `%` is not a whitespace, so `c != '%'` is redundant
-                let nextspec = self
+                let mut nextspec = self
                     .remainder
                     .find(|c: char| !c.is_whitespace())
                     .unwrap_or(self.remainder.len());
+                if nextspec > 1 {
+                    eprintln!("                        nextspec {:?} set to 1", nextspec);
+                    nextspec = 1;
+                }
                 assert!(nextspec > 0);
                 let item = sp!(&self.remainder[..nextspec]);
+                eprintln!("                        remainder {:?}", self.remainder);
                 self.remainder = &self.remainder[nextspec..];
+                eprintln!("                        remainder {:?}", self.remainder);
                 Some(item)
             }
 
