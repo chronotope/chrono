@@ -372,8 +372,9 @@ impl fmt::Debug for Of {
 /// The whole bits except for the least 3 bits are referred as `Mdl`
 /// (month, day of month and leap flag),
 /// which is an index to the `MDL_TO_OL` lookup table.
+#[doc(hidden)]
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
-pub(super) struct Mdf(pub(super) u32);
+pub struct Mdf(pub(super) u32);
 
 impl Mdf {
     #[inline]
@@ -420,8 +421,10 @@ impl Mdf {
         }
     }
 
+    // Exported for pyo3.
+    #[doc(hidden)]
     #[inline]
-    pub(super) fn month(&self) -> u32 {
+    pub fn month(&self) -> u32 {
         let Mdf(mdf) = *self;
         mdf >> 9
     }
@@ -433,8 +436,10 @@ impl Mdf {
         Mdf((mdf & 0b1_1111_1111) | (month << 9))
     }
 
+    // Exported for chrono.
+    #[doc(hidden)]
     #[inline]
-    pub(super) fn day(&self) -> u32 {
+    pub fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
         (mdf >> 4) & 0b1_1111
     }

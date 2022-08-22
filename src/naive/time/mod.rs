@@ -792,7 +792,8 @@ impl NaiveTime {
     }
 
     /// Returns a triple of the hour, minute and second numbers.
-    fn hms(&self) -> (u32, u32, u32) {
+    #[doc(hidden)]
+    pub fn hms(&self) -> (u32, u32, u32) {
         let (mins, sec) = div_mod_floor(self.secs, 60);
         let (hour, min) = div_mod_floor(mins, 60);
         (hour, min, sec)

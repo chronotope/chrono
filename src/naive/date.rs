@@ -995,7 +995,8 @@ impl NaiveDate {
 
     /// Returns the packed month-day-flags.
     #[inline]
-    fn mdf(&self) -> Mdf {
+    #[doc(hidden)]
+    pub fn mdf(&self) -> Mdf {
         self.of().to_mdf()
     }
 

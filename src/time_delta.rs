@@ -53,23 +53,20 @@ macro_rules! try_opt {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct TimeDelta {
-    secs: i64,
-    nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
+    // Inner fields exported for pyo3.
+    #[doc(hidden)]
+    pub secs: i64,
+    #[doc(hidden)]
+    pub nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
 }
 
-/// The minimum possible `Duration`: `i64::MIN` milliseconds.
-pub(crate) const MIN: TimeDelta = TimeDelta {
-    secs: i64::MIN / MILLIS_PER_SEC - 1,
-    nanos: NANOS_PER_SEC + (i64::MIN % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
-};
-
-/// The maximum possible `Duration`: `i64::MAX` milliseconds.
-pub(crate) const MAX: TimeDelta = TimeDelta {
-    secs: i64::MAX / MILLIS_PER_SEC,
-    nanos: (i64::MAX % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
-};
-
 impl TimeDelta {
+    /// The minimum possible `Duration`: `i64::MIN` milliseconds.
+    pub const MIN: TimeDelta = TimeDelta::milliseconds(i64::MIN);
+
+    /// The maximum possible `Duration`: `i64::MAX` milliseconds.
+    pub const MAX: TimeDelta = TimeDelta::milliseconds(i64::MAX);
+
     /// Makes a new `Duration` with given number of weeks.
     /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
@@ -112,7 +109,7 @@ impl TimeDelta {
     #[inline]
     pub fn seconds(seconds: i64) -> TimeDelta {
         let d = TimeDelta { secs: seconds, nanos: 0 };
-        if d < MIN || d > MAX {
+        if d < TimeDelta::MIN || d > TimeDelta::MAX {
             panic!("Duration::seconds out of bounds");
         }
         d
@@ -120,7 +117,7 @@ impl TimeDelta {
 
     /// Makes a new `Duration` with given number of milliseconds.
     #[inline]
-    pub fn milliseconds(milliseconds: i64) -> TimeDelta {
+    pub const fn milliseconds(milliseconds: i64) -> TimeDelta {
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
         let nanos = millis as i32 * NANOS_PER_MILLI;
         TimeDelta { secs, nanos }
@@ -128,7 +125,7 @@ impl TimeDelta {
 
     /// Makes a new `Duration` with given number of microseconds.
     #[inline]
-    pub fn microseconds(microseconds: i64) -> TimeDelta {
+    pub const fn microseconds(microseconds: i64) -> TimeDelta {
         let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
         let nanos = micros as i32 * NANOS_PER_MICRO;
         TimeDelta { secs, nanos }
@@ -221,7 +218,7 @@ impl TimeDelta {
         let d = TimeDelta { secs, nanos };
         // Even if d is within the bounds of i64 seconds,
         // it might still overflow i64 milliseconds.
-        if d < MIN || d > MAX {
+        if d < TimeDelta::MIN || d > TimeDelta::MAX {
             None
         } else {
             Some(d)
@@ -239,7 +236,7 @@ impl TimeDelta {
         let d = TimeDelta { secs, nanos };
         // Even if d is within the bounds of i64 seconds,
         // it might still overflow i64 milliseconds.
-        if d < MIN || d > MAX {
+        if d < TimeDelta::MIN || d > TimeDelta::MAX {
             None
         } else {
             Some(d)
@@ -259,13 +256,13 @@ impl TimeDelta {
     /// The minimum possible `Duration`: `i64::MIN` milliseconds.
     #[inline]
     pub fn min_value() -> TimeDelta {
-        MIN
+        TimeDelta::MIN
     }
 
     /// The maximum possible `Duration`: `i64::MAX` milliseconds.
     #[inline]
     pub fn max_value() -> TimeDelta {
-        MAX
+        TimeDelta::MAX
     }
 
     /// A duration where the stored seconds and nanoseconds are equal to zero.
@@ -286,12 +283,12 @@ impl TimeDelta {
     /// value supported for this type.
     pub fn from_std(duration: StdDuration) -> Result<TimeDelta, OutOfRangeError> {
         // We need to check secs as u64 before coercing to i64
-        if duration.as_secs() > MAX.secs as u64 {
+        if duration.as_secs() > TimeDelta::MAX.secs as u64 {
             return Err(OutOfRangeError(()));
         }
         let d =
             TimeDelta { secs: duration.as_secs() as i64, nanos: duration.subsec_nanos() as i32 };
-        if d > MAX {
+        if d > TimeDelta::MAX {
             return Err(OutOfRangeError(()));
         }
         Ok(d)
@@ -458,12 +455,12 @@ impl Error for OutOfRangeError {
 
 // Copied from libnum
 #[inline]
-fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
+const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
     (div_floor_64(this, other), mod_floor_64(this, other))
 }
 
 #[inline]
-fn div_floor_64(this: i64, other: i64) -> i64 {
+const fn div_floor_64(this: i64, other: i64) -> i64 {
     match div_rem_64(this, other) {
         (d, r) if (r > 0 && other < 0) || (r < 0 && other > 0) => d - 1,
         (d, _) => d,
@@ -471,7 +468,7 @@ fn div_floor_64(this: i64, other: i64) -> i64 {
 }
 
 #[inline]
-fn mod_floor_64(this: i64, other: i64) -> i64 {
+const fn mod_floor_64(this: i64, other: i64) -> i64 {
     match this % other {
         r if (r > 0 && other < 0) || (r < 0 && other > 0) => r + other,
         r => r,
@@ -479,13 +476,13 @@ fn mod_floor_64(this: i64, other: i64) -> i64 {
 }
 
 #[inline]
-fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
+const fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
     (this / other, this % other)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{OutOfRangeError, TimeDelta, MAX, MIN};
+    use super::{OutOfRangeError, TimeDelta};
     use std::time::Duration as StdDuration;
     use std::{i32, i64};
 
@@ -545,8 +542,8 @@ mod tests {
         assert_eq!(TimeDelta::microseconds(-1001).num_milliseconds(), -1);
         assert_eq!(TimeDelta::milliseconds(i64::MAX).num_milliseconds(), i64::MAX);
         assert_eq!(TimeDelta::milliseconds(i64::MIN).num_milliseconds(), i64::MIN);
-        assert_eq!(MAX.num_milliseconds(), i64::MAX);
-        assert_eq!(MIN.num_milliseconds(), i64::MIN);
+        assert_eq!(TimeDelta::MAX.num_milliseconds(), i64::MAX);
+        assert_eq!(TimeDelta::MIN.num_milliseconds(), i64::MIN);
     }
 
     #[test]
@@ -560,8 +557,8 @@ mod tests {
         assert_eq!(TimeDelta::nanoseconds(-1001).num_microseconds(), Some(-1));
         assert_eq!(TimeDelta::microseconds(i64::MAX).num_microseconds(), Some(i64::MAX));
         assert_eq!(TimeDelta::microseconds(i64::MIN).num_microseconds(), Some(i64::MIN));
-        assert_eq!(MAX.num_microseconds(), None);
-        assert_eq!(MIN.num_microseconds(), None);
+        assert_eq!(TimeDelta::MAX.num_microseconds(), None);
+        assert_eq!(TimeDelta::MIN.num_microseconds(), None);
 
         // overflow checks
         const MICROS_PER_DAY: i64 = 86_400_000_000;
@@ -584,8 +581,8 @@ mod tests {
         assert_eq!(TimeDelta::nanoseconds(-1).num_nanoseconds(), Some(-1));
         assert_eq!(TimeDelta::nanoseconds(i64::MAX).num_nanoseconds(), Some(i64::MAX));
         assert_eq!(TimeDelta::nanoseconds(i64::MIN).num_nanoseconds(), Some(i64::MIN));
-        assert_eq!(MAX.num_nanoseconds(), None);
-        assert_eq!(MIN.num_nanoseconds(), None);
+        assert_eq!(TimeDelta::MAX.num_nanoseconds(), None);
+        assert_eq!(TimeDelta::MIN.num_nanoseconds(), None);
 
         // overflow checks
         const NANOS_PER_DAY: i64 = 86_400_000_000_000;
@@ -724,7 +721,7 @@ mod tests {
         assert_eq!(TimeDelta::milliseconds(123).to_std(), Ok(StdDuration::new(0, 123000000)));
         assert_eq!(TimeDelta::milliseconds(123765).to_std(), Ok(StdDuration::new(123, 765000000)));
         assert_eq!(TimeDelta::nanoseconds(777).to_std(), Ok(StdDuration::new(0, 777)));
-        assert_eq!(MAX.to_std(), Ok(StdDuration::new(9223372036854775, 807000000)));
+        assert_eq!(TimeDelta::MAX.to_std(), Ok(StdDuration::new(9223372036854775, 807000000)));
         assert_eq!(TimeDelta::seconds(-1).to_std(), Err(OutOfRangeError(())));
         assert_eq!(TimeDelta::milliseconds(-1).to_std(), Err(OutOfRangeError(())));
     }
@@ -742,7 +739,10 @@ mod tests {
             TimeDelta::from_std(StdDuration::new(123, 765000000))
         );
         assert_eq!(Ok(TimeDelta::nanoseconds(777)), TimeDelta::from_std(StdDuration::new(0, 777)));
-        assert_eq!(Ok(MAX), TimeDelta::from_std(StdDuration::new(9223372036854775, 807000000)));
+        assert_eq!(
+            Ok(TimeDelta::MAX),
+            TimeDelta::from_std(StdDuration::new(9223372036854775, 807000000))
+        );
         assert_eq!(
             TimeDelta::from_std(StdDuration::new(9223372036854776, 0)),
             Err(OutOfRangeError(()))
