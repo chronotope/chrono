@@ -12,6 +12,7 @@ pub(crate) use timezone::TimeZone;
 
 mod parser;
 mod rule;
+mod rule_check;
 
 /// Unified error type for everything in the crate
 #[derive(Debug)]
@@ -123,9 +124,18 @@ const SECONDS_PER_HOUR: i64 = 3600;
 const SECONDS_PER_DAY: i64 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 /// Number of days in one week
 const DAYS_PER_WEEK: i64 = 7;
+/// Number of months in one year
+const MONTHS_PER_YEAR: i64 = 12;
+/// Number of seconds in a normal year
+const SECONDS_PER_NORMAL_YEAR: i64 = 365 * SECONDS_PER_DAY;
+/// Number of seconds in a leap year
+const SECONDS_PER_LEAP_YEAR: i64 = 366 * SECONDS_PER_DAY;
 
 /// Month days in a normal year
-const DAY_IN_MONTHS_NORMAL_YEAR: [i64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const DAYS_IN_MONTHS_NORMAL_YEAR: [i64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 /// Cumulated month days in a normal year
-const CUMUL_DAY_IN_MONTHS_NORMAL_YEAR: [i64; 12] =
+const CUMUL_DAYS_IN_MONTHS_NORMAL_YEAR: [i64; 12] =
     [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+/// Cumulated month days in a leap year
+const CUMUL_DAYS_IN_MONTHS_LEAP_YEAR: [i64; 12] =
+    [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
