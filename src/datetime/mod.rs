@@ -18,6 +18,9 @@ use std::string::ToString;
 #[cfg(any(feature = "std", test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
@@ -28,13 +31,7 @@ use crate::naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-use crate::oldtime::Duration as OldDuration;
-use crate::Date;
-use crate::Months;
-use crate::{Datelike, Timelike, Weekday};
-
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
+use crate::{Date, Datelike, Months, TimeDelta, Timelike, Weekday};
 
 /// documented at re-export site
 #[cfg(feature = "serde")]
@@ -321,7 +318,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
@@ -344,7 +341,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
@@ -366,7 +363,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
     #[inline]
-    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> TimeDelta {
         self.datetime.signed_duration_since(rhs.datetime)
     }
 
@@ -886,18 +883,18 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
-impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: OldDuration) -> DateTime<Tz> {
+    fn add(self, rhs: TimeDelta) -> DateTime<Tz> {
         self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
+    fn add_assign(&mut self, rhs: TimeDelta) {
         let datetime =
             self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
         let tz = self.timezone();
@@ -913,18 +910,18 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     }
 }
 
-impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Sub<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
+    fn sub(self, rhs: TimeDelta) -> DateTime<Tz> {
         self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
+    fn sub_assign(&mut self, rhs: TimeDelta) {
         let datetime =
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
@@ -941,10 +938,10 @@ impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
 }
 
 impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: DateTime<Tz>) -> OldDuration {
+    fn sub(self, rhs: DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }

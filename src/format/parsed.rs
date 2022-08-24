@@ -10,10 +10,7 @@ use num_traits::ToPrimitive;
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::oldtime::Duration as OldDuration;
-use crate::DateTime;
-use crate::Weekday;
-use crate::{Datelike, Timelike};
+use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 
 /// Parsed parts of date and time. There are two classes of methods:
 ///
@@ -428,7 +425,7 @@ impl Parsed {
                     + (week_from_sun as i32 - 1) * 7
                     + weekday.num_days_from_sunday() as i32;
                 let date = newyear
-                    .checked_add_signed(OldDuration::days(i64::from(ndays)))
+                    .checked_add_signed(TimeDelta::days(i64::from(ndays)))
                     .ok_or(OUT_OF_RANGE)?;
                 if date.year() != year {
                     return Err(OUT_OF_RANGE);
@@ -462,7 +459,7 @@ impl Parsed {
                     + (week_from_mon as i32 - 1) * 7
                     + weekday.num_days_from_monday() as i32;
                 let date = newyear
-                    .checked_add_signed(OldDuration::days(i64::from(ndays)))
+                    .checked_add_signed(TimeDelta::days(i64::from(ndays)))
                     .ok_or(OUT_OF_RANGE)?;
                 if date.year() != year {
                     return Err(OUT_OF_RANGE);
@@ -585,7 +582,7 @@ impl Parsed {
                     59 => {}
                     // `datetime` is known to be off by one second.
                     0 => {
-                        datetime -= OldDuration::seconds(1);
+                        datetime -= TimeDelta::seconds(1);
                     }
                     // otherwise it is impossible.
                     _ => return Err(IMPOSSIBLE),
@@ -629,7 +626,7 @@ impl Parsed {
 
         // this is used to prevent an overflow when calling FixedOffset::from_local_datetime
         datetime
-            .checked_sub_signed(OldDuration::seconds(i64::from(offset.local_minus_utc())))
+            .checked_sub_signed(TimeDelta::seconds(i64::from(offset.local_minus_utc())))
             .ok_or(OUT_OF_RANGE)?;
 
         match offset.from_local_datetime(&datetime) {

@@ -184,7 +184,7 @@ The following illustrates most supported operations to the date and time:
 
 ```rust
 use chrono::prelude::*;
-use chrono::Duration;
+use chrono::TimeDelta;
 
 // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
@@ -211,11 +211,11 @@ assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November
 // arithmetic operations
 let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
 let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
-assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
-assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
+assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
+assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
+assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + TimeDelta::seconds(1_000_000_000),
            Utc.ymd(2001, 9, 9).and_hms(1, 46, 40));
-assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
+assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - TimeDelta::seconds(1_000_000_000),
            Utc.ymd(1938, 4, 24).and_hms(22, 13, 20));
 ```
 
@@ -414,4 +414,3 @@ crate ([sources](https://github.com/bcourtine/chrono-ext/)).
 
 Advanced time zone handling is not yet supported.
 For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
-
