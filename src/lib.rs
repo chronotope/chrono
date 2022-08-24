@@ -420,9 +420,6 @@
 #![warn(unreachable_pub)]
 #![deny(dead_code)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
-// can remove this if/when rustc-serialize support is removed
-// keeps clippy happy in the meantime
-#![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod oldtime;
@@ -468,9 +465,6 @@ mod date;
 pub use date::{Date, MAX_DATE, MIN_DATE};
 
 mod datetime;
-#[cfg(feature = "rustc-serialize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
-pub use datetime::rustc_serialize::TsSeconds;
 #[allow(deprecated)]
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 
