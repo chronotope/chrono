@@ -425,10 +425,6 @@
 #![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(feature = "oldtime")]
-#[cfg_attr(docsrs, doc(cfg(feature = "oldtime")))]
-extern crate time as oldtime;
-#[cfg(not(feature = "oldtime"))]
 mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::{Duration, OutOfRangeError};
