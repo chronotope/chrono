@@ -409,6 +409,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 mod time_delta;
+use core::fmt;
+
 // this reexport is to aid the transition and should not be in the prelude!
 pub use time_delta::TimeDelta;
 
@@ -503,6 +505,33 @@ pub use naive::__BenchYearFlags;
 pub mod serde {
     pub use super::datetime::serde::*;
 }
+
+/// Out of range error type used in various converting APIs
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub struct OutOfRange {
+    _private: (),
+}
+
+impl OutOfRange {
+    fn new() -> OutOfRange {
+        OutOfRange { _private: () }
+    }
+}
+
+impl fmt::Display for OutOfRange {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "out of range")
+    }
+}
+
+impl fmt::Debug for OutOfRange {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        write!(f, "out of range")
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for OutOfRange {}
 
 /// MSRV 1.42
 #[cfg(test)]

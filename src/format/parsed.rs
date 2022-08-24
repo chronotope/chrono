@@ -4,8 +4,9 @@
 //! A collection of parsed date and time items.
 //! They can be constructed incrementally while being checked for consistency.
 
+use core::convert::TryFrom;
+
 use num_integer::div_rem;
-use num_traits::ToPrimitive;
 
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -131,7 +132,7 @@ impl Parsed {
     /// Tries to set the [`year`](#structfield.year) field from given value.
     #[inline]
     pub fn set_year(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.year, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`year_div_100`](#structfield.year_div_100) field from given value.
@@ -140,7 +141,7 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.year_div_100, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.year_div_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`year_mod_100`](#structfield.year_mod_100) field from given value.
@@ -149,13 +150,13 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.year_mod_100, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.year_mod_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoyear`](#structfield.isoyear) field from given value.
     #[inline]
     pub fn set_isoyear(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoyear, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoyear_div_100`](#structfield.isoyear_div_100) field from given value.
@@ -164,7 +165,7 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoyear_div_100, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoyear_div_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoyear_mod_100`](#structfield.isoyear_mod_100) field from given value.
@@ -173,31 +174,31 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoyear_mod_100, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoyear_mod_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`month`](#structfield.month) field from given value.
     #[inline]
     pub fn set_month(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.month, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.month, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`week_from_sun`](#structfield.week_from_sun) field from given value.
     #[inline]
     pub fn set_week_from_sun(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.week_from_sun, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.week_from_sun, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`week_from_mon`](#structfield.week_from_mon) field from given value.
     #[inline]
     pub fn set_week_from_mon(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.week_from_mon, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.week_from_mon, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoweek`](#structfield.isoweek) field from given value.
     #[inline]
     pub fn set_isoweek(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoweek, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoweek, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`weekday`](#structfield.weekday) field from given value.
@@ -209,13 +210,13 @@ impl Parsed {
     /// Tries to set the [`ordinal`](#structfield.ordinal) field from given value.
     #[inline]
     pub fn set_ordinal(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.ordinal, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.ordinal, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`day`](#structfield.day) field from given value.
     #[inline]
     pub fn set_day(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.day, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.day, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`hour_div_12`](#structfield.hour_div_12) field from given value.
@@ -239,7 +240,7 @@ impl Parsed {
     /// [`hour_mod_12`](#structfield.hour_mod_12) fields from given value.
     #[inline]
     pub fn set_hour(&mut self, value: i64) -> ParseResult<()> {
-        let v = value.to_u32().ok_or(OUT_OF_RANGE)?;
+        let v = u32::try_from(value).map_err(|_| OUT_OF_RANGE)?;
         set_if_consistent(&mut self.hour_div_12, v / 12)?;
         set_if_consistent(&mut self.hour_mod_12, v % 12)?;
         Ok(())
@@ -248,19 +249,19 @@ impl Parsed {
     /// Tries to set the [`minute`](#structfield.minute) field from given value.
     #[inline]
     pub fn set_minute(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.minute, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.minute, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`second`](#structfield.second) field from given value.
     #[inline]
     pub fn set_second(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.second, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.second, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`nanosecond`](#structfield.nanosecond) field from given value.
     #[inline]
     pub fn set_nanosecond(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.nanosecond, value.to_u32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.nanosecond, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`timestamp`](#structfield.timestamp) field from given value.
@@ -272,7 +273,7 @@ impl Parsed {
     /// Tries to set the [`offset`](#structfield.offset) field from given value.
     #[inline]
     pub fn set_offset(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.offset, value.to_i32().ok_or(OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.offset, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Returns a parsed naive date out of given fields.
