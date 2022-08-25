@@ -31,10 +31,6 @@ which Chrono builds upon and should acknowledge:
 * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 
-Any significant changes to Chrono are documented in
-the [`CHANGELOG.md`](https://github.com/chronotope/chrono/blob/main/CHANGELOG.md) file.
-
-
 ## Usage
 
 Put this in your `Cargo.toml`:
@@ -414,4 +410,3 @@ crate ([sources](https://github.com/bcourtine/chrono-ext/)).
 
 Advanced time zone handling is not yet supported.
 For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
-
