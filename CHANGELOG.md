@@ -1,59 +1,9 @@
 ChangeLog for Chrono
 ====================
 
-This documents all notable changes to [Chrono](https://github.com/chronotope/chrono).
-
-Chrono obeys the principle of [Semantic Versioning](http://semver.org/), with one caveat: we may
-move previously-existing code behind a feature gate and put it behind a new feature. This new
-feature will always be placed in the `previously-default` feature, which you can use to prevent
-breakage if you use `no-default-features`.
-
-There were/are numerous minor versions before 1.0 due to the language changes.
-Versions with only mechanical changes will be omitted from the following list.
-
-## 0.4.23
-* Impl Add<Month> + Sub<Month> for NaiveDateTime
-* Export `oldtime::OutOfRangeError` to the public API
-* Add feature documentation for docs.rs [(#779)](https://github.com/chronotope/chrono/pull/779)
-
-## 0.4.22
-
-* Allow wasmbindgen to be optional on `wasm32-unknown-unknown` target [(#771)](https://github.com/chronotope/chrono/pull/771)
-* Fix compile error for `x86_64-fortanix-unknown-sgx` [(#767)](https://github.com/chronotope/chrono/pull/767)
-* Update `iana-time-zone` version to 1.44 [(#773)](https://github.com/chronotope/chrono/pull/773)
-
-## 0.4.21
-
-* Fall back to UTC timezone in cases where no timezone is found [(#756)](https://github.com/chronotope/chrono/pull/756)
-* Correctly detect timezone on Android [(#756)](https://github.com/chronotope/chrono/pull/756)
-* Improve documentation for strftime `%Y` specifier [(#760)](https://github.com/chronotope/chrono/pull/760)
-
-## 0.4.20
-
-* Add more formatting documentation and examples.
-* Add support for microseconds timestamps serde serialization/deserialization (#304)
-* Fix `DurationRound` is not TZ aware (#495)
-* Implement `DurationRound` for `NaiveDateTime`
-* Implement `std::iter::Sum` for `Duration`
-* Add `DateTime::from_local()` to construct from given local date and time (#572)
-* Add a function that calculates the number of years elapsed between now and a given `Date` or `DateTime` (#557)
-* Correct build for wasm32-unknown-emscripten target (#568)
-* Change `Local::now()` and `Utc::now()` documentation from "current date" to "current date and time" (#647)
-* Fix `duration_round` panic on rounding by `Duration::zero()` (#658)
-* Add optional rkyv support.
-* Add support for microseconds timestamps serde serialization for `NaiveDateTime`.
-* Add support for optional timestamps serde serialization for `NaiveDateTime`.
-* Fix build for wasm32-unknown-emscripten (@yu-re-ka #593)
-* Make `ParseErrorKind` public and available through `ParseError::kind()` (#588)
-* Implement `DoubleEndedIterator` for `NaiveDateDaysIterator` and `NaiveDateWeeksIterator`
-* Fix panicking when parsing a `DateTime` (@botahamec)
-* Add support for getting week bounds based on a specific `NaiveDate` and a `Weekday` (#666)
-* Remove libc dependency from Cargo.toml.
-* Add the `and_local_timezone` method to `NaiveDateTime`
-* Fix the behavior of `Duration::abs()` for negative durations with non-zero nanos
-* Add compatibility with rfc2822 comments (#733)
-* Make `js-sys` and `wasm-bindgen` enabled by default when target is `wasm32-unknown-unknown` for ease of API discovery
-* Add the `Months` struct and associated `Add` and `Sub` impls
+This documents notable changes to [Chrono](https://github.com/chronotope/chrono)
+up to and including version 0.4.19. For later releases, please review the
+release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 ## 0.4.19
 
@@ -779,4 +729,3 @@ and replaced by 0.2.25 very shortly. Duh.)
 ## 0.1.0 (2014-11-20)
 
 The initial version that was available to `crates.io`.
-

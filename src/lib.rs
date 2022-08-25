@@ -19,9 +19,6 @@
 //! * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 //! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
 //!
-//! Any significant changes to Chrono are documented in
-//! the [`CHANGELOG.md`](https://github.com/chronotope/chrono/blob/main/CHANGELOG.md) file.
-//!
 //! ## Usage
 //!
 //! Put this in your `Cargo.toml`:
