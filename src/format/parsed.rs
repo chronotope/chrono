@@ -165,7 +165,10 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoyear_div_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(
+            &mut self.isoyear_div_100,
+            i32::try_from(value).map_err(|_| OUT_OF_RANGE)?,
+        )
     }
 
     /// Tries to set the [`isoyear_mod_100`](#structfield.isoyear_mod_100) field from given value.
@@ -174,7 +177,10 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoyear_mod_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(
+            &mut self.isoyear_mod_100,
+            i32::try_from(value).map_err(|_| OUT_OF_RANGE)?,
+        )
     }
 
     /// Tries to set the [`month`](#structfield.month) field from given value.
