@@ -48,11 +48,8 @@
 //!
 //! ### Duration
 //!
-//! Chrono currently uses its own [`Duration`] type to represent the magnitude
-//! of a time span. Since this has the same name as the newer, standard type for
-//! duration, the reference will refer this type as `OldDuration`.
-//!
-//! Note that this is an "accurate" duration represented as seconds and
+//! Chrono currently uses its own [`TimeDelta`] type to represent the magnitude
+//! of a time span. Note that this is an "accurate" duration represented as seconds and
 //! nanoseconds and does not represent "nominal" components such as days or
 //! months.
 //!
@@ -60,10 +57,7 @@
 //! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
 //! but it will be supported in the future.
 //! Meanwhile you can convert between two types with
-//! [`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
-//! and
-//! [`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
-//! methods.
+//! [`TimeDelta::from_std`] and [`TimeDelta::to_std`] methods.
 //!
 //! ### Date and Time
 //!
@@ -150,7 +144,7 @@
 //!
 //! ```rust
 //! use chrono::prelude::*;
-//! use chrono::Duration;
+//! use chrono::TimeDelta;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 //! let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
@@ -177,11 +171,11 @@
 //! // arithmetic operations
 //! let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
 //! let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
-//! assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
-//! assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
+//! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
+//! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(2001, 9, 9).and_hms(1, 46, 40));
-//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(1938, 4, 24).and_hms(22, 13, 20));
 //! ```
 //!
@@ -399,10 +393,10 @@
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-mod oldtime;
 use core::fmt;
 
-pub use oldtime::{Duration, OutOfRangeError};
+mod time_delta;
+pub use time_delta::TimeDelta;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
