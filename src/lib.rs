@@ -211,7 +211,7 @@
 //! `unstable-locales`:
 //!
 //! ```toml
-//! chrono = { version = "0.4", features = ["unstable-locales"] }
+//! chrono = { version = "0.5", features = ["unstable-locales"] }
 //! ```
 //!
 //! The `unstable-locales` feature requires and implies at least the `alloc` feature.
