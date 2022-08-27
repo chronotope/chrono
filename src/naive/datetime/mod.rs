@@ -5,11 +5,11 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::convert::TryFrom;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_traits::ToPrimitive;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -211,8 +211,8 @@ impl NaiveDateTime {
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let days = secs.div_euclid(86_400);
         let secs = secs.rem_euclid(86_400);
-        let date = days
-            .to_i32()
+        let date = i32::try_from(days)
+            .ok()
             .and_then(|days| days.checked_add(719_163))
             .and_then(NaiveDate::from_num_days_from_ce_opt);
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
