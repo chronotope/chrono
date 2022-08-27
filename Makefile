@@ -17,9 +17,6 @@ authors:
 .PHONY: readme README.md
 readme: README.md
 
-README.md: src/lib.rs
-	( ./ci/fix-readme.sh $< ) > $@
-
 .PHONY: test
 test:
 	CHANNEL=$(CHANNEL) ./ci/travis.sh

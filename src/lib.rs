@@ -1,6 +1,3 @@
-// This is a part of Chrono.
-// See README.md and LICENSE.txt for details.
-
 //! # Chrono: Date and Time for Rust
 //!
 //! It aims to be a feature-complete superset of
@@ -18,15 +15,6 @@
 //!    the wiki](https://github.com/rust-lang/rust-wiki-backup/blob/master/Lib-datetime.md)
 //! * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 //! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
-//!
-//! ## Usage
-//!
-//! Put this in your `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! chrono = "0.4"
-//! ```
 //!
 //! ### Features
 //!
