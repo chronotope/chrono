@@ -519,13 +519,13 @@ impl OutOfRange {
 }
 
 impl fmt::Display for OutOfRange {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "out of range")
     }
 }
 
 impl fmt::Debug for OutOfRange {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "out of range")
     }
 }
