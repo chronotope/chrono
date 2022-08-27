@@ -331,11 +331,11 @@ fn test_from_system_time() {
     // SystemTime -> DateTime<Utc>
     assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
     assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH + TimeDelta::new(999_999_999, nanos)),
+        DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
         Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)
     );
     assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH - TimeDelta::new(999_999_999, nanos)),
+        DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
         Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1_000)
     );
 
@@ -343,11 +343,11 @@ fn test_from_system_time() {
     assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
     assert_eq!(
         SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)),
-        UNIX_EPOCH + TimeDelta::new(999_999_999, nanos)
+        UNIX_EPOCH + Duration::new(999_999_999, nanos)
     );
     assert_eq!(
         SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1_000)),
-        UNIX_EPOCH - TimeDelta::new(999_999_999, nanos)
+        UNIX_EPOCH - Duration::new(999_999_999, nanos)
     );
 
     // DateTime<any tz> -> SystemTime (via `with_timezone`)
