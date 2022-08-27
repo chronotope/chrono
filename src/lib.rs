@@ -422,6 +422,8 @@ mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
 pub use oldtime::{Duration, OutOfRangeError};
 
+use core::fmt;
+
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
 use doc_comment::doctest;
@@ -517,3 +519,30 @@ pub use naive::__BenchYearFlags;
 pub mod serde {
     pub use super::datetime::serde::*;
 }
+
+/// Out of range error type used in various converting APIs
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub struct OutOfRange {
+    _private: (),
+}
+
+impl OutOfRange {
+    const fn new() -> OutOfRange {
+        OutOfRange { _private: () }
+    }
+}
+
+impl fmt::Display for OutOfRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "out of range")
+    }
+}
+
+impl fmt::Debug for OutOfRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "out of range")
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for OutOfRange {}

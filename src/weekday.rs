@@ -1,7 +1,9 @@
-use core::fmt;
+use core::{convert::TryFrom, fmt};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
+
+use crate::OutOfRange;
 
 /// The day of week.
 ///
@@ -12,12 +14,12 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// # Example
 /// ```
 /// use chrono::Weekday;
-/// use num_traits::cast::FromPrimitive;
+/// use std::convert::TryFrom;
 ///
 /// let monday = "Monday".parse::<Weekday>().unwrap();
 /// assert_eq!(monday, Weekday::Mon);
 ///
-/// let sunday = Weekday::from_u8(6).unwrap();
+/// let sunday = Weekday::try_from(6).unwrap();
 /// assert_eq!(sunday, Weekday::Sun);
 ///
 /// assert_eq!(sunday.num_days_from_monday(), 6); // starts counting with Monday = 0
@@ -156,6 +158,26 @@ impl fmt::Display for Weekday {
 /// Any weekday can be represented as an integer from 0 to 6, which equals to
 /// [`Weekday::num_days_from_monday`](#method.num_days_from_monday) in this implementation.
 /// Do not heavily depend on this though; use explicit methods whenever possible.
+impl TryFrom<u8> for Weekday {
+    type Error = OutOfRange;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Weekday::Mon),
+            1 => Ok(Weekday::Tue),
+            2 => Ok(Weekday::Wed),
+            3 => Ok(Weekday::Thu),
+            4 => Ok(Weekday::Fri),
+            5 => Ok(Weekday::Sat),
+            6 => Ok(Weekday::Sun),
+            _ => Err(OutOfRange::new()),
+        }
+    }
+}
+
+/// Any weekday can be represented as an integer from 0 to 6, which equals to
+/// [`Weekday::num_days_from_monday`](#method.num_days_from_monday) in this implementation.
+/// Do not heavily depend on this though; use explicit methods whenever possible.
 impl num_traits::FromPrimitive for Weekday {
     #[inline]
     fn from_i64(n: i64) -> Option<Weekday> {
@@ -210,14 +232,13 @@ impl fmt::Debug for ParseWeekdayError {
 
 #[cfg(test)]
 mod tests {
-    use num_traits::FromPrimitive;
-
     use super::Weekday;
+    use std::convert::TryFrom;
 
     #[test]
     fn test_num_days_from() {
         for i in 0..7 {
-            let base_day = Weekday::from_u64(i).unwrap();
+            let base_day = Weekday::try_from(i).unwrap();
 
             assert_eq!(base_day.num_days_from_monday(), base_day.num_days_from(Weekday::Mon));
             assert_eq!(base_day.num_days_from_sunday(), base_day.num_days_from(Weekday::Sun));
