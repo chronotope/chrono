@@ -8,7 +8,7 @@ source "${BASH_SOURCE[0]%/*}/_shlib.sh"
 TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
 FEATURES=(std serde clock "alloc serde" unstable-locales)
 CHECK_FEATURES=(alloc "std unstable-locales" "serde clock" "clock unstable-locales")
-RUST_132_FEATURES=(rustc-serialize serde)
+RUST_132_FEATURES=(serde)
 
 main() {
     if [[ "$*" =~ "-h" ]]; then
