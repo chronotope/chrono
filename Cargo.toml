@@ -32,7 +32,6 @@ __doctest = []
 
 [dependencies]
 num-integer = { version = "0.1.36", default-features = false }
-num-traits = { version = "0.2", default-features = false }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.5.2", optional = true }
 criterion = { version = "0.3", optional = true }
