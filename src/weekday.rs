@@ -9,7 +9,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// (This is why this type does *not* implement `PartialOrd` or `Ord` traits.)
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub enum Weekday {
     /// Monday.
