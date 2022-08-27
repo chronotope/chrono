@@ -28,7 +28,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub enum Month {
     /// January

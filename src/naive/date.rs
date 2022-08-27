@@ -1985,7 +1985,7 @@ impl Default for NaiveDate {
     }
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_encodable_json<F, E>(to_string: F)
 where
     F: Fn(&NaiveDate) -> Result<String, E>,
@@ -1998,7 +1998,7 @@ where
     assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+262143-12-31""#.into()));
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_decodable_json<F, E>(from_str: F)
 where
     F: Fn(&str) -> Result<NaiveDate, E>,
@@ -2030,41 +2030,8 @@ where
     assert!(from_str(&i64::MIN.to_string()).is_err());
     assert!(from_str(&i64::MAX.to_string()).is_err());
     assert!(from_str(r#"{}"#).is_err());
-    // pre-0.3.0 rustc-serialize format is now invalid
     assert!(from_str(r#"{"ymdf":20}"#).is_err());
     assert!(from_str(r#"null"#).is_err());
-}
-
-#[cfg(feature = "rustc-serialize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
-mod rustc_serialize {
-    use super::NaiveDate;
-    use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-
-    impl Encodable for NaiveDate {
-        fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-            format!("{:?}", self).encode(s)
-        }
-    }
-
-    impl Decodable for NaiveDate {
-        fn decode<D: Decoder>(d: &mut D) -> Result<NaiveDate, D::Error> {
-            d.read_str()?.parse().map_err(|_| d.error("invalid date"))
-        }
-    }
-
-    #[cfg(test)]
-    use rustc_serialize::json;
-
-    #[test]
-    fn test_encodable() {
-        super::test_encodable_json(json::encode);
-    }
-
-    #[test]
-    fn test_decodable() {
-        super::test_decodable_json(json::decode);
-    }
 }
 
 #[cfg(feature = "serde")]
