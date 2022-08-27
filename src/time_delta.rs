@@ -22,11 +22,11 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// The number of nanoseconds in a microsecond.
 const NANOS_PER_MICRO: i32 = 1000;
 /// The number of nanoseconds in a millisecond.
-const NANOS_PER_MILLI: i32 = 1000_000;
+const NANOS_PER_MILLI: i32 = 1_000_000;
 /// The number of nanoseconds in seconds.
 const NANOS_PER_SEC: i32 = 1_000_000_000;
 /// The number of microseconds per second.
-const MICROS_PER_SEC: i64 = 1000_000;
+const MICROS_PER_SEC: i64 = 1_000_000;
 /// The number of milliseconds per second.
 const MILLIS_PER_SEC: i64 = 1000;
 /// The number of seconds in a minute.
@@ -123,7 +123,7 @@ impl TimeDelta {
     pub fn milliseconds(milliseconds: i64) -> TimeDelta {
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
         let nanos = millis as i32 * NANOS_PER_MILLI;
-        TimeDelta { secs: secs, nanos: nanos }
+        TimeDelta { secs, nanos }
     }
 
     /// Makes a new `Duration` with given number of microseconds.
@@ -131,14 +131,14 @@ impl TimeDelta {
     pub fn microseconds(microseconds: i64) -> TimeDelta {
         let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
         let nanos = micros as i32 * NANOS_PER_MICRO;
-        TimeDelta { secs: secs, nanos: nanos }
+        TimeDelta { secs, nanos }
     }
 
     /// Makes a new `Duration` with given number of nanoseconds.
     #[inline]
     pub fn nanoseconds(nanos: i64) -> TimeDelta {
         let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
-        TimeDelta { secs: secs, nanos: nanos as i32 }
+        TimeDelta { secs, nanos: nanos as i32 }
     }
 
     /// Returns the total number of whole weeks in the duration.
@@ -218,7 +218,7 @@ impl TimeDelta {
             nanos -= NANOS_PER_SEC;
             secs = try_opt!(secs.checked_add(1));
         }
-        let d = TimeDelta { secs: secs, nanos: nanos };
+        let d = TimeDelta { secs, nanos };
         // Even if d is within the bounds of i64 seconds,
         // it might still overflow i64 milliseconds.
         if d < MIN || d > MAX {
@@ -236,7 +236,7 @@ impl TimeDelta {
             nanos += NANOS_PER_SEC;
             secs = try_opt!(secs.checked_sub(1));
         }
-        let d = TimeDelta { secs: secs, nanos: nanos };
+        let d = TimeDelta { secs, nanos };
         // Even if d is within the bounds of i64 seconds,
         // it might still overflow i64 milliseconds.
         if d < MIN || d > MAX {
@@ -332,7 +332,7 @@ impl Add for TimeDelta {
             nanos -= NANOS_PER_SEC;
             secs += 1;
         }
-        TimeDelta { secs: secs, nanos: nanos }
+        TimeDelta { secs, nanos }
     }
 }
 
@@ -346,7 +346,7 @@ impl Sub for TimeDelta {
             nanos += NANOS_PER_SEC;
             secs -= 1;
         }
-        TimeDelta { secs: secs, nanos: nanos }
+        TimeDelta { secs, nanos }
     }
 }
 
@@ -358,7 +358,7 @@ impl Mul<i32> for TimeDelta {
         let total_nanos = self.nanos as i64 * rhs as i64;
         let (extra_secs, nanos) = div_mod_floor_64(total_nanos, NANOS_PER_SEC as i64);
         let secs = self.secs * rhs as i64 + extra_secs;
-        TimeDelta { secs: secs, nanos: nanos as i32 }
+        TimeDelta { secs, nanos: nanos as i32 }
     }
 }
 
@@ -378,7 +378,7 @@ impl Div<i32> for TimeDelta {
             nanos += NANOS_PER_SEC;
             secs -= 1;
         }
-        TimeDelta { secs: secs, nanos: nanos }
+        TimeDelta { secs, nanos }
     }
 }
 
@@ -564,7 +564,7 @@ mod tests {
         assert_eq!(MIN.num_microseconds(), None);
 
         // overflow checks
-        const MICROS_PER_DAY: i64 = 86400_000_000;
+        const MICROS_PER_DAY: i64 = 86_400_000_000;
         assert_eq!(
             TimeDelta::days(i64::MAX / MICROS_PER_DAY).num_microseconds(),
             Some(i64::MAX / MICROS_PER_DAY * MICROS_PER_DAY)
@@ -588,7 +588,7 @@ mod tests {
         assert_eq!(MIN.num_nanoseconds(), None);
 
         // overflow checks
-        const NANOS_PER_DAY: i64 = 86400_000_000_000;
+        const NANOS_PER_DAY: i64 = 86_400_000_000_000;
         assert_eq!(
             TimeDelta::days(i64::MAX / NANOS_PER_DAY).num_nanoseconds(),
             Some(i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY)
@@ -634,6 +634,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::erasing_op)]
     fn test_duration_mul() {
         assert_eq!(TimeDelta::zero() * i32::MAX, TimeDelta::zero());
         assert_eq!(TimeDelta::zero() * i32::MIN, TimeDelta::zero());
