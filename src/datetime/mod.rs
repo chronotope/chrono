@@ -370,7 +370,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .single()
     }
 
-    /// Subtract a duration in [`Days`] to the date part of the `DateTime`
+    /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
