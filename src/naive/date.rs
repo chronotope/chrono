@@ -2200,11 +2200,14 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::{
-        Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
+        Days, Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
     };
     use crate::time_delta::TimeDelta;
     use crate::{Datelike, Weekday};
-    use std::{i32, u32};
+    use std::{
+        convert::{TryFrom, TryInto},
+        i32, u32,
+    };
 
     #[test]
     fn diff_months() {
@@ -2645,6 +2648,51 @@ mod tests {
 
         check((MAX_YEAR, 12, 31), (0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64));
         check((MIN_YEAR, 1, 1), (0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64));
+    }
+
+    #[test]
+    fn test_date_add_days() {
+        fn check((y1, m1, d1): (i32, u32, u32), rhs: Days, ymd: Option<(i32, u32, u32)>) {
+            let lhs = NaiveDate::from_ymd(y1, m1, d1);
+            let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd(y, m, d));
+            assert_eq!(lhs.checked_add_days(rhs), sum);
+        }
+
+        check((2014, 1, 1), Days::new(0), Some((2014, 1, 1)));
+        // always round towards zero
+        check((2014, 1, 1), Days::new(1), Some((2014, 1, 2)));
+        check((2014, 1, 1), Days::new(364), Some((2014, 12, 31)));
+        check((2014, 1, 1), Days::new(365 * 4 + 1), Some((2018, 1, 1)));
+        check((2014, 1, 1), Days::new(365 * 400 + 97), Some((2414, 1, 1)));
+
+        check((-7, 1, 1), Days::new(365 * 12 + 3), Some((5, 1, 1)));
+
+        // overflow check
+        check(
+            (0, 1, 1),
+            Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()),
+            Some((MAX_YEAR, 12, 31)),
+        );
+        check((0, 1, 1), Days::new(u64::try_from(MAX_DAYS_FROM_YEAR_0).unwrap() + 1), None);
+    }
+
+    #[test]
+    fn test_date_sub_days() {
+        fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: Days) {
+            let lhs = NaiveDate::from_ymd(y1, m1, d1);
+            let rhs = NaiveDate::from_ymd(y2, m2, d2);
+            assert_eq!(lhs - diff, rhs);
+        }
+
+        check((2014, 1, 1), (2014, 1, 1), Days::new(0));
+        check((2014, 1, 2), (2014, 1, 1), Days::new(1));
+        check((2014, 12, 31), (2014, 1, 1), Days::new(364));
+        check((2015, 1, 3), (2014, 1, 1), Days::new(365 + 2));
+        check((2018, 1, 1), (2014, 1, 1), Days::new(365 * 4 + 1));
+        check((2414, 1, 1), (2014, 1, 1), Days::new(365 * 400 + 97));
+
+        check((MAX_YEAR, 12, 31), (0, 1, 1), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()));
+        check((0, 1, 1), (MIN_YEAR, 1, 1), Days::new((-MIN_DAYS_FROM_YEAR_0).try_into().unwrap()));
     }
 
     #[test]
