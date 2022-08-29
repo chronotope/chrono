@@ -27,7 +27,7 @@ use crate::format::DelayedFormat;
 use crate::format::Locale;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item};
-use crate::naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -357,6 +357,26 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.naive_local()
             .checked_sub_months(rhs)?
             .and_local_timezone(Tz::from_offset(&self.offset))
+            .single()
+    }
+
+    /// Add a duration in [`Days`] to the date part of the `DateTime`
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+        self.datetime
+            .checked_add_days(days)?
+            .and_local_timezone(TimeZone::from_offset(&self.offset))
+            .single()
+    }
+
+    /// Subtract a duration in [`Days`] to the date part of the `DateTime`
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+        self.datetime
+            .checked_sub_days(days)?
+            .and_local_timezone(TimeZone::from_offset(&self.offset))
             .single()
     }
 
@@ -943,6 +963,22 @@ impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
     #[inline]
     fn sub(self, rhs: DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
+    }
+}
+
+impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn add(self, days: Days) -> Self::Output {
+        self.checked_add_days(days).unwrap()
+    }
+}
+
+impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn sub(self, days: Days) -> Self::Output {
+        self.checked_sub_days(days).unwrap()
     }
 }
 

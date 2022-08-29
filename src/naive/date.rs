@@ -114,6 +114,22 @@ impl NaiveWeek {
     }
 }
 
+/// A duration in calendar days.
+///
+/// This is useful becuase when using `TimeDelta` it is possible
+/// that adding `TimeDelta::days(1)` doesn't increment the day value as expected due to it being a
+/// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types
+/// and in other cases `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+pub struct Days(pub(crate) u64);
+
+impl Days {
+    /// Construct a new `Days` from a number of months
+    pub fn new(num: u64) -> Self {
+        Self(num)
+    }
+}
+
 /// ISO 8601 calendar date without timezone.
 /// Allows for every [proleptic Gregorian date](#calendar-date)
 /// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
@@ -695,6 +711,52 @@ impl NaiveDate {
         let day = Ord::min(self.day(), days[(month - 1) as usize]);
 
         NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
+    }
+
+    /// Add a duration in [`Days`] to the date
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, Days};
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 2, 20).checked_add_days(Days::new(9)),
+    ///     Some(NaiveDate::from_ymd(2022, 3, 1))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 7, 31).checked_add_days(Days::new(2)),
+    ///     Some(NaiveDate::from_ymd(2022, 8, 2))
+    /// );
+    /// ```
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+        if days.0 == 0 {
+            return Some(self);
+        }
+
+        i64::try_from(days.0).ok().and_then(|d| self.diff_days(d))
+    }
+
+    /// Subtract a duration in [`Days`] from the date
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, Days};
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 2, 20).checked_sub_days(Days::new(6)),
+    ///     Some(NaiveDate::from_ymd(2022, 2, 14))
+    /// );
+    /// ```
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+        if days.0 == 0 {
+            return Some(self);
+        }
+
+        i64::try_from(days.0).ok().and_then(|d| self.diff_days(-d))
+    }
+
+    fn diff_days(self, days: i64) -> Option<Self> {
+        self.checked_add_signed(TimeDelta::days(days))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -1714,6 +1776,22 @@ impl Sub<Months> for NaiveDate {
     /// ```
     fn sub(self, months: Months) -> Self::Output {
         self.checked_sub_months(months).unwrap()
+    }
+}
+
+impl Add<Days> for NaiveDate {
+    type Output = NaiveDate;
+
+    fn add(self, days: Days) -> Self::Output {
+        self.checked_add_days(days).unwrap()
+    }
+}
+
+impl Sub<Days> for NaiveDate {
+    type Output = NaiveDate;
+
+    fn sub(self, days: Days) -> Self::Output {
+        self.checked_sub_days(days).unwrap()
     }
 }
 
