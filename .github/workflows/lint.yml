@@ -2,9 +2,14 @@ name: lint
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    paths:
+      - "**.rs"
+      - .github/**
+      - .ci/**
+      - xtask/**
+      - Cargo.toml
 
 jobs:
   lint:
@@ -12,11 +17,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - name: Lint
         run: cargo run --package xtask -- lint

@@ -25,13 +25,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust_version }}
-          override: true
-
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - name: Build and Test
         run: cargo run --package xtask -- test
@@ -49,12 +43,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust with no_std toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
       - name: Build and Test
         run: cargo run --package xtask -- test
@@ -72,15 +61,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust with fortanix sgx toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v1
-
       - name: Build no_std lib
         run: cd ci/core-test && cargo build --target ${{ matrix.target }} --color=always
 
@@ -97,13 +81,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v1
 
       - name: Install node
@@ -145,12 +125,8 @@ jobs:
     name: Check doc links
     steps:
       - uses: actions/checkout@v2
-      - name: Install rust nightly
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - uses: dtolnay/rust-toolchain@nightly
       - name: Check docs build without warnings
+        run: cargo +nightly doc --all-features --no-deps
         env:
           RUSTDOCFLAGS: "-D warnings --cfg docsrs"
-        run: cargo +nightly doc --all-features --no-deps
