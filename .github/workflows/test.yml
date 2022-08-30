@@ -8,42 +8,18 @@ on:
       - "**.rs"
       - .github/**
       - .ci/**
+      - xtask/**
       - Cargo.toml
+  schedule:
+    - cron:  '30 5 * * *' # run this daily to pick up any issues due to tzdb updates
 
 jobs:
-  test:
+  test_full:
     strategy:
       matrix:
         os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-latest]
-        rust_version: [stable]
-        exhaustive_tz: [onetz]
-        check_combinatoric: [no_combinatoric]
-        include:
-          # check all tzs on most-recent OS's
-          - os: ubuntu-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          - os: windows-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          - os: macos-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          # compilation check
-          - os: ubuntu-latest
-            rust_version: stable
-            check_combinatoric: "combinatoric"
-          # test other rust versions
-          - os: ubuntu-latest
-            rust_version: beta
-          - os: ubuntu-latest
-            rust_version: nightly
-          - os: ubuntu-20.04
-            rust_version: 1.38.0
-          - os: macos-latest
-            rust_version: 1.38.0
-          - os: windows-latest
-            rust_version: 1.38.0
+        rust_version: ["1.38.0", "stable"]
+        test_style: ["all_tzs", "check_features_powerset"]
 
     runs-on: ${{ matrix.os }}
 
@@ -58,16 +34,16 @@ jobs:
 
       - uses: Swatinem/rust-cache@v1
       - name: Build and Test
-        run: bash ci/github.sh
+        run: cargo run --package xtask -- test
         env:
+          TEST_STYLE: ${{ matrix.test_style }}
           RUST_VERSION: ${{ matrix.rust_version }}
-          EXHAUSTIVE_TZ: ${{ matrix.exhaustive_tz }}
-          CHECK_COMBINATORIC: ${{ matrix.check_combinatoric }}
 
-  no_std:
+  test_basic:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust_version: ["beta", "nightly"]
 
     runs-on: ${{ matrix.os }}
 
@@ -78,18 +54,19 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: thumbv6m-none-eabi
           override: true
       - uses: Swatinem/rust-cache@v1
+      - name: Build and Test
+        run: cargo run --package xtask -- test
+        env:
+          TEST_STYLE: basic
+          RUST_VERSION: ${{ matrix.rust_version }}
 
-      - name: Build no_std lib
-        run: cargo build --target thumbv6m-none-eabi --color=always
-        working-directory: ./ci/core-test
-
-  intel_sgx:
+  no_std:
     strategy:
       matrix:
         os: [ubuntu-latest]
+        target: [thumbv6m-none-eabi, x86_64-fortanix-unknown-sgx]
 
     runs-on: ${{ matrix.os }}
 
@@ -100,18 +77,21 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
-          target: x86_64-fortanix-unknown-sgx
+          target: ${{ matrix.target }}
           override: true
       - uses: Swatinem/rust-cache@v1
 
-      - name: Build sgx lib
-        run: cargo build --target x86_64-fortanix-unknown-sgx --color=always
-        working-directory: ./ci/core-test
+      - name: Build no_std lib
+        run: cd ci/core-test && cargo build --target ${{ matrix.target }} --color=always
 
   wasm:
     strategy:
       matrix:
-        os: [macos-latest]
+        os: [macos-latest, ubuntu-latest]
+        target:
+          - wasm32-unknown-unknown
+          - wasm32-unknown-emscripten
+          - wasm32-wasi
 
     runs-on: ${{ matrix.os }}
 
@@ -122,7 +102,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: wasm32-unknown-unknown
+          target: ${{ matrix.target }}
           override: true
       - uses: Swatinem/rust-cache@v1
 
@@ -138,110 +118,9 @@ jobs:
           wasm-pack --version
 
       - name: Build and Test
-        run: bash ci/github.sh
+        run: cargo run --package xtask -- test
         env:
-          RUST_VERSION: stable
-          WASM: wasm_simple
-
-  wasm_emscripten:
-    strategy:
-      matrix:
-        os: [macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-emscripten
-          override: true
-
-      - name: Install node
-        uses: actions/setup-node@v1
-        with:
-          node-version: "12"
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_emscripten
-
-  wasm_unknown:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_unknown
-
-  wasm_unknown_no_wasmbind:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_unknown_no_wasmbind
-
-  wasm_wasi:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-wasi
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_wasi
+          TARGET: ${{ matrix.target }}
 
   cross-targets:
     strategy:

@@ -1,0 +1,10 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+edition = "2018" # to be compatible with chrono's MSRV of 1.38
+license = "MIT"
+description = "Build tasks"
+
+[dependencies]
+duct = "0.13.5" # for stdout_to_stderr
+itertools = "0.10.3" # for powerset testing

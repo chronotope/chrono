@@ -19,8 +19,4 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - name: Lint
-        run: bash ci/lint.sh
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@0.3.0
-        with:
-          check_together: "y"
+        run: cargo run --package xtask -- lint

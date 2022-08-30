@@ -175,6 +175,12 @@ Notes:
 */
 
 #[cfg(feature = "unstable-locales")]
+extern crate alloc;
+
+#[cfg(feature = "unstable-locales")]
+use alloc::vec::Vec;
+
+#[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
