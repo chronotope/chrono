@@ -17,7 +17,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
+use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::{DateTime, Datelike, LocalResult, Months, TimeDelta, TimeZone, Timelike, Weekday};
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -656,6 +656,20 @@ impl NaiveDateTime {
     /// ```
     pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
+    }
+
+    /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: self.date.checked_add_days(days)?, ..self })
+    }
+
+    /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: self.date.checked_sub_days(days)?, ..self })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -1530,6 +1544,22 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
     #[inline]
     fn sub(self, rhs: NaiveDateTime) -> TimeDelta {
         self.signed_duration_since(rhs)
+    }
+}
+
+impl Add<Days> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    fn add(self, days: Days) -> Self::Output {
+        self.checked_add_days(days).unwrap()
+    }
+}
+
+impl Sub<Days> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    fn sub(self, days: Days) -> Self::Output {
+        self.checked_sub_days(days).unwrap()
     }
 }
 
