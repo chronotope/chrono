@@ -99,8 +99,11 @@ struct Cache {
 #[cfg(target_os = "android")]
 const TZDB_LOCATION: &str = " /system/usr/share/zoneinfo";
 
+#[cfg(target_os = "aix")]
+const TZDB_LOCATION: &str = "/usr/share/lib/zoneinfo";
+
 #[allow(dead_code)] // keeps the cfg simpler
-#[cfg(not(target_os = "android"))]
+#[cfg(not(any(target_os = "android", target_os = "aix")))]
 const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
 
 fn fallback_timezone() -> Option<TimeZone> {
