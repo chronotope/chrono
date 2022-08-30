@@ -114,6 +114,22 @@ impl NaiveWeek {
     }
 }
 
+/// A duration in calendar days.
+///
+/// This is useful becuase when using `TimeDelta` it is possible
+/// that adding `TimeDelta::days(1)` doesn't increment the day value as expected due to it being a
+/// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types
+/// and in other cases `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+pub struct Days(pub(crate) u64);
+
+impl Days {
+    /// Construct a new `Days` from a number of months
+    pub fn new(num: u64) -> Self {
+        Self(num)
+    }
+}
+
 /// ISO 8601 calendar date without timezone.
 /// Allows for every [proleptic Gregorian date](#calendar-date)
 /// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
@@ -695,6 +711,52 @@ impl NaiveDate {
         let day = Ord::min(self.day(), days[(month - 1) as usize]);
 
         NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
+    }
+
+    /// Add a duration in [`Days`] to the date
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, Days};
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 2, 20).checked_add_days(Days::new(9)),
+    ///     Some(NaiveDate::from_ymd(2022, 3, 1))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 7, 31).checked_add_days(Days::new(2)),
+    ///     Some(NaiveDate::from_ymd(2022, 8, 2))
+    /// );
+    /// ```
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+        if days.0 == 0 {
+            return Some(self);
+        }
+
+        i64::try_from(days.0).ok().and_then(|d| self.diff_days(d))
+    }
+
+    /// Subtract a duration in [`Days`] from the date
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, Days};
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 2, 20).checked_sub_days(Days::new(6)),
+    ///     Some(NaiveDate::from_ymd(2022, 2, 14))
+    /// );
+    /// ```
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+        if days.0 == 0 {
+            return Some(self);
+        }
+
+        i64::try_from(days.0).ok().and_then(|d| self.diff_days(-d))
+    }
+
+    fn diff_days(self, days: i64) -> Option<Self> {
+        self.checked_add_signed(TimeDelta::days(days))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -1717,6 +1779,22 @@ impl Sub<Months> for NaiveDate {
     }
 }
 
+impl Add<Days> for NaiveDate {
+    type Output = NaiveDate;
+
+    fn add(self, days: Days) -> Self::Output {
+        self.checked_add_days(days).unwrap()
+    }
+}
+
+impl Sub<Days> for NaiveDate {
+    type Output = NaiveDate;
+
+    fn sub(self, days: Days) -> Self::Output {
+        self.checked_sub_days(days).unwrap()
+    }
+}
+
 /// A subtraction of `TimeDelta` from `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `TimeDelta::zero()`.
 /// It is the same as the addition with a negated `TimeDelta`.
@@ -2122,11 +2200,14 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::{
-        Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
+        Days, Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
     };
     use crate::time_delta::TimeDelta;
     use crate::{Datelike, Weekday};
-    use std::{i32, u32};
+    use std::{
+        convert::{TryFrom, TryInto},
+        i32, u32,
+    };
 
     #[test]
     fn diff_months() {
@@ -2567,6 +2648,51 @@ mod tests {
 
         check((MAX_YEAR, 12, 31), (0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64));
         check((MIN_YEAR, 1, 1), (0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64));
+    }
+
+    #[test]
+    fn test_date_add_days() {
+        fn check((y1, m1, d1): (i32, u32, u32), rhs: Days, ymd: Option<(i32, u32, u32)>) {
+            let lhs = NaiveDate::from_ymd(y1, m1, d1);
+            let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd(y, m, d));
+            assert_eq!(lhs.checked_add_days(rhs), sum);
+        }
+
+        check((2014, 1, 1), Days::new(0), Some((2014, 1, 1)));
+        // always round towards zero
+        check((2014, 1, 1), Days::new(1), Some((2014, 1, 2)));
+        check((2014, 1, 1), Days::new(364), Some((2014, 12, 31)));
+        check((2014, 1, 1), Days::new(365 * 4 + 1), Some((2018, 1, 1)));
+        check((2014, 1, 1), Days::new(365 * 400 + 97), Some((2414, 1, 1)));
+
+        check((-7, 1, 1), Days::new(365 * 12 + 3), Some((5, 1, 1)));
+
+        // overflow check
+        check(
+            (0, 1, 1),
+            Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()),
+            Some((MAX_YEAR, 12, 31)),
+        );
+        check((0, 1, 1), Days::new(u64::try_from(MAX_DAYS_FROM_YEAR_0).unwrap() + 1), None);
+    }
+
+    #[test]
+    fn test_date_sub_days() {
+        fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: Days) {
+            let lhs = NaiveDate::from_ymd(y1, m1, d1);
+            let rhs = NaiveDate::from_ymd(y2, m2, d2);
+            assert_eq!(lhs - diff, rhs);
+        }
+
+        check((2014, 1, 1), (2014, 1, 1), Days::new(0));
+        check((2014, 1, 2), (2014, 1, 1), Days::new(1));
+        check((2014, 12, 31), (2014, 1, 1), Days::new(364));
+        check((2015, 1, 3), (2014, 1, 1), Days::new(365 + 2));
+        check((2018, 1, 1), (2014, 1, 1), Days::new(365 * 4 + 1));
+        check((2414, 1, 1), (2014, 1, 1), Days::new(365 * 400 + 97));
+
+        check((MAX_YEAR, 12, 31), (0, 1, 1), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()));
+        check((0, 1, 1), (MIN_YEAR, 1, 1), Days::new((-MIN_DAYS_FROM_YEAR_0).try_into().unwrap()));
     }
 
     #[test]
