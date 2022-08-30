@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_past() {
-        // let distant_past = Local::now() - Duration::days(365 * 100);
+        // let distant_past = Local::now() - TimeDelta::days(365 * 100);
         let distant_past = Local::now() - TimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
