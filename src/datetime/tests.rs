@@ -111,24 +111,24 @@ fn test_datetime_rfc2822_and_rfc3339() {
     );
 
     assert_eq!(
-        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
         Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
     );
     assert_eq!(
-        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 -0000"),
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 -0000"),
         Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
     );
     assert_eq!(
-        DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
+        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:16:09Z"),
         Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
     );
     assert_eq!(
-        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
         Ok(edt.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000))
     );
-    assert!(DateTime::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
+    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
     assert_eq!(
-        DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
+        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
         Ok(edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567))
     );
 }
@@ -209,12 +209,15 @@ fn test_datetime_from_str() {
 fn test_datetime_parse_from_str() {
     let ymdhms = |y, m, d, h, n, s, off| FixedOffset::east(off).ymd(y, m, d).and_hms(h, n, s);
     assert_eq!(
-        DateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+        DateTime::<FixedOffset>::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
         Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570 * 60))
     ); // ignore offset
-    assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
-    assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
-        .is_err());
+    assert!(DateTime::<FixedOffset>::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
+    assert!(DateTime::<FixedOffset>::parse_from_str(
+        "Fri, 09 Aug 2013 23:54:35 GMT",
+        "%a, %d %b %Y %H:%M:%S GMT"
+    )
+    .is_err());
     assert_eq!(
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35))

@@ -622,15 +622,15 @@ fn test_strftime_docs() {
     );
     assert_eq!(
         dt.with_timezone(&Utc),
-        DateTime::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
+        DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
     );
     assert_eq!(
         dt.with_timezone(&Utc),
-        DateTime::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
+        DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
     );
     assert_eq!(
         dt.with_timezone(&Utc),
-        DateTime::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
+        DateTime::<FixedOffset>::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
     );
 
     assert_eq!(
