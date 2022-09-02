@@ -78,140 +78,40 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --color=always
         working-directory: ./ci/core-test
 
-  wasm:
+  alternative_targets:
     strategy:
       matrix:
-        os: [macos-latest]
-
+        os: [ubuntu-latest]
+        target: [wasm32-unknown-unknown, wasm32-wasi, wasm32-unknown-emscripten, aarch64-apple-ios, aarch64-linux-android]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v1
-
-      - name: Install node
-        uses: actions/setup-node@v1
+      - uses: actions/setup-node@v1
         with:
           node-version: "12"
-
-      - name: Install wasm-pack
-        run: |
+      - run: |
           export RUST_BACKTRACE=1
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           wasm-pack --version
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_simple
-
-  wasm_emscripten:
-    strategy:
-      matrix:
-        os: [macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-emscripten
-          override: true
-
-      - name: Install node
-        uses: actions/setup-node@v1
-        with:
-          node-version: "12"
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_emscripten
-
-  wasm_unknown:
+      - run: cargo build --target ${{ matrix.target }}  --color=always
+  
+  features_check_wasm:
     strategy:
       matrix:
         os: [ubuntu-latest]
-
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_unknown
-
-  wasm_unknown_no_wasmbind:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_unknown_no_wasmbind
-
-  wasm_wasi:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-wasi
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_wasi
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
 
   cross-targets:
     strategy:
