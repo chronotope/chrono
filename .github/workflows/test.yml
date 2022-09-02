@@ -11,58 +11,57 @@ on:
       - Cargo.toml
 
 jobs:
-  test:
+  timezones_linux:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-latest]
-        rust_version: [stable]
-        exhaustive_tz: [onetz]
-        check_combinatoric: [no_combinatoric]
-        include:
-          # check all tzs on most-recent OS's
-          - os: ubuntu-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          - os: windows-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          - os: macos-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          # compilation check
-          - os: ubuntu-latest
-            rust_version: stable
-            check_combinatoric: "combinatoric"
-          # test other rust versions
-          - os: ubuntu-latest
-            rust_version: beta
-          - os: ubuntu-latest
-            rust_version: nightly
-          - os: ubuntu-20.04
-            rust_version: 1.38.0
-          - os: macos-latest
-            rust_version: 1.38.0
-          - os: windows-latest
-            rust_version: 1.38.0
-
+        os: [ubuntu-latest]
+        tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo test --all-features --color=always -- --color=always
 
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+  timezones_other:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo test --lib --all-features --color=always -- --color=always
+      - run: cargo test --doc --all-features --color=always -- --color=always
+
+  rust_versions:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust_version: ["1.38.0", "stable", "beta", "nightly"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_version }}
-          override: true
-
       - uses: Swatinem/rust-cache@v1
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: ${{ matrix.rust_version }}
-          EXHAUSTIVE_TZ: ${{ matrix.exhaustive_tz }}
-          CHECK_COMBINATORIC: ${{ matrix.check_combinatoric }}
+      - run: cargo test --lib --features serde --color=always -- --color=always
+      - run: cargo test --doc --features serde --color=always -- --color=always
+
+  features_check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
 
   no_std:
     strategy:
