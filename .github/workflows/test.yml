@@ -118,18 +118,12 @@ jobs:
       matrix:
         target:
           - x86_64-sun-solaris
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install cross
-        run: cargo install cross
-
+      - run: cargo install cross
       - uses: Swatinem/rust-cache@v1
-
-      - name: Build static library
-        run: cross check --target ${{ matrix.target }}
+      - run: cross check --target ${{ matrix.target }}
 
   check-docs:
     runs-on: ubuntu-latest
