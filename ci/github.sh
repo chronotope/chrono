@@ -5,11 +5,6 @@ set -euo pipefail
 # shellcheck source=ci/_shlib.sh
 source "${BASH_SOURCE[0]%/*}/_shlib.sh"
 
-TEST_TZS=(ACST-9:30 EST4 UTC0 Asia/Katmandu)
-FEATURES=(std serde clock "alloc serde" unstable-locales)
-CHECK_FEATURES=(alloc "std unstable-locales" "serde clock" "clock unstable-locales")
-RUST_132_FEATURES=(rustc-serialize serde)
-
 main() {
     if [[ "$*" =~ "-h" ]]; then
         echo -n "usage: ENV_VARS... $0
@@ -44,49 +39,13 @@ meaningful in the github actions feature matrix UI.
             test_wasm_wasi
         elif [[ ${CORE:-} == no_std ]]; then
             test_core
-        elif [[ ${EXHAUSTIVE_TZ:-} == all_tzs ]]; then
-            test_all_tzs
-        elif [[ ${CHECK_COMBINATORIC:-} == combinatoric ]]; then
-            check_combinatoric
         else
             test_regular UTC0
         fi
-    elif [[ ${RUST_VERSION:-} == 1.38.0 ]]; then
-        test_132
     else
         echo "ERROR: didn't run any tests"
         exit 1
     fi
-}
-
-test_all_tzs() {
-    for tz in "${TEST_TZS[@]}"; do
-        test_regular "$tz"
-    done
-}
-
-test_regular() {
-    tz="$1" && shift
-
-    runt env TZ="$tz" cargo test --features __doctest,unstable-locales --color=always -- --color=always
-    for feature in "${FEATURES[@]}"; do
-        runt env TZ="$tz" cargo test --no-default-features --features "$feature" --lib --color=always -- --color=always
-    done
-}
-
-check_combinatoric() {
-    runt cargo check --no-default-features
-    runt cargo check --all-features
-    for feature in "${CHECK_FEATURES[@]}"; do
-        runt cargo check --no-default-features --features "$feature" --lib --color=always
-    done
-}
-
-test_132() {
-    runv cargo build --color=always
-    for feature in "${RUST_132_FEATURES[@]}"; do
-        runt cargo build --features "$feature" --color=always
-    done
 }
 
 test_core() {
