@@ -2,9 +2,13 @@ name: lint
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    paths:
+      - "**.rs"
+      - .github/**
+      - .ci/**
+      - Cargo.toml
 
 jobs:
   lint:
@@ -12,15 +16,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v1
-      - name: Lint
-        run: bash ci/lint.sh
-      - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@0.3.0
-        with:
-          check_together: "y"
+      - run: cargo fmt -- --check --color=always
+      - run: cargo clippy --color=always -- -D warnings -A clippy::manual-non-exhaustive
+        env:
+          RUSTFLAGS: "-Dwarnings"
