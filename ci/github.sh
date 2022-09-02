@@ -37,8 +37,6 @@ meaningful in the github actions feature matrix UI.
             test_wasm_unknown_no_wasmbind
         elif [[ ${WASM:-} == wasm_wasi ]]; then
             test_wasm_wasi
-        elif [[ ${CORE:-} == no_std ]]; then
-            test_core
         else
             test_regular UTC0
         fi
@@ -46,13 +44,6 @@ meaningful in the github actions feature matrix UI.
         echo "ERROR: didn't run any tests"
         exit 1
     fi
-}
-
-test_core() {
-    (
-        cd ci/core-test
-        runt cargo build --target thumbv6m-none-eabi --color=always
-    )
 }
 
 test_wasm() {
