@@ -127,15 +127,9 @@ jobs:
 
   check-docs:
     runs-on: ubuntu-latest
-    name: Check doc links
     steps:
       - uses: actions/checkout@v2
-      - name: Install rust nightly
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Check docs build without warnings
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo +nightly doc --all-features --no-deps
         env:
           RUSTDOCFLAGS: "-D warnings --cfg docsrs"
-        run: cargo +nightly doc --all-features --no-deps
