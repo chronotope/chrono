@@ -12,6 +12,7 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+use self::u31::U31;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -23,6 +24,8 @@ mod serde;
 
 #[cfg(test)]
 mod tests;
+
+mod u31;
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -187,7 +190,7 @@ mod tests;
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct NaiveTime {
     secs: u32,
-    frac: u32,
+    frac: U31,
 }
 
 impl NaiveTime {
@@ -392,7 +395,8 @@ impl NaiveTime {
             return None;
         }
         let secs = hour * 3600 + min * 60 + sec;
-        Some(NaiveTime { secs, frac: nano })
+        let frac = unsafe { U31::new_unchecked(nano) };
+        Some(NaiveTime { secs, frac })
     }
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
@@ -443,7 +447,8 @@ impl NaiveTime {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return None;
         }
-        Some(NaiveTime { secs, frac: nano })
+        let frac = unsafe { U31::new_unchecked(nano) };
+        Some(NaiveTime { secs, frac })
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
@@ -534,7 +539,7 @@ impl NaiveTime {
     /// ```
     pub fn overflowing_add_signed(&self, mut rhs: TimeDelta) -> (NaiveTime, i64) {
         let mut secs = self.secs;
-        let mut frac = self.frac;
+        let mut frac = self.frac.get();
 
         // check if `self` is a leap second and adding `rhs` would escape that leap second.
         // if it's the case, update `self` and `rhs` to involve no leap second;
@@ -551,6 +556,7 @@ impl NaiveTime {
             } else {
                 frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
                 debug_assert!(frac < 2_000_000_000);
+                let frac = unsafe { U31::new_unchecked(frac) };
                 return (NaiveTime { secs, frac }, 0);
             }
         }
@@ -592,7 +598,8 @@ impl NaiveTime {
         }
         debug_assert!((0..86_400).contains(&secs));
 
-        (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
+        let frac = unsafe { U31::new_unchecked(frac as u32) };
+        (NaiveTime { secs: secs as u32, frac }, morerhssecs)
     }
 
     /// Subtracts given `TimeDelta` from the current time,
@@ -688,12 +695,12 @@ impl NaiveTime {
         use core::cmp::Ordering;
 
         let secs = i64::from(self.secs) - i64::from(rhs.secs);
-        let frac = i64::from(self.frac) - i64::from(rhs.frac);
+        let frac = i64::from(self.frac.get()) - i64::from(rhs.frac.get());
 
         // `secs` may contain a leap second yet to be counted
         let adjust = match self.secs.cmp(&rhs.secs) {
             Ordering::Greater => {
-                if rhs.frac >= 1_000_000_000 {
+                if rhs.frac.get() >= 1_000_000_000 {
                     1
                 } else {
                     0
@@ -701,7 +708,7 @@ impl NaiveTime {
             }
             Ordering::Equal => 0,
             Ordering::Less => {
-                if self.frac >= 1_000_000_000 {
+                if self.frac.get() >= 1_000_000_000 {
                     -1
                 } else {
                     0
@@ -798,8 +805,8 @@ impl NaiveTime {
         (hour, min, sec)
     }
 
-    pub(super) const MIN: Self = Self { secs: 0, frac: 0 };
-    pub(super) const MAX: Self = Self { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
+    pub(super) const MIN: Self = Self { secs: 0, frac: U31::ZERO };
+    pub(super) const MAX: Self = Self { secs: 23 * 3600 + 59 * 60 + 59, frac: U31::SEC_MINUS_1 };
 }
 
 impl Timelike for NaiveTime {
@@ -884,7 +891,7 @@ impl Timelike for NaiveTime {
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {
-        self.frac
+        self.frac.get()
     }
 
     /// Makes a new `NaiveTime` with the hour number changed.
@@ -988,7 +995,8 @@ impl Timelike for NaiveTime {
         if nano >= 2_000_000_000 {
             return None;
         }
-        Some(NaiveTime { frac: nano, ..*self })
+        let frac = unsafe { U31::new_unchecked(nano) };
+        Some(NaiveTime { frac, ..*self })
     }
 
     /// Returns the number of non-leap seconds past the last midnight.
@@ -1222,11 +1230,9 @@ impl Sub<NaiveTime> for NaiveTime {
 impl fmt::Debug for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (hour, min, sec) = self.hms();
-        let (sec, nano) = if self.frac >= 1_000_000_000 {
-            (sec + 1, self.frac - 1_000_000_000)
-        } else {
-            (sec, self.frac)
-        };
+        let frac = self.frac.get();
+        let (sec, nano) =
+            if frac >= 1_000_000_000 { (sec + 1, frac - 1_000_000_000) } else { (sec, frac) };
 
         write!(f, "{:02}:{:02}:{:02}", hour, min, sec)?;
         if nano == 0 {
