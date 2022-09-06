@@ -271,3 +271,15 @@ const _: () = {
         }
     }
 };
+
+#[cfg(test)]
+#[test]
+fn test_niche_optimization() {
+    use core::mem::size_of;
+
+    use crate::{DateTime, NaiveDateTime, NaiveTime, Utc};
+
+    assert_eq!(size_of::<NaiveTime>(), size_of::<Option<NaiveTime>>());
+    assert_eq!(size_of::<NaiveDateTime>(), size_of::<Option<NaiveDateTime>>());
+    assert_eq!(size_of::<DateTime<Utc>>(), size_of::<Option<DateTime<Utc>>>());
+}
