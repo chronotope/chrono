@@ -235,9 +235,37 @@ fn test_date_from_str() {
         " 4 : 3 : 2.1 ",
         " 09:08:07 ",
         " 9:8:07 ",
+        "01:02:03",
+        "4:3:2.1",
+        "9:8:7",
+        "09:8:7",
+        "9:08:7",
+        "9:8:07",
+        "09:08:7",
+        "09:8:07",
+        "09:08:7",
+        "9:08:07",
+        "09:08:07",
+        "9:8:07.123",
+        "9:08:7.123",
+        "09:8:7.123",
+        "09:08:7.123",
+        "9:08:07.123",
+        "09:8:07.123",
+        "09:08:07.123",
+        "09:08:07.123",
+        "09:08:07.1234",
+        "09:08:07.12345",
+        "09:08:07.123456",
+        "09:08:07.1234567",
+        "09:08:07.12345678",
+        "09:08:07.123456789",
+        "09:08:07.1234567891",
+        "09:08:07.12345678912",
         "23:59:60.373929310237",
     ];
     for &s in &valid {
+        eprintln!("test_time_parse_from_str valid {:?}", s);
         let d = match s.parse::<NaiveTime>() {
             Ok(d) => d,
             Err(e) => panic!("parsing `{}` has failed: {}", s, e),
@@ -262,15 +290,30 @@ fn test_date_from_str() {
 
     // some invalid cases
     // since `ParseErrorKind` is private, all we can do is to check if there was an error
-    assert!("".parse::<NaiveTime>().is_err());
-    assert!("x".parse::<NaiveTime>().is_err());
-    assert!("15".parse::<NaiveTime>().is_err());
-    assert!("15:8".parse::<NaiveTime>().is_err());
-    assert!("15:8:x".parse::<NaiveTime>().is_err());
-    assert!("15:8:9x".parse::<NaiveTime>().is_err());
-    assert!("23:59:61".parse::<NaiveTime>().is_err());
-    assert!("12:34:56.x".parse::<NaiveTime>().is_err());
-    assert!("12:34:56. 0".parse::<NaiveTime>().is_err());
+    let invalid = [
+        "",                  // empty
+        "x",                 // invalid
+        "15",                // missing data
+        "15:8",              // missing data
+        "15:8:x",            // missing data, invalid data
+        "15:8:9x",           // missing data, invalid data
+        "23:59:61",          // invalid second (out of bounds)
+        "23:54:35 GMT",      // invalid (timezone non-sensical for NaiveTime)
+        "23:54:35 +0000",    // invalid (timezone non-sensical for NaiveTime)
+        "1441497364.649",    // valid datetime, not a NaiveTime
+        "+1441497364.649",   // valid datetime, not a NaiveTime
+        "+1441497364",       // valid datetime, not a NaiveTime
+        "001:02:03",         // invalid hour
+        "01:002:03",         // invalid minute
+        "01:02:003",         // invalid second
+        "12:34:56.x",        // invalid fraction
+        "12:34:56. 0",       // invalid fraction format
+        "09:08:00000000007", // invalid second / invalid fraction format
+    ];
+    for &s in &invalid {
+        eprintln!("test_time_parse_from_str invalid {:?}", s);
+        assert!(s.parse::<NaiveTime>().is_err());
+    }
 }
 
 #[test]
@@ -281,6 +324,15 @@ fn test_time_parse_from_str() {
         Ok(hms(12, 34, 56))
     ); // ignore date and offset
     assert_eq!(NaiveTime::parse_from_str("PM 12:59", "%P %H:%M"), Ok(hms(12, 59, 0)));
+    assert_eq!(NaiveTime::parse_from_str("12:59 \n\t PM", "%H:%M \n\t %P"), Ok(hms(12, 59, 0)));
+    assert_eq!(NaiveTime::parse_from_str("\t\t12:59\tPM\t", "\t\t%H:%M\t%P\t"), Ok(hms(12, 59, 0)));
+    assert_eq!(
+        NaiveTime::parse_from_str("\t\t1259\t\tPM\t", "\t\t%H%M\t\t%P\t"),
+        Ok(hms(12, 59, 0))
+    );
+    assert!(NaiveTime::parse_from_str("12:59 PM", "%H:%M\t%P").is_ok());
+    assert!(NaiveTime::parse_from_str("\t\t12:59 PM\t", "\t\t%H:%M\t%P\t").is_ok());
+    assert!(NaiveTime::parse_from_str("12:59  PM", "%H:%M %P").is_ok());
     assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
 }
 
