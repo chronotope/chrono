@@ -508,12 +508,32 @@ mod tests {
     fn test_strftime_items() {
         fn parse_and_collect(s: &str) -> Vec<Item<'_>> {
             // map any error into `[Item::Error]`. useful for easy testing.
+            eprintln!("test_strftime_items: parse_and_collect({:?})", s);
             let items = StrftimeItems::new(s);
             let items = items.map(|spec| if spec == Item::Error { None } else { Some(spec) });
             items.collect::<Option<Vec<_>>>().unwrap_or_else(|| vec![Item::Error])
         }
 
         assert_eq!(parse_and_collect(""), []);
+        assert_eq!(parse_and_collect(" "), [Space(" ")]);
+        assert_eq!(parse_and_collect("  "), [Space("  ")]);
+        // ne!
+        assert_ne!(parse_and_collect("  "), [Space(" "), Space(" ")]);
+        // eq!
+        assert_eq!(parse_and_collect("  "), [Space("  ")]);
+        assert_eq!(parse_and_collect("a"), [Literal("a")]);
+        assert_eq!(parse_and_collect("ab"), [Literal("ab")]);
+        assert_eq!(parse_and_collect("😽"), [Literal("😽")]);
+        assert_eq!(parse_and_collect("a😽"), [Literal("a😽")]);
+        assert_eq!(parse_and_collect("😽a"), [Literal("😽a")]);
+        assert_eq!(parse_and_collect(" 😽"), [Space(" "), Literal("😽")]);
+        assert_eq!(parse_and_collect("😽 "), [Literal("😽"), Space(" ")]);
+        // ne!
+        assert_ne!(parse_and_collect("😽😽"), [Literal("😽")]);
+        assert_ne!(parse_and_collect("😽"), [Literal("😽😽")]);
+        assert_ne!(parse_and_collect("😽😽"), [Literal("😽😽"), Literal("😽")]);
+        // eq!
+        assert_eq!(parse_and_collect("😽😽"), [Literal("😽😽")]);
         assert_eq!(parse_and_collect(" \t\n\r "), [Space(" \t\n\r ")]);
         assert_eq!(parse_and_collect("hello?"), [Literal("hello?")]);
         assert_eq!(
@@ -530,12 +550,88 @@ mod tests {
             parse_and_collect("%Y-%m-%d"),
             [num0(Year), Literal("-"), num0(Month), Literal("-"), num0(Day)]
         );
+        assert_eq!(parse_and_collect("😽   "), [Literal("😽"), Space("   ")]);
+        assert_eq!(parse_and_collect("😽😽"), [Literal("😽😽")]);
+        assert_eq!(parse_and_collect("😽😽😽"), [Literal("😽😽😽")]);
+        assert_eq!(parse_and_collect("😽😽 😽"), [Literal("😽😽"), Space(" "), Literal("😽")]);
+        assert_eq!(parse_and_collect("😽😽a 😽"), [Literal("😽😽a"), Space(" "), Literal("😽")]);
+        assert_eq!(parse_and_collect("😽😽a b😽"), [Literal("😽😽a"), Space(" "), Literal("b😽")]);
+        assert_eq!(
+            parse_and_collect("😽😽a b😽c"),
+            [Literal("😽😽a"), Space(" "), Literal("b😽c")]
+        );
+        assert_eq!(parse_and_collect("😽😽   "), [Literal("😽😽"), Space("   ")]);
+        assert_eq!(parse_and_collect("😽😽   😽"), [Literal("😽😽"), Space("   "), Literal("😽")]);
+        assert_eq!(parse_and_collect("   😽"), [Space("   "), Literal("😽")]);
+        assert_eq!(parse_and_collect("   😽 "), [Space("   "), Literal("😽"), Space(" ")]);
+        assert_eq!(
+            parse_and_collect("   😽 😽"),
+            [Space("   "), Literal("😽"), Space(" "), Literal("😽")]
+        );
+        assert_eq!(
+            parse_and_collect("   😽 😽 "),
+            [Space("   "), Literal("😽"), Space(" "), Literal("😽"), Space(" ")]
+        );
+        assert_eq!(
+            parse_and_collect("   😽  😽 "),
+            [Space("   "), Literal("😽"), Space("  "), Literal("😽"), Space(" ")]
+        );
+        assert_eq!(
+            parse_and_collect("   😽  😽😽 "),
+            [Space("   "), Literal("😽"), Space("  "), Literal("😽😽"), Space(" ")]
+        );
+        assert_eq!(parse_and_collect("   😽😽"), [Space("   "), Literal("😽😽")]);
+        assert_eq!(parse_and_collect("   😽😽 "), [Space("   "), Literal("😽😽"), Space(" ")]);
+        assert_eq!(
+            parse_and_collect("   😽😽    "),
+            [Space("   "), Literal("😽😽"), Space("    ")]
+        );
+        assert_eq!(
+            parse_and_collect("   😽😽    "),
+            [Space("   "), Literal("😽😽"), Space("    ")]
+        );
+        assert_eq!(parse_and_collect(" 😽😽    "), [Space(" "), Literal("😽😽"), Space("    ")]);
+        assert_eq!(
+            parse_and_collect(" 😽 😽😽    "),
+            [Space(" "), Literal("😽"), Space(" "), Literal("😽😽"), Space("    ")]
+        );
+        assert_eq!(
+            parse_and_collect(" 😽 😽はい😽    ハンバーガー"),
+            [
+                Space(" "),
+                Literal("😽"),
+                Space(" "),
+                Literal("😽はい😽"),
+                Space("    "),
+                Literal("ハンバーガー")
+            ]
+        );
+        assert_eq!(
+            parse_and_collect("%%😽%%😽"),
+            [Literal("%"), Literal("😽"), Literal("%"), Literal("😽")]
+        );
+        assert_eq!(parse_and_collect("%Y--%m"), [num0(Year), Literal("--"), num0(Month)]);
         assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
+        assert_eq!(parse_and_collect("100%%😽"), [Literal("100"), Literal("%"), Literal("😽")]);
+        assert_eq!(
+            parse_and_collect("100%%😽%%a"),
+            [Literal("100"), Literal("%"), Literal("😽"), Literal("%"), Literal("a")]
+        );
+        assert_eq!(parse_and_collect("😽100%%"), [Literal("😽100"), Literal("%")]);
         assert_eq!(parse_and_collect("%m %d"), [num0(Month), Space(" "), num0(Day)]);
         assert_eq!(parse_and_collect("%"), [Item::Error]);
         assert_eq!(parse_and_collect("%%"), [Literal("%")]);
         assert_eq!(parse_and_collect("%%%"), [Item::Error]);
+        assert_eq!(parse_and_collect("%a"), [fixed(Fixed::ShortWeekdayName)]);
+        assert_eq!(parse_and_collect("%aa"), [fixed(Fixed::ShortWeekdayName), Literal("a")]);
+        assert_eq!(parse_and_collect("%%a%"), [Item::Error]);
+        assert_eq!(parse_and_collect("%😽"), [Item::Error]);
+        assert_eq!(parse_and_collect("%😽😽"), [Item::Error]);
         assert_eq!(parse_and_collect("%%%%"), [Literal("%"), Literal("%")]);
+        assert_eq!(
+            parse_and_collect("%%%%ハンバーガー"),
+            [Literal("%"), Literal("%"), Literal("ハンバーガー")]
+        );
         assert_eq!(parse_and_collect("foo%?"), [Item::Error]);
         assert_eq!(parse_and_collect("bar%42"), [Item::Error]);
         assert_eq!(parse_and_collect("quux% +"), [Item::Error]);
@@ -555,6 +651,10 @@ mod tests {
         assert_eq!(parse_and_collect("%0e"), [num0(Day)]);
         assert_eq!(parse_and_collect("%_e"), [nums(Day)]);
         assert_eq!(parse_and_collect("%z"), [fixed(Fixed::TimezoneOffset)]);
+        assert_eq!(parse_and_collect("%:z"), [fixed(Fixed::TimezoneOffsetColon)]);
+        assert_eq!(parse_and_collect("%Z"), [fixed(Fixed::TimezoneName)]);
+        assert_eq!(parse_and_collect("%ZZZZ"), [fixed(Fixed::TimezoneName), Literal("ZZZ")]);
+        assert_eq!(parse_and_collect("%Z😽"), [fixed(Fixed::TimezoneName), Literal("😽")]);
         assert_eq!(
             parse_and_collect("%#z"),
             [internal_fixed(InternalInternal::TimezoneOffsetPermissive)]
@@ -664,6 +764,13 @@ mod tests {
         assert_eq!(dt.format("%t").to_string(), "\t");
         assert_eq!(dt.format("%n").to_string(), "\n");
         assert_eq!(dt.format("%%").to_string(), "%");
+
+        // complex format specifiers
+        assert_eq!(dt.format("  %Y%d%m%%%%%t%H%M%S\t").to_string(), "  20010807%%\t003460\t");
+        assert_eq!(
+            dt.format("  %Y%d%m%%%%%t%H:%P:%M%S%:::z\t").to_string(),
+            "  20010807%%\t00:am:3460+09\t"
+        );
     }
 
     #[test]
