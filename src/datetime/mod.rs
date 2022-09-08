@@ -523,6 +523,9 @@ impl DateTime<FixedOffset> {
     /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
     /// and email headers.
     ///
+    /// The RFC 2822 standard allows arbitrary intermixed whitespace.
+    /// See [RFC 2822 Appendix A.5]
+    ///
     /// ```
     /// # use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
     /// assert_eq!(
@@ -530,6 +533,8 @@ impl DateTime<FixedOffset> {
     ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// ```
+    ///
+    /// [RFC 2822 Appendix A.5]: https://www.rfc-editor.org/rfc/rfc2822#appendix-A.5
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
