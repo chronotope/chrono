@@ -552,11 +552,13 @@ where
 }
 
 impl DateTime<FixedOffset> {
-    /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
-    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses an RFC 2822 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
-    /// RFC 2822 is the internet message standard that specifies the
-    /// representation of times in HTTP and email headers.
+    /// This parses valid RFC 2822 datetime strings (such as `Tue, 1 Jul 2003 10:52:37 +0200`)
+    /// and returns a new [`DateTime`] instance with the parsed timezone as the [`FixedOffset`].
+    ///
+    /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
+    /// and email headers.
     ///
     /// The RFC 2822 standard allows arbitrary intermixed whitespace.
     /// See [RFC 2822 Appendix A.5]
@@ -577,11 +579,19 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`,
-    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses an RFC 3339 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
-    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows some freedom
-    /// over the syntax and RFC 3339 exercises that freedom to rigidly define a fixed format.
+    /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
+    /// also valid RFC 3339 date-and-time values) and returns a new [`DateTime`] with a
+    /// [`FixedOffset`] corresponding to the parsed timezone. While RFC 3339 values come in a wide
+    /// variety of shapes and sizes, `1996-12-19T16:39:57-08:00` is an example of the most commonly
+    /// encountered variety of RFC 3339 formats.
+    ///
+    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows representing
+    /// values in a wide range of formats, only some of which represent actual date-and-time
+    /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
+    /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
+    /// values (or the other way around).
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
@@ -589,18 +599,15 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses a string with the specified format string and returns a new
-    /// [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value.
     ///
-    /// See the [`crate::format::strftime`] module on the supported escape
+    /// Note that this method *requires a timezone* in the input string. See
+    /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
+    /// for a version that does not require a timezone in the to-be-parsed str. The returned
+    /// [`DateTime`] value will have a [`FixedOffset`] reflecting the parsed timezone.
+    ///
+    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
     /// sequences.
-    ///
-    /// See also [`TimeZone::datetime_from_str`] which gives a local
-    /// [`DateTime`] on specific time zone.
-    ///
-    /// Note that this method *requires a timezone* in the string. See
-    /// [`NaiveDateTime::parse_from_str`]
-    /// for a version that does not require a timezone in the to-be-parsed str.
     ///
     /// # Example
     ///
@@ -645,10 +652,10 @@ where
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
-    /// formatted as per a `SecondsFormat`.
+    /// formatted as per `SecondsFormat`.
     ///
-    /// If passed `use_z` true and the timezone is UTC (offset 0), use 'Z', as
-    /// per [`Fixed::TimezoneOffsetColonZ`] If passed `use_z` false, use
+    /// If `use_z` is true and the timezone is UTC (offset 0), uses `Z` as
+    /// per [`Fixed::TimezoneOffsetColonZ`]. If `use_z` is false, uses
     /// [`Fixed::TimezoneOffsetColon`]
     ///
     /// # Examples
@@ -727,9 +734,9 @@ where
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
 
-    /// Formats the combined date and time with the specified format string.
-    /// See the [`crate::format::strftime`] module
-    /// on the supported escape sequences.
+    /// Formats the combined date and time per the specified format string.
+    ///
+    /// See the [`crate::format::strftime`] module for the supported escape sequences.
     ///
     /// # Example
     /// ```rust
@@ -771,7 +778,7 @@ where
         )
     }
 
-    /// Formats the combined date and time with the specified format string and
+    /// Formats the combined date and time per the specified format string and
     /// locale.
     ///
     /// See the [`crate::format::strftime`] module on the supported escape
