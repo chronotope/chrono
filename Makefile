@@ -17,10 +17,6 @@ authors:
 .PHONY: readme README.md
 readme: README.md
 
-.PHONY: test
-test:
-	CHANNEL=$(CHANNEL) ./ci/travis.sh
-
 .PHONY: doc
 doc: authors readme
 	cargo doc --features 'serde rustc-serialize bincode'
