@@ -12,14 +12,23 @@ use std::{cell::RefCell, env, fs, time::SystemTime};
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
-use crate::{Datelike, LocalResult, Utc};
+use crate::error::ChronoErrorKind;
+use crate::offset::LocalResult;
+use crate::{ChronoError, Datelike, Utc};
 
-pub(super) fn now() -> DateTime<Local> {
-    let now = Utc::now().naive_utc();
-    naive_to_local(&now, false).unwrap()
+pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
+    let now = Utc::now()?.naive_utc();
+
+    match naive_to_local(&now, false)? {
+        LocalResult::Single(dt) => Ok(dt),
+        _ => Err(ChronoError::new(ChronoErrorKind::AmbiguousDate)),
+    }
 }
 
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+pub(super) fn naive_to_local(
+    d: &NaiveDateTime,
+    local: bool,
+) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
     TZ_INFO.with(|maybe_cache| {
         maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
     })
@@ -123,7 +132,11 @@ impl Default for Cache {
 }
 
 impl Cache {
-    fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+    fn offset(
+        &mut self,
+        d: NaiveDateTime,
+        local: bool,
+    ) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
         if self.source.out_of_date() {
             *self = Cache::default();
         }
@@ -134,9 +147,9 @@ impl Cache {
                     .find_local_time_type(d.timestamp())
                     .expect("unable to select local time type")
                     .offset(),
-            );
+            )?;
 
-            return LocalResult::Single(DateTime::from_utc(d, offset));
+            return Ok(LocalResult::Single(DateTime::from_utc(d, offset)));
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
@@ -146,19 +159,19 @@ impl Cache {
             .find_local_time_type_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
         {
-            LocalResult::None => LocalResult::None,
-            LocalResult::Ambiguous(early, late) => {
-                let early_offset = FixedOffset::east(early.offset());
-                let late_offset = FixedOffset::east(late.offset());
+            None => Err(ChronoError::new(ChronoErrorKind::MissingDate)),
+            Some(LocalResult::Ambiguous(early, late)) => {
+                let early_offset = FixedOffset::east(early.offset())?;
+                let late_offset = FixedOffset::east(late.offset())?;
 
-                LocalResult::Ambiguous(
+                Ok(LocalResult::Ambiguous(
                     DateTime::from_utc(d - early_offset, early_offset),
                     DateTime::from_utc(d - late_offset, late_offset),
-                )
+                ))
             }
-            LocalResult::Single(tt) => {
-                let offset = FixedOffset::east(tt.offset());
-                LocalResult::Single(DateTime::from_utc(d - offset, offset))
+            Some(LocalResult::Single(tt)) => {
+                let offset = FixedOffset::east(tt.offset())?;
+                Ok(LocalResult::Single(DateTime::from_utc(d - offset, offset)))
             }
         }
     }

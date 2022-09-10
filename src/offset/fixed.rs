@@ -10,11 +10,11 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{LocalResult, Offset, TimeZone};
+use super::{ChronoError, DateTime, FixedTimeZone, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::offset::ChronoErrorKind;
 use crate::time_delta::TimeDelta;
-use crate::DateTime;
-use crate::Timelike;
+use crate::{LocalResult, Timelike};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
@@ -29,63 +29,50 @@ pub struct FixedOffset {
 }
 
 impl FixedOffset {
-    /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
-    /// The negative `secs` means the Western Hemisphere.
+    /// The fixed offset that matches UTC.
+    pub(crate) const UTC: FixedOffset = FixedOffset { local_minus_utc: 0 };
+
+    /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone
+    /// difference. The negative `secs` means the Western Hemisphere.
     ///
-    /// Panics on the out-of-bound `secs`.
+    /// Returns `Err(ChronoError)` on the out-of-bound `secs`.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::east(5 * hour).ymd(2016, 11, 08)
-    ///                                           .and_hms(0, 0, 0);
-    /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
+    /// let datetime = FixedOffset::east(5 * hour)?.ymd(2016, 11, 08)?.and_hms(0, 0, 0)?;
+    /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00");
+    /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn east(secs: i32) -> FixedOffset {
-        FixedOffset::east_opt(secs).expect("FixedOffset::east out of bounds")
-    }
-
-    /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
-    /// The negative `secs` means the Western Hemisphere.
-    ///
-    /// Returns `None` on the out-of-bound `secs`.
-    pub fn east_opt(secs: i32) -> Option<FixedOffset> {
+    pub fn east(secs: i32) -> Result<FixedOffset, ChronoError> {
         if -86_400 < secs && secs < 86_400 {
-            Some(FixedOffset { local_minus_utc: secs })
+            Ok(FixedOffset { local_minus_utc: secs })
         } else {
-            None
+            Err(ChronoError::new(ChronoErrorKind::InvalidTimeZone))
         }
     }
 
-    /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
-    /// The negative `secs` means the Eastern Hemisphere.
+    /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone
+    /// difference. The negative `secs` means the Eastern Hemisphere.
     ///
-    /// Panics on the out-of-bound `secs`.
+    /// Returns `Err(ChronoError)` on the out-of-bound `secs`.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::west(5 * hour).ymd(2016, 11, 08)
-    ///                                           .and_hms(0, 0, 0);
-    /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
+    /// let datetime = FixedOffset::west(5 * hour)?.ymd(2016, 11, 08)?.and_hms(0, 0, 0)?;
+    /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00");
+    /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn west(secs: i32) -> FixedOffset {
-        FixedOffset::west_opt(secs).expect("FixedOffset::west out of bounds")
-    }
-
-    /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
-    /// The negative `secs` means the Eastern Hemisphere.
-    ///
-    /// Returns `None` on the out-of-bound `secs`.
-    pub fn west_opt(secs: i32) -> Option<FixedOffset> {
+    pub fn west(secs: i32) -> Result<FixedOffset, ChronoError> {
         if -86_400 < secs && secs < 86_400 {
-            Some(FixedOffset { local_minus_utc: -secs })
+            Ok(FixedOffset { local_minus_utc: -secs })
         } else {
-            None
+            Err(ChronoError::new(ChronoErrorKind::InvalidTimeZone))
         }
     }
 
@@ -105,21 +92,38 @@ impl FixedOffset {
 impl TimeZone for FixedOffset {
     type Offset = FixedOffset;
 
-    fn from_offset(offset: &FixedOffset) -> FixedOffset {
+    fn from_offset(offset: &Self::Offset) -> FixedOffset {
         *offset
     }
 
-    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
-        LocalResult::Single(*self)
-    }
-    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
-        LocalResult::Single(*self)
+    fn offset_from_local_date(
+        &self,
+        _: &NaiveDate,
+    ) -> Result<LocalResult<Self::Offset>, ChronoError> {
+        Ok(LocalResult::Single(*self))
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset {
+    fn offset_from_local_datetime(
+        &self,
+        _: &NaiveDateTime,
+    ) -> Result<LocalResult<Self::Offset>, ChronoError> {
+        Ok(LocalResult::Single(*self))
+    }
+
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Result<Self, ChronoError> {
+        Ok(*self)
+    }
+    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Result<Self, ChronoError> {
+        Ok(*self)
+    }
+}
+
+impl FixedTimeZone for FixedOffset {
+    fn offset_from_utc_date_fixed(&self, _: &NaiveDate) -> Self::Offset {
         *self
     }
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset {
+
+    fn offset_from_utc_datetime_fixed(&self, _: &NaiveDateTime) -> Self::Offset {
         *self
     }
 }
@@ -229,20 +233,36 @@ mod tests {
         // starting from 0.3 we don't have an offset exceeding one day.
         // this makes everything easier!
         assert_eq!(
-            format!("{:?}", FixedOffset::east(86399).ymd(2012, 2, 29)),
-            "2012-02-29+23:59:59".to_string()
+            format!("{:?}", FixedOffset::east(86399).unwrap().ymd(2012, 2, 29).unwrap().unwrap()),
+            "2012-02-29+23:59:59"
         );
         assert_eq!(
-            format!("{:?}", FixedOffset::east(86399).ymd(2012, 2, 29).and_hms(5, 6, 7)),
-            "2012-02-29T05:06:07+23:59:59".to_string()
+            format!(
+                "{:?}",
+                FixedOffset::east(86399)
+                    .unwrap()
+                    .ymd(2012, 2, 29)
+                    .unwrap()
+                    .and_hms(5, 6, 7)
+                    .unwrap()
+            ),
+            "2012-02-29T05:06:07+23:59:59"
         );
         assert_eq!(
-            format!("{:?}", FixedOffset::west(86399).ymd(2012, 3, 4)),
-            "2012-03-04-23:59:59".to_string()
+            format!("{:?}", FixedOffset::west(86399).unwrap().ymd(2012, 3, 4).unwrap().unwrap()),
+            "2012-03-04-23:59:59"
         );
         assert_eq!(
-            format!("{:?}", FixedOffset::west(86399).ymd(2012, 3, 4).and_hms(5, 6, 7)),
-            "2012-03-04T05:06:07-23:59:59".to_string()
+            format!(
+                "{:?}",
+                FixedOffset::west(86399)
+                    .unwrap()
+                    .ymd(2012, 3, 4)
+                    .unwrap()
+                    .and_hms(5, 6, 7)
+                    .unwrap()
+            ),
+            "2012-03-04T05:06:07-23:59:59"
         );
     }
 }

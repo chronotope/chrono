@@ -552,7 +552,12 @@ fn test_strftime_items() {
 fn test_strftime_docs() {
     use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
-    let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
+    let dt = FixedOffset::east(34200)
+        .unwrap()
+        .ymd(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano(0, 34, 59, 1_026_490_708)
+        .unwrap();
 
     // date specifiers
     assert_eq!(dt.format("%Y").to_string(), "2001");
@@ -617,19 +622,19 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
 
     assert_eq!(
-        dt.with_timezone(&Utc).format("%+").to_string(),
+        dt.with_timezone(&Utc).unwrap().format("%+").to_string(),
         "2001-07-07T15:04:60.026490708+00:00"
     );
     assert_eq!(
-        dt.with_timezone(&Utc),
+        dt.with_timezone(&Utc).unwrap(),
         DateTime::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
     );
     assert_eq!(
-        dt.with_timezone(&Utc),
+        dt.with_timezone(&Utc).unwrap(),
         DateTime::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
     );
     assert_eq!(
-        dt.with_timezone(&Utc),
+        dt.with_timezone(&Utc).unwrap(),
         DateTime::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
     );
 
@@ -650,7 +655,12 @@ fn test_strftime_docs() {
 fn test_strftime_docs_localized() {
     use crate::{FixedOffset, TimeZone};
 
-    let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
+    let dt = FixedOffset::east(34200)
+        .unwrap()
+        .ymd(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano(0, 34, 59, 1_026_490_708)
+        .unwrap();
 
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");

@@ -17,14 +17,19 @@ use winapi::um::minwinbase::SYSTEMTIME;
 use winapi::um::timezoneapi::*;
 
 use super::{FixedOffset, Local};
-use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use crate::error::{ChronoError, ChronoErrorKind};
+use crate::offset::LocalResult;
+use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
-pub(super) fn now() -> DateTime<Local> {
-    tm_to_datetime(Timespec::now().local())
+pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
+    tm_to_datetime(Timespec::now()?.local()?)
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+pub(super) fn naive_to_local(
+    d: &NaiveDateTime,
+    local: bool,
+) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -43,38 +48,38 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
 
     let spec = Timespec {
         sec: match local {
-            false => utc_tm_to_time(&tm),
-            true => local_tm_to_time(&tm),
+            false => utc_tm_to_time(&tm)?,
+            true => local_tm_to_time(&tm)?,
         },
         nsec: tm.tm_nsec,
     };
 
     // Adjust for leap seconds
-    let mut tm = spec.local();
+    let mut tm = spec.local()?;
     assert_eq!(tm.tm_nsec, 0);
     tm.tm_nsec = d.nanosecond() as i32;
 
     // #TODO - there should be ambiguous cases, investigate?
-    LocalResult::Single(tm_to_datetime(tm))
+    Ok(LocalResult::Single(tm_to_datetime(tm)?))
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
-fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
+fn tm_to_datetime(mut tm: Tm) -> Result<DateTime<Local>, ChronoError> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
     }
 
-    let date = NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32);
+    let date = NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)?;
     let time = NaiveTime::from_hms_nano(
         tm.tm_hour as u32,
         tm.tm_min as u32,
         tm.tm_sec as u32,
         tm.tm_nsec as u32,
-    );
+    )?;
 
-    let offset = FixedOffset::east(tm.tm_utcoff);
-    DateTime::from_utc(date.and_time(time) - offset, offset)
+    let offset = FixedOffset::east(tm.tm_utcoff)?;
+    Ok(DateTime::from_utc(date.and_time(time) - offset, offset))
 }
 
 /// A record specifying a time value in seconds and nanoseconds, where
@@ -89,14 +94,15 @@ struct Timespec {
 
 impl Timespec {
     /// Constructs a timespec representing the current time in UTC.
-    fn now() -> Timespec {
-        let st =
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 }
+    fn now() -> Result<Timespec, ChronoError> {
+        let st = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| ChronoErrorKind::SystemTimeBeforeEpoch)?;
+        Ok(Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 })
     }
 
     /// Converts this timespec into the system's local time.
-    fn local(self) -> Tm {
+    fn local(self) -> Result<Tm, ChronoError> {
         let mut tm = Tm {
             tm_sec: 0,
             tm_min: 0,
@@ -110,9 +116,9 @@ impl Timespec {
             tm_utcoff: 0,
             tm_nsec: 0,
         };
-        time_to_local_tm(self.sec, &mut tm);
+        time_to_local_tm(self.sec, &mut tm)?;
         tm.tm_nsec = self.nsec;
-        tm
+        Ok(tm)
     }
 }
 
@@ -228,13 +234,12 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
 macro_rules! call {
     ($name:ident($($arg:expr),*)) => {
         if $name($($arg),*) == 0 {
-            panic!(concat!(stringify!($name), " failed with: {}"),
-                    io::Error::last_os_error());
+            return Err(ChronoError::new(ChronoErrorKind::SystemError(io::Error::last_os_error())))
         }
     }
 }
 
-fn time_to_local_tm(sec: i64, tm: &mut Tm) {
+fn time_to_local_tm(sec: i64, tm: &mut Tm) -> Result<(), ChronoError> {
     let ft = time_to_file_time(sec);
     unsafe {
         let mut utc = mem::zeroed();
@@ -253,25 +258,26 @@ fn time_to_local_tm(sec: i64, tm: &mut Tm) {
         // check if it non standard
         tm.tm_utcoff = (local_sec - sec) as i32;
         tm.tm_isdst = if tm.tm_utcoff == -60 * (tz.Bias + tz.StandardBias) { 0 } else { 1 };
+        Ok(())
     }
 }
 
-fn utc_tm_to_time(tm: &Tm) -> i64 {
+fn utc_tm_to_time(tm: &Tm) -> Result<i64, ChronoError> {
     unsafe {
         let mut ft = mem::zeroed();
         let sys_time = tm_to_system_time(tm);
         call!(SystemTimeToFileTime(&sys_time, &mut ft));
-        file_time_to_unix_seconds(&ft)
+        Ok(file_time_to_unix_seconds(&ft))
     }
 }
 
-fn local_tm_to_time(tm: &Tm) -> i64 {
+fn local_tm_to_time(tm: &Tm) -> Result<i64, ChronoError> {
     unsafe {
         let mut ft = mem::zeroed();
         let mut utc = mem::zeroed();
         let mut sys_time = tm_to_system_time(tm);
         call!(TzSpecificLocalTimeToSystemTime(0 as *mut _, &mut sys_time, &mut utc));
         call!(SystemTimeToFileTime(&utc, &mut ft));
-        file_time_to_unix_seconds(&ft)
+        Ok(file_time_to_unix_seconds(&ft))
     }
 }

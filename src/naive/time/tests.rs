@@ -6,64 +6,82 @@ use crate::{TimeDelta, Timelike};
 #[test]
 fn test_time_from_hms_milli() {
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 7, 0),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 0))
+        NaiveTime::from_hms_milli(3, 5, 7, 0).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 0).unwrap()
     );
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 7, 777),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 777_000_000))
+        NaiveTime::from_hms_milli(3, 5, 7, 777).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 777_000_000).unwrap()
     );
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 7, 1_999),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 1_999_000_000))
+        NaiveTime::from_hms_milli(3, 5, 7, 1_999).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 1_999_000_000).unwrap()
     );
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 7, 2_000), None);
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 7, 5_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 7, u32::MAX), None);
+    assert!(NaiveTime::from_hms_milli(3, 5, 7, 2_000).is_err());
+    assert!(NaiveTime::from_hms_milli(3, 5, 7, 5_000).is_err()); // overflow check
+    assert!(NaiveTime::from_hms_milli(3, 5, 7, u32::MAX).is_err());
 }
 
 #[test]
 fn test_time_from_hms_micro() {
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 0),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 0))
+        NaiveTime::from_hms_micro(3, 5, 7, 0).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 0).unwrap()
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 333),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 333_000))
+        NaiveTime::from_hms_micro(3, 5, 7, 333).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 333_000).unwrap()
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 777_777),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 777_777_000))
+        NaiveTime::from_hms_micro(3, 5, 7, 777_777).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 777_777_000).unwrap()
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 1_999_999),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 1_999_999_000))
+        NaiveTime::from_hms_micro(3, 5, 7, 1_999_999).unwrap(),
+        NaiveTime::from_hms_nano(3, 5, 7, 1_999_999_000).unwrap()
     );
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 7, 2_000_000), None);
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 7, 5_000_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 7, u32::MAX), None);
+    assert!(NaiveTime::from_hms_micro(3, 5, 7, 2_000_000).is_err());
+    assert!(NaiveTime::from_hms_micro(3, 5, 7, 5_000_000).is_err()); // overflow check
+    assert!(NaiveTime::from_hms_micro(3, 5, 7, u32::MAX).is_err());
 }
 
 #[test]
 fn test_time_hms() {
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).hour(), 3);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_hour(0), Some(NaiveTime::from_hms(0, 5, 7)));
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_hour(23), Some(NaiveTime::from_hms(23, 5, 7)));
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_hour(24), None);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_hour(u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().hour(), 3);
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_hour(0).unwrap(),
+        NaiveTime::from_hms(0, 5, 7).unwrap()
+    );
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_hour(23).unwrap(),
+        NaiveTime::from_hms(23, 5, 7).unwrap()
+    );
+    assert!(NaiveTime::from_hms(3, 5, 7).unwrap().with_hour(24).is_err());
+    assert!(NaiveTime::from_hms(3, 5, 7).unwrap().with_hour(u32::MAX).is_err());
 
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).minute(), 5);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_minute(0), Some(NaiveTime::from_hms(3, 0, 7)));
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_minute(59), Some(NaiveTime::from_hms(3, 59, 7)));
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_minute(60), None);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_minute(u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().minute(), 5);
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(0).unwrap(),
+        NaiveTime::from_hms(3, 0, 7).unwrap()
+    );
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(59).unwrap(),
+        NaiveTime::from_hms(3, 59, 7).unwrap()
+    );
+    assert!(NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(60).is_err());
+    assert!(NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(u32::MAX).is_err());
 
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).second(), 7);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_second(0), Some(NaiveTime::from_hms(3, 5, 0)));
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_second(59), Some(NaiveTime::from_hms(3, 5, 59)));
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_second(60), None);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).with_second(u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().second(), 7);
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_second(0).unwrap(),
+        NaiveTime::from_hms(3, 5, 0).unwrap()
+    );
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_second(59).unwrap(),
+        NaiveTime::from_hms(3, 5, 59).unwrap()
+    );
+    assert!(NaiveTime::from_hms(3, 5, 7).unwrap().with_second(60).is_err());
+    assert!(NaiveTime::from_hms(3, 5, 7).unwrap().with_second(u32::MAX).is_err());
 }
 
 #[test]
@@ -77,23 +95,51 @@ fn test_time_add() {
 
     let hmsm = NaiveTime::from_hms_milli;
 
-    check!(hmsm(3, 5, 7, 900), TimeDelta::zero(), hmsm(3, 5, 7, 900));
-    check!(hmsm(3, 5, 7, 900), TimeDelta::milliseconds(100), hmsm(3, 5, 8, 0));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-1800), hmsm(3, 5, 6, 500));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-800), hmsm(3, 5, 7, 500));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-100), hmsm(3, 5, 7, 1_200));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(100), hmsm(3, 5, 7, 1_400));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(800), hmsm(3, 5, 8, 100));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 5, 9, 100));
-    check!(hmsm(3, 5, 7, 900), TimeDelta::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
-    check!(hmsm(3, 5, 7, 900), TimeDelta::seconds(-86399), hmsm(3, 5, 8, 900));
-    check!(hmsm(3, 5, 7, 900), TimeDelta::days(12345), hmsm(3, 5, 7, 900));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::days(1), hmsm(3, 5, 7, 300));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::days(-1), hmsm(3, 5, 8, 300));
+    check!(hmsm(3, 5, 7, 900).unwrap(), TimeDelta::zero(), hmsm(3, 5, 7, 900).unwrap());
+    check!(hmsm(3, 5, 7, 900).unwrap(), TimeDelta::milliseconds(100), hmsm(3, 5, 8, 0).unwrap());
+    check!(
+        hmsm(3, 5, 7, 1_300).unwrap(),
+        TimeDelta::milliseconds(-1800),
+        hmsm(3, 5, 6, 500).unwrap()
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300).unwrap(),
+        TimeDelta::milliseconds(-800),
+        hmsm(3, 5, 7, 500).unwrap()
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300).unwrap(),
+        TimeDelta::milliseconds(-100),
+        hmsm(3, 5, 7, 1_200).unwrap()
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300).unwrap(),
+        TimeDelta::milliseconds(100),
+        hmsm(3, 5, 7, 1_400).unwrap()
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300).unwrap(),
+        TimeDelta::milliseconds(800),
+        hmsm(3, 5, 8, 100).unwrap()
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300).unwrap(),
+        TimeDelta::milliseconds(1800),
+        hmsm(3, 5, 9, 100).unwrap()
+    );
+    check!(hmsm(3, 5, 7, 900).unwrap(), TimeDelta::seconds(86399), hmsm(3, 5, 6, 900).unwrap()); // overwrap
+    check!(hmsm(3, 5, 7, 900).unwrap(), TimeDelta::seconds(-86399), hmsm(3, 5, 8, 900).unwrap());
+    check!(hmsm(3, 5, 7, 900).unwrap(), TimeDelta::days(12345), hmsm(3, 5, 7, 900).unwrap());
+    check!(hmsm(3, 5, 7, 1_300).unwrap(), TimeDelta::days(1), hmsm(3, 5, 7, 300).unwrap());
+    check!(hmsm(3, 5, 7, 1_300).unwrap(), TimeDelta::days(-1), hmsm(3, 5, 8, 300).unwrap());
 
     // regression tests for #37
-    check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10));
-    check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-9990), hmsm(23, 59, 50, 10));
+    check!(hmsm(0, 0, 0, 0).unwrap(), TimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10).unwrap());
+    check!(
+        hmsm(0, 0, 0, 0).unwrap(),
+        TimeDelta::milliseconds(-9990),
+        hmsm(23, 59, 50, 10).unwrap()
+    );
 }
 
 #[test]
@@ -101,47 +147,47 @@ fn test_time_overflowing_add() {
     let hmsm = NaiveTime::from_hms_milli;
 
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(11)),
-        (hmsm(14, 4, 5, 678), 0)
+        hmsm(3, 4, 5, 678).unwrap().overflowing_add_signed(TimeDelta::hours(11)),
+        (hmsm(14, 4, 5, 678).unwrap(), 0)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(23)),
-        (hmsm(2, 4, 5, 678), 86_400)
+        hmsm(3, 4, 5, 678).unwrap().overflowing_add_signed(TimeDelta::hours(23)),
+        (hmsm(2, 4, 5, 678).unwrap(), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(-7)),
-        (hmsm(20, 4, 5, 678), -86_400)
+        hmsm(3, 4, 5, 678).unwrap().overflowing_add_signed(TimeDelta::hours(-7)),
+        (hmsm(20, 4, 5, 678).unwrap(), -86_400)
     );
 
     // overflowing_add_signed with leap seconds may be counter-intuitive
     assert_eq!(
-        hmsm(3, 4, 5, 1_678).overflowing_add_signed(TimeDelta::days(1)),
-        (hmsm(3, 4, 5, 678), 86_400)
+        hmsm(3, 4, 5, 1_678).unwrap().overflowing_add_signed(TimeDelta::days(1)),
+        (hmsm(3, 4, 5, 678).unwrap(), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 1_678).overflowing_add_signed(TimeDelta::days(-1)),
-        (hmsm(3, 4, 6, 678), -86_400)
+        hmsm(3, 4, 5, 1_678).unwrap().overflowing_add_signed(TimeDelta::days(-1)),
+        (hmsm(3, 4, 6, 678).unwrap(), -86_400)
     );
 }
 
 #[test]
 fn test_time_addassignment() {
     let hms = NaiveTime::from_hms;
-    let mut time = hms(12, 12, 12);
+    let mut time = hms(12, 12, 12).unwrap();
     time += TimeDelta::hours(10);
-    assert_eq!(time, hms(22, 12, 12));
+    assert_eq!(time, hms(22, 12, 12).unwrap());
     time += TimeDelta::hours(10);
-    assert_eq!(time, hms(8, 12, 12));
+    assert_eq!(time, hms(8, 12, 12).unwrap());
 }
 
 #[test]
 fn test_time_subassignment() {
     let hms = NaiveTime::from_hms;
-    let mut time = hms(12, 12, 12);
+    let mut time = hms(12, 12, 12).unwrap();
     time -= TimeDelta::hours(10);
-    assert_eq!(time, hms(2, 12, 12));
+    assert_eq!(time, hms(2, 12, 12).unwrap());
     time -= TimeDelta::hours(10);
-    assert_eq!(time, hms(16, 12, 12));
+    assert_eq!(time, hms(16, 12, 12).unwrap());
 }
 
 #[test]
@@ -156,37 +202,68 @@ fn test_time_sub() {
 
     let hmsm = NaiveTime::from_hms_milli;
 
-    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), TimeDelta::zero());
-    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::milliseconds(300));
-    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), TimeDelta::seconds(3600 + 60 + 1));
+    check!(hmsm(3, 5, 7, 900).unwrap(), hmsm(3, 5, 7, 900).unwrap(), TimeDelta::zero());
+    check!(hmsm(3, 5, 7, 900).unwrap(), hmsm(3, 5, 7, 600).unwrap(), TimeDelta::milliseconds(300));
     check!(
-        hmsm(3, 5, 7, 200),
-        hmsm(2, 4, 6, 300),
+        hmsm(3, 5, 7, 200).unwrap(),
+        hmsm(2, 4, 6, 200).unwrap(),
+        TimeDelta::seconds(3600 + 60 + 1)
+    );
+    check!(
+        hmsm(3, 5, 7, 200).unwrap(),
+        hmsm(2, 4, 6, 300).unwrap(),
         TimeDelta::seconds(3600 + 60) + TimeDelta::milliseconds(900)
     );
 
     // treats the leap second as if it coincides with the prior non-leap second,
     // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
-    check!(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(400));
-    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(1400));
-    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), TimeDelta::milliseconds(1400));
+    check!(
+        hmsm(3, 5, 7, 200).unwrap(),
+        hmsm(3, 5, 6, 1_800).unwrap(),
+        TimeDelta::milliseconds(400)
+    );
+    check!(
+        hmsm(3, 5, 7, 1_200).unwrap(),
+        hmsm(3, 5, 6, 1_800).unwrap(),
+        TimeDelta::milliseconds(1400)
+    );
+    check!(
+        hmsm(3, 5, 7, 1_200).unwrap(),
+        hmsm(3, 5, 6, 800).unwrap(),
+        TimeDelta::milliseconds(1400)
+    );
 
     // additional equality: `time1 + duration = time2` is equivalent to
     // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
-    assert_eq!(hmsm(3, 5, 6, 800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
-    assert_eq!(hmsm(3, 5, 6, 1_800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
+    assert_eq!(
+        hmsm(3, 5, 6, 800).unwrap() + TimeDelta::milliseconds(400),
+        hmsm(3, 5, 7, 200).unwrap()
+    );
+    assert_eq!(
+        hmsm(3, 5, 6, 1_800).unwrap() + TimeDelta::milliseconds(400),
+        hmsm(3, 5, 7, 200).unwrap()
+    );
 }
 
 #[test]
 fn test_time_fmt() {
-    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 999)), "23:59:59.999");
-    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_000)), "23:59:60");
-    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_001)), "23:59:60.001");
-    assert_eq!(format!("{}", NaiveTime::from_hms_micro(0, 0, 0, 43210)), "00:00:00.043210");
-    assert_eq!(format!("{}", NaiveTime::from_hms_nano(0, 0, 0, 6543210)), "00:00:00.006543210");
+    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 999).unwrap()), "23:59:59.999");
+    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap()), "23:59:60");
+    assert_eq!(
+        format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_001).unwrap()),
+        "23:59:60.001"
+    );
+    assert_eq!(
+        format!("{}", NaiveTime::from_hms_micro(0, 0, 0, 43210).unwrap()),
+        "00:00:00.043210"
+    );
+    assert_eq!(
+        format!("{}", NaiveTime::from_hms_nano(0, 0, 0, 6543210).unwrap()),
+        "00:00:00.006543210"
+    );
 
     // the format specifier should have no effect on `NaiveTime`
-    assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9)), "03:05:07.009");
+    assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9).unwrap()), "03:05:07.009");
 }
 
 #[test]
@@ -242,15 +319,15 @@ fn test_time_parse_from_str() {
     let hms = NaiveTime::from_hms;
     assert_eq!(
         NaiveTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-        Ok(hms(12, 34, 56))
+        Ok(hms(12, 34, 56).unwrap())
     ); // ignore date and offset
-    assert_eq!(NaiveTime::parse_from_str("PM 12:59", "%P %H:%M"), Ok(hms(12, 59, 0)));
+    assert_eq!(NaiveTime::parse_from_str("PM 12:59", "%P %H:%M"), Ok(hms(12, 59, 0).unwrap()));
     assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
 }
 
 #[test]
 fn test_time_format() {
-    let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432);
+    let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432).unwrap();
     assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
     assert_eq!(t.format("%M").to_string(), "05");
     assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");
@@ -260,19 +337,22 @@ fn test_time_format() {
     assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
     assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
-    let t = NaiveTime::from_hms_micro(3, 5, 7, 432100);
+    let t = NaiveTime::from_hms_micro(3, 5, 7, 432100).unwrap();
     assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
     assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
 
-    let t = NaiveTime::from_hms_milli(3, 5, 7, 210);
+    let t = NaiveTime::from_hms_milli(3, 5, 7, 210).unwrap();
     assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
     assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
 
-    let t = NaiveTime::from_hms(3, 5, 7);
+    let t = NaiveTime::from_hms(3, 5, 7).unwrap();
     assert_eq!(t.format("%S,%f,%.f").to_string(), "07,000000000,");
     assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".000,.000000,.000000000");
 
     // corner cases
-    assert_eq!(NaiveTime::from_hms(13, 57, 9).format("%r").to_string(), "01:57:09 PM");
-    assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).format("%X").to_string(), "23:59:60");
+    assert_eq!(NaiveTime::from_hms(13, 57, 9).unwrap().format("%r").to_string(), "01:57:09 PM");
+    assert_eq!(
+        NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
+        "23:59:60"
+    );
 }

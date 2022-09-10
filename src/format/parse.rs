@@ -892,7 +892,7 @@ fn parse_rfc850() {
     static RFC850_FMT: &str = "%A, %d-%b-%y %T GMT";
 
     let dt_str = "Sunday, 06-Nov-94 08:49:37 GMT";
-    let dt = Utc.ymd(1994, 11, 6).and_hms(8, 49, 37);
+    let dt = Utc.ymd(1994, 11, 6).unwrap().and_hms(8, 49, 37).unwrap();
 
     // Check that the format is what we expect
     assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
@@ -903,12 +903,30 @@ fn parse_rfc850() {
     // Check that the rest of the weekdays parse correctly (this test originally failed because
     // Sunday parsed incorrectly).
     let testdates = [
-        (Utc.ymd(1994, 11, 7).and_hms(8, 49, 37), "Monday, 07-Nov-94 08:49:37 GMT"),
-        (Utc.ymd(1994, 11, 8).and_hms(8, 49, 37), "Tuesday, 08-Nov-94 08:49:37 GMT"),
-        (Utc.ymd(1994, 11, 9).and_hms(8, 49, 37), "Wednesday, 09-Nov-94 08:49:37 GMT"),
-        (Utc.ymd(1994, 11, 10).and_hms(8, 49, 37), "Thursday, 10-Nov-94 08:49:37 GMT"),
-        (Utc.ymd(1994, 11, 11).and_hms(8, 49, 37), "Friday, 11-Nov-94 08:49:37 GMT"),
-        (Utc.ymd(1994, 11, 12).and_hms(8, 49, 37), "Saturday, 12-Nov-94 08:49:37 GMT"),
+        (
+            Utc.ymd(1994, 11, 7).unwrap().and_hms(8, 49, 37).unwrap(),
+            "Monday, 07-Nov-94 08:49:37 GMT",
+        ),
+        (
+            Utc.ymd(1994, 11, 8).unwrap().and_hms(8, 49, 37).unwrap(),
+            "Tuesday, 08-Nov-94 08:49:37 GMT",
+        ),
+        (
+            Utc.ymd(1994, 11, 9).unwrap().and_hms(8, 49, 37).unwrap(),
+            "Wednesday, 09-Nov-94 08:49:37 GMT",
+        ),
+        (
+            Utc.ymd(1994, 11, 10).unwrap().and_hms(8, 49, 37).unwrap(),
+            "Thursday, 10-Nov-94 08:49:37 GMT",
+        ),
+        (
+            Utc.ymd(1994, 11, 11).unwrap().and_hms(8, 49, 37).unwrap(),
+            "Friday, 11-Nov-94 08:49:37 GMT",
+        ),
+        (
+            Utc.ymd(1994, 11, 12).unwrap().and_hms(8, 49, 37).unwrap(),
+            "Saturday, 12-Nov-94 08:49:37 GMT",
+        ),
     ];
 
     for val in &testdates {

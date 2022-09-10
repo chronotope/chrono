@@ -20,14 +20,14 @@
 //! # use std::error::Error;
 //! use chrono::prelude::*;
 //!
-//! let date_time = Utc.ymd(2020, 11, 10).and_hms(0, 1, 32);
+//! let date_time = Utc.ymd(2020, 11, 10)?.and_hms(0, 1, 32)?;
 //!
 //! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
 //! assert_eq!(formatted, "2020-11-10 00:01:32");
 //!
 //! let parsed = Utc.datetime_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?;
 //! assert_eq!(parsed, date_time);
-//! # Ok::<(), chrono::ParseError>(())
+//! # Ok::<_, Box<dyn std::error::Error>>(())
 //! ```
 
 #[cfg(feature = "alloc")]
@@ -430,7 +430,7 @@ impl Error for ParseError {
 }
 
 // to be used in this module and submodules
-const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
+pub(crate) const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
 const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
 const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);

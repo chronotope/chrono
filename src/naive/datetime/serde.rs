@@ -4,7 +4,6 @@ use core::fmt;
 use serde::{de, ser};
 
 use super::NaiveDateTime;
-use crate::offset::LocalResult;
 
 /// Serialize a `NaiveDateTime` as an RFC 3339 string
 ///
@@ -69,7 +68,7 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 ///     time: NaiveDateTime
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733);
+/// let time = NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?;
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -78,13 +77,12 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_nanoseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of nanoseconds since the epoch
@@ -104,11 +102,11 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?,
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -134,7 +132,7 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -156,19 +154,19 @@ pub mod ts_nanoseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value / 1_000_000_000, (value % 1_000_000_000) as u32)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value / 1_000_000_000, (value % 1_000_000_000) as u32)
+                .map_err(E::custom)
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 value as i64 / 1_000_000_000,
                 (value as i64 % 1_000_000_000) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .map_err(E::custom)
         }
     }
 }
@@ -189,7 +187,7 @@ pub mod ts_nanoseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733));
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?);
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -198,7 +196,7 @@ pub mod ts_nanoseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_nanoseconds_option {
     use core::fmt;
@@ -224,11 +222,11 @@ pub mod ts_nanoseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733)),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -257,7 +255,7 @@ pub mod ts_nanoseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -315,7 +313,7 @@ pub mod ts_nanoseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355);
+/// let time = NaiveDate::from_ymd(2018, 5, 17)?.and_hms_micro(02, 04, 59, 918355)?;
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -324,13 +322,12 @@ pub mod ts_nanoseconds_option {
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_microseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of microseconds since the epoch
@@ -350,11 +347,11 @@ pub mod ts_microseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17)?.and_hms_micro(02, 04, 59, 918355)?,
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -380,7 +377,7 @@ pub mod ts_microseconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -402,22 +399,19 @@ pub mod ts_microseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
-                value / 1_000_000,
-                ((value % 1_000_000) * 1000) as u32,
-            )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value / 1_000_000, ((value % 1_000_000) * 1000) as u32)
+                .map_err(E::custom)
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 (value / 1_000_000) as i64,
                 ((value % 1_000_000) * 1_000) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .map_err(E::custom)
         }
     }
 }
@@ -438,7 +432,7 @@ pub mod ts_microseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355));
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms_micro(02, 04, 59, 918355)?);
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -447,7 +441,7 @@ pub mod ts_microseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_microseconds_option {
     use core::fmt;
@@ -473,11 +467,11 @@ pub mod ts_microseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355)),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms_micro(02, 04, 59, 918355)?),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -506,7 +500,7 @@ pub mod ts_microseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -564,7 +558,7 @@ pub mod ts_microseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918);
+/// let time = NaiveDate::from_ymd(2018, 5, 17)?.and_hms_milli(02, 04, 59, 918)?;
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -573,13 +567,12 @@ pub mod ts_microseconds_option {
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_milliseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of milliseconds since the epoch
@@ -599,11 +592,11 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17)?.and_hms_milli(02, 04, 59, 918)?,
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -629,7 +622,7 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -651,19 +644,19 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value / 1000, ((value % 1000) * 1_000_000) as u32)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value / 1000, ((value % 1000) * 1_000_000) as u32)
+                .map_err(E::custom)
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 (value / 1000) as i64,
                 ((value % 1000) * 1_000_000) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .map_err(E::custom)
         }
     }
 }
@@ -684,7 +677,7 @@ pub mod ts_milliseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918));
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms_milli(02, 04, 59, 918)?);
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -693,7 +686,7 @@ pub mod ts_milliseconds {
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_milliseconds_option {
     use core::fmt;
@@ -719,11 +712,11 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918)),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms_milli(02, 04, 59, 918)?),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -752,7 +745,7 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -810,7 +803,7 @@ pub mod ts_milliseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2015, 5, 15).and_hms(10, 0, 0);
+/// let time = NaiveDate::from_ymd(2015, 5, 15)?.and_hms(10, 0, 0)?;
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -819,13 +812,12 @@ pub mod ts_milliseconds_option {
 /// assert_eq!(as_string, r#"{"time":1431684000}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_seconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of seconds since the epoch
@@ -845,11 +837,11 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2015, 5, 15).and_hms(10, 0, 0),
+    ///     time: NaiveDate::from_ymd(2015, 5, 15)?.and_hms(10, 0, 0)?,
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -875,7 +867,7 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
@@ -897,16 +889,14 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value, 0)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value, 0).map_err(E::custom)
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value as i64, 0)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value as i64, 0).map_err(E::custom)
         }
     }
 }
@@ -927,7 +917,7 @@ pub mod ts_seconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).and_hms(02, 04, 59));
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms(02, 04, 59)?);
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -936,7 +926,7 @@ pub mod ts_seconds {
 /// assert_eq!(as_string, r#"{"time":1526522699}"#);
 /// let my_s: S = serde_json::from_str(&as_string)?;
 /// assert_eq!(my_s.time, time);
-/// # Ok::<(), serde_json::Error>(())
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub mod ts_seconds_option {
     use core::fmt;
@@ -962,11 +952,11 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).and_hms(02, 04, 59)),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17)?.and_hms(02, 04, 59)?),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -995,7 +985,7 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// # Ok::<(), serde_json::Error>(())
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
@@ -1056,7 +1046,7 @@ fn test_serde_bincode() {
     use crate::naive::NaiveDate;
     use bincode::{deserialize, serialize};
 
-    let dt = NaiveDate::from_ymd(2016, 7, 8).and_hms_milli(9, 10, 48, 90);
+    let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli(9, 10, 48, 90).unwrap();
     let encoded = serialize(&dt).unwrap();
     let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
     assert_eq!(dt, decoded);
@@ -1076,57 +1066,10 @@ fn test_serde_bincode_optional() {
         two: Option<DateTime<Utc>>,
     }
 
-    let expected = Test { one: Some(1), two: Some(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1)) };
+    let expected =
+        Test { one: Some(1), two: Some(Utc.ymd(1970, 1, 1).unwrap().and_hms(0, 1, 1).unwrap()) };
     let bytes: Vec<u8> = serialize(&expected).unwrap();
     let actual = deserialize::<Test>(&(bytes)).unwrap();
 
     assert_eq!(expected, actual);
-}
-
-// lik? function to convert a LocalResult into a serde-ish Result
-pub(crate) fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
-where
-    E: de::Error,
-    V: fmt::Display,
-    T: fmt::Display,
-{
-    match me {
-        LocalResult::None => Err(E::custom(ne_timestamp(ts))),
-        LocalResult::Ambiguous(min, max) => {
-            Err(E::custom(SerdeError::Ambiguous { timestamp: ts, min, max }))
-        }
-        LocalResult::Single(val) => Ok(val),
-    }
-}
-
-enum SerdeError<V: fmt::Display, D: fmt::Display> {
-    NonExistent { timestamp: V },
-    Ambiguous { timestamp: V, min: D, max: D },
-}
-
-/// Construct a [`SerdeError::NonExistent`]
-fn ne_timestamp<T: fmt::Display>(ts: T) -> SerdeError<T, u8> {
-    SerdeError::NonExistent::<T, u8> { timestamp: ts }
-}
-
-impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ChronoSerdeError({})", self)
-    }
-}
-
-// impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
-impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            SerdeError::NonExistent { timestamp } => {
-                write!(f, "value is not a legal timestamp: {}", timestamp)
-            }
-            SerdeError::Ambiguous { timestamp, min, max } => write!(
-                f,
-                "value is an ambiguous timestamp: {}, could be either of {}, {}",
-                timestamp, min, max
-            ),
-        }
-    }
 }

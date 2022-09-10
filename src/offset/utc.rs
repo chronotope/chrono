@@ -17,10 +17,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{FixedOffset, LocalResult, Offset, TimeZone};
+use super::{FixedOffset, FixedTimeZone, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg(feature = "clock")]
-use crate::{Date, DateTime};
+use crate::{ChronoError, Date, DateTime, LocalResult};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -34,10 +34,11 @@ use crate::{Date, DateTime};
 /// ```
 /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
 ///
-/// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
+/// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0)?, Utc);
 ///
-/// assert_eq!(Utc.timestamp(61, 0), dt);
-/// assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
+/// assert_eq!(Utc.timestamp(61, 0)?, dt);
+/// assert_eq!(Utc.ymd(1970, 1, 1)?.and_hms(0, 1, 1)?, dt);
+/// # Ok::<_, chrono::ChronoError>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
@@ -47,8 +48,8 @@ pub struct Utc;
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
-    pub fn today() -> Date<Utc> {
-        Utc::now().date()
+    pub fn today() -> Result<Date<Utc>, ChronoError> {
+        Ok(Utc::now()?.date())
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
@@ -57,11 +58,11 @@ impl Utc {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    pub fn now() -> DateTime<Utc> {
+    pub fn now() -> Result<DateTime<Utc>, ChronoError> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32);
-        DateTime::from_utc(naive, Utc)
+        let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32)?;
+        Ok(DateTime::from_utc(naive, Utc))
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
@@ -70,37 +71,52 @@ impl Utc {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    pub fn now() -> DateTime<Utc> {
+    pub fn now() -> Result<DateTime<Utc>, ChronoError> {
         let now = js_sys::Date::new_0();
-        DateTime::<Utc>::from(now)
+        Ok(DateTime::<Utc>::from(now))
     }
 }
 
 impl TimeZone for Utc {
-    type Offset = Utc;
+    type Offset = Self;
 
-    fn from_offset(_state: &Utc) -> Utc {
-        Utc
-    }
-
-    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<Utc> {
-        LocalResult::Single(Utc)
-    }
-    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<Utc> {
-        LocalResult::Single(Utc)
+    fn from_offset(_: &Self) -> Self {
+        Self
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Utc {
-        Utc
+    fn offset_from_local_date(&self, _: &NaiveDate) -> Result<LocalResult<Self>, ChronoError> {
+        Ok(LocalResult::Single(Self))
     }
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Utc {
-        Utc
+
+    fn offset_from_local_datetime(
+        &self,
+        _: &NaiveDateTime,
+    ) -> Result<LocalResult<Self>, ChronoError> {
+        Ok(LocalResult::Single(Self))
+    }
+
+    fn offset_from_utc_date(&self, _: &NaiveDate) -> Result<Self, ChronoError> {
+        Ok(Self)
+    }
+
+    fn offset_from_utc_datetime(&self, _: &NaiveDateTime) -> Result<Self, ChronoError> {
+        Ok(Self)
+    }
+}
+
+impl FixedTimeZone for Utc {
+    fn offset_from_utc_date_fixed(&self, _: &NaiveDate) -> Self::Offset {
+        Self
+    }
+
+    fn offset_from_utc_datetime_fixed(&self, _: &NaiveDateTime) -> Self::Offset {
+        Self
     }
 }
 
 impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
-        FixedOffset::east(0)
+        FixedOffset::UTC
     }
 }
 
