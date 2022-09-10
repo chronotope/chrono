@@ -232,9 +232,6 @@ fn test_date_from_str() {
         "0:0:0",
         "0:0:0.0000000",
         "0:0:0.0000003",
-        " 4 : 3 : 2.1 ",
-        " 09:08:07 ",
-        " 9:8:07 ",
         "01:02:03",
         "4:3:2.1",
         "9:8:7",
@@ -303,6 +300,18 @@ fn test_date_from_str() {
         "1441497364.649",    // valid datetime, not a NaiveTime
         "+1441497364.649",   // valid datetime, not a NaiveTime
         "+1441497364",       // valid datetime, not a NaiveTime
+        "01 :02:03",         // space after hour
+        "01: 02:03",         // space before minute
+        "01 : 02:03",        // space around hour-minute divider
+        "01:02 :03",         // space after minute
+        "01:02: 03",         // space before second
+        "01:02 : 03",        // space around minute-second divider
+        "01:02:03 .456",     // space after second
+        "01:02:03. 456",     // space before fraction
+        "01:02:03 ",         // trailing space
+        "01:02:03.456 ",     // trailing space
+        " 01:02:03",         // leading space
+        " 4 : 3 : 2.1 ",     // spaces intermixed throughout
         "001:02:03",         // invalid hour
         "01:002:03",         // invalid minute
         "01:02:003",         // invalid second
@@ -330,9 +339,9 @@ fn test_time_parse_from_str() {
         NaiveTime::parse_from_str("\t\t1259\t\tPM\t", "\t\t%H%M\t\t%P\t"),
         Ok(hms(12, 59, 0))
     );
-    assert!(NaiveTime::parse_from_str("12:59 PM", "%H:%M\t%P").is_ok());
-    assert!(NaiveTime::parse_from_str("\t\t12:59 PM\t", "\t\t%H:%M\t%P\t").is_ok());
-    assert!(NaiveTime::parse_from_str("12:59  PM", "%H:%M %P").is_ok());
+    assert!(NaiveTime::parse_from_str("12:59 PM", "%H:%M\t%P").is_err());
+    assert!(NaiveTime::parse_from_str("\t\t12:59 PM\t", "\t\t%H:%M\t%P\t").is_err());
+    assert!(NaiveTime::parse_from_str("12:59  PM", "%H:%M %P").is_err());
     assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
 }
 
