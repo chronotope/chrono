@@ -48,7 +48,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
     let mut n = 0i64;
     for (i, c) in bytes.iter().take(max).cloned().enumerate() {
         // cloned() = copied()
-        if !(b'0'..=b'9').contains(&c) {
+        if !c.is_ascii_digit() {
             if i < min {
                 return Err(INVALID);
             } else {
@@ -79,7 +79,7 @@ pub(super) fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
     let v = v.checked_mul(SCALE[consumed]).ok_or(OUT_OF_RANGE)?;
 
     // if there are more than 9 digits, skip next digits.
-    let s = s.trim_left_matches(|c: char| ('0'..='9').contains(&c));
+    let s = s.trim_left_matches(|c: char| c.is_ascii_digit());
 
     Ok((s, v))
 }
@@ -195,6 +195,27 @@ pub(super) fn space(s: &str) -> ParseResult<&str> {
         Err(TOO_SHORT)
     } else {
         Err(INVALID)
+    }
+}
+
+/// Returns slice remaining after first char.
+/// If <=1 chars in `s` then return an empty slice
+pub(super) fn s_next(s: &str) -> &str {
+    match s.char_indices().nth(1) {
+        Some((offset, _)) => &s[offset..],
+        None => {
+            // one or zero chars in `s`, return empty string
+            &s[s.len()..]
+        }
+    }
+}
+
+/// If the first `char` is whitespace then consume it and return `s`.
+/// Else return `s`.
+pub(super) fn trim1(s: &str) -> &str {
+    match s.chars().next() {
+        Some(c) if c.is_whitespace() => s_next(s),
+        Some(_) | None => s,
     }
 }
 
@@ -404,4 +425,42 @@ fn test_rfc2822_comments() {
             test_in, expected, actual
         );
     }
+}
+
+#[test]
+fn test_space() {
+    assert_eq!(space(""), Err(TOO_SHORT));
+    assert_eq!(space(" "), Ok(""));
+    assert_eq!(space(" \t"), Ok(""));
+    assert_eq!(space(" \ta"), Ok("a"));
+    assert_eq!(space(" \ta "), Ok("a "));
+    assert_eq!(space("a"), Err(INVALID));
+    assert_eq!(space("a "), Err(INVALID));
+}
+
+#[test]
+fn test_s_next() {
+    assert_eq!(s_next(""), "");
+    assert_eq!(s_next(" "), "");
+    assert_eq!(s_next("a"), "");
+    assert_eq!(s_next("ab"), "b");
+    assert_eq!(s_next("abc"), "bc");
+    assert_eq!(s_next("😾b"), "b");
+    assert_eq!(s_next("a😾"), "😾");
+    assert_eq!(s_next("😾bc"), "bc");
+    assert_eq!(s_next("a😾c"), "😾c");
+}
+
+#[test]
+fn test_trim1() {
+    assert_eq!(trim1(""), "");
+    assert_eq!(trim1(" "), "");
+    assert_eq!(trim1("\t"), "");
+    assert_eq!(trim1("\t\t"), "\t");
+    assert_eq!(trim1("  "), " ");
+    assert_eq!(trim1("a"), "a");
+    assert_eq!(trim1("a "), "a ");
+    assert_eq!(trim1("ab"), "ab");
+    assert_eq!(trim1("😼"), "😼");
+    assert_eq!(trim1("😼b"), "😼b");
 }
