@@ -1257,14 +1257,11 @@ impl str::FromStr for NaiveTime {
     fn from_str(s: &str) -> ParseResult<NaiveTime> {
         const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
-            Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Minute, Pad::Zero),
-            Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond),
-            Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();

@@ -198,6 +198,27 @@ pub(super) fn space(s: &str) -> ParseResult<&str> {
     }
 }
 
+/// Returns slice remaining after first char.
+/// If <=1 chars in `s` then return an empty slice
+pub(super) fn s_next(s: &str) -> &str {
+    match s.char_indices().nth(1) {
+        Some((offset, _)) => &s[offset..],
+        None => {
+            // one or zero chars in `s`, return empty string
+            &s[s.len()..]
+        }
+    }
+}
+
+/// If the first `char` is whitespace then consume it and return `s`.
+/// Else return `s`.
+pub(super) fn trim1(s: &str) -> &str {
+    match s.chars().next() {
+        Some(c) if c.is_whitespace() => s_next(s),
+        Some(_) | None => s,
+    }
+}
+
 /// Consumes any number (including zero) of colon or spaces.
 pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_left_matches(|c: char| c == ':' || c.is_whitespace()))
@@ -404,4 +425,42 @@ fn test_rfc2822_comments() {
             test_in, expected, actual
         );
     }
+}
+
+#[test]
+fn test_space() {
+    assert_eq!(space(""), Err(TOO_SHORT));
+    assert_eq!(space(" "), Ok(""));
+    assert_eq!(space(" \t"), Ok(""));
+    assert_eq!(space(" \ta"), Ok("a"));
+    assert_eq!(space(" \ta "), Ok("a "));
+    assert_eq!(space("a"), Err(INVALID));
+    assert_eq!(space("a "), Err(INVALID));
+}
+
+#[test]
+fn test_s_next() {
+    assert_eq!(s_next(""), "");
+    assert_eq!(s_next(" "), "");
+    assert_eq!(s_next("a"), "");
+    assert_eq!(s_next("ab"), "b");
+    assert_eq!(s_next("abc"), "bc");
+    assert_eq!(s_next("😾b"), "b");
+    assert_eq!(s_next("a😾"), "😾");
+    assert_eq!(s_next("😾bc"), "bc");
+    assert_eq!(s_next("a😾c"), "😾c");
+}
+
+#[test]
+fn test_trim1() {
+    assert_eq!(trim1(""), "");
+    assert_eq!(trim1(" "), "");
+    assert_eq!(trim1("\t"), "");
+    assert_eq!(trim1("\t\t"), "\t");
+    assert_eq!(trim1("  "), " ");
+    assert_eq!(trim1("a"), "a");
+    assert_eq!(trim1("a "), "a ");
+    assert_eq!(trim1("ab"), "ab");
+    assert_eq!(trim1("😼"), "😼");
+    assert_eq!(trim1("😼b"), "😼b");
 }

@@ -207,27 +207,27 @@ pub enum Fixed {
     ///
     /// It does not support parsing, its use in the parser is an immediate failure.
     TimezoneName,
-    /// Offset from the local time to UTC (`+09:00` or `-04:00` or `+00:00`).
+    /// Offset from the local time to UTC (`+09:00` or `-0400` or `+00:00`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// In the parser, the colon may be omitted,
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
     /// Offset from the local time to UTC with seconds (`+09:00:00` or `-04:00:00` or `+00:00:00`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// In the parser, the colon may be omitted,
     /// The offset is limited from `-24:00:00` to `+24:00:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetDoubleColon,
     /// Offset from the local time to UTC without minutes (`+09` or `-04` or `+00`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// In the parser, the colon may be omitted,
     /// The offset is limited from `-24` to `+24`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetTripleColon,
-    /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
+    /// Offset from the local time to UTC (`+09:00` or `-0400` or `Z`).
     ///
-    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
+    /// In the parser, the colon may be omitted,
     /// and `Z` can be either in upper case or in lower case.
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
