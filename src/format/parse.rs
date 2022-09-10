@@ -42,6 +42,10 @@ fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<()
     })
 }
 
+/// Parse an RFC 2822 format datetime
+/// e.g. `Fri, 21 Nov 1997 09:55:06 -0600`
+///
+/// This function allows arbitrary intermixed whitespace per RFC 2822 appendix A.5
 fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     macro_rules! try_consume {
         ($e:expr) => {{
@@ -237,7 +241,7 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 ///
 /// - Padding-agnostic (for numeric items).
 ///   The [`Pad`](./enum.Pad.html) field is completely ignored,
-///   so one can prepend any number of whitespace then any number of zeroes before numbers.
+///   so one can prepend any number of zeroes before numbers.
 ///
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
 pub fn parse<'a, I, B>(parsed: &mut Parsed, s: &str, items: I) -> ParseResult<()>
@@ -292,13 +296,37 @@ where
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
-                s = s.trim_left();
+            Item::Space(item_space) => {
+                for expect in item_space.chars() {
+                    let actual = match s.chars().next() {
+                        Some(c) => c,
+                        None => {
+                            return Err((s, TOO_SHORT));
+                        }
+                    };
+                    if expect != actual {
+                        return Err((s, INVALID));
+                    }
+                    // advance `s` forward 1 char
+                    s = scan::s_next(s);
+                }
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
-            Item::OwnedSpace(_) => {
-                s = s.trim_left();
+            Item::OwnedSpace(ref item_space) => {
+                for expect in item_space.chars() {
+                    let actual = match s.chars().next() {
+                        Some(c) => c,
+                        None => {
+                            return Err((s, TOO_SHORT));
+                        }
+                    };
+                    if expect != actual {
+                        return Err((s, INVALID));
+                    }
+                    // advance `s` forward 1 char
+                    s = scan::s_next(s);
+                }
             }
 
             Item::Numeric(ref spec, ref _pad) => {
@@ -331,7 +359,6 @@ where
                     Internal(ref int) => match int._dummy {},
                 };
 
-                s = s.trim_left();
                 let v = if signed {
                     if s.starts_with('-') {
                         let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
@@ -424,27 +451,24 @@ where
                     | &TimezoneOffsetDoubleColon
                     | &TimezoneOffsetTripleColon
                     | &TimezoneOffset => {
-                        let offset = try_consume!(scan::timezone_offset(
-                            s.trim_left(),
-                            scan::colon_or_space
-                        ));
+                        s = scan::trim1(s);
+                        let offset = try_consume!(scan::timezone_offset(s, scan::colon_or_space));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
-                        let offset = try_consume!(scan::timezone_offset_zulu(
-                            s.trim_left(),
-                            scan::colon_or_space
-                        ));
+                        s = scan::trim1(s);
+                        let offset =
+                            try_consume!(scan::timezone_offset_zulu(s, scan::colon_or_space));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
+
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
-                        let offset = try_consume!(scan::timezone_offset_permissive(
-                            s.trim_left(),
-                            scan::colon_or_space
-                        ));
+                        s = scan::trim1(s);
+                        let offset =
+                            try_consume!(scan::timezone_offset_permissive(s, scan::colon_or_space));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
@@ -468,15 +492,13 @@ where
 }
 
 /// Accepts a relaxed form of RFC3339.
-/// A space or a 'T' are acepted as the separator between the date and time
-/// parts. Additional spaces are allowed between each component.
+/// A space or a 'T' are accepted as the separator between the date and time
+/// parts.
 ///
-/// All of these examples are equivalent:
 /// ```
 /// # use chrono::{DateTime, offset::FixedOffset};
-/// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>();
-/// "2012-12-12 12:12:12Z".parse::<DateTime<FixedOffset>>();
-/// "2012-  12-12T12:  12:12Z".parse::<DateTime<FixedOffset>>();
+/// "2000-01-02T03:04:05Z".parse::<DateTime<FixedOffset>>();
+/// "2000-01-02 03:04:05Z".parse::<DateTime<FixedOffset>>();
 /// ```
 impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
@@ -484,25 +506,19 @@ impl str::FromStr for DateTime<FixedOffset> {
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const DATE_ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
-            Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Month, Pad::Zero),
-            Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Day, Pad::Zero),
         ];
         const TIME_ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
-            Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Minute, Pad::Zero),
-            Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond),
-            Item::Space(""),
             Item::Fixed(Fixed::TimezoneOffsetZ),
-            Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
@@ -524,7 +540,6 @@ impl str::FromStr for DateTime<FixedOffset> {
 #[cfg(test)]
 #[test]
 fn test_parse() {
-    use super::IMPOSSIBLE;
     use super::*;
 
     // workaround for Rust issue #22255
@@ -556,19 +571,34 @@ fn test_parse() {
 
     // whitespaces
     check!("",          [sp!("")]; );
-    check!(" ",         [sp!("")]; );
-    check!("\t",        [sp!("")]; );
-    check!(" \n\r  \n", [sp!("")]; );
     check!(" ",         [sp!(" ")]; );
     check!("  ",        [sp!("  ")]; );
+    check!("   ",       [sp!("   ")]; );
+    check!(" ",         [sp!("")]; TOO_LONG);
+    check!("  ",        [sp!(" ")]; TOO_LONG);
+    check!("   ",       [sp!("  ")]; TOO_LONG);
+    check!("    ",      [sp!("  ")]; TOO_LONG);
+    check!("",          [sp!(" ")]; TOO_SHORT);
+    check!(" ",         [sp!("  ")]; TOO_SHORT);
+    check!("  ",        [sp!("   ")]; TOO_SHORT);
+    check!("  ",        [sp!("  "), sp!("  ")]; TOO_SHORT);
+    check!("   ",       [sp!("  "), sp!("  ")]; TOO_SHORT);
     check!("  ",        [sp!(" "), sp!(" ")]; );
     check!("   ",       [sp!("  "), sp!(" ")]; );
     check!("   ",       [sp!(" "), sp!("  ")]; );
     check!("   ",       [sp!(" "), sp!(" "), sp!(" ")]; );
+    check!("\t",        [sp!("")]; TOO_LONG);
+    check!(" \n\r  \n", [sp!("")]; TOO_LONG);
     check!("\t",        [sp!("\t")]; );
+    check!("\t",        [sp!(" ")]; INVALID);
+    check!(" ",         [sp!("\t")]; INVALID);
     check!("\t\r",      [sp!("\t\r")]; );
     check!("\t\r ",     [sp!("\t\r ")]; );
+    check!("\t \r",     [sp!("\t \r")]; );
+    check!(" \t\r",     [sp!(" \t\r")]; );
     check!(" \n\r  \n", [sp!(" \n\r  \n")]; );
+    check!(" \t\n",     [sp!(" \t")]; TOO_LONG);
+    check!(" \n\t",     [sp!(" \t\n")]; INVALID);
     check!("\u{2002}",  [sp!("\u{2002}")]; );
     // most unicode whitespace characters
     check!(
@@ -584,16 +614,13 @@ fn test_parse() {
         ];
     );
     check!("a",         [sp!("")]; TOO_LONG);
-    check!("a",         [sp!(" ")]; TOO_LONG);
-    // a Space containing a literal cannot match a literal
-    check!("a",         [sp!("a")]; TOO_LONG);
+    check!("a",         [sp!(" ")]; INVALID);
+    // a Space containing a literal can match a literal, but this should not be done
+    check!("a",         [sp!("a")]; );
     check!("abc",       [sp!("")]; TOO_LONG);
-    check!("  ",        [sp!(" ")]; );
-    check!(" \t\n",     [sp!(" \t")]; );
-    check!("",          [sp!(" ")]; );
-    check!(" ",         [sp!("  ")]; );
-    check!("  ",        [sp!("   ")]; );
-    check!("  ",        [sp!("  "), sp!("  ")]; );
+    check!("abc",       [sp!(" ")]; INVALID);
+    check!(" abc",      [sp!("")]; TOO_LONG);
+    check!(" abc",      [sp!(" ")]; TOO_LONG);
 
     // `\u{0363}` is combining diacritic mark "COMBINING LATIN SMALL LETTER A"
 
@@ -634,7 +661,7 @@ fn test_parse() {
     //
     check!("x y", [lit!("x"), lit!("y")]; INVALID);
     check!("xy",  [lit!("x"), sp!(""), lit!("y")]; );
-    check!("x y", [lit!("x"), sp!(""), lit!("y")]; );
+    check!("x y", [lit!("x"), sp!(""), lit!("y")]; INVALID);
     check!("x y", [lit!("x"), sp!(" "), lit!("y")]; );
 
     // whitespaces + literals
@@ -655,7 +682,7 @@ fn test_parse() {
     check!("2015",        [num!(Year)]; year: 2015);
     check!("0000",        [num!(Year)]; year:    0);
     check!("9999",        [num!(Year)]; year: 9999);
-    check!(" \t987",      [num!(Year)]; year:  987);
+    check!(" \t987",      [num!(Year)]; INVALID);
     check!(" \t987",      [sp!(" \t"), num!(Year)]; year:  987);
     check!(" \t987🤠",    [sp!(" \t"), num!(Year), lit!("🤠")]; year:  987);
     check!("987🤠",       [num!(Year), lit!("🤠")]; year:  987);
@@ -667,9 +694,9 @@ fn test_parse() {
     check!("12345",       [nums!(Year), lit!("5")]; year: 1234);
     check!("12345",       [num0!(Year), lit!("5")]; year: 1234);
     check!("12341234",    [num!(Year), num!(Year)]; year: 1234);
-    check!("1234 1234",   [num!(Year), num!(Year)]; year: 1234);
+    check!("1234 1234",   [num!(Year), num!(Year)]; INVALID);
     check!("1234 1234",   [num!(Year), sp!(" "), num!(Year)]; year: 1234);
-    check!("1234 1235",   [num!(Year), num!(Year)]; IMPOSSIBLE);
+    check!("1234 1235",   [num!(Year), num!(Year)]; INVALID);
     check!("1234 1234",   [num!(Year), lit!("x"), num!(Year)]; INVALID);
     check!("1234x1234",   [num!(Year), lit!("x"), num!(Year)]; year: 1234);
     check!("1234 x 1234", [num!(Year), lit!("x"), num!(Year)]; INVALID);
@@ -685,8 +712,10 @@ fn test_parse() {
     check!("+0042",       [num!(Year)]; year: 42);
     check!("-42195",      [num!(Year)]; year: -42195);
     check!("+42195",      [num!(Year)]; year: 42195);
-    check!("  -42195",    [num!(Year)]; year: -42195);
-    check!("  +42195",    [num!(Year)]; year: 42195);
+    check!(" -42195",     [num!(Year)]; INVALID);
+    check!(" +42195",     [num!(Year)]; INVALID);
+    check!("  -42195",    [num!(Year)]; INVALID);
+    check!("  +42195",    [num!(Year)]; INVALID);
     check!("-42195 ",     [num!(Year)]; TOO_LONG);
     check!("+42195 ",     [num!(Year)]; TOO_LONG);
     check!("  -   42",    [num!(Year)]; INVALID);
@@ -702,7 +731,8 @@ fn test_parse() {
     check!("345",   [num!(Ordinal)]; ordinal: 345);
     check!("+345",  [num!(Ordinal)]; INVALID);
     check!("-345",  [num!(Ordinal)]; INVALID);
-    check!(" 345",  [num!(Ordinal)]; ordinal: 345);
+    check!(" 345",  [num!(Ordinal)]; INVALID);
+    check!("345 ",  [num!(Ordinal)]; TOO_LONG);
     check!(" 345",  [sp!(" "), num!(Ordinal)]; ordinal: 345);
     check!("345 ",  [num!(Ordinal), sp!(" ")]; ordinal: 345);
     check!("345🤠 ", [num!(Ordinal), lit!("🤠"), sp!(" ")]; ordinal: 345);
@@ -715,21 +745,27 @@ fn test_parse() {
     check!(" -345", [sp!(" "), num!(Ordinal)]; INVALID);
 
     // various numeric fields
+    check!("1234 5678", [num!(Year), num!(IsoYear)]; INVALID);
     check!("1234 5678",
-           [num!(Year), num!(IsoYear)];
+           [num!(Year), sp!(" "), num!(IsoYear)];
            year: 1234, isoyear: 5678);
     check!("12 34 56 78",
            [num!(YearDiv100), num!(YearMod100), num!(IsoYearDiv100), num!(IsoYearMod100)];
+           INVALID);
+    check!("12 34🤠56 78",
+           [num!(YearDiv100), sp!(" "), num!(YearMod100),
+           lit!("🤠"), num!(IsoYearDiv100), sp!(" "), num!(IsoYearMod100)];
            year_div_100: 12, year_mod_100: 34, isoyear_div_100: 56, isoyear_mod_100: 78);
     check!("1 2 3 4 5 6",
-           [num!(Month), num!(Day), num!(WeekFromSun), num!(WeekFromMon), num!(IsoWeek),
-            num!(NumDaysFromSun)];
+           [num!(Month), sp!(" "), num!(Day), sp!(" "), num!(WeekFromSun), sp!(" "),
+           num!(WeekFromMon), sp!(" "), num!(IsoWeek), sp!(" "), num!(NumDaysFromSun)];
            month: 1, day: 2, week_from_sun: 3, week_from_mon: 4, isoweek: 5, weekday: Weekday::Sat);
     check!("7 89 01",
-           [num!(WeekdayFromMon), num!(Ordinal), num!(Hour12)];
+           [num!(WeekdayFromMon), sp!(" "), num!(Ordinal), sp!(" "), num!(Hour12)];
            weekday: Weekday::Sun, ordinal: 89, hour_mod_12: 1);
     check!("23 45 6 78901234 567890123",
-           [num!(Hour), num!(Minute), num!(Second), num!(Nanosecond), num!(Timestamp)];
+           [num!(Hour), sp!(" "), num!(Minute), sp!(" "), num!(Second), sp!(" "),
+           num!(Nanosecond), sp!(" "), num!(Timestamp)];
            hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 78_901_234,
            timestamp: 567_890_123);
 
@@ -918,9 +954,9 @@ fn test_parse() {
     check!("+12 34 ",      [fix!(TimezoneOffset)]; TOO_LONG);
     check!(" +12:34",      [fix!(TimezoneOffset)]; offset: 45_240);
     check!(" -12:34",      [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("  +12:34",     [fix!(TimezoneOffset)]; offset: 45_240);
-    check!("  -12:34",     [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("\t -12:34",    [fix!(TimezoneOffset)]; offset: -45_240);
+    check!("  +12:34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("  -12:34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("\t -12:34",    [fix!(TimezoneOffset)]; INVALID);
     check!("-12: 34",      [fix!(TimezoneOffset)]; offset: -45_240);
     check!("-12 :34",      [fix!(TimezoneOffset)]; offset: -45_240);
     check!("-12 : 34",     [fix!(TimezoneOffset)]; offset: -45_240);
@@ -1013,7 +1049,7 @@ fn test_parse() {
     check!("+12:34 ",      [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!(" +12:34",      [fix!(TimezoneOffsetColon)]; offset: 45_240);
     check!("\t+12:34",     [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("\t\t+12:34",   [fix!(TimezoneOffsetColon)]; offset: 45_240);
+    check!("\t\t+12:34",   [fix!(TimezoneOffsetColon)]; INVALID);
     check!("12:34 ",       [fix!(TimezoneOffsetColon)]; INVALID);
     check!(" 12:34",       [fix!(TimezoneOffsetColon)]; INVALID);
     check!("",             [fix!(TimezoneOffsetColon)]; TOO_SHORT);
