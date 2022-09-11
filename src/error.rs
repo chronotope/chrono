@@ -43,7 +43,7 @@ impl fmt::Display for ChronoError {
             #[cfg(all(windows, feature = "clock"))]
             ChronoErrorKind::SystemTimeBeforeEpoch => write!(f, "system time before Unix epoch"),
             #[cfg(all(windows, feature = "clock"))]
-            ChronoErrorKind::SystemError(error) => write!(f, "system error: {error}"),
+            ChronoErrorKind::SystemError(error) => write!(f, "system error: {}", error),
         }
     }
 }
