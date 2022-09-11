@@ -19,8 +19,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, FixedTimeZone, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
+use crate::{ChronoError, LocalResult};
 #[cfg(feature = "clock")]
-use crate::{ChronoError, Date, DateTime, LocalResult};
+use crate::{Date, DateTime};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).

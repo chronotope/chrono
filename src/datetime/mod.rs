@@ -11,6 +11,7 @@ use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
+#[cfg(feature = "clock")]
 use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};

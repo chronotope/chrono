@@ -1,6 +1,4 @@
 use core::fmt;
-#[cfg(windows)]
-use std::io;
 
 /// Internal representation of the chrono error.
 #[derive(Debug)]
@@ -10,12 +8,12 @@ pub(crate) enum ChronoErrorKind {
     InvalidDateTime,
     InvalidTimeZone,
     AmbiguousDate,
-    #[cfg(unix)]
+    #[cfg(all(unix, feature = "clock"))]
     MissingDate,
-    #[cfg(windows)]
+    #[cfg(all(windows, feature = "clock"))]
     SystemTimeBeforeEpoch,
-    #[cfg(windows)]
-    SystemError(io::Error),
+    #[cfg(all(windows, feature = "clock"))]
+    SystemError(std::io::Error),
 }
 
 /// The error raised for an invalid date time.
@@ -40,11 +38,11 @@ impl fmt::Display for ChronoError {
             ChronoErrorKind::InvalidDateTime => write!(f, "invalid date time"),
             ChronoErrorKind::InvalidTimeZone => write!(f, "invalid time zone"),
             ChronoErrorKind::AmbiguousDate => write!(f, "tried to operate over ambiguous date"),
-            #[cfg(unix)]
+            #[cfg(all(unix, feature = "clock"))]
             ChronoErrorKind::MissingDate => write!(f, "missing date"),
-            #[cfg(windows)]
+            #[cfg(all(windows, feature = "clock"))]
             ChronoErrorKind::SystemTimeBeforeEpoch => write!(f, "system time before Unix epoch"),
-            #[cfg(windows)]
+            #[cfg(all(windows, feature = "clock"))]
             ChronoErrorKind::SystemError(error) => write!(f, "system error: {error}"),
         }
     }
@@ -61,7 +59,7 @@ impl From<ChronoErrorKind> for ChronoError {
 impl std::error::Error for ChronoError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.kind {
-            #[cfg(windows)]
+            #[cfg(all(windows, feature = "clock"))]
             ChronoErrorKind::SystemError(error) => Some(error),
             _ => None,
         }
@@ -80,7 +78,7 @@ impl PartialEq for ChronoError {
 impl PartialEq for ChronoErrorKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            #[cfg(windows)]
+            #[cfg(all(windows, feature = "clock"))]
             (Self::SystemError(l0), Self::SystemError(r0)) => l0.kind() == r0.kind(),
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
