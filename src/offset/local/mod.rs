@@ -77,13 +77,13 @@ impl Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    pub fn now() -> DateTime<Local> {
+    pub fn now() -> Result<DateTime<Local>, ChronoError> {
         use super::Utc;
-        let now: DateTime<Utc> = super::Utc::now();
+        let now: DateTime<Utc> = super::Utc::now()?;
 
         // Workaround missing timezone logic in `time` crate
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
-        DateTime::from_utc(now.naive_utc(), offset)
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
+        Ok(DateTime::from_utc(now.naive_utc(), offset))
     }
 }
 
@@ -131,12 +131,15 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<DateTime<Local>, ChronoError> {
+    fn from_local_datetime(
+        &self,
+        local: &NaiveDateTime,
+    ) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
         let mut local = local.clone();
         // Get the offset from the js runtime
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
         local -= crate::TimeDelta::seconds(offset.local_minus_utc() as i64);
-        Ok(DateTime::from_utc(local, offset))
+        Ok(LocalResult::Single(DateTime::from_utc(local, offset)))
     }
 
     #[cfg(not(all(
@@ -163,8 +166,8 @@ impl TimeZone for Local {
     ))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Local>, ChronoError> {
         // Get the offset from the js runtime
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
-        DateTime::from_utc(*utc, offset)
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
+        Ok(DateTime::from_utc(*utc, offset))
     }
 
     #[cfg(not(all(

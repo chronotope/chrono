@@ -1118,9 +1118,11 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))
 )]
-impl From<js_sys::Date> for DateTime<Utc> {
-    fn from(date: js_sys::Date) -> DateTime<Utc> {
-        DateTime::<Utc>::from(&date)
+impl std::convert::TryFrom<js_sys::Date> for DateTime<Utc> {
+    type Error = ChronoError;
+
+    fn try_from(date: js_sys::Date) -> Result<Self, Self::Error> {
+        DateTime::<Utc>::try_from(&date)
     }
 }
 
@@ -1137,8 +1139,10 @@ impl From<js_sys::Date> for DateTime<Utc> {
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))
 )]
-impl From<&js_sys::Date> for DateTime<Utc> {
-    fn from(date: &js_sys::Date) -> DateTime<Utc> {
+impl std::convert::TryFrom<&js_sys::Date> for DateTime<Utc> {
+    type Error = ChronoError;
+
+    fn try_from(date: &js_sys::Date) -> Result<Self, Self::Error> {
         Utc.timestamp_millis(date.get_time() as i64)
     }
 }
