@@ -173,7 +173,7 @@ impl TimeZone for Local {
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Local>, ChronoError> {
-        Ok(inner::naive_to_local(utc, false)?.single()?)
+        inner::naive_to_local(utc, false)?.single()
     }
 }
 

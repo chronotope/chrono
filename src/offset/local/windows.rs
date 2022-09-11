@@ -10,6 +10,7 @@
 
 use std::io;
 use std::mem;
+use std::ptr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use winapi::shared::minwindef::*;
@@ -245,7 +246,7 @@ fn time_to_local_tm(sec: i64, tm: &mut Tm) -> Result<(), ChronoError> {
         let mut utc = mem::zeroed();
         let mut local = mem::zeroed();
         call!(FileTimeToSystemTime(&ft, &mut utc));
-        call!(SystemTimeToTzSpecificLocalTime(0 as *const _, &mut utc, &mut local));
+        call!(SystemTimeToTzSpecificLocalTime(ptr::null(), &utc, &mut local));
         system_time_to_tm(&local, tm);
 
         let local = system_time_to_file_time(&local);
@@ -275,8 +276,8 @@ fn local_tm_to_time(tm: &Tm) -> Result<i64, ChronoError> {
     unsafe {
         let mut ft = mem::zeroed();
         let mut utc = mem::zeroed();
-        let mut sys_time = tm_to_system_time(tm);
-        call!(TzSpecificLocalTimeToSystemTime(0 as *mut _, &mut sys_time, &mut utc));
+        let sys_time = tm_to_system_time(tm);
+        call!(TzSpecificLocalTimeToSystemTime(ptr::null_mut(), &sys_time, &mut utc));
         call!(SystemTimeToFileTime(&utc, &mut ft));
         Ok(file_time_to_unix_seconds(&ft))
     }

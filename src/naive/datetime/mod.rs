@@ -145,7 +145,7 @@ impl NaiveDateTime {
         let date = i32::try_from(days)
             .ok()
             .and_then(|days| days.checked_add(719_163))
-            .ok_or(ChronoError::new(ChronoErrorKind::InvalidDateTime))
+            .ok_or_else(|| ChronoError::new(ChronoErrorKind::InvalidDateTime))
             .and_then(NaiveDate::from_num_days_from_ce)?;
 
         let time = NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs)?;
