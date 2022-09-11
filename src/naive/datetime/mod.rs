@@ -5,6 +5,7 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -38,6 +39,11 @@ mod tests;
 /// an alternative returning `Option` or `Result`. Thus we need some early bound to avoid
 /// touching that call when we are already sure that it WILL overflow...
 const MAX_SECS_BITS: usize = 44;
+
+/// Number of nanoseconds in a millisecond
+const NANOS_IN_MILLISECOND: u32 = 1_000_000;
+/// Number of nanoseconds in a second
+const NANOS_IN_SECOND: u32 = 1000 * NANOS_IN_MILLISECOND;
 
 /// The minimum possible `NaiveDateTime`.
 #[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MIN instead")]
@@ -129,6 +135,43 @@ impl NaiveDateTime {
     pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
         datetime.expect("invalid or out-of-range datetime")
+    }
+
+    /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// Returns `None` on an out-of-range number of milliseconds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDateTime;
+    /// let timestamp_millis: i64 = 1662921288; //Sunday, September 11, 2022 6:34:48 PM
+    /// let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_millis: i64 = -2208936075; //Mon Jan 01 1900 14:38:45 GMT+0000
+    /// let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
+    /// ```
+    #[inline]
+    pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
+        let secs = millis / 1000;
+
+        if millis < 0 {
+            let nsecs = u32::try_from((millis % 1000).abs()).ok()? * NANOS_IN_MILLISECOND;
+            NaiveDateTime::from_timestamp_opt(
+                secs.checked_sub(1)?,
+                NANOS_IN_SECOND.checked_sub(nsecs)?,
+            )
+        } else {
+            let nsecs = u32::try_from(millis % 1000).ok()? * NANOS_IN_MILLISECOND;
+            NaiveDateTime::from_timestamp_opt(secs, nsecs)
+        }
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
