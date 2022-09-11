@@ -533,8 +533,6 @@ impl NaiveDateTime {
     ///
     /// Returns `Err(ChronoError)` when it will result in overflow.
     ///
-    /// Overflow returns `None`.
-    ///
     /// # Example
     ///
     /// ```
@@ -587,20 +585,14 @@ impl NaiveDateTime {
     ///
     /// assert_eq!(d.and_hms_milli(3, 5, 7, 450)?.checked_sub_signed(TimeDelta::milliseconds(670))?,
     ///            d.and_hms_milli(3, 5, 6, 780)?);
-    /// # Ok::<_, chrono::ChronoError>(())
-    /// ```
     ///
-    /// Overflow returns `None`.
-    ///
-    /// ```
-    /// # use chrono::{TimeDelta, NaiveDate};
     /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?;
     /// assert!(dt.checked_sub_signed(TimeDelta::days(1_000_000_000)).is_err());
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
     ///
-    /// Leap seconds are handled,
-    /// but the subtraction assumes that it is the only leap second happened.
+    /// Leap seconds are handled, but the subtraction assumes that it is the
+    /// only leap second happened.
     ///
     /// ```
     /// # use chrono::{TimeDelta, NaiveDate};
@@ -634,8 +626,6 @@ impl NaiveDateTime {
     /// Subtracts given `Months` from the current date and time.
     ///
     /// Returns `Err(ChronoError)` when it will result in overflow.
-    ///
-    /// Overflow returns `None`.
     ///
     /// # Example
     ///
@@ -815,7 +805,7 @@ impl NaiveDateTime {
     ///
     /// ```
     /// use chrono::{NaiveDate, Utc};
-    /// let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?.and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.timezone(), Utc);
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```

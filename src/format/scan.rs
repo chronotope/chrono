@@ -306,8 +306,8 @@ where
     }
 }
 
-/// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
-/// May return `None` which indicates an insufficient offset data (i.e. `-0000`).
+/// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones. May
+/// return `None` which indicates an insufficient offset data (i.e. `-0000`).
 pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names
     let upto = s

@@ -181,8 +181,8 @@ mod tests;
 ///
 /// let dt = Utc.ymd(2015, 6, 30)?.and_hms(23, 56, 5)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
-/// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
-/// # Ok::<_, chrono::ChronoError>(())
+/// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z")?, dt);
+/// # Ok::<_, Box<dyn std::error::Error>>(())
 /// ```
 ///
 /// Since Chrono alone cannot determine any existence of leap seconds,
@@ -858,7 +858,8 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the hour number changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// invalid.
     ///
     /// # Example
     ///
@@ -881,7 +882,8 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the minute number changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// invalid.
     ///
     /// # Example
     ///
@@ -904,9 +906,9 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the second number changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
-    /// As with the [`second`](#method.second) method,
-    /// the input range is restricted to 0 through 59.
+    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// invalid. As with the [`second`](#method.second) method, the input range
+    /// is restricted to 0 through 59.
     ///
     /// # Example
     ///
@@ -927,11 +929,12 @@ impl Timelike for NaiveTime {
         Ok(NaiveTime { secs, ..*self })
     }
 
-    /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
+    /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second
+    /// changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
-    /// As with the [`nanosecond`](#method.nanosecond) method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
+    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// invalid. As with the [`nanosecond`](#method.nanosecond) method, the
+    /// input range can exceed 1,000,000,000 for leap seconds.
     ///
     /// # Example
     ///
@@ -944,10 +947,10 @@ impl Timelike for NaiveTime {
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
     ///
-    /// Leap seconds can theoretically follow *any* whole second.
-    /// The following would be a proper leap second at the time zone offset of UTC-00:03:57
-    /// (there are several historical examples comparable to this "non-sense" offset),
-    /// and therefore is allowed.
+    /// Leap seconds can theoretically follow *any* whole second. The following
+    /// would be a proper leap second at the time zone offset of UTC-00:03:57
+    /// (there are several historical examples comparable to this "non-sense"
+    /// offset), and therefore is allowed.
     ///
     /// ```
     /// # use chrono::{NaiveTime, Timelike};

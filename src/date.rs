@@ -195,7 +195,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Adds given `Duration` to the current date.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<Date<Tz>, ChronoError> {
         let date = self.date.checked_add_signed(rhs)?;
@@ -204,7 +204,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Subtracts given `Duration` from the current date.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<Date<Tz>, ChronoError> {
         let date = self.date.checked_sub_signed(rhs)?;

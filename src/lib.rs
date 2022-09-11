@@ -357,30 +357,35 @@
 //!
 //! ## Limitations
 //!
-//! Only proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
-//! Be very careful if you really have to deal with pre-20C dates, they can be in Julian or others.
+//! Only proleptic Gregorian calendar (i.e. extended to support older dates) is
+//! supported. Be very careful if you really have to deal with pre-20C dates,
+//! they can be in Julian or others.
 //!
 //! Date types are limited in about +/- 262,000 years from the common epoch.
 //! Time types are limited in the nanosecond accuracy.
 //!
-//! [Leap seconds are supported in the representation but
-//! Chrono doesn't try to make use of them](./naive/struct.NaiveTime.html#leap-second-handling).
-//! (The main reason is that leap seconds are not really predictable.)
-//! Almost *every* operation over the possible leap seconds will ignore them.
-//! Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
-//! if you want.
+//! [Leap seconds] are supported in the representation but Chrono doesn't try to
+//! make use of them. (The main reason is that leap seconds are not really
+//! predictable.) Almost *every* operation over the possible leap seconds will
+//! ignore them. Consider using `NaiveDateTime` with the implicit TAI
+//! (International Atomic Time) scale if you want.
 //!
-//! Chrono inherently does not support an inaccurate or partial date and time representation.
-//! Any operation that can be ambiguous will return `None` in such cases.
-//! For example, "a month later" of 2014-01-30 is not well-defined
-//! and consequently `Utc.ymd(2014, 1, 30).with_month(2)` returns `None`.
+//! Chrono inherently does not support an inaccurate or partial date and time
+//! representation. Any operation that can be ambiguous will return
+//! `Err(ChronoError)` in such cases. For example, "a month later" of 2014-01-30
+//! is not well-defined and consequently `Utc.ymd(2014, 1, 30)?.with_month(2)?`
+//! returns `Err(ChronoError)`.
 //!
-//! Non ISO week handling is not yet supported.
-//! For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
-//! crate ([sources](https://github.com/bcourtine/chrono-ext/)).
+//! Non ISO week handling is not yet supported. For now you can use the
+//! [chrono_ext] crate ([sources]).
 //!
 //! Advanced time zone handling is not yet supported.
 //! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
+//!
+//! [chrono_ext]: https://crates.io/crates/chrono_ext
+//! [Chrono-tz]: https://github.com/chronotope/chrono-tz/
+//! [Leap seconds]: ./naive/struct.NaiveTime.html#leap-second-handling
+//! [sources]: https://github.com/bcourtine/chrono-ext/
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/")]
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507

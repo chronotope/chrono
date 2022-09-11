@@ -116,14 +116,14 @@ pub trait DurationRound: Sized {
     /// # use chrono::{DateTime, DurationRound, TimeDelta, TimeZone, Utc};
     /// let dt = Utc.ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?;
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     dt.duration_round(TimeDelta::milliseconds(10))?.to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
+    ///     dt.duration_round(TimeDelta::days(1))?.to_string(),
     ///     "2018-01-12 00:00:00 UTC"
     /// );
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
     fn duration_round(self, duration: TimeDelta) -> Result<Self, Self::Err>;
 
@@ -134,14 +134,14 @@ pub trait DurationRound: Sized {
     /// # use chrono::{DateTime, DurationRound, TimeDelta, TimeZone, Utc};
     /// let dt = Utc.ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?;
     /// assert_eq!(
-    ///     dt.duration_trunc(TimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     dt.duration_trunc(TimeDelta::milliseconds(10))?.to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
+    ///     dt.duration_trunc(TimeDelta::days(1))?.to_string(),
     ///     "2018-01-11 00:00:00 UTC"
     /// );
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err>;
 }

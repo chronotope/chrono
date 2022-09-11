@@ -55,37 +55,37 @@ pub trait Datelike: Sized {
 
     /// Makes a new value with the year number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_year(&self, year: i32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the month number (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_month(&self, month: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the month number (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_month0(&self, month0: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the day of month (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_day(&self, day: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the day of month (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_day0(&self, day0: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_ordinal(&self, ordinal: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the day of year (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_ordinal0(&self, ordinal0: u32) -> Result<Self, ChronoError>;
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
@@ -149,26 +149,27 @@ pub trait Timelike: Sized {
 
     /// Makes a new value with the hour number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_hour(&self, hour: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the minute number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
     fn with_minute(&self, min: u32) -> Result<Self, ChronoError>;
 
     /// Makes a new value with the second number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
-    /// As with the [`second`](#tymethod.second) method,
-    /// the input range is restricted to 0 through 59.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid. As
+    /// with the [`second`](#tymethod.second) method, the input range is
+    /// restricted to 0 through 59.
     fn with_second(&self, sec: u32) -> Result<Self, ChronoError>;
 
-    /// Makes a new value with nanoseconds since the whole non-leap second changed.
+    /// Makes a new value with nanoseconds since the whole non-leap second
+    /// changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
-    /// As with the [`nanosecond`](#tymethod.nanosecond) method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
+    /// Returns `Err(ChronoError)` when the resulting value would be invalid. As
+    /// with the [`nanosecond`](#tymethod.nanosecond) method, the input range
+    /// can exceed 1,000,000,000 for leap seconds.
     fn with_nanosecond(&self, nano: u32) -> Result<Self, ChronoError>;
 
     /// Returns the number of non-leap seconds past the last midnight.

@@ -331,7 +331,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Adds given `Duration` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<DateTime<Tz>, ChronoError> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
@@ -341,7 +341,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Adds given `Months` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow, or if the
+    /// Returns `Err(ChronoError)` when it will result in overflow, or if the
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_add_months`] for more details on behavior
@@ -352,7 +352,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts given `Duration` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<DateTime<Tz>, ChronoError> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
@@ -362,7 +362,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts given `Months` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow, or if the
+    /// Returns `Err(ChronoError)` when it will result in overflow, or if the
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_sub_months`] for more details on behavior
@@ -373,7 +373,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Add a duration in [`Days`] to the date part of the `DateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns `Err(ChronoError)` if the resulting date would be out of range.
     pub fn checked_add_days(self, days: Days) -> Result<Self, ChronoError> {
         let dt = self.datetime.checked_add_days(days)?;
         dt.and_local_timezone(TimeZone::from_offset(&self.offset))
@@ -381,7 +381,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns `Err(ChronoError)` if the resulting date would be out of range.
     pub fn checked_sub_days(self, days: Days) -> Result<Self, ChronoError> {
         let dt = self.datetime.checked_sub_days(days)?;
         dt.and_local_timezone(TimeZone::from_offset(&self.offset))

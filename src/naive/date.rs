@@ -1415,7 +1415,8 @@ impl Datelike for NaiveDate {
 
     /// Makes a new `NaiveDate` with the year number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting `NaiveDate` would be invalid.
+    /// Returns `Err(ChronoError)` when the resulting `NaiveDate` would be
+    /// invalid.
     ///
     /// # Example
     ///
@@ -1427,7 +1428,8 @@ impl Datelike for NaiveDate {
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
     ///
-    /// A leap day (February 29) is a good example that this method can return `None`.
+    /// A leap day (February 29) is a good example that this method can return
+    /// an error.
     ///
     /// ```
     /// # use chrono::{NaiveDate, Datelike};
