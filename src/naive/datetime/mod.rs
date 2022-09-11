@@ -128,6 +128,28 @@ impl NaiveDateTime {
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
+    /// from the number of milliseconds
+    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp").
+    ///
+    /// Returns `None` on the out-of-range number of milliseconds and/or invalid nanosecond.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDateTime;
+    /// let timestamp_millis: i64 = 1662921288; //Sunday, September 11, 2022 6:34:48 PM
+    /// let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
+    /// ```
+    #[inline]
+    pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
+        let secs = millis / 1000;
+        let nsecs = (millis % 1000) as u32 * 1_000_000;
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+    }
+
+    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
     /// from the number of non-leap seconds
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
