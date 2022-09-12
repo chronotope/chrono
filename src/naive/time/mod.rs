@@ -181,7 +181,7 @@ mod tests;
 ///
 /// let dt = Utc.ymd(2015, 6, 30)?.and_hms(23, 56, 5)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
-/// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z")?, dt);
+/// assert_eq!(DateTime::<Utc>::parse_from_rfc3339("2015-06-30T23:56:05Z")?, dt);
 /// # Ok::<_, Box<dyn std::error::Error>>(())
 /// ```
 ///

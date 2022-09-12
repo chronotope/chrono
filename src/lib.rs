@@ -264,11 +264,11 @@
 //! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>()?, fixed_dt.clone());
 //!
 //! // method 2
-//! assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z")?,
+//! assert_eq!(DateTime::<FixedOffset>::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z")?,
 //!            fixed_dt.clone());
-//! assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900")?,
+//! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900")?,
 //!            fixed_dt.clone());
-//! assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00")?, fixed_dt.clone());
+//! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc3339("2014-11-28T21:00:09+09:00")?, fixed_dt.clone());
 //!
 //! // method 3
 //! assert_eq!(Utc.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S")?, dt.clone());
@@ -299,14 +299,14 @@
 //!
 //! ```rust
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::{DateTime, TimeZone, Utc};
+//! use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 //!
 //! // Construct a datetime from epoch:
 //! let dt = Utc.timestamp(1_500_000_000, 0)?;
 //! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
 //!
 //! // Get epoch value from a datetime:
-//! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000")?;
+//! let dt = DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000")?;
 //! assert_eq!(dt.timestamp(), 1_500_000_000);
 //! # Ok::<_, Box<dyn std::error::Error>>(())
 //! ```
