@@ -110,7 +110,8 @@
 //! or in the local time zone
 //! ([`Local::now()`](./offset/struct.Local.html#method.now)).
 //!
-//! ```rust
+#![cfg_attr(not(feature = "clock"), doc = "```ignore")]
+#![cfg_attr(feature = "clock", doc = "```rust")]
 //! use chrono::prelude::*;
 //!
 //! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
@@ -122,7 +123,8 @@
 //! This is a bit verbose due to Rust's lack of function and method overloading,
 //! but in turn we get a rich combination of initialization methods.
 //!
-//! ```rust
+#![cfg_attr(not(feature = "std"), doc = "```ignore")]
+#![cfg_attr(feature = "std", doc = "```rust")]
 //! use chrono::prelude::*;
 //! use chrono::offset::LocalResult;
 //!
@@ -314,7 +316,8 @@
 //! [`DateTime.timestamp_subsec_nanos`](./struct.DateTime.html#method.timestamp_subsec_nanos)
 //! to get the number of additional number of nanoseconds.
 //!
-//! ```rust
+#![cfg_attr(not(feature = "std"), doc = "```ignore")]
+#![cfg_attr(feature = "std", doc = "```rust")]
 //! // We need the trait in scope to use Utc::timestamp().
 //! use chrono::{DateTime, TimeZone, Utc};
 //!
@@ -333,7 +336,8 @@
 //! It also has time zones attached, and have to be constructed via time zones.
 //! Most operations available to `DateTime` are also available to `Date` whenever appropriate.
 //!
-//! ```rust
+#![cfg_attr(not(feature = "std"), doc = "```ignore")]
+#![cfg_attr(feature = "std", doc = "```rust")]
 //! use chrono::prelude::*;
 //! use chrono::offset::LocalResult;
 //!
