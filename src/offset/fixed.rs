@@ -36,7 +36,8 @@ impl FixedOffset {
     ///
     /// # Example
     ///
-    /// ```
+    #[cfg_attr(not(feature = "std"), doc = "```ignore")]
+    #[cfg_attr(feature = "std", doc = "```")]
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime = FixedOffset::east(5 * hour).ymd(2016, 11, 08)
@@ -66,7 +67,8 @@ impl FixedOffset {
     ///
     /// # Example
     ///
-    /// ```
+    #[cfg_attr(not(feature = "std"), doc = "```ignore")]
+    #[cfg_attr(feature = "std", doc = "```")]
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime = FixedOffset::west(5 * hour).ymd(2016, 11, 08)
