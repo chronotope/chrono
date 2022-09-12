@@ -69,6 +69,11 @@ pub const MIN_DATE: Date<Utc> = Date::<Utc>::MIN_UTC;
 pub const MAX_DATE: Date<Utc> = Date::<Utc>::MAX_UTC;
 
 impl<Tz: TimeZone> Date<Tz> {
+    /// The minimum possible `Date`.
+    pub const MIN_UTC: Date<Utc> = Date { date: NaiveDate::MIN, offset: Utc };
+    /// The maximum possible `Date`.
+    pub const MAX_UTC: Date<Utc> = Date { date: NaiveDate::MAX, offset: Utc };
+
     /// Makes a new `Date` with given *UTC* date and offset.
     /// The local date should be constructed via the `TimeZone` trait.
     //
@@ -152,6 +157,15 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the next date.
     ///
     /// Returns `Err(ChronoError)` when `self` is the last representable date.
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// assert_eq!(Utc.ymd(2022, 09, 12)?.single()?.succ()?, Utc.ymd(2022, 09, 13)?.single()?);
+    ///
+    /// assert!(Date::<Utc>::MAX_UTC.succ().is_err());
+    /// Ok::<_, ChronoError>(())
+    /// ```
     #[inline]
     pub fn succ(&self) -> Result<Date<Tz>, ChronoError> {
         let date = self.date.succ()?;
@@ -161,8 +175,17 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the prior date.
     ///
     /// Returns `Err(ChronoError)` when `self` is the first representable date.
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// assert_eq!(Utc.ymd(2022, 09, 12)?.single()?.succ()?, Utc.ymd(2022, 09, 13)?.single()?);
+    ///
+    /// assert!(Date::<Utc>::MIN_UTC.pred().is_err());
+    /// Ok::<_, ChronoError>(())
+    /// ```
     #[inline]
-    pub fn pred_opt(&self) -> Result<Date<Tz>, ChronoError> {
+    pub fn pred(&self) -> Result<Date<Tz>, ChronoError> {
         let date = self.date.pred()?;
         Ok(Date::from_utc(date, self.offset.clone()))
     }
@@ -249,11 +272,6 @@ impl<Tz: TimeZone> Date<Tz> {
             false => None,
         }
     }
-
-    /// The minimum possible `Date`.
-    pub const MIN_UTC: Date<Utc> = Date { date: NaiveDate::MIN, offset: Utc };
-    /// The maximum possible `Date`.
-    pub const MAX_UTC: Date<Utc> = Date { date: NaiveDate::MAX, offset: Utc };
 }
 
 /// Maps the local date to other date with given conversion function.

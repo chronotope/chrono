@@ -412,6 +412,8 @@ doctest!("../README.md");
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
     #[doc(no_inline)]
+    pub use crate::ChronoError;
+    #[doc(no_inline)]
     pub use crate::Date;
     #[cfg(feature = "clock")]
     #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
