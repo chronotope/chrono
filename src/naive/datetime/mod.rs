@@ -126,12 +126,11 @@ impl NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
         datetime.expect("invalid or out-of-range datetime")
     }
-
-    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
-    /// from the number of milliseconds
-    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp").
+    /// Creates a new [NaiveDateTime] from milliseconds since UNIX Epoch.
     ///
-    /// Returns `None` on the out-of-range number of milliseconds and/or invalid nanosecond.
+    /// UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    ///  Returns `None` on an out-of-range number of milliseconds.
     ///
     /// # Example
     ///
