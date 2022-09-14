@@ -17,7 +17,7 @@ use crate::format::Locale;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
-use crate::offset::{FixedTimeZone, TimeZone, Utc};
+use crate::offset::{TimeZone, Utc};
 use crate::time_delta::TimeDelta;
 use crate::{DateTime, Datelike, Error, Weekday};
 
@@ -207,13 +207,6 @@ impl<Tz: TimeZone> Date<Tz> {
     #[inline]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Result<Date<Tz2>, Error> {
         tz.from_utc_date(&self.date)
-    }
-
-    /// Changes the associated time zone.
-    /// This does not change the actual `Date` (but will change the string representation).
-    #[inline]
-    pub fn with_fixed_timezone<Tz2: FixedTimeZone>(&self, tz: &Tz2) -> Date<Tz2> {
-        tz.from_utc_date_fixed(&self.date)
     }
 
     /// Adds given `Duration` to the current date.
@@ -556,14 +549,14 @@ mod tests {
         assert_eq!(date_add, date + TimeDelta::days(5));
 
         let timezone = FixedOffset::east(60 * 60).unwrap();
-        let date = date.with_fixed_timezone(&timezone);
-        let date_add = date_add.with_fixed_timezone(&timezone);
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_add = date_add.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_add, date + TimeDelta::days(5));
 
         let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
-        let date = date.with_fixed_timezone(&timezone);
-        let date_add = date_add.with_fixed_timezone(&timezone);
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_add = date_add.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_add, date + TimeDelta::days(5));
     }
@@ -590,14 +583,14 @@ mod tests {
         assert_eq!(date_sub, date - TimeDelta::days(5));
 
         let timezone = FixedOffset::east(60 * 60).unwrap();
-        let date = date.with_fixed_timezone(&timezone);
-        let date_sub = date_sub.with_fixed_timezone(&timezone);
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_sub = date_sub.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_sub, date - TimeDelta::days(5));
 
         let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
-        let date = date.with_fixed_timezone(&timezone);
-        let date_sub = date_sub.with_fixed_timezone(&timezone);
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_sub = date_sub.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_sub, date - TimeDelta::days(5));
     }

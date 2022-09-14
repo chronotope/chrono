@@ -399,7 +399,7 @@ pub trait TimeZone: Sized + Clone {
 /// A time zone that is fixed. It is distinguished from [TimeZone] by allowing
 /// for infallible operations since there is no need to access system
 /// information to figure out which timezone is being used.
-pub trait FixedTimeZone: TimeZone {
+pub(crate) trait FixedTimeZone: TimeZone {
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
     fn offset_from_utc_date_fixed(&self, utc: &NaiveDate) -> Self::Offset;
 

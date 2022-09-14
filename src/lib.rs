@@ -161,7 +161,7 @@
 //! // time zone accessor and manipulation
 //! assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 //! assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600)?);
-//! assert_eq!(dt.with_fixed_timezone(&Utc), Utc.ymd(2014, 11, 28)?.and_hms_nano(12, 45, 59, 324310806)?);
+//! assert_eq!(dt.with_timezone(&Utc)?, Utc.ymd(2014, 11, 28)?.and_hms_nano(12, 45, 59, 324310806)?);
 //!
 //! // a sample of property manipulations (validates dynamically)
 //! assert_eq!(dt.with_day(29)?.weekday(), Weekday::Sat); // 2014-11-29 is Saturday

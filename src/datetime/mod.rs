@@ -325,7 +325,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Changes the associated time zone.
     /// The returned `DateTime` references the same instant of time from the perspective of the provided time zone.
     #[inline]
-    pub fn with_fixed_timezone<Tz2: FixedTimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
+    pub(crate) fn with_fixed_timezone<Tz2: FixedTimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
         tz.from_utc_datetime_fixed(&self.datetime)
     }
 
