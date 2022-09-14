@@ -47,10 +47,9 @@ ignore them. Consider using `NaiveDateTime` with the implicit TAI (International
 Atomic Time) scale if you want.
 
 Chrono inherently does not support an inaccurate or partial date and time
-representation. Any operation that can be ambiguous will return
-`Err(ChronoError)` in such cases. For example, "a month later" of 2014-01-30 is
-not well-defined and consequently `Utc.ymd(2014, 1, 30)?.with_month(2)?` returns
-`Err(ChronoError)`.
+representation. Any operation that can be ambiguous will return `Err(Error)` in
+such cases. For example, "a month later" of 2014-01-30 is not well-defined and
+consequently `Utc.ymd(2014, 1, 30)?.with_month(2)?` returns `Err(Error)`.
 
 Non ISO week handling is not yet supported. For now you can use the [chrono_ext]
 crate ([sources]).

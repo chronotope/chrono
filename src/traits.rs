@@ -1,4 +1,4 @@
-use crate::{ChronoError, IsoWeek, Weekday};
+use crate::{Error, IsoWeek, Weekday};
 
 /// The common set of methods for date component.
 pub trait Datelike: Sized {
@@ -55,38 +55,38 @@ pub trait Datelike: Sized {
 
     /// Makes a new value with the year number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_year(&self, year: i32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_year(&self, year: i32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 1) changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_month(&self, month: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_month(&self, month: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 0) changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_month0(&self, month0: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_month0(&self, month0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of month (starting from 1) changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_day(&self, day: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_day(&self, day: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of month (starting from 0) changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_day0(&self, day0: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_day0(&self, day0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_ordinal(&self, ordinal: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_ordinal(&self, ordinal: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 0) changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_ordinal0(&self, ordinal0: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<Self, Error>;
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
     ///
@@ -99,7 +99,7 @@ pub trait Datelike: Sized {
     /// assert_eq!(NaiveDate::from_ymd(2, 1, 1)?.num_days_from_ce(), 366);
     /// assert_eq!(NaiveDate::from_ymd(1, 1, 1)?.num_days_from_ce(), 1);
     /// assert_eq!(NaiveDate::from_ymd(0, 1, 1)?.num_days_from_ce(), -365);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     fn num_days_from_ce(&self) -> i32 {
         // See test_num_days_from_ce_against_alternative_impl below for a more straightforward
@@ -149,28 +149,28 @@ pub trait Timelike: Sized {
 
     /// Makes a new value with the hour number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_hour(&self, hour: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_hour(&self, hour: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the minute number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid.
-    fn with_minute(&self, min: u32) -> Result<Self, ChronoError>;
+    /// Returns `Err(Error)` when the resulting value would be invalid.
+    fn with_minute(&self, min: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the second number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid. As
+    /// Returns `Err(Error)` when the resulting value would be invalid. As
     /// with the [`second`](#tymethod.second) method, the input range is
     /// restricted to 0 through 59.
-    fn with_second(&self, sec: u32) -> Result<Self, ChronoError>;
+    fn with_second(&self, sec: u32) -> Result<Self, Error>;
 
     /// Makes a new value with nanoseconds since the whole non-leap second
     /// changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting value would be invalid. As
+    /// Returns `Err(Error)` when the resulting value would be invalid. As
     /// with the [`nanosecond`](#tymethod.nanosecond) method, the input range
     /// can exceed 1,000,000,000 for leap seconds.
-    fn with_nanosecond(&self, nano: u32) -> Result<Self, ChronoError>;
+    fn with_nanosecond(&self, nano: u32) -> Result<Self, Error>;
 
     /// Returns the number of non-leap seconds past the last midnight.
     #[inline]

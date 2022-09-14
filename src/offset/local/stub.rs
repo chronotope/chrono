@@ -12,10 +12,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{FixedOffset, Local};
 use crate::{
-    ChronoError, DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
+    DateTime, Datelike, Error, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
 };
 
-pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
+pub(super) fn now() -> Result<DateTime<Local>, Error> {
     tm_to_datetime(Timespec::now().local())
 }
 
@@ -28,7 +28,7 @@ pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
 pub(super) fn naive_to_local(
     d: &NaiveDateTime,
     local: bool,
-) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
+) -> Result<LocalResult<DateTime<Local>>, Error> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -68,7 +68,7 @@ pub(super) fn naive_to_local(
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 )))]
-fn tm_to_datetime(mut tm: Tm) -> Result<DateTime<Local>, ChronoError> {
+fn tm_to_datetime(mut tm: Tm) -> Result<DateTime<Local>, Error> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;

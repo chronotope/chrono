@@ -18,11 +18,11 @@ use winapi::um::minwinbase::SYSTEMTIME;
 use winapi::um::timezoneapi::*;
 
 use super::{FixedOffset, Local};
-use crate::error::{ChronoError, ChronoErrorKind};
+use crate::error::{Error, ErrorKind};
 use crate::offset::LocalResult;
 use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
-pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
+pub(super) fn now() -> Result<DateTime<Local>, Error> {
     tm_to_datetime(Timespec::now()?.local()?)
 }
 
@@ -30,7 +30,7 @@ pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
 pub(super) fn naive_to_local(
     d: &NaiveDateTime,
     local: bool,
-) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
+) -> Result<LocalResult<DateTime<Local>>, Error> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -65,7 +65,7 @@ pub(super) fn naive_to_local(
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
-fn tm_to_datetime(mut tm: Tm) -> Result<DateTime<Local>, ChronoError> {
+fn tm_to_datetime(mut tm: Tm) -> Result<DateTime<Local>, Error> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
@@ -95,15 +95,15 @@ struct Timespec {
 
 impl Timespec {
     /// Constructs a timespec representing the current time in UTC.
-    fn now() -> Result<Timespec, ChronoError> {
+    fn now() -> Result<Timespec, Error> {
         let st = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|_| ChronoErrorKind::SystemTimeBeforeEpoch)?;
+            .map_err(|_| ErrorKind::SystemTimeBeforeEpoch)?;
         Ok(Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 })
     }
 
     /// Converts this timespec into the system's local time.
-    fn local(self) -> Result<Tm, ChronoError> {
+    fn local(self) -> Result<Tm, Error> {
         let mut tm = Tm {
             tm_sec: 0,
             tm_min: 0,
@@ -235,12 +235,12 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
 macro_rules! call {
     ($name:ident($($arg:expr),*)) => {
         if $name($($arg),*) == 0 {
-            return Err(ChronoError::new(ChronoErrorKind::SystemError(io::Error::last_os_error())))
+            return Err(Error::new(ErrorKind::SystemError(io::Error::last_os_error())))
         }
     }
 }
 
-fn time_to_local_tm(sec: i64, tm: &mut Tm) -> Result<(), ChronoError> {
+fn time_to_local_tm(sec: i64, tm: &mut Tm) -> Result<(), Error> {
     let ft = time_to_file_time(sec);
     unsafe {
         let mut utc = mem::zeroed();
@@ -263,7 +263,7 @@ fn time_to_local_tm(sec: i64, tm: &mut Tm) -> Result<(), ChronoError> {
     }
 }
 
-fn utc_tm_to_time(tm: &Tm) -> Result<i64, ChronoError> {
+fn utc_tm_to_time(tm: &Tm) -> Result<i64, Error> {
     unsafe {
         let mut ft = mem::zeroed();
         let sys_time = tm_to_system_time(tm);
@@ -272,7 +272,7 @@ fn utc_tm_to_time(tm: &Tm) -> Result<i64, ChronoError> {
     }
 }
 
-fn local_tm_to_time(tm: &Tm) -> Result<i64, ChronoError> {
+fn local_tm_to_time(tm: &Tm) -> Result<i64, Error> {
     unsafe {
         let mut ft = mem::zeroed();
         let mut utc = mem::zeroed();

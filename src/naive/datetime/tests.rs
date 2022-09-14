@@ -1,14 +1,13 @@
 use super::NaiveDateTime;
 use crate::naive::NaiveDate;
 use crate::time_delta::TimeDelta;
-use crate::{ChronoError, Datelike, FixedOffset, Utc};
+use crate::{Datelike, Error, FixedOffset, Utc};
 use std::i64;
 
 #[test]
 fn test_datetime_from_timestamp() {
     let from_timestamp = |secs| NaiveDateTime::from_timestamp(secs, 0);
-    let ymdhms =
-        |y, m, d, h, n, s| Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
+    let ymdhms = |y, m, d, h, n, s| Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
     assert_eq!(from_timestamp(-1), Ok(ymdhms(1969, 12, 31, 23, 59, 59).unwrap()));
     assert_eq!(from_timestamp(0), Ok(ymdhms(1970, 1, 1, 0, 0, 0).unwrap()));
     assert_eq!(from_timestamp(1), Ok(ymdhms(1970, 1, 1, 0, 0, 1).unwrap()));
@@ -70,8 +69,7 @@ fn test_datetime_add() {
 
 #[test]
 fn test_datetime_sub() {
-    let ymdhms =
-        |y, m, d, h, n, s| Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
+    let ymdhms = |y, m, d, h, n, s| Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
     let since = NaiveDateTime::signed_duration_since;
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 9).unwrap(), ymdhms(2014, 5, 6, 7, 8, 9).unwrap()),
@@ -97,8 +95,7 @@ fn test_datetime_sub() {
 
 #[test]
 fn test_datetime_addassignment() {
-    let ymdhms =
-        |y, m, d, h, n, s| Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
+    let ymdhms = |y, m, d, h, n, s| Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
     let mut date = ymdhms(2016, 10, 1, 10, 10, 10).unwrap();
     date += TimeDelta::minutes(10_000_000);
     assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10).unwrap());
@@ -108,8 +105,7 @@ fn test_datetime_addassignment() {
 
 #[test]
 fn test_datetime_subassignment() {
-    let ymdhms =
-        |y, m, d, h, n, s| Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
+    let ymdhms = |y, m, d, h, n, s| Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
     let mut date = ymdhms(2016, 10, 1, 10, 10, 10).unwrap();
     date -= TimeDelta::minutes(10_000_000);
     assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10).unwrap());
@@ -120,7 +116,7 @@ fn test_datetime_subassignment() {
 #[test]
 fn test_datetime_timestamp() {
     let to_timestamp = |y, m, d, h, n, s| {
-        Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?.timestamp())
+        Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?.timestamp())
     };
     assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59).unwrap(), -1);
     assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0).unwrap(), 0);
@@ -176,10 +172,9 @@ fn test_datetime_from_str() {
 
 #[test]
 fn test_datetime_parse_from_str() {
-    let ymdhms =
-        |y, m, d, h, n, s| Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
+    let ymdhms = |y, m, d, h, n, s| Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?);
     let ymdhmsn = |y, m, d, h, n, s, nano| {
-        Ok::<_, ChronoError>(NaiveDate::from_ymd(y, m, d)?.and_hms_nano(h, n, s, nano)?)
+        Ok::<_, Error>(NaiveDate::from_ymd(y, m, d)?.and_hms_nano(h, n, s, nano)?)
     };
     assert_eq!(
         NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),

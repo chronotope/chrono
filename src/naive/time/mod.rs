@@ -12,12 +12,12 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::error::ChronoErrorKind;
+use crate::error::ErrorKind;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::{ChronoError, TimeDelta, Timelike};
+use crate::{Error, TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -79,7 +79,7 @@ mod tests;
 ///
 /// let dt2 = Utc.ymd(2015, 6, 30)?.and_hms_nano(23, 59, 59, 1_000_000_000)?;
 /// # let _ = (t, dt1, dt2);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Note that the leap second can happen anytime given an appropriate time zone;
@@ -163,7 +163,7 @@ mod tests;
 ///
 /// let dt = Utc.ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_000)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// There are hypothetical leap seconds not on the minute boundary
@@ -203,7 +203,7 @@ impl NaiveTime {
     /// No [leap second](#leap-second-handling) is allowed here; use
     /// `NaiveTime::from_hms_*` methods with a subsecond parameter instead.
     ///
-    /// Returns `Err(ChronoError)` on invalid hour, minute and/or second.
+    /// Returns `Err(Error)` on invalid hour, minute and/or second.
     ///
     /// # Example
     ///
@@ -223,10 +223,10 @@ impl NaiveTime {
     /// assert!(from_hms(24, 0, 0).is_err());
     /// assert!(from_hms(23, 60, 0).is_err());
     /// assert!(from_hms(23, 59, 60).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_hms(hour: u32, min: u32, sec: u32) -> Result<NaiveTime, ChronoError> {
+    pub fn from_hms(hour: u32, min: u32, sec: u32) -> Result<NaiveTime, Error> {
         NaiveTime::from_hms_nano(hour, min, sec, 0)
     }
 
@@ -240,7 +240,7 @@ impl NaiveTime {
     /// The millisecond part can exceed 1,000
     /// in order to represent the [leap second](#leap-second-handling).
     ///
-    /// Returns `Err(ChronoError)` on invalid hour, minute, second and/or millisecond.
+    /// Returns `Err(Error)` on invalid hour, minute, second and/or millisecond.
     ///
     /// # Example
     ///
@@ -262,16 +262,11 @@ impl NaiveTime {
     /// assert!(from_hms_milli(23, 60, 0, 0).is_err());
     /// assert!(from_hms_milli(23, 59, 60, 0).is_err());
     /// assert!(from_hms_milli(23, 59, 59, 2_000).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_hms_milli(
-        hour: u32,
-        min: u32,
-        sec: u32,
-        milli: u32,
-    ) -> Result<NaiveTime, ChronoError> {
-        let nano = milli.checked_mul(1_000_000).ok_or(ChronoErrorKind::InvalidTime)?;
+    pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> Result<NaiveTime, Error> {
+        let nano = milli.checked_mul(1_000_000).ok_or(ErrorKind::InvalidTime)?;
         NaiveTime::from_hms_nano(hour, min, sec, nano)
     }
 
@@ -280,7 +275,7 @@ impl NaiveTime {
     /// The microsecond part can exceed 1,000,000 in order to represent the
     /// [leap second](#leap-second-handling).
     ///
-    /// Returns `Err(ChronoError)` on invalid hour, minute, second and/or
+    /// Returns `Err(Error)` on invalid hour, minute, second and/or
     /// microsecond.
     ///
     /// # Example
@@ -303,16 +298,11 @@ impl NaiveTime {
     /// assert!(from_hms_micro(23, 60, 0, 0).is_err());
     /// assert!(from_hms_micro(23, 59, 60, 0).is_err());
     /// assert!(from_hms_micro(23, 59, 59, 2_000_000).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_hms_micro(
-        hour: u32,
-        min: u32,
-        sec: u32,
-        micro: u32,
-    ) -> Result<NaiveTime, ChronoError> {
-        let nano = micro.checked_mul(1_000).ok_or(ChronoErrorKind::InvalidTime)?;
+    pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> Result<NaiveTime, Error> {
+        let nano = micro.checked_mul(1_000).ok_or(ErrorKind::InvalidTime)?;
         NaiveTime::from_hms_nano(hour, min, sec, nano)
     }
 
@@ -321,7 +311,7 @@ impl NaiveTime {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the
     /// [leap second](#leap-second-handling).
     ///
-    /// Returns `Err(ChronoError)` on invalid hour, minute, second and/or
+    /// Returns `Err(Error)` on invalid hour, minute, second and/or
     /// nanosecond.
     ///
     /// # Example
@@ -344,17 +334,12 @@ impl NaiveTime {
     /// assert!(from_hms_nano(23, 60, 0, 0).is_err());
     /// assert!(from_hms_nano(23, 59, 60, 0).is_err());
     /// assert!(from_hms_nano(23, 59, 59, 2_000_000_000).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_hms_nano(
-        hour: u32,
-        min: u32,
-        sec: u32,
-        nano: u32,
-    ) -> Result<NaiveTime, ChronoError> {
+    pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Result<NaiveTime, Error> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidTime));
+            return Err(Error::new(ErrorKind::InvalidTime));
         }
         let secs = hour * 3600 + min * 60 + sec;
         Ok(NaiveTime { secs, frac: nano })
@@ -366,7 +351,7 @@ impl NaiveTime {
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the
     /// [leap second](#leap-second-handling).
     ///
-    /// Returns `Err(ChronoError)` on invalid number of seconds and/or
+    /// Returns `Err(Error)` on invalid number of seconds and/or
     /// nanosecond.
     ///
     /// # Example
@@ -387,12 +372,12 @@ impl NaiveTime {
     /// assert!(from_num_seconds_from_midnight(86399, 1_999_999_999).is_ok()); // a leap second after 23:59:59
     /// assert!(from_num_seconds_from_midnight(86_400, 0).is_err());
     /// assert!(from_num_seconds_from_midnight(86399, 2_000_000_000).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Result<NaiveTime, ChronoError> {
+    pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Result<NaiveTime, Error> {
         if secs >= 86_400 || nano >= 2_000_000_000 {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidTime));
+            return Err(Error::new(ErrorKind::InvalidTime));
         }
         Ok(NaiveTime { secs, frac: nano })
     }
@@ -486,7 +471,7 @@ impl NaiveTime {
     ///            (from_hms(2, 4, 5)?, 86_400));
     /// assert_eq!(from_hms(3, 4, 5)?.overflowing_add_signed(TimeDelta::hours(-7)),
     ///            (from_hms(20, 4, 5)?, -86_400));
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     pub fn overflowing_add_signed(&self, mut rhs: TimeDelta) -> (NaiveTime, i64) {
         let mut secs = self.secs;
@@ -569,7 +554,7 @@ impl NaiveTime {
     ///            (from_hms(10, 4, 5)?, 86_400));
     /// assert_eq!(from_hms(3, 4, 5)?.overflowing_sub_signed(TimeDelta::hours(-22)),
     ///            (from_hms(1, 4, 5)?, -86_400));
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn overflowing_sub_signed(&self, rhs: TimeDelta) -> (NaiveTime, i64) {
@@ -611,7 +596,7 @@ impl NaiveTime {
     ///            TimeDelta::seconds(-3600));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900)?, from_hmsm(2, 4, 6, 800)?),
     ///            TimeDelta::seconds(3600 + 60 + 1) + TimeDelta::milliseconds(100));
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Leap seconds are handled, but the subtraction assumes that
@@ -631,7 +616,7 @@ impl NaiveTime {
     ///            TimeDelta::seconds(1));
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000)?, from_hmsm(2, 59, 59, 1_000)?),
     ///            TimeDelta::seconds(61));
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveTime) -> TimeDelta {
         //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
@@ -687,7 +672,7 @@ impl NaiveTime {
     /// let t = NaiveTime::from_hms(23, 56, 4)?;
     /// assert_eq!(t.format_with_items(fmt.clone()).to_string(), "23:56:04");
     /// assert_eq!(t.format("%H:%M:%S").to_string(), "23:56:04");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -698,7 +683,7 @@ impl NaiveTime {
     /// # let fmt = StrftimeItems::new("%H:%M:%S").clone();
     /// # let t = NaiveTime::from_hms(23, 56, 4)?;
     /// assert_eq!(format!("{}", t.format_with_items(fmt)), "23:56:04");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -734,7 +719,7 @@ impl NaiveTime {
     /// assert_eq!(t.format("%H:%M:%S").to_string(), "23:56:04");
     /// assert_eq!(t.format("%H:%M:%S%.6f").to_string(), "23:56:04.012345");
     /// assert_eq!(t.format("%-I:%M %p").to_string(), "11:56 PM");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -745,7 +730,7 @@ impl NaiveTime {
     /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
     /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f")), "23:56:04.012345");
     /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -775,7 +760,7 @@ impl Timelike for NaiveTime {
     ///
     /// assert_eq!(NaiveTime::from_hms(0, 0, 0)?.hour(), 0);
     /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?.hour(), 23);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn hour(&self) -> u32 {
@@ -791,7 +776,7 @@ impl Timelike for NaiveTime {
     ///
     /// assert_eq!(NaiveTime::from_hms(0, 0, 0)?.minute(), 0);
     /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?.minute(), 56);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn minute(&self) -> u32 {
@@ -807,7 +792,7 @@ impl Timelike for NaiveTime {
     ///
     /// assert_eq!(NaiveTime::from_hms(0, 0, 0)?.second(), 0);
     /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?.second(), 4);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// This method never returns 60 even when it is a leap second.
@@ -819,7 +804,7 @@ impl Timelike for NaiveTime {
     /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000)?;
     /// assert_eq!(leap.second(), 59);
     /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn second(&self) -> u32 {
@@ -837,7 +822,7 @@ impl Timelike for NaiveTime {
     ///
     /// assert_eq!(NaiveTime::from_hms(0, 0, 0)?.nanosecond(), 0);
     /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?.nanosecond(), 12_345_678);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Leap seconds may have seemingly out-of-range return values.
@@ -849,7 +834,7 @@ impl Timelike for NaiveTime {
     /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000)?;
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
     /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {
@@ -858,7 +843,7 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the hour number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// Returns `Err(Error)` when the resulting `NaiveTime` would be
     /// invalid.
     ///
     /// # Example
@@ -869,12 +854,12 @@ impl Timelike for NaiveTime {
     /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
     /// assert_eq!(dt.with_hour(7)?, NaiveTime::from_hms_nano(7, 56, 4, 12_345_678)?);
     /// assert!(dt.with_hour(24).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_hour(&self, hour: u32) -> Result<NaiveTime, ChronoError> {
+    fn with_hour(&self, hour: u32) -> Result<NaiveTime, Error> {
         if hour >= 24 {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidTime));
+            return Err(Error::new(ErrorKind::InvalidTime));
         }
         let secs = hour * 3600 + self.secs % 3600;
         Ok(NaiveTime { secs, ..*self })
@@ -882,7 +867,7 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the minute number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// Returns `Err(Error)` when the resulting `NaiveTime` would be
     /// invalid.
     ///
     /// # Example
@@ -893,12 +878,12 @@ impl Timelike for NaiveTime {
     /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
     /// assert_eq!(dt.with_minute(45)?, NaiveTime::from_hms_nano(23, 45, 4, 12_345_678)?);
     /// assert!(dt.with_minute(60).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_minute(&self, min: u32) -> Result<NaiveTime, ChronoError> {
+    fn with_minute(&self, min: u32) -> Result<NaiveTime, Error> {
         if min >= 60 {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidTime));
+            return Err(Error::new(ErrorKind::InvalidTime));
         }
         let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
         Ok(NaiveTime { secs, ..*self })
@@ -906,7 +891,7 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the second number changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// Returns `Err(Error)` when the resulting `NaiveTime` would be
     /// invalid. As with the [`second`](#method.second) method, the input range
     /// is restricted to 0 through 59.
     ///
@@ -918,12 +903,12 @@ impl Timelike for NaiveTime {
     /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
     /// assert_eq!(dt.with_second(17)?, NaiveTime::from_hms_nano(23, 56, 17, 12_345_678)?);
     /// assert!(dt.with_second(60).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_second(&self, sec: u32) -> Result<NaiveTime, ChronoError> {
+    fn with_second(&self, sec: u32) -> Result<NaiveTime, Error> {
         if sec >= 60 {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidTime));
+            return Err(Error::new(ErrorKind::InvalidTime));
         }
         let secs = self.secs / 60 * 60 + sec;
         Ok(NaiveTime { secs, ..*self })
@@ -932,7 +917,7 @@ impl Timelike for NaiveTime {
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second
     /// changed.
     ///
-    /// Returns `Err(ChronoError)` when the resulting `NaiveTime` would be
+    /// Returns `Err(Error)` when the resulting `NaiveTime` would be
     /// invalid. As with the [`nanosecond`](#method.nanosecond) method, the
     /// input range can exceed 1,000,000,000 for leap seconds.
     ///
@@ -944,7 +929,7 @@ impl Timelike for NaiveTime {
     /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
     /// assert_eq!(dt.with_nanosecond(333_333_333)?, NaiveTime::from_hms_nano(23, 56, 4, 333_333_333)?);
     /// assert!(dt.with_nanosecond(2_000_000_000).is_err());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Leap seconds can theoretically follow *any* whole second. The following
@@ -956,12 +941,12 @@ impl Timelike for NaiveTime {
     /// # use chrono::{NaiveTime, Timelike};
     /// # let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
     /// assert_eq!(dt.with_nanosecond(1_333_333_333)?, NaiveTime::from_hms_nano(23, 56, 4, 1_333_333_333)?);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Result<NaiveTime, ChronoError> {
+    fn with_nanosecond(&self, nano: u32) -> Result<NaiveTime, Error> {
         if nano >= 2_000_000_000 {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidTime));
+            return Err(Error::new(ErrorKind::InvalidTime));
         }
         Ok(NaiveTime { frac: nano, ..*self })
     }
@@ -979,7 +964,7 @@ impl Timelike for NaiveTime {
     ///            86164);
     /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000)?.num_seconds_from_midnight(),
     ///            86399);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn num_seconds_from_midnight(&self) -> u32 {
@@ -1010,7 +995,7 @@ impl Timelike for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? + TimeDelta::milliseconds(80), from_hmsm(3, 5, 7, 80)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 950)? + TimeDelta::milliseconds(280), from_hmsm(3, 5, 8, 230)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 950)? + TimeDelta::milliseconds(-980), from_hmsm(3, 5, 6, 970)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// The addition wraps around.
@@ -1021,7 +1006,7 @@ impl Timelike for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? + TimeDelta::seconds(22*60*60), from_hmsm(1, 5, 7, 0)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? + TimeDelta::seconds(-8*60*60), from_hmsm(19, 5, 7, 0)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? + TimeDelta::days(800), from_hmsm(3, 5, 7, 0)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
@@ -1037,7 +1022,7 @@ impl Timelike for NaiveTime {
 /// assert_eq!(leap + TimeDelta::seconds(10), from_hmsm(3, 6, 9, 300)?);
 /// assert_eq!(leap + TimeDelta::seconds(-10), from_hmsm(3, 5, 50, 300)?);
 /// assert_eq!(leap + TimeDelta::days(1), from_hmsm(3, 5, 59, 300)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Add<TimeDelta> for NaiveTime {
     type Output = NaiveTime;
@@ -1077,7 +1062,7 @@ impl AddAssign<TimeDelta> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? - TimeDelta::seconds(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? - TimeDelta::milliseconds(80), from_hmsm(3, 5, 6, 920)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 950)? - TimeDelta::milliseconds(280), from_hmsm(3, 5, 7, 670)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// The subtraction wraps around.
@@ -1087,7 +1072,7 @@ impl AddAssign<TimeDelta> for NaiveTime {
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? - TimeDelta::seconds(8*60*60), from_hmsm(19, 5, 7, 0)?);
 /// assert_eq!(from_hmsm(3, 5, 7, 0)? - TimeDelta::days(800), from_hmsm(3, 5, 7, 0)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
@@ -1102,7 +1087,7 @@ impl AddAssign<TimeDelta> for NaiveTime {
 /// assert_eq!(leap - TimeDelta::milliseconds(500), from_hmsm(3, 5, 59, 800)?);
 /// assert_eq!(leap - TimeDelta::seconds(60), from_hmsm(3, 5, 0, 300)?);
 /// assert_eq!(leap - TimeDelta::days(1), from_hmsm(3, 6, 0, 300)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Sub<TimeDelta> for NaiveTime {
     type Output = NaiveTime;
@@ -1149,7 +1134,7 @@ impl SubAssign<TimeDelta> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 5, 7, 900)? - from_hmsm(4, 5, 7, 900)?, TimeDelta::seconds(-3600));
 /// assert_eq!(from_hmsm(3, 5, 7, 900)? - from_hmsm(2, 4, 6, 800)?,
 ///            TimeDelta::seconds(3600 + 60 + 1) + TimeDelta::milliseconds(100));
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that
@@ -1165,7 +1150,7 @@ impl SubAssign<TimeDelta> for NaiveTime {
 /// assert_eq!(from_hmsm(3, 0, 0, 0)? - from_hmsm(2, 59, 59, 1_000)?, TimeDelta::seconds(1));
 /// assert_eq!(from_hmsm(3, 0, 59, 1_000)? - from_hmsm(2, 59, 59, 1_000)?,
 ///            TimeDelta::seconds(61));
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Sub<NaiveTime> for NaiveTime {
     type Output = TimeDelta;
@@ -1196,7 +1181,7 @@ impl Sub<NaiveTime> for NaiveTime {
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(23, 56, 4, 12)?), "23:56:04.012");
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_micro(23, 56, 4, 1234)?), "23:56:04.001234");
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_nano(23, 56, 4, 123456)?), "23:56:04.000123456");
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds may also be used.
@@ -1204,7 +1189,7 @@ impl Sub<NaiveTime> for NaiveTime {
 /// ```
 /// # use chrono::NaiveTime;
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(6, 59, 59, 1_500)?), "06:59:60.500");
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl fmt::Debug for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1248,7 +1233,7 @@ impl fmt::Debug for NaiveTime {
 /// assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 56, 4, 12)?), "23:56:04.012");
 /// assert_eq!(format!("{}", NaiveTime::from_hms_micro(23, 56, 4, 1234)?), "23:56:04.001234");
 /// assert_eq!(format!("{}", NaiveTime::from_hms_nano(23, 56, 4, 123456)?), "23:56:04.000123456");
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds may also be used.
@@ -1256,7 +1241,7 @@ impl fmt::Debug for NaiveTime {
 /// ```
 /// # use chrono::NaiveTime;
 /// assert_eq!(format!("{}", NaiveTime::from_hms_milli(6, 59, 59, 1_500)?), "06:59:60.500");
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl fmt::Display for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1282,7 +1267,7 @@ impl fmt::Display for NaiveTime {
 /// assert_eq!("23:59:60.23456789".parse::<NaiveTime>(), Ok(t));
 ///
 /// assert!("foo".parse::<NaiveTime>().is_err());
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl str::FromStr for NaiveTime {
     type Err = ParseError;
@@ -1315,7 +1300,7 @@ impl str::FromStr for NaiveTime {
 ///
 /// let default_time = NaiveTime::default();
 /// assert_eq!(default_time, NaiveTime::from_hms(0, 0, 0)?);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Default for NaiveTime {
     fn default() -> Self {

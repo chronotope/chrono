@@ -28,7 +28,7 @@ pub trait SubsecRound {
     /// let dt = Utc.ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?;
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     fn round_subsecs(self, digits: u16) -> Self;
 
@@ -41,7 +41,7 @@ pub trait SubsecRound {
     /// let dt = Utc.ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?;
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     fn trunc_subsecs(self, digits: u16) -> Self;
 }
@@ -254,7 +254,7 @@ pub enum RoundingError {
     ///     dt.duration_round(TimeDelta::days(365)),
     ///     Err(RoundingError::DurationExceedsTimestamp),
     /// );
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     DurationExceedsTimestamp,
 
@@ -268,7 +268,7 @@ pub enum RoundingError {
     ///     dt.duration_round(TimeDelta::days(300 * 365)),
     ///     Err(RoundingError::DurationExceedsLimit)
     /// );
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     DurationExceedsLimit,
 
@@ -279,7 +279,7 @@ pub enum RoundingError {
     /// let dt = Utc.ymd(2300, 12, 12)?.and_hms(0, 0, 0)?;
     ///
     /// assert_eq!(dt.duration_round(TimeDelta::days(1)), Err(RoundingError::TimestampExceedsLimit),);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     TimestampExceedsLimit,
 }

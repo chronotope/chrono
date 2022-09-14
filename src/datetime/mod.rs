@@ -33,7 +33,7 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, FixedTimeZone, Offset, TimeZone, Utc};
-use crate::{ChronoError, Date, Datelike, Months, TimeDelta, Timelike, Weekday};
+use crate::{Date, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 /// documented at re-export site
 #[cfg(feature = "serde")]
@@ -103,7 +103,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0)?, Utc);
     /// assert_eq!(Utc.timestamp(61, 0)?, dt);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
@@ -135,7 +135,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east)?);
     /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west)?);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
@@ -159,7 +159,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.date(), date);
     ///
     /// assert_eq!(dt.date().and_hms(1, 1, 1)?, date.and_hms(1, 1, 1)?);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn date(&self) -> Date<Tz> {
@@ -177,7 +177,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let date: DateTime<Utc> = Utc.ymd(2020, 1, 1)?.and_hms(0, 0, 0)?;
     /// let other: DateTime<FixedOffset> = FixedOffset::east(23)?.ymd(2020, 1, 1)?.and_hms(0, 0, 0)?;
     /// assert_eq!(date.date_naive(), other.date_naive());
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn date_naive(&self) -> NaiveDate {
@@ -216,7 +216,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = Utc.ymd(2001, 9, 9)?.and_hms_milli(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
@@ -241,7 +241,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = Utc.ymd(2001, 9, 9)?.and_hms_micro(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_micros(&self) -> i64 {
@@ -266,7 +266,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = Utc.ymd(2001, 9, 9)?.and_hms_nano(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_nanos(&self) -> i64 {
@@ -318,7 +318,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Changes the associated time zone.
     /// The returned `DateTime` references the same instant of time from the perspective of the provided time zone.
     #[inline]
-    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Result<DateTime<Tz2>, ChronoError> {
+    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Result<DateTime<Tz2>, Error> {
         tz.from_utc_datetime(&self.datetime)
     }
 
@@ -331,7 +331,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Adds given `Duration` to the current date and time.
     ///
-    /// Returns `Err(ChronoError)` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Self> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
@@ -341,7 +341,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Adds given `Months` to the current date and time.
     ///
-    /// Returns `Err(ChronoError)` when it will result in overflow, or if the
+    /// Returns `Err(Error)` when it will result in overflow, or if the
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_add_months`] for more details on behavior
@@ -352,7 +352,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts given `Duration` from the current date and time.
     ///
-    /// Returns `Err(ChronoError)` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Self> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
@@ -362,7 +362,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts given `Months` from the current date and time.
     ///
-    /// Returns `Err(ChronoError)` when it will result in overflow, or if the
+    /// Returns `Err(Error)` when it will result in overflow, or if the
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_sub_months`] for more details on behavior
@@ -373,7 +373,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Add a duration in [`Days`] to the date part of the `DateTime`
     ///
-    /// Returns `Err(ChronoError)` if the resulting date would be out of range.
+    /// Returns `Err(Error)` if the resulting date would be out of range.
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         let dt = self.datetime.checked_add_days(days)?;
         dt.and_local_timezone(TimeZone::from_offset(&self.offset)).ok()
@@ -381,7 +381,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
-    /// Returns `Err(ChronoError)` if the resulting date would be out of range.
+    /// Returns `Err(Error)` if the resulting date would be out of range.
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         let dt = self.datetime.checked_sub_days(days)?;
         dt.and_local_timezone(TimeZone::from_offset(&self.offset)).ok()
@@ -465,7 +465,7 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
 #[cfg(feature = "clock")]
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl TryFrom<DateTime<Utc>> for DateTime<Local> {
-    type Error = ChronoError;
+    type Error = Error;
 
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
@@ -490,7 +490,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
 #[cfg(feature = "clock")]
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl TryFrom<DateTime<FixedOffset>> for DateTime<Local> {
-    type Error = ChronoError;
+    type Error = Error;
 
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
@@ -528,9 +528,9 @@ impl From<DateTime<Local>> for DateTime<FixedOffset> {
 }
 
 /// Maps the local datetime to other datetime with given conversion function.
-fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Result<DateTime<Tz>, ChronoError>
+fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Result<DateTime<Tz>, Error>
 where
-    F: FnMut(NaiveDateTime) -> Result<NaiveDateTime, ChronoError>,
+    F: FnMut(NaiveDateTime) -> Result<NaiveDateTime, Error>,
 {
     let datetime = f(dt.naive_local())?;
     dt.timezone().from_local_datetime(&datetime)?.single()
@@ -707,7 +707,7 @@ where
     /// let dt = pst.ymd(2018, 1, 26)?.and_hms_micro(10, 30, 9, 453_829)?;
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -777,7 +777,7 @@ where
     /// let date_time: DateTime<Utc> = Utc.ymd(2017, 04, 02)?.and_hms(12, 50, 32)?;
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -865,37 +865,37 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_year(&self, year: i32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_year(year))
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_month(&self, month: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_month(month))
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_month0(&self, month0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_month0(month0))
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_day(&self, day: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_day(day))
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_day0(&self, day0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_day0(day0))
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_ordinal(&self, ordinal: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_ordinal(ordinal))
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
 }
@@ -919,22 +919,22 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     }
 
     #[inline]
-    fn with_hour(&self, hour: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_hour(&self, hour: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_hour(hour))
     }
 
     #[inline]
-    fn with_minute(&self, min: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_minute(&self, min: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_minute(min))
     }
 
     #[inline]
-    fn with_second(&self, sec: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_second(&self, sec: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_second(sec))
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Result<DateTime<Tz>, ChronoError> {
+    fn with_nanosecond(&self, nano: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
 }
@@ -966,7 +966,7 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
     ///
     /// assert!(later > earlier);
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     fn partial_cmp(&self, other: &DateTime<Tz2>) -> Option<Ordering> {
         self.datetime.partial_cmp(&other.datetime)
@@ -1184,7 +1184,7 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     )))
 )]
 impl std::convert::TryFrom<js_sys::Date> for DateTime<Utc> {
-    type Error = ChronoError;
+    type Error = Error;
 
     fn try_from(date: js_sys::Date) -> Result<Self, Self::Error> {
         DateTime::<Utc>::try_from(&date)
@@ -1205,7 +1205,7 @@ impl std::convert::TryFrom<js_sys::Date> for DateTime<Utc> {
     )))
 )]
 impl std::convert::TryFrom<&js_sys::Date> for DateTime<Utc> {
-    type Error = ChronoError;
+    type Error = Error;
 
     fn try_from(date: &js_sys::Date) -> Result<Self, Self::Error> {
         Utc.timestamp_millis(date.get_time() as i64)

@@ -10,9 +10,9 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{ChronoError, DateTime, FixedTimeZone, Offset, TimeZone};
+use super::{DateTime, Error, FixedTimeZone, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use crate::offset::ChronoErrorKind;
+use crate::offset::ErrorKind;
 use crate::time_delta::TimeDelta;
 use crate::{LocalResult, Timelike};
 
@@ -35,7 +35,7 @@ impl FixedOffset {
     /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone
     /// difference. The negative `secs` means the Western Hemisphere.
     ///
-    /// Returns `Err(ChronoError)` on the out-of-bound `secs`.
+    /// Returns `Err(Error)` on the out-of-bound `secs`.
     ///
     /// # Example
     ///
@@ -44,20 +44,20 @@ impl FixedOffset {
     /// let hour = 3600;
     /// let datetime = FixedOffset::east(5 * hour)?.ymd(2016, 11, 08)?.and_hms(0, 0, 0)?;
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
-    pub fn east(secs: i32) -> Result<FixedOffset, ChronoError> {
+    pub fn east(secs: i32) -> Result<FixedOffset, Error> {
         if -86_400 < secs && secs < 86_400 {
             Ok(FixedOffset { local_minus_utc: secs })
         } else {
-            Err(ChronoError::new(ChronoErrorKind::InvalidTimeZone))
+            Err(Error::new(ErrorKind::InvalidTimeZone))
         }
     }
 
     /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone
     /// difference. The negative `secs` means the Eastern Hemisphere.
     ///
-    /// Returns `Err(ChronoError)` on the out-of-bound `secs`.
+    /// Returns `Err(Error)` on the out-of-bound `secs`.
     ///
     /// # Example
     ///
@@ -66,13 +66,13 @@ impl FixedOffset {
     /// let hour = 3600;
     /// let datetime = FixedOffset::west(5 * hour)?.ymd(2016, 11, 08)?.and_hms(0, 0, 0)?;
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00");
-    /// # Ok::<_, chrono::ChronoError>(())
+    /// # Ok::<_, chrono::Error>(())
     /// ```
-    pub fn west(secs: i32) -> Result<FixedOffset, ChronoError> {
+    pub fn west(secs: i32) -> Result<FixedOffset, Error> {
         if -86_400 < secs && secs < 86_400 {
             Ok(FixedOffset { local_minus_utc: -secs })
         } else {
-            Err(ChronoError::new(ChronoErrorKind::InvalidTimeZone))
+            Err(Error::new(ErrorKind::InvalidTimeZone))
         }
     }
 
@@ -96,24 +96,21 @@ impl TimeZone for FixedOffset {
         *offset
     }
 
-    fn offset_from_local_date(
-        &self,
-        _: &NaiveDate,
-    ) -> Result<LocalResult<Self::Offset>, ChronoError> {
+    fn offset_from_local_date(&self, _: &NaiveDate) -> Result<LocalResult<Self::Offset>, Error> {
         Ok(LocalResult::Single(*self))
     }
 
     fn offset_from_local_datetime(
         &self,
         _: &NaiveDateTime,
-    ) -> Result<LocalResult<Self::Offset>, ChronoError> {
+    ) -> Result<LocalResult<Self::Offset>, Error> {
         Ok(LocalResult::Single(*self))
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Result<Self, ChronoError> {
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Result<Self, Error> {
         Ok(*self)
     }
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Result<Self, ChronoError> {
+    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Result<Self, Error> {
         Ok(*self)
     }
 }

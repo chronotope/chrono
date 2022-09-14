@@ -2,7 +2,7 @@ use core::fmt;
 
 /// Internal representation of the chrono error.
 #[derive(Debug)]
-pub(crate) enum ChronoErrorKind {
+pub(crate) enum ErrorKind {
     InvalidDate,
     InvalidTime,
     InvalidDateTime,
@@ -18,49 +18,49 @@ pub(crate) enum ChronoErrorKind {
 
 /// The error raised for an invalid date time.
 #[derive(Debug)]
-pub struct ChronoError {
-    kind: ChronoErrorKind,
+pub struct Error {
+    kind: ErrorKind,
 }
 
-impl ChronoError {
+impl Error {
     /// Internal constructor for a chrono error.
     #[inline]
-    pub(crate) fn new(kind: ChronoErrorKind) -> Self {
+    pub(crate) fn new(kind: ErrorKind) -> Self {
         Self { kind }
     }
 }
 
-impl fmt::Display for ChronoError {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.kind {
-            ChronoErrorKind::InvalidDate => write!(f, "invalid date"),
-            ChronoErrorKind::InvalidTime => write!(f, "invalid time"),
-            ChronoErrorKind::InvalidDateTime => write!(f, "invalid date time"),
-            ChronoErrorKind::InvalidTimeZone => write!(f, "invalid time zone"),
-            ChronoErrorKind::AmbiguousDate => write!(f, "tried to operate over ambiguous date"),
+            ErrorKind::InvalidDate => write!(f, "invalid date"),
+            ErrorKind::InvalidTime => write!(f, "invalid time"),
+            ErrorKind::InvalidDateTime => write!(f, "invalid date time"),
+            ErrorKind::InvalidTimeZone => write!(f, "invalid time zone"),
+            ErrorKind::AmbiguousDate => write!(f, "tried to operate over ambiguous date"),
             #[cfg(all(unix, feature = "clock"))]
-            ChronoErrorKind::MissingDate => write!(f, "missing date"),
+            ErrorKind::MissingDate => write!(f, "missing date"),
             #[cfg(all(windows, feature = "clock"))]
-            ChronoErrorKind::SystemTimeBeforeEpoch => write!(f, "system time before Unix epoch"),
+            ErrorKind::SystemTimeBeforeEpoch => write!(f, "system time before Unix epoch"),
             #[cfg(all(windows, feature = "clock"))]
-            ChronoErrorKind::SystemError(error) => write!(f, "system error: {}", error),
+            ErrorKind::SystemError(error) => write!(f, "system error: {}", error),
         }
     }
 }
 
-impl From<ChronoErrorKind> for ChronoError {
+impl From<ErrorKind> for Error {
     #[inline]
-    fn from(kind: ChronoErrorKind) -> Self {
+    fn from(kind: ErrorKind) -> Self {
         Self::new(kind)
     }
 }
 
 #[cfg(feature = "std")]
-impl std::error::Error for ChronoError {
+impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.kind {
             #[cfg(all(windows, feature = "clock"))]
-            ChronoErrorKind::SystemError(error) => Some(error),
+            ErrorKind::SystemError(error) => Some(error),
             _ => None,
         }
     }
@@ -68,14 +68,14 @@ impl std::error::Error for ChronoError {
 
 /// Implementation used in many test cases.
 #[cfg(test)]
-impl PartialEq for ChronoError {
+impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
         self.kind == other.kind
     }
 }
 
 #[cfg(test)]
-impl PartialEq for ChronoErrorKind {
+impl PartialEq for ErrorKind {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             #[cfg(all(windows, feature = "clock"))]

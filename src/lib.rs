@@ -102,7 +102,7 @@
 //! let utc: DateTime<Utc> = Utc::now()?; // e.g. `2014-11-28T12:45:59.324310806Z`
 //! let local: DateTime<Local> = Local::now()?; // e.g. `2014-11-28T21:45:59.324310806+09:00`
 //! # let _ = utc; let _ = local;
-//! # Ok::<_, chrono::ChronoError>(())
+//! # Ok::<_, chrono::Error>(())
 //! ```
 //!
 //! Alternatively, you can create your own date and time.
@@ -133,7 +133,7 @@
 //! let fixed_dt = FixedOffset::east(9 * 3600)?.ymd(2014, 7, 8)?.and_hms_milli(18, 10, 11, 12)?;
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
-//! # Ok::<_, chrono::ChronoError>(())
+//! # Ok::<_, chrono::Error>(())
 //! ```
 //!
 //! Various properties are available to the date and time, and can be altered individually.
@@ -177,7 +177,7 @@
 //!            Utc.ymd(2001, 9, 9)?.and_hms(1, 46, 40)?);
 //! assert_eq!(Utc.ymd(1970, 1, 1)?.and_hms(0, 0, 0)? - TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(1938, 4, 24)?.and_hms(22, 13, 20)?);
-//! # Ok::<_, chrono::ChronoError>(())
+//! # Ok::<_, chrono::Error>(())
 //! ```
 //!
 //! ### Formatting and Parsing
@@ -207,7 +207,7 @@
 //! use chrono::prelude::*;
 //!
 //! # #[cfg(feature = "unstable-locales")]
-//! # fn main() -> Result<(), chrono::ChronoError> {
+//! # fn main() -> Result<(), chrono::Error> {
 //! let dt = Utc.ymd(2014, 11, 28)?.and_hms(12, 0, 9)?;
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
@@ -330,7 +330,7 @@
 //! assert!(Utc.ymd(2014, 11, 31).is_err());
 //! assert_eq!(Utc.ymd(2014, 11, 28)?.and_hms_milli(7, 8, 9, 10)?.format("%H%M%S").to_string(),
 //!            "070809");
-//! # Ok::<_, chrono::ChronoError>(())
+//! # Ok::<_, chrono::Error>(())
 //! ```
 //!
 //! There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
@@ -374,9 +374,9 @@
 //!
 //! Chrono inherently does not support an inaccurate or partial date and time
 //! representation. Any operation that can be ambiguous will return
-//! `Err(ChronoError)` in such cases. For example, "a month later" of 2014-01-30
+//! `Err(Error)` in such cases. For example, "a month later" of 2014-01-30
 //! is not well-defined and consequently `Utc.ymd(2014, 1, 30)?.with_month(2)?`
-//! returns `Err(ChronoError)`.
+//! returns `Err(Error)`.
 //!
 //! Non ISO week handling is not yet supported. For now you can use the
 //! [chrono_ext] crate ([sources]).
@@ -414,9 +414,9 @@ doctest!("../README.md");
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
     #[doc(no_inline)]
-    pub use crate::ChronoError;
-    #[doc(no_inline)]
     pub use crate::Date;
+    #[doc(no_inline)]
+    pub use crate::Error;
     #[cfg(feature = "clock")]
     #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
     #[doc(no_inline)]
@@ -448,7 +448,7 @@ mod datetime;
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 
 mod error;
-pub use self::error::ChronoError;
+pub use self::error::Error;
 
 pub mod format;
 /// L10n locales.

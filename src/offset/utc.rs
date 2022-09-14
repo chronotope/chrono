@@ -19,9 +19,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, FixedTimeZone, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
-use crate::{ChronoError, LocalResult};
 #[cfg(feature = "clock")]
 use crate::{Date, DateTime};
+use crate::{Error, LocalResult};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -39,7 +39,7 @@ use crate::{Date, DateTime};
 ///
 /// assert_eq!(Utc.timestamp(61, 0)?, dt);
 /// assert_eq!(Utc.ymd(1970, 1, 1)?.and_hms(0, 1, 1)?, dt);
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
@@ -49,7 +49,7 @@ pub struct Utc;
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
-    pub fn today() -> Result<Date<Utc>, ChronoError> {
+    pub fn today() -> Result<Date<Utc>, Error> {
         Ok(Utc::now()?.date())
     }
 
@@ -59,7 +59,7 @@ impl Utc {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    pub fn now() -> Result<DateTime<Utc>, ChronoError> {
+    pub fn now() -> Result<DateTime<Utc>, Error> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
         let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32)?;
@@ -72,7 +72,7 @@ impl Utc {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    pub fn now() -> Result<DateTime<Utc>, ChronoError> {
+    pub fn now() -> Result<DateTime<Utc>, Error> {
         use std::convert::TryFrom;
 
         let now = js_sys::Date::new_0();
@@ -87,22 +87,19 @@ impl TimeZone for Utc {
         Self
     }
 
-    fn offset_from_local_date(&self, _: &NaiveDate) -> Result<LocalResult<Self>, ChronoError> {
+    fn offset_from_local_date(&self, _: &NaiveDate) -> Result<LocalResult<Self>, Error> {
         Ok(LocalResult::Single(Self))
     }
 
-    fn offset_from_local_datetime(
-        &self,
-        _: &NaiveDateTime,
-    ) -> Result<LocalResult<Self>, ChronoError> {
+    fn offset_from_local_datetime(&self, _: &NaiveDateTime) -> Result<LocalResult<Self>, Error> {
         Ok(LocalResult::Single(Self))
     }
 
-    fn offset_from_utc_date(&self, _: &NaiveDate) -> Result<Self, ChronoError> {
+    fn offset_from_utc_date(&self, _: &NaiveDate) -> Result<Self, Error> {
         Ok(Self)
     }
 
-    fn offset_from_utc_datetime(&self, _: &NaiveDateTime) -> Result<Self, ChronoError> {
+    fn offset_from_utc_datetime(&self, _: &NaiveDateTime) -> Result<Self, Error> {
         Ok(Self)
     }
 }

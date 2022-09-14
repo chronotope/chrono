@@ -29,7 +29,7 @@ use crate::OutOfRange;
 /// let month = Month::January;
 /// let dt = Utc.ymd(2019, month.number_from_month(), 28)?.and_hms(9, 10, 11)?;
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
-/// # Ok::<_, chrono::ChronoError>(())
+/// # Ok::<_, chrono::Error>(())
 /// ```
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde

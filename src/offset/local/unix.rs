@@ -12,23 +12,23 @@ use std::{cell::RefCell, env, fs, time::SystemTime};
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
-use crate::error::ChronoErrorKind;
+use crate::error::ErrorKind;
 use crate::offset::LocalResult;
-use crate::{ChronoError, Datelike, Utc};
+use crate::{Datelike, Error, Utc};
 
-pub(super) fn now() -> Result<DateTime<Local>, ChronoError> {
+pub(super) fn now() -> Result<DateTime<Local>, Error> {
     let now = Utc::now()?.naive_utc();
 
     match naive_to_local(&now, false)? {
         LocalResult::Single(dt) => Ok(dt),
-        _ => Err(ChronoError::new(ChronoErrorKind::AmbiguousDate)),
+        _ => Err(Error::new(ErrorKind::AmbiguousDate)),
     }
 }
 
 pub(super) fn naive_to_local(
     d: &NaiveDateTime,
     local: bool,
-) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
+) -> Result<LocalResult<DateTime<Local>>, Error> {
     TZ_INFO.with(|maybe_cache| {
         maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
     })
@@ -136,7 +136,7 @@ impl Cache {
         &mut self,
         d: NaiveDateTime,
         local: bool,
-    ) -> Result<LocalResult<DateTime<Local>>, ChronoError> {
+    ) -> Result<LocalResult<DateTime<Local>>, Error> {
         if self.source.out_of_date() {
             *self = Cache::default();
         }
@@ -159,7 +159,7 @@ impl Cache {
             .find_local_time_type_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
         {
-            None => Err(ChronoError::new(ChronoErrorKind::MissingDate)),
+            None => Err(Error::new(ErrorKind::MissingDate)),
             Some(LocalResult::Ambiguous(early, late)) => {
                 let early_offset = FixedOffset::east(early.offset())?;
                 let late_offset = FixedOffset::east(late.offset())?;
