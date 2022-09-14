@@ -433,7 +433,7 @@ impl Parsed {
                     + weekday.num_days_from_sunday() as i32;
                 let date = newyear
                     .checked_add_signed(TimeDelta::days(i64::from(ndays)))
-                    .map_err(|_| OUT_OF_RANGE)?;
+                    .ok_or(OUT_OF_RANGE)?;
                 if date.year() != year {
                     return Err(OUT_OF_RANGE);
                 } // early exit for correct error
@@ -467,7 +467,7 @@ impl Parsed {
                     + weekday.num_days_from_monday() as i32;
                 let date = newyear
                     .checked_add_signed(TimeDelta::days(i64::from(ndays)))
-                    .map_err(|_| OUT_OF_RANGE)?;
+                    .ok_or(OUT_OF_RANGE)?;
                 if date.year() != year {
                     return Err(OUT_OF_RANGE);
                 } // early exit for correct error
@@ -635,7 +635,7 @@ impl Parsed {
         // TODO: is this still needed?
         datetime
             .checked_sub_signed(TimeDelta::seconds(i64::from(offset.local_minus_utc())))
-            .map_err(|_| OUT_OF_RANGE)?;
+            .ok_or(OUT_OF_RANGE)?;
 
         offset.from_local_datetime(&datetime).and_then(|dt| dt.single()).map_err(|_| OUT_OF_RANGE)
     }

@@ -333,10 +333,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<DateTime<Tz>, ChronoError> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Self> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
-        tz.from_utc_datetime(&datetime)
+        tz.from_utc_datetime(&datetime).ok()
     }
 
     /// Adds given `Months` to the current date and time.
@@ -345,19 +345,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_add_months`] for more details on behavior
-    pub fn checked_add_months(self, rhs: Months) -> Result<DateTime<Tz>, ChronoError> {
+    pub fn checked_add_months(self, rhs: Months) -> Option<Self> {
         let datetime = self.naive_local().checked_add_months(rhs)?;
-        datetime.and_local_timezone(Tz::from_offset(&self.offset))
+        datetime.and_local_timezone(Tz::from_offset(&self.offset)).ok()
     }
 
     /// Subtracts given `Duration` from the current date and time.
     ///
     /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<DateTime<Tz>, ChronoError> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Self> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
-        tz.from_utc_datetime(&datetime)
+        tz.from_utc_datetime(&datetime).ok()
     }
 
     /// Subtracts given `Months` from the current date and time.
@@ -366,25 +366,25 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_sub_months`] for more details on behavior
-    pub fn checked_sub_months(self, rhs: Months) -> Result<DateTime<Tz>, ChronoError> {
+    pub fn checked_sub_months(self, rhs: Months) -> Option<Self> {
         let dt = self.naive_local().checked_sub_months(rhs)?;
-        dt.and_local_timezone(Tz::from_offset(&self.offset))
+        dt.and_local_timezone(Tz::from_offset(&self.offset)).ok()
     }
 
     /// Add a duration in [`Days`] to the date part of the `DateTime`
     ///
     /// Returns `Err(ChronoError)` if the resulting date would be out of range.
-    pub fn checked_add_days(self, days: Days) -> Result<Self, ChronoError> {
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
         let dt = self.datetime.checked_add_days(days)?;
-        dt.and_local_timezone(TimeZone::from_offset(&self.offset))
+        dt.and_local_timezone(TimeZone::from_offset(&self.offset)).ok()
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
     /// Returns `Err(ChronoError)` if the resulting date would be out of range.
-    pub fn checked_sub_days(self, days: Days) -> Result<Self, ChronoError> {
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         let dt = self.datetime.checked_sub_days(days)?;
-        dt.and_local_timezone(TimeZone::from_offset(&self.offset))
+        dt.and_local_timezone(TimeZone::from_offset(&self.offset)).ok()
     }
 
     /// Subtracts another `DateTime` from the current date and time.

@@ -223,6 +223,8 @@
 //! let dt_nano = Utc.ymd(2014, 11, 28)?.and_hms_nano(12, 0, 9, 1)?;
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # Ok(()) }
+//! # #[cfg(not(feature = "unstable-locales"))]
+//! # fn main() {}
 //! ```
 //!
 //! Parsing can be done with three methods:

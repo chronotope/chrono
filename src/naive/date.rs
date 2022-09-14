@@ -545,21 +545,21 @@ impl NaiveDate {
     /// ```
     /// # use chrono::{NaiveDate, Months};
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_months(Months::new(6))?,
-    ///     NaiveDate::from_ymd(2022, 8, 20)?
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_months(Months::new(6)),
+    ///     Some(NaiveDate::from_ymd(2022, 8, 20)?)
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_months(Months::new(2))?,
-    ///     NaiveDate::from_ymd(2022, 9, 30)?
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_months(Months::new(2)),
+    ///     Some(NaiveDate::from_ymd(2022, 9, 30)?)
     /// );
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_add_months(self, months: Months) -> Result<Self, ChronoError> {
+    pub fn checked_add_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
-            return Ok(self);
+            return Some(self);
         }
 
-        let d = i32::try_from(months.0).ok().ok_or(ChronoErrorKind::InvalidDate)?;
+        let d = i32::try_from(months.0).ok()?;
         self.diff_months(d)
     }
 
@@ -573,31 +573,28 @@ impl NaiveDate {
     /// use chrono::{NaiveDate, Months};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_months(Months::new(6))?,
-    ///     NaiveDate::from_ymd(2021, 8, 20)?
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_months(Months::new(6)),
+    ///     Some(NaiveDate::from_ymd(2021, 8, 20)?)
     /// );
     ///
     /// assert!(
     ///     NaiveDate::from_ymd(2014, 1, 1)?
     ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1))
-    ///         .is_err()
+    ///         .is_none()
     /// );
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_sub_months(self, months: Months) -> Result<Self, ChronoError> {
+    pub fn checked_sub_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
-            return Ok(self);
+            return Some(self);
         }
 
-        let d = i32::try_from(months.0)
-            .ok()
-            .and_then(|n| n.checked_neg())
-            .ok_or(ChronoErrorKind::InvalidDate)?;
+        let d = i32::try_from(months.0).ok().and_then(|n| n.checked_neg())?;
 
         self.diff_months(d)
     }
 
-    fn diff_months(self, months: i32) -> Result<Self, ChronoError> {
+    fn diff_months(self, months: i32) -> Option<Self> {
         let (years, left) = ((months / 12), (months % 12));
 
         // Determine new year (without taking months into account for now
@@ -605,7 +602,7 @@ impl NaiveDate {
         let year = if (years > 0 && years > (MAX_YEAR - self.year()))
             || (years < 0 && years < (MIN_YEAR - self.year()))
         {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidDate));
+            return None;
         } else {
             self.year() + years
         };
@@ -615,13 +612,13 @@ impl NaiveDate {
         let month = self.month() as i32 + left;
         let (year, month) = if month <= 0 {
             if year == MIN_YEAR {
-                return Err(ChronoError::new(ChronoErrorKind::InvalidDate));
+                return None;
             }
 
             (year - 1, month + 12)
         } else if month > 12 {
             if year == MAX_YEAR {
-                return Err(ChronoError::new(ChronoErrorKind::InvalidDate));
+                return None;
             }
 
             (year + 1, month - 12)
@@ -636,7 +633,7 @@ impl NaiveDate {
         let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         let day = Ord::min(self.day(), days[(month - 1) as usize]);
 
-        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags)).ok()
     }
 
     /// Add a duration in [`Days`] to the date
@@ -647,21 +644,21 @@ impl NaiveDate {
     /// use chrono::{NaiveDate, Days};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_days(Days::new(9))?,
-    ///     NaiveDate::from_ymd(2022, 3, 1)?
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_days(Days::new(9)),
+    ///     Some(NaiveDate::from_ymd(2022, 3, 1)?)
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_days(Days::new(2))?,
-    ///     NaiveDate::from_ymd(2022, 8, 2)?
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_days(Days::new(2)),
+    ///     Some(NaiveDate::from_ymd(2022, 8, 2)?)
     /// );
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_add_days(self, days: Days) -> Result<Self, ChronoError> {
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
-            return Ok(self);
+            return Some(self);
         }
 
-        let d = i64::try_from(days.0).ok().ok_or(ChronoErrorKind::InvalidDate)?;
+        let d = i64::try_from(days.0).ok()?;
         self.diff_days(d)
     }
 
@@ -673,24 +670,21 @@ impl NaiveDate {
     /// use chrono::{NaiveDate, Days};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_days(Days::new(6))?,
-    ///     NaiveDate::from_ymd(2022, 2, 14)?
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_days(Days::new(6)),
+    ///     Some(NaiveDate::from_ymd(2022, 2, 14)?)
     /// );
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_sub_days(self, days: Days) -> Result<Self, ChronoError> {
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
-            return Ok(self);
+            return Some(self);
         }
 
-        let d = i64::try_from(days.0)
-            .ok()
-            .and_then(|n| n.checked_neg())
-            .ok_or(ChronoErrorKind::InvalidDate)?;
+        let d = i64::try_from(days.0).ok().and_then(|n| n.checked_neg())?;
         self.diff_days(d)
     }
 
-    fn diff_days(self, days: i64) -> Result<Self, ChronoError> {
+    fn diff_days(self, days: i64) -> Option<Self> {
         self.checked_add_signed(TimeDelta::days(days))
     }
 
@@ -972,29 +966,27 @@ impl NaiveDate {
     /// use chrono::{TimeDelta, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5)?;
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(40))?,
-    ///            NaiveDate::from_ymd(2015, 10, 15)?);
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-40))?,
-    ///            NaiveDate::from_ymd(2015, 7, 27)?);
-    /// assert!(d.checked_add_signed(TimeDelta::days(1_000_000_000)).is_err());
-    /// assert!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)).is_err());
-    /// assert!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)).is_err());
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(40)),
+    ///            Some(NaiveDate::from_ymd(2015, 10, 15)?));
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-40)),
+    ///            Some(NaiveDate::from_ymd(2015, 7, 27)?));
+    /// assert!(d.checked_add_signed(TimeDelta::days(1_000_000_000)).is_none());
+    /// assert!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)).is_none());
+    /// assert!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)).is_none());
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<NaiveDate, ChronoError> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Self> {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = i32::try_from(rhs.num_days())
-            .ok()
-            .and_then(|n| (cycle as i32).checked_add(n))
-            .ok_or(ChronoErrorKind::InvalidDate)?;
+        let cycle =
+            i32::try_from(rhs.num_days()).ok().and_then(|n| (cycle as i32).checked_add(n))?;
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        Self::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)).ok()
     }
 
     /// Subtracts the `days` part of given `TimeDelta` from the current date.
@@ -1007,29 +999,27 @@ impl NaiveDate {
     /// use chrono::{TimeDelta, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5)?;
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(40))?,
-    ///            NaiveDate::from_ymd(2015, 7, 27)?);
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-40))?,
-    ///            NaiveDate::from_ymd(2015, 10, 15)?);
-    /// assert!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)).is_err());
-    /// assert!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)).is_err());
-    /// assert!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)).is_err());
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(40)),
+    ///            Some(NaiveDate::from_ymd(2015, 7, 27)?));
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-40)),
+    ///            Some(NaiveDate::from_ymd(2015, 10, 15)?));
+    /// assert!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)).is_none());
+    /// assert!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)).is_none());
+    /// assert!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)).is_none());
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<NaiveDate, ChronoError> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Self> {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = i32::try_from(rhs.num_days())
-            .ok()
-            .and_then(|n| (cycle as i32).checked_sub(n))
-            .ok_or(ChronoErrorKind::InvalidDate)?;
+        let cycle =
+            i32::try_from(rhs.num_days()).ok().and_then(|n| (cycle as i32).checked_sub(n))?;
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        Self::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)).ok()
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -2113,9 +2103,8 @@ mod tests {
         Days, Months, NaiveDate, MAX_BITS, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0,
         MIN_YEAR,
     };
-    use crate::error::ChronoErrorKind;
     use crate::time_delta::TimeDelta;
-    use crate::{ChronoError, Datelike, Weekday};
+    use crate::{Datelike, Weekday};
     use std::{
         convert::{TryFrom, TryInto},
         i32, u32,
@@ -2158,51 +2147,54 @@ mod tests {
     #[test]
     fn diff_months() {
         // identity
-        assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(0)), Ok(ymd!(2022, 8, 3)));
+        assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(0)), Some(ymd!(2022, 8, 3)));
 
         // add with months exceeding `i32::MAX`
-        assert!(ymd!(2022, 8, 3).checked_add_months(Months::new(i32::MAX as u32 + 1)).is_err());
+        assert!(ymd!(2022, 8, 3).checked_add_months(Months::new(i32::MAX as u32 + 1)).is_none());
 
         // sub with months exceeindg `i32::MIN`
         assert!(ymd!(2022, 8, 3)
             .checked_sub_months(Months::new((i32::MIN as i64).abs() as u32 + 1))
-            .is_err());
+            .is_none());
 
         // add overflowing year
-        assert!(NaiveDate::MAX.checked_add_months(Months::new(1)).is_err());
+        assert!(NaiveDate::MAX.checked_add_months(Months::new(1)).is_none());
 
         // add underflowing year
-        assert!(NaiveDate::MIN.checked_sub_months(Months::new(1)).is_err());
+        assert!(NaiveDate::MIN.checked_sub_months(Months::new(1)).is_none());
 
         // sub crossing year 0 boundary
         assert_eq!(
             ymd!(2022, 8, 3).checked_sub_months(Months::new(2050 * 12)),
-            Ok(ymd!(-28, 8, 3))
+            Some(ymd!(-28, 8, 3))
         );
 
         // add crossing year boundary
-        assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(6)), Ok(ymd!(2023, 2, 3)));
+        assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(6)), Some(ymd!(2023, 2, 3)));
 
         // sub crossing year boundary
-        assert_eq!(ymd!(2022, 8, 3).checked_sub_months(Months::new(10)), Ok(ymd!(2021, 10, 3)));
+        assert_eq!(ymd!(2022, 8, 3).checked_sub_months(Months::new(10)), Some(ymd!(2021, 10, 3)));
 
         // add clamping day, non-leap year
-        assert_eq!(ymd!(2022, 1, 29).checked_add_months(Months::new(1)), Ok(ymd!(2022, 2, 28)));
+        assert_eq!(ymd!(2022, 1, 29).checked_add_months(Months::new(1)), Some(ymd!(2022, 2, 28)));
 
         // add to leap day
-        assert_eq!(ymd!(2022, 10, 29).checked_add_months(Months::new(16)), Ok(ymd!(2024, 2, 29)));
+        assert_eq!(ymd!(2022, 10, 29).checked_add_months(Months::new(16)), Some(ymd!(2024, 2, 29)));
 
         // add into december
-        assert_eq!(ymd!(2022, 10, 31).checked_add_months(Months::new(2)), Ok(ymd!(2022, 12, 31)));
+        assert_eq!(ymd!(2022, 10, 31).checked_add_months(Months::new(2)), Some(ymd!(2022, 12, 31)));
 
         // sub into december
-        assert_eq!(ymd!(2022, 10, 31).checked_sub_months(Months::new(10)), Ok(ymd!(2021, 12, 31)));
+        assert_eq!(
+            ymd!(2022, 10, 31).checked_sub_months(Months::new(10)),
+            Some(ymd!(2021, 12, 31))
+        );
 
         // add into january
-        assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(5)), Ok(ymd!(2023, 1, 3)));
+        assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(5)), Some(ymd!(2023, 1, 3)));
 
         // sub into january
-        assert_eq!(ymd!(2022, 8, 3).checked_sub_months(Months::new(7)), Ok(ymd!(2022, 1, 3)));
+        assert_eq!(ymd!(2022, 8, 3).checked_sub_months(Months::new(7)), Some(ymd!(2022, 1, 3)));
     }
 
     #[test]
@@ -2515,52 +2507,32 @@ mod tests {
 
     #[test]
     fn test_date_add() {
-        fn check(
-            (y1, m1, d1): (i32, u32, u32),
-            rhs: TimeDelta,
-            ymd: Result<(i32, u32, u32), ChronoError>,
-        ) {
+        fn check((y1, m1, d1): (i32, u32, u32), rhs: TimeDelta, ymd: Option<(i32, u32, u32)>) {
             let lhs = ymd!(y1, m1, d1);
             let sum = ymd.map(|(y, m, d)| ymd!(y, m, d));
             assert_eq!(lhs.checked_add_signed(rhs), sum);
             assert_eq!(lhs.checked_sub_signed(-rhs), sum);
         }
 
-        check((2014, 1, 1), TimeDelta::zero(), Ok((2014, 1, 1)));
-        check((2014, 1, 1), TimeDelta::seconds(86399), Ok((2014, 1, 1)));
+        check((2014, 1, 1), TimeDelta::zero(), Some((2014, 1, 1)));
+        check((2014, 1, 1), TimeDelta::seconds(86399), Some((2014, 1, 1)));
         // always round towards zero
-        check((2014, 1, 1), TimeDelta::seconds(-86399), Ok((2014, 1, 1)));
-        check((2014, 1, 1), TimeDelta::days(1), Ok((2014, 1, 2)));
-        check((2014, 1, 1), TimeDelta::days(-1), Ok((2013, 12, 31)));
-        check((2014, 1, 1), TimeDelta::days(364), Ok((2014, 12, 31)));
-        check((2014, 1, 1), TimeDelta::days(365 * 4 + 1), Ok((2018, 1, 1)));
-        check((2014, 1, 1), TimeDelta::days(365 * 400 + 97), Ok((2414, 1, 1)));
+        check((2014, 1, 1), TimeDelta::seconds(-86399), Some((2014, 1, 1)));
+        check((2014, 1, 1), TimeDelta::days(1), Some((2014, 1, 2)));
+        check((2014, 1, 1), TimeDelta::days(-1), Some((2013, 12, 31)));
+        check((2014, 1, 1), TimeDelta::days(364), Some((2014, 12, 31)));
+        check((2014, 1, 1), TimeDelta::days(365 * 4 + 1), Some((2018, 1, 1)));
+        check((2014, 1, 1), TimeDelta::days(365 * 400 + 97), Some((2414, 1, 1)));
 
-        check((-7, 1, 1), TimeDelta::days(365 * 12 + 3), Ok((5, 1, 1)));
+        check((-7, 1, 1), TimeDelta::days(365 * 12 + 3), Some((5, 1, 1)));
 
         // overflow check
-        check((0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64), Ok((MAX_YEAR, 12, 31)));
-        check(
-            (0, 1, 1),
-            TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1),
-            Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-        );
-        check(
-            (0, 1, 1),
-            TimeDelta::max_value(),
-            Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-        );
-        check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64), Ok((MIN_YEAR, 1, 1)));
-        check(
-            (0, 1, 1),
-            TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1),
-            Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-        );
-        check(
-            (0, 1, 1),
-            TimeDelta::min_value(),
-            Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-        );
+        check((0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64), Some((MAX_YEAR, 12, 31)));
+        check((0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1), None);
+        check((0, 1, 1), TimeDelta::max_value(), None);
+        check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64), Some((MIN_YEAR, 1, 1)));
+        check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1), None);
+        check((0, 1, 1), TimeDelta::min_value(), None);
     }
 
     #[test]
@@ -2585,36 +2557,28 @@ mod tests {
 
     #[test]
     fn test_date_add_days() {
-        fn check(
-            (y1, m1, d1): (i32, u32, u32),
-            rhs: Days,
-            ymd: Result<(i32, u32, u32), ChronoError>,
-        ) {
+        fn check((y1, m1, d1): (i32, u32, u32), rhs: Days, ymd: Option<(i32, u32, u32)>) {
             let lhs = ymd!(y1, m1, d1);
             let sum = ymd.map(|(y, m, d)| ymd!(y, m, d));
             assert_eq!(lhs.checked_add_days(rhs), sum);
         }
 
-        check((2014, 1, 1), Days::new(0), Ok((2014, 1, 1)));
+        check((2014, 1, 1), Days::new(0), Some((2014, 1, 1)));
         // always round towards zero
-        check((2014, 1, 1), Days::new(1), Ok((2014, 1, 2)));
-        check((2014, 1, 1), Days::new(364), Ok((2014, 12, 31)));
-        check((2014, 1, 1), Days::new(365 * 4 + 1), Ok((2018, 1, 1)));
-        check((2014, 1, 1), Days::new(365 * 400 + 97), Ok((2414, 1, 1)));
+        check((2014, 1, 1), Days::new(1), Some((2014, 1, 2)));
+        check((2014, 1, 1), Days::new(364), Some((2014, 12, 31)));
+        check((2014, 1, 1), Days::new(365 * 4 + 1), Some((2018, 1, 1)));
+        check((2014, 1, 1), Days::new(365 * 400 + 97), Some((2414, 1, 1)));
 
-        check((-7, 1, 1), Days::new(365 * 12 + 3), Ok((5, 1, 1)));
+        check((-7, 1, 1), Days::new(365 * 12 + 3), Some((5, 1, 1)));
 
         // overflow check
         check(
             (0, 1, 1),
             Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()),
-            Ok((MAX_YEAR, 12, 31)),
+            Some((MAX_YEAR, 12, 31)),
         );
-        check(
-            (0, 1, 1),
-            Days::new(u64::try_from(MAX_DAYS_FROM_YEAR_0).unwrap() + 1),
-            Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-        );
+        check((0, 1, 1), Days::new(u64::try_from(MAX_DAYS_FROM_YEAR_0).unwrap() + 1), None);
     }
 
     #[test]

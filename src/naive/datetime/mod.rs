@@ -468,20 +468,20 @@ impl NaiveDateTime {
     /// let d = NaiveDate::from_ymd(2016, 7, 8)?;
     ///
     /// let hms = |h, m, s| d.and_hms(h, m, s);
-    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::zero())?,
-    ///            hms(3, 5, 7)?);
-    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(1))?,
-    ///            hms(3, 5, 8)?);
-    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(-1))?,
-    ///            hms(3, 5, 6)?);
-    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(3600 + 60))?,
-    ///            hms(4, 6, 7)?);
-    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(86_400))?,
-    ///            NaiveDate::from_ymd(2016, 7, 9)?.and_hms(3, 5, 7)?);
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::zero()),
+    ///            Some(hms(3, 5, 7)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(1)),
+    ///            Some(hms(3, 5, 8)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(-1)),
+    ///            Some(hms(3, 5, 6)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(3600 + 60)),
+    ///            Some(hms(4, 6, 7)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(86_400)),
+    ///            Some(NaiveDate::from_ymd(2016, 7, 9)?.and_hms(3, 5, 7)?));
     ///
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
-    /// assert_eq!(hmsm(3, 5, 7, 980)?.checked_add_signed(TimeDelta::milliseconds(450))?,
-    ///            hmsm(3, 5, 8, 430)?);
+    /// assert_eq!(hmsm(3, 5, 7, 980)?.checked_add_signed(TimeDelta::milliseconds(450)),
+    ///            Some(hmsm(3, 5, 8, 430)?));
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
     ///
@@ -489,7 +489,7 @@ impl NaiveDateTime {
     ///
     /// ```
     /// use chrono::{TimeDelta, NaiveDate};
-    /// assert!(NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?.checked_add_signed(TimeDelta::days(1_000_000_000)).is_err());
+    /// assert!(NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?.checked_add_signed(TimeDelta::days(1_000_000_000)).is_none());
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
     ///
@@ -501,32 +501,32 @@ impl NaiveDateTime {
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| Ok::<_, chrono::ChronoError>(from_ymd(2016, 7, 8)?.and_hms_milli(h, m, s, milli)?);
     /// let leap = hmsm(3, 5, 59, 1_300)?;
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::zero())?,
-    ///            hmsm(3, 5, 59, 1_300)?);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(-500))?,
-    ///            hmsm(3, 5, 59, 800)?);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(500))?,
-    ///            hmsm(3, 5, 59, 1_800)?);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(800))?,
-    ///            hmsm(3, 6, 0, 100)?);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(10))?,
-    ///            hmsm(3, 6, 9, 300)?);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(-10))?,
-    ///            hmsm(3, 5, 50, 300)?);
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::days(1))?,
-    ///            from_ymd(2016, 7, 9)?.and_hms_milli(3, 5, 59, 300)?);
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::zero()),
+    ///            Some(hmsm(3, 5, 59, 1_300)?));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(-500)),
+    ///            Some(hmsm(3, 5, 59, 800)?));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(500)),
+    ///            Some(hmsm(3, 5, 59, 1_800)?));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(800)),
+    ///            Some(hmsm(3, 6, 0, 100)?));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(10)),
+    ///            Some(hmsm(3, 6, 9, 300)?));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(-10)),
+    ///            Some(hmsm(3, 5, 50, 300)?));
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::days(1)),
+    ///            Some(from_ymd(2016, 7, 9)?.and_hms_milli(3, 5, 59, 300)?));
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<NaiveDateTime, ChronoError> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Self> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
 
         // early checking to avoid overflow in OldTimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidDateTime));
+            return None;
         }
 
         let date = self.date.checked_add_signed(TimeDelta::seconds(rhs))?;
-        Ok(NaiveDateTime { date, time })
+        Some(Self { date, time })
     }
 
     /// Adds given `Months` to the current date and time.
@@ -541,19 +541,19 @@ impl NaiveDateTime {
     ///
     /// assert_eq!(
     ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
-    ///         .checked_add_months(Months::new(1))?,
-    ///     NaiveDate::from_ymd(2014, 2, 1)?.and_hms(1, 0, 0)?
+    ///         .checked_add_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd(2014, 2, 1)?.and_hms(1, 0, 0)?)
     /// );
     ///
     /// assert!(
     ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
     ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1))
-    ///         .is_err()
+    ///         .is_none()
     /// );
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_add_months(self, rhs: Months) -> Result<NaiveDateTime, ChronoError> {
-        Ok(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    pub fn checked_add_months(self, rhs: Months) -> Option<Self> {
+        Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
     }
 
     /// Subtracts given `TimeDelta` from the current date and time.
@@ -572,22 +572,22 @@ impl NaiveDateTime {
     ///
     /// let d = NaiveDate::from_ymd(2016, 7, 8)?;
     ///
-    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::zero())?,
-    ///            d.and_hms(3, 5, 7)?);
-    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(1))?,
-    ///            d.and_hms(3, 5, 6)?);
-    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(-1))?,
-    ///            d.and_hms(3, 5, 8)?);
-    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(3600 + 60))?,
-    ///            d.and_hms(2, 4, 7)?);
-    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(86_400))?,
-    ///            NaiveDate::from_ymd(2016, 7, 7)?.and_hms(3, 5, 7)?);
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::zero()),
+    ///            Some(d.and_hms(3, 5, 7)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(1)),
+    ///            Some(d.and_hms(3, 5, 6)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(-1)),
+    ///            Some(d.and_hms(3, 5, 8)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(3600 + 60)),
+    ///            Some(d.and_hms(2, 4, 7)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(86_400)),
+    ///            Some(NaiveDate::from_ymd(2016, 7, 7)?.and_hms(3, 5, 7)?));
     ///
-    /// assert_eq!(d.and_hms_milli(3, 5, 7, 450)?.checked_sub_signed(TimeDelta::milliseconds(670))?,
-    ///            d.and_hms_milli(3, 5, 6, 780)?);
+    /// assert_eq!(d.and_hms_milli(3, 5, 7, 450)?.checked_sub_signed(TimeDelta::milliseconds(670)),
+    ///            Some(d.and_hms_milli(3, 5, 6, 780)?));
     ///
     /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?;
-    /// assert!(dt.checked_sub_signed(TimeDelta::days(1_000_000_000)).is_err());
+    /// assert!(dt.checked_sub_signed(TimeDelta::days(1_000_000_000)).is_none());
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
     ///
@@ -599,28 +599,28 @@ impl NaiveDateTime {
     /// # let from_ymd = NaiveDate::from_ymd;
     /// # let hmsm = |h, m, s, milli| Ok::<_, chrono::ChronoError>(from_ymd(2016, 7, 8)?.and_hms_milli(h, m, s, milli)?);
     /// let leap = hmsm(3, 5, 59, 1_300)?;
-    /// assert_eq!(leap.checked_sub_signed(TimeDelta::zero())?,
-    ///            hmsm(3, 5, 59, 1_300)?);
-    /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(200))?,
-    ///            hmsm(3, 5, 59, 1_100)?);
-    /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(500))?,
-    ///            hmsm(3, 5, 59, 800)?);
-    /// assert_eq!(leap.checked_sub_signed(TimeDelta::seconds(60))?,
-    ///            hmsm(3, 5, 0, 300)?);
-    /// assert_eq!(leap.checked_sub_signed(TimeDelta::days(1))?,
-    ///            from_ymd(2016, 7, 7)?.and_hms_milli(3, 6, 0, 300)?);
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::zero()),
+    ///            Some(hmsm(3, 5, 59, 1_300)?));
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(200)),
+    ///            Some(hmsm(3, 5, 59, 1_100)?));
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(500)),
+    ///            Some(hmsm(3, 5, 59, 800)?));
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::seconds(60)),
+    ///            Some(hmsm(3, 5, 0, 300)?));
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::days(1)),
+    ///            Some(from_ymd(2016, 7, 7)?.and_hms_milli(3, 6, 0, 300)?));
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<NaiveDateTime, ChronoError> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Self> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
 
         // early checking to avoid overflow in OldTimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return Err(ChronoError::new(ChronoErrorKind::InvalidDateTime));
+            return None;
         }
 
         let date = self.date.checked_sub_signed(TimeDelta::seconds(rhs))?;
-        Ok(NaiveDateTime { date, time })
+        Some(Self { date, time })
     }
 
     /// Subtracts given `Months` from the current date and time.
@@ -635,34 +635,34 @@ impl NaiveDateTime {
     ///
     /// assert_eq!(
     ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
-    ///         .checked_sub_months(Months::new(1))?,
-    ///     NaiveDate::from_ymd(2013, 12, 1)?.and_hms(1, 0, 0)?
+    ///         .checked_sub_months(Months::new(1)),
+    ///     Some(NaiveDate::from_ymd(2013, 12, 1)?.and_hms(1, 0, 0)?)
     /// );
     ///
     /// assert!(
     ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
     ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1))
-    ///         .is_err()
+    ///         .is_none()
     /// );
     /// # Ok::<_, chrono::ChronoError>(())
     /// ```
-    pub fn checked_sub_months(self, rhs: Months) -> Result<NaiveDateTime, ChronoError> {
-        Ok(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
+    pub fn checked_sub_months(self, rhs: Months) -> Option<Self> {
+        Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
     }
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
     ///
     /// Returns `Err(ChronoError)` if the resulting date would be out of range.
-    pub fn checked_add_days(self, days: Days) -> Result<Self, ChronoError> {
-        Ok(Self { date: self.date.checked_add_days(days)?, ..self })
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: self.date.checked_add_days(days)?, ..self })
     }
 
     /// Subtract a duration in [`Days`] from the date part of the
     /// `NaiveDateTime`
     ///
     /// Returns `Err(ChronoError)` if the resulting date would be out of range.
-    pub fn checked_sub_days(self, days: Days) -> Result<Self, ChronoError> {
-        Ok(Self { date: self.date.checked_sub_days(days)?, ..self })
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: self.date.checked_sub_days(days)?, ..self })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.

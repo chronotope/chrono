@@ -1,5 +1,4 @@
 use super::NaiveDateTime;
-use crate::error::ChronoErrorKind;
 use crate::naive::NaiveDate;
 use crate::time_delta::TimeDelta;
 use crate::{ChronoError, Datelike, FixedOffset, Utc};
@@ -25,55 +24,48 @@ fn test_datetime_add() {
         ($input:expr, $rhs:expr, $result:expr $(,)?) => {{
             let (y, m, d, h, n, s) = $input;
             let lhs = NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
-            let sum = $result
-                .and_then(|(y, m, d, h, n, s)| NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s));
+            let sum = $result.map(|(y, m, d, h, n, s)| {
+                NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap()
+            });
             assert_eq!(lhs.checked_add_signed($rhs), sum);
             assert_eq!(lhs.checked_sub_signed(-$rhs), sum);
         }};
     }
 
-    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(3600 + 60 + 1), Ok((2014, 5, 6, 8, 9, 10)));
-    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-(3600 + 60 + 1)), Ok((2014, 5, 6, 6, 7, 8)));
-    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86399), Ok((2014, 5, 7, 7, 8, 8)));
-    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Ok((2014, 5, 16, 7, 8, 9)));
-    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-86_400 * 10), Ok((2014, 4, 26, 7, 8, 9)));
-    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Ok((2014, 5, 16, 7, 8, 9)));
+    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
+    check!(
+        (2014, 5, 6, 7, 8, 9),
+        TimeDelta::seconds(-(3600 + 60 + 1)),
+        Some((2014, 5, 6, 6, 7, 8))
+    );
+    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
+    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
+    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
 
     // overflow check
     // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
     // (they are private constants, but the equivalence is tested in that module.)
     let max_days_from_year_0 =
         NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(0, 1, 1).unwrap());
-    check!((0, 1, 1, 0, 0, 0), max_days_from_year_0, Ok((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
+    check!(
+        (0, 1, 1, 0, 0, 0),
+        max_days_from_year_0,
+        Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0))
+    );
     check!(
         (0, 1, 1, 0, 0, 0),
         max_days_from_year_0 + TimeDelta::seconds(86399),
-        Ok((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
+        Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
-    check!(
-        (0, 1, 1, 0, 0, 0),
-        max_days_from_year_0 + TimeDelta::seconds(86_400),
-        Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-    );
-    check!(
-        (0, 1, 1, 0, 0, 0),
-        TimeDelta::max_value(),
-        Err(ChronoError::new(ChronoErrorKind::InvalidDateTime)),
-    );
+    check!((0, 1, 1, 0, 0, 0), max_days_from_year_0 + TimeDelta::seconds(86_400), None,);
+    check!((0, 1, 1, 0, 0, 0), TimeDelta::max_value(), None,);
 
     let min_days_from_year_0 =
         NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(0, 1, 1).unwrap());
-    check!((0, 1, 1, 0, 0, 0), min_days_from_year_0, Ok((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
-    check!(
-        (0, 1, 1, 0, 0, 0),
-        min_days_from_year_0 - TimeDelta::seconds(1),
-        Err(ChronoError::new(ChronoErrorKind::InvalidDate)),
-    );
-    check!(
-        (0, 1, 1, 0, 0, 0),
-        TimeDelta::min_value(),
-        Err(ChronoError::new(ChronoErrorKind::InvalidDateTime)),
-    );
+    check!((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
+    check!((0, 1, 1, 0, 0, 0), min_days_from_year_0 - TimeDelta::seconds(1), None,);
+    check!((0, 1, 1, 0, 0, 0), TimeDelta::min_value(), None,);
 }
 
 #[test]

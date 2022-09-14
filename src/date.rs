@@ -220,18 +220,18 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<Date<Tz>, ChronoError> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Self> {
         let date = self.date.checked_add_signed(rhs)?;
-        Ok(Date { date, offset: self.offset })
+        Some(Self { date, offset: self.offset })
     }
 
     /// Subtracts given `Duration` from the current date.
     ///
     /// Returns `Err(ChronoError)` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<Date<Tz>, ChronoError> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Self> {
         let date = self.date.checked_sub_signed(rhs)?;
-        Ok(Date { date, offset: self.offset })
+        Some(Self { date, offset: self.offset })
     }
 
     /// Subtracts another `Date` from the current date.
