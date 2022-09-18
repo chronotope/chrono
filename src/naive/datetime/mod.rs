@@ -158,10 +158,13 @@ impl NaiveDateTime {
         let secs = millis / 1000;
 
         if millis < 0 {
-            let nsecs = (millis % 1000).abs() as u32 * NANOS_IN_MILLISECOND;
-            NaiveDateTime::from_timestamp_opt(secs - 1, NANOS_IN_SECOND - nsecs)
+            let nsecs = u32::try_from((millis % 1000).abs()).ok()? * NANOS_IN_MILLISECOND;
+            NaiveDateTime::from_timestamp_opt(
+                secs.checked_sub(1)?,
+                NANOS_IN_SECOND.checked_sub(nsecs)?,
+            )
         } else {
-            let nsecs = (millis % 1000) as u32 * NANOS_IN_MILLISECOND;
+            let nsecs = u32::try_from(millis % 1000).ok()? * NANOS_IN_MILLISECOND;
             NaiveDateTime::from_timestamp_opt(secs, nsecs)
         }
     }
