@@ -36,11 +36,30 @@ jobs:
       - run: cargo test --lib --all-features --color=always -- --color=always
       - run: cargo test --doc --all-features --color=always -- --color=always
 
+  # later this may be able to be included with the below
+  # kept seperate for now as the following don't compile on 1.38.0
+  # * rkyv
+  # * criterion
+  rust_msrv:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.38.0
+      - uses: Swatinem/rust-cache@v1
+      # run --lib and --doc to avoid the long running integration tests which are run elsewhere
+      - run: cargo test --lib --features unstable-locales,wasmbind,oldtime,clock,rustc-serialize,serde,winapi --color=always -- --color=always
+      - run: cargo test --doc --features unstable-locales,wasmbind,oldtime,clock,rustc-serialize,serde,winapi --color=always -- --color=always
+
   rust_versions:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        rust_version: ["1.38.0", "stable", "beta", "nightly"]
+        rust_version: ["stable", "beta", "nightly"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -48,8 +67,9 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
       - uses: Swatinem/rust-cache@v1
-      - run: cargo test --lib --features serde --color=always -- --color=always
-      - run: cargo test --doc --features serde --color=always -- --color=always
+      # run --lib and --doc to avoid the long running integration tests which are run elsewhere
+      - run: cargo test --lib --all-features --color=always -- --color=always
+      - run: cargo test --doc --all-features --color=always -- --color=always
 
   features_check:
     strategy:
