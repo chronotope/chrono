@@ -160,18 +160,18 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
-        let secs = millis / 1000;
-
+        let mut secs = millis / 1000;
         if millis < 0 {
-            let nsecs = u32::try_from((millis % 1000).abs()).ok()? * NANOS_IN_MILLISECOND;
-            NaiveDateTime::from_timestamp_opt(
-                secs.checked_sub(1)?,
-                NANOS_IN_SECOND.checked_sub(nsecs)?,
-            )
-        } else {
-            let nsecs = u32::try_from(millis % 1000).ok()? * NANOS_IN_MILLISECOND;
-            NaiveDateTime::from_timestamp_opt(secs, nsecs)
+            secs = secs.checked_sub(1)?;
         }
+
+        let nsecs = (millis % 1000).abs();
+        let mut nsecs = u32::try_from(nsecs).ok()? * NANOS_IN_MILLISECOND;
+        if secs < 0 {
+            nsecs = NANOS_IN_SECOND.checked_sub(nsecs)?;
+        }
+
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
