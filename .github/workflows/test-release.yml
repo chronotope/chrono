@@ -2,9 +2,7 @@ name: Release Test
 
 on:
   push:
-    branches: ["rel*"]
-  pull_request:
-    branches: ["rel*"]
+    branches: ["rel*", "0.4.x"]
 
 # From here down this should be exactly the same as test.yml
 
