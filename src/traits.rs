@@ -180,7 +180,7 @@ pub trait Timelike: Sized {
 #[cfg(test)]
 mod tests {
     use super::Datelike;
-    use crate::{NaiveDate, TimeDelta};
+    use crate::{NaiveDate, OldTimeDelta};
 
     /// Tests `Datelike::num_days_from_ce` against an alternative implementation.
     ///
@@ -229,7 +229,7 @@ mod tests {
                 "on {:?}",
                 jan1_year
             );
-            let mid_year = jan1_year + TimeDelta::days(133);
+            let mid_year = jan1_year + OldTimeDelta::days(133);
             assert_eq!(
                 mid_year.num_days_from_ce(),
                 num_days_from_ce(&mid_year),

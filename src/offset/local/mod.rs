@@ -132,7 +132,7 @@ impl TimeZone for Local {
         let offset =
             FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
                 .unwrap();
-        local -= crate::TimeDelta::seconds(offset.local_minus_utc() as i64);
+        local -= crate::OldTimeDelta::seconds(offset.local_minus_utc() as i64);
         LocalResult::Single(DateTime::from_utc(local, offset))
     }
 
@@ -179,7 +179,7 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::{Datelike, TimeDelta};
+    use crate::{Datelike, OldTimeDelta};
 
     #[test]
     fn verify_correct_offsets() {
@@ -197,7 +197,7 @@ mod tests {
     #[test]
     fn verify_correct_offsets_distant_past() {
         // let distant_past = Local::now() - Duration::days(365 * 100);
-        let distant_past = Local::now() - TimeDelta::days(250 * 31);
+        let distant_past = Local::now() - OldTimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + TimeDelta::days(250 * 31);
+        let distant_future = Local::now() + OldTimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 

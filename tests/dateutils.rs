@@ -71,6 +71,6 @@ fn try_verify_against_date_command() {
             verify_against_date_command_local(date_path, date);
         }
 
-        date += chrono::TimeDelta::hours(1);
+        date += chrono::OldTimeDelta::hours(1);
     }
 }
