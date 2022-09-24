@@ -9,15 +9,96 @@
 // except according to those terms.
 
 //! Temporal quantification
-
 use core::ops::{Add, Div, Mul, Neg, Sub};
-use core::time::Duration as StdDuration;
+use core::time::Duration;
 use core::{fmt, i64};
+
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
+
+#[derive(Clone, Copy, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+/// A delta in time based on [`core::time::Duration`] and a direction.
+///
+/// This is because when asking for the delta between
+/// two points in time, because there is no way to fix the ordering of those two points
+/// via the type system, the delta could be either forwards or backwards. Generally this type
+/// should be immediately unpacked after being used, either via a `match`, asserting the direction
+/// with either of [`TimeDelta::forwards`] or [`TimeDelta::backwards`], or taking the absolute
+/// value with [`TimeDelta::abs`] to get the contained `Duration` which can then be used
+/// with other [`crate::DateTime`] or [`crate::NaiveDateTime`] values via `Add`, `Sub` or other functions.
+pub enum TimeDelta {
+    /// A duration heading in forwards in time
+    Forwards(Duration),
+    /// A duration heading in backwards in time
+    Backwards(Duration),
+}
+
+impl TimeDelta {
+    // has to be a function as Duration::new is only const on rust >= 1.53
+    /// The minimum possible `Duration` (Equivalent to the max but heading backwards)
+    pub fn min() -> TimeDelta {
+        TimeDelta::Backwards(Duration::new(core::u64::MAX, MAX_NANOS_NON_LEAP))
+    }
+
+    /// A duration of zero length.
+    pub const ZERO: TimeDelta = TimeDelta::Forwards(Duration::from_nanos(0));
+
+    // has to be a function as Duration::new is only const on rust >= 1.53
+    /// The maximum possible `Duration`
+    pub fn max() -> TimeDelta {
+        TimeDelta::Forwards(Duration::new(core::u64::MAX, MAX_NANOS_NON_LEAP))
+    }
+
+    /// Assert that the direction is forwards and throw away the `Duration` otherwise.
+    pub fn forwards(self) -> Option<Duration> {
+        match self {
+            TimeDelta::Forwards(f) => Some(f),
+            TimeDelta::Backwards(_) => None,
+        }
+    }
+
+    /// Assert that the direction is backwards and throw away the `Duration` otherwise.
+    pub fn backwards(self) -> Option<Duration> {
+        match self {
+            TimeDelta::Forwards(_) => None,
+            TimeDelta::Backwards(b) => Some(b),
+        }
+    }
+
+    /// Get the contained `Duration`, no matter which direction
+    #[inline]
+    pub fn abs(&self) -> Duration {
+        match self {
+            TimeDelta::Forwards(d) => *d,
+            TimeDelta::Backwards(d) => *d,
+        }
+    }
+}
+
+impl PartialEq<TimeDelta> for TimeDelta {
+    fn eq(&self, other: &TimeDelta) -> bool {
+        match (self, other) {
+            (TimeDelta::Forwards(f1), TimeDelta::Forwards(f2)) => f1 == f2,
+            (TimeDelta::Backwards(b1), TimeDelta::Backwards(b2)) => b1 == b2,
+            (TimeDelta::Forwards(lhs), TimeDelta::Backwards(rhs))
+            | (TimeDelta::Backwards(lhs), TimeDelta::Forwards(rhs)) => {
+                *lhs == Duration::from_nanos(0) && *rhs == Duration::from_nanos(0)
+            }
+        }
+    }
+}
+
+impl Eq for TimeDelta {}
+
+impl From<Duration> for TimeDelta {
+    fn from(s: Duration) -> Self {
+        TimeDelta::Forwards(s)
+    }
+}
 
 /// The number of nanoseconds in a microsecond.
 const NANOS_PER_MICRO: i32 = 1000;
@@ -37,6 +118,8 @@ const SECS_PER_HOUR: i64 = 3600;
 const SECS_PER_DAY: i64 = 86400;
 /// The number of (non-leap) seconds in a week.
 const SECS_PER_WEEK: i64 = 604800;
+
+const MAX_NANOS_NON_LEAP: u32 = 999_999_999;
 
 macro_rules! try_opt {
     ($e:expr) => {
@@ -284,7 +367,7 @@ impl OldTimeDelta {
     ///
     /// This function errors when original duration is larger than the maximum
     /// value supported for this type.
-    pub fn from_std(duration: StdDuration) -> Result<OldTimeDelta, OutOfRangeError> {
+    pub fn from_std(duration: Duration) -> Result<OldTimeDelta, OutOfRangeError> {
         // We need to check secs as u64 before coercing to i64
         if duration.as_secs() > MAX.secs as u64 {
             return Err(OutOfRangeError(()));
@@ -301,11 +384,11 @@ impl OldTimeDelta {
     ///
     /// This function errors when duration is less than zero. As standard
     /// library implementation is limited to non-negative values.
-    pub fn to_std(&self) -> Result<StdDuration, OutOfRangeError> {
+    pub fn to_std(&self) -> Result<Duration, OutOfRangeError> {
         if self.secs < 0 {
             return Err(OutOfRangeError(()));
         }
-        Ok(StdDuration::new(self.secs as u64, self.nanos as u32))
+        Ok(Duration::new(self.secs as u64, self.nanos as u32))
     }
 }
 
@@ -486,7 +569,7 @@ fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
 #[cfg(test)]
 mod tests {
     use super::{OldTimeDelta, OutOfRangeError, MAX, MIN};
-    use std::time::Duration as StdDuration;
+    use std::time::Duration;
     use std::{i32, i64};
 
     #[test]
@@ -742,45 +825,42 @@ mod tests {
 
     #[test]
     fn test_to_std() {
-        assert_eq!(OldTimeDelta::seconds(1).to_std(), Ok(StdDuration::new(1, 0)));
-        assert_eq!(OldTimeDelta::seconds(86401).to_std(), Ok(StdDuration::new(86401, 0)));
-        assert_eq!(OldTimeDelta::milliseconds(123).to_std(), Ok(StdDuration::new(0, 123000000)));
-        assert_eq!(
-            OldTimeDelta::milliseconds(123765).to_std(),
-            Ok(StdDuration::new(123, 765000000))
-        );
-        assert_eq!(OldTimeDelta::nanoseconds(777).to_std(), Ok(StdDuration::new(0, 777)));
-        assert_eq!(MAX.to_std(), Ok(StdDuration::new(9223372036854775, 807000000)));
+        assert_eq!(OldTimeDelta::seconds(1).to_std(), Ok(Duration::new(1, 0)));
+        assert_eq!(OldTimeDelta::seconds(86401).to_std(), Ok(Duration::new(86401, 0)));
+        assert_eq!(OldTimeDelta::milliseconds(123).to_std(), Ok(Duration::new(0, 123000000)));
+        assert_eq!(OldTimeDelta::milliseconds(123765).to_std(), Ok(Duration::new(123, 765000000)));
+        assert_eq!(OldTimeDelta::nanoseconds(777).to_std(), Ok(Duration::new(0, 777)));
+        assert_eq!(MAX.to_std(), Ok(Duration::new(9223372036854775, 807000000)));
         assert_eq!(OldTimeDelta::seconds(-1).to_std(), Err(OutOfRangeError(())));
         assert_eq!(OldTimeDelta::milliseconds(-1).to_std(), Err(OutOfRangeError(())));
     }
 
     #[test]
     fn test_from_std() {
-        assert_eq!(Ok(OldTimeDelta::seconds(1)), OldTimeDelta::from_std(StdDuration::new(1, 0)));
+        assert_eq!(Ok(OldTimeDelta::seconds(1)), OldTimeDelta::from_std(Duration::new(1, 0)));
         assert_eq!(
             Ok(OldTimeDelta::seconds(86401)),
-            OldTimeDelta::from_std(StdDuration::new(86401, 0))
+            OldTimeDelta::from_std(Duration::new(86401, 0))
         );
         assert_eq!(
             Ok(OldTimeDelta::milliseconds(123)),
-            OldTimeDelta::from_std(StdDuration::new(0, 123000000))
+            OldTimeDelta::from_std(Duration::new(0, 123000000))
         );
         assert_eq!(
             Ok(OldTimeDelta::milliseconds(123765)),
-            OldTimeDelta::from_std(StdDuration::new(123, 765000000))
+            OldTimeDelta::from_std(Duration::new(123, 765000000))
         );
         assert_eq!(
             Ok(OldTimeDelta::nanoseconds(777)),
-            OldTimeDelta::from_std(StdDuration::new(0, 777))
+            OldTimeDelta::from_std(Duration::new(0, 777))
         );
-        assert_eq!(Ok(MAX), OldTimeDelta::from_std(StdDuration::new(9223372036854775, 807000000)));
+        assert_eq!(Ok(MAX), OldTimeDelta::from_std(Duration::new(9223372036854775, 807000000)));
         assert_eq!(
-            OldTimeDelta::from_std(StdDuration::new(9223372036854776, 0)),
+            OldTimeDelta::from_std(Duration::new(9223372036854776, 0)),
             Err(OutOfRangeError(()))
         );
         assert_eq!(
-            OldTimeDelta::from_std(StdDuration::new(9223372036854775, 807000001)),
+            OldTimeDelta::from_std(Duration::new(9223372036854775, 807000001)),
             Err(OutOfRangeError(()))
         );
     }

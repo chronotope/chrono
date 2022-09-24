@@ -396,7 +396,7 @@
 use core::fmt;
 
 mod time_delta;
-pub use time_delta::OldTimeDelta;
+pub use time_delta::{OldTimeDelta, TimeDelta};
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
