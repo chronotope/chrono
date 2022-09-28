@@ -81,7 +81,9 @@ impl Local {
         let now: DateTime<Utc> = super::Utc::now();
 
         // Workaround missing timezone logic in `time` crate
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        let offset =
+            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
+                .unwrap();
         DateTime::from_utc(now.naive_utc(), offset)
     }
 }
@@ -115,7 +117,7 @@ impl TimeZone for Local {
         // this sounds very strange, but required for keeping `TimeZone::ymd` sane.
         // in the other words, we use the offset at the local midnight
         // but keep the actual date unaltered (much like `FixedOffset`).
-        let midnight = self.from_local_datetime(&local.and_hms(0, 0, 0));
+        let midnight = self.from_local_datetime(&local.and_hms_opt(0, 0, 0).unwrap());
         midnight.map(|datetime| Date::from_utc(*local, *datetime.offset()))
     }
 
@@ -127,7 +129,9 @@ impl TimeZone for Local {
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let mut local = local.clone();
         // Get the offset from the js runtime
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        let offset =
+            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
+                .unwrap();
         local -= crate::Duration::seconds(offset.local_minus_utc() as i64);
         LocalResult::Single(DateTime::from_utc(local, offset))
     }
@@ -142,7 +146,7 @@ impl TimeZone for Local {
     }
 
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
-        let midnight = self.from_utc_datetime(&utc.and_hms(0, 0, 0));
+        let midnight = self.from_utc_datetime(&utc.and_hms_opt(0, 0, 0).unwrap());
         Date::from_utc(*utc, *midnight.offset())
     }
 
@@ -153,7 +157,9 @@ impl TimeZone for Local {
     ))]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         // Get the offset from the js runtime
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
+        let offset =
+            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
+                .unwrap();
         DateTime::from_utc(*utc, offset)
     }
 
@@ -221,7 +227,7 @@ mod tests {
     #[test]
     fn test_local_date_sanity_check() {
         // issue #27
-        assert_eq!(Local.ymd(2999, 12, 28).day(), 28);
+        assert_eq!(Local.ymd_opt(2999, 12, 28).unwrap().day(), 28);
     }
 
     #[test]
@@ -229,13 +235,13 @@ mod tests {
         // issue #123
         let today = Local::today();
 
-        let dt = today.and_hms_milli(1, 2, 59, 1000);
+        let dt = today.and_hms_milli_opt(1, 2, 59, 1000).unwrap();
         let timestr = dt.time().to_string();
         // the OS API may or may not support the leap second,
         // but there are only two sensible options.
         assert!(timestr == "01:02:60" || timestr == "01:03:00", "unexpected timestr {:?}", timestr);
 
-        let dt = today.and_hms_milli(1, 2, 3, 1234);
+        let dt = today.and_hms_milli_opt(1, 2, 3, 1234).unwrap();
         let timestr = dt.time().to_string();
         assert!(
             timestr == "01:02:03.234" || timestr == "01:02:04.234",

@@ -48,7 +48,7 @@ use crate::{Datelike, Weekday};
 ///
 /// - Once constructed as a full `DateTime`, [`DateTime::date`] and other associated
 ///   methods should return those for the original `Date`. For example, if `dt =
-///   tz.ymd(y,m,d).hms(h,n,s)` were valid, `dt.date() == tz.ymd(y,m,d)`.
+///   tz.ymd_opt(y,m,d).unwrap().hms(h,n,s)` were valid, `dt.date() == tz.ymd_opt(y,m,d).unwrap()`.
 ///
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
@@ -337,7 +337,7 @@ where
     /// ```rust
     /// use chrono::prelude::*;
     ///
-    /// let date_time: Date<Utc> = Utc.ymd(2017, 04, 02);
+    /// let date_time: Date<Utc> = Utc.ymd_opt(2017, 04, 02).unwrap();
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
     /// assert_eq!(formatted, "02/04/2017");
     /// ```
@@ -575,20 +575,20 @@ mod tests {
 
     #[test]
     fn test_date_add_assign() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_add = date;
 
         date_add += Duration::days(5);
         assert_eq!(date_add, date + Duration::days(5));
 
-        let timezone = FixedOffset::east(60 * 60);
+        let timezone = FixedOffset::east_opt(60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_add = date_add.with_timezone(&timezone);
 
         assert_eq!(date_add, date + Duration::days(5));
 
-        let timezone = FixedOffset::west(2 * 60 * 60);
+        let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_add = date_add.with_timezone(&timezone);
 
@@ -598,7 +598,7 @@ mod tests {
     #[test]
     #[cfg(feature = "clock")]
     fn test_date_add_assign_local() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
 
         let date = Local.from_utc_date(&naivedate);
         let mut date_add = date;
@@ -609,20 +609,20 @@ mod tests {
 
     #[test]
     fn test_date_sub_assign() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_sub = date;
 
         date_sub -= Duration::days(5);
         assert_eq!(date_sub, date - Duration::days(5));
 
-        let timezone = FixedOffset::east(60 * 60);
+        let timezone = FixedOffset::east_opt(60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_sub = date_sub.with_timezone(&timezone);
 
         assert_eq!(date_sub, date - Duration::days(5));
 
-        let timezone = FixedOffset::west(2 * 60 * 60);
+        let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_sub = date_sub.with_timezone(&timezone);
 
@@ -632,7 +632,7 @@ mod tests {
     #[test]
     #[cfg(feature = "clock")]
     fn test_date_sub_assign_local() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
 
         let date = Local.from_utc_date(&naivedate);
         let mut date_sub = date;

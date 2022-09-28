@@ -37,7 +37,7 @@ use crate::{Date, DateTime};
 /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
 ///
 /// assert_eq!(Utc.timestamp(61, 0), dt);
-/// assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 1, 1), dt);
+/// assert_eq!(Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 1, 1).unwrap(), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
@@ -60,7 +60,9 @@ impl Utc {
     pub fn now() -> DateTime<Utc> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32);
+        let naive =
+            NaiveDateTime::from_timestamp_opt(now.as_secs() as i64, now.subsec_nanos() as u32)
+                .unwrap();
         DateTime::from_utc(naive, Utc)
     }
 
@@ -100,7 +102,7 @@ impl TimeZone for Utc {
 
 impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
-        FixedOffset::east(0)
+        FixedOffset::east_opt(0).unwrap()
     }
 }
 

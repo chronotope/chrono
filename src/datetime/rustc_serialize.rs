@@ -37,7 +37,7 @@ impl Decodable for DateTime<FixedOffset> {
 impl Decodable for TsSeconds<FixedOffset> {
     #[allow(deprecated)]
     fn decode<D: Decoder>(d: &mut D) -> Result<TsSeconds<FixedOffset>, D::Error> {
-        from(FixedOffset::east(0).timestamp_opt(d.read_i64()?, 0), d).map(TsSeconds)
+        from(FixedOffset::east_opt(0).unwrap().timestamp_opt(d.read_i64()?, 0), d).map(TsSeconds)
     }
 }
 
