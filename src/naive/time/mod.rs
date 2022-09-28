@@ -201,18 +201,7 @@ impl NaiveTime {
     /// use `NaiveTime::from_hms_*` methods with a subsecond parameter instead.
     ///
     /// Panics on invalid hour, minute and/or second.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveTime, Timelike};
-    ///
-    /// let t = NaiveTime::from_hms(23, 56, 4);
-    /// assert_eq!(t.hour(), 23);
-    /// assert_eq!(t.minute(), 56);
-    /// assert_eq!(t.second(), 4);
-    /// assert_eq!(t.nanosecond(), 0);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_hms_opt()` instead")]
     #[inline]
     pub fn from_hms(hour: u32, min: u32, sec: u32) -> NaiveTime {
         NaiveTime::from_hms_opt(hour, min, sec).expect("invalid time")
@@ -249,18 +238,7 @@ impl NaiveTime {
     /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveTime, Timelike};
-    ///
-    /// let t = NaiveTime::from_hms_milli(23, 56, 4, 12);
-    /// assert_eq!(t.hour(), 23);
-    /// assert_eq!(t.minute(), 56);
-    /// assert_eq!(t.second(), 4);
-    /// assert_eq!(t.nanosecond(), 12_000_000);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_hms_milli_opt()` instead")]
     #[inline]
     pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> NaiveTime {
         NaiveTime::from_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
@@ -301,18 +279,7 @@ impl NaiveTime {
     /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveTime, Timelike};
-    ///
-    /// let t = NaiveTime::from_hms_micro(23, 56, 4, 12_345);
-    /// assert_eq!(t.hour(), 23);
-    /// assert_eq!(t.minute(), 56);
-    /// assert_eq!(t.second(), 4);
-    /// assert_eq!(t.nanosecond(), 12_345_000);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_hms_micro_opt()` instead")]
     #[inline]
     pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> NaiveTime {
         NaiveTime::from_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
@@ -351,18 +318,7 @@ impl NaiveTime {
     /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveTime, Timelike};
-    ///
-    /// let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678);
-    /// assert_eq!(t.hour(), 23);
-    /// assert_eq!(t.minute(), 56);
-    /// assert_eq!(t.second(), 4);
-    /// assert_eq!(t.nanosecond(), 12_345_678);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_hms_nano_opt()` instead")]
     #[inline]
     pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> NaiveTime {
         NaiveTime::from_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
@@ -405,18 +361,7 @@ impl NaiveTime {
     /// in order to represent the [leap second](#leap-second-handling).
     ///
     /// Panics on invalid number of seconds and/or nanosecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveTime, Timelike};
-    ///
-    /// let t = NaiveTime::from_num_seconds_from_midnight(86164, 12_345_678);
-    /// assert_eq!(t.hour(), 23);
-    /// assert_eq!(t.minute(), 56);
-    /// assert_eq!(t.second(), 4);
-    /// assert_eq!(t.nanosecond(), 12_345_678);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_num_seconds_from_midnight_opt()` instead")]
     #[inline]
     pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
         NaiveTime::from_num_seconds_from_midnight_opt(secs, nano).expect("invalid time")

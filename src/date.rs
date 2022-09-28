@@ -93,6 +93,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute and/or second.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_opt() instead")]
     #[inline]
     pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTime<Tz> {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
@@ -112,6 +113,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_milli_opt() instead")]
     #[inline]
     pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTime<Tz> {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
@@ -138,6 +140,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_micro_opt() instead")]
     #[inline]
     pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTime<Tz> {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
@@ -164,6 +167,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_nano_opt() instead")]
     #[inline]
     pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTime<Tz> {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
@@ -188,6 +192,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the next date.
     ///
     /// Panics when `self` is the last representable date.
+    #[deprecated(since = "0.4.23", note = "Use succ_opt() instead")]
     #[inline]
     pub fn succ(&self) -> Date<Tz> {
         self.succ_opt().expect("out of bound")
@@ -204,6 +209,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the prior date.
     ///
     /// Panics when `self` is the first representable date.
+    #[deprecated(since = "0.4.23", note = "Use pred_opt() instead")]
     #[inline]
     pub fn pred(&self) -> Date<Tz> {
         self.pred_opt().expect("out of bound")
