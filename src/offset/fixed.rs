@@ -129,7 +129,7 @@ impl Offset for FixedOffset {
         *self
     }
     fn now(&self) -> DateTime<FixedOffset> {
-        Utc::now()
+        self.from_utc_datetime(&Utc::now().naive_utc())
     }
 }
 
