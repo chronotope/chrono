@@ -194,6 +194,7 @@ impl<T: fmt::Debug> LocalResult<T> {
 pub trait Offset: Sized + Clone + fmt::Debug {
     /// Returns the fixed offset from UTC to the local time stored.
     fn fix(&self) -> FixedOffset;
+    /// Returns a fixed offset DateTime with
     fn now(&self) -> DateTime<FixedOffset>;
 }
 

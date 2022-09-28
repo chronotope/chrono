@@ -13,7 +13,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::time_delta::TimeDelta;
-use crate::DateTime;
+use crate::{DateTime, Utc};
 use crate::Timelike;
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -127,6 +127,9 @@ impl TimeZone for FixedOffset {
 impl Offset for FixedOffset {
     fn fix(&self) -> FixedOffset {
         *self
+    }
+    fn now(&self) -> DateTime<FixedOffset> {
+        Utc::now()
     }
 }
 
