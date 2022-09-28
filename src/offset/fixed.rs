@@ -12,11 +12,10 @@ use rkyv::{Archive, Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{LocalResult, Offset, TimeZone};
-use crate::DateTime;
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::time_delta::TimeDelta;
+use crate::DateTime;
 use crate::Timelike;
-
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///

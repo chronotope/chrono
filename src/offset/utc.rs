@@ -108,7 +108,7 @@ impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
         FixedOffset::east(0)
     }
-    fn now(&self) -> DateTime<FixedOffset>{
+    fn now(&self) -> DateTime<FixedOffset> {
         FixedOffset::east(0).now()
     }
 }
