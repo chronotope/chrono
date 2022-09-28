@@ -9,12 +9,14 @@ use core::ops::{Add, Sub};
 use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{LocalResult, Offset, TimeZone};
+use crate::DateTime;
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::time_delta::TimeDelta;
-use crate::{DateTime, Utc};
 use crate::Timelike;
+
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
@@ -129,7 +131,9 @@ impl Offset for FixedOffset {
         *self
     }
     fn now(&self) -> DateTime<FixedOffset> {
-        self.from_utc_datetime(&Utc::now().naive_utc())
+        let now =
+            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
+        self.timestamp_opt(now.as_secs() as i64, now.subsec_nanos() as u32).unwrap()
     }
 }
 
