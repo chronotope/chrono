@@ -102,6 +102,9 @@ impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
         FixedOffset::east(0)
     }
+    fn now(&self) -> DateTime<FixedOffset>{
+        FixedOffset::east(0).from_utc_datetime(self)
+    }
 }
 
 impl fmt::Debug for Utc {
