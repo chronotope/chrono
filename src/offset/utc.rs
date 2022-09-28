@@ -103,7 +103,7 @@ impl Offset for Utc {
         FixedOffset::east(0)
     }
     fn now(&self) -> DateTime<FixedOffset>{
-        FixedOffset::east(0).from_utc_datetime(self.naive())
+        FixedOffset::east(0).from_utc_datetime(Utc::now().naive_utc())
     }
 }
 
