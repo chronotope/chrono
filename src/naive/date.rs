@@ -241,22 +241,7 @@ impl NaiveDate {
     /// (year, month and day).
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
-    ///
-    /// let d = NaiveDate::from_ymd(2015, 3, 14);
-    /// assert_eq!(d.year(), 2015);
-    /// assert_eq!(d.month(), 3);
-    /// assert_eq!(d.day(), 14);
-    /// assert_eq!(d.ordinal(), 73); // day of year
-    /// assert_eq!(d.iso_week().year(), 2015);
-    /// assert_eq!(d.iso_week().week(), 11);
-    /// assert_eq!(d.weekday(), Weekday::Sat);
-    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_ymd_opt()` instead")]
     pub fn from_ymd(year: i32, month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).expect("invalid or out-of-range date")
     }
@@ -289,22 +274,7 @@ impl NaiveDate {
     /// (year and day of the year).
     ///
     /// Panics on the out-of-range date and/or invalid day of year.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
-    ///
-    /// let d = NaiveDate::from_yo(2015, 73);
-    /// assert_eq!(d.ordinal(), 73);
-    /// assert_eq!(d.year(), 2015);
-    /// assert_eq!(d.month(), 3);
-    /// assert_eq!(d.day(), 14);
-    /// assert_eq!(d.iso_week().year(), 2015);
-    /// assert_eq!(d.iso_week().week(), 11);
-    /// assert_eq!(d.weekday(), Weekday::Sat);
-    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_yo_opt()` instead")]
     pub fn from_yo(year: i32, ordinal: u32) -> NaiveDate {
         NaiveDate::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
     }
@@ -339,22 +309,7 @@ impl NaiveDate {
     /// The resulting `NaiveDate` may have a different year from the input year.
     ///
     /// Panics on the out-of-range date and/or invalid week number.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
-    ///
-    /// let d = NaiveDate::from_isoywd(2015, 11, Weekday::Sat);
-    /// assert_eq!(d.iso_week().year(), 2015);
-    /// assert_eq!(d.iso_week().week(), 11);
-    /// assert_eq!(d.weekday(), Weekday::Sat);
-    /// assert_eq!(d.year(), 2015);
-    /// assert_eq!(d.month(), 3);
-    /// assert_eq!(d.day(), 14);
-    /// assert_eq!(d.ordinal(), 73); // day of year
-    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_isoywd_opt()` instead")]
     pub fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> NaiveDate {
         NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
@@ -438,45 +393,7 @@ impl NaiveDate {
     /// January 1, 1 being day 1.
     ///
     /// Panics if the date is out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
-    ///
-    /// let d = NaiveDate::from_num_days_from_ce(735671);
-    /// assert_eq!(d.num_days_from_ce(), 735671); // days since January 1, 1 CE
-    /// assert_eq!(d.year(), 2015);
-    /// assert_eq!(d.month(), 3);
-    /// assert_eq!(d.day(), 14);
-    /// assert_eq!(d.ordinal(), 73); // day of year
-    /// assert_eq!(d.iso_week().year(), 2015);
-    /// assert_eq!(d.iso_week().week(), 11);
-    /// assert_eq!(d.weekday(), Weekday::Sat);
-    /// ```
-    ///
-    /// While not directly supported by Chrono,
-    /// it is easy to convert from the Julian day number
-    /// (January 1, 4713 BCE in the *Julian* calendar being Day 0)
-    /// to Gregorian with this method.
-    /// (Note that this panics when `jd` is out of range.)
-    ///
-    /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// fn jd_to_date(jd: i32) -> NaiveDate {
-    ///     // keep in mind that the Julian day number is 0-based
-    ///     // while this method requires an 1-based number.
-    ///     NaiveDate::from_num_days_from_ce(jd - 1721425)
-    /// }
-    ///
-    /// // January 1, 4713 BCE in Julian = November 24, 4714 BCE in Gregorian
-    /// assert_eq!(jd_to_date(0), NaiveDate::from_ymd(-4713, 11, 24));
-    ///
-    /// assert_eq!(jd_to_date(1721426), NaiveDate::from_ymd(1, 1, 1));
-    /// assert_eq!(jd_to_date(2450000), NaiveDate::from_ymd(1995, 10, 9));
-    /// assert_eq!(jd_to_date(2451545), NaiveDate::from_ymd(2000, 1, 1));
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_num_days_from_ce_opt()` instead")]
     #[inline]
     pub fn from_num_days_from_ce(days: i32) -> NaiveDate {
         NaiveDate::from_num_days_from_ce_opt(days).expect("out-of-range date")
@@ -493,7 +410,7 @@ impl NaiveDate {
     /// use chrono::NaiveDate;
     ///
     /// let from_ndays_opt = NaiveDate::from_num_days_from_ce_opt;
-    /// let from_ymd = NaiveDate::from_ymd;
+    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     ///
     /// assert_eq!(from_ndays_opt(730_000),      Some(from_ymd(1999, 9, 3)));
     /// assert_eq!(from_ndays_opt(1),            Some(from_ymd(1, 1, 1)));
@@ -520,21 +437,7 @@ impl NaiveDate {
     /// of `weekday` in `month` (eg. the 6th Friday of March 2017) then this function will panic.
     ///
     /// `n` is 1-indexed.  Passing `n=0` will cause a panic.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Weekday};
-    ///
-    /// let from_weekday_of_month = NaiveDate::from_weekday_of_month;
-    /// let from_ymd = NaiveDate::from_ymd;
-    ///
-    /// assert_eq!(from_weekday_of_month(2018, 8, Weekday::Wed, 1), from_ymd(2018, 8, 1));
-    /// assert_eq!(from_weekday_of_month(2018, 8, Weekday::Fri, 1), from_ymd(2018, 8, 3));
-    /// assert_eq!(from_weekday_of_month(2018, 8, Weekday::Tue, 2), from_ymd(2018, 8, 14));
-    /// assert_eq!(from_weekday_of_month(2018, 8, Weekday::Fri, 4), from_ymd(2018, 8, 24));
-    /// assert_eq!(from_weekday_of_month(2018, 8, Weekday::Fri, 5), from_ymd(2018, 8, 31));
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_weekday_of_month_opt()` instead")]
     pub fn from_weekday_of_month(year: i32, month: u32, weekday: Weekday, n: u8) -> NaiveDate {
         NaiveDate::from_weekday_of_month_opt(year, month, weekday, n).expect("out-of-range date")
     }
@@ -799,6 +702,7 @@ impl NaiveDate {
     /// assert_eq!(dt.weekday(), Weekday::Wed);
     /// assert_eq!(dt.second(), 56);
     /// ```
+    #[deprecated(since = "0.4.23", note = "use `and_hms_opt()` instead")]
     #[inline]
     pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> NaiveDateTime {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
@@ -847,6 +751,7 @@ impl NaiveDate {
     /// assert_eq!(dt.second(), 56);
     /// assert_eq!(dt.nanosecond(), 789_000_000);
     /// ```
+    #[deprecated(since = "0.4.23", note = "use `and_hms_milli_opt()` instead")]
     #[inline]
     pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> NaiveDateTime {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
@@ -903,6 +808,7 @@ impl NaiveDate {
     /// assert_eq!(dt.second(), 56);
     /// assert_eq!(dt.nanosecond(), 789_012_000);
     /// ```
+    #[deprecated(since = "0.4.23", note = "use `and_hms_micro_opt()` instead")]
     #[inline]
     pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> NaiveDateTime {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
@@ -945,20 +851,7 @@ impl NaiveDate {
     /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike, Weekday};
-    ///
-    /// let d = NaiveDate::from_ymd(2015, 6, 3);
-    ///
-    /// let dt: NaiveDateTime = d.and_hms_nano(12, 34, 56, 789_012_345);
-    /// assert_eq!(dt.year(), 2015);
-    /// assert_eq!(dt.weekday(), Weekday::Wed);
-    /// assert_eq!(dt.second(), 56);
-    /// assert_eq!(dt.nanosecond(), 789_012_345);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `and_hms_nano_opt()` instead")]
     #[inline]
     pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> NaiveDateTime {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
@@ -1041,6 +934,7 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015,  6, 30).succ(), NaiveDate::from_ymd(2015, 7, 1));
     /// assert_eq!(NaiveDate::from_ymd(2015, 12, 31).succ(), NaiveDate::from_ymd(2016, 1, 1));
     /// ```
+    #[deprecated(since = "0.4.23", note = "use `succ_opt()` instead")]
     #[inline]
     pub fn succ(&self) -> NaiveDate {
         self.succ_opt().expect("out of bound")
@@ -1077,6 +971,7 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015, 6, 1).pred(), NaiveDate::from_ymd(2015,  5, 31));
     /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).pred(), NaiveDate::from_ymd(2014, 12, 31));
     /// ```
+    #[deprecated(since = "0.4.23", note = "use `pred_opt()` instead")]
     #[inline]
     pub fn pred(&self) -> NaiveDate {
         self.pred_opt().expect("out of bound")

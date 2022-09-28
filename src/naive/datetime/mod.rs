@@ -119,18 +119,7 @@ impl NaiveDateTime {
     /// timestamp" cannot represent a leap second unambiguously.)
     ///
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDateTime, NaiveDate};
-    ///
-    /// let dt = NaiveDateTime::from_timestamp(0, 42_000_000);
-    /// assert_eq!(dt, NaiveDate::from_ymd(1970, 1, 1).and_hms_milli(0, 0, 0, 42));
-    ///
-    /// let dt = NaiveDateTime::from_timestamp(1_000_000_000, 0);
-    /// assert_eq!(dt, NaiveDate::from_ymd(2001, 9, 9).and_hms(1, 46, 40));
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
     #[inline]
     pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
