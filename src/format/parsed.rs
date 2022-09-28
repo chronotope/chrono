@@ -782,7 +782,7 @@ mod tests {
             )
         }
 
-        let ymd = |y, m, d| Ok(NaiveDate::from_ymd(y, m, d));
+        let ymd = |y, m, d| Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap());
 
         // ymd: omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
@@ -969,8 +969,8 @@ mod tests {
             )
         }
 
-        let hms = |h, m, s| Ok(NaiveTime::from_hms(h, m, s));
-        let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano(h, m, s, n));
+        let hms = |h, m, s| Ok(NaiveTime::from_hms_opt(h, m, s).unwrap());
+        let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano_opt(h, m, s, n).unwrap());
 
         // omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
@@ -1025,9 +1025,12 @@ mod tests {
             ($($k:ident: $v:expr),*) => (parse!(offset = 0; $($k: $v),*))
         }
 
-        let ymdhms = |y, m, d, h, n, s| Ok(NaiveDate::from_ymd(y, m, d).and_hms(h, n, s));
-        let ymdhmsn =
-            |y, m, d, h, n, s, nano| Ok(NaiveDate::from_ymd(y, m, d).and_hms_nano(h, n, s, nano));
+        let ymdhms = |y, m, d, h, n, s| {
+            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap())
+        };
+        let ymdhmsn = |y, m, d, h, n, s, nano| {
+            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap())
+        };
 
         // omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
@@ -1081,11 +1084,12 @@ mod tests {
 
         // more timestamps
         let max_days_from_year_1970 =
-            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
-        let year_0_from_year_1970 =
-            NaiveDate::from_ymd(0, 1, 1).signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
+            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+        let year_0_from_year_1970 = NaiveDate::from_ymd_opt(0, 1, 1)
+            .unwrap()
+            .signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
         let min_days_from_year_1970 =
-            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1));
+            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
         assert_eq!(
             parse!(timestamp: min_days_from_year_1970.num_seconds()),
             ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0)
@@ -1175,7 +1179,12 @@ mod tests {
         }
 
         let ymdhmsn = |y, m, d, h, n, s, nano, off| {
-            Ok(FixedOffset::east(off).ymd(y, m, d).and_hms_nano(h, n, s, nano))
+            Ok(FixedOffset::east_opt(off)
+                .unwrap()
+                .ymd_opt(y, m, d)
+                .unwrap()
+                .and_hms_nano_opt(h, n, s, nano)
+                .unwrap())
         };
 
         assert_eq!(parse!(offset: 0), Err(NOT_ENOUGH));
@@ -1219,7 +1228,7 @@ mod tests {
             parse!(Utc;
                           year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
-            Ok(Utc.ymd(2014, 12, 31).and_hms_nano(4, 26, 40, 12_345_678))
+            Ok(Utc.ymd_opt(2014, 12, 31).unwrap().and_hms_nano_opt(4, 26, 40, 12_345_678).unwrap())
         );
         assert_eq!(
             parse!(Utc;
@@ -1228,31 +1237,41 @@ mod tests {
             Err(IMPOSSIBLE)
         );
         assert_eq!(
-            parse!(FixedOffset::east(32400);
+            parse!(FixedOffset::east_opt(32400).unwrap();
                           year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
-            parse!(FixedOffset::east(32400);
+            parse!(FixedOffset::east_opt(32400).unwrap();
                           year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
-            Ok(FixedOffset::east(32400).ymd(2014, 12, 31).and_hms_nano(13, 26, 40, 12_345_678))
+            Ok(FixedOffset::east_opt(32400)
+                .unwrap()
+                .ymd_opt(2014, 12, 31)
+                .unwrap()
+                .and_hms_nano_opt(13, 26, 40, 12_345_678)
+                .unwrap())
         );
 
         // single result from timestamp
         assert_eq!(
             parse!(Utc; timestamp: 1_420_000_000, offset: 0),
-            Ok(Utc.ymd(2014, 12, 31).and_hms(4, 26, 40))
+            Ok(Utc.ymd_opt(2014, 12, 31).unwrap().and_hms_opt(4, 26, 40).unwrap())
         );
         assert_eq!(parse!(Utc; timestamp: 1_420_000_000, offset: 32400), Err(IMPOSSIBLE));
         assert_eq!(
-            parse!(FixedOffset::east(32400); timestamp: 1_420_000_000, offset: 0),
+            parse!(FixedOffset::east_opt(32400).unwrap(); timestamp: 1_420_000_000, offset: 0),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
-            parse!(FixedOffset::east(32400); timestamp: 1_420_000_000, offset: 32400),
-            Ok(FixedOffset::east(32400).ymd(2014, 12, 31).and_hms(13, 26, 40))
+            parse!(FixedOffset::east_opt(32400).unwrap(); timestamp: 1_420_000_000, offset: 32400),
+            Ok(FixedOffset::east_opt(32400)
+                .unwrap()
+                .ymd_opt(2014, 12, 31)
+                .unwrap()
+                .and_hms_opt(13, 26, 40)
+                .unwrap())
         );
 
         // TODO test with a variable time zone (for None and Ambiguous cases)

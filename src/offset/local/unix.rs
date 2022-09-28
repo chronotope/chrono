@@ -129,14 +129,16 @@ impl Cache {
         }
 
         if !local {
-            let offset = FixedOffset::east(
-                self.zone
-                    .find_local_time_type(d.timestamp())
-                    .expect("unable to select local time type")
-                    .offset(),
-            );
+            let offset = self
+                .zone
+                .find_local_time_type(d.timestamp())
+                .expect("unable to select local time type")
+                .offset();
 
-            return LocalResult::Single(DateTime::from_utc(d, offset));
+            return match FixedOffset::east_opt(offset) {
+                Some(offset) => LocalResult::Single(DateTime::from_utc(d, offset)),
+                None => LocalResult::None,
+            };
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
@@ -148,8 +150,8 @@ impl Cache {
         {
             LocalResult::None => LocalResult::None,
             LocalResult::Ambiguous(early, late) => {
-                let early_offset = FixedOffset::east(early.offset());
-                let late_offset = FixedOffset::east(late.offset());
+                let early_offset = FixedOffset::east_opt(early.offset()).unwrap();
+                let late_offset = FixedOffset::east_opt(late.offset()).unwrap();
 
                 LocalResult::Ambiguous(
                     DateTime::from_utc(d - early_offset, early_offset),
@@ -157,7 +159,7 @@ impl Cache {
                 )
             }
             LocalResult::Single(tt) => {
-                let offset = FixedOffset::east(tt.offset());
+                let offset = FixedOffset::east_opt(tt.offset()).unwrap();
                 LocalResult::Single(DateTime::from_utc(d - offset, offset))
             }
         }

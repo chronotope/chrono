@@ -30,11 +30,11 @@ fn now() {
 
     // Ensure offset retrieved when getting local time is correct
     let expected_offset = match tz {
-        "ACST-9:30" => FixedOffset::east(19 * 30 * 60),
-        "Asia/Katmandu" => FixedOffset::east(23 * 15 * 60), // No DST thankfully
-        "EDT" | "EST4" | "-0400" => FixedOffset::east(-4 * 60 * 60),
-        "EST" | "-0500" => FixedOffset::east(-5 * 60 * 60),
-        "UTC0" | "+0000" => FixedOffset::east(0),
+        "ACST-9:30" => FixedOffset::east_opt(19 * 30 * 60).unwrap(),
+        "Asia/Katmandu" => FixedOffset::east_opt(23 * 15 * 60).unwrap(), // No DST thankfully
+        "EDT" | "EST4" | "-0400" => FixedOffset::east_opt(-4 * 60 * 60).unwrap(),
+        "EST" | "-0500" => FixedOffset::east_opt(-5 * 60 * 60).unwrap(),
+        "UTC0" | "+0000" => FixedOffset::east_opt(0).unwrap(),
         tz => panic!("unexpected TZ {}", tz),
     };
     assert_eq!(
@@ -52,7 +52,7 @@ fn from_is_exact() {
 
     let dt = DateTime::<Utc>::from(now.clone());
 
-    assert_eq!(now.get_time() as i64, dt.timestamp_millis());
+    assert_eq!(now.get_time() as i64, dt.timestamp_millis_opt().unwrap());
 }
 
 #[wasm_bindgen_test]

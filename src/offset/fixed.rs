@@ -48,8 +48,8 @@ impl FixedOffset {
     /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::east(5 * hour).ymd(2016, 11, 08)
-    ///                                           .and_hms(0, 0, 0);
+    /// let datetime = FixedOffset::east_opt(5 * hour).unwrap().ymd_opt(2016, 11, 08).unwrap()
+    ///                                           .and_hms_opt(0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
     /// ```
     pub fn east_opt(secs: i32) -> Option<FixedOffset> {
@@ -79,8 +79,8 @@ impl FixedOffset {
     /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::west(5 * hour).ymd(2016, 11, 08)
-    ///                                           .and_hms(0, 0, 0);
+    /// let datetime = FixedOffset::west_opt(5 * hour).unwrap().ymd_opt(2016, 11, 08).unwrap()
+    ///                                           .and_hms_opt(0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
     /// ```
     pub fn west_opt(secs: i32) -> Option<FixedOffset> {
@@ -231,19 +231,35 @@ mod tests {
         // starting from 0.3 we don't have an offset exceeding one day.
         // this makes everything easier!
         assert_eq!(
-            format!("{:?}", FixedOffset::east(86399).ymd(2012, 2, 29)),
+            format!("{:?}", FixedOffset::east_opt(86399).unwrap().ymd_opt(2012, 2, 29).unwrap()),
             "2012-02-29+23:59:59".to_string()
         );
         assert_eq!(
-            format!("{:?}", FixedOffset::east(86399).ymd(2012, 2, 29).and_hms(5, 6, 7)),
+            format!(
+                "{:?}",
+                FixedOffset::east_opt(86399)
+                    .unwrap()
+                    .ymd_opt(2012, 2, 29)
+                    .unwrap()
+                    .and_hms_opt(5, 6, 7)
+                    .unwrap()
+            ),
             "2012-02-29T05:06:07+23:59:59".to_string()
         );
         assert_eq!(
-            format!("{:?}", FixedOffset::west(86399).ymd(2012, 3, 4)),
+            format!("{:?}", FixedOffset::west_opt(86399).unwrap().ymd_opt(2012, 3, 4).unwrap()),
             "2012-03-04-23:59:59".to_string()
         );
         assert_eq!(
-            format!("{:?}", FixedOffset::west(86399).ymd(2012, 3, 4).and_hms(5, 6, 7)),
+            format!(
+                "{:?}",
+                FixedOffset::west_opt(86399)
+                    .unwrap()
+                    .ymd_opt(2012, 3, 4)
+                    .unwrap()
+                    .and_hms_opt(5, 6, 7)
+                    .unwrap()
+            ),
             "2012-03-04T05:06:07-23:59:59".to_string()
         );
     }
