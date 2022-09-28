@@ -64,6 +64,12 @@ impl Utc {
         DateTime::from_utc(naive, Utc)
     }
 
+    /// Returns a `DateTime<FixedOffset>` which corresponds to the current date and time
+    /// but with timezone offset set to zero
+    pub fn fixed_now() -> DateTime<FixedOffset> {
+        Offset::now(&Utc)
+    }
+
     /// Returns a `DateTime` which corresponds to the current date and time.
     #[cfg(all(
         target_arch = "wasm32",
@@ -103,7 +109,7 @@ impl Offset for Utc {
         FixedOffset::east(0)
     }
     fn now(&self) -> DateTime<FixedOffset>{
-        FixedOffset::east(0).from_utc_datetime(&Utc::now().naive_utc())
+        FixedOffset::east(0).now()
     }
 }
 
