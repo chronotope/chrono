@@ -6,16 +6,17 @@
 use core::fmt;
 use core::ops::{Add, Sub};
 
-use num_integer::div_mod_floor;
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::time_delta::TimeDelta;
 use crate::DateTime;
 use crate::Timelike;
+use num_integer::div_mod_floor;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
+#[cfg(feature = "std")]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
@@ -129,6 +130,7 @@ impl Offset for FixedOffset {
     fn fix(&self) -> FixedOffset {
         *self
     }
+    #[cfg(feature = "std")]
     fn now(&self) -> DateTime<FixedOffset> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");

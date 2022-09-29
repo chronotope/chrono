@@ -195,6 +195,7 @@ pub trait Offset: Sized + Clone + fmt::Debug {
     /// Returns the fixed offset from UTC to the local time stored.
     fn fix(&self) -> FixedOffset;
     /// Returns a fixed offset DateTime at the current date and time in self's timezone
+    #[cfg(feature = "std")]
     fn now(&self) -> DateTime<FixedOffset>;
 }
 

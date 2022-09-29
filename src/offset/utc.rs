@@ -3,7 +3,13 @@
 
 //! The UTC (Coordinated Universal Time) time zone.
 
+use super::{FixedOffset, LocalResult, Offset, TimeZone};
+use crate::naive::{NaiveDate, NaiveDateTime};
+#[cfg(feature = "clock")]
+use crate::Date;
 use core::fmt;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(all(
     feature = "clock",
     not(all(
@@ -13,14 +19,6 @@ use core::fmt;
     ))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
-
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
-
-use super::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::naive::{NaiveDate, NaiveDateTime};
-#[cfg(feature = "clock")]
-use crate::{Date, DateTime};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -108,6 +106,7 @@ impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
         FixedOffset::east(0)
     }
+    #[cfg(feature = "std")]
     fn now(&self) -> DateTime<FixedOffset> {
         FixedOffset::east(0).now()
     }
