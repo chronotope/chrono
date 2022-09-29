@@ -6,7 +6,8 @@
 use super::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg(feature = "clock")]
-use crate::{Date, DateTime};
+use crate::Date;
+use crate::DateTime;
 use core::fmt;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
