@@ -432,6 +432,10 @@ pub mod prelude {
     pub use crate::{Offset, TimeZone};
 }
 
+mod timezone_alternative_a;
+mod timezone_alternative_b;
+mod timezone_alternative_c;
+
 mod date;
 #[allow(deprecated)]
 pub use date::{Date, MAX_DATE, MIN_DATE};
