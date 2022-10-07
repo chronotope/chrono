@@ -39,34 +39,59 @@ where
     ) -> ParseResult<Result<DateTime<Tz>, InvalidLocalTimeInfoTz<Tz>>> {
         todo!()
     }
+}
+
+/// Marker trait which signifies that the
+/// timezone implementor can statically access
+/// the timezone info (if required)
+///
+/// potentially this should be sealed?
+///
+/// For types like `FixedOffset`, `Utc` and `chrono_tz::Tz` this is trivial
+///
+/// for `Local` it actually caches the parsed Tzinfo and/or TZ environment variable
+/// in a `thread_local!`
+pub trait EnableDirectOpsImpls: TimeZone {}
+
+// DateTime<Tz> conditionally impl's add and sub (the operators would be implemented here as well)
+// when the Tz declares that it has `EnableDirectOpsImpls`.
+// this includes `FixedOffset`, `Utc`, `Local` and `chrono_tz::Tz`.
+//
+// however, if a user desires to maintain their parsed tzinfo file externally for whatever reason
+// then they can use a `Tz` which doesn't implement `EnableDirectOpsImpls` and then use the
+// `TimeZoneManager` trait to do add and sub operations.
+impl<Tz> DateTime<Tz>
+where
+    Tz: EnableDirectOpsImpls + Clone,
+{
     fn add_months(&self, months: Months) -> DateTime<Tz> {
         let new_datetime = self.naive_utc() + months;
-        new_datetime.and_timezone_2(&self.zone)
+        new_datetime.and_timezone_3(&self.zone)
     }
     fn sub_months(&self, months: Months) -> DateTime<Tz> {
         let new_datetime = self.naive_utc() - months;
-        new_datetime.and_timezone_2(&self.zone)
+        new_datetime.and_timezone_3(&self.zone)
     }
     fn add_days(&self, days: Days) -> DateTime<Tz> {
         let new_datetime = self.naive_utc() + days;
-        new_datetime.and_timezone_2(&self.zone)
+        new_datetime.and_timezone_3(&self.zone)
     }
     fn sub_days(&self, days: Days) -> DateTime<Tz> {
         let new_datetime = self.naive_utc() - days;
-        new_datetime.and_timezone_2(&self.zone)
+        new_datetime.and_timezone_3(&self.zone)
     }
     fn add(&self, duration: TimeDelta) -> DateTime<Tz> {
         let new_datetime = self.naive_utc() + duration;
-        new_datetime.and_timezone_2(&self.zone)
+        new_datetime.and_timezone_3(&self.zone)
     }
     fn sub(&self, duration: TimeDelta) -> DateTime<Tz> {
         let new_datetime = self.naive_utc() - duration;
-        new_datetime.and_timezone_2(&self.zone)
+        new_datetime.and_timezone_3(&self.zone)
     }
 }
 
 impl NaiveDateTime {
-    fn and_local_timezone_2<Tz>(
+    fn and_local_timezone_3<Tz>(
         self,
         timezone: &Tz,
     ) -> Result<DateTime<Tz>, InvalidLocalTimeInfoTz<Tz>>
@@ -87,7 +112,7 @@ impl NaiveDateTime {
         }
     }
 
-    fn and_timezone_2<Tz>(self, timezone: &Tz) -> DateTime<Tz>
+    fn and_timezone_3<Tz>(self, timezone: &Tz) -> DateTime<Tz>
     where
         Tz: TimeZone + Clone,
     {
@@ -338,5 +363,96 @@ impl TimeZone for Box<dyn TimeZone> {
 impl TimeZone for FixedOffset {
     fn offset(&self) -> FixedOffset {
         crate::offset::Offset::fix(self)
+    }
+}
+
+mod manager {
+    use super::*;
+    use crate::Days;
+    use crate::Months;
+
+    // the timezone is used to manage the DateTime, but the datetime never contains the timezone itself
+    // this is useful as the TimeZone might contain a bunch of information from a parsed tzinfo file
+    // and so it is useful that the user can control the caching of this
+    //
+    // this is also simpler as there is no longer a type parameter needed in the DateTime
+    //
+    // object safety is argurably less useful here as the `TimeZone` lives outside the `DateTime`, so
+    // some of the choices made to enable could be unwound if it is not deemed necessary
+    //
+    // This could offer a nice migration path by having `DateTime<Tz = FixedOffset>` and
+    // calling this trait `TimeZoneManager` or something better
+    //
+    // This can be quite useful as it can be cached in a `Arc` or `Arc<RwLock>` - the tzinfo
+    // data is only updated on the scale of weeks, so an application can either cache it for the
+    // life of the process, or occasionally update it within a `Arc<RwLock>`. `tokio::sync::Watch`
+    // or similar could also be useful here.
+    pub trait TimeZoneManager {
+        type Zone: TimeZone + Clone;
+
+        fn add_months(&self, dt: DateTime<Self::Zone>, months: Months) -> DateTime<Self::Zone> {
+            let new_datetime = dt.naive_utc() + months;
+            DateTime { datetime: new_datetime, zone: self.offset_at(new_datetime) }
+        }
+        fn sub_months(&self, dt: DateTime<Self::Zone>, months: Months) -> DateTime<Self::Zone> {
+            let new_datetime = dt.naive_utc() - months;
+            DateTime { datetime: new_datetime, zone: self.offset_at(new_datetime) }
+        }
+        fn add_days(&self, dt: DateTime<Self::Zone>, days: Days) -> DateTime<Self::Zone> {
+            let new_datetime = dt.naive_utc() + days;
+            DateTime { datetime: new_datetime, zone: self.offset_at(new_datetime) }
+        }
+        fn sub_days(&self, dt: DateTime<Self::Zone>, days: Days) -> DateTime<Self::Zone> {
+            let new_datetime = dt.naive_utc() - days;
+            DateTime { datetime: new_datetime, zone: self.offset_at(new_datetime) }
+        }
+        fn add(&self, dt: DateTime<Self::Zone>, duration: TimeDelta) -> DateTime<Self::Zone> {
+            let new_datetime = dt.naive_utc() + duration;
+            DateTime { datetime: new_datetime, zone: self.offset_at(new_datetime) }
+        }
+        fn sub(&self, dt: DateTime<Self::Zone>, duration: TimeDelta) -> DateTime<Self::Zone> {
+            let new_datetime = dt.naive_utc() - duration;
+            DateTime { datetime: new_datetime, zone: self.offset_at(new_datetime) }
+        }
+
+        #[cfg(feature = "clock")]
+        fn now(&self) -> DateTime<Self::Zone> {
+            let now = Utc::now().naive_utc();
+            DateTime { datetime: now, zone: self.offset_at(now) }
+        }
+
+        fn offset_at(&self, utc: NaiveDateTime) -> Self::Zone;
+
+        fn offset_at_local(&self, local: NaiveDateTime) -> InvalidLocalTimeInfo;
+
+        // we can likely avoid `from_local_datetime` and `from_utc_datetime` here
+        // and point users towards `and_local_timezone()` and `.and_timezone()` instead.
+
+        // potentially the `_transitions` functions should take a `local: bool` parameter
+        // as it would be incorrect to implement one but leave the other with the default impl
+
+        // this is not hugely useful as it will just be the
+        // previous and next transitions, but it might be nice
+        // to expose this in public API what is currently just in `tzinfo`.
+        fn closest_transitions(&self, _utc: NaiveDateTime) -> Option<ClosestTransitions> {
+            None
+        }
+
+        // if the local timestamp is valid, then these transitions will each be different
+        // if the local timestamp is either ambiguous or invalid, then both fields of the
+        // tuple will be the same
+        fn closest_transitions_from_local(
+            &self,
+            _local: NaiveDateTime,
+        ) -> Option<ClosestTransitions> {
+            None
+        }
+
+        // to be used in %Z formatting
+        fn name(&self) -> Option<&str> {
+            None
+        }
+
+        fn parse_from_str(&self, input: &str, format: &str) -> ParseResult<InvalidLocalTimeInfo>;
     }
 }

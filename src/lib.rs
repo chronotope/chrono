@@ -433,8 +433,7 @@ pub mod prelude {
 }
 
 mod timezone_alternative_a;
-mod timezone_alternative_b;
-mod timezone_alternative_c;
+mod timezone_alternative_d;
 
 mod date;
 #[allow(deprecated)]
