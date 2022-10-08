@@ -404,10 +404,10 @@ fn test_rfc2822_comments() {
         ("( x ( x ) x ( x ) x )", Ok("")),
     ];
 
-    for (test_in, expected) in testdata {
+    for (test_in, expected) in testdata.iter() {
         let actual = comment_2822(test_in).map(|(s, _)| s);
         assert_eq!(
-            expected, actual,
+            *expected, actual,
             "{:?} expected to produce {:?}, but produced {:?}.",
             test_in, expected, actual
         );
