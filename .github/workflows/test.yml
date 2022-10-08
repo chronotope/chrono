@@ -67,6 +67,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
       - uses: Swatinem/rust-cache@v1
+      - run: cargo check --benches
       # run --lib and --doc to avoid the long running integration tests which are run elsewhere
       - run: cargo test --lib --all-features --color=always -- --color=always
       - run: cargo test --doc --all-features --color=always -- --color=always
