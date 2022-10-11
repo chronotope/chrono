@@ -270,18 +270,11 @@ pub(super) struct Of(pub(crate) u32);
 
 impl Of {
     #[inline]
-    fn clamp_ordinal(ordinal: u32) -> u32 {
-        if ordinal > 366 {
-            0
-        } else {
-            ordinal
+    pub(super) fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
+        match ordinal <= 366 {
+            true => Some(Of((ordinal << 4) | u32::from(flags))),
+            false => None,
         }
-    }
-
-    #[inline]
-    pub(super) fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Of {
-        let ordinal = Of::clamp_ordinal(ordinal);
-        Of((ordinal << 4) | u32::from(flags))
     }
 
     #[inline]
@@ -307,10 +300,13 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn with_ordinal(&self, ordinal: u32) -> Of {
-        let ordinal = Of::clamp_ordinal(ordinal);
+    pub(super) fn with_ordinal(&self, ordinal: u32) -> Option<Of> {
+        if ordinal > 366 {
+            return None;
+        }
+
         let Of(of) = *self;
-        Of((of & 0b1111) | (ordinal << 4))
+        Some(Of((of & 0b1111) | (ordinal << 4)))
     }
 
     #[inline]
@@ -523,7 +519,12 @@ mod tests {
     fn test_of() {
         fn check(expected: bool, flags: YearFlags, ordinal1: u32, ordinal2: u32) {
             for ordinal in range_inclusive(ordinal1, ordinal2) {
-                let of = Of::new(ordinal, flags);
+                let of = match Of::new(ordinal, flags) {
+                    Some(of) => of,
+                    None if !expected => continue,
+                    None => panic!("Of::new({}, {:?}) returned None", ordinal, flags),
+                };
+
                 assert!(
                     of.valid() == expected,
                     "ordinal {} = {:?} should be {} for dominical year {:?}",
@@ -640,7 +641,7 @@ mod tests {
     fn test_of_fields() {
         for &flags in FLAGS.iter() {
             for ordinal in range_inclusive(1u32, 366) {
-                let of = Of::new(ordinal, flags);
+                let of = Of::new(ordinal, flags).unwrap();
                 if of.valid() {
                     assert_eq!(of.ordinal(), ordinal);
                 }
@@ -651,11 +652,16 @@ mod tests {
     #[test]
     fn test_of_with_fields() {
         fn check(flags: YearFlags, ordinal: u32) {
-            let of = Of::new(ordinal, flags);
+            let of = Of::new(ordinal, flags).unwrap();
 
             for ordinal in range_inclusive(0u32, 1024) {
-                let of = of.with_ordinal(ordinal);
-                assert_eq!(of.valid(), Of::new(ordinal, flags).valid());
+                let of = match of.with_ordinal(ordinal) {
+                    Some(of) => of,
+                    None if ordinal > 366 => continue,
+                    None => panic!("failed to create Of with ordinal {}", ordinal),
+                };
+
+                assert_eq!(of.valid(), Of::new(ordinal, flags).unwrap().valid());
                 if of.valid() {
                     assert_eq!(of.ordinal(), ordinal);
                 }
@@ -674,25 +680,25 @@ mod tests {
 
     #[test]
     fn test_of_weekday() {
-        assert_eq!(Of::new(1, A).weekday(), Weekday::Sun);
-        assert_eq!(Of::new(1, B).weekday(), Weekday::Sat);
-        assert_eq!(Of::new(1, C).weekday(), Weekday::Fri);
-        assert_eq!(Of::new(1, D).weekday(), Weekday::Thu);
-        assert_eq!(Of::new(1, E).weekday(), Weekday::Wed);
-        assert_eq!(Of::new(1, F).weekday(), Weekday::Tue);
-        assert_eq!(Of::new(1, G).weekday(), Weekday::Mon);
-        assert_eq!(Of::new(1, AG).weekday(), Weekday::Sun);
-        assert_eq!(Of::new(1, BA).weekday(), Weekday::Sat);
-        assert_eq!(Of::new(1, CB).weekday(), Weekday::Fri);
-        assert_eq!(Of::new(1, DC).weekday(), Weekday::Thu);
-        assert_eq!(Of::new(1, ED).weekday(), Weekday::Wed);
-        assert_eq!(Of::new(1, FE).weekday(), Weekday::Tue);
-        assert_eq!(Of::new(1, GF).weekday(), Weekday::Mon);
+        assert_eq!(Of::new(1, A).unwrap().weekday(), Weekday::Sun);
+        assert_eq!(Of::new(1, B).unwrap().weekday(), Weekday::Sat);
+        assert_eq!(Of::new(1, C).unwrap().weekday(), Weekday::Fri);
+        assert_eq!(Of::new(1, D).unwrap().weekday(), Weekday::Thu);
+        assert_eq!(Of::new(1, E).unwrap().weekday(), Weekday::Wed);
+        assert_eq!(Of::new(1, F).unwrap().weekday(), Weekday::Tue);
+        assert_eq!(Of::new(1, G).unwrap().weekday(), Weekday::Mon);
+        assert_eq!(Of::new(1, AG).unwrap().weekday(), Weekday::Sun);
+        assert_eq!(Of::new(1, BA).unwrap().weekday(), Weekday::Sat);
+        assert_eq!(Of::new(1, CB).unwrap().weekday(), Weekday::Fri);
+        assert_eq!(Of::new(1, DC).unwrap().weekday(), Weekday::Thu);
+        assert_eq!(Of::new(1, ED).unwrap().weekday(), Weekday::Wed);
+        assert_eq!(Of::new(1, FE).unwrap().weekday(), Weekday::Tue);
+        assert_eq!(Of::new(1, GF).unwrap().weekday(), Weekday::Mon);
 
         for &flags in FLAGS.iter() {
-            let mut prev = Of::new(1, flags).weekday();
+            let mut prev = Of::new(1, flags).unwrap().weekday();
             for ordinal in range_inclusive(2u32, flags.ndays()) {
-                let of = Of::new(ordinal, flags);
+                let of = Of::new(ordinal, flags).unwrap();
                 let expected = prev.succ();
                 assert_eq!(of.weekday(), expected);
                 prev = expected;
@@ -761,7 +767,7 @@ mod tests {
     fn test_of_isoweekdate_raw() {
         for &flags in FLAGS.iter() {
             // January 4 should be in the first week
-            let (week, _) = Of::new(4 /* January 4 */, flags).isoweekdate_raw();
+            let (week, _) = Of::new(4 /* January 4 */, flags).unwrap().isoweekdate_raw();
             assert_eq!(week, 1);
         }
     }
