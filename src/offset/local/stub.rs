@@ -77,7 +77,7 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
         tm.tm_nsec as u32,
     );
 
-    let offset = FixedOffset::east(tm.tm_utcoff);
+    let offset = FixedOffset::east_opt(tm.tm_utcoff).unwrap();
     DateTime::from_utc(date.and_time(time) - offset, offset)
 }
 

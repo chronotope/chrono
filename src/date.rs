@@ -48,7 +48,7 @@ use crate::{Datelike, Weekday};
 ///
 /// - Once constructed as a full `DateTime`, [`DateTime::date`] and other associated
 ///   methods should return those for the original `Date`. For example, if `dt =
-///   tz.ymd(y,m,d).hms(h,n,s)` were valid, `dt.date() == tz.ymd(y,m,d)`.
+///   tz.ymd_opt(y,m,d).unwrap().hms(h,n,s)` were valid, `dt.date() == tz.ymd_opt(y,m,d).unwrap()`.
 ///
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
@@ -93,6 +93,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute and/or second.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_opt() instead")]
     #[inline]
     pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTime<Tz> {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
@@ -112,6 +113,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute, second and/or millisecond.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_milli_opt() instead")]
     #[inline]
     pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTime<Tz> {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
@@ -138,6 +140,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute, second and/or microsecond.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_micro_opt() instead")]
     #[inline]
     pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTime<Tz> {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
@@ -164,6 +167,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// The offset in the current date is preserved.
     ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
+    #[deprecated(since = "0.4.23", note = "Use and_hms_nano_opt() instead")]
     #[inline]
     pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTime<Tz> {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
@@ -188,6 +192,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the next date.
     ///
     /// Panics when `self` is the last representable date.
+    #[deprecated(since = "0.4.23", note = "Use succ_opt() instead")]
     #[inline]
     pub fn succ(&self) -> Date<Tz> {
         self.succ_opt().expect("out of bound")
@@ -204,6 +209,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the prior date.
     ///
     /// Panics when `self` is the first representable date.
+    #[deprecated(since = "0.4.23", note = "Use pred_opt() instead")]
     #[inline]
     pub fn pred(&self) -> Date<Tz> {
         self.pred_opt().expect("out of bound")
@@ -331,7 +337,7 @@ where
     /// ```rust
     /// use chrono::prelude::*;
     ///
-    /// let date_time: Date<Utc> = Utc.ymd(2017, 04, 02);
+    /// let date_time: Date<Utc> = Utc.ymd_opt(2017, 04, 02).unwrap();
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
     /// assert_eq!(formatted, "02/04/2017");
     /// ```
@@ -569,20 +575,20 @@ mod tests {
 
     #[test]
     fn test_date_add_assign() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_add = date;
 
         date_add += TimeDelta::days(5);
         assert_eq!(date_add, date + TimeDelta::days(5));
 
-        let timezone = FixedOffset::east(60 * 60);
+        let timezone = FixedOffset::east_opt(60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_add = date_add.with_timezone(&timezone);
 
         assert_eq!(date_add, date + TimeDelta::days(5));
 
-        let timezone = FixedOffset::west(2 * 60 * 60);
+        let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_add = date_add.with_timezone(&timezone);
 
@@ -592,7 +598,7 @@ mod tests {
     #[test]
     #[cfg(feature = "clock")]
     fn test_date_add_assign_local() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
 
         let date = Local.from_utc_date(&naivedate);
         let mut date_add = date;
@@ -603,20 +609,20 @@ mod tests {
 
     #[test]
     fn test_date_sub_assign() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_sub = date;
 
         date_sub -= TimeDelta::days(5);
         assert_eq!(date_sub, date - TimeDelta::days(5));
 
-        let timezone = FixedOffset::east(60 * 60);
+        let timezone = FixedOffset::east_opt(60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_sub = date_sub.with_timezone(&timezone);
 
         assert_eq!(date_sub, date - TimeDelta::days(5));
 
-        let timezone = FixedOffset::west(2 * 60 * 60);
+        let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
         let date = date.with_timezone(&timezone);
         let date_sub = date_sub.with_timezone(&timezone);
 
@@ -626,7 +632,7 @@ mod tests {
     #[test]
     #[cfg(feature = "clock")]
     fn test_date_sub_assign_local() {
-        let naivedate = NaiveDate::from_ymd(2000, 1, 1);
+        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
 
         let date = Local.from_utc_date(&naivedate);
         let mut date_sub = date;

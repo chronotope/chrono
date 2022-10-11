@@ -19,7 +19,7 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     // seems to be consistent with the output of the `date` command, so we simply
     // compare both.
     // let local = Local
-    //     .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
+    //     .from_local_datetime(&NaiveDate::from_ymd_opt(year, month, day).unwrap().and_hms_opt(hour, 5, 1).unwrap())
     //     // looks like the "date" command always returns a given time when it is ambiguous
     //     .earliest();
 
@@ -33,11 +33,9 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     // This is used while a decision is made wheter the `date` output needs to
     // be exactly matched, or whether LocalResult::Ambigious should be handled
     // differently
-    match Local.from_local_datetime(&NaiveDate::from_ymd(dt.year(), dt.month(), dt.day()).and_hms(
-        dt.hour(),
-        5,
-        1,
-    )) {
+
+    let date = NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap();
+    match Local.from_local_datetime(&date.and_hms_opt(dt.hour(), 5, 1).unwrap()) {
         chrono::LocalResult::Ambiguous(a, b) => assert!(
             format!("{}\n", a) == date_command_str || format!("{}\n", b) == date_command_str
         ),
@@ -63,7 +61,7 @@ fn try_verify_against_date_command() {
         return;
     }
 
-    let mut date = NaiveDate::from_ymd(1975, 1, 1).and_hms(0, 0, 0);
+    let mut date = NaiveDate::from_ymd_opt(1975, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
     while date.year() < 2078 {
         if (1975..=1977).contains(&date.year())

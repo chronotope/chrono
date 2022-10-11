@@ -95,10 +95,10 @@ pub trait Datelike: Sized {
     /// ```
     /// use chrono::{NaiveDate, Datelike};
     ///
-    /// assert_eq!(NaiveDate::from_ymd(1970, 1, 1).num_days_from_ce(), 719_163);
-    /// assert_eq!(NaiveDate::from_ymd(2, 1, 1).num_days_from_ce(), 366);
-    /// assert_eq!(NaiveDate::from_ymd(1, 1, 1).num_days_from_ce(), 1);
-    /// assert_eq!(NaiveDate::from_ymd(0, 1, 1).num_days_from_ce(), -365);
+    /// assert_eq!(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().num_days_from_ce(), 719_163);
+    /// assert_eq!(NaiveDate::from_ymd_opt(2, 1, 1).unwrap().num_days_from_ce(), 366);
+    /// assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().num_days_from_ce(), 1);
+    /// assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce(), -365);
     /// ```
     fn num_days_from_ce(&self) -> i32 {
         // See test_num_days_from_ce_against_alternative_impl below for a more straightforward
@@ -222,7 +222,7 @@ mod tests {
         use num_iter::range_inclusive;
 
         for year in range_inclusive(NaiveDate::MIN.year(), NaiveDate::MAX.year()) {
-            let jan1_year = NaiveDate::from_ymd(year, 1, 1);
+            let jan1_year = NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
             assert_eq!(
                 jan1_year.num_days_from_ce(),
                 num_days_from_ce(&jan1_year),

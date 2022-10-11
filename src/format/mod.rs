@@ -20,7 +20,7 @@
 //! # use std::error::Error;
 //! use chrono::prelude::*;
 //!
-//! let date_time = Utc.ymd(2020, 11, 10).and_hms(0, 1, 32);
+//! let date_time = Utc.ymd_opt(2020, 11, 10).unwrap().and_hms_opt(0, 1, 32).unwrap();
 //!
 //! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
 //! assert_eq!(formatted, "2020-11-10 00:01:32");

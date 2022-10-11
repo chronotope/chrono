@@ -213,14 +213,7 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.ymd(2015, 5, 15).to_string(), "2015-05-15UTC");
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `ymd_opt()` instead")]
     fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
         self.ymd_opt(year, month, day).unwrap()
     }
@@ -255,14 +248,7 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date and/or invalid DOY.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.yo(2015, 135).to_string(), "2015-05-15UTC");
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `ymd_opt()` instead")]
     fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
         self.yo_opt(year, ordinal).unwrap()
     }
@@ -274,6 +260,14 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Utc, TimeZone};
+    ///
+    /// assert_eq!(Utc.yo_opt(2015, 135).unwrap().to_string(), "2015-05-15UTC");
+    /// ```
     fn yo_opt(&self, year: i32, ordinal: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_yo_opt(year, ordinal) {
             Some(d) => self.from_local_date(&d),
@@ -290,14 +284,7 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date and/or invalid week number.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, Weekday, TimeZone};
-    ///
-    /// assert_eq!(Utc.isoywd(2015, 20, Weekday::Fri).to_string(), "2015-05-15UTC");
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `isoywd_opt()` instead")]
     fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
     }
@@ -311,6 +298,14 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Utc, Weekday, TimeZone};
+    ///
+    /// assert_eq!(Utc.isoywd_opt(2015, 20, Weekday::Fri).unwrap().to_string(), "2015-05-15UTC");
+    /// ```
     fn isoywd_opt(&self, year: i32, week: u32, weekday: Weekday) -> LocalResult<Date<Self>> {
         match NaiveDate::from_isoywd_opt(year, week, weekday) {
             Some(d) => self.from_local_date(&d),
@@ -324,14 +319,7 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond,
     /// for a non-panicking version see [`timestamp_opt`](#method.timestamp_opt).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.timestamp(1431648000, 0).to_string(), "2015-05-15 00:00:00 UTC");
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `timestamp_opt()` instead")]
     fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
         self.timestamp_opt(secs, nsecs).unwrap()
     }
@@ -342,6 +330,14 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// Returns `LocalResult::None` on out-of-range number of seconds and/or
     /// invalid nanosecond, otherwise always returns `LocalResult::Single`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Utc, TimeZone};
+    ///
+    /// assert_eq!(Utc.timestamp_opt(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
+    /// ```
     fn timestamp_opt(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp_opt(secs, nsecs) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
@@ -354,14 +350,7 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// Panics on out-of-range number of milliseconds for a non-panicking
     /// version see [`timestamp_millis_opt`](#method.timestamp_millis_opt).
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.timestamp_millis(1431648000).timestamp(), 1431648);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `timestamp_millis_opt()` instead")]
     fn timestamp_millis(&self, millis: i64) -> DateTime<Self> {
         self.timestamp_millis_opt(millis).unwrap()
     }
@@ -483,21 +472,21 @@ mod tests {
 
     #[test]
     fn test_negative_millis() {
-        let dt = Utc.timestamp_millis(-1000);
+        let dt = Utc.timestamp_millis_opt(-1000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
-        let dt = Utc.timestamp_millis(-7000);
+        let dt = Utc.timestamp_millis_opt(-7000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:53 UTC");
-        let dt = Utc.timestamp_millis(-7001);
+        let dt = Utc.timestamp_millis_opt(-7001).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.999 UTC");
-        let dt = Utc.timestamp_millis(-7003);
+        let dt = Utc.timestamp_millis_opt(-7003).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.997 UTC");
-        let dt = Utc.timestamp_millis(-999);
+        let dt = Utc.timestamp_millis_opt(-999).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
-        let dt = Utc.timestamp_millis(-1);
+        let dt = Utc.timestamp_millis_opt(-1).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999 UTC");
-        let dt = Utc.timestamp_millis(-60000);
+        let dt = Utc.timestamp_millis_opt(-60000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
-        let dt = Utc.timestamp_millis(-3600000);
+        let dt = Utc.timestamp_millis_opt(-3600000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
 
         for (millis, expected) in &[
