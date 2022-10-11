@@ -301,7 +301,7 @@ impl NaiveDate {
     /// ```
     pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_of(year, Of::new(ordinal, flags))
+        NaiveDate::from_of(year, Of::new(ordinal, flags)?)
     }
 
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
@@ -370,18 +370,18 @@ impl NaiveDate {
                 let prevflags = YearFlags::from_year(year - 1);
                 NaiveDate::from_of(
                     year - 1,
-                    Of::new(weekord + prevflags.ndays() - delta, prevflags),
+                    Of::new(weekord + prevflags.ndays() - delta, prevflags)?,
                 )
             } else {
                 let ordinal = weekord - delta;
                 let ndays = flags.ndays();
                 if ordinal <= ndays {
                     // this year
-                    NaiveDate::from_of(year, Of::new(ordinal, flags))
+                    NaiveDate::from_of(year, Of::new(ordinal, flags)?)
                 } else {
                     // ordinal > ndays, next year
                     let nextflags = YearFlags::from_year(year + 1);
-                    NaiveDate::from_of(year + 1, Of::new(ordinal - ndays, nextflags))
+                    NaiveDate::from_of(year + 1, Of::new(ordinal - ndays, nextflags)?)
                 }
             }
         } else {
@@ -424,7 +424,7 @@ impl NaiveDate {
         let (year_div_400, cycle) = div_mod_floor(days, 146_097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -976,7 +976,7 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Subtracts the `days` part of given `Duration` from the current date.
@@ -1007,7 +1007,7 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1510,7 +1510,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
-        self.with_of(self.of().with_ordinal(ordinal))
+        self.with_of(self.of().with_ordinal(ordinal)?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
@@ -1534,7 +1534,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
-        self.with_of(self.of().with_ordinal(ordinal0 + 1))
+        self.with_of(self.of().with_ordinal(ordinal0 + 1)?)
     }
 }
 
