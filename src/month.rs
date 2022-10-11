@@ -12,9 +12,9 @@ use crate::OutOfRange;
 ///
 /// It is possible to convert from a date to a month independently
 /// ```
+/// # use std::convert::TryFrom;
 /// use chrono::prelude::*;
-/// use std::convert::TryFrom;
-/// let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11);
+/// let date = Utc.ymd_opt(2019, 10, 28).unwrap().and_hms_opt(9, 10, 11).unwrap();
 /// // `2019-10-28T09:10:11Z`
 /// let month = Month::try_from(u8::try_from(date.month()).unwrap()).ok();
 /// assert_eq!(month, Some(Month::October))
@@ -23,7 +23,7 @@ use crate::OutOfRange;
 /// ```
 /// # use chrono::prelude::*;
 /// let month = Month::January;
-/// let dt = Utc.ymd(2019, month.number_from_month(), 28).and_hms(9, 10, 11);
+/// let dt = Utc.ymd_opt(2019, month.number_from_month(), 28).unwrap().and_hms_opt(9, 10, 11).unwrap();
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
 /// ```
 /// Allows mapping from and to month, from 1-January to 12-December.
@@ -317,11 +317,15 @@ mod tests {
         assert_eq!(Month::try_from(12), Ok(Month::December));
         assert_eq!(Month::try_from(13), Err(OutOfRange::new()));
 
-        let date = Utc.ymd(2019, 10, 28).and_hms(9, 10, 11);
+        let date = Utc.ymd_opt(2019, 10, 28).unwrap().and_hms_opt(9, 10, 11).unwrap();
         assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
         let month = Month::January;
-        let dt = Utc.ymd(2019, month.number_from_month(), 28).and_hms(9, 10, 11);
+        let dt = Utc
+            .ymd_opt(2019, month.number_from_month(), 28)
+            .unwrap()
+            .and_hms_opt(9, 10, 11)
+            .unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 

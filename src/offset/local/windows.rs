@@ -65,7 +65,8 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
         tm.tm_sec = 59;
     }
 
-    let date = NaiveDate::from_ymd(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32);
+    let date = NaiveDate::from_ymd_opt(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
+        .unwrap();
     let time = NaiveTime::from_hms_nano(
         tm.tm_hour as u32,
         tm.tm_min as u32,
@@ -73,7 +74,7 @@ fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
         tm.tm_nsec as u32,
     );
 
-    let offset = FixedOffset::east(tm.tm_utcoff);
+    let offset = FixedOffset::east_opt(tm.tm_utcoff).unwrap();
     DateTime::from_utc(date.and_time(time) - offset, offset)
 }
 

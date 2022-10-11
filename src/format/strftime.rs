@@ -558,7 +558,12 @@ fn test_strftime_items() {
 fn test_strftime_docs() {
     use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
-    let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
+    let dt = FixedOffset::east_opt(34200)
+        .unwrap()
+        .ymd_opt(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+        .unwrap();
 
     // date specifiers
     assert_eq!(dt.format("%Y").to_string(), "2001");
@@ -656,7 +661,12 @@ fn test_strftime_docs() {
 fn test_strftime_docs_localized() {
     use crate::{FixedOffset, TimeZone};
 
-    let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
+    let dt = FixedOffset::east_opt(34200)
+        .unwrap()
+        .ymd_opt(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+        .unwrap();
 
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");

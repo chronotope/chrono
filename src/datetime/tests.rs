@@ -11,68 +11,101 @@ use crate::TimeDelta;
 
 #[test]
 fn test_datetime_offset() {
-    let est = FixedOffset::west(5 * 60 * 60);
-    let edt = FixedOffset::west(4 * 60 * 60);
-    let kst = FixedOffset::east(9 * 60 * 60);
+    let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
+    let edt = FixedOffset::west_opt(4 * 60 * 60).unwrap();
+    let kst = FixedOffset::east_opt(9 * 60 * 60).unwrap();
 
-    assert_eq!(format!("{}", Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06 07:08:09 UTC");
-    assert_eq!(format!("{}", edt.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06 07:08:09 -04:00");
-    assert_eq!(format!("{}", kst.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06 07:08:09 +09:00");
-    assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06T07:08:09Z");
-    assert_eq!(format!("{:?}", edt.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06T07:08:09-04:00");
-    assert_eq!(format!("{:?}", kst.ymd(2014, 5, 6).and_hms(7, 8, 9)), "2014-05-06T07:08:09+09:00");
+    assert_eq!(
+        format!("{}", Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap()),
+        "2014-05-06 07:08:09 UTC"
+    );
+    assert_eq!(
+        format!("{}", edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap()),
+        "2014-05-06 07:08:09 -04:00"
+    );
+    assert_eq!(
+        format!("{}", kst.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap()),
+        "2014-05-06 07:08:09 +09:00"
+    );
+    assert_eq!(
+        format!("{:?}", Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap()),
+        "2014-05-06T07:08:09Z"
+    );
+    assert_eq!(
+        format!("{:?}", edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap()),
+        "2014-05-06T07:08:09-04:00"
+    );
+    assert_eq!(
+        format!("{:?}", kst.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap()),
+        "2014-05-06T07:08:09+09:00"
+    );
 
     // edge cases
-    assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(0, 0, 0)), "2014-05-06T00:00:00Z");
-    assert_eq!(format!("{:?}", edt.ymd(2014, 5, 6).and_hms(0, 0, 0)), "2014-05-06T00:00:00-04:00");
-    assert_eq!(format!("{:?}", kst.ymd(2014, 5, 6).and_hms(0, 0, 0)), "2014-05-06T00:00:00+09:00");
-    assert_eq!(format!("{:?}", Utc.ymd(2014, 5, 6).and_hms(23, 59, 59)), "2014-05-06T23:59:59Z");
     assert_eq!(
-        format!("{:?}", edt.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        format!("{:?}", Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(0, 0, 0).unwrap()),
+        "2014-05-06T00:00:00Z"
+    );
+    assert_eq!(
+        format!("{:?}", edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(0, 0, 0).unwrap()),
+        "2014-05-06T00:00:00-04:00"
+    );
+    assert_eq!(
+        format!("{:?}", kst.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(0, 0, 0).unwrap()),
+        "2014-05-06T00:00:00+09:00"
+    );
+    assert_eq!(
+        format!("{:?}", Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(23, 59, 59).unwrap()),
+        "2014-05-06T23:59:59Z"
+    );
+    assert_eq!(
+        format!("{:?}", edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(23, 59, 59).unwrap()),
         "2014-05-06T23:59:59-04:00"
     );
     assert_eq!(
-        format!("{:?}", kst.ymd(2014, 5, 6).and_hms(23, 59, 59)),
+        format!("{:?}", kst.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(23, 59, 59).unwrap()),
         "2014-05-06T23:59:59+09:00"
     );
 
-    let dt = Utc.ymd(2014, 5, 6).and_hms(7, 8, 9);
-    assert_eq!(dt, edt.ymd(2014, 5, 6).and_hms(3, 8, 9));
-    assert_eq!(dt + TimeDelta::seconds(3600 + 60 + 1), Utc.ymd(2014, 5, 6).and_hms(8, 9, 10));
+    let dt = Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap();
+    assert_eq!(dt, edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(3, 8, 9).unwrap());
     assert_eq!(
-        dt.signed_duration_since(edt.ymd(2014, 5, 6).and_hms(10, 11, 12)),
+        dt + TimeDelta::seconds(3600 + 60 + 1),
+        Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(8, 9, 10).unwrap()
+    );
+    assert_eq!(
+        dt.signed_duration_since(edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(10, 11, 12).unwrap()),
         TimeDelta::seconds(-7 * 3600 - 3 * 60 - 3)
     );
 
-    assert_eq!(*Utc.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), Utc);
-    assert_eq!(*edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), edt);
-    assert!(*edt.ymd(2014, 5, 6).and_hms(7, 8, 9).offset() != est);
+    assert_eq!(*Utc.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap().offset(), Utc);
+    assert_eq!(*edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap().offset(), edt);
+    assert!(*edt.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap().offset() != est);
 }
 
 #[test]
 fn test_datetime_date_and_time() {
-    let tz = FixedOffset::east(5 * 60 * 60);
-    let d = tz.ymd(2014, 5, 6).and_hms(7, 8, 9);
-    assert_eq!(d.time(), NaiveTime::from_hms(7, 8, 9));
-    assert_eq!(d.date(), tz.ymd(2014, 5, 6));
-    assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2014, 5, 6));
+    let tz = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    let d = tz.ymd_opt(2014, 5, 6).unwrap().and_hms_opt(7, 8, 9).unwrap();
+    assert_eq!(d.time(), NaiveTime::from_hms_opt(7, 8, 9).unwrap());
+    assert_eq!(d.date(), tz.ymd_opt(2014, 5, 6).unwrap());
+    assert_eq!(d.date().naive_local(), NaiveDate::from_ymd_opt(2014, 5, 6).unwrap());
     assert_eq!(d.date().and_time(d.time()), Some(d));
 
-    let tz = FixedOffset::east(4 * 60 * 60);
-    let d = tz.ymd(2016, 5, 4).and_hms(3, 2, 1);
-    assert_eq!(d.time(), NaiveTime::from_hms(3, 2, 1));
-    assert_eq!(d.date(), tz.ymd(2016, 5, 4));
-    assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2016, 5, 4));
+    let tz = FixedOffset::east_opt(4 * 60 * 60).unwrap();
+    let d = tz.ymd_opt(2016, 5, 4).unwrap().and_hms_opt(3, 2, 1).unwrap();
+    assert_eq!(d.time(), NaiveTime::from_hms_opt(3, 2, 1).unwrap());
+    assert_eq!(d.date(), tz.ymd_opt(2016, 5, 4).unwrap());
+    assert_eq!(d.date().naive_local(), NaiveDate::from_ymd_opt(2016, 5, 4).unwrap());
     assert_eq!(d.date().and_time(d.time()), Some(d));
 
-    let tz = FixedOffset::west(13 * 60 * 60);
-    let d = tz.ymd(2017, 8, 9).and_hms(12, 34, 56);
-    assert_eq!(d.time(), NaiveTime::from_hms(12, 34, 56));
-    assert_eq!(d.date(), tz.ymd(2017, 8, 9));
-    assert_eq!(d.date().naive_local(), NaiveDate::from_ymd(2017, 8, 9));
+    let tz = FixedOffset::west_opt(13 * 60 * 60).unwrap();
+    let d = tz.ymd_opt(2017, 8, 9).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    assert_eq!(d.time(), NaiveTime::from_hms_opt(12, 34, 56).unwrap());
+    assert_eq!(d.date(), tz.ymd_opt(2017, 8, 9).unwrap());
+    assert_eq!(d.date().naive_local(), NaiveDate::from_ymd_opt(2017, 8, 9).unwrap());
     assert_eq!(d.date().and_time(d.time()), Some(d));
 
-    let utc_d = Utc.ymd(2017, 8, 9).and_hms(12, 34, 56);
+    let utc_d = Utc.ymd_opt(2017, 8, 9).unwrap().and_hms_opt(12, 34, 56).unwrap();
     assert!(utc_d < d);
 }
 
@@ -87,57 +120,83 @@ fn test_datetime_with_timezone() {
 
 #[test]
 fn test_datetime_rfc2822_and_rfc3339() {
-    let edt = FixedOffset::east(5 * 60 * 60);
+    let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     assert_eq!(
-        Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc2822(),
+        Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap().to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0000"
     );
-    assert_eq!(Utc.ymd(2015, 2, 18).and_hms(23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
     assert_eq!(
-        edt.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc2822(),
+        Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap().to_rfc3339(),
+        "2015-02-18T23:16:09+00:00"
+    );
+    assert_eq!(
+        edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap().to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0500"
     );
     assert_eq!(
-        edt.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150).to_rfc3339(),
+        edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap().to_rfc3339(),
         "2015-02-18T23:16:09.150+05:00"
     );
     assert_eq!(
-        edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc2822(),
+        edt.ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_micro_opt(23, 59, 59, 1_234_567)
+            .unwrap()
+            .to_rfc2822(),
         "Wed, 18 Feb 2015 23:59:60 +0500"
     );
     assert_eq!(
-        edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567).to_rfc3339(),
+        edt.ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_micro_opt(23, 59, 59, 1_234_567)
+            .unwrap()
+            .to_rfc3339(),
         "2015-02-18T23:59:60.234567+05:00"
     );
 
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
-        Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
+        Ok(FixedOffset::east_opt(0)
+            .unwrap()
+            .ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_opt(23, 16, 9)
+            .unwrap())
     );
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 -0000"),
-        Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
+        Ok(FixedOffset::east_opt(0)
+            .unwrap()
+            .ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_opt(23, 16, 9)
+            .unwrap())
     );
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:16:09Z"),
-        Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
+        Ok(FixedOffset::east_opt(0)
+            .unwrap()
+            .ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_opt(23, 16, 9)
+            .unwrap())
     );
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
-        Ok(edt.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000))
+        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap())
     );
     assert!(DateTime::<FixedOffset>::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
-        Ok(edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567))
+        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_micro_opt(23, 59, 59, 1_234_567).unwrap())
     );
 }
 
 #[test]
 fn test_rfc3339_opts() {
     use crate::SecondsFormat::*;
-    let pst = FixedOffset::east(8 * 60 * 60);
-    let dt = pst.ymd(2018, 1, 11).and_hms_nano(10, 5, 13, 84_660_000);
+    let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+    let dt = pst.ymd_opt(2018, 1, 11).unwrap().and_hms_nano_opt(10, 5, 13, 84_660_000).unwrap();
     assert_eq!(dt.to_rfc3339_opts(Secs, false), "2018-01-11T10:05:13+08:00");
     assert_eq!(dt.to_rfc3339_opts(Secs, true), "2018-01-11T10:05:13+08:00");
     assert_eq!(dt.to_rfc3339_opts(Millis, false), "2018-01-11T10:05:13.084+08:00");
@@ -159,7 +218,7 @@ fn test_rfc3339_opts() {
 #[should_panic]
 fn test_rfc3339_opts_nonexhaustive() {
     use crate::SecondsFormat;
-    let dt = Utc.ymd(1999, 10, 9).and_hms(1, 2, 3);
+    let dt = Utc.ymd_opt(1999, 10, 9).unwrap().and_hms_opt(1, 2, 3).unwrap();
     dt.to_rfc3339_opts(SecondsFormat::__NonExhaustive, true);
 }
 
@@ -167,38 +226,53 @@ fn test_rfc3339_opts_nonexhaustive() {
 fn test_datetime_from_str() {
     assert_eq!(
         "2015-02-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
-        Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(FixedOffset::east_opt(0)
+            .unwrap()
+            .ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_milli_opt(23, 16, 9, 150)
+            .unwrap())
     );
     assert_eq!(
         "2015-02-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
     );
     assert_eq!(
         "2015-02-18T23:16:9.15 UTC".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
     );
     assert_eq!(
         "2015-02-18T23:16:9.15UTC".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
     );
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
-        Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(FixedOffset::east_opt(0)
+            .unwrap()
+            .ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_milli_opt(23, 16, 9, 150)
+            .unwrap())
     );
     assert_eq!(
         "2015-2-18T13:16:9.15-10:00".parse::<DateTime<FixedOffset>>(),
-        Ok(FixedOffset::west(10 * 3600).ymd(2015, 2, 18).and_hms_milli(13, 16, 9, 150))
+        Ok(FixedOffset::west_opt(10 * 3600)
+            .unwrap()
+            .ymd_opt(2015, 2, 18)
+            .unwrap()
+            .and_hms_milli_opt(13, 16, 9, 150)
+            .unwrap())
     );
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<FixedOffset>>().is_err());
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
     );
     assert_eq!(
         "2015-2-18T13:16:9.15-10:00".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd(2015, 2, 18).and_hms_milli(23, 16, 9, 150))
+        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
     );
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<Utc>>().is_err());
 
@@ -207,7 +281,9 @@ fn test_datetime_from_str() {
 
 #[test]
 fn test_datetime_parse_from_str() {
-    let ymdhms = |y, m, d, h, n, s, off| FixedOffset::east(off).ymd(y, m, d).and_hms(h, n, s);
+    let ymdhms = |y, m, d, h, n, s, off| {
+        FixedOffset::east_opt(off).unwrap().ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap()
+    };
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
         Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570 * 60))
@@ -220,19 +296,19 @@ fn test_datetime_parse_from_str() {
     .is_err());
     assert_eq!(
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
-        Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35))
+        Ok(Utc.ymd_opt(2013, 8, 9).unwrap().and_hms_opt(23, 54, 35).unwrap())
     );
 }
 
 #[test]
 fn test_to_string_round_trip() {
-    let dt = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0);
+    let dt = Utc.ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let _dt: DateTime<Utc> = dt.to_string().parse().unwrap();
 
-    let ndt_fixed = dt.with_timezone(&FixedOffset::east(3600));
+    let ndt_fixed = dt.with_timezone(&FixedOffset::east_opt(3600).unwrap());
     let _dt: DateTime<FixedOffset> = ndt_fixed.to_string().parse().unwrap();
 
-    let ndt_fixed = dt.with_timezone(&FixedOffset::east(0));
+    let ndt_fixed = dt.with_timezone(&FixedOffset::east_opt(0).unwrap());
     let _dt: DateTime<FixedOffset> = ndt_fixed.to_string().parse().unwrap();
 }
 
@@ -276,7 +352,7 @@ fn test_datetime_is_send() {
 
 #[test]
 fn test_subsecond_part() {
-    let datetime = Utc.ymd(2014, 7, 8).and_hms_nano(9, 10, 11, 1234567);
+    let datetime = Utc.ymd_opt(2014, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 1234567).unwrap();
 
     assert_eq!(1, datetime.timestamp_subsec_millis());
     assert_eq!(1234, datetime.timestamp_subsec_micros());
@@ -288,28 +364,32 @@ fn test_subsecond_part() {
 fn test_from_system_time() {
     use std::time::Duration;
 
-    let epoch = Utc.ymd(1970, 1, 1).and_hms(0, 0, 0);
+    let epoch = Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let nanos = 999_999_999;
 
     // SystemTime -> DateTime<Utc>
     assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
-        Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)
+        Utc.ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 39, nanos).unwrap()
     );
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
-        Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1)
+        Utc.ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1).unwrap()
     );
 
     // DateTime<Utc> -> SystemTime
     assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
     assert_eq!(
-        SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)),
+        SystemTime::from(
+            Utc.ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 39, nanos).unwrap()
+        ),
         UNIX_EPOCH + Duration::new(999_999_999, nanos)
     );
     assert_eq!(
-        SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1)),
+        SystemTime::from(
+            Utc.ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1).unwrap()
+        ),
         UNIX_EPOCH - Duration::new(999_999_999, 999_999_999)
     );
 
@@ -318,8 +398,14 @@ fn test_from_system_time() {
     {
         assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
     }
-    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400))), UNIX_EPOCH);
-    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800))), UNIX_EPOCH);
+    assert_eq!(
+        SystemTime::from(epoch.with_timezone(&FixedOffset::east_opt(32400).unwrap())),
+        UNIX_EPOCH
+    );
+    assert_eq!(
+        SystemTime::from(epoch.with_timezone(&FixedOffset::west_opt(28800).unwrap())),
+        UNIX_EPOCH
+    );
 }
 
 #[test]
@@ -329,27 +415,31 @@ fn test_from_system_time() {
 
     let nanos = 999_999_000;
 
-    let epoch = Utc.ymd(1970, 1, 1).and_hms(0, 0, 0);
+    let epoch = Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
     // SystemTime -> DateTime<Utc>
     assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
-        Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)
+        Utc.ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 39, nanos).unwrap()
     );
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
-        Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1_000)
+        Utc.ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1_000).unwrap()
     );
 
     // DateTime<Utc> -> SystemTime
     assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
     assert_eq!(
-        SystemTime::from(Utc.ymd(2001, 9, 9).and_hms_nano(1, 46, 39, nanos)),
+        SystemTime::from(
+            Utc.ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 39, nanos).unwrap()
+        ),
         UNIX_EPOCH + Duration::new(999_999_999, nanos)
     );
     assert_eq!(
-        SystemTime::from(Utc.ymd(1938, 4, 24).and_hms_nano(22, 13, 20, 1_000)),
+        SystemTime::from(
+            Utc.ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1_000).unwrap()
+        ),
         UNIX_EPOCH - Duration::new(999_999_999, nanos)
     );
 
@@ -358,13 +448,19 @@ fn test_from_system_time() {
     {
         assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
     }
-    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400))), UNIX_EPOCH);
-    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800))), UNIX_EPOCH);
+    assert_eq!(
+        SystemTime::from(epoch.with_timezone(&FixedOffset::east_opt(32400).unwrap())),
+        UNIX_EPOCH
+    );
+    assert_eq!(
+        SystemTime::from(epoch.with_timezone(&FixedOffset::west_opt(28800).unwrap())),
+        UNIX_EPOCH
+    );
 }
 
 #[test]
 fn test_datetime_format_alignment() {
-    let datetime = Utc.ymd(2007, 1, 2);
+    let datetime = Utc.ymd_opt(2007, 1, 2).unwrap();
 
     // Item::Literal
     let percent = datetime.format("%%");
@@ -395,17 +491,20 @@ fn test_datetime_format_alignment() {
 #[test]
 fn test_datetime_from_local() {
     // 2000-01-12T02:00:00Z
-    let naivedatetime_utc = NaiveDate::from_ymd(2000, 1, 12).and_hms(2, 0, 0);
+    let naivedatetime_utc =
+        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(2, 0, 0).unwrap();
     let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
 
     // 2000-01-12T10:00:00+8:00:00
-    let timezone_east = FixedOffset::east(8 * 60 * 60);
-    let naivedatetime_east = NaiveDate::from_ymd(2000, 1, 12).and_hms(10, 0, 0);
+    let timezone_east = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+    let naivedatetime_east =
+        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(10, 0, 0).unwrap();
     let datetime_east = DateTime::<FixedOffset>::from_local(naivedatetime_east, timezone_east);
 
     // 2000-01-11T19:00:00-7:00:00
-    let timezone_west = FixedOffset::west(7 * 60 * 60);
-    let naivedatetime_west = NaiveDate::from_ymd(2000, 1, 11).and_hms(19, 0, 0);
+    let timezone_west = FixedOffset::west_opt(7 * 60 * 60).unwrap();
+    let naivedatetime_west =
+        NaiveDate::from_ymd_opt(2000, 1, 11).unwrap().and_hms_opt(19, 0, 0).unwrap();
     let datetime_west = DateTime::<FixedOffset>::from_local(naivedatetime_west, timezone_west);
 
     assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
@@ -432,20 +531,20 @@ fn test_years_elapsed() {
 
 #[test]
 fn test_datetime_add_assign() {
-    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+    let naivedatetime = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
     let mut datetime_add = datetime;
 
     datetime_add += TimeDelta::seconds(60);
     assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
 
-    let timezone = FixedOffset::east(60 * 60);
+    let timezone = FixedOffset::east_opt(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
     assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
 
-    let timezone = FixedOffset::west(2 * 60 * 60);
+    let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
@@ -455,7 +554,7 @@ fn test_datetime_add_assign() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_add_assign_local() {
-    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
+    let naivedatetime = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
     let mut datetime_add = Local.from_utc_datetime(&naivedatetime);
@@ -469,20 +568,20 @@ fn test_datetime_add_assign_local() {
 
 #[test]
 fn test_datetime_sub_assign() {
-    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).and_hms(12, 0, 0);
+    let naivedatetime = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(12, 0, 0).unwrap();
     let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
     let mut datetime_sub = datetime;
 
     datetime_sub -= TimeDelta::minutes(90);
     assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 
-    let timezone = FixedOffset::east(60 * 60);
+    let timezone = FixedOffset::east_opt(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
     assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 
-    let timezone = FixedOffset::west(2 * 60 * 60);
+    let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
@@ -492,7 +591,7 @@ fn test_datetime_sub_assign() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_sub_assign_local() {
-    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).and_hms(0, 0, 0);
+    let naivedatetime = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
     let mut datetime_sub = Local.from_utc_datetime(&naivedatetime);

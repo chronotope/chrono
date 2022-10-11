@@ -115,7 +115,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733);
+/// let time = Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -152,7 +152,7 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733),
+    ///     time: Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -240,7 +240,7 @@ pub mod ts_nanoseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733));
+/// let time = Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -276,7 +276,7 @@ pub mod ts_nanoseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_nano(02, 04, 59, 918355733)),
+    ///     time: Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -369,7 +369,7 @@ pub mod ts_nanoseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355);
+/// let time = Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -405,7 +405,7 @@ pub mod ts_microseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355),
+    ///     time: Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
@@ -493,7 +493,7 @@ pub mod ts_microseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355));
+/// let time = Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -528,7 +528,7 @@ pub mod ts_microseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_micro(02, 04, 59, 918355)),
+    ///     time: Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
@@ -621,7 +621,7 @@ pub mod ts_microseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918);
+/// let time = Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -657,7 +657,7 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918),
+    ///     time: Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -742,7 +742,7 @@ pub mod ts_milliseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918));
+/// let time = Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -777,7 +777,7 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd(2018, 5, 17).and_hms_milli(02, 04, 59, 918)),
+    ///     time: Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -883,7 +883,7 @@ pub mod ts_milliseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd(2015, 5, 15).and_hms(10, 0, 0);
+/// let time = Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -919,7 +919,7 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd(2015, 5, 15).and_hms(10, 0, 0),
+    ///     time: Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
@@ -1001,7 +1001,7 @@ pub mod ts_seconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd(2015, 5, 15).and_hms(10, 0, 0));
+/// let time = Some(Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -1036,7 +1036,7 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd(2015, 5, 15).and_hms(10, 0, 0)),
+    ///     time: Some(Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
@@ -1134,7 +1134,7 @@ fn test_serde_bincode() {
     // it is not self-describing.
     use bincode::{deserialize, serialize};
 
-    let dt = Utc.ymd(2014, 7, 24).and_hms(12, 34, 6);
+    let dt = Utc.ymd_opt(2014, 7, 24).unwrap().and_hms_opt(12, 34, 6).unwrap();
     let encoded = serialize(&dt).unwrap();
     let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
     assert_eq!(dt, decoded);
