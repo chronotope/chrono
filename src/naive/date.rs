@@ -267,7 +267,7 @@ impl NaiveDate {
     /// ```
     pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month, day, flags)?)
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -615,7 +615,7 @@ impl NaiveDate {
         let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         let day = Ord::min(self.day(), days[(month - 1) as usize]);
 
-        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags)?)
     }
 
     /// Add a duration in [`Days`] to the date
@@ -1429,7 +1429,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month))
+        self.with_mdf(self.mdf().with_month(month)?)
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
@@ -1448,7 +1448,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month0 + 1))
+        self.with_mdf(self.mdf().with_month(month0 + 1)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1467,7 +1467,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day))
+        self.with_mdf(self.mdf().with_day(day)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
@@ -1486,7 +1486,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day0 + 1))
+        self.with_mdf(self.mdf().with_day(day0 + 1)?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.

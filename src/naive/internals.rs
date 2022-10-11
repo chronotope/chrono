@@ -371,28 +371,11 @@ pub(super) struct Mdf(pub(super) u32);
 
 impl Mdf {
     #[inline]
-    fn clamp_month(month: u32) -> u32 {
-        if month > 12 {
-            0
-        } else {
-            month
+    pub(super) fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
+        match month <= 12 && day <= 31 {
+            true => Some(Mdf((month << 9) | (day << 4) | u32::from(flags))),
+            false => None,
         }
-    }
-
-    #[inline]
-    fn clamp_day(day: u32) -> u32 {
-        if day > 31 {
-            0
-        } else {
-            day
-        }
-    }
-
-    #[inline]
-    pub(super) fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Mdf {
-        let month = Mdf::clamp_month(month);
-        let day = Mdf::clamp_day(day);
-        Mdf((month << 9) | (day << 4) | u32::from(flags))
     }
 
     #[inline]
@@ -421,10 +404,13 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_month(&self, month: u32) -> Mdf {
-        let month = Mdf::clamp_month(month);
+    pub(super) fn with_month(&self, month: u32) -> Option<Mdf> {
+        if month > 12 {
+            return None;
+        }
+
         let Mdf(mdf) = *self;
-        Mdf((mdf & 0b1_1111_1111) | (month << 9))
+        Some(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
     }
 
     #[inline]
@@ -434,10 +420,13 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_day(&self, day: u32) -> Mdf {
-        let day = Mdf::clamp_day(day);
+    pub(super) fn with_day(&self, day: u32) -> Option<Mdf> {
+        if day > 31 {
+            return None;
+        }
+
         let Mdf(mdf) = *self;
-        Mdf((mdf & !0b1_1111_0000) | (day << 4))
+        Some(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
     }
 
     #[inline]
@@ -556,7 +545,12 @@ mod tests {
         fn check(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) {
             for month in range_inclusive(month1, month2) {
                 for day in range_inclusive(day1, day2) {
-                    let mdf = Mdf::new(month, day, flags);
+                    let mdf = match Mdf::new(month, day, flags) {
+                        Some(mdf) => mdf,
+                        None if !expected => continue,
+                        None => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
+                    };
+
                     assert!(
                         mdf.valid() == expected,
                         "month {} day {} = {:?} should be {} for dominical year {:?}",
@@ -711,7 +705,11 @@ mod tests {
         for &flags in FLAGS.iter() {
             for month in range_inclusive(1u32, 12) {
                 for day in range_inclusive(1u32, 31) {
-                    let mdf = Mdf::new(month, day, flags);
+                    let mdf = match Mdf::new(month, day, flags) {
+                        Some(mdf) => mdf,
+                        None => continue,
+                    };
+
                     if mdf.valid() {
                         assert_eq!(mdf.month(), month);
                         assert_eq!(mdf.day(), day);
@@ -724,11 +722,15 @@ mod tests {
     #[test]
     fn test_mdf_with_fields() {
         fn check(flags: YearFlags, month: u32, day: u32) {
-            let mdf = Mdf::new(month, day, flags);
+            let mdf = Mdf::new(month, day, flags).unwrap();
 
             for month in range_inclusive(0u32, 16) {
-                let mdf = mdf.with_month(month);
-                assert_eq!(mdf.valid(), Mdf::new(month, day, flags).valid());
+                let mdf = match mdf.with_month(month) {
+                    Some(mdf) => mdf,
+                    None if month > 12 => continue,
+                    None => panic!("failed to create Mdf with month {}", month),
+                };
+
                 if mdf.valid() {
                     assert_eq!(mdf.month(), month);
                     assert_eq!(mdf.day(), day);
@@ -736,8 +738,12 @@ mod tests {
             }
 
             for day in range_inclusive(0u32, 1024) {
-                let mdf = mdf.with_day(day);
-                assert_eq!(mdf.valid(), Mdf::new(month, day, flags).valid());
+                let mdf = match mdf.with_day(day) {
+                    Some(mdf) => mdf,
+                    None if day > 31 => continue,
+                    None => panic!("failed to create Mdf with month {}", month),
+                };
+
                 if mdf.valid() {
                     assert_eq!(mdf.month(), month);
                     assert_eq!(mdf.day(), day);
