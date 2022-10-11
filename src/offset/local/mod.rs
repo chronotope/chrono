@@ -128,7 +128,7 @@ impl TimeZone for Local {
         let mut local = local.clone();
         // Get the offset from the js runtime
         let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60);
-        local -= crate::Duration::seconds(offset.local_minus_utc() as i64);
+        local -= crate::TimeDelta::seconds(offset.local_minus_utc() as i64);
         LocalResult::Single(DateTime::from_utc(local, offset))
     }
 
@@ -173,83 +173,7 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::{Datelike, Duration, NaiveDate, NaiveDateTime, Timelike};
-
-    use std::{path, process};
-
-    #[cfg(unix)]
-    fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
-        let output = process::Command::new(path)
-            .arg("-d")
-            .arg(format!("{}-{:02}-{:02} {:02}:05:01", dt.year(), dt.month(), dt.day(), dt.hour()))
-            .arg("+%Y-%m-%d %H:%M:%S %:z")
-            .output()
-            .unwrap();
-
-        let date_command_str = String::from_utf8(output.stdout).unwrap();
-
-        // The below would be preferred. At this stage neither earliest() or latest()
-        // seems to be consistent with the output of the `date` command, so we simply
-        // compare both.
-        // let local = Local
-        //     .from_local_datetime(&NaiveDate::from_ymd(year, month, day).and_hms(hour, 5, 1))
-        //     // looks like the "date" command always returns a given time when it is ambiguous
-        //     .earliest();
-
-        // if let Some(local) = local {
-        //     assert_eq!(format!("{}\n", local), date_command_str);
-        // } else {
-        //     // we are in a "Spring forward gap" due to DST, and so date also returns ""
-        //     assert_eq!("", date_command_str);
-        // }
-
-        // This is used while a decision is made wheter the `date` output needs to
-        // be exactly matched, or whether LocalResult::Ambigious should be handled
-        // differently
-        match Local.from_local_datetime(
-            &NaiveDate::from_ymd(dt.year(), dt.month(), dt.day()).and_hms(dt.hour(), 5, 1),
-        ) {
-            crate::LocalResult::Ambiguous(a, b) => {
-                assert!(
-                    format!("{}\n", a) == date_command_str
-                        || format!("{}\n", b) == date_command_str
-                )
-            }
-            crate::LocalResult::Single(a) => {
-                assert_eq!(format!("{}\n", a), date_command_str);
-            }
-            crate::LocalResult::None => {
-                assert_eq!("", date_command_str);
-            }
-        }
-    }
-
-    #[test]
-    #[cfg(unix)]
-    fn try_verify_against_date_command() {
-        let date_path = "/usr/bin/date";
-
-        if !path::Path::new(date_path).exists() {
-            // date command not found, skipping
-            // avoid running this on macOS, which has path /bin/date
-            // as the required CLI arguments are not present in the
-            // macOS build.
-            return;
-        }
-
-        let mut date = NaiveDate::from_ymd(1975, 1, 1).and_hms(0, 0, 0);
-
-        while date.year() < 2078 {
-            if (1975..=1977).contains(&date.year())
-                || (2020..=2022).contains(&date.year())
-                || (2073..=2077).contains(&date.year())
-            {
-                verify_against_date_command_local(date_path, date);
-            }
-
-            date += crate::Duration::hours(1);
-        }
-    }
+    use crate::{Datelike, TimeDelta};
 
     #[test]
     fn verify_correct_offsets() {
@@ -267,7 +191,7 @@ mod tests {
     #[test]
     fn verify_correct_offsets_distant_past() {
         // let distant_past = Local::now() - Duration::days(365 * 100);
-        let distant_past = Local::now() - Duration::days(250 * 31);
+        let distant_past = Local::now() - TimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
@@ -280,7 +204,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + Duration::days(250 * 31);
+        let distant_future = Local::now() + TimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 

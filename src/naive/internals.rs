@@ -15,10 +15,12 @@
 
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
-use crate::Weekday;
+use core::convert::TryFrom;
 use core::{fmt, i32};
+
 use num_integer::{div_rem, mod_floor};
-use num_traits::FromPrimitive;
+
+use crate::Weekday;
 
 /// The internal date representation. This also includes the packed `Mdf` value.
 pub(super) type DateImpl = i32;
@@ -322,7 +324,7 @@ impl Of {
     #[inline]
     pub(super) fn weekday(&self) -> Weekday {
         let Of(of) = *self;
-        Weekday::from_u32(((of >> 4) + (of & 0b111)) % 7).unwrap()
+        Weekday::try_from((((of >> 4) + (of & 0b111)) % 7) as u8).unwrap()
     }
 
     #[inline]
@@ -330,7 +332,7 @@ impl Of {
         // week ordinal = ordinal + delta
         let Of(of) = *self;
         let weekord = (of >> 4).wrapping_add(self.flags().isoweek_delta());
-        (weekord / 7, Weekday::from_u32(weekord % 7).unwrap())
+        (weekord / 7, Weekday::try_from((weekord % 7) as u8).unwrap())
     }
 
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]

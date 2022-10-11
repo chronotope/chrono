@@ -71,6 +71,8 @@ The following specifiers are available both to formatting and parsing.
 | `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. [^8] |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
 | `%:z` | `+09:30` | Same as `%z` but with a colon.                                             |
+|`%::z`|`+09:30:00`| Offset from the local time to UTC with seconds.                            |
+|`%:::z`| `+09`    | Offset from the local time to UTC without minutes.                         |
 | `%#z` | `+09`    | *Parsing only:* Same as `%z` but allows minutes to be missing or present.  |
 |       |          |                                                                            |
 |       |          | **DATE & TIME SPECIFIERS:**                                                |
@@ -111,6 +113,13 @@ Notes:
 
 [^5]: `%+`: Same as `%Y-%m-%dT%H:%M:%S%.f%:z`, i.e. 0, 3, 6 or 9 fractional
    digits for seconds and colons in the time zone offset.
+   <br>
+   <br>
+   This format also supports having a `Z` or `UTC` in place of `%:z`. They
+   are equivalent to `+00:00`.
+   <br>
+   <br>
+   Note that all `T`, `Z`, and `UTC` are parsed case-insensitively.
    <br>
    <br>
    The typical `strftime` implementations have different (and locale-dependent)
@@ -166,6 +175,12 @@ Notes:
 */
 
 #[cfg(feature = "unstable-locales")]
+extern crate alloc;
+
+#[cfg(feature = "unstable-locales")]
+use alloc::vec::Vec;
+
+#[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
@@ -218,6 +233,7 @@ impl<'a> StrftimeItems<'a> {
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
@@ -397,10 +413,20 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         }
                     }
                     '+' => fix!(RFC3339),
-                    ':' => match next!() {
-                        'z' => fix!(TimezoneOffsetColon),
-                        _ => Item::Error,
-                    },
+                    ':' => {
+                        if self.remainder.starts_with("::z") {
+                            self.remainder = &self.remainder[3..];
+                            fix!(TimezoneOffsetTripleColon)
+                        } else if self.remainder.starts_with(":z") {
+                            self.remainder = &self.remainder[2..];
+                            fix!(TimezoneOffsetDoubleColon)
+                        } else if self.remainder.starts_with('z') {
+                            self.remainder = &self.remainder[1..];
+                            fix!(TimezoneOffsetColon)
+                        } else {
+                            Item::Error
+                        }
+                    }
                     '.' => match next!() {
                         '3' => match next!() {
                             'f' => fix!(Nanosecond3),
@@ -530,7 +556,7 @@ fn test_strftime_items() {
 #[cfg(test)]
 #[test]
 fn test_strftime_docs() {
-    use crate::{FixedOffset, TimeZone, Timelike};
+    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
     let dt = FixedOffset::east(34200).ymd(2001, 7, 8).and_hms_nano(0, 34, 59, 1_026_490_708);
 
@@ -589,10 +615,30 @@ fn test_strftime_docs() {
     //assert_eq!(dt.format("%Z").to_string(), "ACST");
     assert_eq!(dt.format("%z").to_string(), "+0930");
     assert_eq!(dt.format("%:z").to_string(), "+09:30");
+    assert_eq!(dt.format("%::z").to_string(), "+09:30:00");
+    assert_eq!(dt.format("%:::z").to_string(), "+09");
 
     // date & time specifiers
     assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
     assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
+
+    assert_eq!(
+        dt.with_timezone(&Utc).format("%+").to_string(),
+        "2001-07-07T15:04:60.026490708+00:00"
+    );
+    assert_eq!(
+        dt.with_timezone(&Utc),
+        DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
+    );
+    assert_eq!(
+        dt.with_timezone(&Utc),
+        DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
+    );
+    assert_eq!(
+        dt.with_timezone(&Utc),
+        DateTime::<FixedOffset>::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
+    );
+
     assert_eq!(
         dt.with_nanosecond(1_026_490_000).unwrap().format("%+").to_string(),
         "2001-07-08T00:34:60.026490+09:30"

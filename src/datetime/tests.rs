@@ -5,9 +5,9 @@ use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, TimeZone, Utc};
-use crate::oldtime::Duration;
 #[cfg(feature = "clock")]
 use crate::Datelike;
+use crate::TimeDelta;
 
 #[test]
 fn test_datetime_offset() {
@@ -38,10 +38,10 @@ fn test_datetime_offset() {
 
     let dt = Utc.ymd(2014, 5, 6).and_hms(7, 8, 9);
     assert_eq!(dt, edt.ymd(2014, 5, 6).and_hms(3, 8, 9));
-    assert_eq!(dt + Duration::seconds(3600 + 60 + 1), Utc.ymd(2014, 5, 6).and_hms(8, 9, 10));
+    assert_eq!(dt + TimeDelta::seconds(3600 + 60 + 1), Utc.ymd(2014, 5, 6).and_hms(8, 9, 10));
     assert_eq!(
         dt.signed_duration_since(edt.ymd(2014, 5, 6).and_hms(10, 11, 12)),
-        Duration::seconds(-7 * 3600 - 3 * 60 - 3)
+        TimeDelta::seconds(-7 * 3600 - 3 * 60 - 3)
     );
 
     assert_eq!(*Utc.ymd(2014, 5, 6).and_hms(7, 8, 9).offset(), Utc);
@@ -111,24 +111,24 @@ fn test_datetime_rfc2822_and_rfc3339() {
     );
 
     assert_eq!(
-        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
         Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
     );
     assert_eq!(
-        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 -0000"),
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 -0000"),
         Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
     );
     assert_eq!(
-        DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
+        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:16:09Z"),
         Ok(FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9))
     );
     assert_eq!(
-        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
         Ok(edt.ymd(2015, 2, 18).and_hms_milli(23, 59, 59, 1_000))
     );
-    assert!(DateTime::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
+    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
     assert_eq!(
-        DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
+        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
         Ok(edt.ymd(2015, 2, 18).and_hms_micro(23, 59, 59, 1_234_567))
     );
 }
@@ -209,12 +209,15 @@ fn test_datetime_from_str() {
 fn test_datetime_parse_from_str() {
     let ymdhms = |y, m, d, h, n, s, off| FixedOffset::east(off).ymd(y, m, d).and_hms(h, n, s);
     assert_eq!(
-        DateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
+        DateTime::<FixedOffset>::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
         Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570 * 60))
     ); // ignore offset
-    assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
-    assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
-        .is_err());
+    assert!(DateTime::<FixedOffset>::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
+    assert!(DateTime::<FixedOffset>::parse_from_str(
+        "Fri, 09 Aug 2013 23:54:35 GMT",
+        "%a, %d %b %Y %H:%M:%S GMT"
+    )
+    .is_err());
     assert_eq!(
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(Utc.ymd(2013, 8, 9).and_hms(23, 54, 35))
@@ -415,15 +418,15 @@ fn test_years_elapsed() {
     const WEEKS_PER_YEAR: f32 = 52.1775;
 
     // This is always at least one year because 1 year = 52.1775 weeks.
-    let one_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+    let one_year_ago = Utc::today() - TimeDelta::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
     // A bit more than 2 years.
-    let two_year_ago = Utc::today() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+    let two_year_ago = Utc::today() - TimeDelta::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
 
     assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
     assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
 
     // If the given DateTime is later than now, the function will always return 0.
-    let future = Utc::today() + Duration::weeks(12);
+    let future = Utc::today() + TimeDelta::weeks(12);
     assert_eq!(Utc::today().years_since(future), None);
 }
 
@@ -433,20 +436,20 @@ fn test_datetime_add_assign() {
     let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
     let mut datetime_add = datetime;
 
-    datetime_add += Duration::seconds(60);
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    datetime_add += TimeDelta::seconds(60);
+    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
 
     let timezone = FixedOffset::east(60 * 60);
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
 
     let timezone = FixedOffset::west(2 * 60 * 60);
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
 }
 
 #[test]
@@ -459,8 +462,8 @@ fn test_datetime_add_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_add += Duration::days(1);
-        assert_eq!(datetime_add, datetime + Duration::days(i))
+        datetime_add += TimeDelta::days(1);
+        assert_eq!(datetime_add, datetime + TimeDelta::days(i))
     }
 }
 
@@ -470,20 +473,20 @@ fn test_datetime_sub_assign() {
     let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
     let mut datetime_sub = datetime;
 
-    datetime_sub -= Duration::minutes(90);
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    datetime_sub -= TimeDelta::minutes(90);
+    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 
     let timezone = FixedOffset::east(60 * 60);
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 
     let timezone = FixedOffset::west(2 * 60 * 60);
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 }
 
 #[test]
@@ -496,7 +499,7 @@ fn test_datetime_sub_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_sub -= Duration::days(1);
-        assert_eq!(datetime_sub, datetime - Duration::days(i))
+        datetime_sub -= TimeDelta::days(1);
+        assert_eq!(datetime_sub, datetime - TimeDelta::days(i))
     }
 }

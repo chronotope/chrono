@@ -2,7 +2,7 @@ name: All Tests and Builds
 
 on:
   push:
-    branches: [main]
+    branches: [main, 0.4.x]
   pull_request:
     paths:
       - "**.rs"
@@ -11,267 +11,146 @@ on:
       - Cargo.toml
 
 jobs:
-  test:
+  timezones_linux:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-latest]
-        rust_version: [stable]
-        exhaustive_tz: [onetz]
-        check_combinatoric: [no_combinatoric]
-        include:
-          # check all tzs on most-recent OS's
-          - os: ubuntu-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          - os: windows-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          - os: macos-latest
-            rust_version: stable
-            exhaustive_tz: all_tzs
-          # compilation check
-          - os: ubuntu-latest
-            rust_version: stable
-            check_combinatoric: "combinatoric"
-          # test other rust versions
-          - os: ubuntu-latest
-            rust_version: beta
-          - os: ubuntu-latest
-            rust_version: nightly
-          - os: ubuntu-20.04
-            rust_version: 1.38.0
-          - os: macos-latest
-            rust_version: 1.38.0
-          - os: windows-latest
-            rust_version: 1.38.0
-
+        os: [ubuntu-latest]
+        tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo test --all-features --color=always -- --color=always
 
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+  timezones_other:
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo test --lib --all-features --color=always -- --color=always
+      - run: cargo test --doc --all-features --color=always -- --color=always
+
+  # later this may be able to be included with the below
+  # kept seperate for now as the following don't compile on 1.38.0
+  # * rkyv
+  # * criterion
+  rust_msrv:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.38.0
+      - uses: Swatinem/rust-cache@v1
+      # run --lib and --doc to avoid the long running integration tests which are run elsewhere
+      - run: cargo test --lib --features unstable-locales,wasmbind,clock,serde,winapi --color=always -- --color=always
+      - run: cargo test --doc --features unstable-locales,wasmbind,clock,serde,winapi --color=always -- --color=always
+
+  rust_versions:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust_version: ["stable", "beta", "nightly"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_version }}
-          override: true
-
       - uses: Swatinem/rust-cache@v1
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: ${{ matrix.rust_version }}
-          EXHAUSTIVE_TZ: ${{ matrix.exhaustive_tz }}
-          CHECK_COMBINATORIC: ${{ matrix.check_combinatoric }}
+      - run: cargo check --benches
+      # run --lib and --doc to avoid the long running integration tests which are run elsewhere
+      - run: cargo test --lib --all-features --color=always -- --color=always
+      - run: cargo test --doc --all-features --color=always -- --color=always
+
+  features_check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
 
   no_std:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
-
+        os: [ubuntu-latest]
+        target: [thumbv6m-none-eabi, x86_64-fortanix-unknown-sgx]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust with no_std toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: thumbv6m-none-eabi
-          override: true
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v1
-
-      - name: Build no_std lib
-        run: cargo build --target thumbv6m-none-eabi --color=always
+      - run: cargo build --target ${{ matrix.target }} --color=always
         working-directory: ./ci/core-test
 
-  intel_sgx:
+  alternative_targets:
     strategy:
       matrix:
         os: [ubuntu-latest]
-
+        target: [wasm32-unknown-unknown, wasm32-wasi, wasm32-unknown-emscripten, aarch64-apple-ios, aarch64-linux-android]
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust with fortanix sgx toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
-          target: x86_64-fortanix-unknown-sgx
-          override: true
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v1
-
-      - name: Build sgx lib
-        run: cargo build --target x86_64-fortanix-unknown-sgx --color=always
-        working-directory: ./ci/core-test
-
-  wasm:
-    strategy:
-      matrix:
-        os: [macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-      - uses: Swatinem/rust-cache@v1
-
-      - name: Install node
-        uses: actions/setup-node@v1
+      - uses: actions/setup-node@v1
         with:
           node-version: "12"
-
-      - name: Install wasm-pack
-        run: |
+      - run: |
           export RUST_BACKTRACE=1
           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
           wasm-pack --version
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_simple
-
-  wasm_emscripten:
-    strategy:
-      matrix:
-        os: [macos-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-emscripten
-          override: true
-
-      - name: Install node
-        uses: actions/setup-node@v1
-        with:
-          node-version: "12"
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_emscripten
-
-  wasm_unknown:
+      - run: cargo build --target ${{ matrix.target }}  --color=always
+  
+  features_check_wasm:
     strategy:
       matrix:
         os: [ubuntu-latest]
-
     runs-on: ${{ matrix.os }}
-
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_unknown
-
-  wasm_unknown_no_wasmbind:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_unknown_no_wasmbind
-
-  wasm_wasi:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-wasi
-          override: true
-          default: true
-
-      - name: Build and Test
-        run: bash ci/github.sh
-        env:
-          RUST_VERSION: stable
-          WASM: wasm_wasi
+          targets: wasm32-unknown-unknown
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
 
   cross-targets:
     strategy:
       matrix:
         target:
           - x86_64-sun-solaris
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install cross
-        run: cargo install cross
-
+      - run: cargo install cross
       - uses: Swatinem/rust-cache@v1
-
-      - name: Build static library
-        run: cross check --target ${{ matrix.target }}
+      - run: cross check --target ${{ matrix.target }}
 
   check-docs:
     runs-on: ubuntu-latest
-    name: Check doc links
     steps:
       - uses: actions/checkout@v2
-      - name: Install rust nightly
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - name: Check docs build without warnings
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo +nightly doc --all-features --no-deps
         env:
-          RUSTDOCFLAGS: "-D warnings"
-        run: cargo +nightly doc
+          RUSTDOCFLAGS: "-D warnings --cfg docsrs"

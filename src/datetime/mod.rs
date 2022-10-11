@@ -18,25 +18,20 @@ use std::string::ToString;
 #[cfg(any(feature = "std", test))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
+
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item};
-use crate::naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
+use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-use crate::oldtime::Duration as OldDuration;
-use crate::Date;
-use crate::{Datelike, Timelike, Weekday};
-
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
-
-#[cfg(feature = "rustc-serialize")]
-pub(super) mod rustc_serialize;
+use crate::{Date, Datelike, Months, TimeDelta, Timelike, Weekday};
 
 /// documented at re-export site
 #[cfg(feature = "serde")]
@@ -323,26 +318,72 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
+    }
+
+    /// Adds given `Months` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow, or if the
+    /// local time is not valid on the newly calculated date.
+    ///
+    /// See [`NaiveDate::checked_add_months`] for more details on behavior
+    pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
+        self.naive_local()
+            .checked_add_months(rhs)?
+            .and_local_timezone(Tz::from_offset(&self.offset))
+            .single()
     }
 
     /// Subtracts given `Duration` from the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
 
+    /// Subtracts given `Months` from the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow, or if the
+    /// local time is not valid on the newly calculated date.
+    ///
+    /// See [`NaiveDate::checked_sub_months`] for more details on behavior
+    pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
+        self.naive_local()
+            .checked_sub_months(rhs)?
+            .and_local_timezone(Tz::from_offset(&self.offset))
+            .single()
+    }
+
+    /// Add a duration in [`Days`] to the date part of the `DateTime`
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+        self.datetime
+            .checked_add_days(days)?
+            .and_local_timezone(TimeZone::from_offset(&self.offset))
+            .single()
+    }
+
+    /// Subtract a duration in [`Days`] from the date part of the `DateTime`
+    ///
+    /// Returns `None` if the resulting date would be out of range.
+    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+        self.datetime
+            .checked_sub_days(days)?
+            .and_local_timezone(TimeZone::from_offset(&self.offset))
+            .single()
+    }
+
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
     #[inline]
-    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
+    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> TimeDelta {
         self.datetime.signed_duration_since(rhs.datetime)
     }
 
@@ -388,6 +429,7 @@ impl Default for DateTime<Utc> {
 }
 
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Default for DateTime<Local> {
     fn default() -> Self {
         Local.from_utc_datetime(&NaiveDateTime::default())
@@ -413,6 +455,7 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
 
 /// Convert a `DateTime<Utc>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Utc>> for DateTime<Local> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
@@ -435,6 +478,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
 
 /// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<FixedOffset>> for DateTime<Local> {
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
@@ -447,6 +491,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Local> {
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<Utc>` instance.
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Local>> for DateTime<Utc> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<Utc>` instance.
     ///
@@ -459,6 +504,7 @@ impl From<DateTime<Local>> for DateTime<Utc> {
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
     ///
@@ -478,16 +524,18 @@ where
 }
 
 impl DateTime<FixedOffset> {
-    /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
-    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses an RFC 2822 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
-    /// RFC 2822 is the internet message standard that specifies the
-    /// representation of times in HTTP and email headers.
+    /// This parses valid RFC 2822 datetime strings (such as `Tue, 1 Jul 2003 10:52:37 +0200`)
+    /// and returns a new [`DateTime`] instance with the parsed timezone as the [`FixedOffset`].
+    ///
+    /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
+    /// and email headers.
     ///
     /// ```
     /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// assert_eq!(
-    ///     DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
+    ///     DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
     ///     FixedOffset::east(0).ymd(2015, 2, 18).and_hms(23, 16, 9)
     /// );
     /// ```
@@ -498,11 +546,19 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`,
-    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses an RFC 3339 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
-    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows some freedom
-    /// over the syntax and RFC 3339 exercises that freedom to rigidly define a fixed format.
+    /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
+    /// also valid RFC 3339 date-and-time values) and returns a new [`DateTime`] with a
+    /// [`FixedOffset`] corresponding to the parsed timezone. While RFC 3339 values come in a wide
+    /// variety of shapes and sizes, `1996-12-19T16:39:57-08:00` is an example of the most commonly
+    /// encountered variety of RFC 3339 formats.
+    ///
+    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows representing
+    /// values in a wide range of formats, only some of which represent actual date-and-time
+    /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
+    /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
+    /// values (or the other way around).
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
@@ -510,25 +566,22 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses a string with the specified format string and returns a new
-    /// [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value.
     ///
-    /// See the [`crate::format::strftime`] module on the supported escape
+    /// Note that this method *requires a timezone* in the input string. See
+    /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
+    /// for a version that does not require a timezone in the to-be-parsed str. The returned
+    /// [`DateTime`] value will have a [`FixedOffset`] reflecting the parsed timezone.
+    ///
+    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
     /// sequences.
-    ///
-    /// See also [`TimeZone::datetime_from_str`] which gives a local
-    /// [`DateTime`] on specific time zone.
-    ///
-    /// Note that this method *requires a timezone* in the string. See
-    /// [`NaiveDateTime::parse_from_str`]
-    /// for a version that does not require a timezone in the to-be-parsed str.
     ///
     /// # Example
     ///
     /// ```rust
     /// use chrono::{DateTime, FixedOffset, TimeZone};
     ///
-    /// let dt = DateTime::parse_from_str(
+    /// let dt = DateTime::<FixedOffset>::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
     /// assert_eq!(dt, Ok(FixedOffset::east(0).ymd(1983, 4, 13).and_hms_milli(12, 9, 14, 274)));
     /// ```
@@ -539,12 +592,69 @@ impl DateTime<FixedOffset> {
     }
 }
 
+impl DateTime<Utc> {
+    /// Parses an RFC 2822 date-and-time string into a `DateTime<Utc>` value.
+    ///
+    /// This parses valid RFC 2822 datetime values (such as `Tue, 1 Jul 2003 10:52:37 +0200`)
+    /// and returns a new `DateTime<Utc>` instance corresponding to the UTC date/time, accounting
+    /// for the difference between UTC and the parsed timezone, should they differ.
+    ///
+    /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
+    /// and email headers.
+    pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<Utc>> {
+        DateTime::<FixedOffset>::parse_from_rfc2822(s).map(|result| result.into())
+    }
+
+    /// Parses an RFC 3339 date-and-time string into a `DateTime<Utc>` value.
+    ///
+    /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
+    /// also valid RFC 3339 date-and-time values) and returns a new `DateTime<Utc>` instance
+    /// corresponding to the matching UTC date/time, accounting for the difference between UTC and
+    /// the parsed input's timezone, should they differ. While RFC 3339 values come in a wide
+    /// variety of shapes and sizes, `1996-12-19T16:39:57-08:00` is an example of the most commonly
+    /// encountered variety of RFC 3339 formats.
+    ///
+    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows representing
+    /// values in a wide range of formats, only some of which represent actual date-and-time
+    /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
+    /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
+    /// values (or the other way around).
+    pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<Utc>> {
+        DateTime::<FixedOffset>::parse_from_rfc3339(s).map(|result| result.into())
+    }
+
+    /// Parses a string from a user-specified format into a `DateTime<Utc>` value.
+    ///
+    /// Note that this method *requires a timezone* in the input string. See
+    /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
+    /// for a version that does not require a timezone in the to-be-parsed str. The returned
+    /// `DateTime<Utc>` value will reflect the difference in timezones between UTC and the parsed
+    /// time zone, should they differ.
+    ///
+    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
+    /// sequences.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use chrono::{DateTime, TimeZone, Utc};
+    ///
+    /// let dt = DateTime::<Utc>::parse_from_str(
+    ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
+    /// assert_eq!(dt, Ok(Utc.ymd(1983, 4, 13).and_hms_milli(11, 9, 14, 274)));
+    /// ```
+    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<Utc>> {
+        DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())
+    }
+}
+
 impl<Tz: TimeZone> DateTime<Tz>
 where
     Tz::Offset: fmt::Display,
 {
     /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn to_rfc2822(&self) -> String {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         self.format_with_items(ITEMS.iter()).to_string()
@@ -552,16 +662,17 @@ where
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn to_rfc3339(&self) -> String {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         self.format_with_items(ITEMS.iter()).to_string()
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
-    /// formatted as per a `SecondsFormat`.
+    /// formatted as per `SecondsFormat`.
     ///
-    /// If passed `use_z` true and the timezone is UTC (offset 0), use 'Z', as
-    /// per [`Fixed::TimezoneOffsetColonZ`] If passed `use_z` false, use
+    /// If `use_z` is true and the timezone is UTC (offset 0), uses `Z` as
+    /// per [`Fixed::TimezoneOffsetColonZ`]. If `use_z` is false, uses
     /// [`Fixed::TimezoneOffsetColon`]
     ///
     /// # Examples
@@ -582,6 +693,7 @@ where
     ///            "2018-01-26T10:30:09+08:00");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         use crate::format::Numeric::*;
         use crate::format::Pad::Zero;
@@ -626,6 +738,7 @@ where
 
     /// Formats the combined date and time with the specified formatting items.
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
@@ -636,9 +749,9 @@ where
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
 
-    /// Formats the combined date and time with the specified format string.
-    /// See the [`crate::format::strftime`] module
-    /// on the supported escape sequences.
+    /// Formats the combined date and time per the specified format string.
+    ///
+    /// See the [`crate::format::strftime`] module for the supported escape sequences.
     ///
     /// # Example
     /// ```rust
@@ -649,6 +762,7 @@ where
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
@@ -656,6 +770,7 @@ where
 
     /// Formats the combined date and time with the specified formatting items and locale.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
@@ -676,12 +791,13 @@ where
         )
     }
 
-    /// Formats the combined date and time with the specified format string and
+    /// Formats the combined date and time per the specified format string and
     /// locale.
     ///
-    /// See the [`::format::strftime`] module on the supported escape
+    /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
     pub fn format_localized<'a>(
         &self,
@@ -850,18 +966,18 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
-impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: OldDuration) -> DateTime<Tz> {
+    fn add(self, rhs: TimeDelta) -> DateTime<Tz> {
         self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
+    fn add_assign(&mut self, rhs: TimeDelta) {
         let datetime =
             self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
         let tz = self.timezone();
@@ -869,18 +985,26 @@ impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
     }
 }
 
-impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn add(self, rhs: Months) -> Self::Output {
+        self.checked_add_months(rhs).unwrap()
+    }
+}
+
+impl<Tz: TimeZone> Sub<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
+    fn sub(self, rhs: TimeDelta) -> DateTime<Tz> {
         self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
     }
 }
 
-impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
+    fn sub_assign(&mut self, rhs: TimeDelta) {
         let datetime =
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
@@ -888,12 +1012,36 @@ impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn sub(self, rhs: Months) -> Self::Output {
+        self.checked_sub_months(rhs).unwrap()
+    }
+}
+
 impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: DateTime<Tz>) -> OldDuration {
+    fn sub(self, rhs: DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
+    }
+}
+
+impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn add(self, days: Days) -> Self::Output {
+        self.checked_add_days(days).unwrap()
+    }
+}
+
+impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    fn sub(self, days: Days) -> Self::Output {
+        self.checked_sub_days(days).unwrap()
     }
 }
 
@@ -943,6 +1091,7 @@ impl str::FromStr for DateTime<Utc> {
 /// "2012-  12-12T12:  12:12Z".parse::<DateTime<Local>>();
 /// ```
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl str::FromStr for DateTime<Local> {
     type Err = ParseError;
 
@@ -952,6 +1101,7 @@ impl str::FromStr for DateTime<Local> {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<SystemTime> for DateTime<Utc> {
     fn from(t: SystemTime) -> DateTime<Utc> {
         let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
@@ -972,6 +1122,7 @@ impl From<SystemTime> for DateTime<Utc> {
 }
 
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
         DateTime::<Utc>::from(t).with_timezone(&Local)
@@ -979,6 +1130,7 @@ impl From<SystemTime> for DateTime<Local> {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
         use std::time::Duration;
@@ -999,6 +1151,14 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(
+        target_arch = "wasm32",
+        feature = "wasmbind",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))
+)]
 impl From<js_sys::Date> for DateTime<Utc> {
     fn from(date: js_sys::Date) -> DateTime<Utc> {
         DateTime::<Utc>::from(&date)
@@ -1010,6 +1170,14 @@ impl From<js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(
+        target_arch = "wasm32",
+        feature = "wasmbind",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))
+)]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
         Utc.timestamp_millis(date.get_time() as i64)
@@ -1021,6 +1189,14 @@ impl From<&js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(all(
+        target_arch = "wasm32",
+        feature = "wasmbind",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )))
+)]
 impl From<DateTime<Utc>> for js_sys::Date {
     /// Converts a `DateTime<Utc>` to a JS `Date`. The resulting value may be lossy,
     /// any values that have a millisecond timestamp value greater/less than ±8,640,000,000,000,000
@@ -1032,6 +1208,23 @@ impl From<DateTime<Utc>> for js_sys::Date {
 }
 
 #[test]
+fn test_add_sub_months() {
+    let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
+    assert_eq!(utc_dt + Months::new(15), Utc.ymd(2019, 12, 5).and_hms(23, 58, 0));
+
+    let utc_dt = Utc.ymd(2020, 1, 31).and_hms(23, 58, 0);
+    assert_eq!(utc_dt + Months::new(1), Utc.ymd(2020, 2, 29).and_hms(23, 58, 0));
+    assert_eq!(utc_dt + Months::new(2), Utc.ymd(2020, 3, 31).and_hms(23, 58, 0));
+
+    let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
+    assert_eq!(utc_dt - Months::new(15), Utc.ymd(2017, 6, 5).and_hms(23, 58, 0));
+
+    let utc_dt = Utc.ymd(2020, 3, 31).and_hms(23, 58, 0);
+    assert_eq!(utc_dt - Months::new(1), Utc.ymd(2020, 2, 29).and_hms(23, 58, 0));
+    assert_eq!(utc_dt - Months::new(2), Utc.ymd(2020, 1, 31).and_hms(23, 58, 0));
+}
+
+#[test]
 fn test_auto_conversion() {
     let utc_dt = Utc.ymd(2018, 9, 5).and_hms(23, 58, 0);
     let cdt_dt = FixedOffset::west(5 * 60 * 60).ymd(2018, 9, 5).and_hms(18, 58, 0);
@@ -1039,7 +1232,7 @@ fn test_auto_conversion() {
     assert_eq!(utc_dt, utc_dt2);
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
 where
     FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
@@ -1061,7 +1254,7 @@ where
     );
 }
 
-#[cfg(all(test, feature = "clock", any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "clock", feature = "serde"))]
 fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     utc_from_str: FUtc,
     fixed_from_str: FFixed,
@@ -1108,47 +1301,4 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
-}
-
-#[cfg(all(test, feature = "clock", feature = "rustc-serialize"))]
-fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(
-    utc_from_str: FUtc,
-    fixed_from_str: FFixed,
-    local_from_str: FLocal,
-) where
-    FUtc: Fn(&str) -> Result<rustc_serialize::TsSeconds<Utc>, E>,
-    FFixed: Fn(&str) -> Result<rustc_serialize::TsSeconds<FixedOffset>, E>,
-    FLocal: Fn(&str) -> Result<rustc_serialize::TsSeconds<Local>, E>,
-    E: ::core::fmt::Debug,
-{
-    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
-        dt.as_ref().map(|dt| (dt, dt.offset()))
-    }
-
-    assert_eq!(
-        norm(&utc_from_str("0").ok().map(DateTime::from)),
-        norm(&Some(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0)))
-    );
-    assert_eq!(
-        norm(&utc_from_str("-1").ok().map(DateTime::from)),
-        norm(&Some(Utc.ymd(1969, 12, 31).and_hms(23, 59, 59)))
-    );
-
-    assert_eq!(
-        norm(&fixed_from_str("0").ok().map(DateTime::from)),
-        norm(&Some(FixedOffset::east(0).ymd(1970, 1, 1).and_hms(0, 0, 0)))
-    );
-    assert_eq!(
-        norm(&fixed_from_str("-1").ok().map(DateTime::from)),
-        norm(&Some(FixedOffset::east(0).ymd(1969, 12, 31).and_hms(23, 59, 59)))
-    );
-
-    assert_eq!(
-        *fixed_from_str("0").expect("0 timestamp should parse"),
-        Utc.ymd(1970, 1, 1).and_hms(0, 0, 0)
-    );
-    assert_eq!(
-        *local_from_str("-1").expect("-1 timestamp should parse"),
-        Utc.ymd(1969, 12, 31).and_hms(23, 59, 59)
-    );
 }

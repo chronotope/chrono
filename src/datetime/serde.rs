@@ -1,3 +1,5 @@
+#![cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+
 use core::fmt;
 use serde::{de, ser};
 
@@ -6,22 +8,6 @@ use crate::naive::datetime::serde::serde_from;
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, TimeZone, Utc};
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct SecondsTimestampVisitor;
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct NanoSecondsTimestampVisitor;
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct MicroSecondsTimestampVisitor;
-
-#[doc(hidden)]
-#[derive(Debug)]
-pub struct MilliSecondsTimestampVisitor;
 
 /// Serialize into a rfc3339 time string
 ///
@@ -103,6 +89,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Utc> {
 /// See [the `serde` module](./serde/index.html) for alternate
 /// serialization formats.
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl<'de> de::Deserialize<'de> for DateTime<Local> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -146,7 +133,7 @@ pub mod ts_nanoseconds {
     use crate::offset::TimeZone;
     use crate::{DateTime, Utc};
 
-    use super::{serde_from, NanoSecondsTimestampVisitor};
+    use super::serde_from;
 
     /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
     ///
@@ -203,6 +190,8 @@ pub mod ts_nanoseconds {
     {
         d.deserialize_i64(NanoSecondsTimestampVisitor)
     }
+
+    pub(super) struct NanoSecondsTimestampVisitor;
 
     impl<'de> de::Visitor<'de> for NanoSecondsTimestampVisitor {
         type Value = DateTime<Utc>;
@@ -268,7 +257,7 @@ pub mod ts_nanoseconds_option {
 
     use crate::{DateTime, Utc};
 
-    use super::NanoSecondsTimestampVisitor;
+    use super::ts_nanoseconds::NanoSecondsTimestampVisitor;
 
     /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch or none
     ///
@@ -395,7 +384,7 @@ pub mod ts_microseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::{serde_from, MicroSecondsTimestampVisitor};
+    use super::serde_from;
     use crate::offset::TimeZone;
     use crate::{DateTime, Utc};
 
@@ -454,6 +443,8 @@ pub mod ts_microseconds {
     {
         d.deserialize_i64(MicroSecondsTimestampVisitor)
     }
+
+    pub(super) struct MicroSecondsTimestampVisitor;
 
     impl<'de> de::Visitor<'de> for MicroSecondsTimestampVisitor {
         type Value = DateTime<Utc>;
@@ -517,7 +508,7 @@ pub mod ts_microseconds_option {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::MicroSecondsTimestampVisitor;
+    use super::ts_microseconds::MicroSecondsTimestampVisitor;
     use crate::{DateTime, Utc};
 
     /// Serialize a UTC datetime into an integer number of microseconds since the epoch or none
@@ -645,7 +636,7 @@ pub mod ts_milliseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::{serde_from, MilliSecondsTimestampVisitor};
+    use super::serde_from;
     use crate::offset::TimeZone;
     use crate::{DateTime, Utc};
 
@@ -704,6 +695,8 @@ pub mod ts_milliseconds {
     {
         d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))
     }
+
+    pub(super) struct MilliSecondsTimestampVisitor;
 
     impl<'de> de::Visitor<'de> for MilliSecondsTimestampVisitor {
         type Value = DateTime<Utc>;
@@ -764,7 +757,7 @@ pub mod ts_milliseconds_option {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::MilliSecondsTimestampVisitor;
+    use super::ts_milliseconds::MilliSecondsTimestampVisitor;
     use crate::{DateTime, Utc};
 
     /// Serialize a UTC datetime into an integer number of milliseconds since the epoch or none
@@ -905,7 +898,7 @@ pub mod ts_seconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::{serde_from, SecondsTimestampVisitor};
+    use super::serde_from;
     use crate::offset::TimeZone;
     use crate::{DateTime, Utc};
 
@@ -965,6 +958,8 @@ pub mod ts_seconds {
         d.deserialize_i64(SecondsTimestampVisitor)
     }
 
+    pub(super) struct SecondsTimestampVisitor;
+
     impl<'de> de::Visitor<'de> for SecondsTimestampVisitor {
         type Value = DateTime<Utc>;
 
@@ -1021,7 +1016,7 @@ pub mod ts_seconds_option {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::SecondsTimestampVisitor;
+    use super::ts_seconds::SecondsTimestampVisitor;
     use crate::{DateTime, Utc};
 
     /// Serialize a UTC datetime into an integer number of seconds since the epoch or none

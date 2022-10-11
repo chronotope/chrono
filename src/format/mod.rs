@@ -63,6 +63,7 @@ pub use pure_rust_locales::Locale;
 pub use strftime::StrftimeItems;
 
 #[cfg(not(feature = "unstable-locales"))]
+#[allow(dead_code)]
 #[derive(Debug)]
 struct Locale;
 
@@ -224,6 +225,18 @@ pub enum Fixed {
     /// The offset is limited from `-24:00` to `+24:00`,
     /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
     TimezoneOffsetColon,
+    /// Offset from the local time to UTC with seconds (`+09:00:00` or `-04:00:00` or `+00:00:00`).
+    ///
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// The offset is limited from `-24:00:00` to `+24:00:00`,
+    /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
+    TimezoneOffsetDoubleColon,
+    /// Offset from the local time to UTC without minutes (`+09` or `-04` or `+00`).
+    ///
+    /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace.
+    /// The offset is limited from `-24` to `+24`,
+    /// which is the same as [`FixedOffset`](../offset/struct.FixedOffset.html)'s range.
+    TimezoneOffsetTripleColon,
     /// Offset from the local time to UTC (`+09:00` or `-04:00` or `Z`).
     ///
     /// In the parser, the colon can be omitted and/or surrounded with any amount of whitespace,
@@ -274,6 +287,15 @@ enum InternalInternal {
     Nanosecond9NoDot,
 }
 
+#[cfg(any(feature = "alloc", feature = "std", test))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Colons {
+    None,
+    Single,
+    Double,
+    Triple,
+}
+
 /// A single formatting item. This is used for both formatting and parsing.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Item<'a> {
@@ -281,11 +303,13 @@ pub enum Item<'a> {
     Literal(&'a str),
     /// Same as `Literal` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
     /// Same as `Space` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
     /// the parser simply ignores any padded whitespace and zeroes.
@@ -398,6 +422,7 @@ impl fmt::Display for ParseError {
 }
 
 #[cfg(any(feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Error for ParseError {
     #[allow(deprecated)]
     fn description(&self) -> &str {
@@ -416,6 +441,7 @@ const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 /// Formats single formatting item
 #[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 pub fn format_item<'a>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -557,15 +583,32 @@ fn format_inner<'a>(
                 result: &mut String,
                 off: FixedOffset,
                 allow_zulu: bool,
-                use_colon: bool,
+                colon_type: Colons,
             ) -> fmt::Result {
                 let off = off.local_minus_utc();
                 if !allow_zulu || off != 0 {
                     let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
-                    if use_colon {
-                        write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
-                    } else {
-                        write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
+
+                    match colon_type {
+                        Colons::None => {
+                            write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
+                        }
+                        Colons::Single => {
+                            write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
+                        }
+                        Colons::Double => {
+                            write!(
+                                result,
+                                "{}{:02}:{:02}:{:02}",
+                                sign,
+                                off / 3600,
+                                off / 60 % 60,
+                                off % 60
+                            )
+                        }
+                        Colons::Triple => {
+                            write!(result, "{}{:02}", sign, off / 3600)
+                        }
                     }
                 } else {
                     result.push('Z');
@@ -650,17 +693,19 @@ fn format_inner<'a>(
                         result.push_str(name);
                         Ok(())
                     }),
-                    TimezoneOffsetColon => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, true))
-                    }
-                    TimezoneOffsetColonZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, true))
-                    }
+                    TimezoneOffsetColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
+                    TimezoneOffsetDoubleColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
+                    TimezoneOffsetTripleColon => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
+                    TimezoneOffsetColonZ => off
+                        .map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
                     TimezoneOffset => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, false))
+                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::None))
                     }
                     TimezoneOffsetZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, false))
+                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
                     }
                     Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         panic!("Do not try to write %#z it is undefined")
@@ -681,7 +726,7 @@ fn format_inner<'a>(
                                 t.minute(),
                                 sec
                             )?;
-                            Some(write_local_minus_utc(result, off, false, false))
+                            Some(write_local_minus_utc(result, off, false, Colons::None))
                         } else {
                             None
                         }
@@ -693,7 +738,7 @@ fn format_inner<'a>(
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
                             write!(result, "{:?}T{:?}", d, t)?;
-                            Some(write_local_minus_utc(result, off, false, true))
+                            Some(write_local_minus_utc(result, off, false, Colons::Single))
                         } else {
                             None
                         }
@@ -714,6 +759,7 @@ fn format_inner<'a>(
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 pub fn format<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -743,6 +789,7 @@ pub mod strftime;
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
 #[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 #[derive(Debug)]
 pub struct DelayedFormat<I> {
     /// The date view, if any.
@@ -797,6 +844,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     pub fn new_with_locale(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
@@ -808,6 +856,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     pub fn new_with_offset_and_locale<Off>(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
@@ -884,6 +933,7 @@ impl FromStr for Weekday {
 
 /// Formats single formatting item
 #[cfg(feature = "unstable-locales")]
+#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub fn format_item_localized<'a>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -900,6 +950,7 @@ pub fn format_item_localized<'a>(
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(feature = "unstable-locales")]
+#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,

@@ -17,13 +17,10 @@ authors:
 .PHONY: readme README.md
 readme: README.md
 
-README.md: src/lib.rs
-	( ./ci/fix-readme.sh $< ) > $@
-
 .PHONY: test
 test:
 	CHANNEL=$(CHANNEL) ./ci/travis.sh
 
 .PHONY: doc
 doc: authors readme
-	cargo doc --features 'serde rustc-serialize bincode'
+	cargo doc --features 'serde bincode'

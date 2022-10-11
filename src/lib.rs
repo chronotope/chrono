@@ -1,6 +1,3 @@
-// This is a part of Chrono.
-// See README.md and LICENSE.txt for details.
-
 //! # Chrono: Date and Time for Rust
 //!
 //! It aims to be a feature-complete superset of
@@ -18,18 +15,6 @@
 //!    the wiki](https://github.com/rust-lang/rust-wiki-backup/blob/master/Lib-datetime.md)
 //! * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
 //! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
-//!
-//! Any significant changes to Chrono are documented in
-//! the [`CHANGELOG.md`](https://github.com/chronotope/chrono/blob/main/CHANGELOG.md) file.
-//!
-//! ## Usage
-//!
-//! Put this in your `Cargo.toml`:
-//!
-//! ```toml
-//! [dependencies]
-//! chrono = "0.4"
-//! ```
 //!
 //! ### Features
 //!
@@ -63,30 +48,16 @@
 //!
 //! ### Duration
 //!
-//! Chrono currently uses its own [`Duration`] type to represent the magnitude
-//! of a time span. Since this has the same name as the newer, standard type for
-//! duration, the reference will refer this type as `OldDuration`.
-//!
-//! Note that this is an "accurate" duration represented as seconds and
+//! Chrono currently uses its own [`TimeDelta`] type to represent the magnitude
+//! of a time span. Note that this is an "accurate" duration represented as seconds and
 //! nanoseconds and does not represent "nominal" components such as days or
 //! months.
-//!
-//! When the `oldtime` feature is enabled, [`Duration`] is an alias for the
-//! [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html)
-//! type from v0.1 of the time crate. time v0.1 is deprecated, so new code
-//! should disable the `oldtime` feature and use the `chrono::Duration` type
-//! instead. The `oldtime` feature is enabled by default for backwards
-//! compatibility, but future versions of Chrono are likely to remove the
-//! feature entirely.
 //!
 //! Chrono does not yet natively support
 //! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
 //! but it will be supported in the future.
 //! Meanwhile you can convert between two types with
-//! [`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
-//! and
-//! [`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
-//! methods.
+//! [`TimeDelta::from_std`] and [`TimeDelta::to_std`] methods.
 //!
 //! ### Date and Time
 //!
@@ -173,7 +144,7 @@
 //!
 //! ```rust
 //! use chrono::prelude::*;
-//! use chrono::Duration;
+//! use chrono::TimeDelta;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 //! let dt = FixedOffset::east(9*3600).ymd(2014, 11, 28).and_hms_nano(21, 45, 59, 324310806);
@@ -200,11 +171,11 @@
 //! // arithmetic operations
 //! let dt1 = Utc.ymd(2014, 11, 14).and_hms(8, 9, 10);
 //! let dt2 = Utc.ymd(2014, 11, 14).and_hms(10, 9, 8);
-//! assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
-//! assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + Duration::seconds(1_000_000_000),
+//! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
+//! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) + TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(2001, 9, 9).and_hms(1, 46, 40));
-//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - Duration::seconds(1_000_000_000),
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms(0, 0, 0) - TimeDelta::seconds(1_000_000_000),
 //!            Utc.ymd(1938, 4, 24).and_hms(22, 13, 20));
 //! ```
 //!
@@ -226,7 +197,7 @@
 //! `unstable-locales`:
 //!
 //! ```toml
-//! chrono = { version = "0.4", features = ["unstable-locales"] }
+//! chrono = { version = "0.5", features = ["unstable-locales"] }
 //! ```
 //!
 //! The `unstable-locales` feature requires and implies at least the `alloc` feature.
@@ -297,11 +268,11 @@
 //! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixed_dt.clone()));
 //!
 //! // method 2
-//! assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
+//! assert_eq!(DateTime::<FixedOffset>::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
 //!            Ok(fixed_dt.clone()));
-//! assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
+//! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
 //!            Ok(fixed_dt.clone()));
-//! assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
+//! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
 //!
 //! // method 3
 //! assert_eq!(Utc.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
@@ -331,14 +302,14 @@
 //!
 //! ```rust
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::{DateTime, TimeZone, Utc};
+//! use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 //!
 //! // Construct a datetime from epoch:
 //! let dt = Utc.timestamp(1_500_000_000, 0);
 //! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
 //!
 //! // Get epoch value from a datetime:
-//! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();
+//! let dt = DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();
 //! assert_eq!(dt.timestamp(), 1_500_000_000);
 //! ```
 //!
@@ -420,16 +391,12 @@
 #![warn(unreachable_pub)]
 #![deny(dead_code)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
-// can remove this if/when rustc-serialize support is removed
-// keeps clippy happy in the meantime
-#![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(feature = "oldtime")]
-extern crate time as oldtime;
-#[cfg(not(feature = "oldtime"))]
-mod oldtime;
-// this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
+use core::fmt;
+
+mod time_delta;
+pub use time_delta::TimeDelta;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
@@ -444,9 +411,11 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use crate::Date;
     #[cfg(feature = "clock")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
     #[doc(no_inline)]
     pub use crate::Local;
     #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[doc(no_inline)]
     pub use crate::Locale;
     #[doc(no_inline)]
@@ -468,23 +437,23 @@ mod date;
 pub use date::{Date, MAX_DATE, MIN_DATE};
 
 mod datetime;
-#[cfg(feature = "rustc-serialize")]
-pub use datetime::rustc_serialize::TsSeconds;
 #[allow(deprecated)]
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 
 pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
+#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 
 pub mod naive;
 #[doc(no_inline)]
-pub use naive::{IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
+pub use naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
 
 pub mod offset;
 #[cfg(feature = "clock")]
+#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 #[doc(no_inline)]
 pub use offset::Local;
 #[doc(no_inline)]
@@ -506,18 +475,47 @@ pub use traits::{Datelike, Timelike};
 #[doc(hidden)]
 pub use naive::__BenchYearFlags;
 
-/// Serialization/Deserialization in alternate formats
+/// Serialization/Deserialization with serde.
 ///
-/// The various modules in here are intended to be used with serde's [`with`
-/// annotation][1] to serialize as something other than the default [RFC
-/// 3339][2] format.
+/// This module provides default implementations for `DateTime` using the [RFC 3339][1] format and various
+/// alternatives for use with serde's [`with` annotation][1].
 ///
-/// [1]: https://serde.rs/attributes.html#field-attributes
-/// [2]: https://tools.ietf.org/html/rfc3339
+/// *Available on crate feature 'serde' only.*
+///
+/// [1]: https://tools.ietf.org/html/rfc3339
+/// [2]: https://serde.rs/attributes.html#field-attributes
 #[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
     pub use super::datetime::serde::*;
 }
+
+/// Out of range error type used in various converting APIs
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub struct OutOfRange {
+    _private: (),
+}
+
+impl OutOfRange {
+    fn new() -> OutOfRange {
+        OutOfRange { _private: () }
+    }
+}
+
+impl fmt::Display for OutOfRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "out of range")
+    }
+}
+
+impl fmt::Debug for OutOfRange {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "out of range")
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for OutOfRange {}
 
 /// MSRV 1.42
 #[cfg(test)]

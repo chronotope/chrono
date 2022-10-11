@@ -11,10 +11,7 @@ mod isoweek;
 mod time;
 
 #[allow(deprecated)]
-pub use self::date::{NaiveDate, NaiveWeek, MAX_DATE, MIN_DATE};
-#[cfg(feature = "rustc-serialize")]
-#[allow(deprecated)]
-pub use self::datetime::rustc_serialize::TsSeconds;
+pub use self::date::{Days, NaiveDate, NaiveWeek, MAX_DATE, MIN_DATE};
 #[allow(deprecated)]
 pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
 pub use self::isoweek::IsoWeek;
@@ -33,6 +30,7 @@ pub use self::internals::YearFlags as __BenchYearFlags;
 /// [1]: https://serde.rs/attributes.html#field-attributes
 /// [2]: https://tools.ietf.org/html/rfc3339
 #[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
     pub use super::datetime::serde::*;
 }

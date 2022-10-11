@@ -10,7 +10,7 @@ fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
         b.iter(|| {
             let str = black_box("Wed, 18 Feb 2015 23:16:09 +0000");
-            DateTime::parse_from_rfc2822(str).unwrap()
+            DateTime::<FixedOffset>::parse_from_rfc2822(str).unwrap()
         })
     });
 }
@@ -19,7 +19,7 @@ fn bench_datetime_parse_from_rfc3339(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc3339", |b| {
         b.iter(|| {
             let str = black_box("2015-02-18T23:59:60.234567+05:00");
-            DateTime::parse_from_rfc3339(str).unwrap()
+            DateTime::<FixedOffset>::parse_from_rfc3339(str).unwrap()
         })
     });
 }
