@@ -153,7 +153,7 @@ impl Month {
 }
 
 impl num_traits::FromPrimitive for Month {
-    /// Returns an Option<Month> from a i64, assuming a 1-index, January = 1.
+    /// Returns an `Option<Month>` from a i64, assuming a 1-index, January = 1.
     ///
     /// `Month::from_i64(n: i64)`: | `1`                  | `2`                   | ... | `12`
     /// ---------------------------| -------------------- | --------------------- | ... | -----
