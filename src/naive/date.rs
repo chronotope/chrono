@@ -183,7 +183,7 @@ impl Days {
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct NaiveDate {
-    ymdf: DateImpl, // (year << 13) | of
+    ymdf: DateImpl,
 }
 
 /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
@@ -223,18 +223,13 @@ fn test_date_bounds() {
 
 impl NaiveDate {
     /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
-    fn from_of(year: i32, of: Of) -> Option<NaiveDate> {
-        if (MIN_YEAR..=MAX_YEAR).contains(&year) && of.valid() {
-            let Of(of) = of;
-            Some(NaiveDate { ymdf: (year << 13) | (of as DateImpl) })
-        } else {
-            None
-        }
+    fn from_parts(year: i32, of: Of) -> Option<NaiveDate> {
+        Some(NaiveDate { ymdf: DateImpl::from_parts(year, of)? })
     }
 
     /// Makes a new `NaiveDate` from year and packed month-day-flags, with a verification.
     fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
-        NaiveDate::from_of(year, mdf.to_of())
+        NaiveDate::from_parts(year, mdf.to_of()?)
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
@@ -301,7 +296,7 @@ impl NaiveDate {
     /// ```
     pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_of(year, Of::new(ordinal, flags)?)
+        NaiveDate::from_parts(year, Of::new(ordinal, flags)?)
     }
 
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
@@ -368,7 +363,7 @@ impl NaiveDate {
             if weekord <= delta {
                 // ordinal < 1, previous year
                 let prevflags = YearFlags::from_year(year - 1);
-                NaiveDate::from_of(
+                NaiveDate::from_parts(
                     year - 1,
                     Of::new(weekord + prevflags.ndays() - delta, prevflags)?,
                 )
@@ -377,11 +372,11 @@ impl NaiveDate {
                 let ndays = flags.ndays();
                 if ordinal <= ndays {
                     // this year
-                    NaiveDate::from_of(year, Of::new(ordinal, flags)?)
+                    NaiveDate::from_parts(year, Of::new(ordinal, flags)?)
                 } else {
                     // ordinal > ndays, next year
                     let nextflags = YearFlags::from_year(year + 1);
-                    NaiveDate::from_of(year + 1, Of::new(ordinal - ndays, nextflags)?)
+                    NaiveDate::from_parts(year + 1, Of::new(ordinal - ndays, nextflags)?)
                 }
             }
         } else {
@@ -424,7 +419,7 @@ impl NaiveDate {
         let (year_div_400, cycle) = div_mod_floor(days, 146_097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
+        NaiveDate::from_parts(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -870,7 +865,7 @@ impl NaiveDate {
     /// Returns the packed ordinal-flags.
     #[inline]
     fn of(&self) -> Of {
-        Of((self.ymdf & 0b1_1111_1111_1111) as u32)
+        self.ymdf.of()
     }
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
@@ -878,7 +873,7 @@ impl NaiveDate {
     /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
     fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
-        self.with_of(mdf.to_of())
+        self.with_of(mdf.to_of()?)
     }
 
     /// Makes a new `NaiveDate` with the packed ordinal-flags changed.
@@ -886,12 +881,7 @@ impl NaiveDate {
     /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
     fn with_of(&self, of: Of) -> Option<NaiveDate> {
-        if of.valid() {
-            let Of(of) = of;
-            Some(NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of as DateImpl })
-        } else {
-            None
-        }
+        Some(NaiveDate { ymdf: DateImpl::from_parts(self.year(), of)? })
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
@@ -918,7 +908,7 @@ impl NaiveDate {
     /// ```
     #[inline]
     pub fn succ_opt(&self) -> Option<NaiveDate> {
-        self.with_of(self.of().succ()).or_else(|| NaiveDate::from_ymd_opt(self.year() + 1, 1, 1))
+        Some(NaiveDate { ymdf: self.ymdf.succ_opt()? })
     }
 
     /// Makes a new `NaiveDate` for the previous calendar date.
@@ -945,7 +935,7 @@ impl NaiveDate {
     /// ```
     #[inline]
     pub fn pred_opt(&self) -> Option<NaiveDate> {
-        self.with_of(self.of().pred()).or_else(|| NaiveDate::from_ymd_opt(self.year() - 1, 12, 31))
+        Some(NaiveDate { ymdf: self.ymdf.pred_opt()? })
     }
 
     /// Adds the `days` part of given `Duration` to the current date.
@@ -976,7 +966,7 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
+        NaiveDate::from_parts(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Subtracts the `days` part of given `Duration` from the current date.
@@ -1007,7 +997,7 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
+        NaiveDate::from_parts(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1191,9 +1181,9 @@ impl NaiveDate {
     }
 
     /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
-    pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
+    pub const MIN: NaiveDate = NaiveDate { ymdf: DateImpl::MIN };
     /// The maximum possible `NaiveDate` (December 31, 262143 CE).
-    pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+    pub const MAX: NaiveDate = NaiveDate { ymdf: DateImpl::MAX };
 }
 
 impl Datelike for NaiveDate {
@@ -1209,7 +1199,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn year(&self) -> i32 {
-        self.ymdf >> 13
+        self.ymdf.year()
     }
 
     /// Returns the month number starting from 1.
@@ -1376,7 +1366,7 @@ impl Datelike for NaiveDate {
 
     #[inline]
     fn iso_week(&self) -> IsoWeek {
-        isoweek::iso_week_from_yof(self.year(), self.of())
+        isoweek::iso_week_from_yof(self.year(), self.of()).unwrap()
     }
 
     /// Makes a new `NaiveDate` with the year number changed.
