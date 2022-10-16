@@ -5,7 +5,7 @@
 
 use core::fmt;
 
-use super::internals::{DateImpl, Of, YearFlags};
+use super::internals::{Of, WeekImpl, YearFlags};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -22,7 +22,7 @@ pub struct IsoWeek {
     // note that this allows for larger year range than `NaiveDate`.
     // this is crucial because we have an edge case for the first and last week supported,
     // which year number might not match the calendar year number.
-    ywf: DateImpl, // (year << 10) | (week << 4) | flag
+    ywf: WeekImpl,
 }
 
 /// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
@@ -31,7 +31,7 @@ pub struct IsoWeek {
 // because the year range for the week date and the calendar date do not match and
 // it is confusing to have a date that is out of range in one and not in another.
 // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
+pub(super) fn iso_week_from_yof(year: i32, of: Of) -> Option<IsoWeek> {
     let (rawweek, _) = of.isoweekdate_raw();
     let (year, week) = if rawweek < 1 {
         // previous year
@@ -46,7 +46,7 @@ pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
             (year, rawweek)
         }
     };
-    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(of.flags().0) }
+    Some(IsoWeek { ywf: WeekImpl::from_parts(year, week as u16, of.flags())? })
 }
 
 impl IsoWeek {
@@ -72,7 +72,7 @@ impl IsoWeek {
     /// ```
     #[inline]
     pub fn year(&self) -> i32 {
-        self.ywf >> 10
+        self.ywf.year()
     }
 
     /// Returns the ISO week number starting from 1.
@@ -89,7 +89,7 @@ impl IsoWeek {
     /// ```
     #[inline]
     pub fn week(&self) -> u32 {
-        ((self.ywf >> 4) & 0x3f) as u32
+        self.ywf.week()
     }
 
     /// Returns the ISO week number starting from 0.
@@ -106,7 +106,7 @@ impl IsoWeek {
     /// ```
     #[inline]
     pub fn week0(&self) -> u32 {
-        ((self.ywf >> 4) & 0x3f) as u32 - 1
+        self.ywf.week() - 1
     }
 }
 
