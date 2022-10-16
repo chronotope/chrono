@@ -58,7 +58,7 @@ pub struct TsSeconds<Tz: TimeZone>(DateTime<Tz>);
 
 #[allow(deprecated)]
 impl<Tz: TimeZone> From<TsSeconds<Tz>> for DateTime<Tz> {
-    /// Pull the inner DateTime<Tz> out
+    /// Pull the inner `DateTime<Tz>` out
     #[allow(deprecated)]
     fn from(obj: TsSeconds<Tz>) -> DateTime<Tz> {
         obj.0
