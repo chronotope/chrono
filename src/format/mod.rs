@@ -40,7 +40,6 @@ use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::fmt;
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::fmt::Write;
 use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
@@ -798,19 +797,35 @@ fn write_rfc2822_inner(
         return Err(fmt::Error);
     }
 
+    result.push_str(locale.short_weekdays[d.weekday().num_days_from_sunday() as usize]);
+    result.push_str(", ");
+    write_hundreds(result, d.day() as u8)?;
+    result.push(' ');
+    result.push_str(locale.short_months[d.month0() as usize]);
+    result.push(' ');
+    write_hundreds(result, (year / 100) as u8)?;
+    write_hundreds(result, (year % 100) as u8)?;
+    result.push(' ');
+    write_hundreds(result, t.hour() as u8)?;
+    result.push(':');
+    write_hundreds(result, t.minute() as u8)?;
+    result.push(':');
     let sec = t.second() + t.nanosecond() / 1_000_000_000;
-    write!(
-        result,
-        "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
-        locale.short_weekdays[d.weekday().num_days_from_sunday() as usize],
-        d.day(),
-        locale.short_months[d.month0() as usize],
-        year,
-        t.hour(),
-        t.minute(),
-        sec
-    )?;
+    write_hundreds(result, sec as u8)?;
+    result.push(' ');
     write_local_minus_utc(result, off, false, Colons::None)
+}
+
+/// Equivalent to `{:02}` formatting for n < 100.
+pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
+    if n >= 100 {
+        return Err(fmt::Error);
+    }
+
+    let tens = b'0' + n / 10;
+    let ones = b'0' + n % 10;
+    w.write_char(tens as char)?;
+    w.write_char(ones as char)
 }
 
 /// Tries to format given arguments with given formatting items.

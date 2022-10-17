@@ -16,7 +16,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
@@ -1830,14 +1830,22 @@ impl DoubleEndedIterator for NaiveDateWeeksIterator {
 /// ```
 impl fmt::Debug for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use core::fmt::Write;
+
         let year = self.year();
         let mdf = self.mdf();
         if (0..=9999).contains(&year) {
-            write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
+            write_hundreds(f, (year / 100) as u8)?;
+            write_hundreds(f, (year % 100) as u8)?;
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
-            write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
+            write!(f, "{:+05}", year)?;
         }
+
+        f.write_char('-')?;
+        write_hundreds(f, mdf.month() as u8)?;
+        f.write_char('-')?;
+        write_hundreds(f, mdf.day() as u8)
     }
 }
 
