@@ -52,6 +52,7 @@ mod tz_info;
 /// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Local;
 
 impl Local {
