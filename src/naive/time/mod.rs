@@ -21,6 +21,9 @@ use crate::{TimeDelta, Timelike};
 #[cfg(feature = "serde")]
 mod serde;
 
+#[cfg(feature = "arbitrary")]
+mod arbitrary;
+
 #[cfg(test)]
 mod tests;
 
@@ -188,17 +191,6 @@ mod tests;
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
-}
-
-#[cfg(feature = "arbitrary")]
-impl arbitrary::Arbitrary<'_> for NaiveTime {
-    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveTime> {
-        let secs = u.int_in_range(0..=86_399)?;
-        let nano = u.int_in_range(0..=1_999_999_999)?;
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs, nano)
-            .expect("Could not generate a valid chrono::NaiveTime. It looks like implementation of Arbitrary for NaiveTime is erroneous.");
-        Ok(time)
-    }
 }
 
 impl NaiveTime {

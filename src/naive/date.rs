@@ -191,16 +191,6 @@ pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
 #[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
 pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
 
-#[cfg(feature = "arbitrary")]
-impl arbitrary::Arbitrary<'_> for NaiveDate {
-    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveDate> {
-        let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
-        let max_days = YearFlags::from_year(year).ndays();
-        let ord = u.int_in_range(1..=max_days)?;
-        NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
-    }
-}
-
 // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
 // we use a separate run-time test.
 #[test]
@@ -2067,6 +2057,55 @@ mod serde {
         let encoded = serialize(&d).unwrap();
         let decoded: NaiveDate = deserialize(&encoded).unwrap();
         assert_eq!(d, decoded);
+    }
+}
+
+#[cfg(feature = "arbitrary")]
+#[cfg_attr(docsrs, doc(cfg(feature = "arbitrary")))]
+mod arbitrary {
+    use super::{NaiveDate, YearFlags, MAX_YEAR, MIN_YEAR};
+    use arbitrary::{Arbitrary, Unstructured};
+
+    #[cfg(feature = "arbitrary")]
+    impl Arbitrary<'_> for NaiveDate {
+        fn arbitrary(u: &mut Unstructured) -> arbitrary::Result<NaiveDate> {
+            let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
+            let max_days = YearFlags::from_year(year).ndays();
+            let ord = u.int_in_range(1..=max_days)?;
+            let date = NaiveDate::from_yo_opt(year, ord)
+                .expect("Could not generate a valid chrono::NaiveDate. It looks like implementation of Arbitrary for NaiveDate is erroneous.");
+            Ok(date)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        const UNSTRCUTURED_BINARY1: [u8; 8] = [0x8f, 0xc2, 0x95, 0xdc, 0x3e, 0x45, 0xb2, 0x3e];
+        const UNSTRCUTURED_BINARY2: [u8; 8] = [0x8b, 0xad, 0x2c, 0xc9, 0xf0, 0x05, 0x75, 0x84];
+
+        #[test]
+        fn test_different_unstructured() {
+            let mut unstrctured1 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let date1 = NaiveDate::arbitrary(&mut unstrctured1).unwrap();
+
+            let mut unstrctured2 = Unstructured::new(&UNSTRCUTURED_BINARY2);
+            let date2 = NaiveDate::arbitrary(&mut unstrctured2).unwrap();
+
+            assert_ne!(date1, date2);
+        }
+
+        #[test]
+        fn test_same_unstructured() {
+            let mut unstrctured1 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let date1 = NaiveDate::arbitrary(&mut unstrctured1).unwrap();
+
+            let mut unstrctured2 = Unstructured::new(&UNSTRCUTURED_BINARY1);
+            let date2 = NaiveDate::arbitrary(&mut unstrctured2).unwrap();
+
+            assert_eq!(date1, date2);
+        }
     }
 }
 
