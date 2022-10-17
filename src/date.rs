@@ -545,6 +545,21 @@ where
     }
 }
 
+// Note that implementation of Arbitrary cannot be automatically derived for Date<Tz>, due to
+// the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
+#[cfg(feature = "arbitrary")]
+impl<'a, Tz> arbitrary::Arbitrary<'a> for Date<Tz>
+where
+    Tz: TimeZone,
+    <Tz as TimeZone>::Offset: arbitrary::Arbitrary<'a>,
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Date<Tz>> {
+        let date = NaiveDate::arbitrary(u)?;
+        let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
+        Ok(Date::from_utc(date, offset))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Date;
