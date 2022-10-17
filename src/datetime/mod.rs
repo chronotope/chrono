@@ -1150,6 +1150,21 @@ impl From<DateTime<Utc>> for js_sys::Date {
     }
 }
 
+// Note that implementation of Arbitrary cannot be simply derived for DateTime<Tz>, due to
+// the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
+#[cfg(feature = "arbitrary")]
+impl<'a, Tz> arbitrary::Arbitrary<'a> for DateTime<Tz>
+where
+    Tz: TimeZone,
+    <Tz as TimeZone>::Offset: arbitrary::Arbitrary<'a>,
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<DateTime<Tz>> {
+        let datetime = NaiveDateTime::arbitrary(u)?;
+        let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
+        Ok(DateTime::from_utc(datetime, offset))
+    }
+}
+
 #[test]
 fn test_add_sub_months() {
     let utc_dt = Utc.ymd_opt(2018, 9, 5).unwrap().and_hms_opt(23, 58, 0).unwrap();
