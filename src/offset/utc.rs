@@ -41,6 +41,7 @@ use crate::{Date, DateTime};
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Utc;
 
 #[cfg(feature = "clock")]
