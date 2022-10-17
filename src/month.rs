@@ -30,6 +30,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Month {
     /// January
     January = 0,
@@ -191,6 +192,7 @@ impl num_traits::FromPrimitive for Month {
 
 /// A duration in calendar months
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Months(pub(crate) u32);
 
 impl Months {
