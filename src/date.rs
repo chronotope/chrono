@@ -532,7 +532,8 @@ impl<Tz: TimeZone> Sub<Date<Tz>> for Date<Tz> {
 
 impl<Tz: TimeZone> fmt::Debug for Date<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.naive_local(), self.offset)
+        self.naive_local().fmt(f)?;
+        self.offset.fmt(f)
     }
 }
 
@@ -541,7 +542,8 @@ where
     Tz::Offset: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.naive_local(), self.offset)
+        self.naive_local().fmt(f)?;
+        self.offset.fmt(f)
     }
 }
 
