@@ -700,19 +700,7 @@ fn format_inner<'a>(
                     // same as `%a, %d %b %Y %H:%M:%S %z`
                     {
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                            let sec = t.second() + t.nanosecond() / 1_000_000_000;
-                            write!(
-                                result,
-                                "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
-                                locale.short_weekdays[d.weekday().num_days_from_sunday() as usize],
-                                d.day(),
-                                locale.short_months[d.month0() as usize],
-                                d.year(),
-                                t.hour(),
-                                t.minute(),
-                                sec
-                            )?;
-                            Some(write_local_minus_utc(result, off, false, Colons::None))
+                            Some(write_rfc2822_inner(result, d, t, off, locale))
                         } else {
                             None
                         }
@@ -783,6 +771,46 @@ pub(crate) fn write_rfc3339(
     // this is faster in this way.
     write!(result, "{:?}", dt)?;
     write_local_minus_utc(result, off, false, Colons::Single)
+}
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+/// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
+pub(crate) fn write_rfc2822(
+    result: &mut String,
+    dt: crate::NaiveDateTime,
+    off: FixedOffset,
+) -> fmt::Result {
+    write_rfc2822_inner(result, &dt.date(), &dt.time(), off, Locales::new(None))
+}
+
+#[cfg(any(feature = "alloc", feature = "std", test))]
+/// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
+fn write_rfc2822_inner(
+    result: &mut String,
+    d: &NaiveDate,
+    t: &NaiveTime,
+    off: FixedOffset,
+    locale: Locales,
+) -> fmt::Result {
+    let year = d.year();
+    // RFC2822 is only defined on years 0 through 9999
+    if !(0..=9999).contains(&year) {
+        return Err(fmt::Error);
+    }
+
+    let sec = t.second() + t.nanosecond() / 1_000_000_000;
+    write!(
+        result,
+        "{}, {:02} {} {:04} {:02}:{:02}:{:02} ",
+        locale.short_weekdays[d.weekday().num_days_from_sunday() as usize],
+        d.day(),
+        locale.short_months[d.month0() as usize],
+        year,
+        t.hour(),
+        t.minute(),
+        sec
+    )?;
+    write_local_minus_utc(result, off, false, Colons::None)
 }
 
 /// Tries to format given arguments with given formatting items.

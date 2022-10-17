@@ -600,8 +600,10 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn to_rfc2822(&self) -> String {
-        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
-        self.format_with_items(ITEMS.iter()).to_string()
+        let mut result = String::with_capacity(32);
+        crate::format::write_rfc2822(&mut result, self.naive_local(), self.offset.fix())
+            .expect("writing rfc2822 datetime to string should never fail");
+        result
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
