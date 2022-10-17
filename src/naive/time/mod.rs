@@ -14,7 +14,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::oldtime::Duration as OldDuration;
 use crate::Timelike;
@@ -1188,7 +1188,13 @@ impl fmt::Debug for NaiveTime {
             (sec, self.frac)
         };
 
-        write!(f, "{:02}:{:02}:{:02}", hour, min, sec)?;
+        use core::fmt::Write;
+        write_hundreds(f, hour as u8)?;
+        f.write_char(':')?;
+        write_hundreds(f, min as u8)?;
+        f.write_char(':')?;
+        write_hundreds(f, sec as u8)?;
+
         if nano == 0 {
             Ok(())
         } else if nano % 1_000_000 == 0 {
