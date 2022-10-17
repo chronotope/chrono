@@ -608,8 +608,10 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     pub fn to_rfc3339(&self) -> String {
-        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
-        self.format_with_items(ITEMS.iter()).to_string()
+        let mut result = String::with_capacity(32);
+        crate::format::write_rfc3339(&mut result, self.naive_local(), self.offset.fix())
+            .expect("writing rfc3339 datetime to string should never fail");
+        result
     }
 
     /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
