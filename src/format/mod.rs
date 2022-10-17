@@ -40,6 +40,8 @@ use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::fmt;
+#[cfg(any(feature = "alloc", feature = "std", test))]
+use core::fmt::Write;
 use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
@@ -501,7 +503,6 @@ fn format_inner<'a>(
         )
     };
 
-    use core::fmt::Write;
     use num_integer::{div_floor, mod_floor};
 
     match *item {
@@ -576,45 +577,6 @@ fn format_inner<'a>(
 
         Item::Fixed(ref spec) => {
             use self::Fixed::*;
-
-            /// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
-            /// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
-            fn write_local_minus_utc(
-                result: &mut String,
-                off: FixedOffset,
-                allow_zulu: bool,
-                colon_type: Colons,
-            ) -> fmt::Result {
-                let off = off.local_minus_utc();
-                if !allow_zulu || off != 0 {
-                    let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
-
-                    match colon_type {
-                        Colons::None => {
-                            write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
-                        }
-                        Colons::Single => {
-                            write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
-                        }
-                        Colons::Double => {
-                            write!(
-                                result,
-                                "{}{:02}:{:02}:{:02}",
-                                sign,
-                                off / 3600,
-                                off / 60 % 60,
-                                off % 60
-                            )
-                        }
-                        Colons::Triple => {
-                            write!(result, "{}{:02}", sign, off / 3600)
-                        }
-                    }
-                } else {
-                    result.push('Z');
-                    Ok(())
-                }
-            }
 
             let ret =
                 match *spec {
@@ -735,10 +697,7 @@ fn format_inner<'a>(
                     // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
                     {
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                            // reuse `Debug` impls which already print ISO 8601 format.
-                            // this is faster in this way.
-                            write!(result, "{:?}", crate::NaiveDateTime::new(*d, *t))?;
-                            Some(write_local_minus_utc(result, off, false, Colons::Single))
+                            Some(write_rfc3339(result, crate::NaiveDateTime::new(*d, *t), off))
                         } else {
                             None
                         }
@@ -754,6 +713,52 @@ fn format_inner<'a>(
         Item::Error => return Err(fmt::Error),
     }
     Ok(())
+}
+
+/// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
+/// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
+#[cfg(any(feature = "alloc", feature = "std", test))]
+fn write_local_minus_utc(
+    result: &mut String,
+    off: FixedOffset,
+    allow_zulu: bool,
+    colon_type: Colons,
+) -> fmt::Result {
+    let off = off.local_minus_utc();
+    if !allow_zulu || off != 0 {
+        let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
+
+        match colon_type {
+            Colons::None => {
+                write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
+            }
+            Colons::Single => {
+                write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
+            }
+            Colons::Double => {
+                write!(result, "{}{:02}:{:02}:{:02}", sign, off / 3600, off / 60 % 60, off % 60)
+            }
+            Colons::Triple => {
+                write!(result, "{}{:02}", sign, off / 3600)
+            }
+        }
+    } else {
+        result.push('Z');
+        Ok(())
+    }
+}
+
+/// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
+#[cfg(any(feature = "alloc", feature = "std", test))]
+pub(crate) fn write_rfc3339(
+    result: &mut String,
+    dt: crate::NaiveDateTime,
+    off: FixedOffset,
+) -> fmt::Result {
+    // reuse `Debug` impls which already print ISO 8601 format.
+    // this is faster in this way.
+    write!(result, "{:?}", dt)?;
+    write_local_minus_utc(result, off, false, Colons::Single)
 }
 
 /// Tries to format given arguments with given formatting items.
