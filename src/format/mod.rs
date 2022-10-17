@@ -737,7 +737,7 @@ fn format_inner<'a>(
                         if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                             // reuse `Debug` impls which already print ISO 8601 format.
                             // this is faster in this way.
-                            write!(result, "{:?}T{:?}", d, t)?;
+                            write!(result, "{:?}", crate::NaiveDateTime::new(*d, *t))?;
                             Some(write_local_minus_utc(result, off, false, Colons::Single))
                         } else {
                             None

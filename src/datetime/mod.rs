@@ -11,6 +11,7 @@ use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
+use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
@@ -990,7 +991,8 @@ impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
 
 impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.naive_local(), self.offset)
+        self.naive_local().fmt(f)?;
+        self.offset.fmt(f)
     }
 }
 
@@ -999,7 +1001,9 @@ where
     Tz::Offset: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.naive_local(), self.offset)
+        self.naive_local().fmt(f)?;
+        f.write_char(' ')?;
+        self.offset.fmt(f)
     }
 }
 
