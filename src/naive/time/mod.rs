@@ -197,9 +197,11 @@ pub struct NaiveTime {
 #[cfg(feature = "arbitrary")]
 impl arbitrary::Arbitrary<'_> for NaiveTime {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveTime> {
-        let secs = u.int_in_range(0..=86_400)?;
-        let frac = u.int_in_range(0..=2_000_000_000)?;
-        Ok(NaiveTime { secs, frac })
+        let secs = u.int_in_range(0..=86_399)?;
+        let nano = u.int_in_range(0..=1_999_999_999)?;
+        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs, nano)
+            .expect("Could not generate a valid chrono::NaiveTime. It looks like implementation of Arbitrary for NaiveTime is erroneous.");
+        Ok(time)
     }
 }
 
