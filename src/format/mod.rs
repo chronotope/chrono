@@ -736,26 +736,28 @@ fn write_local_minus_utc(
     colon_type: Colons,
 ) -> fmt::Result {
     let off = off.local_minus_utc();
-    if !allow_zulu || off != 0 {
-        let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
-
-        match colon_type {
-            Colons::None => {
-                write!(result, "{}{:02}{:02}", sign, off / 3600, off / 60 % 60)
-            }
-            Colons::Single => {
-                write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
-            }
-            Colons::Double => {
-                write!(result, "{}{:02}:{:02}:{:02}", sign, off / 3600, off / 60 % 60, off % 60)
-            }
-            Colons::Triple => {
-                write!(result, "{}{:02}", sign, off / 3600)
-            }
-        }
-    } else {
+    if allow_zulu && off == 0 {
         result.push('Z');
-        Ok(())
+        return Ok(());
+    }
+    let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
+    result.push(sign);
+
+    write_hundreds(result, (off / 3600) as u8)?;
+
+    match colon_type {
+        Colons::None => write_hundreds(result, (off / 60 % 60) as u8),
+        Colons::Single => {
+            result.push(':');
+            write_hundreds(result, (off / 60 % 60) as u8)
+        }
+        Colons::Double => {
+            result.push(':');
+            write_hundreds(result, (off / 60 % 60) as u8)?;
+            result.push(':');
+            write_hundreds(result, (off % 60) as u8)
+        }
+        Colons::Triple => Ok(()),
     }
 }
 
