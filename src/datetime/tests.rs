@@ -809,12 +809,11 @@ fn test_parse_datetime_utc() {
         "2001-02-03T04:05:06Z",
         "2001-02-03T04:05:06+0000",
         "2001-02-03T04:05:06-00:00",
+        "2001-02-03T04:05:06-00 00",
         "2001-02-03T04:05:06-01:00",
         "2001-02-03T04:05:06-01: 00",
         "2001-02-03T04:05:06-01 :00",
         "2001-02-03T04:05:06-01 : 00",
-        "2001-02-03T04:05:06-01 :     00",
-        "2001-02-03T04:05:06-01 :    :00",
         "2012-12-12T12:12:12Z",
         "2015-02-18T23:16:09.153Z",
         "2015-2-18T23:16:09.153Z",
@@ -886,6 +885,8 @@ fn test_parse_datetime_utc() {
         "2012-12-12T12 : 12:12Z",   // space space before and after hour-minute divider
         "2012-12-12T12:12:12Z ",    // trailing space
         " 2012-12-12T12:12:12Z",    // leading space
+        "2001-02-03T04:05:06-01 :     00", // invalid timezone spacing
+        "2001-02-03T04:05:06-01 :    :00", // invalid timezone spacing
         "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   Z", // valid datetime, wrong format
     ];
     for &s in invalid.iter() {
@@ -1116,13 +1117,11 @@ fn test_datetime_parse_from_str() {
         "%b %d %Y %H:%M:%S %z"
     )
     .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09::00",
-            "%b %d %Y %H:%M:%S %z"
-        ),
-        Ok(dt),
-    );
+    assert!(DateTime::<FixedOffset>::parse_from_str(
+        "Aug 09 2013 23:54:35 -09::00",
+        "%b %d %Y %H:%M:%S %z"
+    )
+    .is_err());
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_str(
             "Aug 09 2013 23:54:35 -0900::",
@@ -1189,13 +1188,11 @@ fn test_datetime_parse_from_str() {
         "%b %d %Y %H:%M:%S %:z"
     )
     .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09::00",
-            "%b %d %Y %H:%M:%S %:z"
-        ),
-        Ok(dt),
-    );
+    assert!(DateTime::<FixedOffset>::parse_from_str(
+        "Aug 09 2013 23:54:35 -09::00",
+        "%b %d %Y %H:%M:%S %:z"
+    )
+    .is_err());
     // timezone data hs too many colons
     assert!(DateTime::<FixedOffset>::parse_from_str(
         "Aug 09 2013 23:54:35 -09:00:",
@@ -1246,13 +1243,16 @@ fn test_datetime_parse_from_str() {
         "%b %d %Y %H:%M:%S %::z"
     )
     .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09::00",
-            "%b %d %Y %H:%M:%S %::z"
-        ),
-        Ok(dt),
-    );
+    assert!(DateTime::<FixedOffset>::parse_from_str(
+        "Aug 09 2013 23:54:35 -09::00",
+        "%b %d %Y %H:%M:%S %::z"
+    )
+    .is_err());
+    assert!(DateTime::<FixedOffset>::parse_from_str(
+        "Aug 09 2013 23:54:35 -09::00",
+        "%b %d %Y %H:%M:%S %:z"
+    )
+    .is_err());
     // wrong timezone data
     assert!(DateTime::<FixedOffset>::parse_from_str(
         "Aug 09 2013 23:54:35 -09",

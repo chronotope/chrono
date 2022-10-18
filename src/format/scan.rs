@@ -219,9 +219,46 @@ pub(super) fn trim1(s: &str) -> &str {
     }
 }
 
-/// Consumes any number (including zero) of colon or spaces.
-pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
-    Ok(s.trim_left_matches(|c: char| c == ':' || c.is_whitespace()))
+/// Is `s.next()` whitespace?
+/// Helper function to `maybe_colon_or_space`.
+fn next_is_whitespace(s: &str) -> bool {
+    s.chars().next().map(|c| c.is_whitespace()).unwrap_or_default()
+}
+
+/// Allow a colon with possible one-character whitespace padding.
+/// Consumes zero or one of these leading patterns:
+/// `":"`, `" "`, `" :"`, `": "`, or `" : "`.
+/// Always returns `Ok(s)`.
+pub(super) fn maybe_colon_or_space(mut s: &str) -> ParseResult<&str> {
+    if s.is_empty() {
+        // nothing consumed
+        return Ok(s);
+    }
+
+    if s.starts_with(':') {
+        s = s_next(s);
+        if next_is_whitespace(s) {
+            s = s_next(s);
+        }
+        // consumed `":"` or `": "`
+        return Ok(s);
+    } else if !next_is_whitespace(s) {
+        return Ok(s);
+    }
+
+    s = s_next(s);
+    if s.starts_with(':') {
+        s = s_next(s);
+    } else {
+        // consumed `" "`
+        return Ok(s);
+    }
+    if next_is_whitespace(s) {
+        s = s_next(s);
+    }
+
+    // consumed `" :"` or `" : "`
+    Ok(s)
 }
 
 /// Tries to parse `[-+]\d\d` continued by `\d\d`. Return an offset in seconds if possible.
@@ -463,4 +500,51 @@ fn test_trim1() {
     assert_eq!(trim1("ab"), "ab");
     assert_eq!(trim1("😼"), "😼");
     assert_eq!(trim1("😼b"), "😼b");
+}
+
+#[test]
+fn test_next_is_whitespace() {
+    assert!(!next_is_whitespace(""));
+    assert!(!next_is_whitespace("a"));
+    assert!(!next_is_whitespace("😼😼"));
+    assert!(next_is_whitespace(" "));
+    assert!(next_is_whitespace("\t\t"));
+    assert!(next_is_whitespace("\ta\t"));
+    assert!(next_is_whitespace("\t😼\t"));
+}
+
+#[test]
+fn test_maybe_colon_or_space() {
+    assert_eq!(maybe_colon_or_space(""), Ok(""));
+    assert_eq!(maybe_colon_or_space(" "), Ok(""));
+    assert_eq!(maybe_colon_or_space("\n"), Ok(""));
+    assert_eq!(maybe_colon_or_space("  "), Ok(" "));
+    assert_eq!(maybe_colon_or_space("   "), Ok("  "));
+    assert_eq!(maybe_colon_or_space("    "), Ok("   "));
+    assert_eq!(maybe_colon_or_space("\t\t\t\t"), Ok("\t\t\t"));
+    assert_eq!(maybe_colon_or_space(":"), Ok(""));
+    assert_eq!(maybe_colon_or_space(" :"), Ok(""));
+    assert_eq!(maybe_colon_or_space(": "), Ok(""));
+    assert_eq!(maybe_colon_or_space(" : "), Ok(""));
+    assert_eq!(maybe_colon_or_space(" :  "), Ok(" "));
+    assert_eq!(maybe_colon_or_space("  :"), Ok(" :"));
+    assert_eq!(maybe_colon_or_space("  : "), Ok(" : "));
+    assert_eq!(maybe_colon_or_space(" :: "), Ok(": "));
+    assert_eq!(maybe_colon_or_space(" : : "), Ok(": "));
+    assert_eq!(maybe_colon_or_space("😸"), Ok("😸"));
+    assert_eq!(maybe_colon_or_space("😸😸"), Ok("😸😸"));
+    assert_eq!(maybe_colon_or_space("😸:"), Ok("😸:"));
+    assert_eq!(maybe_colon_or_space("😸 "), Ok("😸 "));
+    assert_eq!(maybe_colon_or_space(" 😸"), Ok("😸"));
+    assert_eq!(maybe_colon_or_space(":😸"), Ok("😸"));
+    assert_eq!(maybe_colon_or_space(":😸 "), Ok("😸 "));
+    assert_eq!(maybe_colon_or_space(" :😸"), Ok("😸"));
+    assert_eq!(maybe_colon_or_space(" :😸 "), Ok("😸 "));
+    assert_eq!(maybe_colon_or_space(" :😸:"), Ok("😸:"));
+    assert_eq!(maybe_colon_or_space(": 😸"), Ok("😸"));
+    assert_eq!(maybe_colon_or_space(":  😸"), Ok(" 😸"));
+    assert_eq!(maybe_colon_or_space(": :😸"), Ok(":😸"));
+    assert_eq!(maybe_colon_or_space(" : 😸"), Ok("😸"));
+    assert_eq!(maybe_colon_or_space(" ::😸"), Ok(":😸"));
+    assert_eq!(maybe_colon_or_space(" :: 😸"), Ok(": 😸"));
 }

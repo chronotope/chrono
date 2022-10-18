@@ -452,14 +452,15 @@ where
                     | &TimezoneOffsetTripleColon
                     | &TimezoneOffset => {
                         s = scan::trim1(s);
-                        let offset = try_consume!(scan::timezone_offset(s, scan::colon_or_space));
+                        let offset =
+                            try_consume!(scan::timezone_offset(s, scan::maybe_colon_or_space));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
                         s = scan::trim1(s);
                         let offset =
-                            try_consume!(scan::timezone_offset_zulu(s, scan::colon_or_space));
+                            try_consume!(scan::timezone_offset_zulu(s, scan::maybe_colon_or_space));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
@@ -467,8 +468,10 @@ where
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
                         s = scan::trim1(s);
-                        let offset =
-                            try_consume!(scan::timezone_offset_permissive(s, scan::colon_or_space));
+                        let offset = try_consume!(scan::timezone_offset_permissive(
+                            s,
+                            scan::maybe_colon_or_space
+                        ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
@@ -927,14 +930,14 @@ fn test_parse() {
     check!("+12:34:56",    [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12:34:56:",   [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12 34",       [fix!(TimezoneOffset)]; offset: 45_240);
-    check!("+12  34",      [fix!(TimezoneOffset)]; offset: 45_240);
+    check!("+12  34",      [fix!(TimezoneOffset)]; INVALID);
     check!("12:34",        [fix!(TimezoneOffset)]; INVALID);
     check!("12:34:56",     [fix!(TimezoneOffset)]; INVALID);
-    check!("+12::34",      [fix!(TimezoneOffset)]; offset: 45_240);
-    check!("+12: :34",     [fix!(TimezoneOffset)]; offset: 45_240);
-    check!("+12:::34",     [fix!(TimezoneOffset)]; offset: 45_240);
-    check!("+12::::34",    [fix!(TimezoneOffset)]; offset: 45_240);
-    check!("+12::34",      [fix!(TimezoneOffset)]; offset: 45_240);
+    check!("+12::34",      [fix!(TimezoneOffset)]; INVALID);
+    check!("+12: :34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("+12:::34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("+12::::34",    [fix!(TimezoneOffset)]; INVALID);
+    check!("+12::34",      [fix!(TimezoneOffset)]; INVALID);
     check!("+12:34:56",    [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12:3456",     [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+1234:56",     [fix!(TimezoneOffset)]; TOO_LONG);
@@ -962,11 +965,11 @@ fn test_parse() {
     check!("-12: 34",      [fix!(TimezoneOffset)]; offset: -45_240);
     check!("-12 :34",      [fix!(TimezoneOffset)]; offset: -45_240);
     check!("-12 : 34",     [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("-12 :  34",    [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("-12  : 34",    [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("-12:  34",     [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("-12  :34",     [fix!(TimezoneOffset)]; offset: -45_240);
-    check!("-12  :  34",   [fix!(TimezoneOffset)]; offset: -45_240);
+    check!("-12 :  34",    [fix!(TimezoneOffset)]; INVALID);
+    check!("-12  : 34",    [fix!(TimezoneOffset)]; INVALID);
+    check!("-12:  34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("-12  :34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("-12  :  34",   [fix!(TimezoneOffset)]; INVALID);
     check!("12:34 ",       [fix!(TimezoneOffset)]; INVALID);
     check!(" 12:34",       [fix!(TimezoneOffset)]; INVALID);
     check!("",             [fix!(TimezoneOffset)]; TOO_SHORT);
@@ -1038,14 +1041,14 @@ fn test_parse() {
     check!("+12: 34",      [fix!(TimezoneOffsetColon)]; offset: 45_240);
     check!("+12 :34",      [fix!(TimezoneOffsetColon)]; offset: 45_240);
     check!("+12 : 34",     [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12  : 34",    [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12 :  34",    [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12  :  34",   [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12::34",      [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12: :34",     [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12:::34",     [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12::::34",    [fix!(TimezoneOffsetColon)]; offset: 45_240);
-    check!("+12::34",      [fix!(TimezoneOffsetColon)]; offset: 45_240);
+    check!("+12  : 34",    [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12 :  34",    [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12  :  34",   [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12::34",      [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12: :34",     [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12:::34",     [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12::::34",    [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12::34",      [fix!(TimezoneOffsetColon)]; INVALID);
     check!("#1234",        [fix!(TimezoneOffsetColon)]; INVALID);
     check!("#12:34",       [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12:34 ",      [fix!(TimezoneOffsetColon)]; TOO_LONG);
@@ -1113,17 +1116,17 @@ fn test_parse() {
     check!("+12:34:56:",   [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+12:34:56:7",  [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+12:34:56:78", [fix!(TimezoneOffsetZ)]; TOO_LONG);
-    check!("+12::34",      [fix!(TimezoneOffsetZ)]; offset: 45_240);
+    check!("+12::34",      [fix!(TimezoneOffsetZ)]; INVALID);
     check!("+12:3456",     [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+1234:56",     [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+12 34",       [fix!(TimezoneOffsetZ)]; offset: 45_240);
-    check!("+12  34",      [fix!(TimezoneOffsetZ)]; offset: 45_240);
+    check!("+12  34",      [fix!(TimezoneOffsetZ)]; INVALID);
     check!("+12: 34",      [fix!(TimezoneOffsetZ)]; offset: 45_240);
     check!("+12 :34",      [fix!(TimezoneOffsetZ)]; offset: 45_240);
     check!("+12 : 34",     [fix!(TimezoneOffsetZ)]; offset: 45_240);
-    check!("+12  : 34",    [fix!(TimezoneOffsetZ)]; offset: 45_240);
-    check!("+12 :  34",    [fix!(TimezoneOffsetZ)]; offset: 45_240);
-    check!("+12  :  34",   [fix!(TimezoneOffsetZ)]; offset: 45_240);
+    check!("+12  : 34",    [fix!(TimezoneOffsetZ)]; INVALID);
+    check!("+12 :  34",    [fix!(TimezoneOffsetZ)]; INVALID);
+    check!("+12  :  34",   [fix!(TimezoneOffsetZ)]; INVALID);
     check!("12:34 ",       [fix!(TimezoneOffsetZ)]; INVALID);
     check!(" 12:34",       [fix!(TimezoneOffsetZ)]; INVALID);
     check!("+12:34 ",      [fix!(TimezoneOffsetZ)]; TOO_LONG);
@@ -1200,22 +1203,22 @@ fn test_parse() {
     check!("+12:34:56:7",  [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!("+12:34:56:78", [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!("+12 34",       [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12  34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
+    check!("+12  34",      [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
     check!("+12 :34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
     check!("+12: 34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
     check!("+12 : 34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12  :34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12:  34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12  :  34",   [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12::34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12 ::34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12: :34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12:: 34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12  ::34",    [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12:  :34",    [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12::  34",    [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12:::34",     [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
-    check!("+12::::34",    [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
+    check!("+12  :34",     [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12:  34",     [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12  :  34",   [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12::34",      [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12 ::34",     [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12: :34",     [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12:: 34",     [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12  ::34",    [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12:  :34",    [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12::  34",    [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12:::34",     [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
+    check!("+12::::34",    [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
     check!("12:34 ",       [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
     check!(" 12:34",       [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
     check!("+12:34 ",      [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
