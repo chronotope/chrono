@@ -206,6 +206,27 @@ pub trait TimeZone: Sized + Clone {
     /// The original `TimeZone` value can be recovered via `TimeZone::from_offset`.
     type Offset: Offset;
 
+    /// Make a new `DateTime` from year, month, day, time components and current time zone.
+    ///
+    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    ///
+    /// Returns `LocalResult::None` on invalid input data.
+    fn with_ymd_and_hms(
+        &self,
+        year: i32,
+        month: u32,
+        day: u32,
+        hour: u32,
+        min: u32,
+        sec: u32,
+    ) -> LocalResult<DateTime<Self>> {
+        match NaiveDate::from_ymd_opt(year, month, day).and_then(|d| d.and_hms_opt(hour, min, sec))
+        {
+            Some(dt) => self.from_local_datetime(&dt),
+            None => LocalResult::None,
+        }
+    }
+
     /// Makes a new `Date` from year, month, day and the current time zone.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
