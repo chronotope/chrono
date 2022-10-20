@@ -1181,9 +1181,12 @@ mod tests {
         let ymdhmsn = |y, m, d, h, n, s, nano, off| {
             Ok(FixedOffset::east_opt(off)
                 .unwrap()
-                .ymd_opt(y, m, d)
-                .unwrap()
-                .and_hms_nano_opt(h, n, s, nano)
+                .from_local_datetime(
+                    &NaiveDate::from_ymd_opt(y, m, d)
+                        .unwrap()
+                        .and_hms_nano_opt(h, n, s, nano)
+                        .unwrap(),
+                )
                 .unwrap())
         };
 
@@ -1228,7 +1231,14 @@ mod tests {
             parse!(Utc;
                           year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
-            Ok(Utc.ymd_opt(2014, 12, 31).unwrap().and_hms_nano_opt(4, 26, 40, 12_345_678).unwrap())
+            Ok(Utc
+                .from_local_datetime(
+                    &NaiveDate::from_ymd_opt(2014, 12, 31)
+                        .unwrap()
+                        .and_hms_nano_opt(4, 26, 40, 12_345_678)
+                        .unwrap()
+                )
+                .unwrap())
         );
         assert_eq!(
             parse!(Utc;
@@ -1248,16 +1258,19 @@ mod tests {
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
             Ok(FixedOffset::east_opt(32400)
                 .unwrap()
-                .ymd_opt(2014, 12, 31)
-                .unwrap()
-                .and_hms_nano_opt(13, 26, 40, 12_345_678)
+                .from_local_datetime(
+                    &NaiveDate::from_ymd_opt(2014, 12, 31)
+                        .unwrap()
+                        .and_hms_nano_opt(13, 26, 40, 12_345_678)
+                        .unwrap()
+                )
                 .unwrap())
         );
 
         // single result from timestamp
         assert_eq!(
             parse!(Utc; timestamp: 1_420_000_000, offset: 0),
-            Ok(Utc.ymd_opt(2014, 12, 31).unwrap().and_hms_opt(4, 26, 40).unwrap())
+            Ok(Utc.with_ymd_and_hms(2014, 12, 31, 4, 26, 40).unwrap())
         );
         assert_eq!(parse!(Utc; timestamp: 1_420_000_000, offset: 32400), Err(IMPOSSIBLE));
         assert_eq!(
@@ -1268,9 +1281,7 @@ mod tests {
             parse!(FixedOffset::east_opt(32400).unwrap(); timestamp: 1_420_000_000, offset: 32400),
             Ok(FixedOffset::east_opt(32400)
                 .unwrap()
-                .ymd_opt(2014, 12, 31)
-                .unwrap()
-                .and_hms_opt(13, 26, 40)
+                .with_ymd_and_hms(2014, 12, 31, 13, 26, 40)
                 .unwrap())
         );
 

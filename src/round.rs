@@ -2,8 +2,8 @@
 // See README.md and LICENSE.txt for details.
 
 use crate::datetime::DateTime;
-use crate::naive::NaiveDateTime;
 use crate::oldtime::Duration;
+use crate::NaiveDateTime;
 use crate::TimeZone;
 use crate::Timelike;
 use core::cmp::Ordering;
@@ -24,8 +24,8 @@ pub trait SubsecRound {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap();
+    /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
     /// ```
@@ -36,8 +36,8 @@ pub trait SubsecRound {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap();
+    /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
     /// ```
@@ -111,8 +111,8 @@ pub trait DurationRound: Sized {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, Duration, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap();
+    /// # use chrono::{DateTime, DurationRound, Duration, TimeZone, Utc, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(
     ///     dt.duration_round(Duration::milliseconds(10)).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -128,8 +128,8 @@ pub trait DurationRound: Sized {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, Duration, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap();
+    /// # use chrono::{DateTime, DurationRound, Duration, TimeZone, Utc, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(
     ///     dt.duration_trunc(Duration::milliseconds(10)).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -244,7 +244,7 @@ pub enum RoundingError {
     ///
     /// ``` rust
     /// # use chrono::{DateTime, DurationRound, Duration, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(1970, 12, 12).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    /// let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0).unwrap();
     ///
     /// assert_eq!(
     ///     dt.duration_round(Duration::days(365)),
@@ -256,8 +256,8 @@ pub enum RoundingError {
     /// Error when `Duration.num_nanoseconds` exceeds the limit.
     ///
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, Duration, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2260, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 1_75_500_000).unwrap();
+    /// # use chrono::{DateTime, DurationRound, Duration, RoundingError, TimeZone, Utc, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2260, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 1_75_500_000).unwrap().and_local_timezone(Utc).unwrap();
     ///
     /// assert_eq!(
     ///     dt.duration_round(Duration::days(300 * 365)),
@@ -270,7 +270,7 @@ pub enum RoundingError {
     ///
     /// ``` rust
     /// # use chrono::{DateTime, DurationRound, Duration, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2300, 12, 12).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    /// let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0).unwrap();
     ///
     /// assert_eq!(dt.duration_round(Duration::days(1)), Err(RoundingError::TimestampExceedsLimit),);
     /// ```
@@ -306,12 +306,20 @@ impl std::error::Error for RoundingError {
 mod tests {
     use super::{Duration, DurationRound, SubsecRound};
     use crate::offset::{FixedOffset, TimeZone, Utc};
+    use crate::NaiveDate;
     use crate::Timelike;
 
     #[test]
     fn test_round_subsecs() {
         let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-        let dt = pst.ymd_opt(2018, 1, 11).unwrap().and_hms_nano_opt(10, 5, 13, 84_660_684).unwrap();
+        let dt = pst
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2018, 1, 11)
+                    .unwrap()
+                    .and_hms_nano_opt(10, 5, 13, 84_660_684)
+                    .unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(dt.round_subsecs(10), dt);
         assert_eq!(dt.round_subsecs(9), dt);
@@ -327,8 +335,14 @@ mod tests {
         assert_eq!(dt.round_subsecs(0).nanosecond(), 0);
         assert_eq!(dt.round_subsecs(0).second(), 13);
 
-        let dt =
-            Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_nano_opt(10, 5, 27, 750_500_000).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2018, 1, 11)
+                    .unwrap()
+                    .and_hms_nano_opt(10, 5, 27, 750_500_000)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(dt.round_subsecs(9), dt);
         assert_eq!(dt.round_subsecs(4), dt);
         assert_eq!(dt.round_subsecs(3).nanosecond(), 751_000_000);
@@ -341,8 +355,14 @@ mod tests {
 
     #[test]
     fn test_round_leap_nanos() {
-        let dt =
-            Utc.ymd_opt(2016, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 1_750_500_000).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2016, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 1_750_500_000)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(dt.round_subsecs(9), dt);
         assert_eq!(dt.round_subsecs(4), dt);
         assert_eq!(dt.round_subsecs(2).nanosecond(), 1_750_000_000);
@@ -356,7 +376,14 @@ mod tests {
     #[test]
     fn test_trunc_subsecs() {
         let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-        let dt = pst.ymd_opt(2018, 1, 11).unwrap().and_hms_nano_opt(10, 5, 13, 84_660_684).unwrap();
+        let dt = pst
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2018, 1, 11)
+                    .unwrap()
+                    .and_hms_nano_opt(10, 5, 13, 84_660_684)
+                    .unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(dt.trunc_subsecs(10), dt);
         assert_eq!(dt.trunc_subsecs(9), dt);
@@ -372,8 +399,14 @@ mod tests {
         assert_eq!(dt.trunc_subsecs(0).nanosecond(), 0);
         assert_eq!(dt.trunc_subsecs(0).second(), 13);
 
-        let dt =
-            pst.ymd_opt(2018, 1, 11).unwrap().and_hms_nano_opt(10, 5, 27, 750_500_000).unwrap();
+        let dt = pst
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2018, 1, 11)
+                    .unwrap()
+                    .and_hms_nano_opt(10, 5, 27, 750_500_000)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(dt.trunc_subsecs(9), dt);
         assert_eq!(dt.trunc_subsecs(4), dt);
         assert_eq!(dt.trunc_subsecs(3).nanosecond(), 750_000_000);
@@ -386,8 +419,14 @@ mod tests {
 
     #[test]
     fn test_trunc_leap_nanos() {
-        let dt =
-            Utc.ymd_opt(2016, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 1_750_500_000).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2016, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 1_750_500_000)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(dt.trunc_subsecs(9), dt);
         assert_eq!(dt.trunc_subsecs(4), dt);
         assert_eq!(dt.trunc_subsecs(2).nanosecond(), 1_750_000_000);
@@ -400,8 +439,14 @@ mod tests {
 
     #[test]
     fn test_duration_round() {
-        let dt =
-            Utc.ymd_opt(2016, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 175_500_000).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2016, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(
             dt.duration_round(Duration::zero()).unwrap().to_string(),
@@ -414,13 +459,27 @@ mod tests {
         );
 
         // round up
-        let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 30, 0).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 30, 0)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(
             dt.duration_round(Duration::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:25:00 UTC"
         );
         // round down
-        let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 29, 999).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 29, 999)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(
             dt.duration_round(Duration::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
@@ -444,12 +503,8 @@ mod tests {
         );
 
         // timezone east
-        let dt = FixedOffset::east_opt(3600)
-            .unwrap()
-            .ymd_opt(2020, 10, 27)
-            .unwrap()
-            .and_hms_opt(15, 0, 0)
-            .unwrap();
+        let dt =
+            FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(Duration::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
@@ -460,12 +515,8 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west_opt(3600)
-            .unwrap()
-            .ymd_opt(2020, 10, 27)
-            .unwrap()
-            .and_hms_opt(15, 0, 0)
-            .unwrap();
+        let dt =
+            FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(Duration::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
@@ -479,9 +530,12 @@ mod tests {
     #[test]
     fn test_duration_round_naive() {
         let dt = Utc
-            .ymd_opt(2016, 12, 31)
-            .unwrap()
-            .and_hms_nano_opt(23, 59, 59, 175_500_000)
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2016, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .unwrap(),
+            )
             .unwrap()
             .naive_utc();
 
@@ -497,9 +551,12 @@ mod tests {
 
         // round up
         let dt = Utc
-            .ymd_opt(2012, 12, 12)
-            .unwrap()
-            .and_hms_milli_opt(18, 22, 30, 0)
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 30, 0)
+                    .unwrap(),
+            )
             .unwrap()
             .naive_utc();
         assert_eq!(
@@ -508,9 +565,12 @@ mod tests {
         );
         // round down
         let dt = Utc
-            .ymd_opt(2012, 12, 12)
-            .unwrap()
-            .and_hms_milli_opt(18, 22, 29, 999)
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 29, 999)
+                    .unwrap(),
+            )
             .unwrap()
             .naive_utc();
         assert_eq!(
@@ -538,7 +598,7 @@ mod tests {
 
     #[test]
     fn test_duration_round_pre_epoch() {
-        let dt = Utc.ymd_opt(1969, 12, 12).unwrap().and_hms_opt(12, 12, 12).unwrap();
+        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
         assert_eq!(
             dt.duration_round(Duration::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
@@ -547,8 +607,14 @@ mod tests {
 
     #[test]
     fn test_duration_trunc() {
-        let dt =
-            Utc.ymd_opt(2016, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 175_500_000).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2016, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(
             dt.duration_trunc(Duration::milliseconds(10)).unwrap().to_string(),
@@ -556,13 +622,27 @@ mod tests {
         );
 
         // would round up
-        let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 30, 0).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 30, 0)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(
             dt.duration_trunc(Duration::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         // would round down
-        let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 29, 999).unwrap();
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 29, 999)
+                    .unwrap(),
+            )
+            .unwrap();
         assert_eq!(
             dt.duration_trunc(Duration::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
@@ -585,12 +665,8 @@ mod tests {
         );
 
         // timezone east
-        let dt = FixedOffset::east_opt(3600)
-            .unwrap()
-            .ymd_opt(2020, 10, 27)
-            .unwrap()
-            .and_hms_opt(15, 0, 0)
-            .unwrap();
+        let dt =
+            FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
@@ -601,12 +677,8 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west_opt(3600)
-            .unwrap()
-            .ymd_opt(2020, 10, 27)
-            .unwrap()
-            .and_hms_opt(15, 0, 0)
-            .unwrap();
+        let dt =
+            FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"
@@ -620,9 +692,12 @@ mod tests {
     #[test]
     fn test_duration_trunc_naive() {
         let dt = Utc
-            .ymd_opt(2016, 12, 31)
-            .unwrap()
-            .and_hms_nano_opt(23, 59, 59, 175_500_000)
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2016, 12, 31)
+                    .unwrap()
+                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .unwrap(),
+            )
             .unwrap()
             .naive_utc();
 
@@ -633,9 +708,12 @@ mod tests {
 
         // would round up
         let dt = Utc
-            .ymd_opt(2012, 12, 12)
-            .unwrap()
-            .and_hms_milli_opt(18, 22, 30, 0)
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 30, 0)
+                    .unwrap(),
+            )
             .unwrap()
             .naive_utc();
         assert_eq!(
@@ -644,9 +722,12 @@ mod tests {
         );
         // would round down
         let dt = Utc
-            .ymd_opt(2012, 12, 12)
-            .unwrap()
-            .and_hms_milli_opt(18, 22, 29, 999)
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2012, 12, 12)
+                    .unwrap()
+                    .and_hms_milli_opt(18, 22, 29, 999)
+                    .unwrap(),
+            )
             .unwrap()
             .naive_utc();
         assert_eq!(
@@ -673,7 +754,7 @@ mod tests {
 
     #[test]
     fn test_duration_trunc_pre_epoch() {
-        let dt = Utc.ymd_opt(1969, 12, 12).unwrap().and_hms_opt(12, 12, 12).unwrap();
+        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
         assert_eq!(
             dt.duration_trunc(Duration::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"

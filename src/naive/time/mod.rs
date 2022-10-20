@@ -80,7 +80,7 @@ mod tests;
 ///
 /// let dt1 = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_micro_opt(8, 59, 59, 1_000_000).unwrap();
 ///
-/// let dt2 = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap();
+/// let dt2 = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap().and_local_timezone(Utc).unwrap();
 /// # let _ = (t, dt1, dt2);
 /// ```
 ///
@@ -161,9 +161,9 @@ mod tests;
 /// will be represented as the second part being 60, as required by ISO 8601.
 ///
 /// ```
-/// use chrono::{Utc, TimeZone};
+/// use chrono::{Utc, TimeZone, NaiveDate};
 ///
-/// let dt = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap().and_local_timezone(Utc).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ```
 ///
@@ -175,12 +175,12 @@ mod tests;
 /// and would be read back to the next non-leap second.
 ///
 /// ```
-/// use chrono::{DateTime, Utc, TimeZone};
+/// use chrono::{DateTime, Utc, TimeZone, NaiveDate};
 ///
-/// let dt = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 56, 4, 1_000).unwrap();
+/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 56, 4, 1_000).unwrap().and_local_timezone(Utc).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 ///
-/// let dt = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_opt(23, 56, 5).unwrap();
+/// let dt = Utc.with_ymd_and_hms(2015, 6, 30, 23, 56, 5).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 /// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
 /// ```

@@ -2,6 +2,7 @@
 // See README.md and LICENSE.txt for details.
 
 //! ISO 8601 calendar date with time zone.
+#![allow(deprecated)]
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;

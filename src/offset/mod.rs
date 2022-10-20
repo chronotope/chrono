@@ -23,6 +23,7 @@ use core::fmt;
 use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Weekday;
+#[allow(deprecated)]
 use crate::{Date, DateTime};
 
 mod fixed;
@@ -84,6 +85,7 @@ impl<T> LocalResult<T> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.

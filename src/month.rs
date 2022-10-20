@@ -12,7 +12,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// ```
 /// use num_traits::FromPrimitive;
 /// use chrono::prelude::*;
-/// let date = Utc.ymd_opt(2019, 10, 28).unwrap().and_hms_opt(9, 10, 11).unwrap();
+/// let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
 /// // `2019-10-28T09:10:11Z`
 /// let month = Month::from_u32(date.month());
 /// assert_eq!(month, Some(Month::October))
@@ -21,7 +21,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// ```
 /// # use chrono::prelude::*;
 /// let month = Month::January;
-/// let dt = Utc.ymd_opt(2019, month.number_from_month(), 28).unwrap().and_hms_opt(9, 10, 11).unwrap();
+/// let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
 /// ```
 /// Allows mapping from and to month, from 1-January to 12-December.
@@ -337,15 +337,11 @@ mod tests {
         assert_eq!(dec_opt, Some(Month::December));
         assert_eq!(no_month, None);
 
-        let date = Utc.ymd_opt(2019, 10, 28).unwrap().and_hms_opt(9, 10, 11).unwrap();
+        let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
         assert_eq!(Month::from_u32(date.month()), Some(Month::October));
 
         let month = Month::January;
-        let dt = Utc
-            .ymd_opt(2019, month.number_from_month(), 28)
-            .unwrap()
-            .and_hms_opt(9, 10, 11)
-            .unwrap();
+        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 

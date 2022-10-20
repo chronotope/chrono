@@ -241,33 +241,41 @@ mod tests {
         // starting from 0.3 we don't have an offset exceeding one day.
         // this makes everything easier!
         assert_eq!(
-            format!("{:?}", FixedOffset::east_opt(86399).unwrap().ymd_opt(2012, 2, 29).unwrap()),
-            "2012-02-29+23:59:59".to_string()
+            format!(
+                "{:?}",
+                FixedOffset::east_opt(86399)
+                    .unwrap()
+                    .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
+                    .unwrap()
+            ),
+            "2012-02-29T05:06:07+23:59:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
                 FixedOffset::east_opt(86399)
                     .unwrap()
-                    .ymd_opt(2012, 2, 29)
-                    .unwrap()
-                    .and_hms_opt(5, 6, 7)
+                    .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
                     .unwrap()
             ),
             "2012-02-29T05:06:07+23:59:59".to_string()
-        );
-        assert_eq!(
-            format!("{:?}", FixedOffset::west_opt(86399).unwrap().ymd_opt(2012, 3, 4).unwrap()),
-            "2012-03-04-23:59:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
                 FixedOffset::west_opt(86399)
                     .unwrap()
-                    .ymd_opt(2012, 3, 4)
+                    .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
                     .unwrap()
-                    .and_hms_opt(5, 6, 7)
+            ),
+            "2012-03-04T05:06:07-23:59:59".to_string()
+        );
+        assert_eq!(
+            format!(
+                "{:?}",
+                FixedOffset::west_opt(86399)
+                    .unwrap()
+                    .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
                     .unwrap()
             ),
             "2012-03-04T05:06:07-23:59:59".to_string()
