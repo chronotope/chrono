@@ -152,18 +152,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Unless you are immediately planning on turning this into a `DateTime`
     /// with the same Timezone you should use the
     /// [`date_naive`](DateTime::date_naive) method.
-    ///
-    /// ```
-    /// use chrono::prelude::*;
-    ///
-    /// let date: Date<Utc> = Utc.ymd_opt(2020, 1, 1).unwrap();
-    /// let dt: DateTime<Utc> = date.and_hms_opt(0, 0, 0).unwrap();
-    ///
-    /// assert_eq!(dt.date(), date);
-    ///
-    /// assert_eq!(dt.date().and_hms_opt(1, 1, 1).unwrap(), date.and_hms_opt(1, 1, 1).unwrap());
-    /// ```
     #[inline]
+    #[deprecated(since = "0.4.23", note = "Use `date_naive()` instead")]
+    #[allow(deprecated)]
     pub fn date(&self) -> Date<Tz> {
         Date::from_utc(self.naive_local().date(), self.offset.clone())
     }

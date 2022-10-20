@@ -57,6 +57,8 @@ pub struct Local;
 
 impl Local {
     /// Returns a `Date` which corresponds to the current date.
+    #[deprecated(since = "0.4.23", note = "use `Local::now()` instead")]
+    #[allow(deprecated)]
     pub fn today() -> Date<Local> {
         Local::now().date()
     }
@@ -97,6 +99,7 @@ impl TimeZone for Local {
     }
 
     // they are easier to define in terms of the finished date and time unlike other offsets
+    #[allow(deprecated)]
     fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
         self.from_local_date(local).map(|date| *date.offset())
     }
