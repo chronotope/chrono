@@ -53,6 +53,7 @@ use crate::{Datelike, Weekday};
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
+#[deprecated(since = "0.4.23", note = "Use `NaiveDate` or `DateTime<Tz>` instead")]
 #[derive(Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Date<Tz: TimeZone> {
@@ -324,15 +325,6 @@ where
     /// Formats the date with the specified format string.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
-    ///
-    /// # Example
-    /// ```rust
-    /// use chrono::prelude::*;
-    ///
-    /// let date_time: Date<Utc> = Utc.ymd_opt(2017, 04, 02).unwrap();
-    /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
-    /// assert_eq!(formatted, "02/04/2017");
-    /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]

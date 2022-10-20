@@ -48,6 +48,11 @@ pub struct Utc;
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
+    #[deprecated(
+        since = "0.4.23",
+        note = "use `Utc::now()` instead, potentially with `.date_naive()`"
+    )]
+    #[allow(deprecated)]
     pub fn today() -> Date<Utc> {
         Utc::now().date()
     }
