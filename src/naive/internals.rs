@@ -37,7 +37,7 @@ pub(super) const MIN_YEAR: DateImpl = i32::MIN >> 13;
 /// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
 /// (simplifies the day of week calculation from the 1-based ordinal).
 #[allow(unreachable_pub)] // public as an alias for benchmarks only
-#[derive(PartialEq, Eq, Copy, Clone)]
+#[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct YearFlags(pub(super) u8);
 
 pub(super) const A: YearFlags = YearFlags(0o15);

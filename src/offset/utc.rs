@@ -39,7 +39,7 @@ use crate::{Date, DateTime};
 /// assert_eq!(Utc.timestamp(61, 0), dt);
 /// assert_eq!(Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 1, 1).unwrap(), dt);
 /// ```
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Utc;
 
