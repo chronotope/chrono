@@ -288,15 +288,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Returns the number of whole years from the given `base` until `self`.
     pub fn years_since(&self, base: Self) -> Option<u32> {
-        let mut years = self.year() - base.year();
-        if (self.month(), self.day()) < (base.month(), base.day()) {
-            years -= 1;
-        }
-
-        match years >= 0 {
-            true => Some(years as u32),
-            false => None,
-        }
+        self.date.years_since(base.date)
     }
 
     /// The minimum possible `Date`.
