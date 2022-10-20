@@ -50,7 +50,7 @@ macro_rules! try_opt {
 /// ISO 8601 time duration with nanosecond precision.
 ///
 /// This also allows for the negative duration; see individual methods for details.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Duration {
     secs: i64,
