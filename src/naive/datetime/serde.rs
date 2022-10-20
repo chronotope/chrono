@@ -1053,7 +1053,7 @@ fn test_serde_deserialize() {
 // it is not self-describing.
 #[test]
 fn test_serde_bincode() {
-    use crate::naive::NaiveDate;
+    use crate::NaiveDate;
     use bincode::{deserialize, serialize};
 
     let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap();
@@ -1076,10 +1076,8 @@ fn test_serde_bincode_optional() {
         two: Option<DateTime<Utc>>,
     }
 
-    let expected = Test {
-        one: Some(1),
-        two: Some(Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 1, 1).unwrap()),
-    };
+    let expected =
+        Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
     let bytes: Vec<u8> = serialize(&expected).unwrap();
     let actual = deserialize::<Test>(&(bytes)).unwrap();
 

@@ -9,6 +9,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
+#[allow(deprecated)]
 use crate::{Date, DateTime};
 
 // we don't want `stub.rs` when the target_os is not wasi or emscripten
@@ -108,6 +109,7 @@ impl TimeZone for Local {
         self.from_local_datetime(local).map(|datetime| *datetime.offset())
     }
 
+    #[allow(deprecated)]
     fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
         *self.from_utc_date(utc).offset()
     }
@@ -117,6 +119,7 @@ impl TimeZone for Local {
     }
 
     // override them for avoiding redundant works
+    #[allow(deprecated)]
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Local>> {
         // this sounds very strange, but required for keeping `TimeZone::ymd` sane.
         // in the other words, we use the offset at the local midnight
@@ -149,6 +152,7 @@ impl TimeZone for Local {
         inner::naive_to_local(local, true)
     }
 
+    #[allow(deprecated)]
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Local> {
         let midnight = self.from_utc_datetime(&utc.and_hms_opt(0, 0, 0).unwrap());
         Date::from_utc(*utc, *midnight.offset())
@@ -183,7 +187,7 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::{Datelike, Duration};
+    use crate::{Datelike, Duration, Utc};
 
     #[test]
     fn verify_correct_offsets() {
@@ -231,13 +235,13 @@ mod tests {
     #[test]
     fn test_local_date_sanity_check() {
         // issue #27
-        assert_eq!(Local.ymd_opt(2999, 12, 28).unwrap().day(), 28);
+        assert_eq!(Local.with_ymd_and_hms(2999, 12, 28, 0, 0, 0).unwrap().day(), 28);
     }
 
     #[test]
     fn test_leap_second() {
         // issue #123
-        let today = Local::today();
+        let today = Utc::now().date_naive();
 
         let dt = today.and_hms_milli_opt(1, 2, 59, 1000).unwrap();
         let timestr = dt.time().to_string();

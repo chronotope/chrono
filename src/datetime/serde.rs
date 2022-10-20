@@ -122,7 +122,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc};
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds;
 /// #[derive(Deserialize, Serialize)]
@@ -131,7 +131,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap();
+/// let time = NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap().and_local_timezone(Utc).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -158,7 +158,7 @@ pub mod ts_nanoseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds::serialize as to_nano_ts;
     /// #[derive(Serialize)]
@@ -168,7 +168,7 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap(),
+    ///     time: NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap().and_local_timezone(Utc).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -245,7 +245,7 @@ pub mod ts_nanoseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc};
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -254,7 +254,7 @@ pub mod ts_nanoseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap());
+/// let time = Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap().and_local_timezone(Utc).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -280,7 +280,7 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds_option::serialize as to_nano_tsopt;
     /// #[derive(Serialize)]
@@ -290,7 +290,7 @@ pub mod ts_nanoseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap()),
+    ///     time: Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_nano_opt(02, 04, 59, 918355733).unwrap().and_local_timezone(Utc).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -374,7 +374,7 @@ pub mod ts_nanoseconds_option {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc};
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds;
 /// #[derive(Deserialize, Serialize)]
@@ -383,7 +383,7 @@ pub mod ts_nanoseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap();
+/// let time = NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap().and_local_timezone(Utc).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -409,7 +409,7 @@ pub mod ts_microseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds::serialize as to_micro_ts;
     /// #[derive(Serialize)]
@@ -419,7 +419,7 @@ pub mod ts_microseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap(),
+    ///     time: NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap().and_local_timezone(Utc).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
@@ -496,7 +496,7 @@ pub mod ts_microseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc};
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -505,7 +505,7 @@ pub mod ts_microseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap());
+/// let time = Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap().and_local_timezone(Utc).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -530,7 +530,7 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds_option::serialize as to_micro_tsopt;
     /// #[derive(Serialize)]
@@ -540,7 +540,7 @@ pub mod ts_microseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap()),
+    ///     time: Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap().and_local_timezone(Utc).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
@@ -624,7 +624,7 @@ pub mod ts_microseconds_option {
 /// # Example
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc};
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds;
 /// #[derive(Deserialize, Serialize)]
@@ -633,7 +633,7 @@ pub mod ts_microseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap();
+/// let time = NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -659,7 +659,7 @@ pub mod ts_milliseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds::serialize as to_milli_ts;
     /// #[derive(Serialize)]
@@ -669,7 +669,7 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap(),
+    ///     time: NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -743,7 +743,7 @@ pub mod ts_milliseconds {
 /// # Example
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc};
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -752,7 +752,7 @@ pub mod ts_milliseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap());
+/// let time = Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -777,7 +777,7 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc};
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds_option::serialize as to_milli_tsopt;
     /// #[derive(Serialize)]
@@ -787,7 +787,7 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap()),
+    ///     time: Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -893,7 +893,7 @@ pub mod ts_milliseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap();
+/// let time = Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -929,7 +929,7 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap(),
+    ///     time: Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
@@ -1009,7 +1009,7 @@ pub mod ts_seconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap());
+/// let time = Some(Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -1044,7 +1044,7 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd_opt(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap()),
+    ///     time: Some(Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
@@ -1142,7 +1142,7 @@ fn test_serde_bincode() {
     // it is not self-describing.
     use bincode::{deserialize, serialize};
 
-    let dt = Utc.ymd_opt(2014, 7, 24).unwrap().and_hms_opt(12, 34, 6).unwrap();
+    let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
     let encoded = serialize(&dt).unwrap();
     let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
     assert_eq!(dt, decoded);

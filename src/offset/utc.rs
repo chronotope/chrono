@@ -20,6 +20,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use super::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg(feature = "clock")]
+#[allow(deprecated)]
 use crate::{Date, DateTime};
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
@@ -37,7 +38,7 @@ use crate::{Date, DateTime};
 /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
 ///
 /// assert_eq!(Utc.timestamp(61, 0), dt);
-/// assert_eq!(Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 1, 1).unwrap(), dt);
+/// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
