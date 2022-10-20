@@ -44,7 +44,7 @@ mod tests;
 /// future, so exhaustive matching in external code is not recommended.
 ///
 /// See the `TimeZone::to_rfc3339_opts` function for usage.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.
     Secs,

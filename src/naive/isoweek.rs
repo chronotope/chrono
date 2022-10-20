@@ -16,7 +16,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// constitutes the ISO 8601 [week date](./struct.NaiveDate.html#week-date).
 /// One can retrieve this type from the existing [`Datelike`](../trait.Datelike.html) types
 /// via the [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) method.
-#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct IsoWeek {
     // note that this allows for larger year range than `NaiveDate`.
