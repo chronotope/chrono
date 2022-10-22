@@ -4,7 +4,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use chrono::prelude::*;
-use chrono::{DateTime, FixedOffset, Utc, __BenchYearFlags};
+use chrono::{DateTime, FixedOffset, Local, Utc, __BenchYearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
@@ -70,6 +70,14 @@ fn bench_year_flags_from_year(c: &mut Criterion) {
     });
 }
 
+fn bench_get_local_time(c: &mut Criterion) {
+    c.bench_function("bench_get_local_time", |b| {
+        b.iter(|| {
+            let _ = Local::now();
+        })
+    });
+}
+
 /// Returns the number of multiples of `div` in the range `start..end`.
 ///
 /// If the range `start..end` is back-to-front, i.e. `start` is greater than `end`, the
@@ -123,6 +131,7 @@ criterion_group!(
     bench_datetime_to_rfc3339,
     bench_year_flags_from_year,
     bench_num_days_from_ce,
+    bench_get_local_time,
 );
 
 criterion_main!(benches);
