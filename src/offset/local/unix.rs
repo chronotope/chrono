@@ -32,7 +32,7 @@ thread_local! {
 }
 
 enum Source {
-    LocalTime { mtime: SystemTime, last_checked: SystemTime },
+    LocalTime { mtime: SystemTime },
     // we don't bother storing the contents of the environment variable in this case.
     // changing the environment while the process is running is generally not reccomended
     Environment,
@@ -53,40 +53,13 @@ impl Default for Source {
                     // by picking SystemTime::now() we raise the probability of
                     // the cache being invalidated if/when the mtime starts working
                     mtime: data.modified().unwrap_or_else(|_| SystemTime::now()),
-                    last_checked: SystemTime::now(),
                 },
                 Err(_) => {
                     // as above, now() should be a better default than some constant
                     // TODO: see if we can improve caching in the case where the fallback is a valid timezone
-                    Source::LocalTime { mtime: SystemTime::now(), last_checked: SystemTime::now() }
+                    Source::LocalTime { mtime: SystemTime::now() }
                 }
             },
-        }
-    }
-}
-
-impl Source {
-    fn out_of_date(&mut self) -> bool {
-        let now = SystemTime::now();
-        let prev = match self {
-            Source::LocalTime { mtime, last_checked } => match now.duration_since(*last_checked) {
-                Ok(d) if d.as_secs() < 1 => return false,
-                Ok(_) | Err(_) => *mtime,
-            },
-            Source::Environment => return false,
-        };
-
-        match Source::default() {
-            Source::LocalTime { mtime, .. } => {
-                *self = Source::LocalTime { mtime, last_checked: now };
-                prev != mtime
-            }
-            // will only reach here if TZ has been set while
-            // the process is running
-            Source::Environment => {
-                *self = Source::Environment;
-                true
-            }
         }
     }
 }
@@ -94,6 +67,7 @@ impl Source {
 struct Cache {
     zone: TimeZone,
     source: Source,
+    last_checked: SystemTime,
 }
 
 #[cfg(target_os = "android")]
@@ -118,14 +92,43 @@ impl Default for Cache {
         Cache {
             zone: TimeZone::local().ok().or_else(fallback_timezone).unwrap_or_else(TimeZone::utc),
             source: Source::default(),
+            last_checked: SystemTime::now(),
         }
     }
 }
 
 impl Cache {
     fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
-        if self.source.out_of_date() {
-            *self = Cache::default();
+        let now = SystemTime::now();
+
+        match now.duration_since(self.last_checked) {
+            // If the cache has been around for less than a second then we reuse it
+            // unconditionally. This is a reasonable tradeoff because the timezone
+            // generally won't be changing _that_ often, but if the time zone does
+            // change, it will reflect sufficiently quickly from an application
+            // user's perspective.
+            Ok(d) if d.as_secs() < 1 => (),
+            Ok(_) | Err(_) => {
+                let new_source = Source::default();
+
+                let out_of_date = match (&self.source, &new_source) {
+                    // change from env to file or file to env, must recreate the zone
+                    (Source::Environment, Source::LocalTime { .. })
+                    | (Source::LocalTime { .. }, Source::Environment) => true,
+                    // stay as file, but mtime has changed
+                    (Source::LocalTime { mtime: old_mtime }, Source::LocalTime { mtime })
+                        if old_mtime != mtime =>
+                    {
+                        true
+                    }
+                    // cache can be reused
+                    _ => false,
+                };
+
+                if out_of_date {
+                    *self = Cache::default();
+                }
+            }
         }
 
         if !local {
