@@ -26,11 +26,10 @@ impl TimeZone {
     ///
     /// This method in not supported on non-UNIX platforms, and returns the UTC time zone instead.
     ///
-    pub(crate) fn local() -> Result<Self, Error> {
-        if let Ok(tz) = std::env::var("TZ") {
-            Self::from_posix_tz(&tz)
-        } else {
-            Self::from_posix_tz("localtime")
+    pub(crate) fn local(env_tz: Option<&str>) -> Result<Self, Error> {
+        match env_tz {
+            Some(tz) => Self::from_posix_tz(tz),
+            None => Self::from_posix_tz("localtime"),
         }
     }
 
@@ -813,7 +812,7 @@ mod tests {
             // so just ensure that ::local() acts as expected
             // in this case
             if let Ok(tz) = std::env::var("TZ") {
-                let time_zone_local = TimeZone::local()?;
+                let time_zone_local = TimeZone::local(Some(tz.as_str()))?;
                 let time_zone_local_1 = TimeZone::from_posix_tz(&tz)?;
                 assert_eq!(time_zone_local, time_zone_local_1);
             }

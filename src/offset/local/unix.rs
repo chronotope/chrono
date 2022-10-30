@@ -38,16 +38,16 @@ enum Source {
     Environment,
 }
 
-impl Default for Source {
-    fn default() -> Source {
+impl Source {
+    fn new(env_tz: Option<&str>) -> Source {
         // use of var_os avoids allocating, which is nice
         // as we are only going to discard the string anyway
         // but we must ensure the contents are valid unicode
         // otherwise the behaivour here would be different
         // to that in `naive_to_local`
-        match env::var_os("TZ") {
-            Some(ref s) if s.to_str().is_some() => Source::Environment,
-            Some(_) | None => match fs::symlink_metadata("/etc/localtime") {
+        match env_tz {
+            Some(_) => Source::Environment,
+            None => match fs::symlink_metadata("/etc/localtime") {
                 Ok(data) => Source::LocalTime {
                     // we have to pick a sensible default when the mtime fails
                     // by picking SystemTime::now() we raise the probability of
@@ -89,12 +89,18 @@ fn fallback_timezone() -> Option<TimeZone> {
 impl Default for Cache {
     fn default() -> Cache {
         // default to UTC if no local timezone can be found
+        let env_tz = env::var("TZ").ok();
+        let env_ref = env_tz.as_ref().map(|s| s.as_str());
         Cache {
-            zone: TimeZone::local().ok().or_else(fallback_timezone).unwrap_or_else(TimeZone::utc),
-            source: Source::default(),
             last_checked: SystemTime::now(),
+            source: Source::new(env_ref),
+            zone: current_zone(env_ref),
         }
     }
+}
+
+fn current_zone(var: Option<&str>) -> TimeZone {
+    TimeZone::local(var).ok().or_else(fallback_timezone).unwrap_or_else(TimeZone::utc)
 }
 
 impl Cache {
@@ -109,7 +115,9 @@ impl Cache {
             // user's perspective.
             Ok(d) if d.as_secs() < 1 => (),
             Ok(_) | Err(_) => {
-                let new_source = Source::default();
+                let env_tz = env::var("TZ").ok();
+                let env_ref = env_tz.as_ref().map(|s| s.as_str());
+                let new_source = Source::new(env_ref);
 
                 let out_of_date = match (&self.source, &new_source) {
                     // change from env to file or file to env, must recreate the zone
@@ -126,8 +134,11 @@ impl Cache {
                 };
 
                 if out_of_date {
-                    *self = Cache::default();
+                    self.zone = current_zone(env_ref);
                 }
+
+                self.last_checked = now;
+                self.source = new_source;
             }
         }
 
