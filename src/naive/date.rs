@@ -221,14 +221,14 @@ fn test_date_bounds() {
 
 impl NaiveDate {
     /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
-    fn from_parts(year: i32, of: Of) -> Option<NaiveDate> {
+    fn from_parts(year: i16, of: Of) -> Option<NaiveDate> {
         Some(NaiveDate { ymdf: DateImpl::from_parts(year, of)? })
     }
 
-    /// Makes a new `NaiveDate` from year and packed month-day-flags, with a verification.
-    fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
-        NaiveDate::from_parts(year, mdf.to_of()?)
-    }
+    // /// Makes a new `NaiveDate` from year and packed month-day-flags, with a verification.
+    // fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
+    //     NaiveDate::from_parts(year, mdf.to_of()?)
+    // }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
     /// (year, month and day).
@@ -258,7 +258,7 @@ impl NaiveDate {
     /// assert!(from_ymd_opt(400000, 1, 1).is_none());
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
-    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
+    pub fn from_ymd_opt(year: i16, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
     }
@@ -292,7 +292,7 @@ impl NaiveDate {
     /// assert!(from_yo_opt(400000, 1).is_none());
     /// assert!(from_yo_opt(-400000, 1).is_none());
     /// ```
-    pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
+    pub fn from_yo_opt(year: i16, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_parts(year, Of::new(ordinal, flags)?)
     }
@@ -416,7 +416,7 @@ impl NaiveDate {
         let days = days + 365; // make December 31, 1 BCE equal to day 0
         let (year_div_400, cycle) = div_mod_floor(days, 146_097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
+        let flags = YearTypeFlag::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_parts(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 

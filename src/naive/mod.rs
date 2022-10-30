@@ -19,7 +19,7 @@ pub use self::time::NaiveTime;
 
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]
-pub use self::internals::YearFlags as __BenchYearFlags;
+pub use self::internals::year_flags::YearTypeFlag as __BenchYearFlags;
 
 /// Serialization/Deserialization of naive types in alternate formats
 ///
