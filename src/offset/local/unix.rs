@@ -8,7 +8,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{cell::RefCell, env, fs, time::SystemTime};
+use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::SystemTime};
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
@@ -33,20 +33,18 @@ thread_local! {
 
 enum Source {
     LocalTime { mtime: SystemTime },
-    // we don't bother storing the contents of the environment variable in this case.
-    // changing the environment while the process is running is generally not reccomended
-    Environment,
+    Environment { hash: u64 },
 }
 
 impl Source {
     fn new(env_tz: Option<&str>) -> Source {
-        // use of var_os avoids allocating, which is nice
-        // as we are only going to discard the string anyway
-        // but we must ensure the contents are valid unicode
-        // otherwise the behaivour here would be different
-        // to that in `naive_to_local`
         match env_tz {
-            Some(_) => Source::Environment,
+            Some(tz) => {
+                let mut hasher = hash_map::DefaultHasher::new();
+                hasher.write(tz.as_bytes());
+                let hash = hasher.finish();
+                Source::Environment { hash }
+            }
             None => match fs::symlink_metadata("/etc/localtime") {
                 Ok(data) => Source::LocalTime {
                     // we have to pick a sensible default when the mtime fails
@@ -121,11 +119,17 @@ impl Cache {
 
                 let out_of_date = match (&self.source, &new_source) {
                     // change from env to file or file to env, must recreate the zone
-                    (Source::Environment, Source::LocalTime { .. })
-                    | (Source::LocalTime { .. }, Source::Environment) => true,
+                    (Source::Environment { .. }, Source::LocalTime { .. })
+                    | (Source::LocalTime { .. }, Source::Environment { .. }) => true,
                     // stay as file, but mtime has changed
                     (Source::LocalTime { mtime: old_mtime }, Source::LocalTime { mtime })
                         if old_mtime != mtime =>
+                    {
+                        true
+                    }
+                    // stay as env, but hash of variable has changed
+                    (Source::Environment { hash: old_hash }, Source::Environment { hash })
+                        if old_hash != hash =>
                     {
                         true
                     }
