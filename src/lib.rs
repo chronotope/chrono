@@ -439,6 +439,8 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use crate::Locale;
     #[doc(no_inline)]
+    pub use crate::MonthsDelta;
+    #[doc(no_inline)]
     pub use crate::SubsecRound;
     #[doc(no_inline)]
     pub use crate::{DateTime, SecondsFormat};
@@ -489,7 +491,7 @@ mod weekday;
 pub use weekday::{ParseWeekdayError, Weekday};
 
 mod month;
-pub use month::{Month, Months, ParseMonthError};
+pub use month::{Month, Months, MonthsDelta, ParseMonthError};
 
 mod traits;
 pub use traits::{Datelike, Timelike};

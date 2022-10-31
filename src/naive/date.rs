@@ -18,7 +18,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
-use crate::month::Months;
+use crate::month::{Months, MonthsDelta};
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Duration, Weekday};
@@ -1052,6 +1052,49 @@ impl NaiveDate {
         OldDuration::days(
             (i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 + (cycle1 - cycle2),
         )
+    }
+
+    /// Subtracts another `NaiveDate` from the current date.
+    /// Returns a `MonthsDelta` of the number of calendar months between the two dates.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, MonthsDelta, Months};
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 4, 18).months_since(NaiveDate::from_ymd(2022, 4, 1)),
+    ///     MonthsDelta::Forwards(Months::new(0))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 5, 1).months_since(NaiveDate::from_ymd(2022, 4, 30)),
+    ///     MonthsDelta::Forwards(Months::new(1))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2023, 5, 1).months_since(NaiveDate::from_ymd(2022, 4, 30)),
+    ///     MonthsDelta::Forwards(Months::new(13))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 4, 1).months_since(NaiveDate::from_ymd(2022, 4, 18)),
+    ///     MonthsDelta::Backwards(Months::new(0))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 4, 30).months_since(NaiveDate::from_ymd(2022, 5, 1)),
+    ///     MonthsDelta::Backwards(Months::new(1))
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2022, 4, 30).months_since(NaiveDate::from_ymd(2023, 5, 1)),
+    ///     MonthsDelta::Backwards(Months::new(13))
+    /// );
+    /// ```
+    pub fn months_since(self, rhs: NaiveDate) -> MonthsDelta {
+        if self >= rhs {
+            let years = u32::try_from(self.year() - rhs.year()).expect("Will succeed");
+            MonthsDelta::Forwards(Months::new(years * 12 + self.month() - rhs.month()))
+        } else {
+            let years = u32::try_from((rhs.year() - self.year()).abs()).expect("Will succeed");
+            MonthsDelta::Backwards(Months::new(years * 12 + rhs.month() - self.month()))
+        }
     }
 
     /// Formats the date with the specified formatting items.

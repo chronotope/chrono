@@ -191,7 +191,7 @@ impl num_traits::FromPrimitive for Month {
 }
 
 /// A duration in calendar months
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Months(pub(crate) u32);
 
@@ -199,6 +199,66 @@ impl Months {
     /// Construct a new `Months` from a number of months
     pub fn new(num: u32) -> Self {
         Self(num)
+    }
+}
+
+/// A difference in a number of months, either forwards or backwards.
+///
+/// This type is often returned from fuctions but is generally not used as a parameter.
+/// Instead the inner `Months` must first be extracted and then used. There are helper methods
+/// which can assist with this.
+#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
+pub enum MonthsDelta {
+    /// the forwards direction
+    Forwards(Months),
+    /// the backwards direction
+    Backwards(Months),
+}
+
+impl MonthsDelta {
+    /// Assert that the direction is forwards and throw away the `Months` otherwise.
+    pub fn forwards(self) -> Option<Months> {
+        match self {
+            MonthsDelta::Forwards(d) => Some(d),
+            MonthsDelta::Backwards(_) => None,
+        }
+    }
+
+    /// Assert that the direction is backwards and throw away the `Months` otherwise.
+    pub fn backwards(self) -> Option<Months> {
+        match self {
+            MonthsDelta::Forwards(_) => None,
+            MonthsDelta::Backwards(d) => Some(d),
+        }
+    }
+
+    /// Get the contained `Months`, no matter which direction
+    pub fn abs(self) -> Months {
+        match self {
+            MonthsDelta::Backwards(d) => d,
+            MonthsDelta::Forwards(d) => d,
+        }
+    }
+}
+
+impl PartialEq for MonthsDelta {
+    fn eq(&self, other: &MonthsDelta) -> bool {
+        match (self, other) {
+            (MonthsDelta::Forwards(f1), MonthsDelta::Forwards(f2)) => f1 == f2,
+            (MonthsDelta::Backwards(b1), MonthsDelta::Backwards(b2)) => b1 == b2,
+            (MonthsDelta::Forwards(lhs), MonthsDelta::Backwards(rhs))
+            | (MonthsDelta::Backwards(lhs), MonthsDelta::Forwards(rhs)) => {
+                *lhs == Months(0) && *rhs == Months(0)
+            }
+        }
+    }
+}
+
+impl Eq for MonthsDelta {}
+
+impl From<Months> for MonthsDelta {
+    fn from(s: Months) -> Self {
+        MonthsDelta::Forwards(s)
     }
 }
 
