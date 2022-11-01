@@ -1,7 +1,7 @@
-use std::u32;
-
 use super::NaiveTime;
-use crate::{OldTimeDelta, Timelike};
+use crate::{Days, TimeDelta, Timelike};
+use core::time::Duration;
+use std::u32;
 
 #[test]
 fn test_time_from_hms_milli() {
@@ -85,80 +85,95 @@ fn test_time_hms() {
 }
 
 #[test]
-fn test_time_add() {
+fn test_time_add_duration() {
     macro_rules! check {
         ($lhs:expr, $rhs:expr, $sum:expr) => {{
             assert_eq!($lhs + $rhs, $sum);
-            //assert_eq!($rhs + $lhs, $sum);
+            // assert_eq!($rhs + $lhs, $sum);
         }};
     }
 
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
 
-    check!(hmsm(3, 5, 7, 900), OldTimeDelta::zero(), hmsm(3, 5, 7, 900));
-    check!(hmsm(3, 5, 7, 900), OldTimeDelta::milliseconds(100), hmsm(3, 5, 8, 0));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::milliseconds(-1800), hmsm(3, 5, 6, 500));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::milliseconds(-800), hmsm(3, 5, 7, 500));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::milliseconds(-100), hmsm(3, 5, 7, 1_200));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::milliseconds(100), hmsm(3, 5, 7, 1_400));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::milliseconds(800), hmsm(3, 5, 8, 100));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::milliseconds(1800), hmsm(3, 5, 9, 100));
-    check!(hmsm(3, 5, 7, 900), OldTimeDelta::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
-    check!(hmsm(3, 5, 7, 900), OldTimeDelta::seconds(-86399), hmsm(3, 5, 8, 900));
-    check!(hmsm(3, 5, 7, 900), OldTimeDelta::days(12345), hmsm(3, 5, 7, 900));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::days(1), hmsm(3, 5, 7, 300));
-    check!(hmsm(3, 5, 7, 1_300), OldTimeDelta::days(-1), hmsm(3, 5, 8, 300));
+    check!(hmsm(3, 5, 7, 900), Duration::from_secs(0), hmsm(3, 5, 7, 900));
+    check!(hmsm(3, 5, 7, 900), Duration::from_millis(100), hmsm(3, 5, 8, 0));
 
-    // regression tests for #37
-    check!(hmsm(0, 0, 0, 0), OldTimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10));
-    check!(hmsm(0, 0, 0, 0), OldTimeDelta::milliseconds(-9990), hmsm(23, 59, 50, 10));
+    check!(hmsm(3, 5, 7, 1_300), Duration::from_millis(100), hmsm(3, 5, 7, 1_400));
+    check!(hmsm(3, 5, 7, 1_300), Duration::from_millis(800), hmsm(3, 5, 8, 100));
+    check!(hmsm(3, 5, 7, 1_300), Duration::from_millis(1800), hmsm(3, 5, 9, 100));
+    check!(hmsm(3, 5, 7, 900), Duration::from_secs(86399), hmsm(3, 5, 6, 900)); // overwrap
+    check!(hmsm(3, 5, 7, 900), Duration::from_secs(24 * 60 * 60 * 12345), hmsm(3, 5, 7, 900));
+    check!(hmsm(3, 5, 7, 1_300), Duration::from_secs(24 * 60 * 60), hmsm(3, 5, 7, 300));
+
+    check!(hmsm(3, 5, 7, 1_900), Duration::from_millis(200), hmsm(3, 5, 8, 100));
+    check!(hmsm(3, 5, 7, 1_900), Duration::from_secs(60 * 60), hmsm(4, 5, 7, 900));
+    check!(hmsm(3, 5, 7, 900), Duration::from_secs(60 * 60), hmsm(4, 5, 7, 900));
+    check!(hmsm(3, 5, 7, 1_000), Duration::from_millis(1), hmsm(3, 5, 7, 1_001));
+    check!(hmsm(3, 5, 7, 999), Duration::from_millis(1), hmsm(3, 5, 8, 0));
+
+    check!(
+        NaiveTime::from_hms_nano_opt(3, 5, 7, 1_000_000_000).unwrap(),
+        Duration::from_nanos(1),
+        NaiveTime::from_hms_nano_opt(3, 5, 7, 1_000_000_001).unwrap()
+    );
+    check!(
+        NaiveTime::from_hms_nano_opt(3, 5, 7, 999_999_999).unwrap(),
+        Duration::from_nanos(1),
+        NaiveTime::from_hms_nano_opt(3, 5, 8, 0).unwrap()
+    );
 }
 
 #[test]
-fn test_time_overflowing_add() {
+fn test_time_overflowing_add_duration() {
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
 
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(OldTimeDelta::hours(11)),
-        (hmsm(14, 4, 5, 678), 0)
+        hmsm(3, 4, 5, 678).overflowing_add_opt(Duration::from_secs(11 * 60 * 60)),
+        Some((hmsm(14, 4, 5, 678), Days::new(0)))
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(OldTimeDelta::hours(23)),
-        (hmsm(2, 4, 5, 678), 86_400)
+        hmsm(3, 4, 5, 678).overflowing_add_opt(Duration::from_secs(23 * 60 * 60)),
+        Some((hmsm(2, 4, 5, 678), Days::new(1)))
     );
-    assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(OldTimeDelta::hours(-7)),
-        (hmsm(20, 4, 5, 678), -86_400)
-    );
-
     // overflowing_add_signed with leap seconds may be counter-intuitive
     assert_eq!(
-        hmsm(3, 4, 5, 1_678).overflowing_add_signed(OldTimeDelta::days(1)),
-        (hmsm(3, 4, 5, 678), 86_400)
-    );
-    assert_eq!(
-        hmsm(3, 4, 5, 1_678).overflowing_add_signed(OldTimeDelta::days(-1)),
-        (hmsm(3, 4, 6, 678), -86_400)
+        hmsm(3, 4, 5, 1_678).overflowing_add_opt(Duration::from_secs(24 * 60 * 60)),
+        Some((hmsm(3, 4, 5, 678), Days::new(1)))
     );
 }
 
 #[test]
-fn test_time_addassignment() {
+fn test_time_overflowing_sub() {
+    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
+
+    assert_eq!(
+        hmsm(3, 4, 5, 678).overflowing_sub_opt(Duration::from_secs(7)),
+        Some((hmsm(3, 3, 58, 678), Days::new(0)))
+    );
+
+    assert_eq!(
+        hmsm(3, 4, 5, 1_678).overflowing_sub_opt(Duration::from_secs(24 * 60 * 60)),
+        Some((hmsm(3, 4, 6, 678), Days::new(1)))
+    );
+}
+
+#[test]
+fn test_time_addassignment_duration() {
     let hms = |h, m, s| NaiveTime::from_hms_opt(h, m, s).unwrap();
     let mut time = hms(12, 12, 12);
-    time += OldTimeDelta::hours(10);
+    time += Duration::from_secs(10 * 60 * 60);
     assert_eq!(time, hms(22, 12, 12));
-    time += OldTimeDelta::hours(10);
+    time += Duration::from_secs(10 * 60 * 60);
     assert_eq!(time, hms(8, 12, 12));
 }
 
 #[test]
-fn test_time_subassignment() {
+fn test_time_subassignment_duration() {
     let hms = |h, m, s| NaiveTime::from_hms_opt(h, m, s).unwrap();
     let mut time = hms(12, 12, 12);
-    time -= OldTimeDelta::hours(10);
+    time -= Duration::from_secs(10 * 60 * 60);
     assert_eq!(time, hms(2, 12, 12));
-    time -= OldTimeDelta::hours(10);
+    time -= Duration::from_secs(10 * 60 * 60);
     assert_eq!(time, hms(16, 12, 12));
 }
 
@@ -167,32 +182,82 @@ fn test_time_sub() {
     macro_rules! check {
         ($lhs:expr, $rhs:expr, $diff:expr) => {{
             // `time1 - time2 = duration` is equivalent to `time2 - time1 = -duration`
-            assert_eq!($lhs.signed_duration_since($rhs), $diff);
-            assert_eq!($rhs.signed_duration_since($lhs), -$diff);
+            assert_eq!($lhs.duration_since($rhs), $diff);
         }};
     }
 
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
 
-    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), OldTimeDelta::zero());
-    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), OldTimeDelta::milliseconds(300));
-    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), OldTimeDelta::seconds(3600 + 60 + 1));
+    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), TimeDelta::ZERO);
+    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::Forwards(Duration::from_millis(300)));
+    check!(
+        hmsm(3, 5, 7, 200),
+        hmsm(2, 4, 6, 200),
+        TimeDelta::Forwards(Duration::from_secs(3600 + 60 + 1))
+    );
     check!(
         hmsm(3, 5, 7, 200),
         hmsm(2, 4, 6, 300),
-        OldTimeDelta::seconds(3600 + 60) + OldTimeDelta::milliseconds(900)
+        TimeDelta::Forwards(Duration::new(3600 + 60, 900 * 1_000_000))
     );
 
     // treats the leap second as if it coincides with the prior non-leap second,
     // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
-    check!(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), OldTimeDelta::milliseconds(400));
-    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), OldTimeDelta::milliseconds(1400));
-    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), OldTimeDelta::milliseconds(1400));
+    assert!(hmsm(3, 5, 7, 200) > hmsm(3, 5, 6, 1_800));
+    check!(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 800), TimeDelta::Forwards(Duration::from_millis(400)));
+    check!(
+        hmsm(3, 5, 7, 200),
+        hmsm(3, 5, 6, 1_800),
+        TimeDelta::Forwards(Duration::from_millis(400))
+    );
+    check!(
+        hmsm(3, 5, 7, 1_200),
+        hmsm(3, 5, 6, 1_800),
+        TimeDelta::Forwards(Duration::from_millis(1400))
+    );
+    check!(
+        hmsm(3, 5, 7, 1_200),
+        hmsm(3, 5, 6, 800),
+        TimeDelta::Forwards(Duration::from_millis(1400))
+    );
 
     // additional equality: `time1 + duration = time2` is equivalent to
     // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
-    assert_eq!(hmsm(3, 5, 6, 800) + OldTimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
-    assert_eq!(hmsm(3, 5, 6, 1_800) + OldTimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
+    assert_eq!(hmsm(3, 5, 6, 800) + Duration::from_millis(400), hmsm(3, 5, 7, 200));
+    assert_eq!(hmsm(3, 5, 6, 1_800) + Duration::from_millis(400), hmsm(3, 5, 7, 200));
+
+    check!(
+        hmsm(3, 5, 7, 1_100),
+        hmsm(3, 5, 7, 900),
+        TimeDelta::Forwards(Duration::from_millis(200))
+    );
+    check!(hmsm(3, 5, 7, 1_000), hmsm(3, 5, 7, 999), TimeDelta::Forwards(Duration::from_millis(1)));
+    check!(hmsm(3, 5, 7, 999), hmsm(3, 5, 7, 998), TimeDelta::Forwards(Duration::from_millis(1)));
+
+    // regression tests for #37
+    assert_eq!(hmsm(0, 0, 0, 0) - Duration::from_millis(990), hmsm(23, 59, 59, 10));
+    assert_eq!(hmsm(0, 0, 0, 0) - Duration::from_millis(9990), hmsm(23, 59, 50, 10));
+
+    assert_eq!(hmsm(3, 5, 7, 1_300) + Duration::from_secs(24 * 60 * 60), hmsm(3, 5, 7, 300));
+    assert_eq!(hmsm(3, 5, 7, 1_300) - Duration::from_secs(24 * 60 * 60), hmsm(3, 5, 8, 300));
+
+    assert_eq!(hmsm(3, 5, 7, 900) - Duration::from_secs(24 * 60 * 60 - 1), hmsm(3, 5, 8, 900));
+
+    check!(
+        hmsm(3, 5, 7, 1_300),
+        hmsm(3, 5, 6, 500),
+        TimeDelta::Forwards(Duration::from_millis(1800))
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300),
+        hmsm(3, 5, 7, 500),
+        TimeDelta::Forwards(Duration::from_millis(800))
+    );
+    check!(
+        hmsm(3, 5, 7, 1_300),
+        hmsm(3, 5, 7, 1_200),
+        TimeDelta::Forwards(Duration::from_millis(100))
+    );
 }
 
 #[test]

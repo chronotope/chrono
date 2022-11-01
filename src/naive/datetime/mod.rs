@@ -549,14 +549,25 @@ impl NaiveDateTime {
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
     /// ```
     pub fn checked_add_signed(self, rhs: OldTimeDelta) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_add_signed(rhs);
+        let (date, time) = match rhs.as_time_delta()? {
+            crate::TimeDelta::Forwards(d) => {
+                let (time, days) = self.time.overflowing_add_opt(d)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_add_days(days)?;
+                (date, time)
+            }
+            crate::TimeDelta::Backwards(d) => {
+                let (time, days) = self.time.overflowing_sub_opt(d)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_sub_days(days)?;
+                (date, time)
+            }
+        };
 
-        // early checking to avoid overflow in OldOldTimeDelta::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
-        }
-
-        let date = self.date.checked_add_signed(OldTimeDelta::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
@@ -650,14 +661,25 @@ impl NaiveDateTime {
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap()));
     /// ```
     pub fn checked_sub_signed(self, rhs: OldTimeDelta) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_sub_signed(rhs);
+        let (date, time) = match (-rhs).as_time_delta()? {
+            crate::TimeDelta::Forwards(d) => {
+                let (time, days) = self.time.overflowing_add_opt(d)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_add_days(days)?;
+                (date, time)
+            }
+            crate::TimeDelta::Backwards(d) => {
+                let (time, days) = self.time.overflowing_sub_opt(d)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_sub_days(days)?;
+                (date, time)
+            }
+        };
 
-        // early checking to avoid overflow in OldOldTimeDelta::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
-        }
-
-        let date = self.date.checked_sub_signed(OldTimeDelta::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
@@ -742,7 +764,8 @@ impl NaiveDateTime {
     ///            OldTimeDelta::seconds(3600) - OldTimeDelta::milliseconds(500));
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldTimeDelta {
-        self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
+        self.date.signed_duration_since(rhs.date)
+            + self.time.duration_since(rhs.time).as_old_time_delta().expect("Should succeed")
     }
 
     /// Formats the combined date and time with the specified formatting items.

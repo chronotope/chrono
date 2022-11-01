@@ -77,6 +77,13 @@ impl TimeDelta {
             TimeDelta::Backwards(d) => *d,
         }
     }
+
+    pub(crate) fn as_old_time_delta(&self) -> Option<OldTimeDelta> {
+        match self {
+            TimeDelta::Forwards(d) => OldTimeDelta::from_std(*d).ok(),
+            TimeDelta::Backwards(d) => OldTimeDelta::from_std(*d).ok().map(Neg::neg),
+        }
+    }
 }
 
 impl PartialEq<TimeDelta> for TimeDelta {
@@ -153,6 +160,14 @@ pub(crate) const MAX: OldTimeDelta = OldTimeDelta {
 };
 
 impl OldTimeDelta {
+    pub(crate) fn as_time_delta(&self) -> Option<TimeDelta> {
+        if self.secs < 0 {
+            Some(TimeDelta::Backwards(self.abs().to_std().ok()?))
+        } else {
+            Some(TimeDelta::Forwards(self.to_std().ok()?))
+        }
+    }
+
     /// Makes a new `Duration` with given number of weeks.
     /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.

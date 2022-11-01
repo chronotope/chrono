@@ -5,7 +5,10 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
@@ -16,13 +19,15 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::{OldTimeDelta, Timelike};
+use crate::{Days, TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
 mod serde;
 
 #[cfg(test)]
 mod tests;
+
+const SECOND_AS_NANOS: u32 = 1_000_000_000;
 
 /// ISO 8601 time without timezone.
 /// Allows for the nanosecond precision and optional leap second representation.
@@ -91,8 +96,8 @@ mod tests;
 /// In reality, of course, leap seconds are separated by at least 6 months.
 /// We will also use some intuitive concise notations for the explanation.
 ///
-/// `Time + OldTimeDelta`
-/// (short for [`NaiveTime::overflowing_add_signed`](#method.overflowing_add_signed)):
+/// `Time + Duration`
+/// (short for [`NaiveTime::checked_overflowing_add`](#method.checked_overflowing_add)):
 ///
 /// - `03:00:00 + 1s = 03:00:01`.
 /// - `03:00:59 + 60s = 03:02:00`.
@@ -103,8 +108,8 @@ mod tests;
 /// - `03:00:60 + 61s = 03:02:00`.
 /// - `03:00:60.1 + 0.8s = 03:00:60.9`.
 ///
-/// `Time - OldTimeDelta`
-/// (short for [`NaiveTime::overflowing_sub_signed`](#method.overflowing_sub_signed)):
+/// `Time - Duration`
+/// (short for [`NaiveTime::checked_overflowing_sub`](#method.checked_overflowing_sub)):
 ///
 /// - `03:00:00 - 1s = 02:59:59`.
 /// - `03:01:00 - 1s = 03:00:59`.
@@ -115,7 +120,7 @@ mod tests;
 /// - `03:00:60.7 - 0.9s = 03:00:59.8`.
 ///
 /// `Time - Time`
-/// (short for [`NaiveTime::signed_duration_since`](#method.signed_duration_since)):
+/// (short for [`NaiveTime::duration_since`](#method.duration_since)):
 ///
 /// - `04:00:00 - 03:00:00 = 3600s`.
 /// - `03:01:00 - 03:00:00 = 60s`.
@@ -132,21 +137,21 @@ mod tests;
 ///
 /// In general,
 ///
-/// - `Time + OldTimeDelta` unconditionally equals to `OldTimeDelta + Time`.
+/// - `Time + Duration` unconditionally equals to `Duration + Time`.
 ///
-/// - `Time - OldTimeDelta` unconditionally equals to `Time + (-OldTimeDelta)`.
+/// - `Time - Duration` unconditionally equals to `Time + (-Duration)`.
 ///
 /// - `Time1 - Time2` unconditionally equals to `-(Time2 - Time1)`.
 ///
 /// - Associativity does not generally hold, because
-///   `(Time + OldTimeDelta1) - OldTimeDelta2` no longer equals to `Time + (OldTimeDelta1 - OldTimeDelta2)`
+///   `(Time + Duration1) - Duration2` no longer equals to `Time + (Duration1 - Duration2)`
 ///   for two positive durations.
 ///
-///     - As a special case, `(Time + OldTimeDelta) - OldTimeDelta` also does not equal to `Time`.
+///     - As a special case, `(Time + Duration) - Duration` also does not equal to `Time`.
 ///
 ///     - If you can assume that all durations have the same sign, however,
 ///       then the associativity holds:
-///       `(Time + OldTimeDelta1) + OldTimeDelta2` equals to `Time + (OldTimeDelta1 + OldTimeDelta2)`
+///       `(Time + Duration1) + Duration2` equals to `Time + (Duration1 + Duration2)`
 ///       for two positive durations.
 ///
 /// ## Reading And Writing Leap Seconds
@@ -458,115 +463,165 @@ impl NaiveTime {
         parsed.to_naive_time()
     }
 
-    /// Adds given `OldTimeDelta` to the current time,
-    /// and also returns the number of *seconds*
-    /// in the integral number of days ignored from the addition.
-    /// (We cannot return `OldTimeDelta` because it is subject to overflow or underflow.)
+    /// Adds given `Duration` to the current time
+    ///
+    /// This returns the new target time (which may have overflowed to a new day)
+    /// and also returns the number of *seconds* in the integral number of days
+    /// which were ignored from the addition.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{OldTimeDelta, NaiveTime};
+    /// use chrono::{Days, NaiveTime};
+    /// use core::time::Duration;
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(OldTimeDelta::hours(11)),
-    ///            (from_hms(14, 4, 5), 0));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(OldTimeDelta::hours(23)),
-    ///            (from_hms(2, 4, 5), 86_400));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(OldTimeDelta::hours(-7)),
-    ///            (from_hms(20, 4, 5), -86_400));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_opt(Duration::from_secs(60 * 60 * 11)),
+    ///            Some((from_hms(14, 4, 5), Days::new(0))));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_add_opt(Duration::from_secs(60 * 60 * 23)),
+    ///            Some((from_hms(2, 4, 5), Days::new(1))));
     /// ```
-    pub fn overflowing_add_signed(&self, mut rhs: OldTimeDelta) -> (NaiveTime, i64) {
-        let mut secs = self.secs;
+    pub fn overflowing_add_opt(&self, rhs: Duration) -> Option<(NaiveTime, Days)> {
         let mut frac = self.frac;
 
         // check if `self` is a leap second and adding `rhs` would escape that leap second.
         // if it's the case, update `self` and `rhs` to involve no leap second;
         // otherwise the addition immediately finishes.
-        if frac >= 1_000_000_000 {
-            let rfrac = 2_000_000_000 - frac;
-            if rhs >= OldTimeDelta::nanoseconds(i64::from(rfrac)) {
-                rhs = rhs - OldTimeDelta::nanoseconds(i64::from(rfrac));
-                secs += 1;
-                frac = 0;
-            } else if rhs < OldTimeDelta::nanoseconds(-i64::from(frac)) {
-                rhs = rhs + OldTimeDelta::nanoseconds(i64::from(frac));
-                frac = 0;
-            } else {
-                frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
+        if frac >= SECOND_AS_NANOS {
+            if rhs.as_nanos() + u128::from(frac) < u128::from(2 * SECOND_AS_NANOS) {
+                // stays within the leap second
+                // shouldn't overflow as frac is >= 1_000_000_000
+                frac += rhs.subsec_nanos();
                 debug_assert!(frac < 2_000_000_000);
-                return (NaiveTime { secs, frac }, 0);
+                return Some((NaiveTime { secs: self.secs, frac }, Days::new(0)));
+            } else {
+                // leaves the leap second
+                // so normalise the NaiveTime to not be in a leap second
+                // but we also loose a whole second
+                // as the leap second consumes it
+
+                frac -= SECOND_AS_NANOS;
             }
         }
-        debug_assert!(secs <= 86_400);
+
         debug_assert!(frac < 1_000_000_000);
 
-        let rhssecs = rhs.num_seconds();
-        let rhsfrac = (rhs - OldTimeDelta::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert_eq!(OldTimeDelta::seconds(rhssecs) + OldTimeDelta::nanoseconds(rhsfrac), rhs);
-        let rhssecsinday = rhssecs % 86_400;
-        let mut morerhssecs = rhssecs - rhssecsinday;
-        let rhssecs = rhssecsinday as i32;
-        let rhsfrac = rhsfrac as i32;
-        debug_assert!(-86_400 < rhssecs && rhssecs < 86_400);
-        debug_assert_eq!(morerhssecs % 86_400, 0);
-        debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
+        let rhssecs = rhs.as_secs();
+        let rhsfrac = rhs.subsec_nanos();
 
-        let mut secs = secs as i32 + rhssecs;
-        let mut frac = frac as i32 + rhsfrac;
-        debug_assert!(-86_400 < secs && secs < 2 * 86_400);
-        debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
+        // if the sum of the two nanos fractions is larger than a second,
+        // then we will increase on more second and use the remaining fraction for nanos
+        let (total_seconds, remaining_nanos) = if frac + rhsfrac >= SECOND_AS_NANOS {
+            (u64::from(self.secs) + rhssecs + 1, frac + rhsfrac - SECOND_AS_NANOS)
+        } else {
+            (u64::from(self.secs) + rhssecs, frac + rhsfrac)
+        };
 
-        if frac < 0 {
-            frac += 1_000_000_000;
-            secs -= 1;
-        } else if frac >= 1_000_000_000 {
-            frac -= 1_000_000_000;
-            secs += 1;
-        }
-        debug_assert!((-86_400..2 * 86_400).contains(&secs));
-        debug_assert!((0..1_000_000_000).contains(&frac));
+        let total_days = total_seconds / 86_400;
+        let remaining_seconds = total_seconds % 86_400;
+        debug_assert!(remaining_seconds < 86_400);
+        debug_assert!(remaining_nanos < 1_000_000_000);
 
-        if secs < 0 {
-            secs += 86_400;
-            morerhssecs -= 86_400;
-        } else if secs >= 86_400 {
-            secs -= 86_400;
-            morerhssecs += 86_400;
-        }
-        debug_assert!((0..86_400).contains(&secs));
-
-        (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
+        Some((
+            NaiveTime { secs: u32::try_from(remaining_seconds).ok()?, frac: remaining_nanos },
+            Days::new(total_days),
+        ))
     }
 
-    /// Subtracts given `OldTimeDelta` from the current time,
-    /// and also returns the number of *seconds*
-    /// in the integral number of days ignored from the subtraction.
-    /// (We cannot return `OldTimeDelta` because it is subject to overflow or underflow.)
+    /// Subtracts given `Duration` to the current time
+    ///
+    /// This returns the new target time (which may have overflowed to a new day)
+    /// and also returns the number of *seconds* in the integral number of days
+    /// which were ignored from the subtraction.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{OldTimeDelta, NaiveTime};
+    /// use chrono::{NaiveTime, Days};
+    /// use core::time::Duration;
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(OldTimeDelta::hours(2)),
-    ///            (from_hms(1, 4, 5), 0));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(OldTimeDelta::hours(17)),
-    ///            (from_hms(10, 4, 5), 86_400));
-    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_signed(OldTimeDelta::hours(-22)),
-    ///            (from_hms(1, 4, 5), -86_400));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_opt(Duration::from_secs(60 * 60 * 2)),
+    ///            Some((from_hms(1, 4, 5), Days::new(0))));
+    /// assert_eq!(from_hms(3, 4, 5).overflowing_sub_opt(Duration::from_secs(60 * 60 * 17)),
+    ///            Some((from_hms(10, 4, 5), Days::new(1))));
     /// ```
     #[inline]
-    pub fn overflowing_sub_signed(&self, rhs: OldTimeDelta) -> (NaiveTime, i64) {
-        let (time, rhs) = self.overflowing_add_signed(-rhs);
-        (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
+    pub fn overflowing_sub_opt(&self, rhs: Duration) -> Option<(NaiveTime, Days)> {
+        let mut secs = u64::from(self.secs);
+        let mut frac = self.frac;
+
+        // check if `self` is a leap second and adding `rhs` would escape that leap second.
+        // if it's the case, update `self` and `rhs` to involve no leap second;
+        // otherwise the addition immediately finishes.
+        if frac >= SECOND_AS_NANOS {
+            if rhs.as_nanos() <= u128::from(frac - SECOND_AS_NANOS) {
+                // stays within the leap second
+                frac -= rhs.subsec_nanos();
+                debug_assert!(frac < 2_000_000_000);
+                return Some((NaiveTime { secs: self.secs, frac }, Days::new(0)));
+            } else {
+                // leaves the leap second
+                // so normalise the NaiveTime to not be in a leap second
+                // here we have to increment the second by one so that once we subtract we
+                // end up in the right place.
+                // shouldn't overflow as frac is >= 1_000_000_000
+                secs += 1;
+                frac -= SECOND_AS_NANOS;
+            }
+        }
+
+        debug_assert!(secs <= 86_400);
+        debug_assert!(frac < 1_000_000_000);
+
+        let rhssecs = rhs.as_secs();
+        let rhsfrac = rhs.subsec_nanos();
+
+        // if we want to subtract a larger nanos fraction than the input time has
+        // then we will move back to the previous second
+        let (extra_backwards_seconds, remaining_nanos) = if rhsfrac > frac {
+            (1, frac + SECOND_AS_NANOS - rhsfrac)
+        } else {
+            (0, frac - rhsfrac)
+        };
+
+        // this can overflow if rhs is Duration::MAX hence we use checked_add.
+        let total_backwards_seconds = rhssecs.checked_add(extra_backwards_seconds)?;
+
+        if total_backwards_seconds > secs {
+            // goes backwards a number of days
+            let backwards_secs_from_0 = total_backwards_seconds - secs;
+            // we know we will go back at least one day becuase the rhssecs are greater than the secs
+            let total_days = 1 + backwards_secs_from_0 / 86_400;
+
+            let remaining_backwards_secs = u32::try_from(backwards_secs_from_0 % 86_400).ok()?;
+
+            debug_assert!(remaining_backwards_secs <= 86_400);
+
+            if remaining_backwards_secs == 0 {
+                Some((NaiveTime { secs: 0, frac: remaining_nanos }, Days::new(total_days - 1)))
+            } else {
+                Some((
+                    NaiveTime { secs: 86_400 - remaining_backwards_secs, frac: remaining_nanos },
+                    Days::new(total_days),
+                ))
+            }
+        } else {
+            // stays on same day
+            Some((
+                NaiveTime {
+                    secs: u32::try_from(secs - total_backwards_seconds).ok()?,
+                    frac: remaining_nanos,
+                },
+                Days::new(0),
+            ))
+        }
     }
 
     /// Subtracts another `NaiveTime` from the current time.
-    /// Returns a `OldTimeDelta` within +/- 1 day.
+    /// Returns a `TimeDelta` within +/- 1 day.
     /// This does not overflow or underflow at all.
     ///
     /// As a part of Chrono's [leap second handling](#leap-second-handling),
@@ -578,48 +633,50 @@ impl NaiveTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{OldTimeDelta, NaiveTime};
+    /// use chrono::{TimeDelta, NaiveTime};
+    /// use core::time::Duration;
     ///
     /// let from_hmsm = NaiveTime::from_hms_milli;
-    /// let since = NaiveTime::signed_duration_since;
+    /// let since = NaiveTime::duration_since;
     ///
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 900)),
-    ///            OldTimeDelta::zero());
+    ///            TimeDelta::Forwards(Duration::from_secs(0)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 875)),
-    ///            OldTimeDelta::milliseconds(25));
+    ///            TimeDelta::Forwards(Duration::from_millis(25)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 6, 925)),
-    ///            OldTimeDelta::milliseconds(975));
+    ///            TimeDelta::Forwards(Duration::from_millis(975)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 0, 900)),
-    ///            OldTimeDelta::seconds(7));
+    ///            TimeDelta::Forwards(Duration::from_secs(7)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 0, 7, 900)),
-    ///            OldTimeDelta::seconds(5 * 60));
+    ///            TimeDelta::Forwards(Duration::from_secs(5 * 60)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(0, 5, 7, 900)),
-    ///            OldTimeDelta::seconds(3 * 3600));
+    ///            TimeDelta::Forwards(Duration::from_secs(3 * 3600)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(4, 5, 7, 900)),
-    ///            OldTimeDelta::seconds(-3600));
+    ///            TimeDelta::Backwards(Duration::from_secs(3600)));
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(2, 4, 6, 800)),
-    ///            OldTimeDelta::seconds(3600 + 60 + 1) + OldTimeDelta::milliseconds(100));
+    ///            TimeDelta::Forwards(Duration::from_secs(3600 + 60 + 1) + Duration::from_millis(100)));
     /// ```
     ///
     /// Leap seconds are handled, but the subtraction assumes that
     /// there were no other leap seconds happened.
     ///
     /// ```
-    /// # use chrono::{OldTimeDelta, NaiveTime};
+    /// # use chrono::{TimeDelta, NaiveTime};
+    /// # use core::time::Duration;
     /// # let from_hmsm = NaiveTime::from_hms_milli;
-    /// # let since = NaiveTime::signed_duration_since;
+    /// # let since = NaiveTime::duration_since;
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(3, 0, 59, 0)),
-    ///            OldTimeDelta::seconds(1));
+    ///            TimeDelta::Forwards(Duration::from_secs(1)));
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_500), from_hmsm(3, 0, 59, 0)),
-    ///            OldTimeDelta::milliseconds(1500));
+    ///            TimeDelta::Forwards(Duration::from_millis(1500)));
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(3, 0, 0, 0)),
-    ///            OldTimeDelta::seconds(60));
+    ///            TimeDelta::Forwards(Duration::from_secs(60)));
     /// assert_eq!(since(from_hmsm(3, 0, 0, 0), from_hmsm(2, 59, 59, 1_000)),
-    ///            OldTimeDelta::seconds(1));
+    ///            TimeDelta::Forwards(Duration::from_secs(1)));
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(2, 59, 59, 1_000)),
-    ///            OldTimeDelta::seconds(61));
+    ///            TimeDelta::Forwards(Duration::from_secs(61)));
     /// ```
-    pub fn signed_duration_since(self, rhs: NaiveTime) -> OldTimeDelta {
+    pub fn duration_since(self, rhs: NaiveTime) -> TimeDelta {
         //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
         //     |    |    :    |    |    |    |    |    |    |    :    |    |
         // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
@@ -630,31 +687,65 @@ impl NaiveTime {
         //      `rhs.frac`|========================================>|
         //          |     |   |        `self - rhs`         |       |
 
-        use core::cmp::Ordering;
+        // importantly, here if the `secs` are larger, then that `NaiveTime` is larger,
+        // no matter what the value of the frac is.
+        // this has the effect that if the smaller time is in a leap second, we can simply remove `SECOND_AS_NANOS`
+        // from the frac, and then calculate as normal
 
-        let secs = i64::from(self.secs) - i64::from(rhs.secs);
-        let frac = i64::from(self.frac) - i64::from(rhs.frac);
-
-        // `secs` may contain a leap second yet to be counted
-        let adjust = match self.secs.cmp(&rhs.secs) {
+        match self.secs.cmp(&rhs.secs) {
+            // when equal, compare the frac only
+            // self.frac is leap, rhs.frac is not and the difference is at least a second
+            Ordering::Equal if self.frac >= rhs.frac + SECOND_AS_NANOS => {
+                TimeDelta::Forwards(Duration::new(1, self.frac - rhs.frac - SECOND_AS_NANOS))
+            }
+            // self.frac may be leap but resulting frac is not
+            Ordering::Equal if self.frac >= rhs.frac => {
+                TimeDelta::Forwards(Duration::new(0, self.frac - rhs.frac))
+            }
+            // rhs is larger and rhs.frac is leap while self.frac is not and the differnce is at least a second,
+            Ordering::Equal if rhs.frac >= self.frac + SECOND_AS_NANOS => {
+                TimeDelta::Backwards(Duration::new(1, rhs.frac - self.frac - SECOND_AS_NANOS))
+            }
+            // rhs is larger but the difference is less than a
+            Ordering::Equal => TimeDelta::Backwards(Duration::new(0, rhs.frac - self.frac)),
             Ordering::Greater => {
-                if rhs.frac >= 1_000_000_000 {
-                    1
-                } else {
-                    0
-                }
-            }
-            Ordering::Equal => 0,
-            Ordering::Less => {
-                if self.frac >= 1_000_000_000 {
-                    -1
-                } else {
-                    0
-                }
-            }
-        };
+                // must be `Forwards`
 
-        OldTimeDelta::seconds(secs + adjust) + OldTimeDelta::nanoseconds(frac)
+                // here we can remove SECOND_AS_NANOS from rhs.frac if it is leap
+                let (secs, frac) = match (rhs.frac % SECOND_AS_NANOS).cmp(&self.frac) {
+                    //
+                    Ordering::Less => {
+                        (self.secs - rhs.secs, self.frac - (rhs.frac % SECOND_AS_NANOS))
+                    }
+                    Ordering::Equal => (self.secs - rhs.secs, 0),
+                    // this extra subtraction of 1 won't underflow because the self.secs are strictly greater than the rhs.secs
+                    Ordering::Greater => (
+                        self.secs - rhs.secs - 1,
+                        self.frac + SECOND_AS_NANOS - (rhs.frac % SECOND_AS_NANOS),
+                    ),
+                };
+
+                TimeDelta::Forwards(Duration::new(secs.into(), frac))
+            }
+            Ordering::Less => {
+                // must be `Backwards`
+
+                // here we can remove SECOND_AS_NANOS from self.frac if it is leap
+                let (secs, frac) = match (self.frac % SECOND_AS_NANOS).cmp(&rhs.frac) {
+                    Ordering::Less => {
+                        (rhs.secs - self.secs, rhs.frac - (self.frac % SECOND_AS_NANOS))
+                    }
+                    Ordering::Equal => (rhs.secs - self.secs, 0),
+                    // this extra subtraction of 1 won't underflow because the rhs.secs are strictly greater than the self.secs
+                    Ordering::Greater => (
+                        rhs.secs - self.secs - 1,
+                        rhs.frac + SECOND_AS_NANOS - (self.frac % SECOND_AS_NANOS),
+                    ),
+                };
+
+                TimeDelta::Backwards(Duration::new(secs.into(), frac))
+            }
+        }
     }
 
     /// Formats the time with the specified formatting items.
@@ -956,7 +1047,7 @@ impl Timelike for NaiveTime {
     }
 }
 
-/// An addition of `OldTimeDelta` to `NaiveTime` wraps around and never overflows or underflows.
+/// An addition of `TimeDelta` to `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 ///
 /// As a part of Chrono's [leap second handling](#leap-second-handling),
@@ -967,63 +1058,61 @@ impl Timelike for NaiveTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{OldTimeDelta, NaiveTime};
+/// use chrono::NaiveTime;
+/// use core::time::Duration;
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::zero(),                  from_hmsm(3, 5, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::seconds(1),              from_hmsm(3, 5, 8, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::seconds(-1),             from_hmsm(3, 5, 6, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::seconds(60 + 4),         from_hmsm(3, 6, 11, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::seconds(7*60*60 - 6*60), from_hmsm(9, 59, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::milliseconds(80),        from_hmsm(3, 5, 7, 80));
-/// assert_eq!(from_hmsm(3, 5, 7, 950) + OldTimeDelta::milliseconds(280),     from_hmsm(3, 5, 8, 230));
-/// assert_eq!(from_hmsm(3, 5, 7, 950) + OldTimeDelta::milliseconds(-980),    from_hmsm(3, 5, 6, 970));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_secs(0),                  from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_secs(1),              from_hmsm(3, 5, 8, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_secs(60 + 4),         from_hmsm(3, 6, 11, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_secs(7*60*60 - 6*60), from_hmsm(9, 59, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_millis(80),        from_hmsm(3, 5, 7, 80));
+/// assert_eq!(from_hmsm(3, 5, 7, 950) + Duration::from_millis(280),     from_hmsm(3, 5, 8, 230));
 /// ```
 ///
 /// The addition wraps around.
 ///
 /// ```
-/// # use chrono::{OldTimeDelta, NaiveTime};
+/// # use chrono::NaiveTime;
+/// # use core::time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::seconds(22*60*60), from_hmsm(1, 5, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::seconds(-8*60*60), from_hmsm(19, 5, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) + OldTimeDelta::days(800),         from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_secs(22*60*60), from_hmsm(1, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) + Duration::from_secs(24 * 60 * 60 * 800),         from_hmsm(3, 5, 7, 0));
 /// ```
 ///
 /// Leap seconds are handled, but the addition assumes that it is the only leap second happened.
 ///
 /// ```
-/// # use chrono::{OldTimeDelta, NaiveTime};
+/// # use chrono::NaiveTime;
+/// # use core::time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap + OldTimeDelta::zero(),             from_hmsm(3, 5, 59, 1_300));
-/// assert_eq!(leap + OldTimeDelta::milliseconds(-500), from_hmsm(3, 5, 59, 800));
-/// assert_eq!(leap + OldTimeDelta::milliseconds(500),  from_hmsm(3, 5, 59, 1_800));
-/// assert_eq!(leap + OldTimeDelta::milliseconds(800),  from_hmsm(3, 6, 0, 100));
-/// assert_eq!(leap + OldTimeDelta::seconds(10),        from_hmsm(3, 6, 9, 300));
-/// assert_eq!(leap + OldTimeDelta::seconds(-10),       from_hmsm(3, 5, 50, 300));
-/// assert_eq!(leap + OldTimeDelta::days(1),            from_hmsm(3, 5, 59, 300));
+/// assert_eq!(leap + Duration::from_secs(0),             from_hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap + Duration::from_millis(500),  from_hmsm(3, 5, 59, 1_800));
+/// assert_eq!(leap + Duration::from_millis(800),  from_hmsm(3, 6, 0, 100));
+/// assert_eq!(leap + Duration::from_secs(10),        from_hmsm(3, 6, 9, 300));
+/// assert_eq!(leap + Duration::from_secs(24 * 60 * 60 * 1),            from_hmsm(3, 5, 59, 300));
 /// ```
-impl Add<OldTimeDelta> for NaiveTime {
+impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
-    fn add(self, rhs: OldTimeDelta) -> NaiveTime {
-        self.overflowing_add_signed(rhs).0
+    fn add(self, rhs: Duration) -> NaiveTime {
+        self.overflowing_add_opt(rhs).unwrap().0
     }
 }
 
-impl AddAssign<OldTimeDelta> for NaiveTime {
+impl AddAssign<Duration> for NaiveTime {
     #[inline]
-    fn add_assign(&mut self, rhs: OldTimeDelta) {
+    fn add_assign(&mut self, rhs: Duration) {
         *self = self.add(rhs);
     }
 }
 
-/// A subtraction of `OldTimeDelta` from `NaiveTime` wraps around and never overflows or underflows.
+/// A subtraction of `TimeDelta` from `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
-/// It is the same as the addition with a negated `OldTimeDelta`.
+/// It is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling](#leap-second-handling),
 /// the addition assumes that **there is no leap second ever**,
@@ -1033,57 +1122,60 @@ impl AddAssign<OldTimeDelta> for NaiveTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{OldTimeDelta, NaiveTime};
+/// use chrono::NaiveTime;
+/// use core::time::Duration;
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::zero(),                  from_hmsm(3, 5, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::seconds(1),              from_hmsm(3, 5, 6, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::seconds(60 + 5),         from_hmsm(3, 4, 2, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::seconds(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::milliseconds(80),        from_hmsm(3, 5, 6, 920));
-/// assert_eq!(from_hmsm(3, 5, 7, 950) - OldTimeDelta::milliseconds(280),     from_hmsm(3, 5, 7, 670));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_secs(0),                  from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_secs(1),              from_hmsm(3, 5, 6, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_secs(60 + 5),         from_hmsm(3, 4, 2, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_secs(2*60*60 + 6*60), from_hmsm(0, 59, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_millis(80),        from_hmsm(3, 5, 6, 920));
+/// assert_eq!(from_hmsm(3, 5, 7, 950) - Duration::from_millis(280),     from_hmsm(3, 5, 7, 670));
 /// ```
 ///
 /// The subtraction wraps around.
 ///
 /// ```
-/// # use chrono::{OldTimeDelta, NaiveTime};
+/// # use chrono::NaiveTime;
+/// # use core::time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::seconds(8*60*60), from_hmsm(19, 5, 7, 0));
-/// assert_eq!(from_hmsm(3, 5, 7, 0) - OldTimeDelta::days(800),        from_hmsm(3, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_secs(8*60*60), from_hmsm(19, 5, 7, 0));
+/// assert_eq!(from_hmsm(3, 5, 7, 0) - Duration::from_secs(24 * 60 * 60 * 800),        from_hmsm(3, 5, 7, 0));
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that it is the only leap second happened.
 ///
 /// ```
-/// # use chrono::{OldTimeDelta, NaiveTime};
+/// # use chrono::NaiveTime;
+/// # use core::time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
 /// let leap = from_hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap - OldTimeDelta::zero(),            from_hmsm(3, 5, 59, 1_300));
-/// assert_eq!(leap - OldTimeDelta::milliseconds(200), from_hmsm(3, 5, 59, 1_100));
-/// assert_eq!(leap - OldTimeDelta::milliseconds(500), from_hmsm(3, 5, 59, 800));
-/// assert_eq!(leap - OldTimeDelta::seconds(60),       from_hmsm(3, 5, 0, 300));
-/// assert_eq!(leap - OldTimeDelta::days(1),           from_hmsm(3, 6, 0, 300));
+/// assert_eq!(leap - Duration::from_secs(0),            from_hmsm(3, 5, 59, 1_300));
+/// assert_eq!(leap - Duration::from_millis(200), from_hmsm(3, 5, 59, 1_100));
+/// assert_eq!(leap - Duration::from_millis(500), from_hmsm(3, 5, 59, 800));
+/// assert_eq!(leap - Duration::from_secs(60),       from_hmsm(3, 5, 0, 300));
+/// assert_eq!(leap - Duration::from_secs(24 * 60 * 60 * 1),           from_hmsm(3, 6, 0, 300));
 /// ```
-impl Sub<OldTimeDelta> for NaiveTime {
+impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
-    fn sub(self, rhs: OldTimeDelta) -> NaiveTime {
-        self.overflowing_sub_signed(rhs).0
+    fn sub(self, rhs: Duration) -> NaiveTime {
+        self.overflowing_sub_opt(rhs).unwrap().0
     }
 }
 
-impl SubAssign<OldTimeDelta> for NaiveTime {
+impl SubAssign<Duration> for NaiveTime {
     #[inline]
-    fn sub_assign(&mut self, rhs: OldTimeDelta) {
+    fn sub_assign(&mut self, rhs: Duration) {
         *self = self.sub(rhs);
     }
 }
 
 /// Subtracts another `NaiveTime` from the current time.
-/// Returns a `OldTimeDelta` within +/- 1 day.
+/// Returns a `TimeDelta` within +/- 1 day.
 /// This does not overflow or underflow at all.
 ///
 /// As a part of Chrono's [leap second handling](#leap-second-handling),
@@ -1098,41 +1190,43 @@ impl SubAssign<OldTimeDelta> for NaiveTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{OldTimeDelta, NaiveTime};
+/// use chrono::{TimeDelta, NaiveTime};
+/// use core::time::Duration;
 ///
 /// let from_hmsm = NaiveTime::from_hms_milli;
 ///
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), OldTimeDelta::zero());
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), OldTimeDelta::milliseconds(25));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), OldTimeDelta::milliseconds(975));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), OldTimeDelta::seconds(7));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 0, 7, 900), OldTimeDelta::seconds(5 * 60));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(0, 5, 7, 900), OldTimeDelta::seconds(3 * 3600));
-/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), OldTimeDelta::seconds(-3600));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), TimeDelta::Forwards(Duration::from_secs(0)));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), TimeDelta::Forwards(Duration::from_millis(25)));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 6, 925), TimeDelta::Forwards(Duration::from_millis(975)));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 0, 900), TimeDelta::Forwards(Duration::from_secs(7)));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 0, 7, 900), TimeDelta::Forwards(Duration::from_secs(5 * 60)));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(0, 5, 7, 900), TimeDelta::Forwards(Duration::from_secs(3 * 3600)));
+/// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(4, 5, 7, 900), TimeDelta::Backwards(Duration::from_secs(3600)));
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(2, 4, 6, 800),
-///            OldTimeDelta::seconds(3600 + 60 + 1) + OldTimeDelta::milliseconds(100));
+///            TimeDelta::Forwards(Duration::from_secs(3600 + 60 + 1) + Duration::from_millis(100)));
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that
 /// there were no other leap seconds happened.
 ///
 /// ```
-/// # use chrono::{OldTimeDelta, NaiveTime};
+/// # use chrono::{TimeDelta, NaiveTime};
+/// # use core::time::Duration;
 /// # let from_hmsm = NaiveTime::from_hms_milli;
-/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), OldTimeDelta::seconds(1));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), TimeDelta::Forwards(Duration::from_secs(1)));
 /// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0),
-///            OldTimeDelta::milliseconds(1500));
-/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 0, 0), OldTimeDelta::seconds(60));
-/// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), OldTimeDelta::seconds(1));
+///            TimeDelta::Forwards(Duration::from_millis(1500)));
+/// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 0, 0), TimeDelta::Forwards(Duration::from_secs(60)));
+/// assert_eq!(from_hmsm(3, 0, 0, 0) - from_hmsm(2, 59, 59, 1_000), TimeDelta::Forwards(Duration::from_secs(1)));
 /// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(2, 59, 59, 1_000),
-///            OldTimeDelta::seconds(61));
+///            TimeDelta::Forwards(Duration::from_secs(61)));
 /// ```
 impl Sub<NaiveTime> for NaiveTime {
-    type Output = OldTimeDelta;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: NaiveTime) -> OldTimeDelta {
-        self.signed_duration_since(rhs)
+    fn sub(self, rhs: NaiveTime) -> TimeDelta {
+        self.duration_since(rhs)
     }
 }
 
