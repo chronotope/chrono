@@ -764,7 +764,7 @@ impl NaiveDateTime {
     ///            OldTimeDelta::seconds(3600) - OldTimeDelta::milliseconds(500));
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldTimeDelta {
-        self.date.signed_duration_since(rhs.date)
+        OldTimeDelta::days(self.date.days_since(rhs.date))
             + self.time.duration_since(rhs.time).as_old_time_delta().expect("Should succeed")
     }
 
