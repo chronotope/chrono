@@ -51,6 +51,8 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
 #[test]
 #[cfg(unix)]
 fn try_verify_against_date_command() {
+    use std::time::Duration;
+
     let date_path = "/usr/bin/date";
 
     if !path::Path::new(date_path).exists() {
@@ -71,6 +73,6 @@ fn try_verify_against_date_command() {
             verify_against_date_command_local(date_path, date);
         }
 
-        date += chrono::OldTimeDelta::hours(1);
+        date += Duration::from_secs(60 * 60);
     }
 }

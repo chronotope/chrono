@@ -48,16 +48,11 @@
 //!
 //! ### Duration
 //!
-//! Chrono currently uses its own [`OldTimeDelta`] type to represent the magnitude
-//! of a time span. Note that this is an "accurate" duration represented as seconds and
-//! nanoseconds and does not represent "nominal" components such as days or
-//! months.
-//!
-//! Chrono does not yet natively support
-//! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
-//! but it will be supported in the future.
-//! Meanwhile you can convert between two types with
-//! [`OldTimeDelta::from_std`] and [`OldTimeDelta::to_std`] methods.
+//! Chrono types are interoperable with the [`core::time::Duration`] type, however in cases
+//! where the output might be positive or negative, the [`TimeDelta`] type is used to represent
+//! both the magnitude and direction of the difference in time. [`TimeDelta`] is only used as
+//! a return type, and it is usually expected that it will be unpacked into the underlying `Duration`
+//! rather than being used or stored directly.
 //!
 //! ### Date and Time
 //!
@@ -144,7 +139,7 @@
 //!
 //! ```rust
 //! use chrono::prelude::*;
-//! use chrono::OldTimeDelta;
+//! use core::time::Duration;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 //! let dt = FixedOffset::east_opt(9*3600).unwrap().ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(21, 45, 59, 324310806).unwrap();
@@ -171,12 +166,12 @@
 //! // arithmetic operations
 //! let dt1 = Utc.ymd_opt(2014, 11, 14).unwrap().and_hms_opt(8, 9, 10).unwrap();
 //! let dt2 = Utc.ymd_opt(2014, 11, 14).unwrap().and_hms_opt(10, 9, 8).unwrap();
-//! assert_eq!(dt1.signed_duration_since(dt2), OldTimeDelta::seconds(-2 * 3600 + 2));
-//! assert_eq!(dt2.signed_duration_since(dt1), OldTimeDelta::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap() + OldTimeDelta::seconds(1_000_000_000),
-//!            Utc.ymd_opt(2001, 9, 9).unwrap().and_hms_opt(1, 46, 40).unwrap());
-//! assert_eq!(Utc.ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap() - OldTimeDelta::seconds(1_000_000_000),
-//!            Utc.ymd_opt(1938, 4, 24).unwrap().and_hms_opt(22, 13, 20).unwrap());
+//! assert_eq!(dt1.duration_since(dt2), TimeDelta::Backwards(Duration::from_secs(2 * 3600 - 2)));
+//! assert_eq!(dt2.duration_since(dt1), TimeDelta::Forwards(Duration::from_secs(2 * 3600 - 2)));
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms_opt(0, 0, 0).unwrap() + Duration::from_secs(1_000_000_000),
+//!            Utc.ymd(2001, 9, 9).and_hms_opt(1, 46, 40).unwrap());
+//! assert_eq!(Utc.ymd(1970, 1, 1).and_hms_opt(0, 0, 0).unwrap() - Duration::from_secs(1_000_000_000),
+//!            Utc.ymd(1938, 4, 24).and_hms_opt(22, 13, 20).unwrap());
 //! ```
 //!
 //! ### Formatting and Parsing
@@ -396,7 +391,7 @@
 use core::fmt;
 
 mod time_delta;
-pub use time_delta::{OldTimeDelta, TimeDelta};
+pub use time_delta::TimeDelta;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
@@ -421,9 +416,11 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use crate::SubsecRound;
     #[doc(no_inline)]
+    pub use crate::TimeDelta;
+    #[doc(no_inline)]
     pub use crate::{DateTime, SecondsFormat};
     #[doc(no_inline)]
-    pub use crate::{Datelike, Month, Timelike, Weekday};
+    pub use crate::{Datelike, Days, Month, Months, Timelike, Weekday};
     #[doc(no_inline)]
     pub use crate::{FixedOffset, Utc};
     #[doc(no_inline)]

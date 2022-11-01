@@ -8,6 +8,7 @@ use core::borrow::Borrow;
 use core::convert::TryFrom;
 use core::hash::Hash;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
@@ -126,11 +127,8 @@ impl Days {
         Self(num)
     }
 
-    // temporarily used by some tests
-    // TODO: remove this
-    #[cfg(test)]
-    pub(crate) fn duration(self) -> core::time::Duration {
-        core::time::Duration::new(86400 * self.0, 0)
+    pub(crate) fn duration(self) -> Duration {
+        Duration::new(86400 * self.0, 0)
     }
 }
 

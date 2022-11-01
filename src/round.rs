@@ -3,13 +3,14 @@
 
 use crate::datetime::DateTime;
 use crate::naive::NaiveDateTime;
-use crate::time_delta::OldTimeDelta;
 use crate::TimeZone;
 use crate::Timelike;
 use core::cmp::Ordering;
+use core::convert::TryFrom;
 use core::fmt;
 use core::marker::Sized;
 use core::ops::{Add, Sub};
+use core::time::Duration;
 
 /// Extension trait for subsecond rounding or truncation to a maximum number
 /// of digits. Rounding can be used to decrease the error variance when
@@ -46,7 +47,7 @@ pub trait SubsecRound {
 
 impl<T> SubsecRound for T
 where
-    T: Timelike + Add<OldTimeDelta, Output = T> + Sub<OldTimeDelta, Output = T>,
+    T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
     fn round_subsecs(self, digits: u16) -> T {
         let span = span_for_digits(digits);
@@ -54,9 +55,9 @@ where
         if delta_down > 0 {
             let delta_up = span - delta_down;
             if delta_up <= delta_down {
-                self + OldTimeDelta::nanoseconds(delta_up.into())
+                self + Duration::from_nanos(delta_up.into())
             } else {
-                self - OldTimeDelta::nanoseconds(delta_down.into())
+                self - Duration::from_nanos(delta_down.into())
             }
         } else {
             self // unchanged
@@ -67,7 +68,7 @@ where
         let span = span_for_digits(digits);
         let delta_down = self.nanosecond() % span;
         if delta_down > 0 {
-            self - OldTimeDelta::nanoseconds(delta_down.into())
+            self - Duration::from_nanos(delta_down.into())
         } else {
             self // unchanged
         }
@@ -91,13 +92,13 @@ fn span_for_digits(digits: u16) -> u32 {
     }
 }
 
-/// Extension trait for rounding or truncating a DateTime by a OldTimeDelta.
+/// Extension trait for rounding or truncating a DateTime by a Duration.
 ///
 /// # Limitations
-/// Both rounding and truncating are done via [`OldTimeDelta::num_nanoseconds`] and
+/// Both rounding and truncating are done via [`Duration::as_nanos`] and
 /// [`DateTime::timestamp_nanos`]. This means that they will fail if either the
-/// `OldTimeDelta` or the `DateTime` are too big to represented as nanoseconds. They
-/// will also fail if the `OldTimeDelta` is bigger than the timestamp.
+/// `Duration` or the `DateTime` are too big to represented as nanoseconds. They
+/// will also fail if the `Duration` is bigger than the timestamp.
 pub trait DurationRound: Sized {
     /// Error that can occur in rounding or truncating
     #[cfg(any(feature = "std", test))]
@@ -107,39 +108,41 @@ pub trait DurationRound: Sized {
     #[cfg(not(any(feature = "std", test)))]
     type Err: fmt::Debug + fmt::Display;
 
-    /// Return a copy rounded by OldTimeDelta.
+    /// Return a copy rounded by Duration.
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, OldTimeDelta, TimeZone, Utc};
+    /// # use core::time::Duration;
+    /// # use chrono::{DateTime, DurationRound, TimeZone, Utc};
     /// let dt = Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap();
     /// assert_eq!(
-    ///     dt.duration_round(OldTimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     dt.duration_round(Duration::from_millis(10)).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_round(OldTimeDelta::days(1)).unwrap().to_string(),
+    ///     dt.duration_round(Duration::from_secs(1 * 24 * 60 * 60)).unwrap().to_string(),
     ///     "2018-01-12 00:00:00 UTC"
     /// );
     /// ```
-    fn duration_round(self, duration: OldTimeDelta) -> Result<Self, Self::Err>;
+    fn duration_round(self, duration: Duration) -> Result<Self, Self::Err>;
 
-    /// Return a copy truncated by OldTimeDelta.
+    /// Return a copy truncated by Duration.
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, OldTimeDelta, TimeZone, Utc};
+    /// # use core::time::Duration;
+    /// # use chrono::{DateTime, DurationRound, TimeZone, Utc};
     /// let dt = Utc.ymd_opt(2018, 1, 11).unwrap().and_hms_milli_opt(12, 0, 0, 154).unwrap();
     /// assert_eq!(
-    ///     dt.duration_trunc(OldTimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     dt.duration_trunc(Duration::from_millis(10)).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_trunc(OldTimeDelta::days(1)).unwrap().to_string(),
+    ///     dt.duration_trunc(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
     ///     "2018-01-11 00:00:00 UTC"
     /// );
     /// ```
-    fn duration_trunc(self, duration: OldTimeDelta) -> Result<Self, Self::Err>;
+    fn duration_trunc(self, duration: Duration) -> Result<Self, Self::Err>;
 }
 
 /// The maximum number of seconds a DateTime can be to be represented as nanoseconds
@@ -148,11 +151,11 @@ const MAX_SECONDS_TIMESTAMP_FOR_NANOS: i64 = 9_223_372_036;
 impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
     type Err = RoundingError;
 
-    fn duration_round(self, duration: OldTimeDelta) -> Result<Self, Self::Err> {
+    fn duration_round(self, duration: Duration) -> Result<Self, Self::Err> {
         duration_round(self.naive_local(), self, duration)
     }
 
-    fn duration_trunc(self, duration: OldTimeDelta) -> Result<Self, Self::Err> {
+    fn duration_trunc(self, duration: Duration) -> Result<Self, Self::Err> {
         duration_trunc(self.naive_local(), self, duration)
     }
 }
@@ -160,11 +163,11 @@ impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
 impl DurationRound for NaiveDateTime {
     type Err = RoundingError;
 
-    fn duration_round(self, duration: OldTimeDelta) -> Result<Self, Self::Err> {
+    fn duration_round(self, duration: Duration) -> Result<Self, Self::Err> {
         duration_round(self, self, duration)
     }
 
-    fn duration_trunc(self, duration: OldTimeDelta) -> Result<Self, Self::Err> {
+    fn duration_trunc(self, duration: Duration) -> Result<Self, Self::Err> {
         duration_trunc(self, self, duration)
     }
 }
@@ -172,107 +175,122 @@ impl DurationRound for NaiveDateTime {
 fn duration_round<T>(
     naive: NaiveDateTime,
     original: T,
-    duration: OldTimeDelta,
+    duration: Duration,
 ) -> Result<T, RoundingError>
 where
-    T: Timelike + Add<OldTimeDelta, Output = T> + Sub<OldTimeDelta, Output = T>,
+    T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
-        if span == 0 {
-            return Ok(original);
-        }
-        let delta_down = stamp % span;
-        if delta_down == 0 {
-            Ok(original)
-        } else {
-            let (delta_up, delta_down) = if delta_down < 0 {
-                (delta_down.abs(), span - delta_down.abs())
-            } else {
-                (span - delta_down, delta_down)
-            };
-            if delta_up <= delta_down {
-                Ok(original + OldTimeDelta::nanoseconds(delta_up))
-            } else {
-                Ok(original - OldTimeDelta::nanoseconds(delta_down))
-            }
-        }
+    let span =
+        i128::try_from(duration.as_nanos()).map_err(|_| RoundingError::TimestampExceedsLimit)?;
+
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+    let stamp = i128::from(naive.timestamp_nanos());
+    if span > stamp.abs() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+    if span == 0 {
+        return Ok(original);
+    }
+    let delta_down = stamp % span;
+
+    if delta_down == 0 {
+        Ok(original)
     } else {
-        Err(RoundingError::DurationExceedsLimit)
+        let (delta_up, delta_down) = if delta_down < 0 {
+            (delta_down.abs(), span - delta_down.abs())
+        } else {
+            (span - delta_down, delta_down)
+        };
+
+        if delta_up <= delta_down {
+            let seconds_part = u64::try_from(delta_up / 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            let nanos_part = u32::try_from(delta_up % 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+
+            Ok(original + Duration::new(seconds_part, nanos_part))
+        } else {
+            let seconds_part = u64::try_from(delta_down / 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            let nanos_part = u32::try_from(delta_down % 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+
+            Ok(original - Duration::new(seconds_part, nanos_part))
+        }
     }
 }
 
 fn duration_trunc<T>(
     naive: NaiveDateTime,
     original: T,
-    duration: OldTimeDelta,
+    duration: Duration,
 ) -> Result<T, RoundingError>
 where
-    T: Timelike + Add<OldTimeDelta, Output = T> + Sub<OldTimeDelta, Output = T>,
+    T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
+    let span =
+        i128::try_from(duration.as_nanos()).map_err(|_| RoundingError::TimestampExceedsLimit)?;
+
+    if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
+        return Err(RoundingError::TimestampExceedsLimit);
+    }
+
+    let stamp = i128::from(naive.timestamp_nanos());
+
+    if span > stamp.abs() {
+        return Err(RoundingError::DurationExceedsTimestamp);
+    }
+
+    let delta_down = stamp % span;
+
+    match delta_down.cmp(&0) {
+        Ordering::Equal => Ok(original),
+        Ordering::Greater => {
+            let seconds_part = u64::try_from(delta_down / 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            let nanos_part = u32::try_from(delta_down % 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            Ok(original - Duration::new(seconds_part, nanos_part))
         }
-        let stamp = naive.timestamp_nanos();
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
+        Ordering::Less => {
+            let seconds_part = u64::try_from((span - delta_down.abs()) / 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            let nanos_part = u32::try_from((span - delta_down.abs()) % 1_000_000_000)
+                .map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            Ok(original - Duration::new(seconds_part, nanos_part))
         }
-        let delta_down = stamp % span;
-        match delta_down.cmp(&0) {
-            Ordering::Equal => Ok(original),
-            Ordering::Greater => Ok(original - OldTimeDelta::nanoseconds(delta_down)),
-            Ordering::Less => Ok(original - OldTimeDelta::nanoseconds(span - delta_down.abs())),
-        }
-    } else {
-        Err(RoundingError::DurationExceedsLimit)
     }
 }
 
-/// An error from rounding by `OldTimeDelta`
+/// An error from rounding by `Duration`
 ///
 /// See: [`DurationRound`]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
 pub enum RoundingError {
-    /// Error when the OldTimeDelta exceeds the OldTimeDelta from or until the Unix epoch.
+    /// Error when the Duration exceeds the Duration from or until the Unix epoch.
     ///
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, OldTimeDelta, RoundingError, TimeZone, Utc};
+    /// # use core::time::Duration;
+    /// # use chrono::{DateTime, DurationRound, RoundingError, TimeZone, Utc};
     /// let dt = Utc.ymd_opt(1970, 12, 12).unwrap().and_hms_opt(0, 0, 0).unwrap();
     ///
     /// assert_eq!(
-    ///     dt.duration_round(OldTimeDelta::days(365)),
+    ///     dt.duration_round(Duration::from_secs(24 * 60 * 60 * 365)),
     ///     Err(RoundingError::DurationExceedsTimestamp),
     /// );
     /// ```
     DurationExceedsTimestamp,
 
-    /// Error when `OldTimeDelta.num_nanoseconds` exceeds the limit.
-    ///
-    /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, OldTimeDelta, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.ymd_opt(2260, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 1_75_500_000).unwrap();
-    ///
-    /// assert_eq!(
-    ///     dt.duration_round(OldTimeDelta::days(300 * 365)),
-    ///     Err(RoundingError::DurationExceedsLimit)
-    /// );
-    /// ```
-    DurationExceedsLimit,
-
     /// Error when `DateTime.timestamp_nanos` exceeds the limit.
     ///
     /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, OldTimeDelta, RoundingError, TimeZone, Utc};
+    /// # use core::time::Duration;
+    /// # use chrono::{DateTime, DurationRound, RoundingError, TimeZone, Utc};
     /// let dt = Utc.ymd_opt(2300, 12, 12).unwrap().and_hms_opt(0, 0, 0).unwrap();
     ///
-    /// assert_eq!(dt.duration_round(OldTimeDelta::days(1)), Err(RoundingError::TimestampExceedsLimit),);
+    /// assert_eq!(dt.duration_round(Duration::from_secs(24 * 60 * 60 * 1)), Err(RoundingError::TimestampExceedsLimit),);
     /// ```
     TimestampExceedsLimit,
 }
@@ -282,9 +300,6 @@ impl fmt::Display for RoundingError {
         match *self {
             RoundingError::DurationExceedsTimestamp => {
                 write!(f, "duration in nanoseconds exceeds timestamp")
-            }
-            RoundingError::DurationExceedsLimit => {
-                write!(f, "duration exceeds num_nanoseconds limit")
             }
             RoundingError::TimestampExceedsLimit => {
                 write!(f, "timestamp exceeds num_nanoseconds limit")
@@ -304,9 +319,10 @@ impl std::error::Error for RoundingError {
 
 #[cfg(test)]
 mod tests {
-    use super::{DurationRound, OldTimeDelta, SubsecRound};
+    use super::{DurationRound, SubsecRound};
     use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::Timelike;
+    use core::time::Duration;
 
     #[test]
     fn test_round_subsecs() {
@@ -404,42 +420,42 @@ mod tests {
             Utc.ymd_opt(2016, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 175_500_000).unwrap();
 
         assert_eq!(
-            dt.duration_round(OldTimeDelta::zero()).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(0)).unwrap().to_string(),
             "2016-12-31 23:59:59.175500 UTC"
         );
 
         assert_eq!(
-            dt.duration_round(OldTimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_round(Duration::from_millis(10)).unwrap().to_string(),
             "2016-12-31 23:59:59.180 UTC"
         );
 
         // round up
         let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 30, 0).unwrap();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:25:00 UTC"
         );
         // round down
         let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 29, 999).unwrap();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
 
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(10)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 10)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(30)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 30)).unwrap().to_string(),
             "2012-12-12 18:30:00 UTC"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::hours(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 60)).unwrap().to_string(),
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2012-12-13 00:00:00 UTC"
         );
 
@@ -451,11 +467,11 @@ mod tests {
             .and_hms_opt(15, 0, 0)
             .unwrap();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::weeks(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(7 * 24 * 60 * 60)).unwrap().to_string(),
             "2020-10-29 00:00:00 +01:00"
         );
 
@@ -467,11 +483,11 @@ mod tests {
             .and_hms_opt(15, 0, 0)
             .unwrap();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::weeks(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(7 * 24 * 60 * 60)).unwrap().to_string(),
             "2020-10-29 00:00:00 -01:00"
         );
     }
@@ -486,12 +502,12 @@ mod tests {
             .naive_utc();
 
         assert_eq!(
-            dt.duration_round(OldTimeDelta::zero()).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(0)).unwrap().to_string(),
             "2016-12-31 23:59:59.175500"
         );
 
         assert_eq!(
-            dt.duration_round(OldTimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_round(Duration::from_millis(10)).unwrap().to_string(),
             "2016-12-31 23:59:59.180"
         );
 
@@ -503,7 +519,7 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:25:00"
         );
         // round down
@@ -514,24 +530,24 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
 
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(10)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 10)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(30)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 30)).unwrap().to_string(),
             "2012-12-12 18:30:00"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::hours(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 60)).unwrap().to_string(),
             "2012-12-12 18:00:00"
         );
         assert_eq!(
-            dt.duration_round(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2012-12-13 00:00:00"
         );
     }
@@ -540,7 +556,7 @@ mod tests {
     fn test_duration_round_pre_epoch() {
         let dt = Utc.ymd_opt(1969, 12, 12).unwrap().and_hms_opt(12, 12, 12).unwrap();
         assert_eq!(
-            dt.duration_round(OldTimeDelta::minutes(10)).unwrap().to_string(),
+            dt.duration_round(Duration::from_secs(60 * 10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
         );
     }
@@ -551,36 +567,36 @@ mod tests {
             Utc.ymd_opt(2016, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 175_500_000).unwrap();
 
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_millis(10)).unwrap().to_string(),
             "2016-12-31 23:59:59.170 UTC"
         );
 
         // would round up
         let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 30, 0).unwrap();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         // would round down
         let dt = Utc.ymd_opt(2012, 12, 12).unwrap().and_hms_milli_opt(18, 22, 29, 999).unwrap();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(10)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 10)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(30)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 30)).unwrap().to_string(),
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::hours(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 60)).unwrap().to_string(),
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2012-12-12 00:00:00 UTC"
         );
 
@@ -592,11 +608,11 @@ mod tests {
             .and_hms_opt(15, 0, 0)
             .unwrap();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::weeks(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(7 * 24 * 60 * 60)).unwrap().to_string(),
             "2020-10-22 00:00:00 +01:00"
         );
 
@@ -608,11 +624,11 @@ mod tests {
             .and_hms_opt(15, 0, 0)
             .unwrap();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::weeks(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(7 * 24 * 60 * 60)).unwrap().to_string(),
             "2020-10-22 00:00:00 -01:00"
         );
     }
@@ -627,7 +643,7 @@ mod tests {
             .naive_utc();
 
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_millis(10)).unwrap().to_string(),
             "2016-12-31 23:59:59.170"
         );
 
@@ -639,7 +655,7 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         // would round down
@@ -650,23 +666,23 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(5)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 5)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(10)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 10)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(30)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 30)).unwrap().to_string(),
             "2012-12-12 18:00:00"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::hours(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 60)).unwrap().to_string(),
             "2012-12-12 18:00:00"
         );
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::days(1)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(24 * 60 * 60)).unwrap().to_string(),
             "2012-12-12 00:00:00"
         );
     }
@@ -675,7 +691,7 @@ mod tests {
     fn test_duration_trunc_pre_epoch() {
         let dt = Utc.ymd_opt(1969, 12, 12).unwrap().and_hms_opt(12, 12, 12).unwrap();
         assert_eq!(
-            dt.duration_trunc(OldTimeDelta::minutes(10)).unwrap().to_string(),
+            dt.duration_trunc(Duration::from_secs(60 * 10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
         );
     }

@@ -14,7 +14,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use crate::time_delta::OldTimeDelta;
 use crate::DateTime;
 use crate::Timelike;
 
@@ -159,16 +158,6 @@ impl fmt::Display for FixedOffset {
 // but keep keeps the leap second information.
 // this should be implemented more efficiently, but for the time being, this is generic right now.
 
-fn add_with_leapsecond_old<T>(lhs: &T, rhs: i32) -> T
-where
-    T: Timelike + Add<OldTimeDelta, Output = T>,
-{
-    // extract and temporarily remove the fractional part and later recover it
-    let nanos = lhs.nanosecond();
-    let lhs = lhs.with_nanosecond(0).unwrap();
-    (lhs + OldTimeDelta::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
-}
-
 fn add_with_leapsecond<T>(lhs: &T, rhs: u32) -> T
 where
     T: Timelike + Add<Duration, Output = T>,
@@ -220,7 +209,11 @@ impl Add<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveDateTime {
-        add_with_leapsecond_old(&self, rhs.local_minus_utc)
+        if rhs.local_minus_utc > 0 {
+            add_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc).unwrap())
+        } else {
+            sub_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc.abs()).unwrap())
+        }
     }
 }
 
@@ -229,7 +222,11 @@ impl Sub<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
-        add_with_leapsecond_old(&self, -rhs.local_minus_utc)
+        if rhs.local_minus_utc > 0 {
+            sub_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc).unwrap())
+        } else {
+            add_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc.abs()).unwrap())
+        }
     }
 }
 
@@ -238,7 +235,11 @@ impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> DateTime<Tz> {
-        add_with_leapsecond_old(&self, rhs.local_minus_utc)
+        if rhs.local_minus_utc > 0 {
+            add_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc).unwrap())
+        } else {
+            sub_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc.abs()).unwrap())
+        }
     }
 }
 
@@ -247,7 +248,11 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> DateTime<Tz> {
-        add_with_leapsecond_old(&self, -rhs.local_minus_utc)
+        if rhs.local_minus_utc > 0 {
+            sub_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc).unwrap())
+        } else {
+            add_with_leapsecond(&self, u32::try_from(rhs.local_minus_utc.abs()).unwrap())
+        }
     }
 }
 

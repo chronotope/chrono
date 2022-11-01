@@ -5,13 +5,14 @@
 //! They can be constructed incrementally while being checked for consistency.
 
 use core::convert::TryFrom;
+use core::time::Duration;
 
 use num_integer::div_rem;
 
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::{DateTime, Datelike, Days, OldTimeDelta, Timelike, Weekday};
+use crate::{DateTime, Datelike, Days, Timelike, Weekday};
 
 /// Parsed parts of date and time. There are two classes of methods:
 ///
@@ -601,7 +602,7 @@ impl Parsed {
                     59 => {}
                     // `datetime` is known to be off by one second.
                     0 => {
-                        datetime -= OldTimeDelta::seconds(1);
+                        datetime -= Duration::from_secs(1);
                     }
                     // otherwise it is impossible.
                     _ => return Err(IMPOSSIBLE),
@@ -644,9 +645,17 @@ impl Parsed {
         let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
 
         // this is used to prevent an overflow when calling FixedOffset::from_local_datetime
-        datetime
-            .checked_sub_signed(OldTimeDelta::seconds(i64::from(offset.local_minus_utc())))
-            .ok_or(OUT_OF_RANGE)?;
+        if offset.local_minus_utc() < 0 {
+            datetime
+                .checked_add(Duration::from_secs(
+                    u64::try_from(offset.local_minus_utc().abs()).unwrap(),
+                ))
+                .ok_or(OUT_OF_RANGE)?;
+        } else {
+            datetime
+                .checked_sub(Duration::from_secs(u64::try_from(offset.local_minus_utc()).unwrap()))
+                .ok_or(OUT_OF_RANGE)?;
+        }
 
         match offset.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
