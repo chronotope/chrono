@@ -627,20 +627,22 @@ fn test_datetime_from_local() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_years_elapsed() {
+    use crate::Days;
+
     const WEEKS_PER_YEAR: f32 = 52.1775;
 
     // This is always at least one year because 1 year = 52.1775 weeks.
     let one_year_ago =
-        Utc::now().date_naive() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        Utc::now().date_naive() - Days::new((WEEKS_PER_YEAR * 1.5 * 7.0).ceil() as u64);
     // A bit more than 2 years.
     let two_year_ago =
-        Utc::now().date_naive() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+        Utc::now().date_naive() - Days::new((WEEKS_PER_YEAR * 2.5 * 7.0).ceil() as u64);
 
     assert_eq!(Utc::now().date_naive().years_since(one_year_ago), Some(1));
     assert_eq!(Utc::now().date_naive().years_since(two_year_ago), Some(2));
 
     // If the given DateTime is later than now, the function will always return 0.
-    let future = Utc::now().date_naive() + Duration::weeks(12);
+    let future = Utc::now().date_naive() + Days::new(12 * 7);
     assert_eq!(Utc::now().date_naive().years_since(future), None);
 }
 

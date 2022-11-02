@@ -1,8 +1,11 @@
+use std::convert::TryFrom;
+use std::i64;
+use std::time::Duration as StdDuration;
+
 use super::NaiveDateTime;
 use crate::oldtime::Duration;
 use crate::NaiveDate;
-use crate::{Datelike, FixedOffset, Utc};
-use std::i64;
+use crate::{Datelike, Days, FixedOffset, Utc};
 
 #[test]
 fn test_datetime_from_timestamp() {
@@ -43,8 +46,17 @@ fn test_datetime_add() {
     // overflow check
     // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
     // (they are private constants, but the equivalence is tested in that module.)
-    let max_days_from_year_0 =
-        NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd_opt(0, 1, 1).unwrap());
+    let max_days_from_year_0 = Days::new(
+        u64::try_from(
+            NaiveDate::MAX.num_days_from_ce()
+                - NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce(),
+        )
+        .unwrap(),
+    )
+    .duration();
+
+    let max_days_from_year_0 = Duration::from_std(max_days_from_year_0).unwrap();
+
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
     check(
         (0, 1, 1, 0, 0, 0),
@@ -53,12 +65,6 @@ fn test_datetime_add() {
     );
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
     check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
-
-    let min_days_from_year_0 =
-        NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(0, 1, 1).unwrap());
-    check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
-    check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - Duration::seconds(1), None);
-    check((0, 1, 1, 0, 0, 0), Duration::min_value(), None);
 }
 
 #[test]
@@ -82,6 +88,27 @@ fn test_datetime_sub() {
     assert_eq!(
         since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
         Duration::seconds(999_999_999)
+    );
+
+    let min_days_from_year_0 = Days::new(
+        u64::try_from(
+            NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce()
+                - NaiveDate::MIN.num_days_from_ce(),
+        )
+        .unwrap(),
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0).checked_sub_days(min_days_from_year_0),
+        Some(ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0))
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0).checked_sub_signed(
+            Duration::from_std(min_days_from_year_0.duration() + StdDuration::from_secs(1))
+                .unwrap()
+        ),
+        None
     );
 }
 

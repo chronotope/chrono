@@ -772,7 +772,7 @@ impl NaiveDateTime {
     ///            Duration::seconds(3600) - Duration::milliseconds(500));
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
-        let days = self.date.signed_duration_since(rhs.date);
+        let days = OldDuration::days(self.date.days_since(rhs.date));
         match self.time.cmp(&rhs.time) {
             Ordering::Less => {
                 days - OldDuration::from_std(self.time.abs_duration_since(rhs.time))

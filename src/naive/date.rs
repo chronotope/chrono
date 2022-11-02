@@ -6,11 +6,12 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use core::hash::Hash;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
-use num_traits::ToPrimitive;
+
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -21,7 +22,7 @@ use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Duration, Weekday};
+use crate::{Datelike, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
@@ -77,7 +78,7 @@ impl NaiveWeek {
         let start = self.start.num_days_from_monday();
         let end = self.date.weekday().num_days_from_monday();
         let days = if start > end { 7 - start + end } else { end - start };
-        self.date - Duration::days(days.into())
+        self.date - Days::new(days.into())
     }
 
     /// Returns a date representing the last day of the week.
@@ -93,7 +94,7 @@ impl NaiveWeek {
     /// ```
     #[inline]
     pub fn last_day(&self) -> NaiveDate {
-        self.first_day() + Duration::days(6)
+        self.first_day() + Days::new(6)
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -119,16 +120,22 @@ impl NaiveWeek {
 /// A duration in calendar days.
 ///
 /// This is useful becuase when using `Duration` it is possible
-/// that adding `Duration::days(1)` doesn't increment the day value as expected due to it being a
-/// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types
-/// and in other cases `Duration::days(n)` and `Days::new(n)` are equivalent.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+/// that adding `Duration::from_secs(24 * 60 * 60)` doesn't increment the day value as expected due to it being a
+/// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Days(pub(crate) u64);
 
 impl Days {
     /// Construct a new `Days` from a number of months
     pub fn new(num: u64) -> Self {
         Self(num)
+    }
+
+    // temporarily used by some tests
+    // TODO: remove this
+    #[cfg(test)]
+    pub(crate) fn duration(self) -> core::time::Duration {
+        core::time::Duration::new(86400 * self.0, 0)
     }
 }
 
@@ -648,7 +655,19 @@ impl NaiveDate {
             return Some(self);
         }
 
-        i64::try_from(days.0).ok().and_then(|d| self.diff_days(d))
+        let year = self.year();
+        let (mut year_div_400, year_mod_400) = div_mod_floor(i64::from(year), 400);
+        let cycle = internals::yo_to_cycle(u32::try_from(year_mod_400).ok()?, self.of().ordinal());
+        let cycle = cycle.checked_add(u32::try_from(days.0).ok()?)?;
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
+
+        year_div_400 += i64::from(cycle_div_400y);
+
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle);
+        let flags = YearFlags::from_year_mod_400(i32::try_from(year_mod_400).ok()?);
+
+        let year = i32::try_from(year_div_400 * 400 + i64::from(year_mod_400)).ok()?;
+        NaiveDate::from_of(year, Of::new(ordinal, flags)?)
     }
 
     /// Subtract a duration in [`Days`] from the date
@@ -667,11 +686,24 @@ impl NaiveDate {
             return Some(self);
         }
 
-        i64::try_from(days.0).ok().and_then(|d| self.diff_days(-d))
-    }
+        let year = self.year();
+        let (mut year_div_400, year_mod_400) = div_mod_floor(i64::from(year), 400);
+        let cycle = i64::from(internals::yo_to_cycle(
+            u32::try_from(year_mod_400).unwrap(),
+            self.of().ordinal(),
+        ));
+        let cycle = cycle.checked_sub(i64::try_from(days.0).ok()?)?;
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
 
-    fn diff_days(self, days: i64) -> Option<Self> {
-        self.checked_add_signed(Duration::days(days))
+        year_div_400 += cycle_div_400y;
+
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(u32::try_from(cycle).ok()?);
+        let flags = YearFlags::from_year_mod_400(i32::try_from(year_mod_400).ok()?);
+
+        NaiveDate::from_of(
+            i32::try_from(year_div_400 * 400 + i64::from(year_mod_400)).ok()?,
+            Of::new(ordinal, flags)?,
+        )
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -977,16 +1009,10 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MAX.checked_add_signed(Duration::days(1)), None);
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
-        let year = self.year();
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_add(rhs.num_days().to_i32()?)?;
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        year_div_400 += cycle_div_400y;
-
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
+        match rhs.num_days() < 0 {
+            true => self.checked_sub_days(Days::new(u64::try_from(rhs.num_days().abs()).ok()?)),
+            false => self.checked_add_days(Days::new(u64::try_from(rhs.num_days()).ok()?)),
+        }
     }
 
     /// Subtracts the `days` part of given `Duration` from the current date.
@@ -1008,16 +1034,23 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MIN.checked_sub_signed(Duration::days(1)), None);
     /// ```
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
-        let year = self.year();
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_sub(rhs.num_days().to_i32()?)?;
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        year_div_400 += cycle_div_400y;
+        match rhs.num_days() < 0 {
+            true => self.checked_add_days(Days::new(u64::try_from(rhs.num_days().abs()).ok()?)),
+            false => self.checked_sub_days(Days::new(u64::try_from(rhs.num_days()).ok()?)),
+        }
+    }
 
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
+    /// Subtracts another `NaiveDate` from the current date.
+    /// Returns a `DaysDelta` of the number of days between the two dates.
+    pub fn days_since(self, rhs: NaiveDate) -> i64 {
+        let year1 = self.year();
+        let year2 = rhs.year();
+        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
+        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
+        let cycle1 = i64::from(internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()));
+        let cycle2 = i64::from(internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()));
+
+        (i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 + (cycle1 - cycle2)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1043,15 +1076,7 @@ impl NaiveDate {
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), Duration::days(365*400 + 97));
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDate) -> OldDuration {
-        let year1 = self.year();
-        let year2 = rhs.year();
-        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
-        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = i64::from(internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()));
-        let cycle2 = i64::from(internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()));
-        OldDuration::days(
-            (i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 + (cycle1 - cycle2),
-        )
+        OldDuration::days(self.days_since(rhs))
     }
 
     /// Returns the number of whole years from the given `base` until `self`.
@@ -1660,11 +1685,23 @@ impl Add<Days> for NaiveDate {
     }
 }
 
+impl AddAssign<Days> for NaiveDate {
+    fn add_assign(&mut self, days: Days) {
+        *self = self.checked_add_days(days).unwrap();
+    }
+}
+
 impl Sub<Days> for NaiveDate {
     type Output = NaiveDate;
 
     fn sub(self, days: Days) -> Self::Output {
         self.checked_sub_days(days).unwrap()
+    }
+}
+
+impl SubAssign<Days> for NaiveDate {
+    fn sub_assign(&mut self, days: Days) {
+        *self = self.checked_sub_days(days).unwrap();
     }
 }
 
@@ -1761,7 +1798,7 @@ impl Iterator for NaiveDateDaysIterator {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = NaiveDate::MAX.signed_duration_since(self.value).num_days();
+        let exact_size = usize::try_from(NaiveDate::MAX.days_since(self.value)).unwrap();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
@@ -1788,16 +1825,16 @@ impl Iterator for NaiveDateWeeksIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if NaiveDate::MAX - self.value < OldDuration::weeks(1) {
+        if NaiveDate::MAX.days_since(self.value) < 7 {
             return None;
         }
         let current = self.value;
-        self.value = current + OldDuration::weeks(1);
+        self.value = current + Days::new(7);
         Some(current)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact_size = NaiveDate::MAX.signed_duration_since(self.value).num_weeks();
+        let exact_size = usize::try_from(NaiveDate::MAX.days_since(self.value)).unwrap();
         (exact_size as usize, Some(exact_size as usize))
     }
 }
@@ -1806,11 +1843,11 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.value - NaiveDate::MIN < OldDuration::weeks(1) {
+        if self.value.days_since(NaiveDate::MIN) < 7 {
             return None;
         }
         let current = self.value;
-        self.value = current - OldDuration::weeks(1);
+        self.value = current - Days::new(7);
         Some(current)
     }
 }
@@ -2673,6 +2710,26 @@ mod tests {
 
         check((MAX_YEAR, 12, 31), (0, 1, 1), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()));
         check((0, 1, 1), (MIN_YEAR, 1, 1), Days::new((-MIN_DAYS_FROM_YEAR_0).try_into().unwrap()));
+    }
+
+    #[test]
+    fn test_days_addassignment() {
+        let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        let mut date = ymd(2016, 10, 1);
+        date += Days::new(10);
+        assert_eq!(date, ymd(2016, 10, 11));
+        date += Days::new(30);
+        assert_eq!(date, ymd(2016, 11, 10));
+    }
+
+    #[test]
+    fn test_days_subassignment() {
+        let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        let mut date = ymd(2016, 10, 11);
+        date -= Days::new(10);
+        assert_eq!(date, ymd(2016, 10, 1));
+        date -= Days::new(2);
+        assert_eq!(date, ymd(2016, 9, 29));
     }
 
     #[test]

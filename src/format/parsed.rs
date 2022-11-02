@@ -13,7 +13,7 @@ use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::Weekday;
-use crate::{Datelike, Timelike};
+use crate::{Datelike, Days, Timelike};
 
 /// Parsed parts of date and time. There are two classes of methods:
 ///
@@ -424,12 +424,18 @@ impl Parsed {
                 if week_from_sun > 53 {
                     return Err(OUT_OF_RANGE);
                 } // can it overflow?
-                let ndays = firstweek
-                    + (week_from_sun as i32 - 1) * 7
-                    + weekday.num_days_from_sunday() as i32;
-                let date = newyear
-                    .checked_add_signed(OldDuration::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
+
+                let ndays = if week_from_sun == 0 {
+                    if firstweek + weekday.num_days_from_sunday() < 7 {
+                        return Err(OUT_OF_RANGE);
+                    }
+                    firstweek + weekday.num_days_from_sunday() - 7
+                } else {
+                    firstweek + (week_from_sun - 1) * 7 + weekday.num_days_from_sunday()
+                };
+
+                let date = newyear.checked_add_days(Days::new(ndays.into())).ok_or(OUT_OF_RANGE)?;
+
                 if date.year() != year {
                     return Err(OUT_OF_RANGE);
                 } // early exit for correct error
@@ -458,12 +464,18 @@ impl Parsed {
                 if week_from_mon > 53 {
                     return Err(OUT_OF_RANGE);
                 } // can it overflow?
-                let ndays = firstweek
-                    + (week_from_mon as i32 - 1) * 7
-                    + weekday.num_days_from_monday() as i32;
-                let date = newyear
-                    .checked_add_signed(OldDuration::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
+
+                let ndays = if week_from_mon == 0 {
+                    if firstweek + weekday.num_days_from_monday() < 7 {
+                        return Err(OUT_OF_RANGE);
+                    }
+                    firstweek + weekday.num_days_from_monday() - 7
+                } else {
+                    firstweek + (week_from_mon - 1) * 7 + weekday.num_days_from_monday()
+                };
+
+                let date = newyear.checked_add_days(Days::new(ndays.into())).ok_or(OUT_OF_RANGE)?;
+
                 if date.year() != year {
                     return Err(OUT_OF_RANGE);
                 } // early exit for correct error
@@ -1084,22 +1096,22 @@ mod tests {
 
         // more timestamps
         let max_days_from_year_1970 =
-            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+            NaiveDate::MAX.days_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
         let year_0_from_year_1970 = NaiveDate::from_ymd_opt(0, 1, 1)
             .unwrap()
-            .signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+            .days_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
         let min_days_from_year_1970 =
-            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+            NaiveDate::MIN.days_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
         assert_eq!(
-            parse!(timestamp: min_days_from_year_1970.num_seconds()),
+            parse!(timestamp: min_days_from_year_1970 * 24 * 60 * 60),
             ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0)
         );
         assert_eq!(
-            parse!(timestamp: year_0_from_year_1970.num_seconds()),
+            parse!(timestamp: year_0_from_year_1970 * 24 * 60 * 60),
             ymdhms(0, 1, 1, 0, 0, 0)
         );
         assert_eq!(
-            parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
+            parse!(timestamp: (max_days_from_year_1970 * 24 * 60 * 60) + 86399),
             ymdhms(NaiveDate::MAX.year(), 12, 31, 23, 59, 59)
         );
 
