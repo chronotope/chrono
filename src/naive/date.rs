@@ -9,7 +9,6 @@ use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -21,20 +20,20 @@ use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{Datelike, TimeDelta, Weekday};
 
-use super::internals::{self, DateImpl};
+use super::internals::DateImpl;
 use super::isoweek;
 
-const MAX_YEAR: i16 = internals::MAX_YEAR;
-const MIN_YEAR: i16 = internals::MIN_YEAR;
+#[cfg(test)]
+use super::internals;
 
 //   MAX_YEAR-12-31 minus 0000-01-01
 // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
 // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + 365 days
 // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365 days
 #[cfg(test)] // only used for testing
-const MAX_DAYS_FROM_YEAR_0: i32 = i32::from(MAX_YEAR) * 365 + i32::from(MAX_YEAR) / 4
-    - i32::from(MAX_YEAR) / 100
-    + i32::from(MAX_YEAR) / 400
+const MAX_DAYS_FROM_YEAR_0: i32 = internals::MAX_YEAR as i32 * 365 + internals::MAX_YEAR as i32 / 4
+    - internals::MAX_YEAR as i32 / 100
+    + internals::MAX_YEAR as i32 / 400
     + 365;
 
 //   MIN_YEAR-01-01 minus 0000-01-01
@@ -44,10 +43,10 @@ const MAX_DAYS_FROM_YEAR_0: i32 = i32::from(MAX_YEAR) * 365 + i32::from(MAX_YEAR
 //
 // n is set to 1000 for convenience.
 #[cfg(test)] // only used for testing
-const MIN_DAYS_FROM_YEAR_0: i32 = (i32::from(MIN_YEAR) + 400_000) * 365
-    + (i32::from(MIN_YEAR) + 400_000) / 4
-    - (i32::from(MIN_YEAR) + 400_000) / 100
-    + (i32::from(MIN_YEAR) + 400_000) / 400
+const MIN_DAYS_FROM_YEAR_0: i32 = (internals::MIN_YEAR as i32 + 400_000) * 365
+    + (internals::MIN_YEAR as i32 + 400_000) / 4
+    - (internals::MIN_YEAR as i32 + 400_000) / 100
+    + (internals::MIN_YEAR as i32 + 400_000) / 400
     - 146_097_000;
 
 #[cfg(test)] // only used for testing, but duplicated in naive::datetime
@@ -205,17 +204,17 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
 // we use a separate run-time test.
 #[test]
 fn test_date_bounds() {
-    let calculated_min = NaiveDate::from_ymd_opt(MIN_YEAR, 1, 1).unwrap();
-    let calculated_max = NaiveDate::from_ymd_opt(MAX_YEAR, 12, 31).unwrap();
+    let calculated_min = NaiveDate::from_ymd_opt(internals::MIN_YEAR, 1, 1).unwrap();
+    let calculated_max = NaiveDate::from_ymd_opt(internals::MAX_YEAR, 12, 31).unwrap();
     assert!(
         NaiveDate::MIN == calculated_min,
         "`NaiveDate::MIN` should have a year flag {:?}",
-        calculated_min.of().flags()
+        calculated_min.inner.year_type()
     );
     assert!(
         NaiveDate::MAX == calculated_max,
         "`NaiveDate::MAX` should have a year flag {:?}",
-        calculated_max.of().flags()
+        calculated_max.inner.year_type()
     );
 
     // let's also check that the entire range do not exceed 2^44 seconds
@@ -311,7 +310,7 @@ impl NaiveDate {
     ///
     /// Panics on the out-of-range date and/or invalid week number.
     #[deprecated(since = "0.4.23", note = "use `from_isoywd_opt()` instead")]
-    pub fn from_isoywd(year: i16, week: u16, weekday: Weekday) -> NaiveDate {
+    pub fn from_isoywd(year: i16, week: u8, weekday: Weekday) -> NaiveDate {
         NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
 
@@ -359,7 +358,7 @@ impl NaiveDate {
     /// assert_eq!(from_isoywd_opt(2015, 54, Weekday::Mon), None);
     /// assert_eq!(from_isoywd_opt(2016, 1, Weekday::Mon), Some(from_ymd(2016, 1, 4)));
     /// ```
-    pub fn from_isoywd_opt(year: i16, week: u16, weekday: Weekday) -> Option<NaiveDate> {
+    pub fn from_isoywd_opt(year: i16, week: u8, weekday: Weekday) -> Option<NaiveDate> {
         Some(NaiveDate { inner: DateImpl::from_isoywd_opt(year, week, weekday)? })
     }
 
@@ -587,7 +586,7 @@ impl NaiveDate {
     }
 
     fn diff_days(self, days: i64) -> Option<Self> {
-        self.checked_add_signed(TimeDelta::days(days))
+        Some(NaiveDate { inner: self.inner.diff_days(days)? })
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -869,68 +868,6 @@ impl NaiveDate {
         Some(NaiveDate { inner: self.inner.pred_opt()? })
     }
 
-    /// Adds the `days` part of given `Duration` to the current date.
-    ///
-    /// Returns `None` when it will result in overflow.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{TimeDelta, NaiveDate};
-    ///
-    /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(40)),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 10, 15).unwrap()));
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-40)),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 7, 27).unwrap()));
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)), None);
-    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)), None);
-    /// ```
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
-        let year = self.year();
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_add(i32::try_from(rhs.num_days()).ok()?)?;
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        year_div_400 += cycle_div_400y;
-
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_parts(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
-    }
-
-    /// Subtracts the `days` part of given `TimeDelta` from the current date.
-    ///
-    /// Returns `None` when it will result in overflow.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{TimeDelta, NaiveDate};
-    ///
-    /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(40)),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 7, 27).unwrap()));
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-40)),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 10, 15).unwrap()));
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)), None);
-    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)), None);
-    /// ```
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
-        let year = self.year();
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_sub(i32::try_from(rhs.num_days()).ok()?)?;
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        year_div_400 += cycle_div_400y;
-
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_parts(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
-    }
-
     /// Subtracts another `NaiveDate` from the current date.
     /// Returns a `TimeDelta` of integral numbers.
     ///
@@ -954,15 +891,19 @@ impl NaiveDate {
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), TimeDelta::days(365*400 + 97));
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDate) -> TimeDelta {
-        let year1 = self.year();
-        let year2 = rhs.year();
-        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
-        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = i64::from(internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()));
-        let cycle2 = i64::from(internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()));
-        TimeDelta::days(
-            (i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 + (cycle1 - cycle2),
-        )
+        TimeDelta::days(self.inner.signed_duration_since(rhs.inner))
+    }
+
+    ///
+    ///
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Self> {
+        Some(NaiveDate { inner: self.inner.checked_add_signed(rhs.num_days())? })
+    }
+
+    ///
+    ///
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Self> {
+        Some(NaiveDate { inner: self.inner.checked_sub_signed(rhs.num_days())? })
     }
 
     /// Formats the date with the specified formatting items.
@@ -1978,7 +1919,8 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::{
-        Days, Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
+        internals::{MAX_YEAR, MIN_YEAR},
+        Days, Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MIN_DAYS_FROM_YEAR_0,
     };
     use crate::time_delta::TimeDelta;
     use crate::{Datelike, Weekday};
@@ -2177,7 +2119,7 @@ mod tests {
     #[test]
     fn test_date_from_isoywd_and_iso_week() {
         for year in 2000..2401 {
-            for week in 1..54 {
+            for week in 1..54_u8 {
                 for &weekday in [
                     Weekday::Mon,
                     Weekday::Tue,
@@ -2192,7 +2134,7 @@ mod tests {
                     let d = NaiveDate::from_isoywd_opt(year, week, weekday);
                     if let Some(d) = d {
                         assert_eq!(d.weekday(), weekday);
-                        let w = d.iso_week();
+                        let w = d.iso_week().unwrap();
                         assert_eq!(w.year(), year);
                         assert_eq!(w.week(), week);
                     }
@@ -2205,7 +2147,7 @@ mod tests {
                 for day in 1..32 {
                     let d = NaiveDate::from_ymd_opt(year, month, day);
                     if let Some(d) = d {
-                        let w = d.iso_week();
+                        let w = d.iso_week().unwrap();
                         let d_ = NaiveDate::from_isoywd_opt(w.year(), w.week(), d.weekday());
                         assert_eq!(d, d_.unwrap());
                     }
@@ -2313,7 +2255,7 @@ mod tests {
 
     #[test]
     fn test_date_fields() {
-        fn check(year: i32, month: u32, day: u32, ordinal: u32) {
+        fn check(year: i16, month: u8, day: u8, ordinal: u16) {
             let d1 = NaiveDate::from_ymd_opt(year, month, day).unwrap();
             assert_eq!(d1.year(), year);
             assert_eq!(d1.month(), month);
@@ -2368,7 +2310,7 @@ mod tests {
         assert_eq!(d.with_year(2000), Some(NaiveDate::from_ymd_opt(2000, 2, 29).unwrap()));
         assert_eq!(d.with_year(2001), None);
         assert_eq!(d.with_year(2004), Some(NaiveDate::from_ymd_opt(2004, 2, 29).unwrap()));
-        assert_eq!(d.with_year(i32::MAX), None);
+        assert_eq!(d.with_year(i16::MAX), None);
 
         let d = NaiveDate::from_ymd_opt(2000, 4, 30).unwrap();
         assert_eq!(d.with_month(0), None);
@@ -2378,14 +2320,14 @@ mod tests {
         assert_eq!(d.with_month(4), Some(NaiveDate::from_ymd_opt(2000, 4, 30).unwrap()));
         assert_eq!(d.with_month(12), Some(NaiveDate::from_ymd_opt(2000, 12, 30).unwrap()));
         assert_eq!(d.with_month(13), None);
-        assert_eq!(d.with_month(u32::MAX), None);
+        assert_eq!(d.with_month(u8::MAX), None);
 
         let d = NaiveDate::from_ymd_opt(2000, 2, 8).unwrap();
         assert_eq!(d.with_day(0), None);
         assert_eq!(d.with_day(1), Some(NaiveDate::from_ymd_opt(2000, 2, 1).unwrap()));
         assert_eq!(d.with_day(29), Some(NaiveDate::from_ymd_opt(2000, 2, 29).unwrap()));
         assert_eq!(d.with_day(30), None);
-        assert_eq!(d.with_day(u32::MAX), None);
+        assert_eq!(d.with_day(u8::MAX), None);
 
         let d = NaiveDate::from_ymd_opt(2000, 5, 5).unwrap();
         assert_eq!(d.with_ordinal(0), None);
@@ -2394,7 +2336,7 @@ mod tests {
         assert_eq!(d.with_ordinal(61), Some(NaiveDate::from_ymd_opt(2000, 3, 1).unwrap()));
         assert_eq!(d.with_ordinal(366), Some(NaiveDate::from_ymd_opt(2000, 12, 31).unwrap()));
         assert_eq!(d.with_ordinal(367), None);
-        assert_eq!(d.with_ordinal(u32::MAX), None);
+        assert_eq!(d.with_ordinal(u16::MAX), None);
     }
 
     #[test]
@@ -2431,7 +2373,7 @@ mod tests {
 
     #[test]
     fn test_date_add() {
-        fn check((y1, m1, d1): (i32, u32, u32), rhs: TimeDelta, ymd: Option<(i32, u32, u32)>) {
+        fn check((y1, m1, d1): (i16, u8, u8), rhs: TimeDelta, ymd: Option<(i16, u8, u8)>) {
             let lhs = NaiveDate::from_ymd_opt(y1, m1, d1).unwrap();
             let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd_opt(y, m, d).unwrap());
             assert_eq!(lhs.checked_add_signed(rhs), sum);
@@ -2461,7 +2403,7 @@ mod tests {
 
     #[test]
     fn test_date_sub() {
-        fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: TimeDelta) {
+        fn check((y1, m1, d1): (i16, u8, u8), (y2, m2, d2): (i16, u8, u8), diff: TimeDelta) {
             let lhs = NaiveDate::from_ymd_opt(y1, m1, d1).unwrap();
             let rhs = NaiveDate::from_ymd_opt(y2, m2, d2).unwrap();
             assert_eq!(lhs.signed_duration_since(rhs), diff);
@@ -2481,7 +2423,7 @@ mod tests {
 
     #[test]
     fn test_date_add_days() {
-        fn check((y1, m1, d1): (i32, u32, u32), rhs: Days, ymd: Option<(i32, u32, u32)>) {
+        fn check((y1, m1, d1): (i16, u8, u8), rhs: Days, ymd: Option<(i16, u8, u8)>) {
             let lhs = NaiveDate::from_ymd_opt(y1, m1, d1).unwrap();
             let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd_opt(y, m, d).unwrap());
             assert_eq!(lhs.checked_add_days(rhs), sum);
@@ -2507,7 +2449,7 @@ mod tests {
 
     #[test]
     fn test_date_sub_days() {
-        fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: Days) {
+        fn check((y1, m1, d1): (i16, u8, u8), (y2, m2, d2): (i16, u8, u8), diff: Days) {
             let lhs = NaiveDate::from_ymd_opt(y1, m1, d1).unwrap();
             let rhs = NaiveDate::from_ymd_opt(y2, m2, d2).unwrap();
             assert_eq!(lhs - diff, rhs);
@@ -2681,9 +2623,12 @@ mod tests {
 
     #[test]
     fn test_day_iterator_limit() {
-        assert_eq!(NaiveDate::from_ymd_opt(262143, 12, 29).unwrap().iter_days().take(4).count(), 2);
         assert_eq!(
-            NaiveDate::from_ymd_opt(-262144, 1, 3).unwrap().iter_days().rev().take(4).count(),
+            NaiveDate::from_ymd_opt(i16::MAX, 12, 29).unwrap().iter_days().take(4).count(),
+            2
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(i16::MIN, 1, 3).unwrap().iter_days().rev().take(4).count(),
             2
         );
     }
@@ -2691,11 +2636,11 @@ mod tests {
     #[test]
     fn test_week_iterator_limit() {
         assert_eq!(
-            NaiveDate::from_ymd_opt(262143, 12, 12).unwrap().iter_weeks().take(4).count(),
+            NaiveDate::from_ymd_opt(i16::MAX, 12, 12).unwrap().iter_weeks().take(4).count(),
             2
         );
         assert_eq!(
-            NaiveDate::from_ymd_opt(-262144, 1, 15).unwrap().iter_weeks().rev().take(4).count(),
+            NaiveDate::from_ymd_opt(i16::MIN, 1, 15).unwrap().iter_weeks().rev().take(4).count(),
             2
         );
     }

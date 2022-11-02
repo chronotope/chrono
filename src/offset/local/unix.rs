@@ -145,7 +145,7 @@ impl Cache {
         // the entire time was skipped in which case we will return LocalResult::None anywa.
         match self
             .zone
-            .find_local_time_type_from_local(d.timestamp(), d.year())
+            .find_local_time_type_from_local(d.timestamp(), d.year().into())
             .expect("unable to select local time type")
         {
             LocalResult::None => LocalResult::None,

@@ -863,7 +863,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.year(), 2015);
     /// ```
     #[inline]
-    fn year(&self) -> i32 {
+    fn year(&self) -> i16 {
         self.date.year()
     }
 
@@ -882,7 +882,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.month(), 9);
     /// ```
     #[inline]
-    fn month(&self) -> u32 {
+    fn month(&self) -> u8 {
         self.date.month()
     }
 
@@ -901,7 +901,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.month0(), 8);
     /// ```
     #[inline]
-    fn month0(&self) -> u32 {
+    fn month0(&self) -> u8 {
         self.date.month0()
     }
 
@@ -920,7 +920,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.day(), 25);
     /// ```
     #[inline]
-    fn day(&self) -> u32 {
+    fn day(&self) -> u8 {
         self.date.day()
     }
 
@@ -939,7 +939,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.day0(), 24);
     /// ```
     #[inline]
-    fn day0(&self) -> u32 {
+    fn day0(&self) -> u8 {
         self.date.day0()
     }
 
@@ -958,7 +958,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.ordinal(), 268);
     /// ```
     #[inline]
-    fn ordinal(&self) -> u32 {
+    fn ordinal(&self) -> u16 {
         self.date.ordinal()
     }
 
@@ -977,7 +977,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.ordinal0(), 267);
     /// ```
     #[inline]
-    fn ordinal0(&self) -> u32 {
+    fn ordinal0(&self) -> u16 {
         self.date.ordinal0()
     }
 
@@ -999,7 +999,7 @@ impl Datelike for NaiveDateTime {
     }
 
     #[inline]
-    fn iso_week(&self) -> IsoWeek {
+    fn iso_week(&self) -> Option<IsoWeek> {
         self.date.iso_week()
     }
 
@@ -1019,7 +1019,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_year(-308), Some(NaiveDate::from_ymd_opt(-308, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap()));
     /// ```
     #[inline]
-    fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
+    fn with_year(&self, year: i16) -> Option<NaiveDateTime> {
         self.date.with_year(year).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1040,7 +1040,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_month(2), None); // no February 30
     /// ```
     #[inline]
-    fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
+    fn with_month(&self, month: u8) -> Option<NaiveDateTime> {
         self.date.with_month(month).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1061,7 +1061,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_month0(1), None); // no February 30
     /// ```
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
+    fn with_month0(&self, month0: u8) -> Option<NaiveDateTime> {
         self.date.with_month0(month0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1081,7 +1081,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_day(31), None); // no September 31
     /// ```
     #[inline]
-    fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
+    fn with_day(&self, day: u8) -> Option<NaiveDateTime> {
         self.date.with_day(day).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1101,7 +1101,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_day0(30), None); // no September 31
     /// ```
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
+    fn with_day0(&self, day0: u8) -> Option<NaiveDateTime> {
         self.date.with_day0(day0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1128,7 +1128,7 @@ impl Datelike for NaiveDateTime {
     ///            Some(NaiveDate::from_ymd_opt(2016, 12, 31).unwrap().and_hms_opt(12, 34, 56).unwrap()));
     /// ```
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
+    fn with_ordinal(&self, ordinal: u16) -> Option<NaiveDateTime> {
         self.date.with_ordinal(ordinal).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1155,7 +1155,7 @@ impl Datelike for NaiveDateTime {
     ///            Some(NaiveDate::from_ymd_opt(2016, 12, 31).unwrap().and_hms_opt(12, 34, 56).unwrap()));
     /// ```
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
+    fn with_ordinal0(&self, ordinal0: u16) -> Option<NaiveDateTime> {
         self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 }

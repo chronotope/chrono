@@ -21,9 +21,9 @@ fn test_datetime_from_timestamp() {
 #[test]
 fn test_datetime_add() {
     fn check(
-        (y, m, d, h, n, s): (i32, u32, u32, u32, u32, u32),
+        (y, m, d, h, n, s): (i16, u8, u8, u32, u32, u32),
         rhs: TimeDelta,
-        result: Option<(i32, u32, u32, u32, u32, u32)>,
+        result: Option<(i16, u8, u8, u32, u32, u32)>,
     ) {
         let lhs = NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
         let sum = result.map(|(y, m, d, h, n, s)| {

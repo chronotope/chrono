@@ -598,10 +598,10 @@ fn test_parse() {
     check!("+42",         [num!(Year)]; year: 42);
     check!("-0042",       [num!(Year)]; year: -42);
     check!("+0042",       [num!(Year)]; year: 42);
-    check!("-42195",      [num!(Year)]; year: -42195);
-    check!("+42195",      [num!(Year)]; year: 42195);
-    check!("  -42195",    [num!(Year)]; year: -42195);
-    check!("  +42195",    [num!(Year)]; year: 42195);
+    check!("-32765",      [num!(Year)]; year: -32765);
+    check!("+32765",      [num!(Year)]; year: 32765);
+    check!("  -32765",    [num!(Year)]; year: -32765);
+    check!("  +32765",    [num!(Year)]; year: 32765);
     check!("  -   42",    [num!(Year)]; INVALID);
     check!("  +   42",    [num!(Year)]; INVALID);
     check!("-",           [num!(Year)]; TOO_SHORT);

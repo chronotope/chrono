@@ -26,23 +26,23 @@ pub struct Parsed {
     ///
     /// This can be negative unlike [`year_div_100`](#structfield.year_div_100)
     /// and [`year_mod_100`](#structfield.year_mod_100) fields.
-    pub year: Option<i32>,
+    pub year: Option<i16>,
 
     /// Year divided by 100. Implies that the year is >= 1 BCE when set.
     ///
     /// Due to the common usage, if this field is missing but
     /// [`year_mod_100`](#structfield.year_mod_100) is present,
     /// it is inferred to 19 when `year_mod_100 >= 70` and 20 otherwise.
-    pub year_div_100: Option<i32>,
+    pub year_div_100: Option<i16>,
 
     /// Year modulo 100. Implies that the year is >= 1 BCE when set.
-    pub year_mod_100: Option<i32>,
+    pub year_mod_100: Option<i16>,
 
     /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date).
     ///
     /// This can be negative unlike [`isoyear_div_100`](#structfield.isoyear_div_100) and
     /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) fields.
-    pub isoyear: Option<i32>,
+    pub isoyear: Option<i16>,
 
     /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), divided by 100.
     /// Implies that the year is >= 1 BCE when set.
@@ -50,35 +50,35 @@ pub struct Parsed {
     /// Due to the common usage, if this field is missing but
     /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) is present,
     /// it is inferred to 19 when `isoyear_mod_100 >= 70` and 20 otherwise.
-    pub isoyear_div_100: Option<i32>,
+    pub isoyear_div_100: Option<i16>,
 
     /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), modulo 100.
     /// Implies that the year is >= 1 BCE when set.
-    pub isoyear_mod_100: Option<i32>,
+    pub isoyear_mod_100: Option<i16>,
 
     /// Month (1--12).
-    pub month: Option<u32>,
+    pub month: Option<u8>,
 
     /// Week number, where the week 1 starts at the first Sunday of January
     /// (0--53, 1--53 or 1--52 depending on the year).
-    pub week_from_sun: Option<u32>,
+    pub week_from_sun: Option<u8>,
 
     /// Week number, where the week 1 starts at the first Monday of January
     /// (0--53, 1--53 or 1--52 depending on the year).
-    pub week_from_mon: Option<u32>,
+    pub week_from_mon: Option<u8>,
 
     /// [ISO week number](../naive/struct.NaiveDate.html#week-date)
     /// (1--52 or 1--53 depending on the year).
-    pub isoweek: Option<u32>,
+    pub isoweek: Option<u8>,
 
     /// Day of the week.
     pub weekday: Option<Weekday>,
 
     /// Day of the year (1--365 or 1--366 depending on the year).
-    pub ordinal: Option<u32>,
+    pub ordinal: Option<u16>,
 
     /// Day of the month (1--28, 1--29, 1--30 or 1--31 depending on the month).
-    pub day: Option<u32>,
+    pub day: Option<u8>,
 
     /// Hour number divided by 12 (0--1). 0 indicates AM and 1 indicates PM.
     pub hour_div_12: Option<u32>,
@@ -132,7 +132,7 @@ impl Parsed {
     /// Tries to set the [`year`](#structfield.year) field from given value.
     #[inline]
     pub fn set_year(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.year, i16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`year_div_100`](#structfield.year_div_100) field from given value.
@@ -141,7 +141,7 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.year_div_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.year_div_100, i16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`year_mod_100`](#structfield.year_mod_100) field from given value.
@@ -150,13 +150,13 @@ impl Parsed {
         if value < 0 {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.year_mod_100, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.year_mod_100, i16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoyear`](#structfield.isoyear) field from given value.
     #[inline]
     pub fn set_isoyear(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoyear, i16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoyear_div_100`](#structfield.isoyear_div_100) field from given value.
@@ -167,7 +167,7 @@ impl Parsed {
         }
         set_if_consistent(
             &mut self.isoyear_div_100,
-            i32::try_from(value).map_err(|_| OUT_OF_RANGE)?,
+            i16::try_from(value).map_err(|_| OUT_OF_RANGE)?,
         )
     }
 
@@ -179,32 +179,32 @@ impl Parsed {
         }
         set_if_consistent(
             &mut self.isoyear_mod_100,
-            i32::try_from(value).map_err(|_| OUT_OF_RANGE)?,
+            i16::try_from(value).map_err(|_| OUT_OF_RANGE)?,
         )
     }
 
     /// Tries to set the [`month`](#structfield.month) field from given value.
     #[inline]
     pub fn set_month(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.month, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.month, u8::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`week_from_sun`](#structfield.week_from_sun) field from given value.
     #[inline]
     pub fn set_week_from_sun(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.week_from_sun, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.week_from_sun, u8::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`week_from_mon`](#structfield.week_from_mon) field from given value.
     #[inline]
     pub fn set_week_from_mon(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.week_from_mon, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.week_from_mon, u8::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoweek`](#structfield.isoweek) field from given value.
     #[inline]
     pub fn set_isoweek(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoweek, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoweek, u8::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`weekday`](#structfield.weekday) field from given value.
@@ -216,13 +216,13 @@ impl Parsed {
     /// Tries to set the [`ordinal`](#structfield.ordinal) field from given value.
     #[inline]
     pub fn set_ordinal(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.ordinal, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.ordinal, u16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`day`](#structfield.day) field from given value.
     #[inline]
     pub fn set_day(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.day, u32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.day, u8::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`hour_div_12`](#structfield.hour_div_12) field from given value.
@@ -295,10 +295,10 @@ impl Parsed {
     /// the two-digit year is used to guess the century number then.
     pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
         fn resolve_year(
-            y: Option<i32>,
-            q: Option<i32>,
-            r: Option<i32>,
-        ) -> ParseResult<Option<i32>> {
+            y: Option<i16>,
+            q: Option<i16>,
+            r: Option<i16>,
+        ) -> ParseResult<Option<i16>> {
             match (y, q, r) {
                 // if there is no further information, simply return the given full year.
                 // this is a common case, so let's avoid division here.
@@ -363,7 +363,7 @@ impl Parsed {
 
         // verify the ISO week date.
         let verify_isoweekdate = |date: NaiveDate| {
-            let week = date.iso_week();
+            let week = date.iso_week().ok_or_else(|| OUT_OF_RANGE)?;
             let isoyear = week.year();
             let isoweek = week.week();
             let weekday = date.weekday();
@@ -373,11 +373,11 @@ impl Parsed {
             } else {
                 (None, None) // they should be empty to be consistent
             };
-            self.isoyear.unwrap_or(isoyear) == isoyear
+            Ok(self.isoyear.unwrap_or(isoyear) == isoyear
                 && self.isoyear_div_100.or(isoyear_div_100) == isoyear_div_100
                 && self.isoyear_mod_100.or(isoyear_mod_100) == isoyear_mod_100
                 && self.isoweek.unwrap_or(isoweek) == isoweek
-                && self.weekday.unwrap_or(weekday) == weekday
+                && self.weekday.unwrap_or(weekday) == weekday)
         };
 
         // verify the ordinal and other (non-ISO) week dates.
@@ -398,13 +398,13 @@ impl Parsed {
             (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
                 // year, month, day
                 let date = NaiveDate::from_ymd_opt(year, month, day).ok_or(OUT_OF_RANGE)?;
-                (verify_isoweekdate(date) && verify_ordinal(date), date)
+                (verify_isoweekdate(date)? && verify_ordinal(date), date)
             }
 
             (Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
                 // year, day of the year
                 let date = NaiveDate::from_yo_opt(year, ordinal).ok_or(OUT_OF_RANGE)?;
-                (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
+                (verify_ymd(date) && verify_isoweekdate(date)? && verify_ordinal(date), date)
             }
 
             (
@@ -438,7 +438,7 @@ impl Parsed {
                     return Err(OUT_OF_RANGE);
                 } // early exit for correct error
 
-                (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
+                (verify_ymd(date) && verify_isoweekdate(date)? && verify_ordinal(date), date)
             }
 
             (
@@ -472,7 +472,7 @@ impl Parsed {
                     return Err(OUT_OF_RANGE);
                 } // early exit for correct error
 
-                (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
+                (verify_ymd(date) && verify_isoweekdate(date)? && verify_ordinal(date), date)
             }
 
             (_, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(weekday), .. }) => {
@@ -892,7 +892,7 @@ mod tests {
         assert_eq!(parse!(year: 2000, week_from_sun: 52, weekday: Sat), ymd(2000, 12, 30));
         assert_eq!(parse!(year: 2000, week_from_sun: 53, weekday: Sun), ymd(2000, 12, 31));
         assert_eq!(parse!(year: 2000, week_from_sun: 53, weekday: Mon), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2000, week_from_sun: 0xffffffff, weekday: Mon), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: 2000, week_from_sun: 255, weekday: Mon), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2006, week_from_sun: 0, weekday: Sat), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2006, week_from_sun: 1, weekday: Sun), ymd(2006, 1, 1));
 
@@ -918,7 +918,7 @@ mod tests {
         assert_eq!(parse!(isoyear: 2004, isoweek: 53), Err(NOT_ENOUGH));
         assert_eq!(parse!(isoyear: 2004, isoweek: 53, weekday: Fri), ymd(2004, 12, 31));
         assert_eq!(parse!(isoyear: 2004, isoweek: 53, weekday: Sat), ymd(2005, 1, 1));
-        assert_eq!(parse!(isoyear: 2004, isoweek: 0xffffffff, weekday: Sat), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(isoyear: 2004, isoweek: 255, weekday: Sat), Err(OUT_OF_RANGE));
         assert_eq!(parse!(isoyear: 2005, isoweek: 0, weekday: Thu), Err(OUT_OF_RANGE));
         assert_eq!(parse!(isoyear: 2005, isoweek: 5, weekday: Thu), ymd(2005, 2, 3));
         assert_eq!(parse!(isoyear: 2005, weekday: Thu), Err(NOT_ENOUGH));
@@ -927,18 +927,18 @@ mod tests {
         assert_eq!(parse!(ordinal: 123), Err(NOT_ENOUGH));
         assert_eq!(parse!(year: 2000, ordinal: 0), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2000, ordinal: 1), ymd(2000, 1, 1));
-        assert_eq!(parse!(year: 2000, ordinal: 60), ymd(2000, 2, 29));
+        assert_eq!(parse!(year: 2000, ordinal: 255), ymd(2000, 2, 29));
         assert_eq!(parse!(year: 2000, ordinal: 61), ymd(2000, 3, 1));
         assert_eq!(parse!(year: 2000, ordinal: 366), ymd(2000, 12, 31));
         assert_eq!(parse!(year: 2000, ordinal: 367), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2000, ordinal: 0xffffffff), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: 2000, ordinal: 255), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2100, ordinal: 0), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2100, ordinal: 1), ymd(2100, 1, 1));
         assert_eq!(parse!(year: 2100, ordinal: 59), ymd(2100, 2, 28));
-        assert_eq!(parse!(year: 2100, ordinal: 60), ymd(2100, 3, 1));
+        assert_eq!(parse!(year: 2100, ordinal: 255), ymd(2100, 3, 1));
         assert_eq!(parse!(year: 2100, ordinal: 365), ymd(2100, 12, 31));
         assert_eq!(parse!(year: 2100, ordinal: 366), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2100, ordinal: 0xffffffff), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: 2100, ordinal: 255), Err(OUT_OF_RANGE));
 
         // more complex cases
         assert_eq!(

@@ -111,7 +111,7 @@ impl Month {
     /// -------------------------| --------- | ---------- | --- | -----
     /// `m.number_from_month()`: | 1         | 2          | `...` | 12
     #[inline]
-    pub fn number_from_month(&self) -> u32 {
+    pub fn number_from_month(&self) -> u8 {
         match *self {
             Month::January => 1,
             Month::February => 2,

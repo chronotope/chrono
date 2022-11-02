@@ -510,14 +510,30 @@ fn format_inner<'a>(
                 Year => (4, date.map(|d| i64::from(d.year()))),
                 YearDiv100 => (2, date.map(|d| div_floor(i64::from(d.year()), 100))),
                 YearMod100 => (2, date.map(|d| mod_floor(i64::from(d.year()), 100))),
-                IsoYear => (4, date.map(|d| i64::from(d.iso_week().year()))),
-                IsoYearDiv100 => (2, date.map(|d| div_floor(i64::from(d.iso_week().year()), 100))),
-                IsoYearMod100 => (2, date.map(|d| mod_floor(i64::from(d.iso_week().year()), 100))),
+                IsoYear => (
+                    4,
+                    date.map(|d| (d.iso_week().map(|w| i64::from(w.year()))))
+                        .ok_or_else(|| fmt::Error)?,
+                ),
+                IsoYearDiv100 => (
+                    2,
+                    date.map(|d| (d.iso_week().map(|w| div_floor(i64::from(w.year()), 100))))
+                        .ok_or_else(|| fmt::Error)?,
+                ),
+                IsoYearMod100 => (
+                    2,
+                    date.map(|d| (d.iso_week().map(|w| mod_floor(i64::from(w.year()), 100))))
+                        .ok_or_else(|| fmt::Error)?,
+                ),
                 Month => (2, date.map(|d| i64::from(d.month()))),
                 Day => (2, date.map(|d| i64::from(d.day()))),
                 WeekFromSun => (2, date.map(|d| i64::from(week_from_sun(d)))),
                 WeekFromMon => (2, date.map(|d| i64::from(week_from_mon(d)))),
-                IsoWeek => (2, date.map(|d| i64::from(d.iso_week().week()))),
+                IsoWeek => (
+                    2,
+                    date.map(|d| (d.iso_week().map(|w| i64::from(w.week()))))
+                        .ok_or_else(|| fmt::Error)?,
+                ),
                 NumDaysFromSun => (1, date.map(|d| i64::from(d.weekday().num_days_from_sunday()))),
                 WeekdayFromMon => (1, date.map(|d| i64::from(d.weekday().number_from_monday()))),
                 Ordinal => (3, date.map(|d| i64::from(d.ordinal()))),

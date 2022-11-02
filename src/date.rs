@@ -387,31 +387,31 @@ where
 
 impl<Tz: TimeZone> Datelike for Date<Tz> {
     #[inline]
-    fn year(&self) -> i32 {
+    fn year(&self) -> i16 {
         self.naive_local().year()
     }
     #[inline]
-    fn month(&self) -> u32 {
+    fn month(&self) -> u8 {
         self.naive_local().month()
     }
     #[inline]
-    fn month0(&self) -> u32 {
+    fn month0(&self) -> u8 {
         self.naive_local().month0()
     }
     #[inline]
-    fn day(&self) -> u32 {
+    fn day(&self) -> u8 {
         self.naive_local().day()
     }
     #[inline]
-    fn day0(&self) -> u32 {
+    fn day0(&self) -> u8 {
         self.naive_local().day0()
     }
     #[inline]
-    fn ordinal(&self) -> u32 {
+    fn ordinal(&self) -> u16 {
         self.naive_local().ordinal()
     }
     #[inline]
-    fn ordinal0(&self) -> u32 {
+    fn ordinal0(&self) -> u16 {
         self.naive_local().ordinal0()
     }
     #[inline]
@@ -419,42 +419,42 @@ impl<Tz: TimeZone> Datelike for Date<Tz> {
         self.naive_local().weekday()
     }
     #[inline]
-    fn iso_week(&self) -> IsoWeek {
+    fn iso_week(&self) -> Option<IsoWeek> {
         self.naive_local().iso_week()
     }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Option<Date<Tz>> {
+    fn with_year(&self, year: i16) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_year(year))
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Option<Date<Tz>> {
+    fn with_month(&self, month: u8) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_month(month))
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<Date<Tz>> {
+    fn with_month0(&self, month0: u8) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_month0(month0))
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Option<Date<Tz>> {
+    fn with_day(&self, day: u8) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_day(day))
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<Date<Tz>> {
+    fn with_day0(&self, day0: u8) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_day0(day0))
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<Date<Tz>> {
+    fn with_ordinal(&self, ordinal: u16) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_ordinal(ordinal))
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<Date<Tz>> {
+    fn with_ordinal0(&self, ordinal0: u16) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_ordinal0(ordinal0))
     }
 }
