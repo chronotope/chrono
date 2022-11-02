@@ -5,7 +5,7 @@
 
 use core::fmt;
 
-use super::internals::{Of, WeekImpl, YearFlags};
+use super::internals::WeekImpl;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -22,31 +22,7 @@ pub struct IsoWeek {
     // note that this allows for larger year range than `NaiveDate`.
     // this is crucial because we have an edge case for the first and last week supported,
     // which year number might not match the calendar year number.
-    ywf: WeekImpl,
-}
-
-/// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
-//
-// internal use only. we don't expose the public constructor for `IsoWeek` for now,
-// because the year range for the week date and the calendar date do not match and
-// it is confusing to have a date that is out of range in one and not in another.
-// currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-pub(super) fn iso_week_from_yof(year: i32, of: Of) -> Option<IsoWeek> {
-    let (rawweek, _) = of.isoweekdate_raw();
-    let (year, week) = if rawweek < 1 {
-        // previous year
-        let prevlastweek = YearFlags::from_year(year - 1).nisoweeks();
-        (year - 1, prevlastweek)
-    } else {
-        let lastweek = of.flags().nisoweeks();
-        if rawweek > lastweek {
-            // next year
-            (year + 1, 1)
-        } else {
-            (year, rawweek)
-        }
-    };
-    Some(IsoWeek { ywf: WeekImpl::from_parts(year, week as u16, of.flags())? })
+    inner: WeekImpl,
 }
 
 impl IsoWeek {
@@ -71,8 +47,8 @@ impl IsoWeek {
     /// assert_eq!(d, NaiveDate::from_ymd_opt(2014, 12, 29).unwrap());
     /// ```
     #[inline]
-    pub fn year(&self) -> i32 {
-        self.ywf.year()
+    pub fn year(&self) -> i16 {
+        self.inner.year()
     }
 
     /// Returns the ISO week number starting from 1.
@@ -88,8 +64,8 @@ impl IsoWeek {
     /// assert_eq!(d.iso_week().week(), 15);
     /// ```
     #[inline]
-    pub fn week(&self) -> u32 {
-        self.ywf.week()
+    pub fn week(&self) -> u8 {
+        self.inner.week()
     }
 
     /// Returns the ISO week number starting from 0.
@@ -105,8 +81,12 @@ impl IsoWeek {
     /// assert_eq!(d.iso_week().week0(), 14);
     /// ```
     #[inline]
-    pub fn week0(&self) -> u32 {
-        self.ywf.week() - 1
+    pub fn week0(&self) -> u8 {
+        self.inner.week() - 1
+    }
+
+    pub(super) fn from_yo(year: i16, ordinal: u16) -> Option<IsoWeek> {
+        Some(IsoWeek { inner: WeekImpl::iso_week_from_yof(year, ordinal)? })
     }
 }
 

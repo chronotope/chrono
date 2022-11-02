@@ -3,7 +3,7 @@ use crate::{IsoWeek, Weekday};
 /// The common set of methods for date component.
 pub trait Datelike: Sized {
     /// Returns the year number in the [calendar date](./naive/struct.NaiveDate.html#calendar-date).
-    fn year(&self) -> i32;
+    fn year(&self) -> i16;
 
     /// Returns the absolute year number starting from 1 with a boolean flag,
     /// which is false when the year predates the epoch (BCE/BC) and true otherwise (CE/AD).
@@ -20,73 +20,73 @@ pub trait Datelike: Sized {
     /// Returns the month number starting from 1.
     ///
     /// The return value ranges from 1 to 12.
-    fn month(&self) -> u32;
+    fn month(&self) -> u8;
 
     /// Returns the month number starting from 0.
     ///
     /// The return value ranges from 0 to 11.
-    fn month0(&self) -> u32;
+    fn month0(&self) -> u8;
 
     /// Returns the day of month starting from 1.
     ///
     /// The return value ranges from 1 to 31. (The last day of month differs by months.)
-    fn day(&self) -> u32;
+    fn day(&self) -> u8;
 
     /// Returns the day of month starting from 0.
     ///
     /// The return value ranges from 0 to 30. (The last day of month differs by months.)
-    fn day0(&self) -> u32;
+    fn day0(&self) -> u8;
 
     /// Returns the day of year starting from 1.
     ///
     /// The return value ranges from 1 to 366. (The last day of year differs by years.)
-    fn ordinal(&self) -> u32;
+    fn ordinal(&self) -> u16;
 
     /// Returns the day of year starting from 0.
     ///
     /// The return value ranges from 0 to 365. (The last day of year differs by years.)
-    fn ordinal0(&self) -> u32;
+    fn ordinal0(&self) -> u16;
 
     /// Returns the day of week.
     fn weekday(&self) -> Weekday;
 
     /// Returns the ISO week.
-    fn iso_week(&self) -> IsoWeek;
+    fn iso_week(&self) -> Option<IsoWeek>;
 
     /// Makes a new value with the year number changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_year(&self, year: i32) -> Option<Self>;
+    fn with_year(&self, year: i16) -> Option<Self>;
 
     /// Makes a new value with the month number (starting from 1) changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_month(&self, month: u32) -> Option<Self>;
+    fn with_month(&self, month: u8) -> Option<Self>;
 
     /// Makes a new value with the month number (starting from 0) changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_month0(&self, month0: u32) -> Option<Self>;
+    fn with_month0(&self, month0: u8) -> Option<Self>;
 
     /// Makes a new value with the day of month (starting from 1) changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_day(&self, day: u32) -> Option<Self>;
+    fn with_day(&self, day: u8) -> Option<Self>;
 
     /// Makes a new value with the day of month (starting from 0) changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_day0(&self, day0: u32) -> Option<Self>;
+    fn with_day0(&self, day0: u8) -> Option<Self>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_ordinal(&self, ordinal: u32) -> Option<Self>;
+    fn with_ordinal(&self, ordinal: u16) -> Option<Self>;
 
     /// Makes a new value with the day of year (starting from 0) changed.
     ///
     /// Returns `None` when the resulting value would be invalid.
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<Self>;
+    fn with_ordinal0(&self, ordinal0: u16) -> Option<Self>;
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
     ///
@@ -105,8 +105,8 @@ pub trait Datelike: Sized {
         // implementation.
 
         // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
-        let mut year = self.year() - 1;
-        let mut ndays = 0;
+        let mut year = i32::from(self.year() - 1);
+        let mut ndays = 0_i32;
         if year < 0 {
             let excess = 1 + (-year) / 400;
             year += excess * 400;
@@ -114,7 +114,7 @@ pub trait Datelike: Sized {
         }
         let div_100 = year / 100;
         ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
-        ndays + self.ordinal() as i32
+        ndays + i32::from(self.ordinal())
     }
 }
 
@@ -213,7 +213,7 @@ mod tests {
         /// Alternative implementation to `Datelike::num_days_from_ce`
         fn num_days_from_ce<Date: Datelike>(date: &Date) -> i32 {
             let year = date.year();
-            let diff = move |div| in_between(1, year, div);
+            let diff = move |div| in_between(1, year.into(), div);
             // 365 days a year, one more in leap years. In the gregorian calendar, leap years are all
             // the multiples of 4 except multiples of 100 but including multiples of 400.
             date.ordinal() as i32 + 365 * diff(1) + diff(4) - diff(100) + diff(400)
