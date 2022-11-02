@@ -49,7 +49,7 @@ fn bench_datetime_to_rfc3339(c: &mut Criterion) {
 fn bench_year_flags_from_year(c: &mut Criterion) {
     c.bench_function("bench_year_flags_from_year", |b| {
         b.iter(|| {
-            for year in -999i32..1000 {
+            for year in -999i16..1000 {
                 __BenchYearFlags::from_year(year);
             }
         })
@@ -67,15 +67,15 @@ fn bench_year_flags_from_year(c: &mut Criterion) {
 /// # Panics
 ///
 /// Panics if `div` is not positive.
-fn in_between(start: i32, end: i32, div: i32) -> i32 {
+fn in_between(start: i16, end: i16, div: i16) -> i32 {
     assert!(div > 0, "in_between: nonpositive div = {}", div);
     let start = (start.div_euclid(div), start.rem_euclid(div));
     let end = (end.div_euclid(div), end.rem_euclid(div));
     // The lowest multiple of `div` greater than or equal to `start`, divided.
-    let start = start.0 + (start.1 != 0) as i32;
+    let start = start.0 + (start.1 != 0) as i16;
     // The lowest multiple of `div` greater than or equal to   `end`, divided.
-    let end = end.0 + (end.1 != 0) as i32;
-    end - start
+    let end = end.0 + (end.1 != 0) as i16;
+    i32::from(end - start)
 }
 
 /// Alternative implementation to `Datelike::num_days_from_ce`
