@@ -19,6 +19,8 @@ use std::error::Error;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::TimeDelta;
+
 /// The number of nanoseconds in a microsecond.
 const NANOS_PER_MICRO: i32 = 1000;
 /// The number of nanoseconds in a millisecond.
@@ -70,6 +72,14 @@ pub(crate) const MAX: Duration = Duration {
 };
 
 impl Duration {
+    pub(crate) fn as_time_delta(&self) -> Option<TimeDelta> {
+        if self.secs < 0 {
+            Some(TimeDelta::Backwards(self.abs().to_std().ok()?))
+        } else {
+            Some(TimeDelta::Forwards(self.to_std().ok()?))
+        }
+    }
+
     /// Makes a new `Duration` with given number of weeks.
     /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
