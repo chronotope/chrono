@@ -652,13 +652,7 @@ impl NaiveTime {
 
         // `secs` may contain a leap second yet to be counted
         let adjust = match self.secs.cmp(&rhs.secs) {
-            Ordering::Greater => {
-                if rhs.frac >= 1_000_000_000 {
-                    1
-                } else {
-                    0
-                }
-            }
+            Ordering::Greater => i64::from(rhs.frac >= 1_000_000_000),
             Ordering::Equal => 0,
             Ordering::Less => {
                 if self.frac >= 1_000_000_000 {

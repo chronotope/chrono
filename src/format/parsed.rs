@@ -225,7 +225,7 @@ impl Parsed {
     /// (`false` for AM, `true` for PM)
     #[inline]
     pub fn set_ampm(&mut self, value: bool) -> ParseResult<()> {
-        set_if_consistent(&mut self.hour_div_12, if value { 1 } else { 0 })
+        set_if_consistent(&mut self.hour_div_12, u32::from(value))
     }
 
     /// Tries to set the [`hour_mod_12`](#structfield.hour_mod_12) field from
