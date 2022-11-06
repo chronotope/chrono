@@ -706,7 +706,18 @@ mod tests {
         assert_eq!(TimeDelta::hours(5) / TimeDelta::minutes(15), 20.0);
         assert_eq!(TimeDelta::microseconds(20) / TimeDelta::microseconds(4), 5.0);
         assert_eq!(TimeDelta::hours(2) / TimeDelta::nanoseconds(3), 2.4e12);
-        assert_eq!(TimeDelta::nanoseconds(1) / TimeDelta::nanoseconds(1 << 30), 1.0 / (1024.0 * 1024.0 * 1024.0));
+        assert_eq!(
+            TimeDelta::days(2000) / TimeDelta::nanoseconds(3),
+            (2000.0 * 28800.0 * 1e9)
+        );
+        assert_eq!(
+            TimeDelta::weeks(-4000) / TimeDelta::nanoseconds(2),
+            (-4000.0 * 7.0 * 43200.0 * 1e9)
+        );
+        assert_eq!(
+            TimeDelta::nanoseconds(1) / TimeDelta::nanoseconds(1 << 30),
+            1.0 / (1024.0 * 1024.0 * 1024.0)
+        );
     }
 
     #[test]
