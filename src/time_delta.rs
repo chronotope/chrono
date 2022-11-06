@@ -210,6 +210,20 @@ impl TimeDelta {
         secs_part.checked_add(nanos_part as i64)
     }
 
+    /// Convert the duration to nanoseconds as a floating-point number,
+    /// possibly with loss of precision.
+    #[inline]
+    pub fn as_nanoseconds(&self) -> f64 {
+        self.secs as f64 * 1e9 + self.nanos as f64
+    }
+
+    /// Convert the duration to seconds as a floating-point number,
+    /// possibly with loss of precision.
+    #[inline]
+    pub fn as_seconds(&self) -> f64 {
+        self.secs as f64 + self.nanos as f64 * 1e-9
+    }
+
     /// Add two durations, returning `None` if overflow occurred.
     pub fn checked_add(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
         let mut secs = try_opt!(self.secs.checked_add(rhs.secs));
@@ -379,6 +393,18 @@ impl Div<i32> for TimeDelta {
             secs -= 1;
         }
         TimeDelta { secs, nanos }
+    }
+}
+
+impl Div<TimeDelta> for TimeDelta {
+    type Output = f64;
+
+    fn div(self, rhs: Self) -> f64 {
+        if rhs.secs.abs() > 8 {
+            self.as_seconds() / rhs.as_seconds()
+        } else {
+            self.as_nanoseconds() / rhs.as_nanoseconds()
+        }
     }
 }
 
@@ -670,6 +696,17 @@ mod tests {
         assert_eq!(TimeDelta::seconds(-1) / -2, TimeDelta::milliseconds(500));
         assert_eq!(TimeDelta::seconds(-4) / 3, TimeDelta::nanoseconds(-1_333_333_333));
         assert_eq!(TimeDelta::seconds(-4) / -3, TimeDelta::nanoseconds(1_333_333_333));
+    }
+
+    #[test]
+    fn test_duration_ratio() {
+        assert_eq!(TimeDelta::seconds(3).as_seconds(), 3.0);
+        assert_eq!(TimeDelta::seconds(5).as_nanoseconds(), 5.0e9);
+
+        assert_eq!(TimeDelta::hours(5) / TimeDelta::minutes(15), 20.0);
+        assert_eq!(TimeDelta::microseconds(20) / TimeDelta::microseconds(4), 5.0);
+        assert_eq!(TimeDelta::hours(2) / TimeDelta::nanoseconds(3), 2.4e12);
+        assert_eq!(TimeDelta::nanoseconds(1) / TimeDelta::nanoseconds(1 << 30), 1.0 / (1024.0 * 1024.0 * 1024.0));
     }
 
     #[test]
