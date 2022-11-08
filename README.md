@@ -6,7 +6,7 @@
 [![Chrono on docs.rs][docsrs-image]][docsrs]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
 
-[gh-image]: https://github.com/chronotope/chrono/workflows/test/badge.svg
+[gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg
 [gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
