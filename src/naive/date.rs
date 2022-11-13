@@ -131,9 +131,6 @@ impl Days {
         Self(num)
     }
 
-    // temporarily used by some tests
-    // TODO: remove this
-    #[cfg(test)]
     pub(crate) fn duration(self) -> core::time::Duration {
         core::time::Duration::new(86400 * self.0, 0)
     }

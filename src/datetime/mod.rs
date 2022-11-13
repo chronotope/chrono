@@ -13,6 +13,7 @@ use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::string::ToString;
@@ -314,8 +315,20 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
+    #[deprecated(since = "0.4.24", note = "Use checked_add() instead")]
+    #[allow(deprecated)]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
+        let tz = self.timezone();
+        Some(tz.from_utc_datetime(&datetime))
+    }
+
+    /// Adds given `Duration` to the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    #[inline]
+    pub fn checked_add(self, rhs: Duration) -> Option<DateTime<Tz>> {
+        let datetime = self.datetime.checked_add(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
@@ -337,8 +350,20 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
+    #[deprecated(since = "0.4.24", note = "Use checked_sub() instead")]
+    #[allow(deprecated)]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
+        let tz = self.timezone();
+        Some(tz.from_utc_datetime(&datetime))
+    }
+
+    /// Subtracts given `Duration` from the current date and time.
+    ///
+    /// Returns `None` when it will result in overflow.
+    #[inline]
+    pub fn checked_sub(self, rhs: Duration) -> Option<DateTime<Tz>> {
+        let datetime = self.datetime.checked_sub(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
@@ -379,8 +404,27 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
     #[inline]
+    #[deprecated(since = "0.4.24", note = "Use checked_duration_since() or abs_diff() instead")]
+    #[allow(deprecated)]
     pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
         self.datetime.signed_duration_since(rhs.datetime)
+    }
+
+    /// Subtracts another `DateTime` from the current date and time.
+    /// This does not overflow or underflow at all.
+    #[inline]
+    pub fn checked_duration_since<Tz2: TimeZone>(
+        self,
+        rhs: DateTime<Tz2>,
+    ) -> Result<Duration, Duration> {
+        self.datetime.checked_duration_since(rhs.datetime)
+    }
+
+    /// Subtracts another `DateTime` from the current date and time.
+    /// This does not overflow or underflow at all.
+    #[inline]
+    pub fn abs_diff<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> Duration {
+        self.datetime.abs_diff(rhs.datetime)
     }
 
     /// Returns a view to the naive UTC datetime.
@@ -903,6 +947,7 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -912,11 +957,30 @@ impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
         let datetime =
             self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime);
+    }
+}
+
+impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> DateTime<Tz> {
+        self.checked_add(rhs).expect("`DateTime + Duration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        let datetime = self.datetime.checked_add(rhs).expect("`DateTime + Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime);
     }
@@ -930,6 +994,7 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -939,11 +1004,30 @@ impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
         let datetime =
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime)
+    }
+}
+
+impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> DateTime<Tz> {
+        self.checked_sub(rhs).expect("`DateTime - Duration` overflowed")
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        let datetime = self.datetime.checked_sub(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
     }
@@ -957,6 +1041,7 @@ impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
     type Output = OldDuration;
 
@@ -1073,8 +1158,6 @@ impl From<SystemTime> for DateTime<Local> {
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
-        use std::time::Duration;
-
         let sec = dt.timestamp();
         let nsec = dt.timestamp_subsec_nanos();
         if sec < 0 {

@@ -48,9 +48,8 @@
 //!
 //! ### Duration
 //!
-//! Chrono currently uses its own [`Duration`] type to represent the magnitude
-//! of a time span. Since this has the same name as the newer, standard type for
-//! duration, the reference will refer this type as `OldDuration`.
+//! Chrono currently uses the core library's [`core::time::Duration`] type to represent the magnitude
+//! of a time span.
 //!
 //! Note that this is an "accurate" duration represented as seconds and
 //! nanoseconds and does not represent "nominal" components such as days or
@@ -157,8 +156,8 @@
 //! The following illustrates most supported operations to the date and time:
 //!
 //! ```rust
+//! use core::time::Duration;
 //! use chrono::prelude::*;
-//! use chrono::Duration;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 //! let dt = FixedOffset::east_opt(9*3600).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(21, 45, 59, 324310806).unwrap()).unwrap();
@@ -183,13 +182,14 @@
 //! assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November 29, 301 BCE
 //!
 //! // arithmetic operations
+
 //! let dt1 = Utc.with_ymd_and_hms(2014, 11, 14, 8, 9, 10).unwrap();
 //! let dt2 = Utc.with_ymd_and_hms(2014, 11, 14, 10, 9, 8).unwrap();
-//! assert_eq!(dt1.signed_duration_since(dt2), Duration::seconds(-2 * 3600 + 2));
-//! assert_eq!(dt2.signed_duration_since(dt1), Duration::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + Duration::seconds(1_000_000_000),
+//! assert_eq!(dt1.checked_duration_since(dt2), Err(Duration::from_secs(2 * 3600 - 2)));
+//! assert_eq!(dt2.checked_duration_since(dt1), Ok(Duration::from_secs(2 * 3600 - 2)));
+//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + Duration::from_secs(1_000_000_000),
 //!            Utc.with_ymd_and_hms(2001, 9, 9, 1, 46, 40).unwrap());
-//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - Duration::seconds(1_000_000_000),
+//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - Duration::from_secs(1_000_000_000),
 //!            Utc.with_ymd_and_hms(1938, 4, 24, 22, 13, 20).unwrap());
 //! ```
 //!
@@ -416,7 +416,9 @@ extern crate time as oldtime;
 #[cfg(not(feature = "oldtime"))]
 mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::{Duration, OutOfRangeError};
+#[deprecated(since = "0.4.24", note = "Use core::time::Duration instead")]
+pub use oldtime::Duration;
+pub use oldtime::OutOfRangeError;
 
 #[cfg(feature = "__doctest")]
 #[cfg_attr(feature = "__doctest", cfg(doctest))]
@@ -429,6 +431,8 @@ doctest!("../README.md");
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
     #[doc(no_inline)]
+    pub use crate::CoreSubsecRound;
+    #[doc(no_inline)]
     #[allow(deprecated)]
     pub use crate::Date;
     #[cfg(feature = "clock")]
@@ -440,6 +444,7 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use crate::Locale;
     #[doc(no_inline)]
+    #[allow(deprecated)]
     pub use crate::SubsecRound;
     #[doc(no_inline)]
     pub use crate::{DateTime, SecondsFormat};
@@ -484,7 +489,9 @@ pub use offset::Local;
 pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 
 mod round;
-pub use round::{DurationRound, RoundingError, SubsecRound};
+#[allow(deprecated)]
+pub use round::SubsecRound;
+pub use round::{CoreSubsecRound, DurationRound, RoundingError};
 
 mod weekday;
 pub use weekday::{ParseWeekdayError, Weekday};

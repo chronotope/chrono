@@ -1,10 +1,10 @@
 use std::convert::TryFrom;
 use std::i64;
-use std::time::Duration as StdDuration;
+use std::time::Duration;
 
 use super::NaiveDateTime;
-use crate::oldtime::Duration;
-use crate::NaiveDate;
+use crate::naive::NaiveDate;
+use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Days, FixedOffset, Utc};
 
 #[test]
@@ -22,10 +22,11 @@ fn test_datetime_from_timestamp() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_datetime_add() {
     fn check(
         (y, m, d, h, n, s): (i32, u32, u32, u32, u32, u32),
-        rhs: Duration,
+        rhs: OldDuration,
         result: Option<(i32, u32, u32, u32, u32, u32)>,
     ) {
         let lhs = NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
@@ -36,12 +37,16 @@ fn test_datetime_add() {
         assert_eq!(lhs.checked_sub_signed(-rhs), sum);
     }
 
-    check((2014, 5, 6, 7, 8, 9), Duration::seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
-    check((2014, 5, 6, 7, 8, 9), Duration::seconds(-(3600 + 60 + 1)), Some((2014, 5, 6, 6, 7, 8)));
-    check((2014, 5, 6, 7, 8, 9), Duration::seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
-    check((2014, 5, 6, 7, 8, 9), Duration::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
-    check((2014, 5, 6, 7, 8, 9), Duration::seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
-    check((2014, 5, 6, 7, 8, 9), Duration::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), OldDuration::seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
+    check(
+        (2014, 5, 6, 7, 8, 9),
+        OldDuration::seconds(-(3600 + 60 + 1)),
+        Some((2014, 5, 6, 6, 7, 8)),
+    );
+    check((2014, 5, 6, 7, 8, 9), OldDuration::seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
+    check((2014, 5, 6, 7, 8, 9), OldDuration::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), OldDuration::seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), OldDuration::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
 
     // overflow check
     // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
@@ -55,39 +60,83 @@ fn test_datetime_add() {
     )
     .duration();
 
-    let max_days_from_year_0 = Duration::from_std(max_days_from_year_0).unwrap();
+    let max_days_from_year_0 = OldDuration::from_std(max_days_from_year_0).unwrap();
 
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
     check(
         (0, 1, 1, 0, 0, 0),
-        max_days_from_year_0 + Duration::seconds(86399),
+        max_days_from_year_0 + OldDuration::seconds(86399),
         Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
-    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::seconds(86_400), None);
-    check((0, 1, 1, 0, 0, 0), Duration::max_value(), None);
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + OldDuration::seconds(86_400), None);
+    check((0, 1, 1, 0, 0, 0), OldDuration::max_value(), None);
 }
 
 #[test]
+fn test_datetime_add_duration() {
+    fn check(
+        (y, m, d, h, n, s): (i32, u32, u32, u32, u32, u32),
+        rhs: Duration,
+        result: Option<(i32, u32, u32, u32, u32, u32)>,
+    ) {
+        let lhs = NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+        let sum = result.map(|(y, m, d, h, n, s)| {
+            NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap()
+        });
+        assert_eq!(lhs.checked_add(rhs), sum);
+    }
+
+    check((2014, 5, 6, 7, 8, 9), Duration::from_secs(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
+    check((2014, 5, 6, 7, 8, 9), Duration::from_secs(86399), Some((2014, 5, 7, 7, 8, 8)));
+    check((2014, 5, 6, 7, 8, 9), Duration::from_secs(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), Duration::from_secs(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+
+    // overflow check
+    // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
+    // (they are private constants, but the equivalence is tested in that module.)
+    let max_days_from_year_0 = Days::new(
+        u64::try_from(
+            NaiveDate::MAX.num_days_from_ce()
+                - NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce(),
+        )
+        .unwrap(),
+    )
+    .duration();
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
+    check(
+        (0, 1, 1, 0, 0, 0),
+        max_days_from_year_0 + Duration::from_secs(86399),
+        Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
+    );
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + Duration::from_secs(86_400), None);
+    check((0, 1, 1, 0, 0, 0), Duration::new(core::u64::MAX, 999_999_999), None);
+}
+
+#[test]
+#[allow(deprecated)]
 fn test_datetime_sub() {
     let ymdhms =
         |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
     let since = NaiveDateTime::signed_duration_since;
-    assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), Duration::zero());
+    assert_eq!(
+        since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
+        OldDuration::zero()
+    );
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
-        Duration::seconds(1)
+        OldDuration::seconds(1)
     );
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-        Duration::seconds(-1)
+        OldDuration::seconds(-1)
     );
     assert_eq!(
         since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-        Duration::seconds(86399)
+        OldDuration::seconds(86399)
     );
     assert_eq!(
         since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
-        Duration::seconds(999_999_999)
+        OldDuration::seconds(999_999_999)
     );
 
     let min_days_from_year_0 = Days::new(
@@ -105,9 +154,79 @@ fn test_datetime_sub() {
 
     assert_eq!(
         ymdhms(0, 1, 1, 0, 0, 0).checked_sub_signed(
-            Duration::from_std(min_days_from_year_0.duration() + StdDuration::from_secs(1))
+            OldDuration::from_std(min_days_from_year_0.duration() + Duration::from_secs(1))
                 .unwrap()
         ),
+        None
+    );
+}
+
+#[test]
+fn test_datetime_sub_duration() {
+    let ymdhms =
+        |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let since = NaiveDateTime::checked_duration_since;
+    assert_eq!(
+        since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)),
+        Ok(Duration::from_secs(0))
+    );
+    assert_eq!(
+        since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
+        Ok(Duration::from_secs(1))
+    );
+    assert_eq!(
+        since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
+        Err(Duration::from_secs(1))
+    );
+    assert_eq!(
+        since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
+        Ok(Duration::from_secs(86399))
+    );
+    assert_eq!(
+        since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
+        Ok(Duration::from_secs(999_999_999))
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0).checked_sub(Duration::new(core::u64::MAX, 999_999_999)),
+        None
+    );
+
+    let min_days_from_year_0 = Days::new(
+        u64::try_from(
+            NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce()
+                - NaiveDate::MIN.num_days_from_ce(),
+        )
+        .unwrap(),
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0).checked_sub_days(min_days_from_year_0),
+        Some(ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0))
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0)
+            .checked_sub(min_days_from_year_0.duration() + Duration::from_secs(1)),
+        None
+    );
+
+    let min_days_from_year_0 = Days::new(
+        u64::try_from(
+            NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce()
+                - NaiveDate::MIN.num_days_from_ce(),
+        )
+        .unwrap(),
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0).checked_sub_days(min_days_from_year_0),
+        Some(ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0))
+    );
+
+    assert_eq!(
+        ymdhms(0, 1, 1, 0, 0, 0)
+            .checked_sub(min_days_from_year_0.duration() + Duration::from_secs(1)),
         None
     );
 }
@@ -117,9 +236,9 @@ fn test_datetime_addassignment() {
     let ymdhms =
         |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
     let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
-    date += Duration::minutes(10_000_000);
+    date += OldDuration::minutes(10_000_000);
     assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
-    date += Duration::days(10);
+    date += OldDuration::days(10);
     assert_eq!(date, ymdhms(2035, 10, 16, 20, 50, 10));
 }
 
@@ -128,9 +247,31 @@ fn test_datetime_subassignment() {
     let ymdhms =
         |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
     let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
-    date -= Duration::minutes(10_000_000);
+    date -= OldDuration::minutes(10_000_000);
     assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
-    date -= Duration::days(10);
+    date -= OldDuration::days(10);
+    assert_eq!(date, ymdhms(1997, 9, 16, 23, 30, 10));
+}
+
+#[test]
+fn test_datetime_addassignment_duration() {
+    let ymdhms =
+        |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+    date += Duration::from_secs(60 * 10_000_000);
+    assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
+    date += Duration::from_secs(24 * 60 * 60 * 10);
+    assert_eq!(date, ymdhms(2035, 10, 16, 20, 50, 10));
+}
+
+#[test]
+fn test_datetime_subassignment_duration() {
+    let ymdhms =
+        |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+    date -= Duration::from_secs(60 * 10_000_000);
+    assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
+    date -= Duration::from_secs(24 * 60 * 60 * 10);
     assert_eq!(date, ymdhms(1997, 9, 16, 23, 30, 10));
 }
 
@@ -254,12 +395,22 @@ fn test_datetime_format() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_datetime_add_sub_invariant() {
     // issue #37
     let base = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
     let t = -946684799990000;
-    let time = base + Duration::microseconds(t);
+    let time = base + OldDuration::microseconds(t);
     assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
+}
+
+#[test]
+fn test_datetime_add_sub_invariant_duration() {
+    // issue #37
+    let base = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let t = 946684799990000;
+    let time = base - Duration::from_micros(t);
+    assert_eq!(u128::from(t), time.checked_duration_since(base).err().unwrap().as_micros());
 }
 
 #[test]

@@ -134,12 +134,19 @@ impl TimeZone for Local {
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
+        use core::convert::TryInto;
+
         let mut local = local.clone();
         // Get the offset from the js runtime
         let offset =
             FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
                 .unwrap();
-        local -= crate::Duration::seconds(offset.local_minus_utc() as i64);
+        if offset.local_minus_utc() > 0 {
+            local -= core::time::Duration::from_secs(offset.local_minus_utc().try_into().unwrap());
+        } else {
+            local +=
+                core::time::Duration::from_secs(offset.local_minus_utc().abs().try_into().unwrap());
+        }
         LocalResult::Single(DateTime::from_utc(local, offset))
     }
 
@@ -185,9 +192,11 @@ impl TimeZone for Local {
 
 #[cfg(test)]
 mod tests {
+    use core::time::Duration;
+
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::{Datelike, Duration, Utc};
+    use crate::{Datelike, Utc};
 
     #[test]
     fn verify_correct_offsets() {
@@ -204,8 +213,8 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_past() {
-        // let distant_past = Local::now() - Duration::days(365 * 100);
-        let distant_past = Local::now() - Duration::days(250 * 31);
+        let distant_past = Local::now() - Duration::from_secs(24 * 60 * 60 * 250 * 31);
+
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
@@ -218,7 +227,8 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + Duration::days(250 * 31);
+        let distant_future = Local::now() + Duration::from_secs(24 * 60 * 60 * 250 * 31);
+
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 
