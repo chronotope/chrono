@@ -124,7 +124,7 @@ impl NaiveWeek {
 pub struct Days(pub(crate) u64);
 
 impl Days {
-    /// Construct a new `Days` from a number of months
+    /// Construct a new `Days` from a number of days
     pub fn new(num: u64) -> Self {
         Self(num)
     }
