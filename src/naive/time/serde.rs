@@ -12,7 +12,7 @@ impl ser::Serialize for NaiveTime {
     where
         S: ser::Serializer,
     {
-        serializer.collect_str(&self)
+        serializer.serialize_str(&self.to_string())
     }
 }
 

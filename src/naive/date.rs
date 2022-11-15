@@ -2054,17 +2054,7 @@ mod serde {
         where
             S: ser::Serializer,
         {
-            struct FormatWrapped<'a, D: 'a> {
-                inner: &'a D,
-            }
-
-            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
-                fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                    self.inner.fmt(f)
-                }
-            }
-
-            serializer.collect_str(&FormatWrapped { inner: &self })
+            serializer.serialize_str(&self.to_string())
         }
     }
 

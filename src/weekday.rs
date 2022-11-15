@@ -222,7 +222,7 @@ mod weekday_serde {
         where
             S: ser::Serializer,
         {
-            serializer.collect_str(&self)
+            serializer.serialize_str(&self.to_string())
         }
     }
 

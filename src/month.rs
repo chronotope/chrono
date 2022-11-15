@@ -227,7 +227,7 @@ mod month_serde {
         where
             S: ser::Serializer,
         {
-            serializer.collect_str(self.name())
+            serializer.serialize_str(self.name())
         }
     }
 
