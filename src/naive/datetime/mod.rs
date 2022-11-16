@@ -174,7 +174,8 @@ impl NaiveDateTime {
     /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
-    /// Returns `None` on the out-of-range number of seconds and/or invalid nanosecond.
+    /// Returns `None` on the out-of-range number of seconds (more than 262 000 years away
+    /// from common era) and/or invalid nanosecond (2 seconds or more).
     ///
     /// # Example
     ///
