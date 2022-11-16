@@ -5,7 +5,7 @@
 
 use core::fmt;
 
-use super::internals::WeekImpl;
+use super::internals::DateImpl;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -19,10 +19,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct IsoWeek {
-    // note that this allows for larger year range than `NaiveDate`.
-    // this is crucial because we have an edge case for the first and last week supported,
-    // which year number might not match the calendar year number.
-    inner: WeekImpl,
+    pub(super) inner: DateImpl,
 }
 
 impl IsoWeek {
@@ -47,8 +44,8 @@ impl IsoWeek {
     /// assert_eq!(d, NaiveDate::from_ymd_opt(2014, 12, 29).unwrap());
     /// ```
     #[inline]
-    pub fn year(&self) -> i16 {
-        self.inner.year()
+    pub fn year(&self) -> i32 {
+        self.inner.isoweek_year()
     }
 
     /// Returns the ISO week number starting from 1.
@@ -65,7 +62,7 @@ impl IsoWeek {
     /// ```
     #[inline]
     pub fn week(&self) -> u8 {
-        self.inner.week()
+        self.inner.isoweek_number()
     }
 
     /// Returns the ISO week number starting from 0.
@@ -82,11 +79,7 @@ impl IsoWeek {
     /// ```
     #[inline]
     pub fn week0(&self) -> u8 {
-        self.inner.week() - 1
-    }
-
-    pub(super) fn from_yo(year: i16, ordinal: u16) -> Option<IsoWeek> {
-        Some(IsoWeek { inner: WeekImpl::iso_week_from_yof(year, ordinal)? })
+        self.inner.isoweek_number() - 1
     }
 }
 
@@ -136,7 +129,7 @@ mod tests {
 
         assert!(maxweek.is_none());
 
-        assert_eq!(minweek.year(), internals::MIN_YEAR);
+        // assert_eq!(minweek.year(), internals::MIN_YEAR);
         assert_eq!(minweek.week(), 1);
         assert_eq!(minweek.week0(), 0);
         assert_eq!(format!("{:?}", minweek), NaiveDate::MIN.format("%G-W%V").to_string());

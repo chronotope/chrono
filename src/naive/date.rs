@@ -310,7 +310,7 @@ impl NaiveDate {
     ///
     /// Panics on the out-of-range date and/or invalid week number.
     #[deprecated(since = "0.4.23", note = "use `from_isoywd_opt()` instead")]
-    pub fn from_isoywd(year: i16, week: u8, weekday: Weekday) -> NaiveDate {
+    pub fn from_isoywd(year: i32, week: u8, weekday: Weekday) -> NaiveDate {
         NaiveDate::from_isoywd_opt(year, week, weekday).expect("invalid or out-of-range date")
     }
 
@@ -358,7 +358,7 @@ impl NaiveDate {
     /// assert_eq!(from_isoywd_opt(2015, 54, Weekday::Mon), None);
     /// assert_eq!(from_isoywd_opt(2016, 1, Weekday::Mon), Some(from_ymd(2016, 1, 4)));
     /// ```
-    pub fn from_isoywd_opt(year: i16, week: u8, weekday: Weekday) -> Option<NaiveDate> {
+    pub fn from_isoywd_opt(year: i32, week: u8, weekday: Weekday) -> Option<NaiveDate> {
         Some(NaiveDate { inner: DateImpl::from_isoywd_opt(year, week, weekday)? })
     }
 
@@ -1088,7 +1088,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn month(&self) -> u8 {
-        self.inner.month()
+        self.inner.month().get()
     }
 
     /// Returns the month number starting from 0.
@@ -1105,7 +1105,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn month0(&self) -> u8 {
-        self.inner.month() - 1
+        self.inner.month().get() - 1
     }
 
     /// Returns the day of month starting from 1.
@@ -1145,7 +1145,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn day(&self) -> u8 {
-        self.inner.day_of_month()
+        self.inner.day_of_month().get()
     }
 
     /// Returns the day of month starting from 0.
@@ -1162,7 +1162,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn day0(&self) -> u8 {
-        self.inner.day_of_month() - 1
+        self.inner.day_of_month().get() - 1
     }
 
     /// Returns the day of year starting from 1.
@@ -1201,7 +1201,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal(&self) -> u16 {
-        self.inner.ordinal()
+        self.inner.ordinal().get()
     }
 
     /// Returns the day of year starting from 0.
@@ -1218,7 +1218,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal0(&self) -> u16 {
-        self.inner.ordinal() - 1
+        self.inner.ordinal().get() - 1
     }
 
     /// Returns the day of week.
@@ -1238,7 +1238,7 @@ impl Datelike for NaiveDate {
 
     #[inline]
     fn iso_week(&self) -> Option<IsoWeek> {
-        isoweek::IsoWeek::from_yo(self.year(), self.ordinal())
+        Some(IsoWeek { inner: self.inner })
     }
 
     /// Makes a new `NaiveDate` with the year number changed.
@@ -2135,7 +2135,7 @@ mod tests {
                     if let Some(d) = d {
                         assert_eq!(d.weekday(), weekday);
                         let w = d.iso_week().unwrap();
-                        assert_eq!(w.year(), year);
+                        assert_eq!(w.year(), i32::from(year));
                         assert_eq!(w.week(), week);
                     }
                 }
@@ -2148,7 +2148,11 @@ mod tests {
                     let d = NaiveDate::from_ymd_opt(year, month, day);
                     if let Some(d) = d {
                         let w = d.iso_week().unwrap();
-                        let d_ = NaiveDate::from_isoywd_opt(w.year(), w.week(), d.weekday());
+                        let d_ = NaiveDate::from_isoywd_opt(
+                            w.year().try_into().unwrap(),
+                            w.week(),
+                            d.weekday(),
+                        );
                         assert_eq!(d, d_.unwrap());
                     }
                 }
@@ -2257,12 +2261,14 @@ mod tests {
     fn test_date_fields() {
         fn check(year: i16, month: u8, day: u8, ordinal: u16) {
             let d1 = NaiveDate::from_ymd_opt(year, month, day).unwrap();
+            dbg!(d1);
             assert_eq!(d1.year(), year);
             assert_eq!(d1.month(), month);
             assert_eq!(d1.day(), day);
             assert_eq!(d1.ordinal(), ordinal);
 
             let d2 = NaiveDate::from_yo_opt(year, ordinal).unwrap();
+            dbg!(d2);
             assert_eq!(d2.year(), year);
             assert_eq!(d2.month(), month);
             assert_eq!(d2.day(), day);
@@ -2510,8 +2516,8 @@ mod tests {
     fn test_date_from_str() {
         // valid cases
         let valid = [
-            "-0000000123456-1-2",
-            "    -123456 - 1 - 2    ",
+            "-000000032768-1-2",
+            "    -32768 - 1 - 2    ",
             "-12345-1-2",
             "-1234-12-31",
             "-7-6-5",
@@ -2520,7 +2526,7 @@ mod tests {
             "0360-02-29",
             "2015-2 -18",
             "+70-2-18",
-            "+70000-2-18",
+            "+32767-2-18",
             "+00007-2-18",
         ];
         for &s in &valid {

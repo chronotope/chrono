@@ -42,7 +42,7 @@ pub struct Parsed {
     ///
     /// This can be negative unlike [`isoyear_div_100`](#structfield.isoyear_div_100) and
     /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) fields.
-    pub isoyear: Option<i16>,
+    pub isoyear: Option<i32>,
 
     /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), divided by 100.
     /// Implies that the year is >= 1 BCE when set.
@@ -50,11 +50,11 @@ pub struct Parsed {
     /// Due to the common usage, if this field is missing but
     /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) is present,
     /// it is inferred to 19 when `isoyear_mod_100 >= 70` and 20 otherwise.
-    pub isoyear_div_100: Option<i16>,
+    pub isoyear_div_100: Option<i32>,
 
     /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), modulo 100.
     /// Implies that the year is >= 1 BCE when set.
-    pub isoyear_mod_100: Option<i16>,
+    pub isoyear_mod_100: Option<i32>,
 
     /// Month (1--12).
     pub month: Option<u8>,
@@ -156,7 +156,7 @@ impl Parsed {
     /// Tries to set the [`isoyear`](#structfield.isoyear) field from given value.
     #[inline]
     pub fn set_isoyear(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoyear, i16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`isoyear_div_100`](#structfield.isoyear_div_100) field from given value.
@@ -167,7 +167,7 @@ impl Parsed {
         }
         set_if_consistent(
             &mut self.isoyear_div_100,
-            i16::try_from(value).map_err(|_| OUT_OF_RANGE)?,
+            i32::try_from(value).map_err(|_| OUT_OF_RANGE)?,
         )
     }
 
@@ -179,7 +179,7 @@ impl Parsed {
         }
         set_if_consistent(
             &mut self.isoyear_mod_100,
-            i16::try_from(value).map_err(|_| OUT_OF_RANGE)?,
+            i32::try_from(value).map_err(|_| OUT_OF_RANGE)?,
         )
     }
 
@@ -339,9 +339,55 @@ impl Parsed {
                 (_, _, Some(_)) => Err(OUT_OF_RANGE),
             }
         }
+        fn resolve_year_isoweek(
+            y: Option<i32>,
+            q: Option<i32>,
+            r: Option<i32>,
+        ) -> ParseResult<Option<i32>> {
+            match (y, q, r) {
+                // if there is no further information, simply return the given full year.
+                // this is a common case, so let's avoid division here.
+                (y, None, None) => Ok(y),
+
+                // if there is a full year *and* also quotient and/or modulo,
+                // check if present quotient and/or modulo is consistent to the full year.
+                // since the presence of those fields means a positive full year,
+                // we should filter a negative full year first.
+                (Some(y), q, r @ Some(0..=99)) | (Some(y), q, r @ None) => {
+                    if y < 0 {
+                        return Err(OUT_OF_RANGE);
+                    }
+                    let (q_, r_) = div_rem(y, 100);
+                    if q.unwrap_or(q_) == q_ && r.unwrap_or(r_) == r_ {
+                        Ok(Some(y))
+                    } else {
+                        Err(IMPOSSIBLE)
+                    }
+                }
+
+                // the full year is missing but we have quotient and modulo.
+                // reconstruct the full year. make sure that the result is always positive.
+                (None, Some(q), Some(r @ 0..=99)) => {
+                    if q < 0 {
+                        return Err(OUT_OF_RANGE);
+                    }
+                    let y = q.checked_mul(100).and_then(|v| v.checked_add(r));
+                    Ok(Some(y.ok_or(OUT_OF_RANGE)?))
+                }
+
+                // we only have modulo. try to interpret a modulo as a conventional two-digit year.
+                // note: we are affected by Rust issue #18060. avoid multiple range patterns.
+                (None, None, Some(r @ 0..=99)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
+
+                // otherwise it is an out-of-bound or insufficient condition.
+                (None, Some(_), None) => Err(NOT_ENOUGH),
+                (_, _, Some(_)) => Err(OUT_OF_RANGE),
+            }
+        }
 
         let given_year = resolve_year(self.year, self.year_div_100, self.year_mod_100)?;
-        let given_isoyear = resolve_year(self.isoyear, self.isoyear_div_100, self.isoyear_mod_100)?;
+        let given_isoyear =
+            resolve_year_isoweek(self.isoyear, self.isoyear_div_100, self.isoyear_mod_100)?;
 
         // verify the normal year-month-day date.
         let verify_ymd = |date: NaiveDate| {
