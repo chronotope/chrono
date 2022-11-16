@@ -407,7 +407,7 @@ impl NaiveDate {
     ///
     /// `n` is 1-indexed.  Passing `n=0` will cause a panic.
     #[deprecated(since = "0.4.23", note = "use `from_weekday_of_month_opt()` instead")]
-    pub fn from_weekday_of_month(year: i16, month: u16, weekday: Weekday, n: u8) -> NaiveDate {
+    pub fn from_weekday_of_month(year: i16, month: u8, weekday: Weekday, n: u8) -> NaiveDate {
         NaiveDate::from_weekday_of_month_opt(year, month, weekday, n).expect("out-of-range date")
     }
 
@@ -425,7 +425,7 @@ impl NaiveDate {
     /// `month` (eg. the 6th Friday of March 2017), or if `n == 0`.
     pub fn from_weekday_of_month_opt(
         year: i16,
-        month: u16,
+        month: u8,
         weekday: Weekday,
         n: u8,
     ) -> Option<NaiveDate> {

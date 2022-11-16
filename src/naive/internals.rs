@@ -82,35 +82,39 @@ impl DateImpl {
     }
 
     pub(super) fn from_isoywd_opt(year: i32, week: u8, weekday: Weekday) -> Option<DateImpl> {
-        todo!()
-        // let flags = YearFlags::from_year(year);
-        // let nweeks = flags.nisoweeks();
-        // if 1 <= week && week <= nweeks {
-        //     // ordinal = week ordinal - delta
-        //     let weekord = week * 7 + weekday as u32;
-        //     let delta = flags.isoweek_delta();
-        //     if weekord <= delta {
-        //         // ordinal < 1, previous year
-        //         let prevflags = YearFlags::from_year(year - 1);
-        //         NaiveDate::from_parts(
-        //             year - 1,
-        //             Of::new(weekord + prevflags.ndays() - delta, prevflags)?,
-        //         )
-        //     } else {
-        //         let ordinal = weekord - delta;
-        //         let ndays = flags.ndays();
-        //         if ordinal <= ndays {
-        //             // this year
-        //             NaiveDate::from_parts(year, Of::new(ordinal, flags)?)
-        //         } else {
-        //             // ordinal > ndays, next year
-        //             let nextflags = YearFlags::from_year(year + 1);
-        //             NaiveDate::from_parts(year + 1, Of::new(ordinal - ndays, nextflags)?)
-        //         }
-        //     }
-        // } else {
-        //     None
-        // }
+        let flags = YearTypeFlag::from_year_mod_400(i16::try_from(mod_floor(year, 400)).ok()?);
+        let nweeks = flags.nisoweeks();
+        if 1 <= week && week <= nweeks {
+            // ordinal = week ordinal - delta
+            let weekord = u16::from(week) * 7 + weekday.num_days_from_monday() as u16;
+            let delta = flags.isoweek_delta();
+            if weekord <= delta {
+                // ordinal < 1, previous year
+                let earlier_year = i16::try_from(year.checked_sub(1)?).ok()?;
+                let prevflags = YearTypeFlag::from_year(earlier_year);
+                DateImpl::from_parts(
+                    earlier_year,
+                    Of::new(weekord + prevflags.ndays().get() - delta, prevflags)?,
+                )
+                .into()
+            } else {
+                let ordinal = weekord - delta;
+                let ndays = flags.ndays();
+                if ordinal <= ndays.get() {
+                    // this year
+                    let year = i16::try_from(year).ok()?;
+                    DateImpl::from_parts(year, Of::new(ordinal, flags)?).into()
+                } else {
+                    // ordinal > ndays, next year
+                    let later_year = i16::try_from(year.checked_add(1)?).ok()?;
+                    let nextflags = YearTypeFlag::from_year(later_year);
+                    DateImpl::from_parts(later_year, Of::new(ordinal - ndays.get(), nextflags)?)
+                        .into()
+                }
+            }
+        } else {
+            None
+        }
 
         //     let weekday = self.weekday();
 
@@ -134,14 +138,6 @@ impl DateImpl {
     }
 
     // the ISOWEEK year has a wider range
-    pub(super) fn from_week_parts(year: i32, week: u16, flags: YearTypeFlag) -> Option<DateImpl> {
-        todo!()
-        // let week_part = i32::try_from(week << 4).ok()?;
-        // let flags_part = i32::from(flags.0);
-        // Some(WeekImpl((year << 10) | week_part | flags_part))
-    }
-
-    // the ISOWEEK year has a wider range
     pub(super) fn isoweek_year(&self) -> i32 {
         todo!()
         // self.0 >> 10
@@ -151,44 +147,20 @@ impl DateImpl {
         // u32::try_from((self.0 >> 4) & 0x3f).unwrap()
     }
 
-    // /// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
-    // //
-    // // internal use only. we don't expose the public constructor for `IsoWeek` for now,
-    // // because the year range for the week date and the calendar date do not match and
-    // // it is confusing to have a date that is out of range in one and not in another.
-    // // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-    // pub(super) fn iso_week_from_yof(year: i32, ordinal: u16) -> Option<DateImpl> {
-    //     let (rawweek, _) = of.isoweekdate_raw();
-    //     let (year, week) = if rawweek < 1 {
-    //         // previous year
-    //         let prevlastweek = YearTypeFlag::from_year(year - 1).nisoweeks();
-    //         (year - 1, prevlastweek)
-    //     } else {
-    //         let lastweek = of.flags().nisoweeks();
-    //         if rawweek > lastweek {
-    //             // next year
-    //             (year + 1, 1)
-    //         } else {
-    //             (year, rawweek)
-    //         }
-    //     };
-    //     Some(WeekImpl::from_parts(year, week as u16, of.flags())?)
-    // }
-
     pub(super) fn from_weekday_of_month_opt(
         year: i16,
-        month: u16,
+        month: u8,
         weekday: Weekday,
         n: u8,
     ) -> Option<DateImpl> {
-        todo!()
-        // if n == 0 {
-        //     return None;
-        // }
-        // let first = NaiveDate::from_ymd_opt(year, month, 1)?.weekday();
-        // let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
-        // let day = (u32::from(n) - 1) * 7 + first_to_dow + 1;
-        // NaiveDate::from_ymd_opt(year, month, day)
+        // todo!()
+        if n == 0 {
+            return None;
+        }
+        let first = DateImpl::from_ymd(year, month, 1)?.weekday();
+        let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
+        let day = (n - 1) * 7 + first_to_dow + 1;
+        DateImpl::from_ymd(year, month, day)
     }
 
     pub(super) fn diff_months(self, months: i32) -> Option<Self> {
@@ -516,19 +488,21 @@ pub mod year_flags {
         }
 
         #[inline]
-        pub(super) fn isoweek_delta(&self) -> u32 {
-            todo!()
-            // let YearTypeFlag(flags) = *self;
-            // let mut delta = u32::from(flags) & 0b0111;
-            // if delta < 3 {
-            //     delta += 7;
-            // }
-            // delta
+        pub(super) fn isoweek_delta(&self) -> u16 {
+            match self.jan_1_weekday() {
+                Weekday::Mon => 0,
+                Weekday::Tue => 6,
+                Weekday::Wed => 5,
+                Weekday::Thu => 4,
+                Weekday::Fri => 3,
+                Weekday::Sat => 2,
+                Weekday::Sun => 1,
+            }
         }
 
         #[inline]
         // https://en.wikipedia.org/wiki/ISO_week_date
-        pub(super) fn nisoweeks(&self) -> u32 {
+        pub(super) fn nisoweeks(&self) -> u8 {
             match self {
                 YearTypeFlag::D | YearTypeFlag::DC | YearTypeFlag::ED => 53,
                 _ => 52,
@@ -986,7 +960,7 @@ mod ordinal_flags {
 
             let ord = self.ordinal().get();
 
-            match (start_at.num_days_from_monday() + u32::from(ord)) % 7 {
+            match (u16::from(start_at.num_days_from_monday()) + ord) % 7 {
                 0 => Weekday::Mon,
                 1 => Weekday::Tue,
                 2 => Weekday::Wed,
