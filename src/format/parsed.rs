@@ -69,7 +69,7 @@ pub struct Parsed {
 
     /// [ISO week number](../naive/struct.NaiveDate.html#week-date)
     /// (1--52 or 1--53 depending on the year).
-    pub isoweek: Option<u8>,
+    pub isoweek: Option<u16>,
 
     /// Day of the week.
     pub weekday: Option<Weekday>,
@@ -204,7 +204,7 @@ impl Parsed {
     /// Tries to set the [`isoweek`](#structfield.isoweek) field from given value.
     #[inline]
     pub fn set_isoweek(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoweek, u8::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+        set_if_consistent(&mut self.isoweek, u16::try_from(value).map_err(|_| OUT_OF_RANGE)?)
     }
 
     /// Tries to set the [`weekday`](#structfield.weekday) field from given value.
@@ -299,6 +299,7 @@ impl Parsed {
             q: Option<i16>,
             r: Option<i16>,
         ) -> ParseResult<Option<i16>> {
+            dbg!(y, q, r);
             match (y, q, r) {
                 // if there is no further information, simply return the given full year.
                 // this is a common case, so let's avoid division here.
@@ -344,6 +345,7 @@ impl Parsed {
             q: Option<i32>,
             r: Option<i32>,
         ) -> ParseResult<Option<i32>> {
+            dbg!(y, q, r);
             match (y, q, r) {
                 // if there is no further information, simply return the given full year.
                 // this is a common case, so let's avoid division here.
@@ -389,6 +391,8 @@ impl Parsed {
         let given_isoyear =
             resolve_year_isoweek(self.isoyear, self.isoyear_div_100, self.isoyear_mod_100)?;
 
+        dbg!(given_year, given_isoyear);
+
         // verify the normal year-month-day date.
         let verify_ymd = |date: NaiveDate| {
             let year = date.year();
@@ -409,10 +413,12 @@ impl Parsed {
 
         // verify the ISO week date.
         let verify_isoweekdate = |date: NaiveDate| {
-            let week = date.iso_week().ok_or_else(|| OUT_OF_RANGE)?;
+            let week = date.iso_week().ok_or(OUT_OF_RANGE)?;
+            dbg!(week);
             let isoyear = week.year();
             let isoweek = week.week();
             let weekday = date.weekday();
+            dbg!(isoyear, isoweek, weekday);
             let (isoyear_div_100, isoyear_mod_100) = if isoyear >= 0 {
                 let (q, r) = div_rem(isoyear, 100);
                 (Some(q), Some(r))
@@ -420,10 +426,10 @@ impl Parsed {
                 (None, None) // they should be empty to be consistent
             };
             Ok(self.isoyear.unwrap_or(isoyear) == isoyear
-                && self.isoyear_div_100.or(isoyear_div_100) == isoyear_div_100
-                && self.isoyear_mod_100.or(isoyear_mod_100) == isoyear_mod_100
-                && self.isoweek.unwrap_or(isoweek) == isoweek
-                && self.weekday.unwrap_or(weekday) == weekday)
+                && dbg!(self.isoyear_div_100.or(isoyear_div_100)) == isoyear_div_100
+                && dbg!(self.isoyear_mod_100.or(isoyear_mod_100)) == isoyear_mod_100
+                && dbg!(self.isoweek.unwrap_or(isoweek)) == isoweek
+                && dbg!(self.weekday.unwrap_or(weekday)) == weekday)
         };
 
         // verify the ordinal and other (non-ISO) week dates.
@@ -442,15 +448,23 @@ impl Parsed {
         // it is consistent with other given fields.
         let (verified, parsed_date) = match (given_year, given_isoyear, self) {
             (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
+                dbg!(year, month, day);
                 // year, month, day
                 let date = NaiveDate::from_ymd_opt(year, month, day).ok_or(OUT_OF_RANGE)?;
                 (verify_isoweekdate(date)? && verify_ordinal(date), date)
             }
 
             (Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
+                dbg!(year, ordinal);
                 // year, day of the year
                 let date = NaiveDate::from_yo_opt(year, ordinal).ok_or(OUT_OF_RANGE)?;
-                (verify_ymd(date) && verify_isoweekdate(date)? && verify_ordinal(date), date)
+                dbg!(date);
+                (
+                    dbg!(verify_ymd(date))
+                        && dbg!(verify_isoweekdate(date))?
+                        && dbg!(verify_ordinal(date)),
+                    date,
+                )
             }
 
             (
@@ -458,6 +472,7 @@ impl Parsed {
                 _,
                 &Parsed { week_from_sun: Some(week_from_sun), weekday: Some(weekday), .. },
             ) => {
+                dbg!(year, week_from_sun, weekday);
                 // year, week (starting at 1st Sunday), day of the week
                 let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
                 let firstweek = match newyear.weekday() {
@@ -492,6 +507,7 @@ impl Parsed {
                 _,
                 &Parsed { week_from_mon: Some(week_from_mon), weekday: Some(weekday), .. },
             ) => {
+                dbg!(year, week_from_mon, weekday);
                 // year, week (starting at 1st Monday), day of the week
                 let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
                 let firstweek = match newyear.weekday() {
@@ -522,6 +538,7 @@ impl Parsed {
             }
 
             (_, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(weekday), .. }) => {
+                dbg!(isoyear, isoweek, weekday);
                 // ISO year, week, day of the week
                 let date = NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday);
                 let date = date.ok_or(OUT_OF_RANGE)?;

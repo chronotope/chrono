@@ -61,7 +61,7 @@ impl IsoWeek {
     /// assert_eq!(d.iso_week().week(), 15);
     /// ```
     #[inline]
-    pub fn week(&self) -> u8 {
+    pub fn week(&self) -> u16 {
         self.inner.isoweek_number()
     }
 
@@ -78,7 +78,7 @@ impl IsoWeek {
     /// assert_eq!(d.iso_week().week0(), 14);
     /// ```
     #[inline]
-    pub fn week0(&self) -> u8 {
+    pub fn week0(&self) -> u16 {
         self.inner.isoweek_number() - 1
     }
 }
@@ -125,18 +125,18 @@ mod tests {
     #[test]
     fn test_iso_week_extremes() {
         let minweek = NaiveDate::MIN.iso_week().unwrap();
-        let maxweek = NaiveDate::MAX.iso_week();
+        let maxweek = NaiveDate::MAX.iso_week().unwrap();
 
-        assert!(maxweek.is_none());
-
-        // assert_eq!(minweek.year(), internals::MIN_YEAR);
-        assert_eq!(minweek.week(), 1);
-        assert_eq!(minweek.week0(), 0);
+        // assert!(maxweek.is_none());
+        dbg!(minweek);
+        assert_eq!(minweek.year(), i32::from(internals::MIN_YEAR) - 1);
+        assert_eq!(minweek.week(), 52);
+        assert_eq!(minweek.week0(), 51);
         assert_eq!(format!("{:?}", minweek), NaiveDate::MIN.format("%G-W%V").to_string());
 
-        // assert_eq!(maxweek.year(), internals::MAX_YEAR + 1);
-        // assert_eq!(maxweek.week(), 1);
-        // assert_eq!(maxweek.week0(), 0);
-        // assert_eq!(format!("{:?}", maxweek), NaiveDate::MAX.format("%G-W%V").to_string());
+        assert_eq!(maxweek.year(), i32::from(internals::MAX_YEAR));
+        assert_eq!(maxweek.week(), 52);
+        assert_eq!(maxweek.week0(), 51);
+        assert_eq!(format!("{:?}", maxweek), NaiveDate::MAX.format("%G-W%V").to_string());
     }
 }

@@ -285,7 +285,7 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// Panics on the out-of-range date and/or invalid week number.
     #[deprecated(since = "0.4.23", note = "use `isoywd_opt()` instead")]
-    fn isoywd(&self, year: i32, week: u8, weekday: Weekday) -> Date<Self> {
+    fn isoywd(&self, year: i32, week: u16, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
     }
 
@@ -306,7 +306,7 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// assert_eq!(Utc.isoywd_opt(2015, 20, Weekday::Fri).unwrap().to_string(), "2015-05-15UTC");
     /// ```
-    fn isoywd_opt(&self, year: i32, week: u8, weekday: Weekday) -> LocalResult<Date<Self>> {
+    fn isoywd_opt(&self, year: i32, week: u16, weekday: Weekday) -> LocalResult<Date<Self>> {
         match NaiveDate::from_isoywd_opt(year, week, weekday) {
             Some(d) => self.from_local_date(&d),
             None => LocalResult::None,

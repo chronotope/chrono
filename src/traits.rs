@@ -100,22 +100,24 @@ pub trait Datelike: Sized {
     /// assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().num_days_from_ce(), 1);
     /// assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce(), -365);
     /// ```
-    fn num_days_from_ce(&self) -> i32 {
-        // See test_num_days_from_ce_against_alternative_impl below for a more straightforward
-        // implementation.
+    fn num_days_from_ce(&self) -> i32;
+    //     fn num_days_from_ce(&self) -> i32 {
+    //         // See test_num_days_from_ce_against_alternative_impl below for a more straightforward
+    //     // implementation.
 
-        // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
-        let mut year = i32::from(self.year() - 1);
-        let mut ndays = 0_i32;
-        if year < 0 {
-            let excess = 1 + (-year) / 400;
-            year += excess * 400;
-            ndays -= excess * 146_097;
-        }
-        let div_100 = year / 100;
-        ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
-        ndays + i32::from(self.ordinal())
-    }
+    //     // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
+    //     let mut year = i32::from(self.year() - 1);
+    //     let mut ndays = 0_i32;
+    //     if year < 0 {
+    //         let excess = 1 + (-year) / 400;
+    //         year += excess * 400;
+    //         ndays -= excess * 146_097;
+    //     }
+    //     let div_100 = year / 100;
+    //     ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
+    //     ndays + i32::from(self.ordinal())
+
+    // }
 }
 
 /// The common set of methods for time component.

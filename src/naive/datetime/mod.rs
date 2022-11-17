@@ -13,6 +13,7 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+use super::internals::DateImpl;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -865,6 +866,10 @@ impl Datelike for NaiveDateTime {
     #[inline]
     fn year(&self) -> i16 {
         self.date.year()
+    }
+
+    fn num_days_from_ce(&self) -> i32 {
+        self.date.num_days_from_ce()
     }
 
     /// Returns the month number starting from 1.

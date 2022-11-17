@@ -810,6 +810,10 @@ where
 
 impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     #[inline]
+    fn num_days_from_ce(&self) -> i32 {
+        self.naive_local().date().num_days_from_ce()
+    }
+    #[inline]
     fn year(&self) -> i16 {
         self.naive_local().year()
     }
