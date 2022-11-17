@@ -120,10 +120,12 @@ impl DateImpl {
         if (2..=51).contains(&week)
             || week == 1 && flags.week_1_jan_delta_days_from_jan_1_calendar() >= 0
         {
+            let adj = mult_week.checked_sub(u16::from(flags.jan_1_weekday().num_days_from_monday()))?.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
             dbg!("regular");
+            dbg!(flags.jan_1_weekday().num_days_from_monday(), weekday.num_days_from_monday(), adj);
             let cal_year = i16::try_from(year).ok()?;
             let flags = YearTypeFlag::calculate_from_year(cal_year);
-            let ordinal = mult_week.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
+            let ordinal = adj;
             return Some(DateImpl::from_parts(cal_year, Of::new(ordinal, flags)?));
         }
 
