@@ -14,6 +14,10 @@ use num_traits::ToPrimitive;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+/// L10n locales.
+#[cfg(feature = "unstable-locales")]
+use pure_rust_locales::Locale;
+
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -1142,6 +1146,37 @@ impl NaiveDate {
     #[inline]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Formats the date with the specified formatting items and locale.
+    #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[inline]
+    pub fn format_localized_with_items<'a, I, B>(
+        &self,
+        items: I,
+        locale: Locale,
+    ) -> DelayedFormat<I>
+    where
+        I: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        DelayedFormat::new_with_locale(Some(*self), None, items, locale)
+    }
+
+    /// Formats the date with the specified format string and locale.
+    ///
+    /// See the [`crate::format::strftime`] module on the supported escape
+    /// sequences.
+    #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[inline]
+    pub fn format_localized<'a>(
+        &self,
+        fmt: &'a str,
+        locale: Locale,
+    ) -> DelayedFormat<StrftimeItems<'a>> {
+        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
     }
 
     /// Returns an iterator that steps by days across all representable dates.
