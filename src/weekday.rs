@@ -108,7 +108,7 @@ impl Weekday {
     /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.num_days_from_monday()`: | 0     | 1     | 2     | 3     | 4     | 5     | 6
     #[inline]
-    pub fn num_days_from_monday(&self) -> u8 {
+    pub const fn num_days_from_monday(&self) -> u8 {
         match *self {
             Weekday::Mon => 0,
             Weekday::Tue => 1,
@@ -126,7 +126,7 @@ impl Weekday {
     /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.num_days_from_sunday()`: | 1     | 2     | 3     | 4     | 5     | 6     | 0
     #[inline]
-    pub fn num_days_from_sunday(&self) -> u8 {
+    pub const fn num_days_from_sunday(&self) -> u8 {
         match *self {
             Weekday::Mon => 1,
             Weekday::Tue => 2,

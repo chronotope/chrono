@@ -29,6 +29,7 @@ use year_flags::{cycle_to_yo, yo_to_cycle, YearTypeFlag};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::Weekday;
+use core::cmp::Ordering;
 use core::num::{NonZeroU16, NonZeroU8};
 
 pub(super) const MAX_YEAR: i16 = i16::MAX;
@@ -67,8 +68,7 @@ impl arbitrary::Arbitrary<'_> for DateImpl {
         let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
         let flag = YearTypeFlag::from_year(year);
         let ord = u.int_in_range(1..=flag.ndays())?;
-        let of = Of::new(ord, flag).ok_or(arbitrary::Error::IncorrectFormat)?;
-        Ok(DateImpl::from_parts(year, of))
+        DateImpl::from_yo(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
     }
 }
 
@@ -76,17 +76,27 @@ impl DateImpl {
     pub(super) const CE: DateImpl =
         DateImpl(1, Of::start_of_year(YearTypeFlag::calculate_from_year(1)));
 
-    pub(super) fn from_yo(year: i16, ord: u16) -> Option<DateImpl> {
+    pub(super) const fn from_yo(year: i16, ord: u16) -> Option<DateImpl> {
         let flag = YearTypeFlag::calculate_from_year(year);
-        let of = Of::new(ord, flag)?;
-        Some(DateImpl::from_parts(year, of))
+        match Of::new(ord, flag) {
+            Some(of) => Some(DateImpl(year, of)),
+            None => None,
+        }
+    }
+    #[track_caller]
+    pub(super) const fn from_yo_validated(year: i16, ord: u16) -> DateImpl {
+        let flag = YearTypeFlag::calculate_from_year(year);
+        match Of::new(ord, flag) {
+            Some(of) => DateImpl(year, of),
+            None => panic!("Invalid combination for year and ordinal"),
+        }
     }
 
     pub(super) fn from_ymd(year: i16, month: u8, day: u8) -> Option<DateImpl> {
         // dbg!(year, month, day);
         let of = Of::from_ymd(year, month, day)?;
         // dbg!(of);
-        Some(DateImpl::from_parts(year, of))
+        Some(DateImpl(year, of))
     }
 
     pub(super) fn from_num_days_from_ce_opt(days: i32) -> Option<DateImpl> {
@@ -103,153 +113,133 @@ impl DateImpl {
         dbg!(year_base);
         let year = year_base?.checked_add(i32::try_from(year_mod_400).ok()?);
         dbg!(year);
-        Some(DateImpl::from_parts(i16::try_from(year?).ok()?, Of::new(ordinal as u16, flags)?))
+        DateImpl::from_yo(i16::try_from(year?).ok()?, ordinal as u16)
     }
 
     pub(super) fn from_isoywd_opt(year: i32, week: u16, weekday: Weekday) -> Option<DateImpl> {
-        dbg!(year, week, weekday);
+        // dbg!(year, week, weekday);
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_an_ordinal_or_month_date_from_a_week_date
         let flags = YearTypeFlag::calculate_from_year(const_mod_floor_i16(
             i16::try_from(year % 400).ok()?,
             400,
         ));
-        dbg!(flags);
+        // dbg!(flags);
         let mult_week = week.checked_mul(7)?;
-        dbg!(mult_week);
-        // not a corner case
-        if (2..=51).contains(&week)
-            || week == 1 && flags.week_1_jan_delta_days_from_jan_1_calendar() >= 0
-        {
-            let adj = mult_week.checked_sub(u16::from(flags.jan_1_weekday().num_days_from_monday()))?.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
-            dbg!("regular");
-            dbg!(flags.jan_1_weekday().num_days_from_monday(), weekday.num_days_from_monday(), adj);
-            let cal_year = i16::try_from(year).ok()?;
-            let flags = YearTypeFlag::calculate_from_year(cal_year);
-            let ordinal = adj;
-            return Some(DateImpl::from_parts(cal_year, Of::new(ordinal, flags)?));
-        }
-
-        // calendar year might be one year before the given year
-        if week == 1 {
-            // the cal_year must be valid, even if the ISO year is not!
-            let cal_year = i16::try_from(year - 1).ok()?;
-            let alt_flags = YearTypeFlag::calculate_from_year(cal_year);
-            let delta =
-                u16::try_from(i16::from(flags.week_1_jan_delta_days_from_jan_1_calendar().abs()))
-                    .ok()?;
-            return Some(DateImpl::from_parts(
-                cal_year,
-                Of::new(alt_flags.ndays().get().checked_sub(delta)?, flags)?,
-            ));
-        }
-
-        todo!();
-
-        let next_year_flags = YearTypeFlag::calculate_from_year(const_mod_floor_i16(
-            i16::try_from((year + 1) % 400).ok()?,
-            400,
-        ));
-        // calendar year might be one year after the given year
-
         // dbg!(mult_week);
-        // let added_wd = mult_week.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
-        // dbg!(added_wd);
-        // let weekday_4_jan = flags.jan_1_weekday().succ().succ().succ().num_days_from_monday() + 4;
-        // dbg!(weekday_4_jan);
-        // let corrected = added_wd - u16::from(weekday_4_jan);
-        // dbg!(corrected);
 
-        // let (year, ordinal, flags) = if corrected < 1 {
-        //     let cal_year = i16::try_from(year - 1).ok()?;
-        //     let flags= YearTypeFlag::calculate_from_year(cal_year);
-        //     (cal_year, flags.ndays().get() - corrected, flags)
-        // } else if corrected > flags.ndays().get() {
-        //     let cal_year = i16::try_from(year + 1).ok()?;
-        //     let flags= YearTypeFlag::calculate_from_year(cal_year);
-        //     (cal_year, corrected - flags.ndays().get(), flags)
-        // } else {
-        //     let cal_year= i16::try_from(year).ok()?;
-        //     (cal_year, corrected, YearTypeFlag::calculate_from_year(cal_year))
-        // };
+        // dbg!(flags.nisoweeks());
 
-        // Some(DateImpl::from_parts(year, Of::new(ordinal, flags)?))
+        if week == 0 || week > flags.nisoweeks().into() {
+            return None;
+        }
 
-        // let flags = YearTypeFlag::calculate_from_year(i16::try_from(mod_floor(year, 400)).ok()?);
-        // let nweeks = u16::from(flags.nisoweeks());
-        // if 1 <= week && week <= nweeks {
-        //     // ordinal = week ordinal - delta
-        //     let weekord = week * 7 + weekday.num_days_from_monday() as u16;
-        //     let delta = u16::from(flags.isoweek_delta());
-        //     if weekord <= delta {
-        //         // ordinal < 1, previous year
-        //         let earlier_year = i16::try_from(year.checked_sub(1)?).ok()?;
-        //         let prevflags = YearTypeFlag::calculate_from_year(earlier_year);
-        //         DateImpl::from_parts(
-        //             earlier_year,
-        //             Of::new(weekord + prevflags.ndays().get() - delta, prevflags)?,
-        //         )
-        //         .into()
-        //     } else {
-        //         let ordinal = weekord - delta;
-        //         let ndays = flags.ndays();
-        //         if ordinal <= ndays.get() {
-        //             // this year
-        //             let year = i16::try_from(year).ok()?;
-        //             DateImpl::from_parts(year, Of::new(ordinal, flags)?).into()
-        //         } else {
-        //             // ordinal > ndays, next year
-        //             let later_year = i16::try_from(year.checked_add(1)?).ok()?;
-        //             let nextflags = YearTypeFlag::calculate_from_year(later_year);
-        //             DateImpl::from_parts(later_year, Of::new(ordinal - ndays.get(), nextflags)?)
-        //                 .into()
-        //         }
-        //     }
-        // } else {
-        //     None
-        // }
+        fn base_ordinal(week: u16, weekday: Weekday, flags: YearTypeFlag) -> Option<u16> {
+            let week_ord = week
+                .checked_mul(7)?
+                .checked_sub(6)?
+                .checked_add(u16::from(weekday.num_days_from_monday()))?;
 
-        //     let weekday = self.weekday();
+            let ord = flags.week_1_jan_delta_days_from_jan_1_calendar_adj(week_ord)?;
 
-        //     let max_days_in_prev_year_last_week = match self.flags().jan_1_weekday() {
-        //         Weekday::Mon => 0,
-        //         Weekday::Tue => 6,
-        //         Weekday::Wed => 5,
-        //         Weekday::Thu => 4,
-        //         Weekday::Fri => 3,
-        //         Weekday::Sat => 2,
-        //         Weekday::Sun => 1,
-        //     };
+            if ord == 0 {
+                None
+            } else {
+                Some(ord)
+            }
+        }
 
-        //     // if ordinal is less than or equal to the max days in last week of prev year,
-        //     // then we are in the last week of the prev year
-        //     if u32::from(ord) <= max_days_in_prev_year_last_week {
-        //         return (YearTypeFlag::from_year_mod_400()
-        //     }
+        let base_ord = dbg!(base_ordinal(week, weekday, flags));
 
-        //     // also need to figure out what week number we are in!
+        match base_ord {
+            Some(ord) if ord <= flags.ndays().get() => {
+                // matching cy
+                // let adj = mult_week.checked_sub(u16::from(flags.jan_1_weekday().num_days_from_monday()))?.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
+                // dbg!("regular");
+                // dbg!(flags.jan_1_weekday().num_days_from_monday(), weekday.num_days_from_monday(), adj);
+                let cal_year = i16::try_from(year).ok()?;
+                let flags = YearTypeFlag::calculate_from_year(cal_year);
+                // let ordinal = adj;
+                // dbg!(cal_year, flags, ord);
+                DateImpl::from_yo(cal_year, ord)
+            }
+            Some(ord) => {
+                // next CY
+                let cal_year = i16::try_from(year + 1).ok()?;
+                let alt_flags = YearTypeFlag::calculate_from_year(cal_year);
+                let adj_ord = ord.checked_sub(flags.ndays().get())?;
+                // dbg!(cal_year, alt_flags, adj_ord);
+                DateImpl::from_yo(cal_year, adj_ord)
+            }
+            None => {
+                // prev cy
+                let cal_year = i16::try_from(year - 1).ok()?;
+                let alt_flags = YearTypeFlag::calculate_from_year(cal_year);
+
+                let ord =
+                    flags.week_1_jan_delta_days_from_jan_1_calendar_adj(alt_flags.ndays().get())?;
+                // dbg!(ord);
+                let adj_ord = ord + 1 + u16::from(weekday.num_days_from_monday());
+                // dbg!(cal_year, adj_ord, Of::from_ordinal_and_year(adj_ord, cal_year).unwrap().weekday());
+                DateImpl::from_yo(cal_year, adj_ord)
+            }
+        }
     }
 
     // the ISOWEEK year has a wider range
     pub(super) fn isoweek_year(&self) -> i32 {
+        // dbg!(self);
+
+        // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
+        let num = (self.ordinal().get() + 9 - u16::from(self.weekday().num_days_from_monday())) / 7;
+        // dbg!(num);
+        match num {
+            0 => i32::from(self.year()) - 1,
+            53 => {
+                match YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1)
+                    .jan_1_weekday()
+                {
+                    Weekday::Tue | Weekday::Wed | Weekday::Thu => i32::from(self.year()) + 1,
+                    Weekday::Mon | Weekday::Fri | Weekday::Sat | Weekday::Sun => self.year().into(),
+                }
+                // dbg!(self.weekday(), YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1).jan_1_weekday());
+                // todo!()
+            }
+            _ => self.year().into(), // Ordering::Greater => todo!(),
+        }
         // if ordinal is less than or equal to the max days in last week of prev year,
         // then we are in the last week of the prev year
-        if self.ordinal().get()
-            < self.year_type().ordinal_of_first_day_of_first_week_in_matching_year()
-        {
-            i32::from(self.year()) - 1
-        } else if self.ordinal().get() > self.year_type().ordinal_of_last_day_in_last_week() {
-            i32::from(self.year()) + 1
-        } else {
-            self.year().into()
-        }
+        // if self.ordinal().get()
+        //     < self.year_type().ordinal_of_first_day_of_first_week_in_matching_year()
+        // {
+        //     i32::from(self.year()) - 1
+        // } else if self.ordinal().get() > self.year_type().ordinal_of_last_day_in_last_week_in_matching_year() {
+        //     i32::from(self.year()) + 1
+        // } else {
+        //     self.year().into()
+        // }
     }
 
     // u16 for convenience as u16 is a lot more convenient than Option<u8>!
     pub(super) fn isoweek_number(&self) -> u16 {
+        // dbg!(self);
+
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
-        let numerator =
-            10 + self.ordinal().get() - (u16::from(self.weekday().num_days_from_monday()) + 1);
-        numerator / 7
+        let num = (self.ordinal().get() + 9 - u16::from(self.weekday().num_days_from_monday())) / 7;
+        // dbg!(num);
+        match num {
+            0 => YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) - 1)
+                .nisoweeks()
+                .into(),
+            53 => {
+                let next_year_flags =
+                    YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1);
+                match next_year_flags {
+                    YearTypeFlag::BA | YearTypeFlag::B | YearTypeFlag::C | YearTypeFlag::CB => 53,
+                    _ => 1,
+                }
+            }
+            weeks => weeks,
+        }
     }
 
     pub(super) fn from_weekday_of_month_opt(
@@ -315,10 +305,6 @@ impl DateImpl {
         DateImpl::from_ymd(year, month, day)
     }
 
-    pub(super) fn from_parts(year: i16, of: Of) -> DateImpl {
-        dbg!(year, of);
-        DateImpl(year, of)
-    }
     pub(super) fn year_type(&self) -> YearTypeFlag {
         self.of().flags()
     }
@@ -382,17 +368,13 @@ impl DateImpl {
         dbg!(year_mod_400);
         let ordinal = u16::try_from(ordinal).ok()?;
         dbg!(ordinal);
-        let flags = YearTypeFlag::calculate_from_year(year_mod_400);
-        dbg!(flags);
-        let of = Of::new(ordinal, flags);
-        dbg!(of);
         let year_base = i32::from(year_div_400).checked_mul(400);
         dbg!(year_base);
         let year = year_base?.checked_add(i32::from(year_mod_400));
         dbg!(year);
         let year = i16::try_from(year?);
         dbg!(year);
-        Some(DateImpl::from_parts(year.ok()?, of?))
+        DateImpl::from_yo(year.ok()?, ordinal)
     }
 
     pub(super) fn checked_sub_signed(self, rhs: i64) -> Option<Self> {
@@ -420,17 +402,14 @@ impl DateImpl {
 
         let ordinal = u16::try_from(ordinal).ok()?;
 
-        let flags = YearTypeFlag::calculate_from_year(year_mod_400);
         let year_base = i32::from(year_div_400).checked_mul(400);
         dbg!(year_base);
         let year = year_base?.checked_add(i32::from(year_mod_400));
         dbg!(year);
         let year = i16::try_from(year?).ok();
         dbg!(year);
-        let ordinal = Of::new(ordinal, flags);
-        dbg!(ordinal);
 
-        Some(DateImpl::from_parts(year?, ordinal?))
+        DateImpl::from_yo(year?, ordinal)
     }
 
     #[inline]
@@ -439,10 +418,9 @@ impl DateImpl {
         let current_year = self.year();
         if of.ordinal() == of.flags().ndays() {
             let next_year = current_year.checked_add(1)?;
-            let new_flags = YearTypeFlag::calculate_from_year(next_year);
-            Some(DateImpl::from_parts(next_year, Of::new(1, new_flags)?))
+            DateImpl::from_yo(next_year, 1)
         } else {
-            Some(DateImpl::from_parts(current_year, Of::new(of.ordinal().get() + 1, of.flags())?))
+            DateImpl::from_yo(current_year, of.ordinal().get() + 1)
         }
     }
 
@@ -453,9 +431,9 @@ impl DateImpl {
         if of.ordinal().get() == 1 {
             let prev_year = current_year.checked_sub(1)?;
             let new_flags = YearTypeFlag::calculate_from_year(prev_year);
-            Some(DateImpl::from_parts(prev_year, Of::new(new_flags.ndays().get(), new_flags)?))
+            DateImpl::from_yo(prev_year, new_flags.ndays().get())
         } else {
-            Some(DateImpl::from_parts(current_year, Of::new(of.ordinal().get() - 1, of.flags())?))
+            DateImpl::from_yo(current_year, of.ordinal().get() - 1)
         }
     }
 
@@ -627,14 +605,14 @@ pub mod year_flags {
     }
 
     impl YearTypeFlag {
-        pub fn ndays(&self) -> NonZeroU16 {
+        pub const fn ndays(&self) -> NonZeroU16 {
             match self.is_leap() {
                 true => unsafe { NonZeroU16::new_unchecked(366) },
                 false => unsafe { NonZeroU16::new_unchecked(365) },
             }
         }
 
-        pub fn is_leap(&self) -> bool {
+        pub const fn is_leap(&self) -> bool {
             match self {
                 YearTypeFlag::A => false,
                 YearTypeFlag::AG => true,
@@ -653,7 +631,7 @@ pub mod year_flags {
             }
         }
 
-        pub fn jan_1_weekday(&self) -> Weekday {
+        pub const fn jan_1_weekday(&self) -> Weekday {
             match self {
                 YearTypeFlag::A => Weekday::Sun,  // Common, Sunday start
                 YearTypeFlag::AG => Weekday::Sun, // Leap, Sunday start
@@ -672,7 +650,7 @@ pub mod year_flags {
             }
         }
 
-        pub fn ordinal_of_last_day_in_last_week(&self) -> u16 {
+        pub const fn ordinal_of_last_day_in_last_week_in_matching_year(&self) -> u16 {
             self.ndays().get()
                 - match self {
                     YearTypeFlag::A => 0,
@@ -692,7 +670,7 @@ pub mod year_flags {
                 }
         }
 
-        pub fn ordinal_of_first_day_of_first_week_in_matching_year(&self) -> u16 {
+        pub const fn ordinal_of_first_day_of_first_week_in_matching_year(&self) -> u16 {
             match self {
                 YearTypeFlag::A => 2,
                 YearTypeFlag::AG => 2,
@@ -767,7 +745,7 @@ pub mod year_flags {
         //     }
         // }
 
-        pub(super) fn week_1_jan_delta_days_from_jan_1_calendar(&self) -> i8 {
+        pub(super) const fn week_1_jan_delta_days_from_jan_1_calendar(&self) -> i8 {
             match self.jan_1_weekday() {
                 Weekday::Mon => 0,
                 Weekday::Tue => -1,
@@ -779,9 +757,24 @@ pub mod year_flags {
             }
         }
 
+        pub(super) const fn week_1_jan_delta_days_from_jan_1_calendar_adj(
+            &self,
+            week_ord: u16,
+        ) -> Option<u16> {
+            match self.jan_1_weekday() {
+                Weekday::Mon => Some(week_ord),
+                Weekday::Tue => week_ord.checked_sub(1),
+                Weekday::Wed => week_ord.checked_sub(2),
+                Weekday::Thu => week_ord.checked_sub(3),
+                Weekday::Fri => week_ord.checked_add(3),
+                Weekday::Sat => week_ord.checked_add(2),
+                Weekday::Sun => week_ord.checked_add(1),
+            }
+        }
+
         #[inline]
         // https://en.wikipedia.org/wiki/ISO_week_date
-        pub(super) fn nisoweeks(&self) -> u8 {
+        pub(super) const fn nisoweeks(&self) -> u8 {
             match self {
                 YearTypeFlag::D | YearTypeFlag::DC | YearTypeFlag::ED => 53,
                 _ => 52,
@@ -938,7 +931,7 @@ mod ordinal_flags {
     }
 
     impl OrdinalFlagAndYearFlag {
-        fn ordinal_second_register(&self) -> bool {
+        const fn ordinal_second_register(&self) -> bool {
             match self {
                 OrdinalFlagAndYearFlag::A0
                 | OrdinalFlagAndYearFlag::AG0
@@ -970,7 +963,7 @@ mod ordinal_flags {
                 | OrdinalFlagAndYearFlag::GF1 => true,
             }
         }
-        fn internal(&self) -> YearTypeFlag {
+        const fn internal(&self) -> YearTypeFlag {
             match self {
                 OrdinalFlagAndYearFlag::A0 => YearTypeFlag::A,
                 OrdinalFlagAndYearFlag::AG0 => YearTypeFlag::AG,
@@ -1155,15 +1148,22 @@ mod ordinal_flags {
         // this function should only allow creation of valid Of.
         // otherwise it will return None.
         #[inline]
-        pub(super) fn new(ordinal: u16, yf: YearTypeFlag) -> Option<Of> {
-            match (1_u16..=yf.ndays().get()).contains(&ordinal) {
+        pub(super) const fn new(ordinal: u16, yf: YearTypeFlag) -> Option<Of> {
+            match 1_u16 <= ordinal && ordinal <= yf.ndays().get() {
                 true if ordinal > 255 => Some(Of(
-                    NonZeroU8::new((ordinal - 255) as u8)?,
+                    match NonZeroU8::new((ordinal - 255) as u8) {
+                        Some(o) => o,
+                        None => return None,
+                    },
                     yf.with_ordinal_second_reigster(true),
                 )),
-                true => {
-                    Some(Of(NonZeroU8::new(ordinal as u8)?, yf.with_ordinal_second_reigster(false)))
-                }
+                true => Some(Of(
+                    match NonZeroU8::new(ordinal as u8) {
+                        Some(o) => o,
+                        None => return None,
+                    },
+                    yf.with_ordinal_second_reigster(false),
+                )),
                 false => None,
             }
         }
@@ -1197,7 +1197,36 @@ mod ordinal_flags {
             Of::new(ordinal, year_type)
         }
 
-        pub(super) fn from_ordinal_and_year(ordinal: u16, year: i16) -> Option<Of> {
+        pub(super) const fn from_ymd_const(year: i16, month: u8, day: u8) -> Option<Of> {
+            if !(1..=12).contains(&month) {
+                return None;
+            }
+            if day == 0 {
+                return None;
+            }
+
+            let month_idx = usize::from(month.checked_sub(1)?);
+
+            let year_type = YearTypeFlag::calculate_from_year(year);
+
+            let ordinal = match is_leap(year) {
+                true => {
+                    if day > dbg!(*LEAP_DAYS_IN_MONTH.get(month_idx)?) {
+                        return None;
+                    }
+                    *LEAP_MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
+                }
+                false => {
+                    if day > dbg!(*DAYS_IN_MONTH.get(month_idx)?) {
+                        return None;
+                    }
+                    *MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
+                }
+            };
+            Of::new(ordinal, year_type)
+        }
+
+        pub(super) const fn from_ordinal_and_year(ordinal: u16, year: i16) -> Option<Of> {
             let year_type = YearTypeFlag::calculate_from_year(year);
             Of::new(ordinal, year_type)
         }
@@ -1221,32 +1250,37 @@ mod ordinal_flags {
         }
 
         #[inline]
-        pub(super) fn ordinal(&self) -> NonZeroU16 {
+        pub(super) const fn ordinal(&self) -> NonZeroU16 {
             let n = if self.1.ordinal_second_register() {
-                u16::from(self.0.get()) + 255
+                (self.0.get() as u16) + 255
             } else {
-                self.0.get().into()
+                self.0.get() as u16
             };
             unsafe { NonZeroU16::new_unchecked(n) }
         }
 
         #[inline]
-        pub(super) fn with_ordinal(&self, ordinal: u16) -> Option<Of> {
+        pub(super) const fn with_ordinal(&self, ordinal: u16) -> Option<Of> {
             Of::new(ordinal, self.flags())
         }
 
         #[inline]
-        pub(super) fn flags(&self) -> YearTypeFlag {
+        pub(super) const fn flags(&self) -> YearTypeFlag {
             self.1.internal()
         }
 
         #[inline]
-        pub(super) fn weekday(&self) -> Weekday {
+        pub(super) const fn weekday(&self) -> Weekday {
             let start_at = self.flags().jan_1_weekday();
             let ord = self.ordinal().get();
             // dbg!(start_at, ord, (u16::from(start_at.num_days_from_monday()) + ord) % 7);
+            // dbg!(
+            //     ord + 6,
+            //     ord + 6 - u16::from(start_at.num_days_from_monday()),
+            //     (ord + 6 - u16::from(start_at.num_days_from_monday())) % 7,
+            // );
 
-            match (u16::from(start_at.num_days_from_monday()) + ord - 1) % 7 {
+            match (start_at.num_days_from_monday() as u16 + ord - 1) % 7 {
                 0 => Weekday::Mon,
                 1 => Weekday::Tue,
                 2 => Weekday::Wed,

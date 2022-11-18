@@ -277,9 +277,8 @@ impl NaiveDate {
     /// (year and day of the year).
     ///
     /// Panics on the out-of-range date and/or invalid day of year.
-    #[deprecated(since = "0.4.23", note = "use `from_yo_opt()` instead")]
-    pub fn from_yo(year: i16, ordinal: u16) -> NaiveDate {
-        NaiveDate::from_yo_opt(year, ordinal).expect("invalid or out-of-range date")
+    pub fn from_yo_validated(year: i16, ordinal: u16) -> NaiveDate {
+        NaiveDate { inner: DateImpl::from_yo_validated(year, ordinal) }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -2048,6 +2047,19 @@ mod tests {
     }
 
     #[test]
+    fn test_from_yo_validated() {
+        let res = std::panic::catch_unwind(|| {
+            let _ = NaiveDate::from_yo_validated(2022, 0);
+        });
+        assert!(res.is_err());
+        let _ = NaiveDate::from_yo_validated(2022, 1);
+        let _ = NaiveDate::from_yo_validated(2022, 365);
+        let res = std::panic::catch_unwind(|| {
+            let _ = NaiveDate::from_yo_validated(2022, 366);
+        });
+        assert!(res.is_err());
+    }
+    #[test]
     fn test_date_from_ymd() {
         let ymd_opt = NaiveDate::from_ymd_opt;
 
@@ -2138,7 +2150,6 @@ mod tests {
                 .iter()
                 {
                     let d = NaiveDate::from_isoywd_opt(year, week, weekday);
-                    dbg!(year, week, weekday, d);
                     if let Some(d) = d {
                         assert_eq!(d.weekday(), weekday);
                         let w = d.iso_week().unwrap();
@@ -2155,11 +2166,7 @@ mod tests {
                     let d = NaiveDate::from_ymd_opt(year, month, day);
                     if let Some(d) = d {
                         let w = d.iso_week().unwrap();
-                        let d_ = NaiveDate::from_isoywd_opt(
-                            w.year().try_into().unwrap(),
-                            w.week(),
-                            d.weekday(),
-                        );
+                        let d_ = NaiveDate::from_isoywd_opt(w.year(), w.week(), d.weekday());
                         assert_eq!(d, d_.unwrap());
                     }
                 }
