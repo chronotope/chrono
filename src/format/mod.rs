@@ -513,19 +513,19 @@ fn format_inner<'a>(
                 YearMod100 => (2, date.map(|d| const_mod_floor_i64(i64::from(d.year()), 100))),
                 IsoYear => (
                     4,
-                    date.map(|d| (d.iso_week().map(|w| i64::from(w.year())))).ok_or(fmt::Error)?,
+                    date.map(|d| d.iso_week().map(|w| i64::from(w.year()))).ok_or(fmt::Error)?,
                 ),
                 IsoYearDiv100 => (
                     2,
                     date.map(|d| {
-                        (d.iso_week().map(|w| const_div_floor_i64(i64::from(w.year()), 100)))
+                        d.iso_week().map(|w| const_div_floor_i64(i64::from(w.year()), 100))
                     })
                     .ok_or(fmt::Error)?,
                 ),
                 IsoYearMod100 => (
                     2,
                     date.map(|d| {
-                        (d.iso_week().map(|w| const_mod_floor_i64(i64::from(w.year()), 100)))
+                        d.iso_week().map(|w| const_mod_floor_i64(i64::from(w.year()), 100))
                     })
                     .ok_or(fmt::Error)?,
                 ),
@@ -535,7 +535,7 @@ fn format_inner<'a>(
                 WeekFromMon => (2, date.map(|d| i64::from(week_from_mon(d)))),
                 IsoWeek => (
                     2,
-                    date.map(|d| (d.iso_week().map(|w| i64::from(w.week())))).ok_or(fmt::Error)?,
+                    date.map(|d| d.iso_week().map(|w| i64::from(w.week()))).ok_or(fmt::Error)?,
                 ),
                 NumDaysFromSun => (1, date.map(|d| i64::from(d.weekday().num_days_from_sunday()))),
                 WeekdayFromMon => (1, date.map(|d| i64::from(d.weekday().number_from_monday()))),

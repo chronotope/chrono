@@ -16,6 +16,7 @@
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 #![allow(unreachable_pub)]
 #![allow(dead_code)]
+#![allow(clippy::int_plus_one)] // for try_from_i32_to_i16!
 
 use core::hash::Hash;
 use core::i32;

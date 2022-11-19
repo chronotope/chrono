@@ -1833,8 +1833,8 @@ where
         to_string(&NaiveDate::from_ymd_opt(-1, 12, 31).unwrap()).ok(),
         Some(r#""-0001-12-31""#.into())
     );
-    assert_eq!(to_string(&NaiveDate::MIN).ok(), Some(r#""-262144-01-01""#.into()));
-    assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+262143-12-31""#.into()));
+    assert_eq!(to_string(&NaiveDate::MIN).ok(), Some(r#""-32768-01-01""#.into()));
+    assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+32767-12-31""#.into()));
 }
 
 #[cfg(all(test, feature = "serde"))]
@@ -1857,8 +1857,8 @@ where
         from_str(r#""-0001-12-31""#).ok(),
         Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap())
     );
-    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(NaiveDate::MIN));
-    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(NaiveDate::MAX));
+    assert_eq!(from_str(r#""-32768-01-01""#).ok(), Some(NaiveDate::MIN));
+    assert_eq!(from_str(r#""+32767-12-31""#).ok(), Some(NaiveDate::MAX));
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
