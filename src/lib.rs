@@ -457,6 +457,9 @@ mod date;
 #[allow(deprecated)]
 pub use date::{Date, MAX_DATE, MIN_DATE};
 
+mod day;
+pub use day::Day;
+
 mod datetime;
 #[cfg(feature = "rustc-serialize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
