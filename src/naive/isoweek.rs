@@ -129,9 +129,9 @@ mod tests {
 
         // assert!(maxweek.is_none());
         dbg!(minweek);
-        assert_eq!(minweek.year(), i32::from(internals::MIN_YEAR) - 1);
-        assert_eq!(minweek.week(), 52);
-        assert_eq!(minweek.week0(), 51);
+        assert_eq!(minweek.year(), i32::from(internals::MIN_YEAR));
+        assert_eq!(minweek.week(), 1);
+        assert_eq!(minweek.week0(), 0);
         assert_eq!(format!("{:?}", minweek), NaiveDate::MIN.format("%G-W%V").to_string());
 
         assert_eq!(maxweek.year(), i32::from(internals::MAX_YEAR));

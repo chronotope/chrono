@@ -125,7 +125,7 @@ fn test_datetime_from_str() {
     let valid = [
         "2015-2-18T23:16:9.15",
         "-77-02-18T23:16:09",
-        "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ",
+        "  +32767  -  05  -  6  T  15  :  9  : 60.898989898989   ",
     ];
     for &s in &valid {
         let d = match s.parse::<NaiveDateTime>() {
@@ -160,8 +160,8 @@ fn test_datetime_from_str() {
     assert!("2015-15-15T15:15:15".parse::<NaiveDateTime>().is_err());
     assert!("2012-12-12T12:12:12x".parse::<NaiveDateTime>().is_err());
     assert!("2012-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
-    assert!("+ 82701-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
-    assert!("+802701-123-12T12:12:12".parse::<NaiveDateTime>().is_err()); // out-of-bound
+    assert!("+ 32767-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
+    assert!("+32767-123-12T12:12:12".parse::<NaiveDateTime>().is_err()); // out-of-bound
 }
 
 #[test]

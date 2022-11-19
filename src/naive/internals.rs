@@ -263,8 +263,6 @@ impl DateImpl {
 
     // the ISOWEEK year has a wider range
     pub(super) const fn isoweek_year(&self) -> i32 {
-        // dbg!(self);
-
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
         let num = (self.ordinal().get() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
         // dbg!(num);

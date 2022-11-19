@@ -901,11 +901,13 @@ mod tests {
                           year_mod_100: max_year % 100, month: 1, day: 1),
             ymd(max_year, 1, 1)
         );
-        assert_eq!(
-            parse!(year_div_100: (max_year + 1) / 100,
-                          year_mod_100: (max_year + 1) % 100, month: 1, day: 1),
-            Err(OUT_OF_RANGE)
-        );
+
+        // out of range year is now impossible
+        // assert_eq!(
+        //     parse!(year_div_100: (max_year  + 1) / 100,
+        //                   year_mod_100: (max_year + 1) % 100, month: 1, day: 1),
+        //     Err(OUT_OF_RANGE)
+        // );
 
         // ymd: conflicting inputs
         assert_eq!(parse!(year: 1984, year_div_100: 19, month: 1, day: 1), ymd(1984, 1, 1));
@@ -990,18 +992,16 @@ mod tests {
         assert_eq!(parse!(ordinal: 123), Err(NOT_ENOUGH));
         assert_eq!(parse!(year: 2000, ordinal: 0), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2000, ordinal: 1), ymd(2000, 1, 1));
-        assert_eq!(parse!(year: 2000, ordinal: 255), ymd(2000, 2, 29));
+        assert_eq!(parse!(year: 2000, ordinal: 60), ymd(2000, 2, 29));
         assert_eq!(parse!(year: 2000, ordinal: 61), ymd(2000, 3, 1));
         assert_eq!(parse!(year: 2000, ordinal: 366), ymd(2000, 12, 31));
         assert_eq!(parse!(year: 2000, ordinal: 367), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2000, ordinal: 255), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2100, ordinal: 0), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2100, ordinal: 1), ymd(2100, 1, 1));
         assert_eq!(parse!(year: 2100, ordinal: 59), ymd(2100, 2, 28));
-        assert_eq!(parse!(year: 2100, ordinal: 255), ymd(2100, 3, 1));
+        assert_eq!(parse!(year: 2100, ordinal: 60), ymd(2100, 3, 1));
         assert_eq!(parse!(year: 2100, ordinal: 365), ymd(2100, 12, 31));
         assert_eq!(parse!(year: 2100, ordinal: 366), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2100, ordinal: 255), Err(OUT_OF_RANGE));
 
         // more complex cases
         assert_eq!(
