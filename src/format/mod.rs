@@ -599,19 +599,15 @@ fn format_inner<'a>(
                         Colons::Single => {
                             write!(result, "{}{:02}:{:02}", sign, off / 3600, off / 60 % 60)
                         }
-                        Colons::Double => {
-                            write!(
-                                result,
-                                "{}{:02}:{:02}:{:02}",
-                                sign,
-                                off / 3600,
-                                off / 60 % 60,
-                                off % 60
-                            )
-                        }
-                        Colons::Triple => {
-                            write!(result, "{}{:02}", sign, off / 3600)
-                        }
+                        Colons::Double => write!(
+                            result,
+                            "{}{:02}:{:02}:{:02}",
+                            sign,
+                            off / 3600,
+                            off / 60 % 60,
+                            off % 60
+                        ),
+                        Colons::Triple => write!(result, "{}{:02}", sign, off / 3600),
                     }
                 } else {
                     result.push('Z');

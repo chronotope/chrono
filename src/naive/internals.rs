@@ -28,12 +28,83 @@ use year_flags::{cycle_to_yo, yo_to_cycle, YearTypeFlag};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::Weekday;
-use core::cmp::Ordering;
+use crate::{Month, Weekday};
 use core::num::{NonZeroU16, NonZeroU8};
 
 pub(super) const MAX_YEAR: i16 = i16::MAX;
 pub(super) const MIN_YEAR: i16 = i16::MIN;
+
+const DAYS_IN_CYCLE: i32 = 146_097;
+
+// useful in const fns
+macro_rules! try_opt {
+    ($e:expr) => {
+        match $e {
+            Some(v) => v,
+            None => return None,
+        }
+    };
+}
+
+macro_rules! try_from_i32_to_i16 {
+    ($e:expr) => {
+        if $e >= i16::MIN as i32 && $e <= i16::MAX as i32 {
+            $e as i16
+        } else {
+            return None;
+        }
+    };
+}
+
+macro_rules! try_from_u32_to_u16 {
+    ($e:expr) => {
+        if $e <= u16::MAX as u32 {
+            $e as u16
+        } else {
+            return None;
+        }
+    };
+}
+
+macro_rules! try_from_i64_to_i32 {
+    ($e:expr) => {
+        if $e >= i32::MIN as i64 && $e <= i32::MAX as i64 {
+            $e as i32
+        } else {
+            return None;
+        }
+    };
+}
+
+macro_rules! try_from_u32_to_i32 {
+    ($e:expr) => {
+        if $e <= i32::MAX as u32 {
+            $e as i32
+        } else {
+            return None;
+        }
+    };
+}
+
+// forces the cosnt validation
+#[cfg(feature = "const-validation")]
+macro_rules! ymd {
+    ($y:expr, $m:expr, $d:expr) => {{
+        const _: DateImpl = DateImpl::from_ymd_validated($y, $m, $d);
+
+        DateImpl::from_ymd_validated($y, $m, $d)
+    }};
+}
+
+// forces the cosnt validation
+#[cfg(feature = "const-validation")]
+macro_rules! yo {
+    ($y:expr, $o:expr) => {{
+        const _: DateImpl = DateImpl::from_yo_validated($y, $m, $d);
+
+        DateImpl::from_yo_validated($y, $m, $d)
+    }};
+}
 
 // DateImpl of [u8; 4]
 // first two u8 -> represents an i16 of the year
@@ -83,7 +154,9 @@ impl DateImpl {
             None => None,
         }
     }
+
     #[track_caller]
+    #[cfg(feature = "const-validation")]
     pub(super) const fn from_yo_validated(year: i16, ord: u16) -> DateImpl {
         let flag = YearTypeFlag::calculate_from_year(year);
         match Of::new(ord, flag) {
@@ -92,54 +165,58 @@ impl DateImpl {
         }
     }
 
-    pub(super) fn from_ymd(year: i16, month: u8, day: u8) -> Option<DateImpl> {
+    pub(super) const fn from_ymd(year: i16, month: Month, day: u8) -> Option<DateImpl> {
         // dbg!(year, month, day);
-        let of = Of::from_ymd(year, month, day)?;
+        let of = try_opt!(Of::from_ymd(year, month, day));
         // dbg!(of);
         Some(DateImpl(year, of))
     }
 
-    pub(super) fn from_num_days_from_ce_opt(days: i32) -> Option<DateImpl> {
-        // todo!()
-        let days = days.checked_add(365)?; // make December 31, 1 BCE equal to day 0
-        dbg!(days);
-        let (year_div_400, cycle) = div_mod_floor(days, 146_097);
-        dbg!(year_div_400, cycle);
-        let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        dbg!(year_mod_400, ordinal);
-        let flags = YearTypeFlag::calculate_from_year(year_mod_400 as i16);
-        dbg!(flags);
-        let year_base = year_div_400.checked_mul(400);
-        dbg!(year_base);
-        let year = year_base?.checked_add(i32::try_from(year_mod_400).ok()?);
-        dbg!(year);
-        DateImpl::from_yo(i16::try_from(year?).ok()?, ordinal as u16)
+    #[track_caller]
+    #[cfg(feature = "const-validation")]
+    pub(super) const fn from_ymd_validated(year: i16, month: Month, day: u8) -> DateImpl {
+        match Of::from_ymd(year, month, day) {
+            Some(of) => DateImpl(year, of),
+            None => panic!("Invalid combination for year, month and day"),
+        }
     }
 
-    pub(super) fn from_isoywd_opt(year: i32, week: u16, weekday: Weekday) -> Option<DateImpl> {
+    pub(super) const fn from_num_days_from_ce_opt(days: i32) -> Option<DateImpl> {
+        // todo!()
+        let days = try_opt!(days.checked_add(365)); // make December 31, 1 BCE equal to day 0
+                                                    // dbg!(days);
+        let (year_div_400, cycle) = const_div_mod_floor_i32(days, DAYS_IN_CYCLE);
+        // dbg!(year_div_400, cycle);
+        let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
+        // dbg!(year_mod_400, ordinal);
+        let flags = YearTypeFlag::calculate_from_year(year_mod_400 as i16);
+        // dbg!(flags);
+        let year_base = year_div_400.checked_mul(400);
+        // dbg!(year_base);
+        let year = try_opt!(year_base).checked_add(try_from_u32_to_i32!(year_mod_400));
+        // dbg!(year);
+        DateImpl::from_yo(try_from_i32_to_i16!(try_opt!(year)), ordinal as u16)
+    }
+
+    pub(super) const fn from_isoywd_opt(
+        year: i32,
+        week: u16,
+        weekday: Weekday,
+    ) -> Option<DateImpl> {
         // dbg!(year, week, weekday);
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_an_ordinal_or_month_date_from_a_week_date
-        let flags = YearTypeFlag::calculate_from_year(const_mod_floor_i16(
-            i16::try_from(year % 400).ok()?,
-            400,
-        ));
-        // dbg!(flags);
-        let mult_week = week.checked_mul(7)?;
-        // dbg!(mult_week);
+        let flags =
+            YearTypeFlag::calculate_from_year(const_mod_floor_i16((year % 400) as i16, 400));
 
-        // dbg!(flags.nisoweeks());
-
-        if week == 0 || week > flags.nisoweeks().into() {
+        if week == 0 || week > flags.nisoweeks() as u16 {
             return None;
         }
 
-        fn base_ordinal(week: u16, weekday: Weekday, flags: YearTypeFlag) -> Option<u16> {
-            let week_ord = week
-                .checked_mul(7)?
-                .checked_sub(6)?
-                .checked_add(u16::from(weekday.num_days_from_monday()))?;
+        const fn base_ordinal(week: u16, weekday: Weekday, flags: YearTypeFlag) -> Option<u16> {
+            let week_ord = try_opt!(try_opt!(try_opt!(week.checked_mul(7)).checked_sub(6))
+                .checked_add(weekday.num_days_from_monday() as u16));
 
-            let ord = flags.week_1_jan_delta_days_from_jan_1_calendar_adj(week_ord)?;
+            let ord = try_opt!(flags.week_1_jan_delta_days_from_jan_1_calendar_adj(week_ord));
 
             if ord == 0 {
                 None
@@ -148,7 +225,7 @@ impl DateImpl {
             }
         }
 
-        let base_ord = dbg!(base_ordinal(week, weekday, flags));
+        let base_ord = base_ordinal(week, weekday, flags);
 
         match base_ord {
             Some(ord) if ord <= flags.ndays().get() => {
@@ -156,29 +233,28 @@ impl DateImpl {
                 // let adj = mult_week.checked_sub(u16::from(flags.jan_1_weekday().num_days_from_monday()))?.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
                 // dbg!("regular");
                 // dbg!(flags.jan_1_weekday().num_days_from_monday(), weekday.num_days_from_monday(), adj);
-                let cal_year = i16::try_from(year).ok()?;
-                let flags = YearTypeFlag::calculate_from_year(cal_year);
+                let cal_year = try_from_i32_to_i16!(year);
                 // let ordinal = adj;
                 // dbg!(cal_year, flags, ord);
                 DateImpl::from_yo(cal_year, ord)
             }
             Some(ord) => {
                 // next CY
-                let cal_year = i16::try_from(year + 1).ok()?;
-                let alt_flags = YearTypeFlag::calculate_from_year(cal_year);
-                let adj_ord = ord.checked_sub(flags.ndays().get())?;
+                let cal_year = try_from_i32_to_i16!(year + 1);
+                let adj_ord = try_opt!(ord.checked_sub(flags.ndays().get()));
                 // dbg!(cal_year, alt_flags, adj_ord);
                 DateImpl::from_yo(cal_year, adj_ord)
             }
             None => {
                 // prev cy
-                let cal_year = i16::try_from(year - 1).ok()?;
+                let cal_year = try_from_i32_to_i16!(year - 1);
                 let alt_flags = YearTypeFlag::calculate_from_year(cal_year);
 
                 let ord =
-                    flags.week_1_jan_delta_days_from_jan_1_calendar_adj(alt_flags.ndays().get())?;
+                    try_opt!(flags
+                        .week_1_jan_delta_days_from_jan_1_calendar_adj(alt_flags.ndays().get()));
                 // dbg!(ord);
-                let adj_ord = ord + 1 + u16::from(weekday.num_days_from_monday());
+                let adj_ord = ord + 1 + weekday.num_days_from_monday() as u16;
                 // dbg!(cal_year, adj_ord, Of::from_ordinal_and_year(adj_ord, cal_year).unwrap().weekday());
                 DateImpl::from_yo(cal_year, adj_ord)
             }
@@ -186,25 +262,25 @@ impl DateImpl {
     }
 
     // the ISOWEEK year has a wider range
-    pub(super) fn isoweek_year(&self) -> i32 {
+    pub(super) const fn isoweek_year(&self) -> i32 {
         // dbg!(self);
 
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
-        let num = (self.ordinal().get() + 9 - u16::from(self.weekday().num_days_from_monday())) / 7;
+        let num = (self.ordinal().get() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
         // dbg!(num);
         match num {
-            0 => i32::from(self.year()) - 1,
+            0 => self.year() as i32 - 1,
             53 => {
-                match YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1)
+                match YearTypeFlag::calculate_from_year(const_mod_floor_i16(self.year(), 400) + 1)
                     .jan_1_weekday()
                 {
-                    Weekday::Tue | Weekday::Wed | Weekday::Thu => i32::from(self.year()) + 1,
-                    Weekday::Mon | Weekday::Fri | Weekday::Sat | Weekday::Sun => self.year().into(),
+                    Weekday::Tue | Weekday::Wed | Weekday::Thu => self.year() as i32 + 1,
+                    Weekday::Mon | Weekday::Fri | Weekday::Sat | Weekday::Sun => self.year() as i32,
                 }
                 // dbg!(self.weekday(), YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1).jan_1_weekday());
                 // todo!()
             }
-            _ => self.year().into(), // Ordering::Greater => todo!(),
+            _ => self.year() as i32, // Ordering::Greater => todo!(),
         }
         // if ordinal is less than or equal to the max days in last week of prev year,
         // then we are in the last week of the prev year
@@ -220,19 +296,18 @@ impl DateImpl {
     }
 
     // u16 for convenience as u16 is a lot more convenient than Option<u8>!
-    pub(super) fn isoweek_number(&self) -> u16 {
+    pub(super) const fn isoweek_number(&self) -> u16 {
         // dbg!(self);
 
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
-        let num = (self.ordinal().get() + 9 - u16::from(self.weekday().num_days_from_monday())) / 7;
+        let num = (self.ordinal().get() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
         // dbg!(num);
         match num {
-            0 => YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) - 1)
-                .nisoweeks()
-                .into(),
+            0 => YearTypeFlag::calculate_from_year(const_mod_floor_i16(self.year(), 400) - 1)
+                .nisoweeks() as u16,
             53 => {
                 let next_year_flags =
-                    YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1);
+                    YearTypeFlag::calculate_from_year(const_mod_floor_i16(self.year(), 400) + 1);
                 match next_year_flags {
                     YearTypeFlag::BA | YearTypeFlag::B | YearTypeFlag::C | YearTypeFlag::CB => 53,
                     _ => 1,
@@ -242,9 +317,9 @@ impl DateImpl {
         }
     }
 
-    pub(super) fn from_weekday_of_month_opt(
+    pub(super) const fn from_weekday_of_month_opt(
         year: i16,
-        month: u8,
+        month: Month,
         weekday: Weekday,
         n: u8,
     ) -> Option<DateImpl> {
@@ -252,22 +327,21 @@ impl DateImpl {
         if n == 0 {
             return None;
         }
-        let first = DateImpl::from_ymd(year, month, 1)?.weekday();
+        let first = try_opt!(DateImpl::from_ymd(year, month, 1)).weekday();
         let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
         let day = (n - 1) * 7 + first_to_dow + 1;
         DateImpl::from_ymd(year, month, day)
     }
 
-    pub(super) fn diff_months(self, months: i32) -> Option<Self> {
+    pub(super) const fn diff_months(self, months: i32) -> Option<Self> {
         let (years, left) = ((months / 12), (months % 12));
 
-        let years = i16::try_from(years).ok()?;
-        let left = i16::try_from(left).ok()?;
-
+        let years = try_from_i32_to_i16!(years);
+        let left = try_from_i32_to_i16!(left);
         // Determine new year (without taking months into account for now
 
-        let year = if (years > 0 && years > (MAX_YEAR.checked_sub(self.year())?))
-            || (years < 0 && years < (MIN_YEAR.checked_sub(self.year())?))
+        let year = if (years > 0 && years > try_opt!(MAX_YEAR.checked_sub(self.year())))
+            || (years < 0 && years < try_opt!(MIN_YEAR.checked_add(self.year())))
         {
             return None;
         } else {
@@ -276,148 +350,149 @@ impl DateImpl {
 
         // Determine new month
 
-        let month = i16::from(self.month().get()) + left;
+        let month = self.month().number_from_month() as i16 + left;
         let (year, month) = if month <= 0 {
             if year == (MIN_YEAR) {
                 return None;
             }
 
-            (year.checked_sub(1)?, month.checked_add(12)?)
+            (try_opt!(year.checked_sub(1)), try_opt!(month.checked_add(12)))
         } else if month > 12 {
             if year == (MAX_YEAR) {
                 return None;
             }
 
-            (year.checked_add(1)?, month.checked_sub(12)?)
+            (try_opt!(year.checked_add(1)), try_opt!(month.checked_sub(12)))
         } else {
             (year, month)
         };
 
-        let month = u8::try_from(month).ok()?;
-
+        let month = try_opt!(Month::try_from_i16(month));
         // Clamp original day in case new month is shorter
 
         let flags = YearTypeFlag::calculate_from_year(year);
-        let feb_days = if flags.is_leap() { 29 } else { 28 };
-        let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        let day = Ord::min(self.day_of_month().get(), days[(month - 1) as usize]);
+
+        let days1 = self.day_of_month().get();
+        let days2 = flags.days_in_month(month).get();
+        let day = if days1 < days2 { days1 } else { days2 };
 
         DateImpl::from_ymd(year, month, day)
     }
 
-    pub(super) fn year_type(&self) -> YearTypeFlag {
+    pub(super) const fn year_type(&self) -> YearTypeFlag {
         self.of().flags()
     }
-    fn of(&self) -> Of {
+    const fn of(&self) -> Of {
         self.1
     }
-    pub(super) fn weekday(&self) -> Weekday {
+    pub(super) const fn weekday(&self) -> Weekday {
         self.of().weekday()
     }
-    pub(super) fn ordinal(&self) -> NonZeroU16 {
+    pub(super) const fn ordinal(&self) -> NonZeroU16 {
         self.of().ordinal()
     }
 
-    pub(super) fn month(&self) -> NonZeroU8 {
+    pub(super) const fn month(&self) -> Month {
         self.of().month()
     }
 
-    pub(super) fn day_of_month(&self) -> NonZeroU8 {
+    pub(super) const fn day_of_month(&self) -> NonZeroU8 {
         self.of().day_of_month()
     }
 
-    pub(super) fn year(&self) -> i16 {
+    pub(super) const fn year(&self) -> i16 {
         self.0
     }
 
-    pub(super) fn diff_days(self, days: i64) -> Option<Self> {
+    pub(super) const fn diff_days(self, days: i64) -> Option<Self> {
         // will later be swapped to proper impl once checked_*_signed are removed
         self.checked_add_signed(days)
     }
 
-    pub fn signed_duration_since(self, rhs: DateImpl) -> i64 {
+    pub const fn signed_duration_since(self, rhs: DateImpl) -> i64 {
         let year1 = self.year();
         let year2 = rhs.year();
-        let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
-        let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = i64::from(yo_to_cycle(year1_mod_400 as u32, self.ordinal().get()));
-        let cycle2 = i64::from(yo_to_cycle(year2_mod_400 as u32, rhs.ordinal().get()));
+        let (year1_div_400, year1_mod_400) = const_div_mod_floor_i16(year1, 400);
+        let (year2_div_400, year2_mod_400) = const_div_mod_floor_i16(year2, 400);
+        let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal().get());
+        let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal().get());
 
-        (i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 + (cycle1 - cycle2)
+        (year1_div_400 as i64 - year2_div_400 as i64) * DAYS_IN_CYCLE as i64
+            + (cycle1 as i64 - cycle2 as i64)
     }
 
-    pub(super) fn checked_add_signed(self, rhs: i64) -> Option<Self> {
-        dbg!(self);
-        let rhs = i32::try_from(rhs).ok()?;
-        dbg!(rhs);
+    pub(super) const fn checked_add_signed(self, rhs: i64) -> Option<Self> {
+        // dbg!(self);
+        let rhs = try_from_i64_to_i32!(rhs);
+        // dbg!(rhs);
         let year = self.year();
-        dbg!(year);
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        dbg!(year_div_400, year_mod_400);
+        // dbg!(year);
+        let (mut year_div_400, year_mod_400) = const_div_mod_floor_i16(year, 400);
+        // dbg!(year_div_400, year_mod_400);
         let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal().get());
-        dbg!(cycle);
-        let cycle = (cycle as i32).checked_add(rhs)?;
-        dbg!(cycle);
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        dbg!(cycle_div_400y, cycle);
-        year_div_400 = year_div_400.checked_add(i16::try_from(cycle_div_400y).ok()?)?;
-        dbg!(year_div_400);
+        // dbg!(cycle);
+        let cycle = try_opt!((cycle as i32).checked_add(rhs));
+        // dbg!(cycle);
+        let (cycle_div_400y, cycle) = const_div_mod_floor_i32(cycle, DAYS_IN_CYCLE);
+        // dbg!(cycle_div_400y, cycle);
+        year_div_400 = try_opt!(year_div_400.checked_add(try_from_i32_to_i16!(cycle_div_400y)));
+        // dbg!(year_div_400);
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        dbg!(year_mod_400, ordinal);
-        let year_mod_400 = i16::try_from(year_mod_400).ok()?;
-        dbg!(year_mod_400);
-        let ordinal = u16::try_from(ordinal).ok()?;
-        dbg!(ordinal);
-        let year_base = i32::from(year_div_400).checked_mul(400);
-        dbg!(year_base);
-        let year = year_base?.checked_add(i32::from(year_mod_400));
-        dbg!(year);
-        let year = i16::try_from(year?);
-        dbg!(year);
-        DateImpl::from_yo(year.ok()?, ordinal)
+        // dbg!(year_mod_400, ordinal);
+        let year_mod_400 = try_from_u32_to_u16!(year_mod_400);
+        // dbg!(year_mod_400);
+        let ordinal = try_from_u32_to_u16!(ordinal);
+        // dbg!(ordinal);
+        let year_base = (year_div_400 as i32).checked_mul(400);
+        // dbg!(year_base);
+        let year = try_opt!(year_base).checked_add(year_mod_400 as i32);
+        // dbg!(year);
+        let year = try_from_i32_to_i16!(try_opt!(year));
+        // dbg!(year);
+        DateImpl::from_yo(year, ordinal)
     }
 
-    pub(super) fn checked_sub_signed(self, rhs: i64) -> Option<Self> {
-        dbg!(self);
-        let rhs = i32::try_from(rhs).ok()?;
-        dbg!(rhs);
+    pub(super) const fn checked_sub_signed(self, rhs: i64) -> Option<Self> {
+        // dbg!(self);
+        let rhs = try_from_i64_to_i32!(rhs);
+        // dbg!(rhs);
         let year = self.year();
-        dbg!(year);
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        dbg!(year_div_400, year_mod_400);
+        // dbg!(year);
+        let (mut year_div_400, year_mod_400) = const_div_mod_floor_i16(year, 400);
+        // dbg!(year_div_400, year_mod_400);
         let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal().get());
-        dbg!(cycle);
-        let cycle = (cycle as i32).checked_sub(rhs)?;
-        dbg!(cycle);
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        dbg!(cycle_div_400y, cycle);
-        year_div_400 = year_div_400.checked_add(i16::try_from(cycle_div_400y).ok()?)?;
-        dbg!(year_div_400);
+        // dbg!(cycle);
+        let cycle = try_opt!((cycle as i32).checked_sub(rhs));
+        // dbg!(cycle);
+        let (cycle_div_400y, cycle) = const_div_mod_floor_i32(cycle, DAYS_IN_CYCLE);
+        // dbg!(cycle_div_400y, cycle);
+        year_div_400 = try_opt!(year_div_400.checked_add(try_from_i32_to_i16!(cycle_div_400y)));
+        // dbg!(year_div_400);
 
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        dbg!(year_mod_400, ordinal);
+        // dbg!(year_mod_400, ordinal);
 
-        let year_mod_400 = i16::try_from(year_mod_400).ok()?;
-        dbg!(year_mod_400);
+        let year_mod_400 = try_from_u32_to_u16!(year_mod_400);
+        // dbg!(year_mod_400);
 
-        let ordinal = u16::try_from(ordinal).ok()?;
+        let ordinal = try_from_u32_to_u16!(ordinal);
 
-        let year_base = i32::from(year_div_400).checked_mul(400);
-        dbg!(year_base);
-        let year = year_base?.checked_add(i32::from(year_mod_400));
-        dbg!(year);
-        let year = i16::try_from(year?).ok();
-        dbg!(year);
+        let year_base = (year_div_400 as i32).checked_mul(400);
+        // dbg!(year_base);
+        let year = try_opt!(year_base).checked_add(year_mod_400 as i32);
+        // dbg!(year);
+        let year = try_from_i32_to_i16!(try_opt!(year));
+        // dbg!(year);
 
-        DateImpl::from_yo(year?, ordinal)
+        DateImpl::from_yo(year, ordinal)
     }
 
     #[inline]
-    pub(super) fn succ_opt(&self) -> Option<DateImpl> {
+    pub(super) const fn succ_opt(&self) -> Option<DateImpl> {
         let of = self.of();
         let current_year = self.year();
-        if of.ordinal() == of.flags().ndays() {
-            let next_year = current_year.checked_add(1)?;
+        if of.ordinal().get() == of.flags().ndays().get() {
+            let next_year = try_opt!(current_year.checked_add(1));
             DateImpl::from_yo(next_year, 1)
         } else {
             DateImpl::from_yo(current_year, of.ordinal().get() + 1)
@@ -425,11 +500,11 @@ impl DateImpl {
     }
 
     #[inline]
-    pub(super) fn pred_opt(&self) -> Option<DateImpl> {
+    pub(super) const fn pred_opt(&self) -> Option<DateImpl> {
         let of = self.of();
         let current_year = self.year();
         if of.ordinal().get() == 1 {
-            let prev_year = current_year.checked_sub(1)?;
+            let prev_year = try_opt!(current_year.checked_sub(1));
             let new_flags = YearTypeFlag::calculate_from_year(prev_year);
             DateImpl::from_yo(prev_year, new_flags.ndays().get())
         } else {
@@ -471,6 +546,48 @@ const fn const_mod_floor_i32(a: i32, b: i32) -> i32 {
     }
 }
 
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+const fn const_div_floor_i16(a: i16, b: i16) -> i16 {
+    // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
+    // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
+    let (d, r) = (a / b, a % b);
+    if (r > 0 && b < 0) || (r < 0 && b > 0) {
+        d - 1
+    } else {
+        d
+    }
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+const fn const_div_floor_i32(a: i32, b: i32) -> i32 {
+    // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
+    // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
+    let (d, r) = (a / b, a % b);
+    if (r > 0 && b < 0) || (r < 0 && b > 0) {
+        d - 1
+    } else {
+        d
+    }
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+const fn const_div_mod_floor_i16(a: i16, b: i16) -> (i16, i16) {
+    (const_div_floor_i16(a, b), const_mod_floor_i16(a, b))
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+const fn const_div_mod_floor_i32(a: i32, b: i32) -> (i32, i32) {
+    (const_div_floor_i32(a, b), const_mod_floor_i32(a, b))
+}
+
 const fn is_leap(astronomical_year: i16) -> bool {
     if astronomical_year % 4 != 0 {
         return false;
@@ -496,6 +613,7 @@ pub fn ndays(astronomical_year: i16) -> NonZeroU16 {
 
 pub mod year_flags {
     use super::*;
+    use crate::Month;
     use core::num::NonZeroU16;
     pub use YearTypeFlag::*;
 
@@ -531,77 +649,29 @@ pub mod year_flags {
         GF, // Leap, Monday start
     }
 
-    // pub(super) const A: YearFlags = YearFlags(0o15);
-    // pub(super) const AG: YearFlags = YearFlags(0o05);
-    // pub(super) const B: YearFlags = YearFlags(0o14);
-    // pub(super) const BA: YearFlags = YearFlags(0o04);
-    // pub(super) const C: YearFlags = YearFlags(0o13);
-    // pub(super) const CB: YearFlags = YearFlags(0o03);
-    // pub(super) const D: YearFlags = YearFlags(0o12);
-    // pub(super) const DC: YearFlags = YearFlags(0o02);
-    // pub(super) const E: YearFlags = YearFlags(0o11);
-    // pub(super) const ED: YearFlags = YearFlags(0o01);
-    // pub(super) const F: YearFlags = YearFlags(0o17);
-    // pub(super) const FE: YearFlags = YearFlags(0o07);
-    // pub(super) const G: YearFlags = YearFlags(0o16);
-    // pub(super) const GF: YearFlags = YearFlags(0o06);
+    pub(super) const fn year_deltas(year_mod_400: u32) -> u32 {
+        if year_mod_400 == 0 {
+            return 0;
+        }
+        let adj = (year_mod_400 - 1) / 100;
+        let base = (year_mod_400 - 1) / 4 + 1;
+        base - adj
+    }
 
-    pub(super) const YEAR_TO_FLAGS: &[YearTypeFlag] = &[
-        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C,
-        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C,
-        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C,
-        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, // 100
-        C, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
-        DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
-        DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
-        DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, // 200
-        E, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G,
-        FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G,
-        FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G,
-        FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, // 300
-        G, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
-        AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
-        AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
-        AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
-    ];
-
-    const YEAR_DELTAS: [u8; 401] = [
-        0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8,
-        8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14,
-        14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19,
-        20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25,
-        25, // 100
-        25, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30,
-        30, 30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36,
-        36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39, 39, 40, 40, 40, 40, 41, 41, 41, 41,
-        42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47,
-        47, 48, 48, 48, 48, 49, 49, 49, // 200
-        49, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54,
-        54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58, 58, 59, 59, 59, 59, 60,
-        60, 60, 60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63, 63, 64, 64, 64, 64, 65, 65, 65, 65,
-        66, 66, 66, 66, 67, 67, 67, 67, 68, 68, 68, 68, 69, 69, 69, 69, 70, 70, 70, 70, 71, 71, 71,
-        71, 72, 72, 72, 72, 73, 73, 73, // 300
-        73, 73, 73, 73, 73, 74, 74, 74, 74, 75, 75, 75, 75, 76, 76, 76, 76, 77, 77, 77, 77, 78, 78,
-        78, 78, 79, 79, 79, 79, 80, 80, 80, 80, 81, 81, 81, 81, 82, 82, 82, 82, 83, 83, 83, 83, 84,
-        84, 84, 84, 85, 85, 85, 85, 86, 86, 86, 86, 87, 87, 87, 87, 88, 88, 88, 88, 89, 89, 89, 89,
-        90, 90, 90, 90, 91, 91, 91, 91, 92, 92, 92, 92, 93, 93, 93, 93, 94, 94, 94, 94, 95, 95, 95,
-        95, 96, 96, 96, 96, 97, 97, 97, 97, // 400+1
-    ];
-
-    pub(super) fn cycle_to_yo(cycle: u32) -> (u32, u32) {
-        let (mut year_mod_400, mut ordinal0) = div_rem(cycle, 365);
-        let delta = u32::from(YEAR_DELTAS[year_mod_400 as usize]);
+    pub(super) const fn cycle_to_yo(cycle: u32) -> (u32, u32) {
+        let (mut year_mod_400, mut ordinal0) = (cycle / 365, cycle % 365);
+        let delta = year_deltas(year_mod_400);
         if ordinal0 < delta {
             year_mod_400 -= 1;
-            ordinal0 += 365 - u32::from(YEAR_DELTAS[year_mod_400 as usize]);
+            ordinal0 += 365 - year_deltas(year_mod_400);
         } else {
             ordinal0 -= delta;
         }
         (year_mod_400, ordinal0 + 1)
     }
 
-    pub(super) fn yo_to_cycle(year_mod_400: u32, ordinal: u16) -> u32 {
-        year_mod_400 * 365 + u32::from(YEAR_DELTAS[year_mod_400 as usize]) + u32::from(ordinal) - 1
+    pub(super) const fn yo_to_cycle(year_mod_400: u32, ordinal: u16) -> u32 {
+        year_mod_400 * 365 + year_deltas(year_mod_400) + ordinal as u32 - 1
     }
 
     impl YearTypeFlag {
@@ -689,6 +759,59 @@ pub mod year_flags {
             }
         }
 
+        pub const fn days_in_month(&self, month: Month) -> NonZeroU8 {
+            let d = match month {
+                Month::January => 31,
+                Month::February if self.is_leap() => 29,
+                Month::February => 28,
+                Month::March => 31,
+                Month::April => 30,
+                Month::May => 31,
+                Month::June => 30,
+                Month::July => 31,
+                Month::August => 31,
+                Month::September => 30,
+                Month::October => 31,
+                Month::November => 30,
+                Month::December => 31,
+            };
+            unsafe { NonZeroU8::new_unchecked(d) }
+        }
+
+        pub const fn month_to_start_ordinal(&self, month: Month) -> u16 {
+            if self.is_leap() {
+                match month {
+                    Month::January => 0,
+                    Month::February => 31,
+                    Month::March => 60,
+                    Month::April => 91,
+                    Month::May => 121,
+                    Month::June => 152,
+                    Month::July => 182,
+                    Month::August => 213,
+                    Month::September => 244,
+                    Month::October => 274,
+                    Month::November => 305,
+                    Month::December => 335,
+                }
+            } else {
+                match month {
+                    Month::January => 0,
+                    Month::February => 31,
+                    Month::March => 59,
+                    Month::April => 90,
+                    Month::May => 120,
+                    Month::June => 151,
+                    Month::July => 181,
+                    Month::August => 212,
+                    Month::September => 243,
+                    Month::October => 273,
+                    Month::November => 304,
+                    Month::December => 334,
+                }
+            }
+        }
+
         pub const fn calculate_from_year(year: i16) -> YearTypeFlag {
             // https://en.wikipedia.org/wiki/Dominical_letter#De_Morgan's_rule
             let year = const_mod_floor_i16(year, 400);
@@ -710,7 +833,10 @@ pub mod year_flags {
                     2 => YearTypeFlag::ED,
                     1 => YearTypeFlag::FE,
                     0 => YearTypeFlag::GF,
+                    #[cfg(feature = "const-validation")]
                     _ => unreachable!(),
+                    #[cfg(not(feature = "const-validation"))]
+                    _ => YearTypeFlag::AG, // sentinel value
                 },
                 false => match de_morgan {
                     6 => YearTypeFlag::A,
@@ -720,7 +846,10 @@ pub mod year_flags {
                     2 => YearTypeFlag::E,
                     1 => YearTypeFlag::F,
                     0 => YearTypeFlag::G,
+                    #[cfg(feature = "const-validation")]
                     _ => unreachable!(),
+                    #[cfg(not(feature = "const-validation"))]
+                    _ => YearTypeFlag::A, // sentinel value
                 },
             }
         }
@@ -997,130 +1126,6 @@ mod ordinal_flags {
         }
     }
 
-    #[rustfmt::skip]
-    const LEAP_ORDINAL_TO_MONTH: [u8; 366] = [
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Jan
-        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,       // Feb
-        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Mar
-        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,    // Apr
-        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, // May
-        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,    // Jun
-        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Jul
-        8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, // Aug
-        9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,    // Sep
-       10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10, // Oct
-       11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,    // Nov
-       12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12, // Dec
-    ];
-
-    #[rustfmt::skip]
-    const LEAP_ORDINAL_TO_DAY: [u8; 366] = [
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jan
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,       // Feb
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Mar
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Apr
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // May
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Jun
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jul
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Aug
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Sep
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Oct
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Nov
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Dec
-    ];
-
-    #[rustfmt::skip]
-    const ORDINAL_TO_MONTH: [u8; 365] = [
-         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Jan
-         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,          // Feb
-         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Mar
-         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,    // Apr
-         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, // May
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,    // Jun
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Jul
-         8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, // Aug
-         9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,    // Sep
-        10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10, // Oct
-        11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,    // Nov
-        12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12, // Dec
-    ];
-
-    #[rustfmt::skip]
-    const ORDINAL_TO_DAY: [u8; 365] = [
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jan
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,          // Feb
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Mar
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Apr
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // May
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Jun
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jul
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Aug
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Sep
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Oct
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Nov
-        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Dec
-    ];
-
-    const MONTH_TO_START_ORDINAL: [u16; 12] = [
-        0,   // Jan
-        31,  // Feb
-        59,  // Mar
-        90,  // Apr
-        120, // May
-        151, // Jun
-        181, // Jul
-        212, // Aug
-        243, // Sep
-        273, // Oct
-        304, // Nov
-        334, // Dec
-    ];
-
-    const LEAP_MONTH_TO_START_ORDINAL: [u16; 12] = [
-        0,   // Jan
-        31,  // Feb
-        60,  // Mar
-        91,  // Apr
-        121, // May
-        152, // Jun
-        182, // Jul
-        213, // Aug
-        244, // Sep
-        274, // Oct
-        305, // Nov
-        335, // Dec
-    ];
-
-    const DAYS_IN_MONTH: [u8; 12] = [
-        31, // Jan
-        28, // Feb
-        31, // Mar
-        30, // Apr
-        31, // May
-        30, // Jun
-        31, // Jul
-        31, // Aug
-        30, // Sep
-        31, // Oct
-        30, // Nov
-        31, // Dec
-    ];
-
-    const LEAP_DAYS_IN_MONTH: [u8; 12] = [
-        31, // Jan
-        29, // Feb
-        31, // Mar
-        30, // Apr
-        31, // May
-        30, // Jun
-        31, // Jul
-        31, // Aug
-        30, // Sep
-        31, // Oct
-        30, // Nov
-        31, // Dec
-    ];
-
     /// Ordinal (day of year) and year flags: `(ordinal << 4) | flags`.
     ///
     /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
@@ -1168,62 +1173,48 @@ mod ordinal_flags {
             }
         }
 
-        pub(super) fn from_ymd(year: i16, month: u8, day: u8) -> Option<Of> {
-            if !(1..=12).contains(&month) {
-                return None;
-            }
+        // pub(super) fn from_ymd(year: i16, month: Month, day: u8) -> Option<Of> {
+        //     if day == 0 {
+        //         return None;
+        //     }
+
+        //     let month_idx = usize::from(month.number_from_month().checked_sub(1)?);
+
+        //     let year_type = YearTypeFlag::calculate_from_year(year);
+
+        //     let ordinal = match is_leap(year) {
+        //         true => {
+        //             if day > dbg!(*LEAP_DAYS_IN_MONTH.get(month_idx)?) {
+        //                 return None;
+        //             }
+        //             *LEAP_MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
+        //         }
+        //         false => {
+        //             if day > dbg!(*DAYS_IN_MONTH.get(month_idx)?) {
+        //                 return None;
+        //             }
+        //             *MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
+        //         }
+        //     };
+        //     Of::new(ordinal, year_type)
+        // }
+
+        pub(super) const fn from_ymd(year: i16, month: Month, day: u8) -> Option<Of> {
             if day == 0 {
                 return None;
             }
 
-            let month_idx = usize::from(month.checked_sub(1)?);
+            // let month_idx = usize::from(try_opt!(month.number_from_month().checked_sub(1)));
 
             let year_type = YearTypeFlag::calculate_from_year(year);
 
-            let ordinal = match is_leap(year) {
-                true => {
-                    if day > dbg!(*LEAP_DAYS_IN_MONTH.get(month_idx)?) {
-                        return None;
-                    }
-                    *LEAP_MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
-                }
-                false => {
-                    if day > dbg!(*DAYS_IN_MONTH.get(month_idx)?) {
-                        return None;
-                    }
-                    *MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
-                }
-            };
-            Of::new(ordinal, year_type)
-        }
-
-        pub(super) const fn from_ymd_const(year: i16, month: u8, day: u8) -> Option<Of> {
-            if !(1..=12).contains(&month) {
-                return None;
-            }
-            if day == 0 {
+            if day > year_type.days_in_month(month).get() {
                 return None;
             }
 
-            let month_idx = usize::from(month.checked_sub(1)?);
+            let ordinal = year_type.month_to_start_ordinal(month).checked_add(day as u16);
 
-            let year_type = YearTypeFlag::calculate_from_year(year);
-
-            let ordinal = match is_leap(year) {
-                true => {
-                    if day > dbg!(*LEAP_DAYS_IN_MONTH.get(month_idx)?) {
-                        return None;
-                    }
-                    *LEAP_MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
-                }
-                false => {
-                    if day > dbg!(*DAYS_IN_MONTH.get(month_idx)?) {
-                        return None;
-                    }
-                    *MONTH_TO_START_ORDINAL.get(month_idx)? + u16::from(day)
-                }
-            };
-            Of::new(ordinal, year_type)
+            Of::new(try_opt!(ordinal), year_type)
         }
 
         pub(super) const fn from_ordinal_and_year(ordinal: u16, year: i16) -> Option<Of> {
@@ -1231,22 +1222,116 @@ mod ordinal_flags {
             Of::new(ordinal, year_type)
         }
 
-        pub(super) fn month(&self) -> NonZeroU8 {
-            let m = if self.flags().is_leap() {
-                LEAP_ORDINAL_TO_MONTH[usize::from(self.ordinal().get() - 1)]
+        #[allow(clippy::collapsible_else_if)]
+        // manual binary search.
+        // might be better as just a match with 365/366 arms but will leave for now
+        // not collapsing the if else to match the syntax to the binary search semantics
+        pub(super) const fn month(&self) -> Month {
+            let ord = self.ordinal().get();
+            if self.flags().is_leap() {
+                if ord >= 183 {
+                    if ord >= 275 {
+                        if ord >= 336 {
+                            Month::December
+                        } else {
+                            if ord >= 306 {
+                                Month::November
+                            } else {
+                                Month::October
+                            }
+                        }
+                    } else {
+                        if ord >= 245 {
+                            Month::September
+                        } else {
+                            if ord >= 214 {
+                                Month::August
+                            } else {
+                                Month::July
+                            }
+                        }
+                    }
+                } else {
+                    if ord >= 92 {
+                        if ord >= 153 {
+                            Month::June
+                        } else {
+                            if ord >= 122 {
+                                Month::May
+                            } else {
+                                Month::April
+                            }
+                        }
+                    } else {
+                        if ord >= 61 {
+                            Month::March
+                        } else {
+                            if ord >= 32 {
+                                Month::February
+                            } else {
+                                Month::January
+                            }
+                        }
+                    }
+                }
             } else {
-                ORDINAL_TO_MONTH[usize::from(self.ordinal().get() - 1)]
-            };
-            unsafe { NonZeroU8::new_unchecked(m) }
+                if ord >= 182 {
+                    if ord >= 274 {
+                        if ord >= 335 {
+                            Month::December
+                        } else {
+                            if ord >= 305 {
+                                Month::November
+                            } else {
+                                Month::October
+                            }
+                        }
+                    } else {
+                        if ord >= 244 {
+                            Month::September
+                        } else {
+                            if ord >= 213 {
+                                Month::August
+                            } else {
+                                Month::July
+                            }
+                        }
+                    }
+                } else {
+                    if ord >= 91 {
+                        if ord >= 152 {
+                            Month::June
+                        } else {
+                            if ord >= 121 {
+                                Month::May
+                            } else {
+                                Month::April
+                            }
+                        }
+                    } else {
+                        if ord >= 60 {
+                            Month::March
+                        } else {
+                            if ord >= 32 {
+                                Month::February
+                            } else {
+                                Month::January
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        pub(super) fn day_of_month(&self) -> NonZeroU8 {
-            let d = if self.flags().is_leap() {
-                LEAP_ORDINAL_TO_DAY[usize::from(self.ordinal().get() - 1)]
-            } else {
-                ORDINAL_TO_DAY[usize::from(self.ordinal().get() - 1)]
-            };
-            unsafe { NonZeroU8::new_unchecked(d) }
+        pub(super) const fn day_of_month(&self) -> NonZeroU8 {
+            let month = self.month();
+            let ord = self.ordinal().get();
+            let month_start_ordinal = self.flags().month_to_start_ordinal(month);
+
+            // assert!(ord > month_start_ordinal);
+            let dom = ord - month_start_ordinal;
+            // assert!(dom >= 1 && dom <= self.flags().days_in_month(month).get() as u16);
+            unsafe { NonZeroU8::new_unchecked(dom as u8) }
         }
 
         #[inline]
@@ -1288,7 +1373,11 @@ mod ordinal_flags {
                 4 => Weekday::Fri,
                 5 => Weekday::Sat,
                 6 => Weekday::Sun,
+
+                #[cfg(feature = "const-validation")]
                 _ => unreachable!(),
+                #[cfg(not(feature = "const-validation"))]
+                _ => Weekday::Mon, // sentinel value
             }
         }
 
@@ -1305,8 +1394,11 @@ mod tests {
     use num_iter::range_inclusive;
 
     use super::year_flags::{YearTypeFlag, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
-    use super::Of;
-    use crate::Weekday;
+    use super::{ndays, Of};
+    use crate::naive::internals::is_leap;
+    use crate::naive::internals::year_flags::year_deltas;
+    use crate::{Month, Weekday};
+    use num_integer::mod_floor;
 
     const NONLEAP_FLAGS: [YearTypeFlag; 7] = [A, B, C, D, E, F, G];
     const LEAP_FLAGS: [YearTypeFlag; 7] = [AG, BA, CB, DC, ED, FE, GF];
@@ -1392,9 +1484,7 @@ mod tests {
         for &flags in FLAGS.iter() {
             for ordinal in range_inclusive(1u16, 366) {
                 match Of::new(ordinal, flags) {
-                    Some(of) => {
-                        assert_eq!(of.ordinal().get(), ordinal)
-                    }
+                    Some(of) => assert_eq!(of.ordinal().get(), ordinal),
                     None => {
                         assert_eq!(flags.ndays().get(), 365);
                         assert_eq!(ordinal, 366);
@@ -1462,15 +1552,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_year_flags_calculation() {
-        for y in i16::MIN..=i16::MAX {
-            let calculated = YearTypeFlag::calculate_from_year(y);
-            let lookup = super::year_flags::YEAR_TO_FLAGS[super::mod_floor(y, 400) as usize];
-            assert_eq!(calculated, lookup)
-        }
-    }
-
     // #[test]
     // fn test_of_isoweekdate_raw() {
     //     for &flags in FLAGS.iter() {
@@ -1479,4 +1560,317 @@ mod tests {
     //         assert_eq!(week, 1);
     //     }
     // }
+
+    #[cfg(feature = "const-validation")]
+    #[test]
+    fn test_const_ymd() {
+        use super::DateImpl;
+        use crate::Month;
+
+        let res = std::panic::catch_unwind(|| {
+            let _ = DateImpl::from_ymd_validated(2022, Month::January, 0);
+        });
+        assert!(res.is_err());
+        let _ = DateImpl::from_ymd_validated(2022, Month::January, 1);
+        let _ = DateImpl::from_ymd_validated(2022, Month::December, 31);
+        let res = std::panic::catch_unwind(|| {
+            let _ = DateImpl::from_ymd_validated(2022, Month::December, 32);
+        });
+        assert!(res.is_err());
+
+        ymd!(2022, Month::January, 5);
+        ymd!(2022, Month::January, 1);
+        ymd!(2022, Month::January, 2);
+    }
+
+    #[test]
+    fn test_ndays() {
+        for i in i16::MIN..=i16::MAX {
+            ndays(i);
+        }
+    }
+
+    const YEAR_TO_FLAGS: &[YearTypeFlag] = &[
+        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C,
+        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C,
+        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C,
+        BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, // 100
+        C, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
+        DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
+        DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E,
+        DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, // 200
+        E, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G,
+        FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G,
+        FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G,
+        FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, // 300
+        G, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
+        AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
+        AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F, E, DC, B, A, G, FE, D, C, B,
+        AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
+    ];
+
+    const MONTH_TO_START_ORDINAL: [u16; 12] = [
+        0,   // Jan
+        31,  // Feb
+        59,  // Mar
+        90,  // Apr
+        120, // May
+        151, // Jun
+        181, // Jul
+        212, // Aug
+        243, // Sep
+        273, // Oct
+        304, // Nov
+        334, // Dec
+    ];
+
+    const LEAP_MONTH_TO_START_ORDINAL: [u16; 12] = [
+        0,   // Jan
+        31,  // Feb
+        60,  // Mar
+        91,  // Apr
+        121, // May
+        152, // Jun
+        182, // Jul
+        213, // Aug
+        244, // Sep
+        274, // Oct
+        305, // Nov
+        335, // Dec
+    ];
+
+    const DAYS_IN_MONTH: [u8; 12] = [
+        31, // Jan
+        28, // Feb
+        31, // Mar
+        30, // Apr
+        31, // May
+        30, // Jun
+        31, // Jul
+        31, // Aug
+        30, // Sep
+        31, // Oct
+        30, // Nov
+        31, // Dec
+    ];
+
+    const LEAP_DAYS_IN_MONTH: [u8; 12] = [
+        31, // Jan
+        29, // Feb
+        31, // Mar
+        30, // Apr
+        31, // May
+        30, // Jun
+        31, // Jul
+        31, // Aug
+        30, // Sep
+        31, // Oct
+        30, // Nov
+        31, // Dec
+    ];
+
+    #[rustfmt::skip]
+    const LEAP_ORDINAL_TO_MONTH: [u8; 366] = [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Jan
+        2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,       // Feb
+        3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Mar
+        4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,    // Apr
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, // May
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,    // Jun
+        7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Jul
+        8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, // Aug
+        9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,    // Sep
+       10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10, // Oct
+       11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,    // Nov
+       12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12, // Dec
+    ];
+
+    #[rustfmt::skip]
+    const LEAP_ORDINAL_TO_DAY: [u8; 366] = [
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jan
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,       // Feb
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Mar
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Apr
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // May
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Jun
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jul
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Aug
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Sep
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Oct
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Nov
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Dec
+    ];
+
+    #[rustfmt::skip]
+    const ORDINAL_TO_MONTH: [u8; 365] = [
+         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Jan
+         2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,          // Feb
+         3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Mar
+         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,    // Apr
+         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, // May
+         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,    // Jun
+         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Jul
+         8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, // Aug
+         9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,    // Sep
+        10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10, // Oct
+        11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,    // Nov
+        12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12,12, // Dec
+    ];
+
+    #[rustfmt::skip]
+    const ORDINAL_TO_DAY: [u8; 365] = [
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jan
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,          // Feb
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Mar
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Apr
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // May
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Jun
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Jul
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Aug
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Sep
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Oct
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,    // Nov
+        1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31, // Dec
+    ];
+
+    #[test]
+    fn test_year_flags_fns() {
+        for y in i16::MIN..=i16::MAX {
+            let flags = YearTypeFlag::calculate_from_year(y);
+
+            assert_eq!(flags.is_leap(), is_leap(y));
+
+            assert_eq!(flags, YEAR_TO_FLAGS[mod_floor(y, 400) as usize]);
+
+            flags.ndays();
+        }
+    }
+
+    #[test]
+    fn test_year_flags_ymd() {
+        for y in i16::MIN..=i16::MAX {
+            let flags = YearTypeFlag::calculate_from_year(y);
+
+            for month in [
+                Month::January,
+                Month::February,
+                Month::March,
+                Month::April,
+                Month::May,
+                Month::June,
+                Month::July,
+                Month::August,
+                Month::September,
+                Month::October,
+                Month::November,
+                Month::December,
+            ]
+            .iter()
+            .copied()
+            {
+                flags.days_in_month(month);
+
+                let month_start = flags.month_to_start_ordinal(month);
+
+                if flags.is_leap() {
+                    assert_eq!(
+                        month_start,
+                        LEAP_MONTH_TO_START_ORDINAL[month.number_from_month() as usize - 1]
+                    )
+                } else {
+                    assert_eq!(
+                        month_start,
+                        MONTH_TO_START_ORDINAL[month.number_from_month() as usize - 1]
+                    )
+                }
+
+                let days_in_month = flags.days_in_month(month);
+
+                if flags.is_leap() {
+                    assert_eq!(
+                        days_in_month.get(),
+                        LEAP_DAYS_IN_MONTH[month.number_from_month() as usize - 1]
+                    )
+                } else {
+                    assert_eq!(
+                        days_in_month.get(),
+                        DAYS_IN_MONTH[month.number_from_month() as usize - 1]
+                    )
+                }
+
+                for day in 1..=31 {
+                    if let Some(of) = Of::from_ymd(y, month, day) {
+                        of.weekday();
+                        assert_eq!(of.flags(), flags);
+                        assert_eq!(of.month(), month);
+                        assert_eq!(of.day_of_month().get(), day);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_year_flags_yo() {
+        for y in i16::MIN..=i16::MAX {
+            let flags = YearTypeFlag::calculate_from_year(y);
+            for ord in 1..=366 {
+                if let Some(of) = Of::from_ordinal_and_year(ord, y) {
+                    of.weekday();
+                    assert_eq!(of.ordinal().get(), ord);
+                    assert_eq!(of.flags(), flags);
+
+                    if of.flags().is_leap() {
+                        assert_eq!(
+                            of.day_of_month().get(),
+                            LEAP_ORDINAL_TO_DAY[of.ordinal().get() as usize - 1],
+                        );
+                        assert_eq!(
+                            of.month().number_from_month(),
+                            LEAP_ORDINAL_TO_MONTH[of.ordinal().get() as usize - 1],
+                        );
+                    } else {
+                        assert_eq!(
+                            of.day_of_month().get(),
+                            ORDINAL_TO_DAY[of.ordinal().get() as usize - 1],
+                        );
+                        assert_eq!(
+                            of.month().number_from_month(),
+                            ORDINAL_TO_MONTH[of.ordinal().get() as usize - 1],
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    const YEAR_DELTAS: [u32; 401] = [
+        0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8,
+        8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14,
+        14, 14, 14, 15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19,
+        20, 20, 20, 20, 21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25,
+        25, // 100
+        25, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30,
+        30, 30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36,
+        36, 36, 36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39, 39, 40, 40, 40, 40, 41, 41, 41, 41,
+        42, 42, 42, 42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47,
+        47, 48, 48, 48, 48, 49, 49, 49, // 200
+        49, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54,
+        54, 54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58, 58, 59, 59, 59, 59, 60,
+        60, 60, 60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63, 63, 64, 64, 64, 64, 65, 65, 65, 65,
+        66, 66, 66, 66, 67, 67, 67, 67, 68, 68, 68, 68, 69, 69, 69, 69, 70, 70, 70, 70, 71, 71, 71,
+        71, 72, 72, 72, 72, 73, 73, 73, // 300
+        73, 73, 73, 73, 73, 74, 74, 74, 74, 75, 75, 75, 75, 76, 76, 76, 76, 77, 77, 77, 77, 78, 78,
+        78, 78, 79, 79, 79, 79, 80, 80, 80, 80, 81, 81, 81, 81, 82, 82, 82, 82, 83, 83, 83, 83, 84,
+        84, 84, 84, 85, 85, 85, 85, 86, 86, 86, 86, 87, 87, 87, 87, 88, 88, 88, 88, 89, 89, 89, 89,
+        90, 90, 90, 90, 91, 91, 91, 91, 92, 92, 92, 92, 93, 93, 93, 93, 94, 94, 94, 94, 95, 95, 95,
+        95, 96, 96, 96, 96, 97, 97, 97, 97, // 400+1
+    ];
+
+    #[test]
+    fn test_year_deltas() {
+        for i in 0..=399 {
+            assert_eq!(year_deltas(i), YEAR_DELTAS[i as usize],);
+        }
+    }
 }

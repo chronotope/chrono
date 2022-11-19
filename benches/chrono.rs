@@ -50,7 +50,7 @@ fn bench_year_flags_from_year(c: &mut Criterion) {
     c.bench_function("bench_year_flags_from_year", |b| {
         b.iter(|| {
             for year in -999i16..1000 {
-                __BenchYearFlags::from_year(year);
+                __BenchYearFlags::calculate_from_year(year);
             }
         })
     });

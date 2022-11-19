@@ -18,7 +18,7 @@ use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
-use crate::{Datelike, TimeDelta, Weekday};
+use crate::{Datelike, Month, TimeDelta, Weekday};
 
 use super::internals::DateImpl;
 use super::isoweek;
@@ -270,13 +270,14 @@ impl NaiveDate {
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
     pub fn from_ymd_opt(year: i16, month: u8, day: u8) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: DateImpl::from_ymd(year, month, day)? })
+        Some(NaiveDate { inner: DateImpl::from_ymd(year, Month::try_from(month).ok()?, day)? })
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
     /// (year and day of the year).
     ///
-    /// Panics on the out-of-range date and/or invalid day of year.
+    /// Panics on the out-of-range date and/or invalid day of year.                 
+    #[cfg(feature = "const-validation")]
     pub fn from_yo_validated(year: i16, ordinal: u16) -> NaiveDate {
         NaiveDate { inner: DateImpl::from_yo_validated(year, ordinal) }
     }
@@ -430,7 +431,14 @@ impl NaiveDate {
         weekday: Weekday,
         n: u8,
     ) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: DateImpl::from_weekday_of_month_opt(year, month, weekday, n)? })
+        Some(NaiveDate {
+            inner: DateImpl::from_weekday_of_month_opt(
+                year,
+                Month::try_from(month).ok()?,
+                weekday,
+                n,
+            )?,
+        })
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
@@ -1093,7 +1101,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn month(&self) -> u8 {
-        self.inner.month().get()
+        self.inner.month().number_from_month()
     }
 
     /// Returns the month number starting from 0.
@@ -1110,7 +1118,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn month0(&self) -> u8 {
-        self.inner.month().get() - 1
+        self.inner.month().number_from_month() - 1
     }
 
     /// Returns the day of month starting from 1.
@@ -1935,7 +1943,7 @@ mod tests {
     };
 
     #[test]
-    fn diff_months() {
+    fn test_diff_months() {
         // identity
         assert_eq!(
             NaiveDate::from_ymd_opt(2022, 8, 3).unwrap().checked_add_months(Months::new(0)),
@@ -2047,6 +2055,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "const-validation")]
     fn test_from_yo_validated() {
         let res = std::panic::catch_unwind(|| {
             let _ = NaiveDate::from_yo_validated(2022, 0);

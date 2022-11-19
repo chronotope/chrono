@@ -25,6 +25,7 @@ wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
 __internal_bench = ["criterion"]
 __doctest = []
+const-validation = []
 
 [dependencies]
 num-integer = { version = "0.1.36", default-features = false }

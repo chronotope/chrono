@@ -72,7 +72,7 @@ impl Weekday {
     /// ------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.number_from_monday()`: | 1     | 2     | 3     | 4     | 5     | 6     | 7
     #[inline]
-    pub fn number_from_monday(&self) -> u8 {
+    pub const fn number_from_monday(&self) -> u8 {
         match *self {
             Weekday::Mon => 1,
             Weekday::Tue => 2,

@@ -111,7 +111,7 @@ impl Month {
     /// -------------------------| --------- | ---------- | --- | -----
     /// `m.number_from_month()`: | 1         | 2          | `...` | 12
     #[inline]
-    pub fn number_from_month(&self) -> u8 {
+    pub const fn number_from_month(&self) -> u8 {
         match *self {
             Month::January => 1,
             Month::February => 2,
@@ -149,6 +149,63 @@ impl Month {
             Month::October => "October",
             Month::November => "November",
             Month::December => "December",
+        }
+    }
+
+    /// a
+    pub const fn try_from_u8(val: u8) -> Option<Self> {
+        match val {
+            1 => Some(Month::January),
+            2 => Some(Month::February),
+            3 => Some(Month::March),
+            4 => Some(Month::April),
+            5 => Some(Month::May),
+            6 => Some(Month::June),
+            7 => Some(Month::July),
+            8 => Some(Month::August),
+            9 => Some(Month::September),
+            10 => Some(Month::October),
+            11 => Some(Month::November),
+            12 => Some(Month::December),
+            _ => None,
+        }
+    }
+
+    /// a
+    pub const fn try_from_u16(val: u16) -> Option<Self> {
+        match val {
+            1 => Some(Month::January),
+            2 => Some(Month::February),
+            3 => Some(Month::March),
+            4 => Some(Month::April),
+            5 => Some(Month::May),
+            6 => Some(Month::June),
+            7 => Some(Month::July),
+            8 => Some(Month::August),
+            9 => Some(Month::September),
+            10 => Some(Month::October),
+            11 => Some(Month::November),
+            12 => Some(Month::December),
+            _ => None,
+        }
+    }
+
+    /// a
+    pub const fn try_from_i16(val: i16) -> Option<Self> {
+        match val {
+            1 => Some(Month::January),
+            2 => Some(Month::February),
+            3 => Some(Month::March),
+            4 => Some(Month::April),
+            5 => Some(Month::May),
+            6 => Some(Month::June),
+            7 => Some(Month::July),
+            8 => Some(Month::August),
+            9 => Some(Month::September),
+            10 => Some(Month::October),
+            11 => Some(Month::November),
+            12 => Some(Month::December),
+            _ => None,
         }
     }
 }
