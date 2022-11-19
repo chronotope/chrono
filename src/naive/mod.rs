@@ -7,7 +7,7 @@
 mod date;
 pub(crate) mod datetime;
 #[macro_use]
-mod internals;
+pub(crate) mod internals;
 mod isoweek;
 mod time;
 

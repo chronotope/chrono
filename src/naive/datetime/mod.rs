@@ -9,11 +9,10 @@ use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
+use crate::naive::internals::const_div_mod_floor_i64;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::internals::DateImpl;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -186,7 +185,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        let (days, secs) = div_mod_floor(secs, 86_400);
+        let (days, secs) = const_div_mod_floor_i64(secs, 86_400);
         let date = i32::try_from(days)
             .ok()
             .and_then(|days| days.checked_add(719_163))

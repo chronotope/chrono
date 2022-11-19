@@ -356,6 +356,7 @@ impl ParseError {
 
 /// The category of parse error
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
+#[allow(clippy::manual_non_exhaustive)]
 pub enum ParseErrorKind {
     /// Given field is out of permitted range.
     OutOfRange,
@@ -488,8 +489,8 @@ fn format_inner<'a>(
         )
     };
 
+    use crate::naive::internals::{const_div_floor_i64, const_mod_floor_i64};
     use core::fmt::Write;
-    use num_integer::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
@@ -508,22 +509,25 @@ fn format_inner<'a>(
 
             let (width, v) = match *spec {
                 Year => (4, date.map(|d| i64::from(d.year()))),
-                YearDiv100 => (2, date.map(|d| div_floor(i64::from(d.year()), 100))),
-                YearMod100 => (2, date.map(|d| mod_floor(i64::from(d.year()), 100))),
+                YearDiv100 => (2, date.map(|d| const_div_floor_i64(i64::from(d.year()), 100))),
+                YearMod100 => (2, date.map(|d| const_mod_floor_i64(i64::from(d.year()), 100))),
                 IsoYear => (
                     4,
-                    date.map(|d| (d.iso_week().map(|w| i64::from(w.year()))))
-                        .ok_or_else(|| fmt::Error)?,
+                    date.map(|d| (d.iso_week().map(|w| i64::from(w.year())))).ok_or(fmt::Error)?,
                 ),
                 IsoYearDiv100 => (
                     2,
-                    date.map(|d| (d.iso_week().map(|w| div_floor(i64::from(w.year()), 100))))
-                        .ok_or_else(|| fmt::Error)?,
+                    date.map(|d| {
+                        (d.iso_week().map(|w| const_div_floor_i64(i64::from(w.year()), 100)))
+                    })
+                    .ok_or(fmt::Error)?,
                 ),
                 IsoYearMod100 => (
                     2,
-                    date.map(|d| (d.iso_week().map(|w| mod_floor(i64::from(w.year()), 100))))
-                        .ok_or_else(|| fmt::Error)?,
+                    date.map(|d| {
+                        (d.iso_week().map(|w| const_mod_floor_i64(i64::from(w.year()), 100)))
+                    })
+                    .ok_or(fmt::Error)?,
                 ),
                 Month => (2, date.map(|d| i64::from(d.month()))),
                 Day => (2, date.map(|d| i64::from(d.day()))),
@@ -531,8 +535,7 @@ fn format_inner<'a>(
                 WeekFromMon => (2, date.map(|d| i64::from(week_from_mon(d)))),
                 IsoWeek => (
                     2,
-                    date.map(|d| (d.iso_week().map(|w| i64::from(w.week()))))
-                        .ok_or_else(|| fmt::Error)?,
+                    date.map(|d| (d.iso_week().map(|w| i64::from(w.week())))).ok_or(fmt::Error)?,
                 ),
                 NumDaysFromSun => (1, date.map(|d| i64::from(d.weekday().num_days_from_sunday()))),
                 WeekdayFromMon => (1, date.map(|d| i64::from(d.weekday().number_from_monday()))),

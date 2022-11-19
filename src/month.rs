@@ -172,6 +172,26 @@ impl Month {
     }
 
     /// a
+    #[cfg(feature = "const-validation")]
+    pub const fn try_from_u8_validated(val: u8) -> Self {
+        match val {
+            1 => Month::January,
+            2 => Month::February,
+            3 => Month::March,
+            4 => Month::April,
+            5 => Month::May,
+            6 => Month::June,
+            7 => Month::July,
+            8 => Month::August,
+            9 => Month::September,
+            10 => Month::October,
+            11 => Month::November,
+            12 => Month::December,
+            _ => panic!("Invalid month value"),
+        }
+    }
+
+    /// a
     pub const fn try_from_u16(val: u16) -> Option<Self> {
         match val {
             1 => Some(Month::January),

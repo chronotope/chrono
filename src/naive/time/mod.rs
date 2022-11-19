@@ -8,7 +8,6 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -16,6 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::naive::internals::const_div_mod_floor_u32;
 use crate::{TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
@@ -738,8 +738,8 @@ impl NaiveTime {
 
     /// Returns a triple of the hour, minute and second numbers.
     fn hms(&self) -> (u32, u32, u32) {
-        let (mins, sec) = div_mod_floor(self.secs, 60);
-        let (hour, min) = div_mod_floor(mins, 60);
+        let (mins, sec) = const_div_mod_floor_u32(self.secs, 60);
+        let (hour, min) = const_div_mod_floor_u32(mins, 60);
         (hour, min, sec)
     }
 

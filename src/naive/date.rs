@@ -20,13 +20,35 @@ use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{Datelike, Month, TimeDelta, Weekday};
 
-
-use crate::try_opt;
 use super::internals::DateImpl;
-use super::isoweek;
+use crate::{try_from_u64_to_i64, try_opt};
 
 #[cfg(test)]
 use super::internals;
+
+// forces the cosnt validation
+#[cfg(feature = "const-validation")]
+#[macro_export]
+/// a
+macro_rules! ymd {
+    ($y:expr, $m:expr, $d:expr) => {{
+        const _: NaiveDate = NaiveDate::from_ymd_validated($y, $m, $d);
+
+        NaiveDate::from_ymd_validated($y, $m, $d)
+    }};
+}
+
+// forces the cosnt validation
+#[cfg(feature = "const-validation")]
+#[macro_export]
+/// a
+macro_rules! yo {
+    ($y:expr, $o:expr) => {{
+        const _: NaiveDate = NaiveDate::from_yo_validated($y, $o);
+
+        NaiveDate::from_yo_validated($y, $o)
+    }};
+}
 
 //   MAX_YEAR-12-31 minus 0000-01-01
 // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
@@ -272,13 +294,17 @@ impl NaiveDate {
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
     pub const fn from_ymd_opt(year: i16, month: u8, day: u8) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: try_opt!(DateImpl::from_ymd(year, try_opt!(Month::try_from_u8(month)), day)) })
+        Some(NaiveDate {
+            inner: try_opt!(DateImpl::from_ymd(year, try_opt!(Month::try_from_u8(month)), day)),
+        })
     }
 
     #[cfg(feature = "const-validation")]
-    /// 
-    pub const fn from_ymd_validated(year: i16, month: Month, day: u8) -> NaiveDate {
-        NaiveDate { inner:DateImpl::from_ymd_validated(year, month, day) }
+    ///
+    pub const fn from_ymd_validated(year: i16, month: u8, day: u8) -> NaiveDate {
+        NaiveDate {
+            inner: DateImpl::from_ymd_validated(year, Month::try_from_u8_validated(month), day),
+        }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -310,8 +336,8 @@ impl NaiveDate {
     /// assert!(from_yo_opt(400000, 1).is_none());
     /// assert!(from_yo_opt(-400000, 1).is_none());
     /// ```
-    pub fn from_yo_opt(year: i16, ordinal: u16) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: DateImpl::from_yo(year, ordinal)? })
+    pub const fn from_yo_opt(year: i16, ordinal: u16) -> Option<NaiveDate> {
+        Some(NaiveDate { inner: try_opt!(DateImpl::from_yo(year, ordinal)) })
     }
 
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
@@ -368,8 +394,8 @@ impl NaiveDate {
     /// assert_eq!(from_isoywd_opt(2015, 54, Weekday::Mon), None);
     /// assert_eq!(from_isoywd_opt(2016, 1, Weekday::Mon), Some(from_ymd(2016, 1, 4)));
     /// ```
-    pub fn from_isoywd_opt(year: i32, week: u16, weekday: Weekday) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: DateImpl::from_isoywd_opt(year, week, weekday)? })
+    pub const fn from_isoywd_opt(year: i32, week: u16, weekday: Weekday) -> Option<NaiveDate> {
+        Some(NaiveDate { inner: try_opt!(DateImpl::from_isoywd_opt(year, week, weekday)) })
     }
 
     /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
@@ -402,8 +428,8 @@ impl NaiveDate {
     /// assert_eq!(from_ndays_opt(100_000_000),  None);
     /// assert_eq!(from_ndays_opt(-100_000_000), None);
     /// ```
-    pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: DateImpl::from_num_days_from_ce_opt(days)? })
+    pub const fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
+        Some(NaiveDate { inner: try_opt!(DateImpl::from_num_days_from_ce_opt(days)) })
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -433,19 +459,19 @@ impl NaiveDate {
     ///
     /// Returns `None` if `n` out-of-range; ie. if `n` is larger than the number of `weekday` in
     /// `month` (eg. the 6th Friday of March 2017), or if `n == 0`.
-    pub fn from_weekday_of_month_opt(
+    pub const fn from_weekday_of_month_opt(
         year: i16,
         month: u8,
         weekday: Weekday,
         n: u8,
     ) -> Option<NaiveDate> {
         Some(NaiveDate {
-            inner: DateImpl::from_weekday_of_month_opt(
+            inner: try_opt!(DateImpl::from_weekday_of_month_opt(
                 year,
-                Month::try_from(month).ok()?,
+                try_opt!(Month::try_from_u8(month)),
                 weekday,
                 n,
-            )?,
+            )),
         })
     }
 
@@ -514,7 +540,7 @@ impl NaiveDate {
     ///     Some(NaiveDate::from_ymd_opt(2022, 9, 30).unwrap())
     /// );
     /// ```
-    pub fn checked_add_months(self, months: Months) -> Option<Self> {
+    pub const fn checked_add_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
             return Some(self);
         }
@@ -544,7 +570,7 @@ impl NaiveDate {
     ///     None
     /// );
     /// ```
-    pub fn checked_sub_months(self, months: Months) -> Option<Self> {
+    pub const fn checked_sub_months(self, months: Months) -> Option<Self> {
         if months.0 == 0 {
             return Some(self);
         }
@@ -556,8 +582,8 @@ impl NaiveDate {
         }
     }
 
-    fn diff_months(self, months: i32) -> Option<Self> {
-        Some(NaiveDate { inner: self.inner.diff_months(months)? })
+    const fn diff_months(self, months: i32) -> Option<Self> {
+        Some(NaiveDate { inner: try_opt!(self.inner.diff_months(months)) })
     }
 
     /// Add a duration in [`Days`] to the date
@@ -575,12 +601,13 @@ impl NaiveDate {
     ///     Some(NaiveDate::from_ymd_opt(2022, 8, 2).unwrap())
     /// );
     /// ```
-    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+    pub const fn checked_add_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
             return Some(self);
         }
 
-        i64::try_from(days.0).ok().and_then(|d| self.diff_days(d))
+        let days = try_from_u64_to_i64!(days.0);
+        self.diff_days(days)
     }
 
     /// Subtract a duration in [`Days`] from the date
@@ -594,16 +621,17 @@ impl NaiveDate {
     ///     Some(NaiveDate::from_ymd_opt(2022, 2, 14).unwrap())
     /// );
     /// ```
-    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+    pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
             return Some(self);
         }
 
-        i64::try_from(days.0).ok().and_then(|d| self.diff_days(-d))
+        let days = try_from_u64_to_i64!(days.0);
+        self.diff_days(-days)
     }
 
-    fn diff_days(self, days: i64) -> Option<Self> {
-        Some(NaiveDate { inner: self.inner.diff_days(days)? })
+    const fn diff_days(self, days: i64) -> Option<Self> {
+        Some(NaiveDate { inner: try_opt!(self.inner.diff_days(days)) })
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -854,8 +882,8 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MAX.succ_opt(), None);
     /// ```
     #[inline]
-    pub fn succ_opt(&self) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: self.inner.succ_opt()? })
+    pub const fn succ_opt(&self) -> Option<NaiveDate> {
+        Some(NaiveDate { inner: try_opt!(self.inner.succ_opt()) })
     }
 
     /// Makes a new `NaiveDate` for the previous calendar date.
@@ -881,8 +909,8 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MIN.pred_opt(), None);
     /// ```
     #[inline]
-    pub fn pred_opt(&self) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: self.inner.pred_opt()? })
+    pub const fn pred_opt(&self) -> Option<NaiveDate> {
+        Some(NaiveDate { inner: try_opt!(self.inner.pred_opt()) })
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -2708,5 +2736,31 @@ mod tests {
             assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%Y-%m-%d"));
             assert!(days.contains(&date));
         }
+    }
+
+    #[cfg(feature = "const-validation")]
+    #[test]
+    fn test_const_ymd() {
+        use super::NaiveDate;
+
+        let res = std::panic::catch_unwind(|| {
+            let _ = NaiveDate::from_ymd_validated(2022, 1, 0);
+        });
+        assert!(res.is_err());
+        let _ = NaiveDate::from_ymd_validated(2022, 1, 1);
+        let _ = NaiveDate::from_ymd_validated(2022, 12, 31);
+        let res = std::panic::catch_unwind(|| {
+            let _ = NaiveDate::from_ymd_validated(2022, 12, 32);
+        });
+        assert!(res.is_err());
+
+        ymd!(2022, 1, 5);
+        ymd!(2022, 1, 1);
+        ymd!(2022, 1, 2);
+        ymd!(2022, 12, 31);
+        // ymd!(2022, 12, 32); // compile error!
+
+        yo!(2022, 1);
+        yo!(2022, 365);
     }
 }

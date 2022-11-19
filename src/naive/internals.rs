@@ -17,11 +17,8 @@
 #![allow(unreachable_pub)]
 #![allow(dead_code)]
 
-use core::convert::TryFrom;
 use core::hash::Hash;
 use core::i32;
-use num_integer::div_mod_floor;
-use num_integer::{div_rem, mod_floor};
 use ordinal_flags::Of;
 use year_flags::{cycle_to_yo, yo_to_cycle, YearTypeFlag};
 
@@ -88,24 +85,16 @@ macro_rules! try_from_u32_to_i32 {
     };
 }
 
-// forces the cosnt validation
-#[cfg(feature = "const-validation")]
-macro_rules! ymd {
-    ($y:expr, $m:expr, $d:expr) => {{
-        const _: DateImpl = DateImpl::from_ymd_validated($y, $m, $d);
-
-        DateImpl::from_ymd_validated($y, $m, $d)
-    }};
-}
-
-// forces the cosnt validation
-#[cfg(feature = "const-validation")]
-macro_rules! yo {
-    ($y:expr, $o:expr) => {{
-        const _: DateImpl = DateImpl::from_yo_validated($y, $m, $d);
-
-        DateImpl::from_yo_validated($y, $m, $d)
-    }};
+/// a
+#[macro_export]
+macro_rules! try_from_u64_to_i64 {
+    ($e:expr) => {
+        if $e <= i64::MAX as u64 {
+            $e as i64
+        } else {
+            return None;
+        }
+    };
 }
 
 // DateImpl of [u8; 4]
@@ -184,19 +173,12 @@ impl DateImpl {
     }
 
     pub(super) const fn from_num_days_from_ce_opt(days: i32) -> Option<DateImpl> {
-        // todo!()
         let days = try_opt!(days.checked_add(365)); // make December 31, 1 BCE equal to day 0
                                                     // dbg!(days);
         let (year_div_400, cycle) = const_div_mod_floor_i32(days, DAYS_IN_CYCLE);
-        // dbg!(year_div_400, cycle);
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        // dbg!(year_mod_400, ordinal);
-        let flags = YearTypeFlag::calculate_from_year(year_mod_400 as i16);
-        // dbg!(flags);
         let year_base = year_div_400.checked_mul(400);
-        // dbg!(year_base);
         let year = try_opt!(year_base).checked_add(try_from_u32_to_i32!(year_mod_400));
-        // dbg!(year);
         DateImpl::from_yo(try_from_i32_to_i16!(try_opt!(year)), ordinal as u16)
     }
 
@@ -205,7 +187,6 @@ impl DateImpl {
         week: u16,
         weekday: Weekday,
     ) -> Option<DateImpl> {
-        // dbg!(year, week, weekday);
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_an_ordinal_or_month_date_from_a_week_date
         let flags =
             YearTypeFlag::calculate_from_year(const_mod_floor_i16((year % 400) as i16, 400));
@@ -232,19 +213,13 @@ impl DateImpl {
         match base_ord {
             Some(ord) if ord <= flags.ndays().get() => {
                 // matching cy
-                // let adj = mult_week.checked_sub(u16::from(flags.jan_1_weekday().num_days_from_monday()))?.checked_add(u16::from(weekday.num_days_from_monday()) + 1)?;
-                // dbg!("regular");
-                // dbg!(flags.jan_1_weekday().num_days_from_monday(), weekday.num_days_from_monday(), adj);
                 let cal_year = try_from_i32_to_i16!(year);
-                // let ordinal = adj;
-                // dbg!(cal_year, flags, ord);
                 DateImpl::from_yo(cal_year, ord)
             }
             Some(ord) => {
                 // next CY
                 let cal_year = try_from_i32_to_i16!(year + 1);
                 let adj_ord = try_opt!(ord.checked_sub(flags.ndays().get()));
-                // dbg!(cal_year, alt_flags, adj_ord);
                 DateImpl::from_yo(cal_year, adj_ord)
             }
             None => {
@@ -255,9 +230,7 @@ impl DateImpl {
                 let ord =
                     try_opt!(flags
                         .week_1_jan_delta_days_from_jan_1_calendar_adj(alt_flags.ndays().get()));
-                // dbg!(ord);
                 let adj_ord = ord + 1 + weekday.num_days_from_monday() as u16;
-                // dbg!(cal_year, adj_ord, Of::from_ordinal_and_year(adj_ord, cal_year).unwrap().weekday());
                 DateImpl::from_yo(cal_year, adj_ord)
             }
         }
@@ -277,28 +250,13 @@ impl DateImpl {
                     Weekday::Tue | Weekday::Wed | Weekday::Thu => self.year() as i32 + 1,
                     Weekday::Mon | Weekday::Fri | Weekday::Sat | Weekday::Sun => self.year() as i32,
                 }
-                // dbg!(self.weekday(), YearTypeFlag::calculate_from_year(mod_floor(self.year(), 400) + 1).jan_1_weekday());
-                // todo!()
             }
-            _ => self.year() as i32, // Ordering::Greater => todo!(),
+            _ => self.year() as i32,
         }
-        // if ordinal is less than or equal to the max days in last week of prev year,
-        // then we are in the last week of the prev year
-        // if self.ordinal().get()
-        //     < self.year_type().ordinal_of_first_day_of_first_week_in_matching_year()
-        // {
-        //     i32::from(self.year()) - 1
-        // } else if self.ordinal().get() > self.year_type().ordinal_of_last_day_in_last_week_in_matching_year() {
-        //     i32::from(self.year()) + 1
-        // } else {
-        //     self.year().into()
-        // }
     }
 
     // u16 for convenience as u16 is a lot more convenient than Option<u8>!
     pub(super) const fn isoweek_number(&self) -> u16 {
-        // dbg!(self);
-
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
         let num = (self.ordinal().get() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
         // dbg!(num);
@@ -422,67 +380,49 @@ impl DateImpl {
     }
 
     pub(super) const fn checked_add_signed(self, rhs: i64) -> Option<Self> {
-        // dbg!(self);
         let rhs = try_from_i64_to_i32!(rhs);
-        // dbg!(rhs);
         let year = self.year();
-        // dbg!(year);
+
         let (mut year_div_400, year_mod_400) = const_div_mod_floor_i16(year, 400);
-        // dbg!(year_div_400, year_mod_400);
         let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal().get());
-        // dbg!(cycle);
+
         let cycle = try_opt!((cycle as i32).checked_add(rhs));
-        // dbg!(cycle);
         let (cycle_div_400y, cycle) = const_div_mod_floor_i32(cycle, DAYS_IN_CYCLE);
-        // dbg!(cycle_div_400y, cycle);
         year_div_400 = try_opt!(year_div_400.checked_add(try_from_i32_to_i16!(cycle_div_400y)));
-        // dbg!(year_div_400);
+
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        // dbg!(year_mod_400, ordinal);
+
         let year_mod_400 = try_from_u32_to_u16!(year_mod_400);
-        // dbg!(year_mod_400);
+
         let ordinal = try_from_u32_to_u16!(ordinal);
-        // dbg!(ordinal);
+
         let year_base = (year_div_400 as i32).checked_mul(400);
-        // dbg!(year_base);
         let year = try_opt!(year_base).checked_add(year_mod_400 as i32);
-        // dbg!(year);
         let year = try_from_i32_to_i16!(try_opt!(year));
-        // dbg!(year);
+
         DateImpl::from_yo(year, ordinal)
     }
 
     pub(super) const fn checked_sub_signed(self, rhs: i64) -> Option<Self> {
-        // dbg!(self);
         let rhs = try_from_i64_to_i32!(rhs);
-        // dbg!(rhs);
         let year = self.year();
-        // dbg!(year);
+
         let (mut year_div_400, year_mod_400) = const_div_mod_floor_i16(year, 400);
-        // dbg!(year_div_400, year_mod_400);
         let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal().get());
-        // dbg!(cycle);
+
         let cycle = try_opt!((cycle as i32).checked_sub(rhs));
-        // dbg!(cycle);
         let (cycle_div_400y, cycle) = const_div_mod_floor_i32(cycle, DAYS_IN_CYCLE);
-        // dbg!(cycle_div_400y, cycle);
         year_div_400 = try_opt!(year_div_400.checked_add(try_from_i32_to_i16!(cycle_div_400y)));
-        // dbg!(year_div_400);
 
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
-        // dbg!(year_mod_400, ordinal);
 
         let year_mod_400 = try_from_u32_to_u16!(year_mod_400);
-        // dbg!(year_mod_400);
 
         let ordinal = try_from_u32_to_u16!(ordinal);
 
         let year_base = (year_div_400 as i32).checked_mul(400);
-        // dbg!(year_base);
         let year = try_opt!(year_base).checked_add(year_mod_400 as i32);
-        // dbg!(year);
         let year = try_from_i32_to_i16!(try_opt!(year));
-        // dbg!(year);
 
         DateImpl::from_yo(year, ordinal)
     }
@@ -521,7 +461,7 @@ impl DateImpl {
 // from num-integer, copied so it can be const
 /// Floored integer modulo
 #[inline]
-const fn const_mod_floor_i16(a: i16, b: i16) -> i16 {
+pub(crate) const fn const_mod_floor_i16(a: i16, b: i16) -> i16 {
     // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
     // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
     let r = a % b;
@@ -535,7 +475,7 @@ const fn const_mod_floor_i16(a: i16, b: i16) -> i16 {
 // from num-integer, copied so it can be const
 /// Floored integer modulo
 #[inline]
-const fn const_mod_floor_i32(a: i32, b: i32) -> i32 {
+pub(crate) const fn const_mod_floor_i32(a: i32, b: i32) -> i32 {
     // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
     // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
     let r = a % b;
@@ -549,7 +489,21 @@ const fn const_mod_floor_i32(a: i32, b: i32) -> i32 {
 // from num-integer, copied so it can be const
 /// Floored integer modulo
 #[inline]
-const fn const_div_floor_i16(a: i16, b: i16) -> i16 {
+pub(crate) const fn const_mod_floor_i64(a: i64, b: i64) -> i64 {
+    // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
+    // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
+    let r = a % b;
+    if (r > 0 && b < 0) || (r < 0 && b > 0) {
+        r + b
+    } else {
+        r
+    }
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+pub(crate) const fn const_div_floor_i16(a: i16, b: i16) -> i16 {
     // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
     // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
     let (d, r) = (a / b, a % b);
@@ -563,7 +517,7 @@ const fn const_div_floor_i16(a: i16, b: i16) -> i16 {
 // from num-integer, copied so it can be const
 /// Floored integer modulo
 #[inline]
-const fn const_div_floor_i32(a: i32, b: i32) -> i32 {
+pub(crate) const fn const_div_floor_i32(a: i32, b: i32) -> i32 {
     // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
     // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
     let (d, r) = (a / b, a % b);
@@ -577,15 +531,43 @@ const fn const_div_floor_i32(a: i32, b: i32) -> i32 {
 // from num-integer, copied so it can be const
 /// Floored integer modulo
 #[inline]
-const fn const_div_mod_floor_i16(a: i16, b: i16) -> (i16, i16) {
+pub(crate) const fn const_div_floor_i64(a: i64, b: i64) -> i64 {
+    // Algorithm from [Daan Leijen. _Division and Modulus for Computer Scientists_,
+    // December 2001](http://research.microsoft.com/pubs/151917/divmodnote-letter.pdf)
+    let (d, r) = (a / b, a % b);
+    if (r > 0 && b < 0) || (r < 0 && b > 0) {
+        d - 1
+    } else {
+        d
+    }
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+pub(crate) const fn const_div_mod_floor_i16(a: i16, b: i16) -> (i16, i16) {
     (const_div_floor_i16(a, b), const_mod_floor_i16(a, b))
 }
 
 // from num-integer, copied so it can be const
 /// Floored integer modulo
 #[inline]
-const fn const_div_mod_floor_i32(a: i32, b: i32) -> (i32, i32) {
+pub(crate) const fn const_div_mod_floor_i32(a: i32, b: i32) -> (i32, i32) {
     (const_div_floor_i32(a, b), const_mod_floor_i32(a, b))
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+pub(crate) const fn const_div_mod_floor_i64(a: i64, b: i64) -> (i64, i64) {
+    (const_div_floor_i64(a, b), const_mod_floor_i64(a, b))
+}
+
+// from num-integer, copied so it can be const
+/// Floored integer modulo
+#[inline]
+pub(crate) const fn const_div_mod_floor_u32(a: u32, b: u32) -> (u32, u32) {
+    (a / b, a % b)
 }
 
 const fn is_leap(astronomical_year: i16) -> bool {
@@ -1398,7 +1380,6 @@ mod tests {
     use crate::naive::internals::is_leap;
     use crate::naive::internals::year_flags::year_deltas;
     use crate::{Month, Weekday};
-    use num_integer::mod_floor;
 
     const NONLEAP_FLAGS: [YearTypeFlag; 7] = [A, B, C, D, E, F, G];
     const LEAP_FLAGS: [YearTypeFlag; 7] = [AG, BA, CB, DC, ED, FE, GF];
@@ -1561,28 +1542,6 @@ mod tests {
     //     }
     // }
 
-    #[cfg(feature = "const-validation")]
-    #[test]
-    fn test_const_ymd() {
-        use super::DateImpl;
-        use crate::Month;
-
-        let res = std::panic::catch_unwind(|| {
-            let _ = DateImpl::from_ymd_validated(2022, Month::January, 0);
-        });
-        assert!(res.is_err());
-        let _ = DateImpl::from_ymd_validated(2022, Month::January, 1);
-        let _ = DateImpl::from_ymd_validated(2022, Month::December, 31);
-        let res = std::panic::catch_unwind(|| {
-            let _ = DateImpl::from_ymd_validated(2022, Month::December, 32);
-        });
-        assert!(res.is_err());
-
-        ymd!(2022, Month::January, 5);
-        ymd!(2022, Month::January, 1);
-        ymd!(2022, Month::January, 2);
-    }
-
     #[test]
     fn test_ndays() {
         for i in i16::MIN..=i16::MAX {
@@ -1740,7 +1699,7 @@ mod tests {
 
             assert_eq!(flags.is_leap(), is_leap(y));
 
-            assert_eq!(flags, YEAR_TO_FLAGS[mod_floor(y, 400) as usize]);
+            assert_eq!(flags, YEAR_TO_FLAGS[super::const_mod_floor_i16(y, 400) as usize]);
 
             flags.ndays();
         }

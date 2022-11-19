@@ -37,7 +37,7 @@ jobs:
       - run: cargo test --doc --all-features --color=always -- --color=always
 
   # later this may be able to be included with the below
-  # kept seperate for now as the following don't compile on 1.38.0
+  # kept seperate for now as the following don't compile on 1.47.0
   # * rkyv
   # * criterion
   rust_msrv:
@@ -49,7 +49,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.38.0
+          toolchain: 1.47.0
       - uses: Swatinem/rust-cache@v1
       # run --lib and --doc to avoid the long running integration tests which are run elsewhere
       - run: cargo test --lib --features unstable-locales,wasmbind,clock,serde,winapi --color=always -- --color=always

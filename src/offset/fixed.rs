@@ -6,11 +6,11 @@
 use core::fmt;
 use core::ops::{Add, Sub};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
+use crate::naive::internals::const_div_mod_floor_i32;
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::time_delta::TimeDelta;
 use crate::DateTime;
@@ -136,8 +136,8 @@ impl fmt::Debug for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let offset = self.local_minus_utc;
         let (sign, offset) = if offset < 0 { ('-', -offset) } else { ('+', offset) };
-        let (mins, sec) = div_mod_floor(offset, 60);
-        let (hour, min) = div_mod_floor(mins, 60);
+        let (mins, sec) = const_div_mod_floor_i32(offset, 60);
+        let (hour, min) = const_div_mod_floor_i32(mins, 60);
         if sec == 0 {
             write!(f, "{}{:02}:{:02}", sign, hour, min)
         } else {

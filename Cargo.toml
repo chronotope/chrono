@@ -28,7 +28,6 @@ __doctest = []
 const-validation = []
 
 [dependencies]
-num-integer = { version = "0.1.36", default-features = false }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.5.2", optional = true }
 criterion = { version = "0.4.0", optional = true }
