@@ -37,6 +37,8 @@ pub(super) const MIN_YEAR: i16 = i16::MIN;
 const DAYS_IN_CYCLE: i32 = 146_097;
 
 // useful in const fns
+/// some docs
+#[macro_export]
 macro_rules! try_opt {
     ($e:expr) => {
         match $e {

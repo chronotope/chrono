@@ -20,6 +20,8 @@ use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{Datelike, Month, TimeDelta, Weekday};
 
+
+use crate::try_opt;
 use super::internals::DateImpl;
 use super::isoweek;
 
@@ -129,7 +131,7 @@ pub struct Days(pub(crate) u64);
 
 impl Days {
     /// Construct a new `Days` from a number of months
-    pub fn new(num: u64) -> Self {
+    pub const fn new(num: u64) -> Self {
         Self(num)
     }
 }
@@ -188,10 +190,10 @@ pub struct NaiveDate {
     inner: DateImpl,
 }
 
-/// The minimum possible `NaiveDate` (January 1, 262145 BCE).
+/// The minimum possible `NaiveDate` (January 1, -32769 BCE).
 #[deprecated(since = "0.4.20", note = "Use NaiveDate::MIN instead")]
 pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
-/// The maximum possible `NaiveDate` (December 31, 262143 CE).
+/// The maximum possible `NaiveDate` (December 31, 32767 CE).
 #[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
 pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
 
@@ -269,8 +271,14 @@ impl NaiveDate {
     /// assert!(from_ymd_opt(400000, 1, 1).is_none());
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
-    pub fn from_ymd_opt(year: i16, month: u8, day: u8) -> Option<NaiveDate> {
-        Some(NaiveDate { inner: DateImpl::from_ymd(year, Month::try_from(month).ok()?, day)? })
+    pub const fn from_ymd_opt(year: i16, month: u8, day: u8) -> Option<NaiveDate> {
+        Some(NaiveDate { inner: try_opt!(DateImpl::from_ymd(year, try_opt!(Month::try_from_u8(month)), day)) })
+    }
+
+    #[cfg(feature = "const-validation")]
+    /// 
+    pub const fn from_ymd_validated(year: i16, month: Month, day: u8) -> NaiveDate {
+        NaiveDate { inner:DateImpl::from_ymd_validated(year, month, day) }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -278,7 +286,7 @@ impl NaiveDate {
     ///
     /// Panics on the out-of-range date and/or invalid day of year.                 
     #[cfg(feature = "const-validation")]
-    pub fn from_yo_validated(year: i16, ordinal: u16) -> NaiveDate {
+    pub const fn from_yo_validated(year: i16, ordinal: u16) -> NaiveDate {
         NaiveDate { inner: DateImpl::from_yo_validated(year, ordinal) }
     }
 
