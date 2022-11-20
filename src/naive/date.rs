@@ -301,9 +301,17 @@ impl NaiveDate {
 
     #[cfg(feature = "const-validation")]
     ///
-    pub const fn from_ymd_validated(year: i16, month: u8, day: u8) -> NaiveDate {
+    pub const fn from_ymd_validated(year: i16, month: u8, day: u8) -> NaiveDate {        
         NaiveDate {
             inner: DateImpl::from_ymd_validated(year, Month::try_from_u8_validated(month), day),
+        }
+    }
+
+    #[cfg(feature = "const-validation")]
+    ///
+    pub const fn from_ymd_validated_2<const Y: i16, const M: u8, const D: u8>() -> NaiveDate {        
+        NaiveDate {
+            inner: DateImpl::from_ymd_validated(Y, Month::try_from_u8_validated(M), D),
         }
     }
 
@@ -2103,6 +2111,15 @@ mod tests {
             let _ = NaiveDate::from_yo_validated(2022, 366);
         });
         assert!(res.is_err());
+
+        // compile error
+        // dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 0>());
+        
+        dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 1>());
+        dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 31>());
+        
+        // compile error
+        // dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 32>());
     }
     #[test]
     fn test_date_from_ymd() {
