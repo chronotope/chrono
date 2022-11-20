@@ -5,6 +5,33 @@ use crate::{Datelike, FixedOffset, Utc};
 use std::i64;
 
 #[test]
+fn test_datetime_from_timestamp_millis() {
+    let valid_map = [
+        (1662921288000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123, "2022-09-11 18:34:48.123000000"),
+        (1662921287890, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000, "1900-01-01 14:38:45.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_millis, formatted) in valid_map.iter().cloned() {
+        let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
+        assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
+        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), formatted);
+    }
+
+    let invalid = [i64::MAX, i64::MIN];
+
+    for timestamp_millis in invalid.iter().cloned() {
+        let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
+        assert!(naive_datetime.is_none());
+    }
+}
+
+#[test]
 fn test_datetime_from_timestamp() {
     let from_timestamp = |secs| NaiveDateTime::from_timestamp_opt(secs, 0);
     let ymdhms =
@@ -143,7 +170,7 @@ fn test_datetime_from_str() {
         assert!(
             d == d_,
             "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match",
+             `{:?}` does not match",
             s,
             d,
             d_
