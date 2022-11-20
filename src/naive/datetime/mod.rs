@@ -22,6 +22,7 @@ use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
+use core::cmp::Ordering;
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -138,31 +139,41 @@ impl NaiveDateTime {
     ///
     /// ```
     /// use chrono::NaiveDateTime;
-    /// let timestamp_millis: i64 = 1662921288; //Sunday, September 11, 2022 6:34:48 PM
+    /// let timestamp_millis: i64 = 1662921288000; //Sunday, September 11, 2022 6:34:48 PM
     /// let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
     /// assert!(naive_datetime.is_some());
     /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
     ///
     /// // Negative timestamps (before the UNIX epoch) are supported as well.
-    /// let timestamp_millis: i64 = -2208936075; //Mon Jan 01 1900 14:38:45 GMT+0000
+    /// let timestamp_millis: i64 = -2208936075000; //Mon Jan 01 1900 14:38:45 GMT+0000
     /// let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
     /// assert!(naive_datetime.is_some());
     /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
     /// ```
     #[inline]
     pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
-        let mut secs = millis / 1000;
-        if millis < 0 {
-            secs = secs.checked_sub(1)?;
-        }
+        let (secs, subsec_millis) = (millis / 1000, millis % 1000);
 
-        let nsecs = (millis % 1000).abs();
-        let mut nsecs = u32::try_from(nsecs).ok()? * NANOS_IN_MILLISECOND;
-        if secs < 0 {
-            nsecs = NANOS_IN_SECOND.checked_sub(nsecs)?;
+        match subsec_millis.cmp(&0) {
+            Ordering::Less => {
+                // in the case where our subsec part is negative, then we are actually in the earlier second
+                // hence we subtract one from the seconds part, and we then add a whole second worth of nanos
+                // to our nanos part. Due to the use of u32 datatype, it is more convenient to subtract
+                // the absolute value of the subsec nanos from a whole second worth of nanos
+                let nsecs = u32::try_from(subsec_millis.abs()).ok()? * NANOS_IN_MILLISECOND;
+                NaiveDateTime::from_timestamp_opt(
+                    secs.checked_sub(1)?,
+                    NANOS_IN_SECOND.checked_sub(nsecs)?,
+                )
+            }
+            Ordering::Equal => NaiveDateTime::from_timestamp_opt(secs, 0),
+            Ordering::Greater => {
+                // convert the subsec millis into nanosecond scale so they can be supplied
+                // as the nanoseconds parameter
+                let nsecs = u32::try_from(subsec_millis).ok()? * NANOS_IN_MILLISECOND;
+                NaiveDateTime::from_timestamp_opt(secs, nsecs)
+            }
         }
-
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
