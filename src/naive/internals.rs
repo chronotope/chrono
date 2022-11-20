@@ -105,24 +105,12 @@ macro_rules! try_from_u64_to_i64 {
 // 4th u8 -> year flags. values 0..13 is standard flags, values 14..26 is same but we add 256 to the ordinal.
 
 /// The internal date representation. This also includes the packed `Mdf` value.
-#[derive(PartialOrd, Ord, Copy, Clone, Debug)]
+#[derive(PartialOrd, Ord, PartialEq, Hash, Eq, Copy, Clone, Debug)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-pub struct DateImpl(i16, Of);
-
-impl PartialEq for DateImpl {
-    fn eq(&self, other: &DateImpl) -> bool {
-        // dbg!(self, other);
-        self.0 == other.0 && self.1 == other.1
-    }
-}
-
-impl Eq for DateImpl {}
-
-impl Hash for DateImpl {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        state.write_i16(self.0);
-        self.1.hash(state)
-    }
+pub struct DateImpl {
+    year: i16,
+    month: Month,
+    day: NonZeroU8,
 }
 
 #[cfg(feature = "arbitrary")]
@@ -135,42 +123,72 @@ impl arbitrary::Arbitrary<'_> for DateImpl {
     }
 }
 
-impl DateImpl {
-    pub(super) const CE: DateImpl =
-        DateImpl(1, Of::start_of_year(YearTypeFlag::calculate_from_year(1)));
+const ONE: NonZeroU8 = unsafe { NonZeroU8::new_unchecked(1) };
 
-    pub(super) const fn from_yo(year: i16, ord: u16) -> Option<DateImpl> {
-        let flag = YearTypeFlag::calculate_from_year(year);
-        match Of::new(ord, flag) {
-            Some(of) => Some(DateImpl(year, of)),
-            None => None,
-        }
-    }
+impl DateImpl {
+    pub(super) const CE: DateImpl = DateImpl { year: 1, month: Month::January, day: ONE };
+
+    /// The minimum possible `Date` (January 1, 32769 BCE).
+    pub(super) const MIN: DateImpl = DateImpl { year: i16::MIN, month: Month::January, day: ONE };
+
+    /// The maximum possible `Date` (December 31, 32767 CE).
+    pub(super) const MAX: DateImpl = DateImpl {
+        year: i16::MAX,
+        month: Month::December,
+        day: unsafe { NonZeroU8::new_unchecked(31) },
+    };
 
     #[track_caller]
     #[cfg(feature = "const-validation")]
-    pub(super) const fn from_yo_validated(year: i16, ord: u16) -> DateImpl {
+    pub(super) const fn from_yo_validated<const YEAR: i16, const ORD: u16>() -> DateImpl {
+        let flag = YearTypeFlag::calculate_from_year(YEAR);
+        // todo, remove Of
+        if let Some(of) = Of::new(ORD, flag) {
+            DateImpl { day: of.day_of_month(), year: YEAR, month: of.month() }
+        } else {
+            panic!("invalid year and ordinal combination")
+        }
+    }
+
+    pub(super) const fn from_yo(year: i16, ord: u16) -> Option<DateImpl> {
         let flag = YearTypeFlag::calculate_from_year(year);
-        match Of::new(ord, flag) {
-            Some(of) => DateImpl(year, of),
-            None => panic!("Invalid combination for year and ordinal"),
+        // todo, remove Of
+        let of = try_opt!(Of::new(ord, flag));
+        Some(DateImpl { day: of.day_of_month(), year, month: of.month() })
+    }
+
+    // #[track_caller]
+    // #[cfg(feature = "const-validation")]
+    // pub(super) const fn from_yo_validated(year: i16, ord: u16) -> DateImpl {
+    //     let flag = YearTypeFlag::calculate_from_year(year);
+    //     match Of::new(ord, flag) {
+    //         Some(of) => DateImpl(year, of),
+    //         None => panic!("Invalid combination for year and ordinal"),
+    //     }
+    // }
+
+    #[track_caller]
+    #[cfg(feature = "const-validation")]
+    pub(super) const fn from_ymd_validated<const YEAR: i16, const MONTH: u8, const DAY: u8>(
+    ) -> DateImpl {
+        let flag = YearTypeFlag::calculate_from_year(YEAR);
+        let month = Month::try_from_u8_validated::<MONTH>();
+        if DAY > flag.days_in_month(month).get() {
+            panic!("invalid day");
+        }
+        if let Some(day) = NonZeroU8::new(DAY) {
+            DateImpl { day, year: YEAR, month }
+        } else {
+            panic!("invalid day of 0")
         }
     }
 
     pub(super) const fn from_ymd(year: i16, month: Month, day: u8) -> Option<DateImpl> {
-        // dbg!(year, month, day);
-        let of = try_opt!(Of::from_ymd(year, month, day));
-        // dbg!(of);
-        Some(DateImpl(year, of))
-    }
-
-    #[track_caller]
-    #[cfg(feature = "const-validation")]
-    pub(super) const fn from_ymd_validated(year: i16, month: Month, day: u8) -> DateImpl {
-        match Of::from_ymd(year, month, day) {
-            Some(of) => DateImpl(year, of),
-            None => panic!("Invalid combination for year, month and day"),
+        let flag = YearTypeFlag::calculate_from_year(year);
+        if day > flag.days_in_month(month).get() {
+            return None;
         }
+        Some(DateImpl { day: try_opt!(NonZeroU8::new(day)), year, month })
     }
 
     pub(super) const fn from_num_days_from_ce_opt(days: i32) -> Option<DateImpl> {
@@ -240,7 +258,7 @@ impl DateImpl {
     // the ISOWEEK year has a wider range
     pub(super) const fn isoweek_year(&self) -> i32 {
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
-        let num = (self.ordinal().get() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
+        let num = (self.ordinal() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
         // dbg!(num);
         match num {
             0 => self.year() as i32 - 1,
@@ -259,7 +277,7 @@ impl DateImpl {
     // u16 for convenience as u16 is a lot more convenient than Option<u8>!
     pub(super) const fn isoweek_number(&self) -> u16 {
         // https://en.wikipedia.org/wiki/ISO_week_date#Calculating_the_week_number_from_an_ordinal_date
-        let num = (self.ordinal().get() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
+        let num = (self.ordinal() + 9 - self.weekday().num_days_from_monday() as u16) / 7;
         // dbg!(num);
         match num {
             0 => YearTypeFlag::calculate_from_year(const_mod_floor_i16(self.year(), 400) - 1)
@@ -339,28 +357,42 @@ impl DateImpl {
     }
 
     pub(super) const fn year_type(&self) -> YearTypeFlag {
-        self.of().flags()
-    }
-    const fn of(&self) -> Of {
-        self.1
+        YearTypeFlag::calculate_from_year(self.year)
     }
     pub(super) const fn weekday(&self) -> Weekday {
-        self.of().weekday()
+        let start_at = self.year_type().jan_1_weekday();
+        let ord = self.ordinal();
+
+        match (start_at.num_days_from_monday() as u16 + ord - 1) % 7 {
+            0 => Weekday::Mon,
+            1 => Weekday::Tue,
+            2 => Weekday::Wed,
+            3 => Weekday::Thu,
+            4 => Weekday::Fri,
+            5 => Weekday::Sat,
+            6 => Weekday::Sun,
+
+            #[cfg(feature = "const-validation")]
+            _ => unreachable!(),
+            #[cfg(not(feature = "const-validation"))]
+            _ => Weekday::Mon, // sentinel value
+        }
     }
-    pub(super) const fn ordinal(&self) -> NonZeroU16 {
-        self.of().ordinal()
+    pub(super) const fn ordinal(&self) -> u16 {
+        let flags = self.year_type();
+        flags.month_to_start_ordinal(self.month) + self.day.get() as u16
     }
 
     pub(super) const fn month(&self) -> Month {
-        self.of().month()
+        self.month
     }
 
     pub(super) const fn day_of_month(&self) -> NonZeroU8 {
-        self.of().day_of_month()
+        self.day
     }
 
     pub(super) const fn year(&self) -> i16 {
-        self.0
+        self.year
     }
 
     pub(super) const fn diff_days(self, days: i64) -> Option<Self> {
@@ -373,8 +405,8 @@ impl DateImpl {
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = const_div_mod_floor_i16(year1, 400);
         let (year2_div_400, year2_mod_400) = const_div_mod_floor_i16(year2, 400);
-        let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal().get());
-        let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal().get());
+        let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal());
+        let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal());
 
         (year1_div_400 as i64 - year2_div_400 as i64) * DAYS_IN_CYCLE as i64
             + (cycle1 as i64 - cycle2 as i64)
@@ -385,7 +417,7 @@ impl DateImpl {
         let year = self.year();
 
         let (mut year_div_400, year_mod_400) = const_div_mod_floor_i16(year, 400);
-        let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal().get());
+        let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal());
 
         let cycle = try_opt!((cycle as i32).checked_add(rhs));
         let (cycle_div_400y, cycle) = const_div_mod_floor_i32(cycle, DAYS_IN_CYCLE);
@@ -409,7 +441,7 @@ impl DateImpl {
         let year = self.year();
 
         let (mut year_div_400, year_mod_400) = const_div_mod_floor_i16(year, 400);
-        let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal().get());
+        let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal());
 
         let cycle = try_opt!((cycle as i32).checked_sub(rhs));
         let (cycle_div_400y, cycle) = const_div_mod_floor_i32(cycle, DAYS_IN_CYCLE);
@@ -430,33 +462,26 @@ impl DateImpl {
 
     #[inline]
     pub(super) const fn succ_opt(&self) -> Option<DateImpl> {
-        let of = self.of();
         let current_year = self.year();
-        if of.ordinal().get() == of.flags().ndays().get() {
+        if self.ordinal() == self.year_type().ndays().get() {
             let next_year = try_opt!(current_year.checked_add(1));
             DateImpl::from_yo(next_year, 1)
         } else {
-            DateImpl::from_yo(current_year, of.ordinal().get() + 1)
+            DateImpl::from_yo(current_year, self.ordinal() + 1)
         }
     }
 
     #[inline]
     pub(super) const fn pred_opt(&self) -> Option<DateImpl> {
-        let of = self.of();
         let current_year = self.year();
-        if of.ordinal().get() == 1 {
+        if self.ordinal() == 1 {
             let prev_year = try_opt!(current_year.checked_sub(1));
             let new_flags = YearTypeFlag::calculate_from_year(prev_year);
             DateImpl::from_yo(prev_year, new_flags.ndays().get())
         } else {
-            DateImpl::from_yo(current_year, of.ordinal().get() - 1)
+            DateImpl::from_yo(current_year, self.ordinal() - 1)
         }
     }
-
-    /// The minimum possible `Date` (January 1, 262145 BCE).
-    pub(super) const MIN: DateImpl = DateImpl(i16::MIN, Of::MIN_YEAR_MIN);
-    /// The maximum possible `Date` (December 31, 262143 CE).
-    pub(super) const MAX: DateImpl = DateImpl(i16::MAX, Of::MAX_YEAR_MAX);
 }
 
 // from num-integer, copied so it can be const

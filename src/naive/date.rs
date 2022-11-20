@@ -31,10 +31,8 @@ use super::internals;
 #[macro_export]
 /// a
 macro_rules! ymd {
-    ($y:expr, $m:expr, $d:expr) => {{
-        const _: NaiveDate = NaiveDate::from_ymd_validated($y, $m, $d);
-
-        NaiveDate::from_ymd_validated($y, $m, $d)
+    ($y:literal, $m:literal, $d:literal) => {{
+        NaiveDate::from_ymd_validated::<$y, $m, $d>()
     }};
 }
 
@@ -43,10 +41,8 @@ macro_rules! ymd {
 #[macro_export]
 /// a
 macro_rules! yo {
-    ($y:expr, $o:expr) => {{
-        const _: NaiveDate = NaiveDate::from_yo_validated($y, $o);
-
-        NaiveDate::from_yo_validated($y, $o)
+    ($y:literal, $o:literal) => {{
+        NaiveDate::from_yo_validated::<$y, $o>()
     }};
 }
 
@@ -299,20 +295,20 @@ impl NaiveDate {
         })
     }
 
+    #[track_caller]
     #[cfg(feature = "const-validation")]
     ///
-    pub const fn from_ymd_validated(year: i16, month: u8, day: u8) -> NaiveDate {        
-        NaiveDate {
-            inner: DateImpl::from_ymd_validated(year, Month::try_from_u8_validated(month), day),
+    pub const fn from_ymd_validated<const Y: i16, const M: u8, const D: u8>() -> NaiveDate {
+        // hack as per: https://github.com/rust-lang/rust/issues/57775#issuecomment-1307737812
+        struct ValidDate<const Y1: i16, const M1: u8, const D1: u8> {}
+        impl<const Y1: i16, const M1: u8, const D1: u8> ValidDate<Y1, M1, D1> {
+            const IT: DateImpl = DateImpl::from_ymd_validated::<Y1, M1, D1>();
+            const fn get() -> DateImpl {
+                Self::IT
+            }
         }
-    }
 
-    #[cfg(feature = "const-validation")]
-    ///
-    pub const fn from_ymd_validated_2<const Y: i16, const M: u8, const D: u8>() -> NaiveDate {        
-        NaiveDate {
-            inner: DateImpl::from_ymd_validated(Y, Month::try_from_u8_validated(M), D),
-        }
+        NaiveDate { inner: ValidDate::<Y, M, D>::get() }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -320,8 +316,18 @@ impl NaiveDate {
     ///
     /// Panics on the out-of-range date and/or invalid day of year.                 
     #[cfg(feature = "const-validation")]
-    pub const fn from_yo_validated(year: i16, ordinal: u16) -> NaiveDate {
-        NaiveDate { inner: DateImpl::from_yo_validated(year, ordinal) }
+    #[track_caller]
+    pub const fn from_yo_validated<const Y: i16, const O: u16>() -> NaiveDate {
+        // hack as per: https://github.com/rust-lang/rust/issues/57775#issuecomment-1307737812
+        struct ValidDate<const Y1: i16, const O1: u16> {}
+        impl<const Y1: i16, const O1: u16> ValidDate<Y1, O1> {
+            const IT: DateImpl = DateImpl::from_yo_validated::<Y1, O1>();
+            const fn get() -> DateImpl {
+                Self::IT
+            }
+        }
+
+        NaiveDate { inner: ValidDate::<Y, O>::get() }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -1258,7 +1264,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal(&self) -> u16 {
-        self.inner.ordinal().get()
+        self.inner.ordinal()
     }
 
     /// Returns the day of year starting from 0.
@@ -1275,7 +1281,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal0(&self) -> u16 {
-        self.inner.ordinal().get() - 1
+        self.inner.ordinal() - 1
     }
 
     /// Returns the day of week.
@@ -2099,29 +2105,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "const-validation")]
-    fn test_from_yo_validated() {
-        let res = std::panic::catch_unwind(|| {
-            let _ = NaiveDate::from_yo_validated(2022, 0);
-        });
-        assert!(res.is_err());
-        let _ = NaiveDate::from_yo_validated(2022, 1);
-        let _ = NaiveDate::from_yo_validated(2022, 365);
-        let res = std::panic::catch_unwind(|| {
-            let _ = NaiveDate::from_yo_validated(2022, 366);
-        });
-        assert!(res.is_err());
-
-        // compile error
-        // dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 0>());
-        
-        dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 1>());
-        dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 31>());
-        
-        // compile error
-        // dbg!(NaiveDate::from_ymd_validated_2::<2022, 1, 32>());
-    }
-    #[test]
     fn test_date_from_ymd() {
         let ymd_opt = NaiveDate::from_ymd_opt;
 
@@ -2760,16 +2743,8 @@ mod tests {
     fn test_const_ymd() {
         use super::NaiveDate;
 
-        let res = std::panic::catch_unwind(|| {
-            let _ = NaiveDate::from_ymd_validated(2022, 1, 0);
-        });
-        assert!(res.is_err());
-        let _ = NaiveDate::from_ymd_validated(2022, 1, 1);
-        let _ = NaiveDate::from_ymd_validated(2022, 12, 31);
-        let res = std::panic::catch_unwind(|| {
-            let _ = NaiveDate::from_ymd_validated(2022, 12, 32);
-        });
-        assert!(res.is_err());
+        let _ = NaiveDate::from_ymd_validated::<2022, 1, 1>();
+        let _ = NaiveDate::from_ymd_validated::<2022, 12, 31>();
 
         ymd!(2022, 1, 5);
         ymd!(2022, 1, 1);
@@ -2779,5 +2754,21 @@ mod tests {
 
         yo!(2022, 1);
         yo!(2022, 365);
+    }
+
+    #[test]
+    #[cfg(feature = "const-validation")]
+    fn test_const_from_validated() {
+        assert_eq!(NaiveDate::from_yo_validated::<2022, 1>().day(), 1);
+        assert_eq!(NaiveDate::from_yo_validated::<2022, 365>().day(), 31);
+
+        // compile error!!
+        // assert_eq!(NaiveDate::from_yo_validated::<2022, 366>().day(), 31);
+
+        assert_eq!(NaiveDate::from_ymd_validated::<2022, 1, 1>().day(), 1);
+        assert_eq!(NaiveDate::from_ymd_validated::<2022, 1, 31>().day(), 31);
+
+        // compile error!!
+        // assert_eq!(NaiveDate::from_ymd_validated::<2022, 1, 32>().day(), 31);
     }
 }

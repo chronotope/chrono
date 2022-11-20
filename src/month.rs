@@ -29,8 +29,9 @@ use crate::OutOfRange;
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[repr(u8)]
 pub enum Month {
     /// January
     January = 0,
@@ -173,8 +174,8 @@ impl Month {
 
     /// a
     #[cfg(feature = "const-validation")]
-    pub const fn try_from_u8_validated(val: u8) -> Self {
-        match val {
+    pub const fn try_from_u8_validated<const MONTH: u8>() -> Self {
+        match MONTH {
             1 => Month::January,
             2 => Month::February,
             3 => Month::March,
