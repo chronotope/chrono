@@ -556,13 +556,17 @@ fn test_strftime_items() {
 #[cfg(test)]
 #[test]
 fn test_strftime_docs() {
+    use crate::NaiveDate;
     use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
     let dt = FixedOffset::east_opt(34200)
         .unwrap()
-        .ymd_opt(2001, 7, 8)
-        .unwrap()
-        .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+        .from_local_datetime(
+            &NaiveDate::from_ymd_opt(2001, 7, 8)
+                .unwrap()
+                .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+                .unwrap(),
+        )
         .unwrap();
 
     // date specifiers
@@ -659,13 +663,12 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use crate::{FixedOffset, TimeZone};
+    use crate::{FixedOffset, NaiveDate};
 
-    let dt = FixedOffset::east_opt(34200)
+    let dt = NaiveDate::from_ymd_opt(2001, 7, 8)
+        .and_then(|d| d.and_hms_nano_opt(0, 34, 59, 1_026_490_708))
         .unwrap()
-        .ymd_opt(2001, 7, 8)
-        .unwrap()
-        .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+        .and_local_timezone(FixedOffset::east_opt(34200).unwrap())
         .unwrap();
 
     // date specifiers

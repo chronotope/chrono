@@ -23,6 +23,7 @@ use core::fmt;
 use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Weekday;
+#[allow(deprecated)]
 use crate::{Date, DateTime};
 
 mod fixed;
@@ -84,6 +85,7 @@ impl<T> LocalResult<T> {
     }
 }
 
+#[allow(deprecated)]
 impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
@@ -206,6 +208,27 @@ pub trait TimeZone: Sized + Clone {
     /// The original `TimeZone` value can be recovered via `TimeZone::from_offset`.
     type Offset: Offset;
 
+    /// Make a new `DateTime` from year, month, day, time components and current time zone.
+    ///
+    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    ///
+    /// Returns `LocalResult::None` on invalid input data.
+    fn with_ymd_and_hms(
+        &self,
+        year: i32,
+        month: u32,
+        day: u32,
+        hour: u32,
+        min: u32,
+        sec: u32,
+    ) -> LocalResult<DateTime<Self>> {
+        match NaiveDate::from_ymd_opt(year, month, day).and_then(|d| d.and_hms_opt(hour, min, sec))
+        {
+            Some(dt) => self.from_local_datetime(&dt),
+            None => LocalResult::None,
+        }
+    }
+
     /// Makes a new `Date` from year, month, day and the current time zone.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
@@ -213,7 +236,8 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date, invalid month and/or day.
-    #[deprecated(since = "0.4.23", note = "use `ymd_opt()` instead")]
+    #[deprecated(since = "0.4.23", note = "use `with_ymd_and_hms()` instead")]
+    #[allow(deprecated)]
     fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
         self.ymd_opt(year, month, day).unwrap()
     }
@@ -225,15 +249,8 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Returns `None` on the out-of-range date, invalid month and/or day.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, LocalResult, TimeZone};
-    ///
-    /// assert_eq!(Utc.ymd_opt(2015, 5, 15).unwrap().to_string(), "2015-05-15UTC");
-    /// assert_eq!(Utc.ymd_opt(2000, 0, 0), LocalResult::None);
-    /// ```
+    #[deprecated(since = "0.4.23", note = "use `with_ymd_and_hms()` instead")]
+    #[allow(deprecated)]
     fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_ymd_opt(year, month, day) {
             Some(d) => self.from_local_date(&d),
@@ -248,7 +265,11 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date and/or invalid DOY.
-    #[deprecated(since = "0.4.23", note = "use `ymd_opt()` instead")]
+    #[deprecated(
+        since = "0.4.23",
+        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
+    )]
+    #[allow(deprecated)]
     fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
         self.yo_opt(year, ordinal).unwrap()
     }
@@ -260,14 +281,11 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Returns `None` on the out-of-range date and/or invalid DOY.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.yo_opt(2015, 135).unwrap().to_string(), "2015-05-15UTC");
-    /// ```
+    #[deprecated(
+        since = "0.4.23",
+        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
+    )]
+    #[allow(deprecated)]
     fn yo_opt(&self, year: i32, ordinal: u32) -> LocalResult<Date<Self>> {
         match NaiveDate::from_yo_opt(year, ordinal) {
             Some(d) => self.from_local_date(&d),
@@ -284,7 +302,11 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Panics on the out-of-range date and/or invalid week number.
-    #[deprecated(since = "0.4.23", note = "use `isoywd_opt()` instead")]
+    #[deprecated(
+        since = "0.4.23",
+        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
+    )]
+    #[allow(deprecated)]
     fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
         self.isoywd_opt(year, week, weekday).unwrap()
     }
@@ -298,14 +320,11 @@ pub trait TimeZone: Sized + Clone {
     /// but it will propagate to the `DateTime` values constructed via this date.
     ///
     /// Returns `None` on the out-of-range date and/or invalid week number.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, Weekday, TimeZone};
-    ///
-    /// assert_eq!(Utc.isoywd_opt(2015, 20, Weekday::Fri).unwrap().to_string(), "2015-05-15UTC");
-    /// ```
+    #[deprecated(
+        since = "0.4.23",
+        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
+    )]
+    #[allow(deprecated)]
     fn isoywd_opt(&self, year: i32, week: u32, weekday: Weekday) -> LocalResult<Date<Self>> {
         match NaiveDate::from_isoywd_opt(year, week, weekday) {
             Some(d) => self.from_local_date(&d),
@@ -431,6 +450,8 @@ pub trait TimeZone: Sized + Clone {
 
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
     #[allow(clippy::wrong_self_convention)]
+    #[deprecated(since = "0.4.23", note = "use `from_local_datetime()` instead")]
+    #[allow(deprecated)]
     fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>> {
         self.offset_from_local_date(local).map(|offset| {
             // since FixedOffset is within +/- 1 day, the date is never affected
@@ -454,6 +475,8 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     #[allow(clippy::wrong_self_convention)]
+    #[deprecated(since = "0.4.23", note = "use `from_utc_datetime()` instead")]
+    #[allow(deprecated)]
     fn from_utc_date(&self, utc: &NaiveDate) -> Date<Self> {
         Date::from_utc(*utc, self.offset_from_utc_date(utc))
     }

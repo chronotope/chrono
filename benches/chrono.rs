@@ -4,7 +4,7 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use chrono::prelude::*;
-use chrono::{DateTime, FixedOffset, Utc, __BenchYearFlags};
+use chrono::{DateTime, FixedOffset, Local, Utc, __BenchYearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
@@ -36,13 +36,27 @@ fn bench_datetime_from_str(c: &mut Criterion) {
 
 fn bench_datetime_to_rfc2822(c: &mut Criterion) {
     let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    let dt = pst.ymd_opt(2018, 1, 11).unwrap().and_hms_nano_opt(10, 5, 13, 84_660_000).unwrap();
+    let dt = pst
+        .from_local_datetime(
+            &NaiveDate::from_ymd_opt(2018, 1, 11)
+                .unwrap()
+                .and_hms_nano_opt(10, 5, 13, 84_660_000)
+                .unwrap(),
+        )
+        .unwrap();
     c.bench_function("bench_datetime_to_rfc2822", |b| b.iter(|| black_box(dt).to_rfc2822()));
 }
 
 fn bench_datetime_to_rfc3339(c: &mut Criterion) {
     let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    let dt = pst.ymd_opt(2018, 1, 11).and_hms_nano_opt(10, 5, 13, 84_660_000).unwrap();
+    let dt = pst
+        .from_local_datetime(
+            &NaiveDate::from_ymd_opt(2018, 1, 11)
+                .unwrap()
+                .and_hms_nano_opt(10, 5, 13, 84_660_000)
+                .unwrap(),
+        )
+        .unwrap();
     c.bench_function("bench_datetime_to_rfc3339", |b| b.iter(|| black_box(dt).to_rfc3339()));
 }
 
@@ -52,6 +66,14 @@ fn bench_year_flags_from_year(c: &mut Criterion) {
             for year in -999i32..1000 {
                 __BenchYearFlags::from_year(year);
             }
+        })
+    });
+}
+
+fn bench_get_local_time(c: &mut Criterion) {
+    c.bench_function("bench_get_local_time", |b| {
+        b.iter(|| {
+            let _ = Local::now();
         })
     });
 }
@@ -109,6 +131,7 @@ criterion_group!(
     bench_datetime_to_rfc3339,
     bench_year_flags_from_year,
     bench_num_days_from_ce,
+    bench_get_local_time,
 );
 
 criterion_main!(benches);

@@ -2,6 +2,7 @@
 // See README.md and LICENSE.txt for details.
 
 //! ISO 8601 calendar date with time zone.
+#![allow(deprecated)]
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
@@ -53,6 +54,7 @@ use crate::{Datelike, Weekday};
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
+#[deprecated(since = "0.4.23", note = "Use `NaiveDate` or `DateTime<Tz>` instead")]
 #[derive(Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct Date<Tz: TimeZone> {
@@ -288,15 +290,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Returns the number of whole years from the given `base` until `self`.
     pub fn years_since(&self, base: Self) -> Option<u32> {
-        let mut years = self.year() - base.year();
-        if (self.month(), self.day()) < (base.month(), base.day()) {
-            years -= 1;
-        }
-
-        match years >= 0 {
-            true => Some(years as u32),
-            false => None,
-        }
+        self.date.years_since(base.date)
     }
 
     /// The minimum possible `Date`.
@@ -332,15 +326,6 @@ where
     /// Formats the date with the specified format string.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
-    ///
-    /// # Example
-    /// ```rust
-    /// use chrono::prelude::*;
-    ///
-    /// let date_time: Date<Utc> = Utc.ymd_opt(2017, 04, 02).unwrap();
-    /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
-    /// assert_eq!(formatted, "02/04/2017");
-    /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
@@ -532,7 +517,8 @@ impl<Tz: TimeZone> Sub<Date<Tz>> for Date<Tz> {
 
 impl<Tz: TimeZone> fmt::Debug for Date<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}{:?}", self.naive_local(), self.offset)
+        self.naive_local().fmt(f)?;
+        self.offset.fmt(f)
     }
 }
 
@@ -541,7 +527,23 @@ where
     Tz::Offset: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}", self.naive_local(), self.offset)
+        self.naive_local().fmt(f)?;
+        self.offset.fmt(f)
+    }
+}
+
+// Note that implementation of Arbitrary cannot be automatically derived for Date<Tz>, due to
+// the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
+#[cfg(feature = "arbitrary")]
+impl<'a, Tz> arbitrary::Arbitrary<'a> for Date<Tz>
+where
+    Tz: TimeZone,
+    <Tz as TimeZone>::Offset: arbitrary::Arbitrary<'a>,
+{
+    fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<Date<Tz>> {
+        let date = NaiveDate::arbitrary(u)?;
+        let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
+        Ok(Date::from_utc(date, offset))
     }
 }
 

@@ -15,7 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
@@ -191,6 +191,16 @@ pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
 #[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
 pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
 
+#[cfg(feature = "arbitrary")]
+impl arbitrary::Arbitrary<'_> for NaiveDate {
+    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveDate> {
+        let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
+        let max_days = YearFlags::from_year(year).ndays();
+        let ord = u.int_in_range(1..=max_days)?;
+        NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
+    }
+}
+
 // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
 // we use a separate run-time test.
 #[test]
@@ -265,7 +275,7 @@ impl NaiveDate {
     /// ```
     pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_mdf(year, Mdf::new(month, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month, day, flags)?)
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -299,7 +309,7 @@ impl NaiveDate {
     /// ```
     pub fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_of(year, Of::new(ordinal, flags))
+        NaiveDate::from_of(year, Of::new(ordinal, flags)?)
     }
 
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
@@ -368,18 +378,18 @@ impl NaiveDate {
                 let prevflags = YearFlags::from_year(year - 1);
                 NaiveDate::from_of(
                     year - 1,
-                    Of::new(weekord + prevflags.ndays() - delta, prevflags),
+                    Of::new(weekord + prevflags.ndays() - delta, prevflags)?,
                 )
             } else {
                 let ordinal = weekord - delta;
                 let ndays = flags.ndays();
                 if ordinal <= ndays {
                     // this year
-                    NaiveDate::from_of(year, Of::new(ordinal, flags))
+                    NaiveDate::from_of(year, Of::new(ordinal, flags)?)
                 } else {
                     // ordinal > ndays, next year
                     let nextflags = YearFlags::from_year(year + 1);
-                    NaiveDate::from_of(year + 1, Of::new(ordinal - ndays, nextflags))
+                    NaiveDate::from_of(year + 1, Of::new(ordinal - ndays, nextflags)?)
                 }
             }
         } else {
@@ -422,7 +432,7 @@ impl NaiveDate {
         let (year_div_400, cycle) = div_mod_floor(days, 146_097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -613,7 +623,7 @@ impl NaiveDate {
         let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
         let day = Ord::min(self.day(), days[(month - 1) as usize]);
 
-        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags))
+        NaiveDate::from_mdf(year, Mdf::new(month as u32, day, flags)?)
     }
 
     /// Add a duration in [`Days`] to the date
@@ -974,7 +984,7 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Subtracts the `days` part of given `TimeDelta` from the current date.
@@ -1005,7 +1015,7 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags))
+        NaiveDate::from_of(year_div_400 * 400 + year_mod_400 as i32, Of::new(ordinal, flags)?)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1040,6 +1050,19 @@ impl NaiveDate {
         TimeDelta::days(
             (i64::from(year1_div_400) - i64::from(year2_div_400)) * 146_097 + (cycle1 - cycle2),
         )
+    }
+
+    /// Returns the number of whole years from the given `base` until `self`.
+    pub fn years_since(&self, base: Self) -> Option<u32> {
+        let mut years = self.year() - base.year();
+        if (self.month(), self.day()) < (base.month(), base.day()) {
+            years -= 1;
+        }
+
+        match years >= 0 {
+            true => Some(years as u32),
+            false => None,
+        }
     }
 
     /// Formats the date with the specified formatting items.
@@ -1427,7 +1450,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month))
+        self.with_mdf(self.mdf().with_month(month)?)
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
@@ -1446,7 +1469,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month0 + 1))
+        self.with_mdf(self.mdf().with_month(month0 + 1)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1465,7 +1488,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day))
+        self.with_mdf(self.mdf().with_day(day)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
@@ -1484,7 +1507,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day0 + 1))
+        self.with_mdf(self.mdf().with_day(day0 + 1)?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
@@ -1508,7 +1531,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
-        self.with_of(self.of().with_ordinal(ordinal))
+        self.with_of(self.of().with_ordinal(ordinal)?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
@@ -1532,7 +1555,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
-        self.with_of(self.of().with_ordinal(ordinal0 + 1))
+        self.with_of(self.of().with_ordinal(ordinal0 + 1)?)
     }
 }
 
@@ -1818,14 +1841,22 @@ impl DoubleEndedIterator for NaiveDateWeeksIterator {
 /// ```
 impl fmt::Debug for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use core::fmt::Write;
+
         let year = self.year();
         let mdf = self.mdf();
         if (0..=9999).contains(&year) {
-            write!(f, "{:04}-{:02}-{:02}", year, mdf.month(), mdf.day())
+            write_hundreds(f, (year / 100) as u8)?;
+            write_hundreds(f, (year % 100) as u8)?;
         } else {
             // ISO 8601 requires the explicit sign for out-of-range years
-            write!(f, "{:+05}-{:02}-{:02}", year, mdf.month(), mdf.day())
+            write!(f, "{:+05}", year)?;
         }
+
+        f.write_char('-')?;
+        write_hundreds(f, mdf.month() as u8)?;
+        f.write_char('-')?;
+        write_hundreds(f, mdf.day() as u8)
     }
 }
 
