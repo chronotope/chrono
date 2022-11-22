@@ -14,7 +14,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::{TimeDelta, Timelike};
 
@@ -76,7 +76,7 @@ mod tests;
 ///
 /// let dt1 = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_micro_opt(8, 59, 59, 1_000_000).unwrap();
 ///
-/// let dt2 = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap();
+/// let dt2 = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap().and_local_timezone(Utc).unwrap();
 /// # let _ = (t, dt1, dt2);
 /// ```
 ///
@@ -157,9 +157,9 @@ mod tests;
 /// will be represented as the second part being 60, as required by ISO 8601.
 ///
 /// ```
-/// use chrono::{Utc, TimeZone};
+/// use chrono::{Utc, TimeZone, NaiveDate};
 ///
-/// let dt = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap().and_local_timezone(Utc).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ```
 ///
@@ -171,12 +171,12 @@ mod tests;
 /// and would be read back to the next non-leap second.
 ///
 /// ```
-/// use chrono::{DateTime, Utc, TimeZone};
+/// use chrono::{DateTime, Utc, TimeZone, NaiveDate};
 ///
-/// let dt = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 56, 4, 1_000).unwrap();
+/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 56, 4, 1_000).unwrap().and_local_timezone(Utc).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 ///
-/// let dt = Utc.ymd_opt(2015, 6, 30).unwrap().and_hms_opt(23, 56, 5).unwrap();
+/// let dt = Utc.with_ymd_and_hms(2015, 6, 30, 23, 56, 5).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 /// assert_eq!(DateTime::<Utc>::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
 /// ```
@@ -188,6 +188,17 @@ mod tests;
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
+}
+
+#[cfg(feature = "arbitrary")]
+impl arbitrary::Arbitrary<'_> for NaiveTime {
+    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveTime> {
+        let secs = u.int_in_range(0..=86_399)?;
+        let nano = u.int_in_range(0..=1_999_999_999)?;
+        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs, nano)
+            .expect("Could not generate a valid chrono::NaiveTime. It looks like implementation of Arbitrary for NaiveTime is erroneous.");
+        Ok(time)
+    }
 }
 
 impl NaiveTime {
@@ -637,13 +648,7 @@ impl NaiveTime {
 
         // `secs` may contain a leap second yet to be counted
         let adjust = match self.secs.cmp(&rhs.secs) {
-            Ordering::Greater => {
-                if rhs.frac >= 1_000_000_000 {
-                    1
-                } else {
-                    0
-                }
-            }
+            Ordering::Greater => i64::from(rhs.frac >= 1_000_000_000),
             Ordering::Equal => 0,
             Ordering::Less => {
                 if self.frac >= 1_000_000_000 {
@@ -1173,7 +1178,13 @@ impl fmt::Debug for NaiveTime {
             (sec, self.frac)
         };
 
-        write!(f, "{:02}:{:02}:{:02}", hour, min, sec)?;
+        use core::fmt::Write;
+        write_hundreds(f, hour as u8)?;
+        f.write_char(':')?;
+        write_hundreds(f, min as u8)?;
+        f.write_char(':')?;
+        write_hundreds(f, sec as u8)?;
+
         if nano == 0 {
             Ok(())
         } else if nano % 1_000_000 == 0 {

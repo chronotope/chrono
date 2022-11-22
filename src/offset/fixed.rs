@@ -152,6 +152,16 @@ impl fmt::Display for FixedOffset {
     }
 }
 
+#[cfg(feature = "arbitrary")]
+impl arbitrary::Arbitrary<'_> for FixedOffset {
+    fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<FixedOffset> {
+        let secs = u.int_in_range(-86_399..=86_399)?;
+        let fixed_offset = FixedOffset::east_opt(secs)
+            .expect("Could not generate a valid chrono::FixedOffset. It looks like implementation of Arbitrary for FixedOffset is erroneous.");
+        Ok(fixed_offset)
+    }
+}
+
 // addition or subtraction of FixedOffset to/from Timelike values is the same as
 // adding or subtracting the offset's local_minus_utc value
 // but keep keeps the leap second information.
@@ -231,33 +241,41 @@ mod tests {
         // starting from 0.3 we don't have an offset exceeding one day.
         // this makes everything easier!
         assert_eq!(
-            format!("{:?}", FixedOffset::east_opt(86399).unwrap().ymd_opt(2012, 2, 29).unwrap()),
-            "2012-02-29+23:59:59".to_string()
+            format!(
+                "{:?}",
+                FixedOffset::east_opt(86399)
+                    .unwrap()
+                    .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
+                    .unwrap()
+            ),
+            "2012-02-29T05:06:07+23:59:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
                 FixedOffset::east_opt(86399)
                     .unwrap()
-                    .ymd_opt(2012, 2, 29)
-                    .unwrap()
-                    .and_hms_opt(5, 6, 7)
+                    .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
                     .unwrap()
             ),
             "2012-02-29T05:06:07+23:59:59".to_string()
-        );
-        assert_eq!(
-            format!("{:?}", FixedOffset::west_opt(86399).unwrap().ymd_opt(2012, 3, 4).unwrap()),
-            "2012-03-04-23:59:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
                 FixedOffset::west_opt(86399)
                     .unwrap()
-                    .ymd_opt(2012, 3, 4)
+                    .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
                     .unwrap()
-                    .and_hms_opt(5, 6, 7)
+            ),
+            "2012-03-04T05:06:07-23:59:59".to_string()
+        );
+        assert_eq!(
+            format!(
+                "{:?}",
+                FixedOffset::west_opt(86399)
+                    .unwrap()
+                    .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
                     .unwrap()
             ),
             "2012-03-04T05:06:07-23:59:59".to_string()

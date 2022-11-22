@@ -6,6 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::convert::TryFrom;
+use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -74,6 +75,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// ```
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
@@ -1623,7 +1625,9 @@ impl Sub<Days> for NaiveDateTime {
 /// ```
 impl fmt::Debug for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}T{:?}", self.date, self.time)
+        self.date.fmt(f)?;
+        f.write_char('T')?;
+        self.time.fmt(f)
     }
 }
 
@@ -1654,7 +1658,9 @@ impl fmt::Debug for NaiveDateTime {
 /// ```
 impl fmt::Display for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.date, self.time)
+        self.date.fmt(f)?;
+        f.write_char(' ')?;
+        self.time.fmt(f)
     }
 }
 

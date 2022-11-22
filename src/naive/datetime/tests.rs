@@ -1,6 +1,6 @@
 use super::NaiveDateTime;
-use crate::naive::NaiveDate;
 use crate::time_delta::TimeDelta;
+use crate::NaiveDate;
 use crate::{Datelike, FixedOffset, Utc};
 use std::i64;
 
