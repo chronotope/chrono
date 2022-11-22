@@ -478,12 +478,12 @@ pub use naive::__BenchYearFlags;
 /// Serialization/Deserialization with serde.
 ///
 /// This module provides default implementations for `DateTime` using the [RFC 3339][1] format and various
-/// alternatives for use with serde's [`with` annotation][1].
+/// alternatives for use with serde's [`with` annotation][2].
 ///
 /// *Available on crate feature 'serde' only.*
 ///
 /// [1]: https://tools.ietf.org/html/rfc3339
-/// [2]: https://serde.rs/attributes.html#field-attributes
+/// [2]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
