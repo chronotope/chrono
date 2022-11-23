@@ -25,7 +25,7 @@ use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Duration, Weekday};
+use crate::{Datelike, Duration, Month, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
@@ -236,6 +236,49 @@ fn test_date_bounds() {
 }
 
 impl NaiveDate {
+    /// Create a `NaiveDate` of the first day of the given year
+    ///
+    /// This takes an `i16` rather than `i32` to ensure it is not
+    /// out of the allowed range
+    pub fn start_year(year: i16) -> NaiveDate {
+        // ideally this unwrap can be later removed
+        Self::from_ymd_opt(year.into(), 1, 1).unwrap()
+    }
+
+    /// Create a `NaiveDate` of the last day of the given year
+    ///
+    /// This takes an `i16` rather than `i32` to ensure it is not
+    /// out of the allowed range
+    pub fn end_year(year: i16) -> NaiveDate {
+        // ideally this unwrap can be later removed
+        Self::from_ymd_opt(i32::from(year) + 1, 1, 1).unwrap().pred_opt().unwrap()
+    }
+
+    /// Create a `NaiveDate` of the first day of the given year and month
+    ///
+    /// This takes an `i16` rather than `i32` to ensure it is not
+    /// out of the allowed range
+    pub fn start_month(year: i16, month: Month) -> NaiveDate {
+        // ideally this unwrap can be later removed
+        Self::from_ymd_opt(year.into(), month.number_from_month(), 1).unwrap()
+    }
+
+    /// Create a `NaiveDate` of the ;ast day of the given year and month
+    ///
+    /// This takes an `i16` rather than `i32` to ensure it is not
+    /// out of the allowed range
+    pub fn end_month(year: i16, month: Month) -> NaiveDate {
+        // ideally this unwrap can be later removed
+        let start = Self::start_month(year, month);
+
+        (start + Months::new(1)).pred_opt().unwrap()
+    }
+
+    /// Create a `NaiveDateTime` at midnight on the given `NaiveDate`
+    pub fn start_time(&self) -> NaiveDateTime {
+        self.and_time(NaiveTime::MIN)
+    }
+
     /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
     fn from_of(year: i32, of: Of) -> Option<NaiveDate> {
         if (MIN_YEAR..=MAX_YEAR).contains(&year) && of.valid() {
@@ -2166,12 +2209,86 @@ mod tests {
     use super::{
         Days, Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
     };
+    use crate::naive::internals::YearFlags;
     use crate::oldtime::Duration;
-    use crate::{Datelike, Weekday};
+    use crate::{Datelike, Month, Weekday};
     use std::{
         convert::{TryFrom, TryInto},
         i32, u32,
     };
+
+    #[test]
+    fn test_helpers() {
+        let months = &[
+            Month::January,
+            Month::February,
+            Month::March,
+            Month::April,
+            Month::May,
+            Month::June,
+            Month::July,
+            Month::August,
+            Month::September,
+            Month::October,
+            Month::November,
+            Month::December,
+        ];
+
+        fn days_in_month(month: Month, flags: YearFlags) -> u8 {
+            match month {
+                Month::January => 31,
+                Month::February if flags.ndays() == 366 => 29,
+                Month::February => 28,
+                Month::March => 31,
+                Month::April => 30,
+                Month::May => 31,
+                Month::June => 30,
+                Month::July => 31,
+                Month::August => 31,
+                Month::September => 30,
+                Month::October => 31,
+                Month::November => 30,
+                Month::December => 31,
+            }
+        }
+        for year in 0..=9999 {
+            assert_eq!(NaiveDate::start_year(year).to_string(), format!("{:04}-01-01", year));
+            assert_eq!(NaiveDate::end_year(year).to_string(), format!("{:04}-12-31", year));
+            assert_eq!(
+                NaiveDate::start_year(year).start_time().to_string(),
+                format!("{:04}-01-01 00:00:00", year)
+            );
+
+            for month in months {
+                assert_eq!(
+                    NaiveDate::start_month(year, *month).to_string(),
+                    format!("{:04}-{:02}-01", year, month.number_from_month())
+                );
+                assert_eq!(
+                    NaiveDate::end_month(year, *month).to_string(),
+                    format!(
+                        "{:04}-{:02}-{:02}",
+                        year,
+                        month.number_from_month(),
+                        days_in_month(*month, YearFlags::from_year(year.into()))
+                    )
+                );
+            }
+        }
+        for year in std::i16::MIN..=std::i16::MAX {
+            NaiveDate::start_year(year);
+            NaiveDate::end_year(year);
+            assert_eq!(
+                NaiveDate::start_year(year),
+                NaiveDate::start_year(year).start_time().date()
+            );
+
+            for month in months {
+                NaiveDate::start_month(year, *month);
+                NaiveDate::end_month(year, *month);
+            }
+        }
+    }
 
     #[test]
     fn diff_months() {
