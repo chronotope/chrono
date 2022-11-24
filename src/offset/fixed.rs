@@ -29,6 +29,9 @@ pub struct FixedOffset {
 }
 
 impl FixedOffset {
+    /// FixedOffset of 0
+    pub const ZERO: FixedOffset = FixedOffset { local_minus_utc: 0 };
+
     /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
     /// The negative `secs` means the Western Hemisphere.
     ///

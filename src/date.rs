@@ -7,6 +7,7 @@
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
+use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash};
 
@@ -20,7 +21,7 @@ use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
 use crate::oldtime::Duration as OldDuration;
-use crate::DateTime;
+use crate::{DateTime, Days, FixedOffset, Offset};
 use crate::{Datelike, Weekday};
 
 /// ISO 8601 calendar date with time zone.
@@ -54,12 +55,48 @@ use crate::{Datelike, Weekday};
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
-#[deprecated(since = "0.4.23", note = "Use `NaiveDate` or `DateTime<Tz>` instead")]
 #[derive(Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-pub struct Date<Tz: TimeZone> {
+pub struct Date<Tz = NotSpecified>
+where
+    Tz: TimeZone,
+{
     date: NaiveDate,
     offset: Tz::Offset,
+}
+
+// pub type NaiveDate = Date;
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+pub struct NotSpecified;
+
+impl Offset for NotSpecified {
+    fn fix(&self) -> FixedOffset {
+        FixedOffset::ZERO
+    }
+}
+
+impl TimeZone for NotSpecified {
+    type Offset = NotSpecified;
+    fn from_offset(_offset: &Self::Offset) -> Self {
+        NotSpecified
+    }
+    fn offset_from_local_date(&self, _local: &NaiveDate) -> crate::LocalResult<Self::Offset> {
+        crate::LocalResult::Single(NotSpecified)
+    }
+    fn offset_from_local_datetime(
+        &self,
+        _local: &crate::NaiveDateTime,
+    ) -> crate::LocalResult<Self::Offset> {
+        crate::LocalResult::Single(NotSpecified)
+    }
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Self::Offset {
+        NotSpecified
+    }
+    fn offset_from_utc_datetime(&self, _utc: &crate::NaiveDateTime) -> Self::Offset {
+        NotSpecified
+    }
 }
 
 /// The minimum possible `Date`.
@@ -72,6 +109,83 @@ pub const MIN_DATE: Date<Utc> = Date::<Utc>::MIN_UTC;
 pub const MAX_DATE: Date<Utc> = Date::<Utc>::MAX_UTC;
 
 impl<Tz: TimeZone> Date<Tz> {
+    ///
+    pub fn new(date: NaiveDate, tz: Tz) -> Date<Tz> {
+        Date { date, offset: tz.offset_from_utc_datetime(&date.and_time(NaiveTime::MIN)) }
+    }
+
+    ///
+    pub fn checked_add_days(&self, days: Days) -> Option<Self> {
+        if days.0 == 0 {
+            return Some(self.clone());
+        }
+
+        i64::try_from(days.0).ok().and_then(|d| self.diff_days(d))
+    }
+
+    ///
+    pub fn checked_sub_days(&self, days: Days) -> Option<Self> {
+        if days.0 == 0 {
+            return Some(self.clone());
+        }
+
+        i64::try_from(days.0).ok().and_then(|d| self.diff_days(-d))
+    }
+
+    fn diff_days(&self, days: i64) -> Option<Self> {
+        let date = self.date.checked_add_signed(crate::oldtime::Duration::days(days))?;
+        Some(Date { date, offset: self.offset.clone() })
+    }
+
+    /// Returns the earliest datetime on the given day
+    ///
+    /// panics: This will panic in the following cases:
+    ///   * There are no valid local times in the first six hours of the day
+    /// other: This will return the incorrect value when:
+    ///   * There are valid local times not aligned to a 15-minute reslution
+    pub fn start(&self) -> DateTime<Tz> {
+        // All possible offsets: https://en.wikipedia.org/wiki/List_of_UTC_offsets
+        // means a gap of 15 minutes should be reasonable
+
+        // while looping here is less than ideal, in the vast majority of cases
+        // the inital start time guess will be valid. We have to loop here because
+        // we don't know ex-ante what the earliest valid local time on the day will be
+        // and so we have to attempt a number of reasonable local times until we find one.
+        //
+        // Reasonable in this case means that this function will work for all timezones
+        // mentioned in the above wikipedia list, but will panic in custom implementations
+        // that allow offsets not aligned to a 15-minute resolution.
+
+        let base = NaiveTime::MIN;
+        for multiple in 0..=24 {
+            let start_time = base + oldtime::Duration::minutes(multiple * 15);
+            match self.timezone().from_local_datetime(&self.date.and_time(start_time)) {
+                crate::LocalResult::None => continue,
+                crate::LocalResult::Single(dt) => return dt,
+                // in the ambiguous case we pick the one which has an
+                // earlier UTC timestamp
+                // (this could be done without calling `naive_utc`, but
+                // this potentially better expresses the intent)
+                crate::LocalResult::Ambiguous(dt1, dt2) => {
+                    if dt1.naive_utc() < dt2.naive_utc() {
+                        return dt1;
+                    } else {
+                        return dt2;
+                    }
+                }
+            }
+        }
+
+        panic!("Unable to calculate start time for date {}", self.date)
+    }
+
+    /// Returns the exclusive end date of the day, equivalent to the start of the next day
+    ///
+    /// Returns None when it would otherwise overflow
+    pub fn exclusive_end(&self) -> Option<DateTime<Tz>> {
+        Some(self.checked_add_days(Days::new(1))?.start())
+    }
+
     /// Makes a new `Date` with given *UTC* date and offset.
     /// The local date should be constructed via the `TimeZone` trait.
     //
@@ -299,6 +413,42 @@ impl<Tz: TimeZone> Date<Tz> {
     pub const MAX_UTC: Date<Utc> = Date { date: NaiveDate::MAX, offset: Utc };
 }
 
+impl<Tz> Add<Days> for Date<Tz>
+where
+    Tz: TimeZone + Copy,
+{
+    type Output = Date<Tz>;
+
+    fn add(self, days: Days) -> Self::Output {
+        self.checked_add_days(days).unwrap()
+    }
+}
+
+impl<Tz> Sub<Days> for Date<Tz>
+where
+    Tz: TimeZone + Copy,
+{
+    type Output = Date<Tz>;
+
+    fn sub(self, days: Days) -> Self::Output {
+        self.checked_sub_days(days).unwrap()
+    }
+}
+
+impl<Tz> From<DateTime<Tz>> for Date<Tz>
+where
+    Tz: TimeZone + Copy,
+{
+    fn from(dt: DateTime<Tz>) -> Self {
+        Date {
+            date: dt.date_naive(),
+            offset: dt
+                .timezone()
+                .offset_from_utc_datetime(&dt.date_naive().and_time(NaiveTime::MIN)),
+        }
+    }
+}
+
 /// Maps the local date to other date with given conversion function.
 fn map_local<Tz: TimeZone, F>(d: &Date<Tz>, mut f: F) -> Option<Date<Tz>>
 where
@@ -518,7 +668,7 @@ impl<Tz: TimeZone> Sub<Date<Tz>> for Date<Tz> {
 impl<Tz: TimeZone> fmt::Debug for Date<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.naive_local().fmt(f)?;
-        self.offset.fmt(f)
+        self.offset().fmt(f)
     }
 }
 
@@ -528,7 +678,7 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.naive_local().fmt(f)?;
-        self.offset.fmt(f)
+        self.offset().fmt(f)
     }
 }
 
@@ -554,6 +704,7 @@ mod tests {
     use crate::oldtime::Duration;
     use crate::{FixedOffset, NaiveDate, Utc};
 
+    use crate::date::NotSpecified;
     #[cfg(feature = "clock")]
     use crate::offset::{Local, TimeZone};
 
@@ -641,5 +792,61 @@ mod tests {
 
         date_sub -= Duration::days(5);
         assert_eq!(date_sub, date - Duration::days(5));
+    }
+
+    #[test]
+    fn test_start_time() {
+        assert_eq!(
+            Date::from(Utc::now()).start(),
+            Utc::now()
+                .date_naive()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_local_timezone(Utc)
+                .single()
+                .unwrap(),
+        );
+    }
+
+    #[test]
+    fn test_zst() {
+        assert_eq!(
+            std::mem::size_of::<Date>(),
+            std::mem::size_of::<NaiveDate>() + std::mem::size_of::<NotSpecified>(),
+        );
+        assert_eq!(std::mem::size_of::<Date>(), std::mem::size_of::<NaiveDate>(),);
+        assert_eq!(
+            std::mem::size_of::<Date<Utc>>(),
+            std::mem::size_of::<NaiveDate>() + std::mem::size_of::<Utc>(),
+        );
+        assert_eq!(std::mem::size_of::<Date<Utc>>(), std::mem::size_of::<NaiveDate>(),);
+        assert_eq!(
+            std::mem::size_of::<Date<FixedOffset>>(),
+            std::mem::size_of::<NaiveDate>() + std::mem::size_of::<FixedOffset>(),
+        );
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+mod serde {
+    use crate::{Date, TimeZone};
+    use core::fmt::Display;
+    use serde::ser;
+
+    // Currently no `Deserialize` option as there is no generic way to create a timezone
+    // from a string representation of it. This could be added to the `TimeZone` trait in future
+
+    impl<Tz> ser::Serialize for Date<Tz>
+    where
+        Tz: TimeZone + Copy + Display,
+        Tz::Offset: Display,
+    {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: ser::Serializer,
+        {
+            serializer.collect_str(&self)
+        }
     }
 }
