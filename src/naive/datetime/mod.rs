@@ -7,7 +7,7 @@
 use core::borrow::Borrow;
 use core::convert::TryFrom;
 use core::fmt::Write;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use core::{fmt, str};
 
 use num_integer::div_mod_floor;
@@ -568,14 +568,25 @@ impl NaiveDateTime {
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
     /// ```
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_add_signed(rhs);
+        let (date, time) = match rhs < OldDuration::zero() {
+            false => {
+                let (time, days) = self.time.overflowing_add_opt(rhs.to_std().ok()?)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_add_days(days)?;
+                (date, time)
+            }
+            true => {
+                let (time, days) = self.time.overflowing_sub_opt(rhs.neg().to_std().ok()?)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_sub_days(days)?;
+                (date, time)
+            }
+        };
 
-        // early checking to avoid overflow in OldDuration::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
-        }
-
-        let date = self.date.checked_add_signed(OldDuration::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
@@ -669,14 +680,25 @@ impl NaiveDateTime {
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap()));
     /// ```
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_sub_signed(rhs);
+        let (date, time) = match rhs < OldDuration::zero() {
+            true => {
+                let (time, days) = self.time.overflowing_add_opt(rhs.neg().to_std().ok()?)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_add_days(days)?;
+                (date, time)
+            }
+            false => {
+                let (time, days) = self.time.overflowing_sub_opt(rhs.to_std().ok()?)?;
+                if days.0 * 24 * 60 * 60 >= (1 << MAX_SECS_BITS) {
+                    return None;
+                }
+                let date = self.date.checked_sub_days(days)?;
+                (date, time)
+            }
+        };
 
-        // early checking to avoid overflow in OldDuration::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
-        }
-
-        let date = self.date.checked_sub_signed(OldDuration::seconds(rhs))?;
         Some(NaiveDateTime { date, time })
     }
 
@@ -761,7 +783,16 @@ impl NaiveDateTime {
     ///            Duration::seconds(3600) - Duration::milliseconds(500));
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
-        self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
+        let days = self.date.signed_duration_since(rhs.date);
+        match self.time.cmp(&rhs.time) {
+            Ordering::Less => {
+                days - OldDuration::from_std(self.time.abs_diff(rhs.time)).expect("Should succeed")
+            }
+            Ordering::Equal => days,
+            Ordering::Greater => {
+                days + OldDuration::from_std(self.time.abs_diff(rhs.time)).expect("Should succeed")
+            }
+        }
     }
 
     /// Formats the combined date and time with the specified formatting items.
