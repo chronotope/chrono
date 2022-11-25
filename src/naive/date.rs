@@ -122,7 +122,7 @@ impl NaiveWeek {
 
 /// A duration in calendar days.
 ///
-/// This is useful becuase when using `Duration` it is possible
+/// This is useful because when using `Duration` it is possible
 /// that adding `Duration::days(1)` doesn't increment the day value as expected due to it being a
 /// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types
 /// and in other cases `Duration::days(n)` and `Days::new(n)` are equivalent.
@@ -2189,7 +2189,7 @@ mod tests {
             None
         );
 
-        // sub with months exceeindg `i32::MIN`
+        // sub with months exceeding `i32::MIN`
         assert_eq!(
             NaiveDate::from_ymd_opt(2022, 8, 3)
                 .unwrap()
