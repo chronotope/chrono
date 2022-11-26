@@ -492,6 +492,11 @@ pub use weekday::{ParseWeekdayError, Weekday};
 mod month;
 pub use month::{Month, Months, ParseMonthError};
 
+// I'm not entirely sure too this should be here, because months
+// was implemented at this level and Days at naive level
+// I believe here might be better since it should help avoid coupling
+mod years; // add pub uses
+
 mod traits;
 pub use traits::{Datelike, Timelike};
 
