@@ -356,6 +356,7 @@ impl ParseError {
 }
 
 /// The category of parse error
+#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
 pub enum ParseErrorKind {
     /// Given field is out of permitted range.
@@ -385,10 +386,6 @@ pub enum ParseErrorKind {
 
     /// There was an error on the formatting string, or there were non-supported formating items.
     BadFormat,
-
-    // TODO: Change this to `#[non_exhaustive]` (on the enum) when MSRV is increased
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 /// Same as `Result<T, ParseError>`.
@@ -404,7 +401,6 @@ impl fmt::Display for ParseError {
             ParseErrorKind::TooShort => write!(f, "premature end of input"),
             ParseErrorKind::TooLong => write!(f, "trailing input"),
             ParseErrorKind::BadFormat => write!(f, "bad or unsupported format string"),
-            _ => unreachable!(),
         }
     }
 }
