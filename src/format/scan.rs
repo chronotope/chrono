@@ -312,8 +312,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
     // tries to parse legacy time zone names
     let upto = s.as_bytes().iter().position(|c| !c.is_ascii_alphabetic()).unwrap_or(s.len());
     if upto > 0 {
-        let name = &s[..upto];
-        let s = &s[upto..];
+        let (name, s) = s.split_at(upto);
         let offset_hours = |o| Ok((s, Some(o * 3600)));
         if equals(name, "gmt") || equals(name, "ut") {
             offset_hours(0)
