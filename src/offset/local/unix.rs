@@ -88,7 +88,7 @@ impl Default for Cache {
     fn default() -> Cache {
         // default to UTC if no local timezone can be found
         let env_tz = env::var("TZ").ok();
-        let env_ref = env_tz.as_ref().map(|s| s.as_str());
+        let env_ref = env_tz.as_deref();
         Cache {
             last_checked: SystemTime::now(),
             source: Source::new(env_ref),
@@ -114,7 +114,7 @@ impl Cache {
             Ok(d) if d.as_secs() < 1 => (),
             Ok(_) | Err(_) => {
                 let env_tz = env::var("TZ").ok();
-                let env_ref = env_tz.as_ref().map(|s| s.as_str());
+                let env_ref = env_tz.as_deref();
                 let new_source = Source::new(env_ref);
 
                 let out_of_date = match (&self.source, &new_source) {
