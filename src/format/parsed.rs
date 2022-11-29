@@ -20,6 +20,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///
 /// - `to_*` methods try to make a concrete date and time value out of set fields.
 ///   It fully checks any remaining out-of-range conditions and inconsistent/impossible fields.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Hash)]
 pub struct Parsed {
     /// Year.
@@ -102,9 +103,6 @@ pub struct Parsed {
 
     /// Offset from the local time to UTC, in seconds.
     pub offset: Option<i32>,
-
-    /// A dummy field to make this type not fully destructible (required for API stability).
-    _dummy: (),
 }
 
 /// Checks if `old` is either empty or has the same value as `new` (i.e. "consistent"),
