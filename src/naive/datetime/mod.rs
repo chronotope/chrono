@@ -292,7 +292,7 @@ impl NaiveDateTime {
     ///```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_naive_datetime_with_offset(0) // no offset adjustment
     }
 
@@ -317,7 +317,7 @@ impl NaiveDateTime {
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDateTime, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
     }
 
@@ -826,10 +826,10 @@ impl NaiveDateTime {
     /// use chrono::NaiveDate;
     /// use chrono::format::strftime::StrftimeItems;
     ///
-    /// let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S");
+    /// let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").unwrap();
     /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
     /// assert_eq!(dt.format_with_items(fmt.clone()).to_string(), "2015-09-05 23:56:04");
-    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(),    "2015-09-05 23:56:04");
+    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").unwrap().to_string(),    "2015-09-05 23:56:04");
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -837,7 +837,7 @@ impl NaiveDateTime {
     /// ```
     /// # use chrono::NaiveDate;
     /// # use chrono::format::strftime::StrftimeItems;
-    /// # let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
+    /// # let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").unwrap().clone();
     /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
     /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
     /// ```
@@ -873,8 +873,8 @@ impl NaiveDateTime {
     /// use chrono::NaiveDate;
     ///
     /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
-    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
-    /// assert_eq!(dt.format("around %l %p on %b %-d").to_string(), "around 11 PM on Sep 5");
+    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").unwrap().to_string(), "2015-09-05 23:56:04");
+    /// assert_eq!(dt.format("around %l %p on %b %-d").unwrap().to_string(), "around 11 PM on Sep 5");
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -882,15 +882,14 @@ impl NaiveDateTime {
     /// ```
     /// # use chrono::NaiveDate;
     /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
-    /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
-    /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
+    /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S").unwrap()), "2015-09-05 23:56:04");
+    /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d").unwrap()), "around 11 PM on Sep 5");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
-    #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_with_items(StrftimeItems::new(fmt))
+    pub fn format<'a>(&self, fmt: &'a str) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_with_items(StrftimeItems::new(fmt)?))
     }
 
     /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Tz>`
@@ -1924,4 +1923,17 @@ where
     // pre-0.3.0 rustc-serialize format is now invalid
     assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err());
     assert!(from_str(r#"null"#).is_err());
+}
+
+#[test]
+fn test_datetime_format_err() {
+    assert!(
+        NaiveDate::from_ymd_opt(-1, 12, 31)
+            .unwrap()
+            .and_hms_nano_opt(23, 59, 59, 7)
+            .unwrap()
+            .format("%")
+            .is_err(),
+        "Invalid format string should be format error"
+    )
 }

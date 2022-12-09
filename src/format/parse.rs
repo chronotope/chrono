@@ -1472,7 +1472,7 @@ fn parse_rfc850() {
     let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
 
     // Check that the format is what we expect
-    assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
+    assert_eq!(dt.format(RFC850_FMT).unwrap().to_string(), dt_str);
 
     // Check that it parses correctly
     assert_eq!(Ok(dt), Utc.datetime_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT));

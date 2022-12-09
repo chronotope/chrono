@@ -22,7 +22,7 @@
 //!
 //! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
 //!
-//! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
+//! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S").unwrap());
 //! assert_eq!(formatted, "2020-11-10 00:01:32");
 //!
 //! let parsed = Utc.datetime_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?;

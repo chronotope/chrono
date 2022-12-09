@@ -21,6 +21,7 @@ use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
 use crate::time_delta::TimeDelta;
 use crate::DateTime;
+use crate::ParseError;
 use crate::{Datelike, Weekday};
 
 /// ISO 8601 calendar date with time zone.
@@ -353,9 +354,8 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
-    #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_with_items(StrftimeItems::new(fmt))
+    pub fn format<'a>(&self, fmt: &'a str) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_with_items(StrftimeItems::new(fmt)?))
     }
 
     /// Formats the date with the specified formatting items and locale.
@@ -392,8 +392,8 @@ where
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
+    ) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale)?, locale))
     }
 }
 
@@ -668,5 +668,11 @@ mod tests {
 
         date_sub -= TimeDelta::days(5);
         assert_eq!(date_sub, date - TimeDelta::days(5));
+    }
+
+    #[test]
+    fn test_invalid_format() {
+        let result = Utc::now().format("%");
+        assert!(result.is_err(), "Invalid format string should be format error")
     }
 }

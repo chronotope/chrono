@@ -117,7 +117,7 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
     let ldt = Local
         .from_local_datetime(&date.and_hms_opt(dt.hour(), dt.minute(), dt.second()).unwrap())
         .unwrap();
-    let formated_date = format!("{}\n", ldt.format(required_format));
+    let formated_date = format!("{}\n", ldt.format(required_format).unwrap());
     assert_eq!(date_command_str, formated_date);
 }
 

@@ -569,7 +569,7 @@ impl NaiveDate {
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_naive_date()
     }
 
@@ -591,7 +591,7 @@ impl NaiveDate {
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDate, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_naive_date().map(|d| (d, remainder))
     }
 
@@ -1182,10 +1182,10 @@ impl NaiveDate {
     /// use chrono::NaiveDate;
     /// use chrono::format::strftime::StrftimeItems;
     ///
-    /// let fmt = StrftimeItems::new("%Y-%m-%d");
+    /// let fmt = StrftimeItems::new("%Y-%m-%d").unwrap();
     /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
     /// assert_eq!(d.format_with_items(fmt.clone()).to_string(), "2015-09-05");
-    /// assert_eq!(d.format("%Y-%m-%d").to_string(),             "2015-09-05");
+    /// assert_eq!(d.format("%Y-%m-%d").unwrap().to_string(),             "2015-09-05");
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -1193,7 +1193,7 @@ impl NaiveDate {
     /// ```
     /// # use chrono::NaiveDate;
     /// # use chrono::format::strftime::StrftimeItems;
-    /// # let fmt = StrftimeItems::new("%Y-%m-%d").clone();
+    /// # let fmt = StrftimeItems::new("%Y-%m-%d").unwrap().clone();
     /// # let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
     /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ```
@@ -1229,8 +1229,8 @@ impl NaiveDate {
     /// use chrono::NaiveDate;
     ///
     /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
-    /// assert_eq!(d.format("%Y-%m-%d").to_string(), "2015-09-05");
-    /// assert_eq!(d.format("%A, %-d %B, %C%y").to_string(), "Saturday, 5 September, 2015");
+    /// assert_eq!(d.format("%Y-%m-%d").unwrap().to_string(), "2015-09-05");
+    /// assert_eq!(d.format("%A, %-d %B, %C%y").unwrap().to_string(), "Saturday, 5 September, 2015");
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -1238,15 +1238,14 @@ impl NaiveDate {
     /// ```
     /// # use chrono::NaiveDate;
     /// # let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
-    /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
-    /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
+    /// assert_eq!(format!("{}", d.format("%Y-%m-%d").unwrap()), "2015-09-05");
+    /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y").unwrap()), "Saturday, 5 September, 2015");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
-    #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_with_items(StrftimeItems::new(fmt))
+    pub fn format<'a>(&self, fmt: &'a str) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_with_items(StrftimeItems::new(fmt)?))
     }
 
     /// Formats the date with the specified formatting items and locale.
@@ -1278,8 +1277,8 @@ impl NaiveDate {
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
+    ) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale)?, locale))
     }
 
     /// Returns an iterator that steps by days across all representable dates.
@@ -2947,43 +2946,78 @@ mod tests {
     #[test]
     fn test_date_format() {
         let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
-        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
-        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
-        assert_eq!(d.format("%d,%e").to_string(), "04, 4");
-        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
-        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
-        assert_eq!(d.format("%j").to_string(), "064"); // since 2012 is a leap year
-        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12");
-        assert_eq!(d.format("%F").to_string(), "2012-03-04");
-        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
-        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        assert_eq!(d.format("%Y,%C,%y,%G,%g").unwrap().to_string(), "2012,20,12,2012,12");
+        assert_eq!(d.format("%m,%b,%h,%B").unwrap().to_string(), "03,Mar,Mar,March");
+        assert_eq!(d.format("%d,%e").unwrap().to_string(), "04, 4");
+        assert_eq!(d.format("%U,%W,%V").unwrap().to_string(), "10,09,09");
+        assert_eq!(d.format("%a,%A,%w,%u").unwrap().to_string(), "Sun,Sunday,0,7");
+        assert_eq!(d.format("%j").unwrap().to_string(), "064"); // since 2012 is a leap year
+        assert_eq!(d.format("%D,%x").unwrap().to_string(), "03/04/12,03/04/12");
+        assert_eq!(d.format("%F").unwrap().to_string(), "2012-03-04");
+        assert_eq!(d.format("%v").unwrap().to_string(), " 4-Mar-2012");
+        assert_eq!(d.format("%t%n%%%n%t").unwrap().to_string(), "\t\n%\n\t");
 
         // non-four-digit years
         assert_eq!(
-            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").to_string(),
+            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").unwrap().to_string(),
             "+12345"
         );
-        assert_eq!(NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
-        assert_eq!(NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
-        assert_eq!(NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
-        assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
-        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
-        assert_eq!(NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
-        assert_eq!(NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
-        assert_eq!(NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
-        assert_eq!(NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
         assert_eq!(
-            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
+            NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "1234"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "0123"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "0012"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "0001"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "0000"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "-0001"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "-0012"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "-0123"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").unwrap().to_string(),
+            "-1234"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").unwrap().to_string(),
             "-12345"
         );
 
         // corner cases
         assert_eq!(
-            NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
+            NaiveDate::from_ymd_opt(2007, 12, 31)
+                .unwrap()
+                .format("%G,%g,%U,%W,%V")
+                .unwrap()
+                .to_string(),
             "2008,08,52,53,01"
         );
         assert_eq!(
-            NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
+            NaiveDate::from_ymd_opt(2010, 1, 3)
+                .unwrap()
+                .format("%G,%g,%U,%W,%V")
+                .unwrap()
+                .to_string(),
             "2009,09,01,00,53"
         );
     }
@@ -3099,6 +3133,14 @@ mod tests {
                 assert!((base + Days::new(dplus)).weeks_from(*day) < 54)
             }
         }
+    }
+
+    #[test]
+    fn test_date_format_err() {
+        assert!(
+            NaiveDate::from_ymd_opt(2023, 4, 9).unwrap().format("%").is_err(),
+            "Invalid format string should be format error"
+        )
     }
 
     #[test]

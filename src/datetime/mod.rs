@@ -615,7 +615,7 @@ impl DateTime<FixedOffset> {
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_datetime()
     }
 
@@ -649,7 +649,7 @@ impl DateTime<FixedOffset> {
         fmt: &str,
     ) -> ParseResult<(DateTime<FixedOffset>, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_datetime().map(|d| (d, remainder))
     }
 }
@@ -825,15 +825,14 @@ where
     /// use chrono::prelude::*;
     ///
     /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
-    /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
+    /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M").unwrap());
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
-    #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_with_items(StrftimeItems::new(fmt))
+    pub fn format<'a>(&self, fmt: &'a str) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_with_items(StrftimeItems::new(fmt)?))
     }
 
     /// Formats the combined date and time with the specified formatting items and locale.
@@ -873,8 +872,8 @@ where
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
+    ) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale)?, locale))
     }
 }
 
@@ -1409,4 +1408,18 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+}
+
+#[test]
+fn test_invalid_format() {
+    assert!(Utc::now().format("%").is_err());
+}
+
+#[test]
+#[cfg(feature = "unstable-locales")]
+fn test_invalid_format_localized() {
+    assert!(
+        Utc::now().format_localized("%", Locale::de_DE).is_err(),
+        "Invalid format string should be format error"
+    )
 }

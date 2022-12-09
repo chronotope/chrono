@@ -218,11 +218,11 @@
 //! # #[cfg(feature = "unstable-locales")]
 //! # fn test() {
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
-//! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
-//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
+//! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").unwrap().to_string(), "2014-11-28 12:00:09");
+//! assert_eq!(dt.format("%a %b %e %T %Y").unwrap().to_string(), "Fri Nov 28 12:00:09 2014");
+//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).unwrap().to_string(), "vendredi 28 novembre 2014, 12:00:09");
 //!
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
+//! assert_eq!(dt.format("%a %b %e %T %Y").unwrap().to_string(), dt.format("%c").unwrap().to_string());
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
 //! assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
 //! assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");

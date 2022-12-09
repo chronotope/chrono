@@ -476,7 +476,7 @@ impl NaiveTime {
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_naive_time()
     }
 
@@ -498,7 +498,7 @@ impl NaiveTime {
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveTime, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt)?)?;
         parsed.to_naive_time().map(|t| (t, remainder))
     }
 
@@ -710,10 +710,10 @@ impl NaiveTime {
     /// use chrono::NaiveTime;
     /// use chrono::format::strftime::StrftimeItems;
     ///
-    /// let fmt = StrftimeItems::new("%H:%M:%S");
+    /// let fmt = StrftimeItems::new("%H:%M:%S").unwrap();
     /// let t = NaiveTime::from_hms_opt(23, 56, 4).unwrap();
     /// assert_eq!(t.format_with_items(fmt.clone()).to_string(), "23:56:04");
-    /// assert_eq!(t.format("%H:%M:%S").to_string(),             "23:56:04");
+    /// assert_eq!(t.format("%H:%M:%S").unwrap().to_string(),             "23:56:04");
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -721,7 +721,7 @@ impl NaiveTime {
     /// ```
     /// # use chrono::NaiveTime;
     /// # use chrono::format::strftime::StrftimeItems;
-    /// # let fmt = StrftimeItems::new("%H:%M:%S").clone();
+    /// # let fmt = StrftimeItems::new("%H:%M:%S").unwrap().clone();
     /// # let t = NaiveTime::from_hms_opt(23, 56, 4).unwrap();
     /// assert_eq!(format!("{}", t.format_with_items(fmt)), "23:56:04");
     /// ```
@@ -757,9 +757,9 @@ impl NaiveTime {
     /// use chrono::NaiveTime;
     ///
     /// let t = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(t.format("%H:%M:%S").to_string(), "23:56:04");
-    /// assert_eq!(t.format("%H:%M:%S%.6f").to_string(), "23:56:04.012345");
-    /// assert_eq!(t.format("%-I:%M %p").to_string(), "11:56 PM");
+    /// assert_eq!(t.format("%H:%M:%S").unwrap().to_string(), "23:56:04");
+    /// assert_eq!(t.format("%H:%M:%S%.6f").unwrap().to_string(), "23:56:04.012345");
+    /// assert_eq!(t.format("%-I:%M %p").unwrap().to_string(), "11:56 PM");
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -767,16 +767,15 @@ impl NaiveTime {
     /// ```
     /// # use chrono::NaiveTime;
     /// # let t = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
-    /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f")), "23:56:04.012345");
-    /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
+    /// assert_eq!(format!("{}", t.format("%H:%M:%S").unwrap()), "23:56:04");
+    /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f").unwrap()), "23:56:04.012345");
+    /// assert_eq!(format!("{}", t.format("%-I:%M %p").unwrap()), "11:56 PM");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
-    #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
-        self.format_with_items(StrftimeItems::new(fmt))
+    pub fn format<'a>(&self, fmt: &'a str) -> Result<DelayedFormat<StrftimeItems<'a>>, ParseError> {
+        Ok(self.format_with_items(StrftimeItems::new(fmt)?))
     }
 
     /// Returns a triple of the hour, minute and second numbers.
@@ -844,7 +843,7 @@ impl Timelike for NaiveTime {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.second(), 59);
-    /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
+    /// assert_eq!(leap.format("%H:%M:%S").unwrap().to_string(), "23:59:60");
     /// ```
     #[inline]
     fn second(&self) -> u32 {
@@ -873,7 +872,7 @@ impl Timelike for NaiveTime {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
-    /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
+    /// assert_eq!(leap.format("%H:%M:%S%.9f").unwrap().to_string(), "23:59:60.000000000");
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {
@@ -1424,4 +1423,12 @@ where
     // pre-0.3.0 rustc-serialize format is now invalid
     assert!(from_str(r#"{"secs":0,"frac":0}"#).is_err());
     assert!(from_str(r#"null"#).is_err());
+}
+
+#[test]
+fn test_time_format_err() {
+    assert!(
+        NaiveTime::from_hms_opt(1, 2, 3).unwrap().format("%").is_err(),
+        "Invalid format string should be format error"
+    )
 }

@@ -1156,7 +1156,10 @@ fn test_to_string_round_trip_with_local() {
 fn test_datetime_format_with_local() {
     // if we are not around the year boundary, local and UTC date should have the same year
     let dt = Local::now().with_month(5).unwrap();
-    assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&Utc).format("%Y").to_string());
+    assert_eq!(
+        dt.format("%Y").unwrap().to_string(),
+        dt.with_timezone(&Utc).format("%Y").unwrap().to_string()
+    );
 }
 
 #[test]
@@ -1347,25 +1350,25 @@ fn test_datetime_format_alignment() {
     let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0).unwrap();
 
     // Item::Literal
-    let percent = datetime.format("%%");
+    let percent = datetime.format("%%").unwrap();
     assert_eq!("  %", format!("{:>3}", percent));
     assert_eq!("%  ", format!("{:<3}", percent));
     assert_eq!(" % ", format!("{:^3}", percent));
 
     // Item::Numeric
-    let year = datetime.format("%Y");
+    let year = datetime.format("%Y").unwrap();
     assert_eq!("  2007", format!("{:>6}", year));
     assert_eq!("2007  ", format!("{:<6}", year));
     assert_eq!(" 2007 ", format!("{:^6}", year));
 
     // Item::Fixed
-    let tz = datetime.format("%Z");
+    let tz = datetime.format("%Z").unwrap();
     assert_eq!("  UTC", format!("{:>5}", tz));
     assert_eq!("UTC  ", format!("{:<5}", tz));
     assert_eq!(" UTC ", format!("{:^5}", tz));
 
     // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
-    let ymd = datetime.format("%Y %B %d");
+    let ymd = datetime.format("%Y %B %d").unwrap();
     let ymd_formatted = "2007 January 02";
     assert_eq!(format!("  {}", ymd_formatted), format!("{:>17}", ymd));
     assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
