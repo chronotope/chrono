@@ -87,6 +87,32 @@ pub struct NaiveDateTime {
     time: NaiveTime,
 }
 
+/// The unit of a timestamp expressed in fractions of a second.
+/// Currently either milliseconds or microseconds.
+///
+/// This is a private type, used in the implementation of
+/// [NaiveDateTime::from_timestamp_millis] and [NaiveDateTime::from_timestamp_micros].
+#[derive(Clone, Copy, Debug)]
+enum TimestampUnit {
+    Millis,
+    Micros,
+}
+
+impl TimestampUnit {
+    fn per_second(self) -> u32 {
+        match self {
+            TimestampUnit::Millis => 1_000,
+            TimestampUnit::Micros => 1_000_000,
+        }
+    }
+    fn nanos_per(self) -> u32 {
+        match self {
+            TimestampUnit::Millis => 1_000_000,
+            TimestampUnit::Micros => 1_000,
+        }
+    }
+}
+
 impl NaiveDateTime {
     /// Makes a new `NaiveDateTime` from date and time components.
     /// Equivalent to [`date.and_time(time)`](./struct.NaiveDate.html#method.and_time)
@@ -152,28 +178,33 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
-        let (secs, subsec_millis) = (millis / 1000, millis % 1000);
+        Self::from_timestamp_unit(millis, TimestampUnit::Millis)
+    }
 
-        match subsec_millis.cmp(&0) {
-            Ordering::Less => {
-                // in the case where our subsec part is negative, then we are actually in the earlier second
-                // hence we subtract one from the seconds part, and we then add a whole second worth of nanos
-                // to our nanos part. Due to the use of u32 datatype, it is more convenient to subtract
-                // the absolute value of the subsec nanos from a whole second worth of nanos
-                let nsecs = u32::try_from(subsec_millis.abs()).ok()? * NANOS_IN_MILLISECOND;
-                NaiveDateTime::from_timestamp_opt(
-                    secs.checked_sub(1)?,
-                    NANOS_IN_SECOND.checked_sub(nsecs)?,
-                )
-            }
-            Ordering::Equal => NaiveDateTime::from_timestamp_opt(secs, 0),
-            Ordering::Greater => {
-                // convert the subsec millis into nanosecond scale so they can be supplied
-                // as the nanoseconds parameter
-                let nsecs = u32::try_from(subsec_millis).ok()? * NANOS_IN_MILLISECOND;
-                NaiveDateTime::from_timestamp_opt(secs, nsecs)
-            }
-        }
+    /// Creates a new [NaiveDateTime] from microseconds since the UNIX epoch.
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// Returns `None` on an out-of-range number of microseconds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDateTime;
+    /// let timestamp_micros: i64 = 1662921288000000; //Sunday, September 11, 2022 6:34:48 PM
+    /// let naive_datetime = NaiveDateTime::from_timestamp_micros(timestamp_micros);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_micros: i64 = -2208936075000000; //Mon Jan 01 1900 14:38:45 GMT+0000
+    /// let naive_datetime = NaiveDateTime::from_timestamp_micros(timestamp_micros);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
+    /// ```
+    #[inline]
+    pub fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
+        Self::from_timestamp_unit(micros, TimestampUnit::Micros)
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -866,6 +897,36 @@ impl NaiveDateTime {
     pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
     /// The maximum possible `NaiveDateTime`.
     pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
+
+    /// Creates a new [NaiveDateTime] from milliseconds or microseconds since the UNIX epoch.
+    ///
+    /// This is a private function used by [from_timestamp_millis] and [from_timestamp_micros].
+    #[inline]
+    fn from_timestamp_unit(value: i64, unit: TimestampUnit) -> Option<NaiveDateTime> {
+        let (secs, subsecs) =
+            (value / i64::from(unit.per_second()), value % i64::from(unit.per_second()));
+
+        match subsecs.cmp(&0) {
+            Ordering::Less => {
+                // in the case where our subsec part is negative, then we are actually in the earlier second
+                // hence we subtract one from the seconds part, and we then add a whole second worth of nanos
+                // to our nanos part. Due to the use of u32 datatype, it is more convenient to subtract
+                // the absolute value of the subsec nanos from a whole second worth of nanos
+                let nsecs = u32::try_from(subsecs.abs()).ok()? * unit.nanos_per();
+                NaiveDateTime::from_timestamp_opt(
+                    secs.checked_sub(1)?,
+                    NANOS_IN_SECOND.checked_sub(nsecs)?,
+                )
+            }
+            Ordering::Equal => NaiveDateTime::from_timestamp_opt(secs, 0),
+            Ordering::Greater => {
+                // convert the subsec millis into nanosecond scale so they can be supplied
+                // as the nanoseconds parameter
+                let nsecs = u32::try_from(subsecs).ok()? * unit.nanos_per();
+                NaiveDateTime::from_timestamp_opt(secs, nsecs)
+            }
+        }
+    }
 }
 
 impl Datelike for NaiveDateTime {
