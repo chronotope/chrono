@@ -33,7 +33,7 @@ fn test_datetime_from_timestamp_millis() {
     // Test that the result of `from_timestamp_millis` compares equal to
     // that of `from_timestamp_opt`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
-    for secs in secs_test {
+    for secs in secs_test.iter().cloned() {
         assert_eq!(
             NaiveDateTime::from_timestamp_millis(secs * 1000),
             NaiveDateTime::from_timestamp_opt(secs, 0)
