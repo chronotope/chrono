@@ -9,6 +9,7 @@ on:
       - .github/**
       - .ci/**
       - Cargo.toml
+      - deny.toml
 
 jobs:
   lint:
@@ -22,3 +23,9 @@ jobs:
       - run: cargo clippy --color=always -- -D warnings -A clippy::manual-non-exhaustive
         env:
           RUSTFLAGS: "-Dwarnings"
+
+  cargo-deny:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: EmbarkStudios/cargo-deny-action@v1
