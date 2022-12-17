@@ -27,6 +27,8 @@ use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Duration, Weekday};
 
+use crate::Years;
+
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
 
@@ -1248,6 +1250,23 @@ impl NaiveDate {
         NaiveWeek { date: *self, start }
     }
 
+    // I think self here is a copy, but I still have to make sure it's
+    pub fn checked_add_years(self, years: Years) -> Option<NaiveDate> {
+        if years.0 == 0 {
+            return Some(self);
+        }
+        let num_years = i32::try_from(years.0).ok()?;
+        self.with_year(self.year() + num_years)
+    }
+
+    pub fn checked_sub_years(self, years: Years) -> Option<NaiveDate> {
+        if years.0 == 0 {
+            return Some(self);
+        }
+        let num_years = i32::try_from(years.0).ok()?;
+        self.with_year(self.year() - num_years)
+    }
+
     /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
     pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
     /// The maximum possible `NaiveDate` (December 31, 262143 CE).
@@ -1684,6 +1703,22 @@ impl Sub<Months> for NaiveDate {
     /// ```
     fn sub(self, months: Months) -> Self::Output {
         self.checked_sub_months(months).unwrap()
+    }
+}
+
+impl Add<Years> for NaiveDate {
+    type Output = NaiveDate;
+
+    fn add(self, years: Years) -> Self::Output {
+        self.checked_add_years(years).unwrap()
+    }
+}
+
+impl Sub<Years> for NaiveDate {
+    type Output = NaiveDate;
+
+    fn sub(self, years: Years) -> Self::Output {
+        self.checked_sub_years(years).unwrap()
     }
 }
 

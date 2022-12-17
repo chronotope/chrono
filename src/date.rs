@@ -23,6 +23,8 @@ use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::{Datelike, Weekday};
 
+use crate::Years;
+
 /// ISO 8601 calendar date with time zone.
 ///
 /// You almost certainly want to be using a [`NaiveDate`] instead of this type.
@@ -367,6 +369,16 @@ where
         locale: Locale,
     ) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
+    }
+
+    pub fn checked_add_years(mut self, num_years: Years) -> Option<Date<Tz>> {
+        self.date = self.date.checked_add_years(num_years)?;
+        Some(self)
+    }
+
+    pub fn checked_sub_years(mut self, num_years: Years) -> Option<Date<Tz>> {
+        self.date = self.date.checked_sub_years(num_years)?;
+        Some(self)
     }
 }
 

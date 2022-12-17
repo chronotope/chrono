@@ -35,6 +35,8 @@ use crate::Date;
 use crate::Months;
 use crate::{Datelike, Timelike, Weekday};
 
+use crate::Years;
+
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -742,6 +744,16 @@ where
         locale: Locale,
     ) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
+    }
+
+    pub fn checked_add_years(mut self, num_years: Years) -> Option<DateTime<Tz>> {
+        self.datetime = self.datetime.checked_add_years(num_years)?;
+        Some(self)
+    }
+
+    pub fn checked_sub_years(mut self, num_years: Years) -> Option<DateTime<Tz>> {
+        self.datetime = self.datetime.checked_sub_years(num_years)?;
+        Some(self)
     }
 }
 

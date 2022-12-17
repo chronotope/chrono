@@ -24,6 +24,8 @@ use crate::oldtime::Duration as OldDuration;
 use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
 use core::cmp::Ordering;
 
+use crate::Years;
+
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
 
@@ -926,6 +928,16 @@ impl NaiveDateTime {
                 NaiveDateTime::from_timestamp_opt(secs, nsecs)
             }
         }
+    }
+
+    pub fn checked_add_years(mut self, num_years: Years) -> Option<NaiveDateTime> {
+        self.date = self.date.checked_add_years(num_years)?;
+        Some(self)
+    }
+
+    pub fn checked_sub_years(mut self, num_years: Years) -> Option<NaiveDateTime> {
+        self.date = self.date.checked_sub_years(num_years)?;
+        Some(self)
     }
 }
 
