@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo test --all-features --color=always -- --color=always
 
   timezones_other:
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo test --lib --all-features --color=always -- --color=always
       - run: cargo test --doc --all-features --color=always -- --color=always
 
@@ -50,7 +50,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.48.0
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       # run --lib and --doc to avoid the long running integration tests which are run elsewhere
       - run: cargo test --lib --features unstable-locales,wasmbind,clock,serde,windows-sys --color=always -- --color=always
       - run: cargo test --doc --features unstable-locales,wasmbind,clock,serde,windows-sys --color=always -- --color=always
@@ -66,7 +66,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust_version }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo check --benches
       # run --lib and --doc to avoid the long running integration tests which are run elsewhere
       - run: cargo test --lib --all-features --color=always -- --color=always
@@ -81,7 +81,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-hack
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
 
   no_std:
@@ -95,7 +95,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo build --target ${{ matrix.target }} --color=always
         working-directory: ./ci/core-test
 
@@ -110,7 +110,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v1
         with:
           node-version: "12"
@@ -131,7 +131,7 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: taiki-e/install-action@cargo-hack
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
 
   cross-targets:
@@ -143,7 +143,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: cargo install cross
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: cross check --target ${{ matrix.target }}
 
   check-docs:
