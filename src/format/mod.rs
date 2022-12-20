@@ -534,10 +534,10 @@ fn format_inner<'a>(
             use self::Numeric::*;
 
             let week_from_sun = |d: &NaiveDate| {
-                (d.ordinal() as i32 - d.weekday().num_days_from_sunday() as i32 + 7) / 7
+                (d.ordinal() as i32 - d.weekday().num_days_from_sunday() as i32 + 6) / 7
             };
             let week_from_mon = |d: &NaiveDate| {
-                (d.ordinal() as i32 - d.weekday().num_days_from_monday() as i32 + 7) / 7
+                (d.ordinal() as i32 - d.weekday().num_days_from_monday() as i32 + 6) / 7
             };
 
             let (width, v) = match *spec {
