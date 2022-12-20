@@ -117,8 +117,8 @@ fn try_verify_against_date_command_format() {
         return;
     }
     let mut date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(12, 11, 13).unwrap();
-    while date.year() < 2078 {
+    while date.year() < 2008 {
         verify_against_date_command_format_local(date_path, date);
-        date += chrono::Duration::days(1);
+        date += chrono::Duration::days(55);
     }
 }
