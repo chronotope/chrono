@@ -584,7 +584,7 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%A").to_string(), "Sunday");
     assert_eq!(dt.format("%w").to_string(), "0");
     assert_eq!(dt.format("%u").to_string(), "7");
-    assert_eq!(dt.format("%U").to_string(), "28");
+    assert_eq!(dt.format("%U").to_string(), "27");
     assert_eq!(dt.format("%W").to_string(), "27");
     assert_eq!(dt.format("%G").to_string(), "2001");
     assert_eq!(dt.format("%g").to_string(), "01");

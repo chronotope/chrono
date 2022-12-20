@@ -2869,7 +2869,7 @@ mod tests {
         // corner cases
         assert_eq!(
             NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2008,08,53,53,01"
+            "2008,08,52,53,01"
         );
         assert_eq!(
             NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
