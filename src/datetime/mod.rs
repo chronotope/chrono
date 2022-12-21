@@ -355,7 +355,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` if the resulting date would be out of range.
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        self.datetime
+        self.naive_local()
             .checked_add_days(days)?
             .and_local_timezone(TimeZone::from_offset(&self.offset))
             .single()
@@ -365,7 +365,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` if the resulting date would be out of range.
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        self.datetime
+        self.naive_local()
             .checked_sub_days(days)?
             .and_local_timezone(TimeZone::from_offset(&self.offset))
             .single()

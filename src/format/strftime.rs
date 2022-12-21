@@ -663,7 +663,7 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use crate::{FixedOffset, NaiveDate};
+    use crate::{FixedOffset, NaiveDate, TimeZone};
 
     let dt = NaiveDate::from_ymd_opt(2001, 7, 8)
         .and_then(|d| d.and_hms_nano_opt(0, 34, 59, 1_026_490_708))
@@ -695,4 +695,17 @@ fn test_strftime_docs_localized() {
         dt.format_localized("%c", Locale::fr_BE).to_string(),
         "dim 08 jui 2001 00:34:60 +09:30"
     );
+
+    let nd = NaiveDate::from_ymd_opt(2001, 7, 8).unwrap();
+
+    // date specifiers
+    assert_eq!(nd.format_localized("%b", Locale::de_DE).to_string(), "Jul");
+    assert_eq!(nd.format_localized("%B", Locale::de_DE).to_string(), "Juli");
+    assert_eq!(nd.format_localized("%h", Locale::de_DE).to_string(), "Jul");
+    assert_eq!(nd.format_localized("%a", Locale::de_DE).to_string(), "So");
+    assert_eq!(nd.format_localized("%A", Locale::de_DE).to_string(), "Sonntag");
+    assert_eq!(nd.format_localized("%D", Locale::de_DE).to_string(), "07/08/01");
+    assert_eq!(nd.format_localized("%x", Locale::de_DE).to_string(), "08.07.2001");
+    assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
+    assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
 }

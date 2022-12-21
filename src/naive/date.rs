@@ -13,6 +13,10 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+/// L10n locales.
+#[cfg(feature = "unstable-locales")]
+use pure_rust_locales::Locale;
+
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -116,7 +120,7 @@ impl NaiveWeek {
 
 /// A duration in calendar days.
 ///
-/// This is useful becuase when using `TimeDelta` it is possible
+/// This is useful because when using `TimeDelta` it is possible
 /// that adding `TimeDelta::days(1)` doesn't increment the day value as expected due to it being a
 /// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types
 /// and in other cases `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
@@ -124,7 +128,7 @@ impl NaiveWeek {
 pub struct Days(pub(crate) u64);
 
 impl Days {
-    /// Construct a new `Days` from a number of months
+    /// Construct a new `Days` from a number of days
     pub fn new(num: u64) -> Self {
         Self(num)
     }
@@ -1142,6 +1146,37 @@ impl NaiveDate {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
+    /// Formats the date with the specified formatting items and locale.
+    #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[inline]
+    pub fn format_localized_with_items<'a, I, B>(
+        &self,
+        items: I,
+        locale: Locale,
+    ) -> DelayedFormat<I>
+    where
+        I: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        DelayedFormat::new_with_locale(Some(*self), None, items, locale)
+    }
+
+    /// Formats the date with the specified format string and locale.
+    ///
+    /// See the [`crate::format::strftime`] module on the supported escape
+    /// sequences.
+    #[cfg(feature = "unstable-locales")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[inline]
+    pub fn format_localized<'a>(
+        &self,
+        fmt: &'a str,
+        locale: Locale,
+    ) -> DelayedFormat<StrftimeItems<'a>> {
+        self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
+    }
+
     /// Returns an iterator that steps by days across all representable dates.
     ///
     /// # Example
@@ -2119,7 +2154,7 @@ mod tests {
             None
         );
 
-        // sub with months exceeindg `i32::MIN`
+        // sub with months exceeding `i32::MIN`
         assert_eq!(
             NaiveDate::from_ymd_opt(2022, 8, 3)
                 .unwrap()

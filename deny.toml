@@ -1,0 +1,13 @@
+[licenses]
+allow-osi-fsf-free = "either"
+copyleft = "deny"
+
+[advisories]
+ignore = [
+    "RUSTSEC-2020-0071", # time 0.1, doesn't affect the API we use
+    "RUSTSEC-2021-0145", # atty (dev-deps only, dependency of criterion)
+    "RUSTSEC-2022-0004", # rustc_serialize, cannot remove due to compatibility
+]
+unmaintained = "deny"
+unsound = "deny"
+yanked = "deny"
