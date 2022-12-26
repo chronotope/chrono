@@ -10,7 +10,7 @@
 
 //! Temporal quantification
 
-use core::ops::{Add, Div, Mul, Neg, Sub};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use core::time::Duration as StdDuration;
 use core::{fmt, i64};
 #[cfg(any(feature = "std", test))]
@@ -378,6 +378,42 @@ impl Div<i32> for Duration {
             secs -= 1;
         }
         Duration { secs: secs, nanos: nanos }
+    }
+}
+
+impl<T> AddAssign<T> for Duration
+where
+    Self: Add<T, Output = Self>,
+{
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
+    }
+}
+
+impl<T> SubAssign<T> for Duration
+where
+    Self: Sub<T, Output = Self>,
+{
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs;
+    }
+}
+
+impl<T> MulAssign<T> for Duration
+where
+    Self: Mul<T, Output = Self>,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        *self = *self * rhs;
+    }
+}
+
+impl<T> DivAssign<T> for Duration
+where
+    Self: Div<T, Output = Self>,
+{
+    fn div_assign(&mut self, rhs: T) {
+        *self = *self / rhs;
     }
 }
 

@@ -912,16 +912,6 @@ impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     }
 }
 
-impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
-    #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
-        let datetime =
-            self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
-        let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime);
-    }
-}
-
 impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -936,16 +926,6 @@ impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     #[inline]
     fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
         self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
-    }
-}
-
-impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
-    #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
-        let datetime =
-            self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
-        let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime)
     }
 }
 
@@ -979,6 +959,30 @@ impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
 
     fn sub(self, days: Days) -> Self::Output {
         self.checked_sub_days(days).unwrap()
+    }
+}
+
+impl<T, Tz: TimeZone> AddAssign<T> for DateTime<Tz>
+where
+    NaiveDateTime: Add<T, Output = NaiveDateTime>,
+{
+    #[inline]
+    fn add_assign(&mut self, rhs: T) {
+        let datetime = self.datetime + rhs;
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime);
+    }
+}
+
+impl<T, Tz: TimeZone> SubAssign<T> for DateTime<Tz>
+where
+    NaiveDateTime: Sub<T, Output = NaiveDateTime>,
+{
+    #[inline]
+    fn sub_assign(&mut self, rhs: T) {
+        let datetime = self.datetime - rhs;
+        let tz = self.timezone();
+        *self = tz.from_utc_datetime(&datetime);
     }
 }
 

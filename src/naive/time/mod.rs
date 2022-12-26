@@ -1024,13 +1024,6 @@ impl Add<OldDuration> for NaiveTime {
     }
 }
 
-impl AddAssign<OldDuration> for NaiveTime {
-    #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
-        *self = self.add(rhs);
-    }
-}
-
 /// A subtraction of `Duration` from `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 /// It is the same as the addition with a negated `Duration`.
@@ -1085,13 +1078,6 @@ impl Sub<OldDuration> for NaiveTime {
     }
 }
 
-impl SubAssign<OldDuration> for NaiveTime {
-    #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
-        *self = self.sub(rhs);
-    }
-}
-
 /// Subtracts another `NaiveTime` from the current time.
 /// Returns a `Duration` within +/- 1 day.
 /// This does not overflow or underflow at all.
@@ -1143,6 +1129,26 @@ impl Sub<NaiveTime> for NaiveTime {
     #[inline]
     fn sub(self, rhs: NaiveTime) -> OldDuration {
         self.signed_duration_since(rhs)
+    }
+}
+
+impl<T> AddAssign<T> for NaiveTime
+where
+    Self: Add<T, Output = Self>,
+{
+    #[inline]
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
+    }
+}
+
+impl<T> SubAssign<T> for NaiveTime
+where
+    Self: Sub<T, Output = Self>,
+{
+    #[inline]
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs;
     }
 }
 

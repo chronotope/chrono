@@ -1461,13 +1461,6 @@ impl Add<OldDuration> for NaiveDateTime {
     }
 }
 
-impl AddAssign<OldDuration> for NaiveDateTime {
-    #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
-        *self = self.add(rhs);
-    }
-}
-
 impl Add<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1570,13 +1563,6 @@ impl Sub<OldDuration> for NaiveDateTime {
     }
 }
 
-impl SubAssign<OldDuration> for NaiveDateTime {
-    #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
-        *self = self.sub(rhs);
-    }
-}
-
 /// A subtraction of Months from `NaiveDateTime` clamped to valid days in resulting month.
 ///
 /// # Panics
@@ -1671,6 +1657,26 @@ impl Sub<Days> for NaiveDateTime {
 
     fn sub(self, days: Days) -> Self::Output {
         self.checked_sub_days(days).unwrap()
+    }
+}
+
+impl<T> AddAssign<T> for NaiveDateTime
+where
+    Self: Add<T, Output = Self>,
+{
+    #[inline]
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
+    }
+}
+
+impl<T> SubAssign<T> for NaiveDateTime
+where
+    Self: Sub<T, Output = Self>,
+{
+    #[inline]
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs;
     }
 }
 

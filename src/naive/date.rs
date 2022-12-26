@@ -1627,13 +1627,6 @@ impl Add<OldDuration> for NaiveDate {
     }
 }
 
-impl AddAssign<OldDuration> for NaiveDate {
-    #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
-        *self = self.add(rhs);
-    }
-}
-
 impl Add<Months> for NaiveDate {
     type Output = NaiveDate;
 
@@ -1735,13 +1728,6 @@ impl Sub<OldDuration> for NaiveDate {
     }
 }
 
-impl SubAssign<OldDuration> for NaiveDate {
-    #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
-        *self = self.sub(rhs);
-    }
-}
-
 /// Subtracts another `NaiveDate` from the current date.
 /// Returns a `Duration` of integral numbers.
 ///
@@ -1772,6 +1758,26 @@ impl Sub<NaiveDate> for NaiveDate {
     #[inline]
     fn sub(self, rhs: NaiveDate) -> OldDuration {
         self.signed_duration_since(rhs)
+    }
+}
+
+impl<T> AddAssign<T> for NaiveDate
+where
+    Self: Add<T, Output = Self>,
+{
+    #[inline]
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
+    }
+}
+
+impl<T> SubAssign<T> for NaiveDate
+where
+    Self: Sub<T, Output = Self>,
+{
+    #[inline]
+    fn sub_assign(&mut self, rhs: T) {
+        *self = *self - rhs;
     }
 }
 
