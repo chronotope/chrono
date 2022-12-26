@@ -723,6 +723,78 @@ mod tests {
     }
 
     #[test]
+    fn test_duration_addassign() {
+        let mut dur = Duration::zero();
+        dur += Duration::zero();
+        assert_eq!(dur, Duration::zero());
+        dur += Duration::seconds(1);
+        assert_eq!(dur, Duration::seconds(1));
+        dur += Duration::minutes(2);
+        assert_eq!(dur, Duration::seconds(121));
+        dur += Duration::seconds(-42);
+        assert_eq!(dur, Duration::seconds(79));
+    }
+
+    #[test]
+    fn test_duration_subassign() {
+        let mut dur = Duration::minutes(5);
+        dur -= Duration::zero();
+        assert_eq!(dur, Duration::minutes(5));
+        dur -= Duration::seconds(1);
+        assert_eq!(dur, Duration::seconds(299));
+        dur -= Duration::minutes(10);
+        assert_eq!(dur, Duration::seconds(-301));
+        dur -= Duration::seconds(-42);
+        assert_eq!(dur, Duration::seconds(-259));
+    }
+
+    #[test]
+    fn test_duration_mulassign() {
+        {
+            let mut dur = Duration::zero();
+            dur *= 2;
+            assert_eq!(dur, Duration::zero());
+            dur *= 0;
+            assert_eq!(dur, Duration::zero());
+        }
+
+        {
+            let mut dur = Duration::minutes(1);
+            dur *= 2;
+            assert_eq!(dur, Duration::minutes(2));
+            dur *= 1;
+            assert_eq!(dur, Duration::minutes(2));
+            dur *= -3;
+            assert_eq!(dur, Duration::minutes(-6));
+            dur *= -1;
+            assert_eq!(dur, Duration::minutes(6));
+            dur *= 0;
+            assert_eq!(dur, Duration::zero());
+        }
+    }
+
+    #[test]
+    fn test_duration_divassign() {
+        {
+            let mut dur = Duration::zero();
+            dur /= 2;
+            assert_eq!(dur, Duration::zero());
+            dur /= -3;
+            assert_eq!(dur, Duration::zero());
+        }
+
+        {
+            let mut dur = Duration::minutes(10);
+            dur /= 2;
+            assert_eq!(dur, Duration::minutes(5));
+            dur /= 2;
+            assert_eq!(dur, Duration::seconds(150));
+            dur /= -3;
+            assert_eq!(dur, Duration::seconds(-50));
+        }
+    }
+
+    #[test]
     fn test_duration_sum() {
         let duration_list_1 = [Duration::zero(), Duration::seconds(1)];
         let sum_1: Duration = duration_list_1.iter().sum();
