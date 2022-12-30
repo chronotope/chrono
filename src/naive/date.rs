@@ -25,7 +25,7 @@ use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Duration, Weekday};
+use crate::{DateTime, Datelike, Duration, TimeZone, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
@@ -873,6 +873,12 @@ impl NaiveDate {
         nano: u32,
     ) -> Option<NaiveDateTime> {
         NaiveTime::from_hms_nano_opt(hour, min, sec, nano).map(|time| self.and_time(time))
+    }
+
+    /// Makes a DateTime for the first second of the day in the provided timezone.
+    #[inline]
+    pub fn and_first_second<Tz: TimeZone>(&self, tz: Tz) -> DateTime<Tz> {
+        self.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(tz).unwrap()
     }
 
     /// Returns the packed month-day-flags.
