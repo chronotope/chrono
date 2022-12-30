@@ -221,13 +221,16 @@ pub mod ts_nanoseconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(-1, 999_999_999).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": "1526522699918355733" }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355733).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(NanoSecondsTimestampVisitor)
+        d.deserialize_any(NanoSecondsTimestampVisitor)
     }
 
     impl<'de> de::Visitor<'de> for NanoSecondsTimestampVisitor {
@@ -256,6 +259,14 @@ pub mod ts_nanoseconds {
         {
             DateTime::from_timestamp((value / 1_000_000_000) as i64, (value % 1_000_000_000) as u32)
                 .ok_or_else(|| invalid_ts(value))
+        }
+
+        ///  Deserialize a timestamp in nanoseconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_i64(value.parse::<i64>().map_err(|e| E::custom(e))?)
         }
     }
 }
@@ -503,13 +514,16 @@ pub mod ts_microseconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(-1, 999_999_000).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": "1526522699918355" }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(MicroSecondsTimestampVisitor)
+        d.deserialize_any(MicroSecondsTimestampVisitor)
     }
 
     impl<'de> de::Visitor<'de> for MicroSecondsTimestampVisitor {
@@ -541,6 +555,14 @@ pub mod ts_microseconds {
                 ((value % 1_000_000) * 1_000) as u32,
             )
             .ok_or_else(|| invalid_ts(value))
+        }
+
+        /// Deserialize a timestamp in microseconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_i64(value.parse::<i64>().map_err(|e| E::custom(e))?)
         }
     }
 }
@@ -777,13 +799,16 @@ pub mod ts_milliseconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(-1, 999_000_000).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": "1526522699918" }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918000000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))
+        d.deserialize_any(MilliSecondsTimestampVisitor)
     }
 
     impl<'de> de::Visitor<'de> for MilliSecondsTimestampVisitor {
@@ -808,6 +833,14 @@ pub mod ts_milliseconds {
         {
             DateTime::from_timestamp((value / 1000) as i64, ((value % 1000) * 1_000_000) as u32)
                 .ok_or_else(|| invalid_ts(value))
+        }
+
+        /// Deserialize a timestamp in milliseconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_i64(value.parse::<i64>().map_err(|e| E::custom(e))?)
         }
     }
 }
@@ -1043,13 +1076,16 @@ pub mod ts_seconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1431684000, 0).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": "1431684000" }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1431684000, 0).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(SecondsTimestampVisitor)
+        d.deserialize_any(SecondsTimestampVisitor)
     }
 
     impl<'de> de::Visitor<'de> for SecondsTimestampVisitor {
@@ -1077,6 +1113,14 @@ pub mod ts_seconds {
             } else {
                 DateTime::from_timestamp(value as i64, 0).ok_or_else(|| invalid_ts(value))
             }
+        }
+
+        /// Deserialize a timestamp in seconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_i64(value.parse::<i64>().map_err(|e| E::custom(e))?)
         }
     }
 }
