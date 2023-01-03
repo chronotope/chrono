@@ -75,7 +75,7 @@ fn try_verify_against_date_command() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTime) {
     let required_format = "d%d D%D F%F H%H I%I j%j k%k l%l m%m M%M S%S T%T u%u U%U w%w W%W X%X y%y Y%Y z%:z";
     // a%a - depends from localization
@@ -105,15 +105,12 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn try_verify_against_date_command_format() {
     let date_path = "/usr/bin/date";
 
     if !path::Path::new(date_path).exists() {
         // date command not found, skipping
-        // avoid running this on macOS, which has path /bin/date
-        // as the required CLI arguments are not present in the
-        // macOS build.
         return;
     }
     let mut date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(12, 11, 13).unwrap();
