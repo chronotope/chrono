@@ -1404,7 +1404,7 @@ impl Timelike for NaiveDateTime {
     /// * before reset: `2014-11-28T21:45:59.324310806`
     /// * after reset:  `2014-11-28T00:00:00.0`
     fn reset_time(&self) -> Self {
-        Self { date: self.date.clone(), time: NaiveTime::MIN }
+        Self { date: self.date, time: NaiveTime::MIN }
     }
 }
 
