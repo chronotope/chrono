@@ -167,6 +167,7 @@
 //! assert_eq!(dt.with_day(29).unwrap().weekday(), Weekday::Sat); // 2014-11-29 is Saturday
 //! assert_eq!(dt.with_day(32), None);
 //! assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November 29, 301 BCE
+//! println!("{}",Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33).unwrap().reset_time()); // 2014-07-08 21:15:33 UTC -> 2014-07-08 00:00:00 UTC
 //!
 //! // arithmetic operations
 //! let dt1 = Utc.with_ymd_and_hms(2014, 11, 14, 8, 9, 10).unwrap();
