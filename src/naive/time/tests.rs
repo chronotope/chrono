@@ -196,6 +196,16 @@ fn test_time_sub() {
 }
 
 #[test]
+fn test_reset_time() {
+    let d1 = NaiveTime::from_hms_milli_opt(1, 2, 3, 4).unwrap().reset_time();
+    let d2 = NaiveTime::from_hms_milli_opt(0, 0, 0, 0).unwrap();
+    assert_eq!(d1, d2);
+    // since the function itself returns MIN value we need to be alerted if MIN changes
+    // expecting d1 == d2 == MIN
+    assert_eq!(d1, NaiveTime::MIN);
+}
+
+#[test]
 fn test_time_fmt() {
     assert_eq!(
         format!("{}", NaiveTime::from_hms_milli_opt(23, 59, 59, 999).unwrap()),

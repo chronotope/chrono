@@ -1,7 +1,7 @@
 use super::NaiveDateTime;
 use crate::time_delta::TimeDelta;
 use crate::NaiveDate;
-use crate::{Datelike, FixedOffset, Utc};
+use crate::{Datelike, FixedOffset, Timelike, Utc};
 use std::i64;
 
 #[test]
@@ -340,4 +340,17 @@ fn test_and_timezone() {
     let dt_offset = ndt.and_local_timezone(offset_tz).unwrap();
     assert_eq!(dt_offset.naive_local(), ndt);
     assert_eq!(dt_offset.timezone(), offset_tz);
+}
+
+#[test]
+fn test_reset_time() {
+    let d1 = NaiveDate::from_ymd_opt(2022, 6, 15)
+        .unwrap()
+        .and_hms_opt(18, 59, 36)
+        .unwrap()
+        .with_nanosecond(12345)
+        .unwrap()
+        .reset_time();
+    let d2 = NaiveDate::from_ymd_opt(2022, 6, 15).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    assert_eq!(d1, d2);
 }

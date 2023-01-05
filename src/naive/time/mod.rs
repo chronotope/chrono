@@ -960,6 +960,11 @@ impl Timelike for NaiveTime {
     fn num_seconds_from_midnight(&self) -> u32 {
         self.secs // do not repeat the calculation!
     }
+
+    /// Returns naive zero-time of 00:00:00.0 and is the equivalent of calling `NaiveTime::MIN`.
+    fn reset_time(&self) -> Self {
+        NaiveTime::MIN
+    }
 }
 
 /// An addition of `TimeDelta` to `NaiveTime` wraps around and never overflows or underflows.

@@ -1396,6 +1396,16 @@ impl Timelike for NaiveDateTime {
     fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
         self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
     }
+
+    /// Returns an instance of `NaiveDateTime` with the same _date_ part and the time part reset to `00:00:00.0`.
+    ///
+    /// # Example
+    ///
+    /// * before reset: `2014-11-28T21:45:59.324310806`
+    /// * after reset:  `2014-11-28T00:00:00.0`
+    fn reset_time(&self) -> Self {
+        Self { date: self.date.clone(), time: NaiveTime::MIN }
+    }
 }
 
 /// An addition of `TimeDelta` to `NaiveDateTime` yields another `NaiveDateTime`.

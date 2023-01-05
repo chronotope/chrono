@@ -914,6 +914,26 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
+
+    /// Returns an instance of `DateTime<Tz>` with the same _date_ and _offset_ parts.
+    /// The time part gets reset to `00:00:00.0`.
+    ///
+    /// # Example
+    ///
+    /// * before reset: `2014-11-28T21:45:59.324310806+00:00`
+    /// * after reset:  `2014-11-28T00:00:00.0+00:00`
+    #[inline]
+    fn reset_time(&self) -> DateTime<Tz> {
+        self.clone()
+            .with_hour(0)
+            .unwrap()
+            .with_minute(0)
+            .unwrap()
+            .with_second(0)
+            .unwrap()
+            .with_nanosecond(0)
+            .unwrap()
+    }
 }
 
 // we need them as automatic impls cannot handle associated types

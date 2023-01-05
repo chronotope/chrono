@@ -6,6 +6,7 @@ use crate::offset::Local;
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::Datelike;
+use crate::Timelike;
 use crate::{
     naive::{NaiveDate, NaiveTime},
     TimeDelta,
@@ -336,6 +337,28 @@ fn test_datetime_date_and_time() {
 
     let utc_d = Utc.with_ymd_and_hms(2017, 8, 9, 12, 34, 56).unwrap();
     assert!(utc_d < d);
+}
+
+#[test]
+fn test_datetime_reset_time() {
+    let tz = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    let d1 = tz
+        .with_ymd_and_hms(2014, 5, 6, 7, 8, 9)
+        .unwrap()
+        .with_nanosecond(12345)
+        .unwrap()
+        .reset_time();
+    let d2 = tz.with_ymd_and_hms(2014, 5, 6, 0, 0, 0).unwrap();
+    assert_eq!(d1, d2);
+
+    let d1 = Utc
+        .with_ymd_and_hms(2014, 5, 6, 7, 8, 9)
+        .unwrap()
+        .with_nanosecond(12345)
+        .unwrap()
+        .reset_time();
+    let d2 = Utc.with_ymd_and_hms(2014, 5, 6, 0, 0, 0).unwrap();
+    assert_eq!(d1, d2);
 }
 
 #[test]

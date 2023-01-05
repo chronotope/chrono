@@ -175,6 +175,14 @@ pub trait Timelike: Sized {
     fn num_seconds_from_midnight(&self) -> u32 {
         self.hour() * 3600 + self.minute() * 60 + self.second()
     }
+
+    /// Returns a clone of Self with the time portion reset to `00:00:00.0`. No other members of Self are affected.
+    ///
+    /// # Example
+    ///
+    /// * before reset: `2014-11-28T21:45:59.324310806+09:00`
+    /// * after reset:  `2014-11-28T00:00:00.0+09:00`
+    fn reset_time(&self) -> Self;
 }
 
 #[cfg(test)]
