@@ -243,7 +243,7 @@ fn test_datetime_sub_months() {
 }
 
 #[test]
-fn test_datetime_addassign() {
+fn test_datetime_addassignment() {
     let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
     let original_dt = est.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
 
@@ -273,7 +273,7 @@ fn test_datetime_addassign() {
 }
 
 #[test]
-fn test_datetime_subassign() {
+fn test_datetime_subassignment() {
     let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
     let original_dt = est.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
 

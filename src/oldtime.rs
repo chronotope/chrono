@@ -723,7 +723,7 @@ mod tests {
     }
 
     #[test]
-    fn test_duration_addassign() {
+    fn test_duration_addassignment() {
         let mut dur = Duration::zero();
         dur += Duration::zero();
         assert_eq!(dur, Duration::zero());
@@ -736,7 +736,7 @@ mod tests {
     }
 
     #[test]
-    fn test_duration_subassign() {
+    fn test_duration_subassignment() {
         let mut dur = Duration::minutes(5);
         dur -= Duration::zero();
         assert_eq!(dur, Duration::minutes(5));

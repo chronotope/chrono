@@ -2719,21 +2719,59 @@ mod tests {
     #[test]
     fn test_date_addassignment() {
         let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-        let mut date = ymd(2016, 10, 1);
-        date += Duration::days(10);
-        assert_eq!(date, ymd(2016, 10, 11));
-        date += Duration::days(30);
-        assert_eq!(date, ymd(2016, 11, 10));
+
+        {
+            let mut date = ymd(2016, 10, 1);
+            date += Duration::days(10);
+            assert_eq!(date, ymd(2016, 10, 11));
+            date += Duration::days(30);
+            assert_eq!(date, ymd(2016, 11, 10));
+        }
+
+        {
+            let mut date = ymd(2016, 10, 1);
+            date += Months::new(1);
+            assert_eq!(date, ymd(2016, 11, 1));
+            date += Months::new(3);
+            assert_eq!(date, ymd(2017, 2, 1));
+        }
+
+        {
+            let mut date = ymd(2016, 10, 1);
+            date += Days::new(10);
+            assert_eq!(date, ymd(2016, 10, 11));
+            date += Days::new(30);
+            assert_eq!(date, ymd(2016, 11, 10));
+        }
     }
 
     #[test]
     fn test_date_subassignment() {
         let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-        let mut date = ymd(2016, 10, 11);
-        date -= Duration::days(10);
-        assert_eq!(date, ymd(2016, 10, 1));
-        date -= Duration::days(2);
-        assert_eq!(date, ymd(2016, 9, 29));
+
+        {
+            let mut date = ymd(2016, 10, 11);
+            date -= Duration::days(10);
+            assert_eq!(date, ymd(2016, 10, 1));
+            date -= Duration::days(2);
+            assert_eq!(date, ymd(2016, 9, 29));
+        }
+
+        {
+            let mut date = ymd(2016, 10, 11);
+            date -= Months::new(10);
+            assert_eq!(date, ymd(2015, 12, 11));
+            date -= Months::new(2);
+            assert_eq!(date, ymd(2015, 10, 11));
+        }
+
+        {
+            let mut date = ymd(2016, 10, 11);
+            date -= Days::new(10);
+            assert_eq!(date, ymd(2016, 10, 1));
+            date -= Days::new(2);
+            assert_eq!(date, ymd(2016, 9, 29));
+        }
     }
 
     #[test]
