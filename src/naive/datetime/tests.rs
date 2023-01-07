@@ -1,7 +1,5 @@
 use super::NaiveDateTime;
-use crate::oldtime::Duration;
-use crate::NaiveDate;
-use crate::{Datelike, FixedOffset, Utc};
+use crate::{oldtime::Duration, Datelike, Days, FixedOffset, Months, NaiveDate, Utc};
 use std::i64;
 
 #[test]
@@ -163,22 +161,60 @@ fn test_datetime_sub() {
 fn test_datetime_addassignment() {
     let ymdhms =
         |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
-    let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
-    date += Duration::minutes(10_000_000);
-    assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
-    date += Duration::days(10);
-    assert_eq!(date, ymdhms(2035, 10, 16, 20, 50, 10));
+
+    {
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date += Duration::minutes(10_000_000);
+        assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
+        date += Duration::days(10);
+        assert_eq!(date, ymdhms(2035, 10, 16, 20, 50, 10));
+    }
+
+    {
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date += Months::new(1_000);
+        assert_eq!(date, ymdhms(2100, 2, 1, 10, 10, 10));
+        date += Months::new(10);
+        assert_eq!(date, ymdhms(2100, 12, 1, 10, 10, 10));
+    }
+
+    {
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date += Days::new(10_000);
+        assert_eq!(date, ymdhms(2044, 2, 17, 10, 10, 10));
+        date += Days::new(10);
+        assert_eq!(date, ymdhms(2044, 2, 27, 10, 10, 10));
+    }
 }
 
 #[test]
 fn test_datetime_subassignment() {
     let ymdhms =
         |y, m, d, h, n, s| NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
-    let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
-    date -= Duration::minutes(10_000_000);
-    assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
-    date -= Duration::days(10);
-    assert_eq!(date, ymdhms(1997, 9, 16, 23, 30, 10));
+
+    {
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date -= Duration::minutes(10_000_000);
+        assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
+        date -= Duration::days(10);
+        assert_eq!(date, ymdhms(1997, 9, 16, 23, 30, 10));
+    }
+
+    {
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date -= Months::new(1_000);
+        assert_eq!(date, ymdhms(1933, 6, 1, 10, 10, 10));
+        date -= Months::new(10);
+        assert_eq!(date, ymdhms(1932, 8, 1, 10, 10, 10));
+    }
+
+    {
+        let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
+        date -= Days::new(10_000);
+        assert_eq!(date, ymdhms(1989, 5, 16, 10, 10, 10));
+        date -= Days::new(10);
+        assert_eq!(date, ymdhms(1989, 5, 6, 10, 10, 10));
+    }
 }
 
 #[test]
