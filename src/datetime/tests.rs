@@ -245,30 +245,30 @@ fn test_datetime_sub_months() {
 #[test]
 fn test_datetime_addassignment() {
     let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
-    let original_dt = est.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
+    let ymdhms = |y, m, d, h, n, s| est.with_ymd_and_hms(y, m, d, h, n, s).unwrap();
 
     {
-        let mut dt = original_dt;
+        let mut dt = ymdhms(2014, 5, 6, 7, 8, 9);
         dt += Duration::seconds(5);
-        assert_eq!(dt, original_dt + Duration::seconds(5));
+        assert_eq!(dt, ymdhms(2014, 5, 6, 7, 8, 14));
         dt += Duration::minutes(35);
-        assert_eq!(dt, original_dt + Duration::seconds(2105));
+        assert_eq!(dt, ymdhms(2014, 5, 6, 7, 43, 14));
     }
 
     {
-        let mut dt = original_dt;
+        let mut dt = ymdhms(2014, 5, 6, 7, 8, 9);
         dt += Days::new(5);
-        assert_eq!(dt, original_dt + Days::new(5));
+        assert_eq!(dt, ymdhms(2014, 5, 11, 7, 8, 9));
         dt += Days::new(35);
-        assert_eq!(dt, original_dt + Days::new(40));
+        assert_eq!(dt, ymdhms(2014, 6, 15, 7, 8, 9));
     }
 
     {
-        let mut dt = original_dt;
+        let mut dt = ymdhms(2014, 5, 6, 7, 8, 9);
         dt += Months::new(1);
-        assert_eq!(dt, original_dt + Months::new(1));
+        assert_eq!(dt, ymdhms(2014, 6, 6, 7, 8, 9));
         dt += Months::new(5);
-        assert_eq!(dt, original_dt + Months::new(6));
+        assert_eq!(dt, ymdhms(2014, 11, 6, 7, 8, 9));
     }
 }
 
