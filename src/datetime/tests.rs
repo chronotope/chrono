@@ -243,6 +243,73 @@ fn test_datetime_sub_months() {
 }
 
 #[test]
+fn test_datetime_addassign() {
+    let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
+    let original_dt = est.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
+
+    {
+        let mut dt = original_dt;
+        dt += Duration::seconds(5);
+        assert_eq!(dt, original_dt + Duration::seconds(5));
+        dt += Duration::minutes(35);
+        assert_eq!(dt, original_dt + Duration::seconds(2105));
+    }
+
+    {
+        let mut dt = original_dt;
+        dt += Days::new(5);
+        assert_eq!(dt, original_dt + Days::new(5));
+        dt += Days::new(35);
+        assert_eq!(dt, original_dt + Days::new(40));
+    }
+
+    {
+        let mut dt = original_dt;
+        dt += Months::new(1);
+        assert_eq!(dt, original_dt + Months::new(1));
+        dt += Months::new(5);
+        assert_eq!(dt, original_dt + Months::new(6));
+    }
+}
+
+#[test]
+fn test_datetime_subassign() {
+    let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
+    let original_dt = est.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
+
+    {
+        let mut dt = original_dt;
+        dt -= Duration::seconds(5);
+        assert_eq!(dt, original_dt - Duration::seconds(5));
+        dt -= Duration::minutes(35);
+        assert_eq!(dt, original_dt - Duration::seconds(2105));
+    }
+
+    {
+        let mut dt = original_dt;
+        dt -= Days::new(5);
+        assert_eq!(dt, original_dt - Days::new(5));
+        dt -= Days::new(35);
+        assert_eq!(dt, original_dt - Days::new(40));
+    }
+
+    {
+        let mut dt = original_dt;
+        dt -= Months::new(1);
+        assert_eq!(dt, original_dt - Months::new(1));
+        dt -= Months::new(5);
+        assert_eq!(dt, original_dt - Months::new(6));
+    }
+}
+
+#[test]
+#[should_panic(expected = "`NaiveDateTime + Duration` overflowed")]
+fn test_datetime_addassign_overflow() {
+    let mut dt = DateTime::<Utc>::MAX_UTC;
+    dt += Duration::seconds(1);
+}
+
+#[test]
 fn test_datetime_offset() {
     let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
     let edt = FixedOffset::west_opt(4 * 60 * 60).unwrap();
