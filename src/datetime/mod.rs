@@ -545,11 +545,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .expect("writing rfc3339 datetime to string should never fail");
         result
     }
-
-    /// The minimum possible `DateTime<Utc>`.
-    pub const MIN_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
-    /// The maximum possible `DateTime<Utc>`.
-    pub const MAX_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MAX, offset: Utc };
 }
 
 impl Default for DateTime<Utc> {
@@ -831,6 +826,11 @@ impl DateTime<Utc> {
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<Utc>> {
         DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())
     }
+
+    /// The minimum possible `DateTime<Utc>`.
+    pub const MIN_UTC: Self = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
+    /// The maximum possible `DateTime<Utc>`.
+    pub const MAX_UTC: Self = DateTime { datetime: NaiveDateTime::MAX, offset: Utc };
 }
 
 impl<Tz: TimeZone> DateTime<Tz>
