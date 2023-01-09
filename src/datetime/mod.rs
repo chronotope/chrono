@@ -406,7 +406,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
             false => None,
         }
     }
+}
 
+impl DateTime<Utc> {
     /// The minimum possible `DateTime<Utc>`.
     pub const MIN_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
     /// The maximum possible `DateTime<Utc>`.
