@@ -75,8 +75,15 @@ impl TimeDelta {
     /// Panics when the duration is out of bounds.
     #[inline]
     pub fn weeks(weeks: i64) -> TimeDelta {
-        let secs = weeks.checked_mul(SECS_PER_WEEK).expect("Duration::weeks out of bounds");
-        TimeDelta::seconds(secs)
+        TimeDelta::try_weeks(weeks).expect("Duration::weeks out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of weeks.
+    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
+    /// Returns None when the duration is out of bounds.
+    #[inline]
+    pub fn try_weeks(weeks: i64) -> Option<TimeDelta> {
+        weeks.checked_mul(SECS_PER_WEEK).and_then(TimeDelta::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of days.
@@ -84,8 +91,15 @@ impl TimeDelta {
     /// Panics when the duration is out of bounds.
     #[inline]
     pub fn days(days: i64) -> TimeDelta {
-        let secs = days.checked_mul(SECS_PER_DAY).expect("Duration::days out of bounds");
-        TimeDelta::seconds(secs)
+        TimeDelta::try_days(days).expect("Duration::days out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of days.
+    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
+    /// Returns None when the duration is out of bounds.
+    #[inline]
+    pub fn try_days(days: i64) -> Option<TimeDelta> {
+        days.checked_mul(SECS_PER_DAY).and_then(TimeDelta::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of hours.
@@ -93,8 +107,15 @@ impl TimeDelta {
     /// Panics when the duration is out of bounds.
     #[inline]
     pub fn hours(hours: i64) -> TimeDelta {
-        let secs = hours.checked_mul(SECS_PER_HOUR).expect("Duration::hours ouf of bounds");
-        TimeDelta::seconds(secs)
+        TimeDelta::try_hours(hours).expect("Duration::hours ouf of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of hours.
+    /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
+    /// Returns None when the duration is out of bounds.
+    #[inline]
+    pub fn try_hours(hours: i64) -> Option<TimeDelta> {
+        hours.checked_mul(SECS_PER_HOUR).and_then(TimeDelta::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of minutes.
@@ -102,8 +123,15 @@ impl TimeDelta {
     /// Panics when the duration is out of bounds.
     #[inline]
     pub fn minutes(minutes: i64) -> TimeDelta {
-        let secs = minutes.checked_mul(SECS_PER_MINUTE).expect("Duration::minutes out of bounds");
-        TimeDelta::seconds(secs)
+        TimeDelta::try_minutes(minutes).expect("Duration::minutes out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of minutes.
+    /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
+    /// Returns None when the duration is out of bounds.
+    #[inline]
+    pub fn try_minutes(minutes: i64) -> Option<TimeDelta> {
+        minutes.checked_mul(SECS_PER_MINUTE).and_then(TimeDelta::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of seconds.
@@ -111,11 +139,19 @@ impl TimeDelta {
     /// or less than `i64::MIN` seconds.
     #[inline]
     pub fn seconds(seconds: i64) -> TimeDelta {
+        TimeDelta::try_seconds(seconds).expect("Duration::seconds out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of seconds.
+    /// Returns None when the duration is more than `i64::MAX` milliseconds
+    /// or less than `i64::MIN` milliseconds.
+    #[inline]
+    pub fn try_seconds(seconds: i64) -> Option<TimeDelta> {
         let d = TimeDelta { secs: seconds, nanos: 0 };
         if d < MIN || d > MAX {
-            panic!("Duration::seconds out of bounds");
+            return None;
         }
-        d
+        Some(d)
     }
 
     /// Makes a new `Duration` with given number of milliseconds.

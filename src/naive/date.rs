@@ -644,6 +644,10 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd_opt(2022, 7, 31).unwrap().checked_add_days(Days::new(2)),
     ///     Some(NaiveDate::from_ymd_opt(2022, 8, 2).unwrap())
     /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2022, 7, 31).unwrap().checked_add_days(Days::new(1000000000000)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
@@ -673,7 +677,7 @@ impl NaiveDate {
     }
 
     fn diff_days(self, days: i64) -> Option<Self> {
-        self.checked_add_signed(TimeDelta::days(days))
+        self.checked_add_signed(TimeDelta::try_days(days)?)
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
