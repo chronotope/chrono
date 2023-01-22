@@ -80,8 +80,15 @@ impl Duration {
     #[inline]
     #[must_use]
     pub fn weeks(weeks: i64) -> Duration {
-        let secs = weeks.checked_mul(SECS_PER_WEEK).expect("Duration::weeks out of bounds");
-        Duration::seconds(secs)
+        Duration::try_weeks(weeks).expect("Duration::weeks out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of weeks.
+    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
+    /// Returns `None` when the duration is out of bounds.
+    #[inline]
+    pub fn try_weeks(weeks: i64) -> Option<Duration> {
+        weeks.checked_mul(SECS_PER_WEEK).and_then(Duration::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of days.
@@ -90,8 +97,15 @@ impl Duration {
     #[inline]
     #[must_use]
     pub fn days(days: i64) -> Duration {
-        let secs = days.checked_mul(SECS_PER_DAY).expect("Duration::days out of bounds");
-        Duration::seconds(secs)
+        Duration::try_days(days).expect("Duration::days out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of days.
+    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
+    /// Returns `None` when the duration is out of bounds.
+    #[inline]
+    pub fn try_days(days: i64) -> Option<Duration> {
+        days.checked_mul(SECS_PER_DAY).and_then(Duration::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of hours.
@@ -100,8 +114,15 @@ impl Duration {
     #[inline]
     #[must_use]
     pub fn hours(hours: i64) -> Duration {
-        let secs = hours.checked_mul(SECS_PER_HOUR).expect("Duration::hours ouf of bounds");
-        Duration::seconds(secs)
+        Duration::try_hours(hours).expect("Duration::hours ouf of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of hours.
+    /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
+    /// Returns `None` when the duration is out of bounds.
+    #[inline]
+    pub fn try_hours(hours: i64) -> Option<Duration> {
+        hours.checked_mul(SECS_PER_HOUR).and_then(Duration::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of minutes.
@@ -110,8 +131,15 @@ impl Duration {
     #[inline]
     #[must_use]
     pub fn minutes(minutes: i64) -> Duration {
-        let secs = minutes.checked_mul(SECS_PER_MINUTE).expect("Duration::minutes out of bounds");
-        Duration::seconds(secs)
+        Duration::try_minutes(minutes).expect("Duration::minutes out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of minutes.
+    /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
+    /// Returns `None` when the duration is out of bounds.
+    #[inline]
+    pub fn try_minutes(minutes: i64) -> Option<Duration> {
+        minutes.checked_mul(SECS_PER_MINUTE).and_then(Duration::try_seconds)
     }
 
     /// Makes a new `Duration` with given number of seconds.
@@ -120,11 +148,19 @@ impl Duration {
     #[inline]
     #[must_use]
     pub fn seconds(seconds: i64) -> Duration {
+        Duration::try_seconds(seconds).expect("Duration::seconds out of bounds")
+    }
+
+    /// Makes a new `Duration` with given number of seconds.
+    /// Returns `None` when the duration is more than `i64::MAX` milliseconds
+    /// or less than `i64::MIN` milliseconds.
+    #[inline]
+    pub fn try_seconds(seconds: i64) -> Option<Duration> {
         let d = Duration { secs: seconds, nanos: 0 };
         if d < MIN || d > MAX {
-            panic!("Duration::seconds out of bounds");
+            return None;
         }
-        d
+        Some(d)
     }
 
     /// Makes a new `Duration` with given number of milliseconds.
