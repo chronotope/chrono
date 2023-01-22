@@ -646,6 +646,10 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd_opt(2022, 7, 31).unwrap().checked_add_days(Days::new(2)),
     ///     Some(NaiveDate::from_ymd_opt(2022, 8, 2).unwrap())
     /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2022, 7, 31).unwrap().checked_add_days(Days::new(1000000000000)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
@@ -665,6 +669,10 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd_opt(2022, 2, 20).unwrap().checked_sub_days(Days::new(6)),
     ///     Some(NaiveDate::from_ymd_opt(2022, 2, 14).unwrap())
     /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2022, 2, 20).unwrap().checked_sub_days(Days::new(1000000000000)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
@@ -675,7 +683,11 @@ impl NaiveDate {
     }
 
     fn diff_days(self, days: i64) -> Option<Self> {
-        self.checked_add_signed(Duration::days(days))
+        let secs = days.checked_mul(86400)?; // 86400 seconds in one day
+        if secs >= core::i64::MAX / 1000 || secs <= core::i64::MIN / 1000 {
+            return None; // See the `time` 0.1 crate. Outside these bounds, `Duration::seconds` will panic
+        }
+        self.checked_add_signed(Duration::seconds(secs))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
