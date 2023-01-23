@@ -40,7 +40,7 @@ wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.42.0", features = ["Win32_System_Time", "Win32_Foundation"], optional = true }
+windows-sys = { version = "0.45.0", features = ["Win32_System_Time", "Win32_Foundation"], optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }
