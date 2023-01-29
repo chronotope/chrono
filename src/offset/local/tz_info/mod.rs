@@ -24,6 +24,8 @@ pub(crate) enum Error {
     LocalTimeType(&'static str),
     /// Invalid slice for integer conversion
     InvalidSlice(&'static str),
+    /// Invalid tzdata file
+    InvalidTzdataFile(&'static str),
     /// Invalid Tzif file
     InvalidTzFile(&'static str),
     /// Invalid TZ string
@@ -59,6 +61,7 @@ impl fmt::Display for Error {
             LocalTimeType(error) => write!(f, "invalid local time type: {}", error),
             InvalidSlice(error) => error.fmt(f),
             InvalidTzString(error) => write!(f, "invalid TZ string: {}", error),
+            InvalidTzdataFile(error) => error.fmt(f),
             InvalidTzFile(error) => error.fmt(f),
             Io(error) => error.fmt(f),
             OutOfRange(error) => error.fmt(f),

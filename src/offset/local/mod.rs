@@ -29,6 +29,8 @@ mod inner;
 #[cfg(unix)]
 #[path = "unix.rs"]
 mod inner;
+#[cfg(target_os = "android")]
+mod tzdata;
 
 #[cfg(windows)]
 #[path = "windows.rs"]
