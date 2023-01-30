@@ -99,7 +99,7 @@ pub enum Pad {
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
-    /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
+    /// May accept years before 1 BCE or after 9999 CE, given an initial sign (+/-).
     Year,
     /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
     YearDiv100,
