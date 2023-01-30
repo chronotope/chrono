@@ -308,6 +308,16 @@ impl NaiveDateTime {
     /// assert!(parse_from_str("2001-09-09 01:46:39 = UNIX timestamp 999999999", fmt).is_ok());
     /// assert!(parse_from_str("1970-01-01 00:00:00 = UNIX timestamp 1", fmt).is_err());
     /// ```
+    ///
+    /// Years before 1 BCE or after 9999 CE, require an initial sign
+    ///
+    ///```
+    /// # use chrono::{NaiveDate, NaiveDateTime};
+    /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    /// let fmt = "%Y-%m-%d %H:%M:%S";
+    /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
+    /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
+    ///```     
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
