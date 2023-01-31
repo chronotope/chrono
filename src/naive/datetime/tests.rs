@@ -370,7 +370,7 @@ fn test_nanosecond_range() {
 }
 
 #[test]
-fn test_and_timezone() {
+fn test_and_local_timezone() {
     let ndt = NaiveDate::from_ymd_opt(2022, 6, 15).unwrap().and_hms_opt(18, 59, 36).unwrap();
     let dt_utc = ndt.and_local_timezone(Utc).unwrap();
     assert_eq!(dt_utc.naive_local(), ndt);
@@ -380,4 +380,12 @@ fn test_and_timezone() {
     let dt_offset = ndt.and_local_timezone(offset_tz).unwrap();
     assert_eq!(dt_offset.naive_local(), ndt);
     assert_eq!(dt_offset.timezone(), offset_tz);
+}
+
+#[test]
+fn test_and_utc() {
+    let ndt = NaiveDate::from_ymd_opt(2023, 1, 30).unwrap().and_hms_opt(19, 32, 33).unwrap();
+    let dt_utc = ndt.and_utc();
+    assert_eq!(dt_utc.naive_local(), ndt);
+    assert_eq!(dt_utc.timezone(), Utc);
 }
