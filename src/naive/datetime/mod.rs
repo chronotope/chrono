@@ -18,6 +18,7 @@ use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
+use crate::offset::Utc;
 use crate::oldtime::Duration as OldDuration;
 use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
 
@@ -887,12 +888,29 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Utc};
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timezone(), Utc);
+    /// use chrono::{NaiveDate, FixedOffset};
+    /// let hour = 3600;
+    /// let tz = FixedOffset::east_opt(5 * hour).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap().and_local_timezone(tz).unwrap();
+    /// assert_eq!(dt.timezone(), tz);
+    /// ```
     #[must_use]
     pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
         tz.from_local_datetime(self)
+    }
+
+    /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Utc>`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveTime, Utc};
+    /// let dt = NaiveDate::from_ymd_opt(2023, 1, 30).unwrap().and_hms_opt(19, 32, 33).unwrap().and_utc();
+    /// assert_eq!(dt.timezone(), Utc);
+    /// ```
+    #[must_use]
+    pub fn and_utc(&self) -> DateTime<Utc> {
+        Utc.from_utc_datetime(self)
     }
 
     /// The minimum possible `NaiveDateTime`.

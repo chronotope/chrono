@@ -31,6 +31,7 @@ John Nagle <nagle@sitetruth.com>
 Jonas mg <jonasmg@yepmail.net>
 János Illés <ijanos@gmail.com>
 Ken Tossell <ken@tossell.net>
+Kurtis Nusbaum <kcommiter@gmail.com>
 Martin Risell Lilja <martin.risell.lilja@gmail.com>
 Richard Petrie <rap1011@ksu.edu>
 Ryan Lewis <ryansname@gmail.com>
