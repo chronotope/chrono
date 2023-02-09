@@ -661,7 +661,7 @@ fn format_inner<'a>(
                             let nano = t.nanosecond() % 1_000_000_000;
                             write!(result, "{:09}", nano)
                         }),
-                    TimezoneName => off.map(|&(ref name, _)| {
+                    TimezoneName => off.map(|(name, _)| {
                         result.push_str(name);
                         Ok(())
                     }),
