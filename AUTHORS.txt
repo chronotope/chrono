@@ -32,12 +32,13 @@ Jonas mg <jonasmg@yepmail.net>
 János Illés <ijanos@gmail.com>
 Ken Tossell <ken@tossell.net>
 Martin Risell Lilja <martin.risell.lilja@gmail.com>
+Mikhail Katychev <mkatych@gmail.com>
 Richard Petrie <rap1011@ksu.edu>
 Ryan Lewis <ryansname@gmail.com>
-Sergey V. Shadoy <shadoysv@yandex.ru>
 Sergey V. Galtsev <sergey.v.galtsev@github.com>
+Sergey V. Shadoy <shadoysv@yandex.ru>
 Steve Klabnik <steve@steveklabnik.com>
 Tom Gallacher <tomgallacher23@gmail.com>
+Yohan Boogaert <yozhgoor@outlook.com>
 klutzy <klutzytheklutzy@gmail.com>
 kud1ing <github@kudling.de>
-Yohan Boogaert <yozhgoor@outlook.com>
