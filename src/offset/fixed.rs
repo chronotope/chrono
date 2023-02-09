@@ -23,7 +23,7 @@ use crate::Timelike;
 /// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
 /// [`west`](#method.west) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), archive(compare(PartialEq)))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }

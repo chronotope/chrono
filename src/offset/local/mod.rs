@@ -52,7 +52,7 @@ mod tz_info;
 /// let dt: DateTime<Local> = Local.timestamp(0, 0);
 /// ```
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), archive(compare(PartialEq)))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Local;
 

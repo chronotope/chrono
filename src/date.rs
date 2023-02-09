@@ -56,7 +56,7 @@ use crate::{Datelike, Weekday};
 ///   even though the raw calculation between `NaiveDate` and `Duration` may not.
 #[deprecated(since = "0.4.23", note = "Use `NaiveDate` or `DateTime<Tz>` instead")]
 #[derive(Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), archive(compare(PartialEq)))]
 pub struct Date<Tz: TimeZone> {
     date: NaiveDate,
     offset: Tz::Offset,

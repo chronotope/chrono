@@ -183,7 +183,7 @@ impl Days {
 ///
 /// This is currently the internal format of Chrono's date types.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize), archive(compare(PartialEq)))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
