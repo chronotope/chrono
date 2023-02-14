@@ -1250,7 +1250,12 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_ymd(None, Some(2), Some(31)), None); // no February 31
     /// ```
     #[inline]
-    fn with_ymd(&self, year: Option<i32>, month: Option<u32>, day: Option<u32>) -> Option<NaiveDateTime> {
+    fn with_ymd(
+        &self,
+        year: Option<i32>,
+        month: Option<u32>,
+        day: Option<u32>,
+    ) -> Option<NaiveDateTime> {
         self.date.with_ymd(year, month, day).map(|d| NaiveDateTime { date: d, ..*self })
     }
 }

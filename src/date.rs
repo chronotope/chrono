@@ -444,7 +444,12 @@ impl<Tz: TimeZone> Datelike for Date<Tz> {
     }
 
     #[inline]
-    fn with_ymd(&self, year: Option<i32>, month: Option<u32>, day: Option<u32>) -> Option<Date<Tz>> {
+    fn with_ymd(
+        &self,
+        year: Option<i32>,
+        month: Option<u32>,
+        day: Option<u32>,
+    ) -> Option<Date<Tz>> {
         map_local(self, |date| date.with_ymd(year, month, day))
     }
 }

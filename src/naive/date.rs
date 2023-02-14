@@ -1607,7 +1607,12 @@ impl Datelike for NaiveDate {
     /// assert_eq!(dt.with_ymd(None, Some(2), Some(31)), None); // no February 31
     /// ```
     #[inline]
-    fn with_ymd(&self, year: Option<i32>, month: Option<u32>, day: Option<u32>) -> Option<NaiveDate> {
+    fn with_ymd(
+        &self,
+        year: Option<i32>,
+        month: Option<u32>,
+        day: Option<u32>,
+    ) -> Option<NaiveDate> {
         NaiveDate::from_ymd_opt(
             year.unwrap_or(self.year()),
             month.unwrap_or(self.month()),
@@ -2570,15 +2575,30 @@ mod tests {
         assert_eq!(d.with_ordinal(u32::MAX), None);
 
         let d = NaiveDate::from_ymd_opt(2000, 2, 5).unwrap();
-        assert_eq!(d.with_ymd(Some(1600), None, None), Some(NaiveDate::from_ymd_opt(1600, 2, 5).unwrap()));
-        assert_eq!(d.with_ymd(Some(2020), Some(1), Some(1)), Some(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap()));
-        assert_eq!(d.with_ymd(Some(2020), Some(1), Some(31)), Some(NaiveDate::from_ymd_opt(2020, 1, 31).unwrap()));
+        assert_eq!(
+            d.with_ymd(Some(1600), None, None),
+            Some(NaiveDate::from_ymd_opt(1600, 2, 5).unwrap())
+        );
+        assert_eq!(
+            d.with_ymd(Some(2020), Some(1), Some(1)),
+            Some(NaiveDate::from_ymd_opt(2020, 1, 1).unwrap())
+        );
+        assert_eq!(
+            d.with_ymd(Some(2020), Some(1), Some(31)),
+            Some(NaiveDate::from_ymd_opt(2020, 1, 31).unwrap())
+        );
         assert_eq!(d.with_ymd(Some(2020), None, Some(31)), None); // Feb has less than 30 days
         assert_eq!(d.with_ymd(Some(2020), Some(2), Some(31)), None); // Feb has less than 30 days
-        assert_eq!(d.with_ymd(Some(2020), Some(5), Some(31)), Some(NaiveDate::from_ymd_opt(2020, 5, 31).unwrap()));
+        assert_eq!(
+            d.with_ymd(Some(2020), Some(5), Some(31)),
+            Some(NaiveDate::from_ymd_opt(2020, 5, 31).unwrap())
+        );
 
         let d = NaiveDate::from_ymd_opt(2000, 1, 31).unwrap();
-        assert_eq!(d.with_ymd(Some(2020), None, Some(25)), Some(NaiveDate::from_ymd_opt(2020, 1, 25).unwrap()));
+        assert_eq!(
+            d.with_ymd(Some(2020), None, Some(25)),
+            Some(NaiveDate::from_ymd_opt(2020, 1, 25).unwrap())
+        );
         assert_eq!(d.with_ymd(Some(2020), Some(2), None), None); // Feb has less than 30 days
     }
 
