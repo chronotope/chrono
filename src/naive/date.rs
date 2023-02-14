@@ -1602,7 +1602,7 @@ impl Datelike for NaiveDate {
     /// ```
     /// use chrono::{NaiveDate, Datelike};
     ///
-    /// let dt: NaiveDate = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().unwrap();
+    /// let dt: NaiveDate = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap();
     /// assert_eq!(dt.with_ymd(None, Some(10), Some(31)), Some(NaiveDate::from_ymd_opt(2015, 10, 31).unwrap()));
     /// assert_eq!(dt.with_ymd(None, Some(2), Some(31)), None); // no February 31
     /// ```
