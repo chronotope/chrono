@@ -102,8 +102,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
     ///
-    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0), Utc);
-    /// assert_eq!(Utc.timestamp(61, 0), dt);
+    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
+    /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
     /// ```
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
