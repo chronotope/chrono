@@ -19,7 +19,9 @@ readme: README.md
 
 .PHONY: test
 test:
-	CHANNEL=$(CHANNEL) ./ci/travis.sh
+	@cargo test --all-features --color=always -- --color=always
+	@cargo test --lib --all-features --color=always -- --color=always
+	@cargo test --doc --all-features --color=always -- --color=always
 
 .PHONY: doc
 doc: authors readme

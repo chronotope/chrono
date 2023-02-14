@@ -88,6 +88,11 @@ pub trait Datelike: Sized {
     /// Returns `None` when the resulting value would be invalid.
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self>;
 
+    /// Makes a new value with any of the year number, month number (starting from 1) and/or day of month (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting value would be invalid.
+    fn with_ymd(&self, year: Option<i32>, month: Option<u32>, day: Option<u32>) -> Option<Self>;
+
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
     ///
     /// # Examples

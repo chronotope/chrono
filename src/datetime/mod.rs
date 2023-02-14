@@ -875,6 +875,11 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
+
+    #[inline]
+    fn with_ymd(&self, year: Option<i32>, month: Option<u32>, day: Option<u32>) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_ymd(year, month, day))
+    }
 }
 
 impl<Tz: TimeZone> Timelike for DateTime<Tz> {

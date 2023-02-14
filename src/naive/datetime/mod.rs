@@ -1233,6 +1233,26 @@ impl Datelike for NaiveDateTime {
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
         self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
     }
+
+    /// Makes a new `NaiveDateTime` with any of the year number, month number (starting from 1) and/or day of month (starting from 1) changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    ///
+    /// See also the [`NaiveDate::with_ymd`] method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
+    ///
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// assert_eq!(dt.with_ymd(None, Some(10), Some(31)), Some(NaiveDate::from_ymd_opt(2015, 10, 31).unwrap().and_hms_opt(12, 34, 56).unwrap()));
+    /// assert_eq!(dt.with_ymd(None, Some(2), Some(31)), None); // no February 31
+    /// ```
+    #[inline]
+    fn with_ymd(&self, year: Option<i32>, month: Option<u32>, day: Option<u32>) -> Option<NaiveDateTime> {
+        self.date.with_ymd(year, month, day).map(|d| NaiveDateTime { date: d, ..*self })
+    }
 }
 
 impl Timelike for NaiveDateTime {
