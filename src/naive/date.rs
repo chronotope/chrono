@@ -2819,6 +2819,16 @@ mod tests {
         assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
         assert!(NaiveDate::parse_from_str("2014-57", "%Y-%m-%d").is_err());
         assert!(NaiveDate::parse_from_str("2014", "%Y").is_err()); // insufficient
+
+        assert_eq!(
+            NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),
+            NaiveDate::from_ymd_opt(2020, 1, 12),
+        );
+
+        assert_eq!(
+            NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").ok(),
+            NaiveDate::from_ymd_opt(2019, 1, 13),
+        );
     }
 
     #[test]

@@ -380,8 +380,8 @@ impl Parsed {
         let verify_ordinal = |date: NaiveDate| {
             let ordinal = date.ordinal();
             let weekday = date.weekday();
-            let week_from_sun = (ordinal as i32 - weekday.num_days_from_sunday() as i32 + 7) / 7;
-            let week_from_mon = (ordinal as i32 - weekday.num_days_from_monday() as i32 + 7) / 7;
+            let week_from_sun = (ordinal as i32 - weekday.num_days_from_sunday() as i32 + 6) / 7;
+            let week_from_mon = (ordinal as i32 - weekday.num_days_from_monday() as i32 + 6) / 7;
             self.ordinal.unwrap_or(ordinal) == ordinal
                 && self.week_from_sun.map_or(week_from_sun, |v| v as i32) == week_from_sun
                 && self.week_from_mon.map_or(week_from_mon, |v| v as i32) == week_from_mon
