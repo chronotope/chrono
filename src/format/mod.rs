@@ -483,12 +483,12 @@ impl Locales {
 /// Formats single formatting item
 #[cfg(any(feature = "alloc", feature = "std", test))]
 #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
-pub fn format_item<'a>(
+pub fn format_item(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
-    item: &Item<'a>,
+    item: &Item<'_>,
 ) -> fmt::Result {
     let mut result = String::new();
     format_inner(&mut result, date, time, off, item, None)?;
@@ -496,12 +496,12 @@ pub fn format_item<'a>(
 }
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
-fn format_inner<'a>(
+fn format_inner(
     result: &mut String,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
-    item: &Item<'a>,
+    item: &Item<'_>,
     locale: Option<Locale>,
 ) -> fmt::Result {
     let locale = Locales::new(locale);
@@ -657,7 +657,7 @@ fn format_inner<'a>(
                             let nano = t.nanosecond() % 1_000_000_000;
                             write!(result, "{:09}", nano)
                         }),
-                    TimezoneName => off.map(|&(ref name, _)| {
+                    TimezoneName => off.map(|(name, _)| {
                         result.push_str(name);
                         Ok(())
                     }),

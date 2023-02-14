@@ -20,8 +20,8 @@ use crate::Timelike;
 ///
 /// Using the [`TimeZone`](./trait.TimeZone.html) methods
 /// on a `FixedOffset` struct is the preferred way to construct
-/// `DateTime<FixedOffset>` instances. See the [`east`](#method.east) and
-/// [`west`](#method.west) methods for examples.
+/// `DateTime<FixedOffset>` instances. See the [`east_opt`](#method.east_opt) and
+/// [`west_opt`](#method.west_opt) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct FixedOffset {
