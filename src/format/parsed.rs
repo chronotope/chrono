@@ -379,9 +379,8 @@ impl Parsed {
         // verify the ordinal and other (non-ISO) week dates.
         let verify_ordinal = |date: NaiveDate| {
             let ordinal = date.ordinal();
-            let weekday = date.weekday();
-            let week_from_sun = (ordinal as i32 - weekday.num_days_from_sunday() as i32 + 6) / 7;
-            let week_from_mon = (ordinal as i32 - weekday.num_days_from_monday() as i32 + 6) / 7;
+            let week_from_sun = date.weeks_from(Weekday::Sun);
+            let week_from_mon = date.weeks_from(Weekday::Mon);
             self.ordinal.unwrap_or(ordinal) == ordinal
                 && self.week_from_sun.map_or(week_from_sun, |v| v as i32) == week_from_sun
                 && self.week_from_mon.map_or(week_from_mon, |v| v as i32) == week_from_mon

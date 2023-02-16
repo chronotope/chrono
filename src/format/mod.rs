@@ -520,12 +520,8 @@ fn format_inner(
         Item::Numeric(ref spec, ref pad) => {
             use self::Numeric::*;
 
-            let week_from_sun = |d: &NaiveDate| {
-                (d.ordinal() as i32 - d.weekday().num_days_from_sunday() as i32 + 6) / 7
-            };
-            let week_from_mon = |d: &NaiveDate| {
-                (d.ordinal() as i32 - d.weekday().num_days_from_monday() as i32 + 6) / 7
-            };
+            let week_from_sun = |d: &NaiveDate| d.weeks_from(Weekday::Sun);
+            let week_from_mon = |d: &NaiveDate| d.weeks_from(Weekday::Mon);
 
             let (width, v) = match *spec {
                 Year => (4, date.map(|d| i64::from(d.year()))),
