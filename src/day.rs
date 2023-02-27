@@ -9,6 +9,7 @@ use core::ops::Sub;
 
 use crate::oldtime;
 use crate::DateTime;
+use crate::Datelike;
 use crate::Days;
 use crate::NaiveDate;
 use crate::NaiveTime;
@@ -116,6 +117,75 @@ where
     fn diff_days(self, days: i64) -> Option<Self> {
         let date = self.date.checked_add_signed(Duration::days(days))?;
         Some(Day { date, ..self })
+    }
+}
+
+impl<Tz> Datelike for Day<Tz>
+where
+    Tz: TimeZone + Copy + Display,
+{
+    fn year(&self) -> i32 {
+        self.date.year()
+    }
+
+    fn month(&self) -> u32 {
+        self.date.month()
+    }
+
+    fn month0(&self) -> u32 {
+        self.date.month0()
+    }
+
+    fn day(&self) -> u32 {
+        self.date.day()
+    }
+
+    fn day0(&self) -> u32 {
+        self.date.day0()
+    }
+
+    fn ordinal(&self) -> u32 {
+        self.date.ordinal()
+    }
+
+    fn ordinal0(&self) -> u32 {
+        self.date.ordinal0()
+    }
+
+    fn weekday(&self) -> crate::Weekday {
+        self.date.weekday()
+    }
+
+    fn iso_week(&self) -> crate::IsoWeek {
+        self.date.iso_week()
+    }
+
+    fn with_year(&self, year: i32) -> Option<Self> {
+        Some(Self { date: self.date.with_year(year)?, tz: self.tz })
+    }
+
+    fn with_month(&self, month: u32) -> Option<Self> {
+        Some(Self { date: self.date.with_month(month)?, tz: self.tz })
+    }
+
+    fn with_month0(&self, month0: u32) -> Option<Self> {
+        Some(Self { date: self.date.with_month0(month0)?, tz: self.tz })
+    }
+
+    fn with_day(&self, day: u32) -> Option<Self> {
+        Some(Self { date: self.date.with_day(day)?, tz: self.tz })
+    }
+
+    fn with_day0(&self, day0: u32) -> Option<Self> {
+        Some(Self { date: self.date.with_day0(day0)?, tz: self.tz })
+    }
+
+    fn with_ordinal(&self, ordinal: u32) -> Option<Self> {
+        Some(Self { date: self.date.with_ordinal(ordinal)?, tz: self.tz })
+    }
+
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<Self> {
+        Some(Self { date: self.date.with_ordinal0(ordinal0)?, tz: self.tz })
     }
 }
 
