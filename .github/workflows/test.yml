@@ -99,7 +99,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        target: [wasm32-unknown-unknown, wasm32-wasi, wasm32-unknown-emscripten, aarch64-apple-ios, aarch64-linux-android]
+        target:
+          [
+            wasm32-unknown-unknown,
+            wasm32-wasi,
+            wasm32-unknown-emscripten,
+            aarch64-apple-ios,
+            aarch64-linux-android,
+          ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2

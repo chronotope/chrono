@@ -52,6 +52,14 @@ impl TimeZone {
             return Self::from_file(&mut file);
         }
 
+        // attributes are not allowed on if blocks in Rust 1.38
+        #[cfg(target_os = "android")]
+        {
+            if let Ok(bytes) = android_tzdata::find_tz_data(tz_string) {
+                return Self::from_tz_data(&bytes);
+            }
+        }
+
         // TZ string extensions are not allowed
         let tz_string = tz_string.trim_matches(|c: char| c.is_ascii_whitespace());
         let rule = TransitionRule::from_tz_string(tz_string.as_bytes(), false)?;
