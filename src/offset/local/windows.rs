@@ -207,7 +207,7 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
     tm.tm_mday = sys.wDay as i32;
     tm.tm_wday = sys.wDayOfWeek as i32;
     tm.tm_mon = (sys.wMonth - 1) as i32;
-    tm.tm_year = (sys.wYear - 1900) as i32;
+    tm.tm_year = i32::from(sys.wYear) - 1900i32;
     tm.tm_yday = yday(tm.tm_year, tm.tm_mon + 1, tm.tm_mday);
 
     fn yday(year: i32, month: i32, day: i32) -> i32 {
