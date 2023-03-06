@@ -954,21 +954,14 @@ fn test_datetime_sub_assign_local() {
 #[test]
 #[cfg(target_os = "windows")]
 fn test_from_naive_date_time_conversions() {
-    let min_year = NaiveDate::from_ymd_opt(1601, 1, 3)
-        .unwrap().and_hms_opt(0, 0, 0)
-        .unwrap();
+    let min_year = NaiveDate::from_ymd_opt(1601, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
-    let max_year = NaiveDate::from_ymd_opt(30827, 12, 29)
-        .unwrap().and_hms_opt(23, 59, 59)
-        .unwrap();
+    let max_year = NaiveDate::from_ymd_opt(30827, 12, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
 
-    let too_low_year = NaiveDate::from_ymd_opt(1600, 12, 29)
-        .unwrap().and_hms_opt(23, 59, 59)
-        .unwrap();
+    let too_low_year =
+        NaiveDate::from_ymd_opt(1600, 12, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
 
-    let too_high_year = NaiveDate::from_ymd_opt(30829, 1, 3)
-        .unwrap().and_hms_opt(0, 0, 0)
-        .unwrap();
+    let too_high_year = NaiveDate::from_ymd_opt(30829, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
     let _ = Local.from_utc_datetime(&min_year);
     let _ = Local.from_utc_datetime(&max_year);
@@ -976,15 +969,23 @@ fn test_from_naive_date_time_conversions() {
     let _ = Local.from_local_datetime(&min_year);
     let _ = Local.from_local_datetime(&max_year);
 
-    let err = std::panic::catch_unwind(|| {Local.from_utc_datetime(&too_low_year);});
+    let err = std::panic::catch_unwind(|| {
+        Local.from_utc_datetime(&too_low_year);
+    });
     assert!(err.is_err());
 
-    let err = std::panic::catch_unwind(|| {Local.from_local_datetime(&too_low_year);});
+    let err = std::panic::catch_unwind(|| {
+        Local.from_local_datetime(&too_low_year);
+    });
     assert!(err.is_err());
 
-    let err = std::panic::catch_unwind(|| {Local.from_utc_datetime(&too_high_year);});
+    let err = std::panic::catch_unwind(|| {
+        Local.from_utc_datetime(&too_high_year);
+    });
     assert!(err.is_err());
 
-    let err = std::panic::catch_unwind(|| {Local.from_local_datetime(&too_high_year);});
+    let err = std::panic::catch_unwind(|| {
+        Local.from_local_datetime(&too_high_year);
+    });
     assert!(err.is_err());
 }
