@@ -1,0 +1,23 @@
+# Parser settings.
+cff-version: 1.2.0
+message: Please cite this crate using these information.
+
+# Version information.
+date-released: 2022-11-12
+version: 0.4.23
+
+# Project information.
+abstract: Date and time library for Rust
+authors:
+  - alias: .
+    # email:
+    family-names: .
+    given-names: .
+    # website:
+license:
+  - Apache-2.0
+  - MIT
+repository-artifact: https://crates.io/crates/chrono
+repository-code: https://github.com/chronotope/chrono
+title: chrono
+url: https://docs.rs/chrono
