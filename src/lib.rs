@@ -500,7 +500,7 @@ pub struct OutOfRange {
 }
 
 impl OutOfRange {
-    fn new() -> OutOfRange {
+    const fn new() -> OutOfRange {
         OutOfRange { _private: () }
     }
 }
