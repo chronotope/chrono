@@ -120,7 +120,7 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of milliseconds.
     #[inline]
-    pub fn milliseconds(milliseconds: i64) -> Duration {
+    pub const fn milliseconds(milliseconds: i64) -> Duration {
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
         let nanos = millis as i32 * NANOS_PER_MILLI;
         Duration { secs: secs, nanos: nanos }
@@ -128,7 +128,7 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of microseconds.
     #[inline]
-    pub fn microseconds(microseconds: i64) -> Duration {
+    pub const fn microseconds(microseconds: i64) -> Duration {
         let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
         let nanos = micros as i32 * NANOS_PER_MICRO;
         Duration { secs: secs, nanos: nanos }
@@ -136,36 +136,36 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of nanoseconds.
     #[inline]
-    pub fn nanoseconds(nanos: i64) -> Duration {
+    pub const fn nanoseconds(nanos: i64) -> Duration {
         let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
         Duration { secs: secs, nanos: nanos as i32 }
     }
 
     /// Returns the total number of whole weeks in the duration.
     #[inline]
-    pub fn num_weeks(&self) -> i64 {
+    pub const fn num_weeks(&self) -> i64 {
         self.num_days() / 7
     }
 
     /// Returns the total number of whole days in the duration.
-    pub fn num_days(&self) -> i64 {
+    pub const fn num_days(&self) -> i64 {
         self.num_seconds() / SECS_PER_DAY
     }
 
     /// Returns the total number of whole hours in the duration.
     #[inline]
-    pub fn num_hours(&self) -> i64 {
+    pub const fn num_hours(&self) -> i64 {
         self.num_seconds() / SECS_PER_HOUR
     }
 
     /// Returns the total number of whole minutes in the duration.
     #[inline]
-    pub fn num_minutes(&self) -> i64 {
+    pub const fn num_minutes(&self) -> i64 {
         self.num_seconds() / SECS_PER_MINUTE
     }
 
     /// Returns the total number of whole seconds in the duration.
-    pub fn num_seconds(&self) -> i64 {
+    pub const fn num_seconds(&self) -> i64 {
         // If secs is negative, nanos should be subtracted from the duration.
         if self.secs < 0 && self.nanos > 0 {
             self.secs + 1
@@ -177,7 +177,7 @@ impl Duration {
     /// Returns the number of nanoseconds such that
     /// `nanos_mod_sec() + num_seconds() * NANOS_PER_SEC` is the total number of
     /// nanoseconds in the duration.
-    fn nanos_mod_sec(&self) -> i32 {
+    const fn nanos_mod_sec(&self) -> i32 {
         if self.secs < 0 && self.nanos > 0 {
             self.nanos - NANOS_PER_SEC
         } else {
@@ -186,7 +186,7 @@ impl Duration {
     }
 
     /// Returns the total number of whole milliseconds in the duration,
-    pub fn num_milliseconds(&self) -> i64 {
+    pub const fn num_milliseconds(&self) -> i64 {
         // A proper Duration will not overflow, because MIN and MAX are defined
         // such that the range is exactly i64 milliseconds.
         let secs_part = self.num_seconds() * MILLIS_PER_SEC;
@@ -196,7 +196,7 @@ impl Duration {
 
     /// Returns the total number of whole microseconds in the duration,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
-    pub fn num_microseconds(&self) -> Option<i64> {
+    pub const fn num_microseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(MICROS_PER_SEC));
         let nanos_part = self.nanos_mod_sec() / NANOS_PER_MICRO;
         secs_part.checked_add(nanos_part as i64)
@@ -204,7 +204,7 @@ impl Duration {
 
     /// Returns the total number of whole nanoseconds in the duration,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
-    pub fn num_nanoseconds(&self) -> Option<i64> {
+    pub const fn num_nanoseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64));
         let nanos_part = self.nanos_mod_sec();
         secs_part.checked_add(nanos_part as i64)
@@ -248,7 +248,7 @@ impl Duration {
 
     /// Returns the duration as an absolute (non-negative) value.
     #[inline]
-    pub fn abs(&self) -> Duration {
+    pub const fn abs(&self) -> Duration {
         if self.secs < 0 && self.nanos != 0 {
             Duration { secs: (self.secs + 1).abs(), nanos: NANOS_PER_SEC - self.nanos }
         } else {
@@ -258,25 +258,25 @@ impl Duration {
 
     /// The minimum possible `Duration`: `i64::MIN` milliseconds.
     #[inline]
-    pub fn min_value() -> Duration {
+    pub const fn min_value() -> Duration {
         MIN
     }
 
     /// The maximum possible `Duration`: `i64::MAX` milliseconds.
     #[inline]
-    pub fn max_value() -> Duration {
+    pub const fn max_value() -> Duration {
         MAX
     }
 
     /// A duration where the stored seconds and nanoseconds are equal to zero.
     #[inline]
-    pub fn zero() -> Duration {
+    pub const fn zero() -> Duration {
         Duration { secs: 0, nanos: 0 }
     }
 
     /// Returns `true` if the duration equals `Duration::zero()`.
     #[inline]
-    pub fn is_zero(&self) -> bool {
+    pub const fn is_zero(&self) -> bool {
         self.secs == 0 && self.nanos == 0
     }
 
@@ -457,12 +457,12 @@ impl Error for OutOfRangeError {
 
 // Copied from libnum
 #[inline]
-fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
+const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
     (div_floor_64(this, other), mod_floor_64(this, other))
 }
 
 #[inline]
-fn div_floor_64(this: i64, other: i64) -> i64 {
+const fn div_floor_64(this: i64, other: i64) -> i64 {
     match div_rem_64(this, other) {
         (d, r) if (r > 0 && other < 0) || (r < 0 && other > 0) => d - 1,
         (d, _) => d,
@@ -470,7 +470,7 @@ fn div_floor_64(this: i64, other: i64) -> i64 {
 }
 
 #[inline]
-fn mod_floor_64(this: i64, other: i64) -> i64 {
+const fn mod_floor_64(this: i64, other: i64) -> i64 {
     match this % other {
         r if (r > 0 && other < 0) || (r < 0 && other > 0) => r + other,
         r => r,
@@ -478,7 +478,7 @@ fn mod_floor_64(this: i64, other: i64) -> i64 {
 }
 
 #[inline]
-fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
+const fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
     (this / other, this % other)
 }
 

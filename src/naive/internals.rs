@@ -141,7 +141,7 @@ impl YearFlags {
     }
 
     #[inline]
-    pub(super) fn nisoweeks(&self) -> u32 {
+    pub(super) const fn nisoweeks(&self) -> u32 {
         let YearFlags(flags) = *self;
         52 + ((0b0000_0100_0000_0110 >> flags as usize) & 1)
     }
@@ -294,7 +294,7 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn ordinal(&self) -> u32 {
+    pub(super) const fn ordinal(&self) -> u32 {
         let Of(of) = *self;
         of >> 4
     }
@@ -310,7 +310,7 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn flags(&self) -> YearFlags {
+    pub(super) const fn flags(&self) -> YearFlags {
         let Of(of) = *self;
         YearFlags((of & 0b1111) as u8)
     }
@@ -336,13 +336,13 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn succ(&self) -> Of {
+    pub(super) const fn succ(&self) -> Of {
         let Of(of) = *self;
         Of(of + (1 << 4))
     }
 
     #[inline]
-    pub(super) fn pred(&self) -> Of {
+    pub(super) const fn pred(&self) -> Of {
         let Of(of) = *self;
         Of(of - (1 << 4))
     }
@@ -398,7 +398,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn month(&self) -> u32 {
+    pub(super) const fn month(&self) -> u32 {
         let Mdf(mdf) = *self;
         mdf >> 9
     }
@@ -414,7 +414,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn day(&self) -> u32 {
+    pub(super) const fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
         (mdf >> 4) & 0b1_1111
     }
