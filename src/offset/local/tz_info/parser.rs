@@ -224,7 +224,7 @@ pub(crate) struct Cursor<'a> {
 
 impl<'a> Cursor<'a> {
     /// Construct a new `Cursor` from remaining data
-    pub(crate) fn new(remaining: &'a [u8]) -> Self {
+    pub(crate) const fn new(remaining: &'a [u8]) -> Self {
         Self { remaining, read_count: 0 }
     }
 
@@ -233,7 +233,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Returns remaining data
-    pub(crate) fn remaining(&self) -> &'a [u8] {
+    pub(crate) const fn remaining(&self) -> &'a [u8] {
         self.remaining
     }
 

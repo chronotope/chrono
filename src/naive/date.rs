@@ -131,7 +131,7 @@ pub struct Days(pub(crate) u64);
 
 impl Days {
     /// Construct a new `Days` from a number of days
-    pub fn new(num: u64) -> Self {
+    pub const fn new(num: u64) -> Self {
         Self(num)
     }
 }
@@ -708,7 +708,7 @@ impl NaiveDate {
     /// assert_eq!(dt.time(), t);
     /// ```
     #[inline]
-    pub fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
+    pub const fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime::new(*self, time)
     }
 
@@ -898,7 +898,7 @@ impl NaiveDate {
 
     /// Returns the packed ordinal-flags.
     #[inline]
-    fn of(&self) -> Of {
+    const fn of(&self) -> Of {
         Of((self.ymdf & 0b1_1111_1111_1111) as u32)
     }
 
@@ -1221,7 +1221,7 @@ impl NaiveDate {
     /// }
     /// ```
     #[inline]
-    pub fn iter_days(&self) -> NaiveDateDaysIterator {
+    pub const fn iter_days(&self) -> NaiveDateDaysIterator {
         NaiveDateDaysIterator { value: *self }
     }
 
@@ -1252,14 +1252,14 @@ impl NaiveDate {
     /// }
     /// ```
     #[inline]
-    pub fn iter_weeks(&self) -> NaiveDateWeeksIterator {
+    pub const fn iter_weeks(&self) -> NaiveDateWeeksIterator {
         NaiveDateWeeksIterator { value: *self }
     }
 
     /// Returns the [`NaiveWeek`] that the date belongs to, starting with the [`Weekday`]
     /// specified.
     #[inline]
-    pub fn week(&self, start: Weekday) -> NaiveWeek {
+    pub const fn week(&self, start: Weekday) -> NaiveWeek {
         NaiveWeek { date: *self, start }
     }
 

@@ -131,7 +131,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.time(), t);
     /// ```
     #[inline]
-    pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
+    pub const fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime { date, time }
     }
 
@@ -335,7 +335,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2016, 7, 8).unwrap());
     /// ```
     #[inline]
-    pub fn date(&self) -> NaiveDate {
+    pub const fn date(&self) -> NaiveDate {
         self.date
     }
 
@@ -350,7 +350,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.time(), NaiveTime::from_hms_opt(9, 10, 11).unwrap());
     /// ```
     #[inline]
-    pub fn time(&self) -> NaiveTime {
+    pub const fn time(&self) -> NaiveTime {
         self.time
     }
 

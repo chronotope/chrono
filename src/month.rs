@@ -197,7 +197,7 @@ pub struct Months(pub(crate) u32);
 
 impl Months {
     /// Construct a new `Months` from a number of months
-    pub fn new(num: u32) -> Self {
+    pub const fn new(num: u32) -> Self {
         Self(num)
     }
 }

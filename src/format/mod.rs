@@ -350,7 +350,7 @@ pub struct ParseError(ParseErrorKind);
 
 impl ParseError {
     /// The category of parse error
-    pub fn kind(&self) -> ParseErrorKind {
+    pub const fn kind(&self) -> ParseErrorKind {
         self.0
     }
 }
