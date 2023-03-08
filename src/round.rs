@@ -75,7 +75,7 @@ where
 }
 
 // Return the maximum span in nanoseconds for the target number of digits.
-fn span_for_digits(digits: u16) -> u32 {
+const fn span_for_digits(digits: u16) -> u32 {
     // fast lookup form of: 10^(9-min(9,digits))
     match digits {
         0 => 1_000_000_000,
