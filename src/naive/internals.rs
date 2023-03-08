@@ -301,7 +301,7 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn with_ordinal(&self, ordinal: u32) -> Option<Of> {
+    pub(super) const fn with_ordinal(&self, ordinal: u32) -> Option<Of> {
         if ordinal > 366 {
             return None;
         }
@@ -405,7 +405,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_month(&self, month: u32) -> Option<Mdf> {
+    pub(super) const fn with_month(&self, month: u32) -> Option<Mdf> {
         if month > 12 {
             return None;
         }
@@ -421,7 +421,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_day(&self, day: u32) -> Option<Mdf> {
+    pub(super) const fn with_day(&self, day: u32) -> Option<Mdf> {
         if day > 31 {
             return None;
         }

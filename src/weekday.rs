@@ -37,7 +37,7 @@ impl Weekday {
     /// ----------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.succ()`: | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun` | `Mon`
     #[inline]
-    pub fn succ(&self) -> Weekday {
+    pub const fn succ(&self) -> Weekday {
         match *self {
             Weekday::Mon => Weekday::Tue,
             Weekday::Tue => Weekday::Wed,
@@ -55,7 +55,7 @@ impl Weekday {
     /// ----------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.pred()`: | `Sun` | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat`
     #[inline]
-    pub fn pred(&self) -> Weekday {
+    pub const fn pred(&self) -> Weekday {
         match *self {
             Weekday::Mon => Weekday::Sun,
             Weekday::Tue => Weekday::Mon,

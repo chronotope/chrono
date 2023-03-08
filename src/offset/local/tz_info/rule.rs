@@ -127,7 +127,7 @@ pub(super) struct AlternateTime {
 
 impl AlternateTime {
     /// Construct a transition rule representing alternate local time types
-    fn new(
+    const fn new(
         std: LocalTimeType,
         dst: LocalTimeType,
         dst_start: RuleDay,
@@ -504,7 +504,7 @@ impl RuleDay {
     }
 
     /// Construct a transition rule day represented by a zero-based Julian day in `[0, 365]`, taking occasional Feb 29 into account
-    fn julian_0(julian_day_0: u16) -> Result<Self, Error> {
+    const fn julian_0(julian_day_0: u16) -> Result<Self, Error> {
         if julian_day_0 > 365 {
             return Err(Error::TransitionRule("invalid rule day julian day"));
         }
@@ -737,7 +737,7 @@ const DAY_IN_MONTHS_LEAP_YEAR_FROM_MARCH: [i64; 12] =
 /// * `year`: Year
 /// * `month`: Month in `[1, 12]`
 /// * `month_day`: Day of the month in `[1, 31]`
-pub(crate) fn days_since_unix_epoch(year: i32, month: usize, month_day: i64) -> i64 {
+pub(crate) const fn days_since_unix_epoch(year: i32, month: usize, month_day: i64) -> i64 {
     let is_leap_year = is_leap_year(year);
 
     let year = year as i64;
@@ -768,7 +768,7 @@ pub(crate) fn days_since_unix_epoch(year: i32, month: usize, month_day: i64) -> 
 }
 
 /// Check if a year is a leap year
-pub(crate) fn is_leap_year(year: i32) -> bool {
+pub(crate) const fn is_leap_year(year: i32) -> bool {
     year % 400 == 0 || (year % 4 == 0 && year % 100 != 0)
 }
 

@@ -52,7 +52,7 @@ impl FixedOffset {
     ///                                           .and_hms_opt(0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
     /// ```
-    pub fn east_opt(secs: i32) -> Option<FixedOffset> {
+    pub const fn east_opt(secs: i32) -> Option<FixedOffset> {
         if -86_400 < secs && secs < 86_400 {
             Some(FixedOffset { local_minus_utc: secs })
         } else {
@@ -83,7 +83,7 @@ impl FixedOffset {
     ///                                           .and_hms_opt(0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
     /// ```
-    pub fn west_opt(secs: i32) -> Option<FixedOffset> {
+    pub const fn west_opt(secs: i32) -> Option<FixedOffset> {
         if -86_400 < secs && secs < 86_400 {
             Some(FixedOffset { local_minus_utc: -secs })
         } else {

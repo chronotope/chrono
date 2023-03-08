@@ -102,7 +102,7 @@ impl From<Utf8Error> for Error {
 
 // MSRV: 1.38
 #[inline]
-fn rem_euclid(v: i64, rhs: i64) -> i64 {
+const fn rem_euclid(v: i64, rhs: i64) -> i64 {
     let r = v % rhs;
     if r < 0 {
         if rhs < 0 {
