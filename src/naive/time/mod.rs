@@ -241,7 +241,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_hms_opt(hour: u32, min: u32, sec: u32) -> Option<NaiveTime> {
+    pub const fn from_hms_opt(hour: u32, min: u32, sec: u32) -> Option<NaiveTime> {
         NaiveTime::from_hms_nano_opt(hour, min, sec, 0)
     }
 
@@ -366,7 +366,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
+    pub const fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
             return None;
         }
@@ -409,7 +409,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
+    pub const fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return None;
         }

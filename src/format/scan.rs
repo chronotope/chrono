@@ -254,7 +254,7 @@ fn timezone_offset_internal<F>(
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
-    fn digits(s: &str) -> ParseResult<(u8, u8)> {
+    const fn digits(s: &str) -> ParseResult<(u8, u8)> {
         let b = s.as_bytes();
         if b.len() < 2 {
             Err(TOO_SHORT)
