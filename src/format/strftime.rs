@@ -668,18 +668,26 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%%").to_string(), "%");
 }
 
+/// helper function to setup a date time for the localized tests
 #[cfg(feature = "unstable-locales")]
-#[test]
-fn test_strftime_docs_localized() {
-    use crate::{FixedOffset, NaiveDate, TimeZone};
+#[cfg(test)]
+fn setup_naive_dt() -> crate::DateTime<crate::FixedOffset> {
+    use crate::{FixedOffset, TimeZone};
 
-    let dt = FixedOffset::east_opt(34200).unwrap().ymd_opt(2001, 7, 8).unwrap().and_hms_nano(
+    FixedOffset::east_opt(34200).unwrap().ymd_opt(2001, 7, 8).unwrap().and_hms_nano(
         0,
         34,
         59,
         1_026_490_708,
-    );
+    )
+}
 
+#[cfg(feature = "unstable-locales")]
+#[test]
+fn test_strftime_docs_localized() {
+    use crate::NaiveDate;
+
+    let dt = setup_naive_dt();
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");
     assert_eq!(dt.format_localized("%B", Locale::fr_BE).to_string(), "juillet");
@@ -717,4 +725,49 @@ fn test_strftime_docs_localized() {
     assert_eq!(nd.format_localized("%x", Locale::de_DE).to_string(), "08.07.2001");
     assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
     assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
+}
+
+#[cfg(feature = "unstable-locales")]
+#[test]
+fn test_strftime_localized_korean() {
+    let dt = setup_naive_dt();
+
+    // date specifiers
+    assert_eq!(dt.format_localized("%b", Locale::ko_KR).to_string(), " 7월");
+    assert_eq!(dt.format_localized("%B", Locale::ko_KR).to_string(), "7월");
+    assert_eq!(dt.format_localized("%h", Locale::ko_KR).to_string(), " 7월");
+    assert_eq!(dt.format_localized("%a", Locale::ko_KR).to_string(), "일");
+    assert_eq!(dt.format_localized("%A", Locale::ko_KR).to_string(), "일요일");
+    assert_eq!(dt.format_localized("%D", Locale::ko_KR).to_string(), "07/08/01");
+    assert_eq!(dt.format_localized("%x", Locale::ko_KR).to_string(), "2001년 07월 08일");
+    assert_eq!(dt.format_localized("%F", Locale::ko_KR).to_string(), "2001-07-08");
+    assert_eq!(dt.format_localized("%v", Locale::ko_KR).to_string(), " 8- 7월-2001");
+    assert_eq!(dt.format_localized("%r", Locale::ko_KR).to_string(), "오전 12시 34분 60초");
+
+    // date & time specifiers
+    assert_eq!(
+        dt.format_localized("%c", Locale::ko_KR).to_string(),
+        "2001년 07월 08일 (일) 오전 12시 34분 60초"
+    );
+}
+
+#[cfg(feature = "unstable-locales")]
+#[test]
+fn test_strftime_localized_japanese() {
+    let dt = setup_naive_dt();
+
+    // date specifiers
+    assert_eq!(dt.format_localized("%b", Locale::ja_JP).to_string(), " 7月");
+    assert_eq!(dt.format_localized("%B", Locale::ja_JP).to_string(), "7月");
+    assert_eq!(dt.format_localized("%h", Locale::ja_JP).to_string(), " 7月");
+    assert_eq!(dt.format_localized("%a", Locale::ja_JP).to_string(), "日");
+    assert_eq!(dt.format_localized("%A", Locale::ja_JP).to_string(), "日曜日");
+    assert_eq!(dt.format_localized("%D", Locale::ja_JP).to_string(), "07/08/01");
+    assert_eq!(dt.format_localized("%x", Locale::ja_JP).to_string(), "2001年07月08日");
+    assert_eq!(dt.format_localized("%F", Locale::ja_JP).to_string(), "2001-07-08");
+    assert_eq!(dt.format_localized("%v", Locale::ja_JP).to_string(), " 8- 7月-2001");
+    assert_eq!(dt.format_localized("%r", Locale::ja_JP).to_string(), "午前12時34分60秒");
+
+    // date & time specifiers
+    assert_eq!(dt.format_localized("%c", Locale::ja_JP).to_string(), "2001年07月08日 00時34分60秒");
 }
