@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
       - run: |
           cargo fmt --check -- --color=always
           cargo fmt --check --manifest-path fuzz/Cargo.toml
