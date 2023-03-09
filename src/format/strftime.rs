@@ -65,7 +65,7 @@ The following specifiers are available both to formatting and parsing.
 | `%R`  | `00:34`       | Hour-minute format. Same as `%H:%M`.                                  |
 | `%T`  | `00:34:60`    | Hour-minute-second format. Same as `%H:%M:%S`.                        |
 | `%X`  | `00:34:60`    | Locale's time representation (e.g., 23:13:48).                        |
-| `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
+| `%r`  | `12:34:60 AM` | Locale's 12 hour clock time. (e.g., 11:11:04 PM)                      |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
 | `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. [^8] |
@@ -207,6 +207,8 @@ static D_T_FMT: &[Item<'static>] = &[
     num0!(Year),
 ];
 static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+static T_FMT_AMPM: &[Item<'static>] =
+    &[num0!(Hour12), lit!(":"), num0!(Minute), lit!(":"), num0!(Second), sp!(" "), fix!(UpperAmPm)];
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -221,6 +223,8 @@ pub struct StrftimeItems<'a> {
     d_fmt: Fmt<'a>,
     /// Date and time format
     d_t_fmt: Fmt<'a>,
+    /// Date and time format with AM/PM
+    t_fmt_ampm: Fmt<'a>,
     /// Time format
     t_fmt: Fmt<'a>,
 }
@@ -237,16 +241,18 @@ impl<'a> StrftimeItems<'a> {
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         let d_fmt: Vec<Item> = StrftimeItems::new(locales::d_fmt(locale)).collect();
         let t_fmt: Vec<Item> = StrftimeItems::new(locales::t_fmt(locale)).collect();
+        let t_fmt_ampm: Vec<Item> = StrftimeItems::new(locales::t_fmt_ampm(locale)).collect();
         let d_t_fmt = StrftimeItems {
             remainder: locales::d_t_fmt(locale),
             recons: Vec::new(),
             d_fmt: d_fmt.clone(),
             t_fmt: t_fmt.clone(),
+            t_fmt_ampm: t_fmt_ampm.clone(),
             d_t_fmt: D_T_FMT.to_vec(),
         }
         .collect();
 
-        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
+        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt, t_fmt_ampm }
     }
 
     #[cfg(not(feature = "unstable-locales"))]
@@ -258,6 +264,7 @@ impl<'a> StrftimeItems<'a> {
             recons: FMT_NONE,
             d_fmt: D_FMT,
             d_t_fmt: D_T_FMT,
+            t_fmt_ampm: T_FMT_AMPM,
             t_fmt: T_FMT,
         }
     }
@@ -269,6 +276,7 @@ impl<'a> StrftimeItems<'a> {
             recons: Vec::new(),
             d_fmt: D_FMT.to_vec(),
             d_t_fmt: D_T_FMT.to_vec(),
+            t_fmt_ampm: T_FMT_AMPM.to_vec(),
             t_fmt: T_FMT.to_vec(),
         }
     }
@@ -394,15 +402,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'm' => num0!(Month),
                     'n' => sp!("\n"),
                     'p' => fix!(UpperAmPm),
-                    'r' => recons![
-                        num0!(Hour12),
-                        lit!(":"),
-                        num0!(Minute),
-                        lit!(":"),
-                        num0!(Second),
-                        sp!(" "),
-                        fix!(UpperAmPm)
-                    ],
+                    'r' => recons_from_slice!(self.t_fmt_ampm),
                     's' => num!(Timestamp),
                     't' => sp!("\t"),
                     'u' => num!(WeekdayFromMon),
