@@ -243,9 +243,16 @@ impl<'a> StrftimeItems<'a> {
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
-        let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
-        let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
-        let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
+        let d_fmt: Vec<Item> = StrftimeItems::new(locales::d_fmt(locale)).collect();
+        let t_fmt: Vec<Item> = StrftimeItems::new(locales::t_fmt(locale)).collect();
+        let d_t_fmt = StrftimeItems {
+            remainder: locales::d_t_fmt(locale),
+            recons: Vec::new(),
+            d_fmt: d_fmt.clone(),
+            t_fmt: t_fmt.clone(),
+            d_t_fmt: D_T_FMT.to_vec(),
+        }
+        .collect();
 
         StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
     }
