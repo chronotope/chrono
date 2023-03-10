@@ -40,19 +40,32 @@ macro_rules! expand_ampm {
 
 /// hardcoded `locale_match!` fallback for `T_FMT_AMPM`.
 ///
-/// This is because `locale_match!` cannot be used when a locale misses a field.
-/// see [related issue](https://github.com/cecton/pure-rust-locales/issues/4) for details.
+/// it takes variable number of possible locales that have `LC_TIME::T_FMT_AMPM` field.
+/// it will then match the locale and return its `LC_TIME::T_FMT_AMPM` field.
+/// fallbacks to en_US if the field is an empty string.
+///
+/// ```rs
+/// // usage:
+/// locale => ( Locale::POSIX, Locale::aa_DJ, ...)
+/// // expands into:
+/// match locale {
+///     Locale::POSIX => {
+///         let ampm = pure_rust_locales::POSIX::LC_TIME::T_FMT_AMPM;
+///
+///         if ampm.is_empty() { pure_rust_locales::en_US::LC_TIME::T_FMT_AMPM } else { ampm }
+///     },
+///     Locale::aa_DJ => // ...
+///     // ...
+///     _ => pure_rust_locales::en_US::LC_TIME::T_FMT_AMPM,
+/// }
+/// ```
 macro_rules! locale_match_ampm {
     ($locale:expr => ( $($item:ident),* $(,)? )) => {
         match $locale {
             $(Locale::$item => {
-                let t_fmt_ampm = expand_ampm!($item);
+                let ampm = expand_ampm!($item);
 
-                if t_fmt_ampm.is_empty() {
-                    expand_ampm!(en_US)
-                } else {
-                    t_fmt_ampm
-                }
+                if ampm.is_empty() { expand_ampm!(en_US) } else { ampm }
             },)*
 
             // default fallback is en_US
@@ -61,6 +74,41 @@ macro_rules! locale_match_ampm {
     }
 }
 
+/// finds locale's time format in 12 hour AM/PM.
+///
+/// uses hardcoded [locale_match_ampm] macro to find `LC_TIME::T_FMT_AMPM` field.
+///
+/// ## Why locale_match won't work
+///
+/// [locale_match] assumes every single locale module to have same field.
+/// however, due to issues in [pure-rust-locales][issue],
+/// three locales (ff_SN, km_KH, ug_CN) are missing `LC_TIME::T_FMT_AMPM` field,
+/// causing compile error.
+///
+/// example:
+/// ```rs
+/// locale_match!(locale => LC_TIME::T_FMT_AMPM)
+///
+/// error[E0425]: cannot find value `T_FMT_AMPM` in module `$crate::ff_SN::LC_TIME`
+///   --> src/format/locales.rs:72:45
+///    |
+/// 72 | ...le => LC_TIME::T_FMT_AMPM);
+///    |                   ^^^^^^^^^^ not found in `$crate::ff_SN::LC_TIME`
+///    |
+/// help: consider importing one of these items
+///    |
+/// 1  | use pure_rust_locales::POSIX::LC_TIME::T_FMT_AMPM;
+///    |
+/// 1  | use pure_rust_locales::aa_DJ::LC_TIME::T_FMT_AMPM;
+///    |
+/// 1  | use pure_rust_locales::aa_ER::LC_TIME::T_FMT_AMPM;
+///    |
+/// 1  | use pure_rust_locales::aa_ER_saaho::LC_TIME::T_FMT_AMPM;
+///    |
+///      and 285 other candidates
+/// ```
+///
+/// [issue]: https://github.com/cecton/pure-rust-locales/issues/4
 pub(crate) fn t_fmt_ampm(locale: Locale) -> &'static str {
     #[allow(unused_imports)]
     use pure_rust_locales::Locale::*;
