@@ -223,10 +223,10 @@ pub struct StrftimeItems<'a> {
     d_fmt: Fmt<'a>,
     /// Date and time format
     d_t_fmt: Fmt<'a>,
-    /// Date and time format with AM/PM
-    t_fmt_ampm: Fmt<'a>,
     /// Time format
     t_fmt: Fmt<'a>,
+    /// 12 hour Time format with AM/PM
+    t_fmt_ampm: Fmt<'a>,
 }
 
 impl<'a> StrftimeItems<'a> {
