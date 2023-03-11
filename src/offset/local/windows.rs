@@ -181,10 +181,7 @@ struct Tm {
     /// Months since January - [0, 11]
     tm_mon: i32,
 
-    // NOTE: Initially evaluated as years since 1900
-    /// Years since 1601 (per Win32 [SYSTEMTIME][spec])
-    ///
-    /// [spec]: https://learn.microsoft.com/en-us/windows/win32/api/minwinbase/ns-minwinbase-systemtime
+    /// Years since 1900
     tm_year: i32,
 
     /// Days since Sunday - [0, 6]. 0 = Sunday, 1 = Monday, ..., 6 = Saturday.
