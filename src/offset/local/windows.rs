@@ -67,7 +67,7 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
         tm_hour: d.hour() as i32,
         tm_mday: d.day() as i32,
         tm_mon: d.month0() as i32, // yes, C is that strange...
-        tm_year: d.year() - 1601,  // this doesn't underflow, we know that d is `NaiveDateTime`.
+        tm_year: d.year() - 1900,  // this doesn't underflow, we know that d is `NaiveDateTime`.
         tm_wday: 0,                // to_local ignores this
         tm_yday: 0,                // and this
         tm_isdst: -1,
@@ -112,7 +112,7 @@ fn tm_to_datetime(mut tm: Tm) -> LocalResult<DateTime<Local>> {
         tm.tm_sec = 59;
     }
 
-    let date = NaiveDate::from_ymd_opt(tm.tm_year + 1601, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
+    let date = NaiveDate::from_ymd_opt(tm.tm_year + 1900, tm.tm_mon as u32 + 1, tm.tm_mday as u32)
         .unwrap();
 
     let time = NaiveTime::from_hms_nano_opt(
@@ -241,7 +241,7 @@ fn tm_to_system_time(tm: &Tm) -> SYSTEMTIME {
     sys.wDay = tm.tm_mday as u16;
     sys.wDayOfWeek = tm.tm_wday as u16;
     sys.wMonth = (tm.tm_mon + 1) as u16;
-    sys.wYear = (tm.tm_year + 1601) as u16;
+    sys.wYear = (tm.tm_year + 1900) as u16;
     sys
 }
 
@@ -252,7 +252,7 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
     tm.tm_mday = sys.wDay as i32;
     tm.tm_wday = sys.wDayOfWeek as i32;
     tm.tm_mon = (sys.wMonth - 1) as i32;
-    tm.tm_year = (sys.wYear - 1601) as i32;
+    tm.tm_year = (sys.wYear - 1900) as i32;
     tm.tm_yday = yday(tm.tm_year, tm.tm_mon + 1, tm.tm_mday);
 
     fn yday(year: i32, month: i32, day: i32) -> i32 {
