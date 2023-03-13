@@ -3,17 +3,24 @@ cff-version: 1.2.0
 message: Please cite this crate using these information.
 
 # Version information.
-date-released: 2022-11-12
-version: 0.4.23
+date-released: 2023-03-12
+version: 0.4.24
 
 # Project information.
 abstract: Date and time library for Rust
 authors:
-  - alias: .
-    # email:
-    family-names: .
-    given-names: .
-    # website:
+  - alias: quodlibetor
+    family-names: Maister
+    given-names: Brandon W.
+  - alias: djc
+    family-names: Ochtman
+    given-names: Dirkjan
+  - alias: lifthrasiir
+    family-names: Seonghoon
+    given-names: Kang
+  - alias: esheppa
+    family-names: Sheppard
+    given-names: Eric
 license:
   - Apache-2.0
   - MIT
