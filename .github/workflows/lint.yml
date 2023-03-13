@@ -9,6 +9,7 @@ on:
       - .github/**
       - .ci/**
       - Cargo.toml
+      - CITATION.cff
       - deny.toml
 
 jobs:
@@ -29,3 +30,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: EmbarkStudios/cargo-deny-action@v1
+
+  cffconvert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+      - uses: citation-file-format/cffconvert-github-action@2.0.0
+        with:
+          args: --validate
