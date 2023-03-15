@@ -46,7 +46,8 @@ pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
             (year, rawweek)
         }
     };
-    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(of.flags().0) }
+    let flags = YearFlags::from_year(year);
+    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(flags.0) }
 }
 
 impl IsoWeek {
@@ -163,5 +164,39 @@ mod tests {
         assert_eq!(maxweek.week(), 1);
         assert_eq!(maxweek.week0(), 0);
         assert_eq!(format!("{:?}", maxweek), NaiveDate::MAX.format("%G-W%V").to_string());
+    }
+
+    #[test]
+    fn test_iso_week_equivalence_for_first_week() {
+        let monday = NaiveDate::from_ymd_opt(2024, 12, 30).unwrap();
+        let friday = NaiveDate::from_ymd_opt(2025, 1, 3).unwrap();
+
+        assert_eq!(monday.iso_week(), friday.iso_week());
+    }
+
+    #[test]
+    fn test_iso_week_equivalence_for_last_week() {
+        let monday = NaiveDate::from_ymd_opt(2026, 12, 28).unwrap();
+        let friday = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
+
+        assert_eq!(monday.iso_week(), friday.iso_week());
+    }
+
+    #[test]
+    fn test_iso_week_ordering_for_first_week() {
+        let monday = NaiveDate::from_ymd_opt(2024, 12, 30).unwrap();
+        let friday = NaiveDate::from_ymd_opt(2025, 1, 3).unwrap();
+
+        assert!(monday.iso_week() >= friday.iso_week());
+        assert!(monday.iso_week() <= friday.iso_week());
+    }
+
+    #[test]
+    fn test_iso_week_ordering_for_last_week() {
+        let monday = NaiveDate::from_ymd_opt(2026, 12, 28).unwrap();
+        let friday = NaiveDate::from_ymd_opt(2027, 1, 1).unwrap();
+
+        assert!(monday.iso_week() >= friday.iso_week());
+        assert!(monday.iso_week() <= friday.iso_week());
     }
 }
