@@ -12,7 +12,7 @@ use std::io::Error;
 use std::result::Result;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use super::windows_sys::{WinFileTime, WinSystemTime};
+use super::windows_sys::WinSystemTime;
 
 use super::{FixedOffset, Local};
 use crate::{DateTime, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
@@ -69,12 +69,10 @@ struct LocalSysTime {
 
 impl LocalSysTime {
     pub(crate) fn from_duration(dur: InnerDuration) -> Result<Self, Error> {
-        let filetime = WinFileTime::from_seconds(dur.sec);
-        let utc_sys_time = filetime.as_system_time()?;
+        let utc_sys_time = WinSystemTime::from_unix_seconds(dur.sec)?;
 
         let local_sys_time = utc_sys_time.as_time_zone_specific()?;
-        let local_filetime = local_sys_time.as_file_time()?;
-        let local_secs = local_filetime.as_unix_seconds();
+        let local_secs = local_sys_time.as_unix_seconds()?;
 
         let offset = (local_secs - dur.sec) as i32;
 
@@ -82,15 +80,13 @@ impl LocalSysTime {
     }
 
     fn from_utc_time(utc_time: WinSystemTime) -> Result<Self, Error> {
-        let filetime = utc_time.as_file_time()?;
-        let duration = InnerDuration::from_seconds(filetime.as_unix_seconds());
+        let duration = InnerDuration::from_seconds(utc_time.as_unix_seconds()?);
         Self::from_duration(duration)
     }
 
     fn from_local_time(local_time: WinSystemTime) -> Result<Self, Error> {
-        let utc = local_time.as_utc_time()?;
-        let filetime = utc.as_file_time()?;
-        let duration = InnerDuration::from_seconds(filetime.as_unix_seconds());
+        let utc_time = local_time.as_utc_time()?;
+        let duration = InnerDuration::from_seconds(utc_time.as_unix_seconds()?);
         Self::from_duration(duration)
     }
 
