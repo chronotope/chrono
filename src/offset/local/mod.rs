@@ -34,9 +34,6 @@ mod inner;
 #[path = "windows.rs"]
 mod inner;
 
-#[cfg(windows)]
-mod windows_sys;
-
 #[cfg(unix)]
 mod tz_info;
 

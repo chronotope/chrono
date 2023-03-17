@@ -8,105 +8,150 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use core::mem::MaybeUninit;
 use std::io::Error;
+use std::ptr;
 use std::result::Result;
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use super::windows_sys::WinSystemTime;
+use winapi::shared::minwindef::FILETIME;
+use winapi::um::minwinbase::SYSTEMTIME;
+use winapi::um::sysinfoapi::GetLocalTime;
+use winapi::um::timezoneapi::{
+    SystemTimeToFileTime, SystemTimeToTzSpecificLocalTime, TzSpecificLocalTimeToSystemTime,
+};
 
 use super::{FixedOffset, Local};
-use crate::{DateTime, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+
+/// This macro calls a Windows API FFI and checks whether the function errored with the provided error_id. If an error returns,
+/// the macro will return an `Error::last_os_error()`.
+///
+/// # Safety
+///
+/// This macro can only check one idea, and provided error ID must be the corresponding error ID.
+macro_rules! windows_sys_call {
+    ($name:ident($($arg:expr),*), $error_id:expr) => {
+        if $name($($arg),*) == $error_id {
+            return Err(Error::last_os_error());
+        }
+    }
+}
+
+const HECTONANOSECS_IN_SEC: i64 = 10_000_000;
+const HECTONANOSEC_TO_UNIX_EPOCH: i64 = 11_644_473_600 * HECTONANOSECS_IN_SEC;
 
 pub(super) fn now() -> DateTime<Local> {
-    InnerDuration::now_locally().datetime()
+    LocalSysTime::local().datetime()
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
-    let naive_sys_time = WinSystemTime::from_naive_datetime(d);
+    let naive_sys_time = system_time_from_naive_date_time(d);
 
     let local_sys_time = match local {
         false => LocalSysTime::from_utc_time(naive_sys_time),
         true => LocalSysTime::from_local_time(naive_sys_time),
     };
 
-    if let Ok(mut local) = local_sys_time {
-        assert_eq!(local.nsecs, 0);
-        local.set_nsecs(d.nanosecond() as i32);
-
+    if let Ok(local) = local_sys_time {
         return LocalResult::Single(local.datetime());
     }
-
     LocalResult::None
 }
 
-struct InnerDuration {
-    sec: i64,
-    nsec: i32,
-}
-
-impl InnerDuration {
-    /// Constructs a new LocalSysTime representing the current time in UTC
-    /// Constructs a timespec representing the current time in UTC.
-    fn now_locally() -> LocalSysTime {
-        let st =
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        let now_duration = Self { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 };
-        LocalSysTime::from_duration(now_duration)
-            .expect("Now should not fail to produce a local sys time")
-    }
-
-    fn from_seconds(sec: i64) -> Self {
-        Self { sec, nsec: 0 }
-    }
-}
-
 struct LocalSysTime {
-    inner: WinSystemTime,
+    inner: SYSTEMTIME,
     offset: i32,
-    nsecs: i32,
 }
 
 impl LocalSysTime {
-    pub(crate) fn from_duration(dur: InnerDuration) -> Result<Self, Error> {
-        let utc_sys_time = WinSystemTime::from_unix_seconds(dur.sec)?;
+    fn local() -> Self {
+        let mut now = MaybeUninit::<SYSTEMTIME>::uninit();
+        unsafe { GetLocalTime(now.as_mut_ptr()) }
+        let st = unsafe { now.assume_init() };
 
-        let local_sys_time = utc_sys_time.as_time_zone_specific()?;
-        let local_secs = local_sys_time.as_unix_seconds()?;
-
-        let offset = (local_secs - dur.sec) as i32;
-
-        Ok(Self { inner: local_sys_time, offset, nsecs: dur.nsec })
+        Self::from_local_time(st).expect("Current local time must exist")
     }
 
-    fn from_utc_time(utc_time: WinSystemTime) -> Result<Self, Error> {
-        let duration = InnerDuration::from_seconds(utc_time.as_unix_seconds()?);
-        Self::from_duration(duration)
+    fn from_utc_time(utc_time: SYSTEMTIME) -> Result<Self, Error> {
+        let local_time = utc_to_local_time(&utc_time)?;
+        let utc_secs = system_time_as_unix_seconds(&utc_time)?;
+        let local_secs = system_time_as_unix_seconds(&local_time)?;
+        let offset = (local_secs - utc_secs) as i32;
+        Ok(Self { inner: local_time, offset })
     }
 
-    fn from_local_time(local_time: WinSystemTime) -> Result<Self, Error> {
-        let utc_time = local_time.as_utc_time()?;
-        let duration = InnerDuration::from_seconds(utc_time.as_unix_seconds()?);
-        Self::from_duration(duration)
-    }
-
-    fn set_nsecs(&mut self, nsecs: i32) {
-        self.nsecs = nsecs;
+    fn from_local_time(local_time: SYSTEMTIME) -> Result<Self, Error> {
+        let utc_time = local_to_utc_time(&local_time)?;
+        let utc_secs = system_time_as_unix_seconds(&utc_time)?;
+        let local_secs = system_time_as_unix_seconds(&local_time)?;
+        let offset = (local_secs - utc_secs) as i32;
+        Ok(Self { inner: local_time, offset })
     }
 
     fn datetime(self) -> DateTime<Local> {
-        let st = self.inner.inner();
+        let st = self.inner;
 
         let date =
             NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32).unwrap();
-        let time = NaiveTime::from_hms_nano(
-            st.wHour as u32,
-            st.wMinute as u32,
-            st.wSecond as u32,
-            self.nsecs as u32,
-        );
+        let time = NaiveTime::from_hms(st.wHour as u32, st.wMinute as u32, st.wSecond as u32);
 
         let offset = FixedOffset::east_opt(self.offset).unwrap();
         DateTime::from_utc(date.and_time(time) - offset, offset)
     }
+}
+
+fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> SYSTEMTIME {
+    SYSTEMTIME {
+        // Valid values: 1601-30827
+        wYear: dt.year() as u16,
+        // Valid values:1-12
+        wMonth: dt.month() as u16,
+        // Valid values: 0-6, starting Sunday.
+        // NOTE: enum returns 1-7, starting Monday, so we are
+        // off here, but this is not currently used in local.
+        wDayOfWeek: dt.weekday() as u16,
+        // Valid values: 1-31
+        wDay: dt.day() as u16,
+        // Valid values: 0-23
+        wHour: dt.hour() as u16,
+        // Valid values: 0-59
+        wMinute: dt.minute() as u16,
+        // Valid values: 0-59
+        wSecond: dt.second() as u16,
+        // Valid values: 0-999
+        wMilliseconds: 0,
+    }
+}
+
+pub(crate) fn local_to_utc_time(local: &SYSTEMTIME) -> Result<SYSTEMTIME, Error> {
+    let mut sys_time = MaybeUninit::<SYSTEMTIME>::uninit();
+    unsafe {
+        windows_sys_call!(
+            TzSpecificLocalTimeToSystemTime(ptr::null(), local, sys_time.as_mut_ptr()),
+            0
+        )
+    };
+    Ok(unsafe { sys_time.assume_init() })
+}
+
+pub(crate) fn utc_to_local_time(utc_time: &SYSTEMTIME) -> Result<SYSTEMTIME, Error> {
+    let mut local = MaybeUninit::<SYSTEMTIME>::uninit();
+    unsafe {
+        windows_sys_call!(
+            SystemTimeToTzSpecificLocalTime(ptr::null(), utc_time, local.as_mut_ptr()),
+            0
+        )
+    };
+    Ok(unsafe { local.assume_init() })
+}
+
+/// Returns a i64 value representing the unix seconds conversion of the current `WinSystemTime`.
+pub(crate) fn system_time_as_unix_seconds(st: &SYSTEMTIME) -> Result<i64, Error> {
+    let mut init = MaybeUninit::<FILETIME>::uninit();
+    unsafe { windows_sys_call!(SystemTimeToFileTime(st, init.as_mut_ptr()), 0) }
+    let filetime = unsafe { init.assume_init() };
+    let bit_shift = ((filetime.dwHighDateTime as u64) << 32) | (filetime.dwLowDateTime as u64);
+    let unix_secs = (bit_shift as i64 - HECTONANOSEC_TO_UNIX_EPOCH) / HECTONANOSECS_IN_SEC;
+    Ok(unix_secs)
 }
