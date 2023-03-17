@@ -438,12 +438,12 @@ pub(super) struct Transition {
 
 impl Transition {
     /// Construct a TZif file transition
-    pub(super) fn new(unix_leap_time: i64, local_time_type_index: usize) -> Self {
+    pub(super) const fn new(unix_leap_time: i64, local_time_type_index: usize) -> Self {
         Self { unix_leap_time, local_time_type_index }
     }
 
     /// Returns Unix leap time
-    fn unix_leap_time(&self) -> i64 {
+    const fn unix_leap_time(&self) -> i64 {
         self.unix_leap_time
     }
 }
@@ -459,12 +459,12 @@ pub(super) struct LeapSecond {
 
 impl LeapSecond {
     /// Construct a TZif file leap second
-    pub(super) fn new(unix_leap_time: i64, correction: i32) -> Self {
+    pub(super) const fn new(unix_leap_time: i64, correction: i32) -> Self {
         Self { unix_leap_time, correction }
     }
 
     /// Returns Unix leap time
-    fn unix_leap_time(&self) -> i64 {
+    const fn unix_leap_time(&self) -> i64 {
         self.unix_leap_time
     }
 }
@@ -572,12 +572,12 @@ impl LocalTimeType {
     }
 
     /// Returns offset from UTC in seconds
-    pub(crate) fn offset(&self) -> i32 {
+    pub(crate) const fn offset(&self) -> i32 {
         self.ut_offset
     }
 
     /// Returns daylight saving time indicator
-    pub(super) fn is_dst(&self) -> bool {
+    pub(super) const fn is_dst(&self) -> bool {
         self.is_dst
     }
 

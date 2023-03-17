@@ -11,7 +11,7 @@ The following specifiers are available both to formatting and parsing.
 | Spec. | Example  | Description                                                                |
 |-------|----------|----------------------------------------------------------------------------|
 |       |          | **DATE SPECIFIERS:**                                                       |
-| `%Y`  | `2001`   | The full proleptic Gregorian year, zero-padded to 4 digits. chrono supports years from -262144 to 262143. |
+| `%Y`  | `2001`   | The full proleptic Gregorian year, zero-padded to 4 digits. chrono supports years from -262144 to 262143. Note: years before 1 BCE or after 9999 CE, require an initial sign (+/-).|
 | `%C`  | `20`     | The proleptic Gregorian year divided by 100, zero-padded to 2 digits. [^1] |
 | `%y`  | `01`     | The proleptic Gregorian year modulo 100, zero-padded to 2 digits. [^1]     |
 |       |          |                                                                            |
@@ -584,7 +584,7 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%A").to_string(), "Sunday");
     assert_eq!(dt.format("%w").to_string(), "0");
     assert_eq!(dt.format("%u").to_string(), "7");
-    assert_eq!(dt.format("%U").to_string(), "28");
+    assert_eq!(dt.format("%U").to_string(), "27");
     assert_eq!(dt.format("%W").to_string(), "27");
     assert_eq!(dt.format("%G").to_string(), "2001");
     assert_eq!(dt.format("%g").to_string(), "01");
@@ -663,7 +663,7 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use crate::{FixedOffset, NaiveDate, TimeZone};
+    use crate::{FixedOffset, NaiveDate};
 
     let dt = NaiveDate::from_ymd_opt(2001, 7, 8)
         .and_then(|d| d.and_hms_nano_opt(0, 34, 59, 1_026_490_708))
