@@ -99,7 +99,7 @@ pub enum Pad {
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
-    /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
+    /// May accept years before 1 BCE or after 9999 CE, given an initial sign (+/-).
     Year,
     /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
     YearDiv100,
@@ -350,7 +350,7 @@ pub struct ParseError(ParseErrorKind);
 
 impl ParseError {
     /// The category of parse error
-    pub fn kind(&self) -> ParseErrorKind {
+    pub const fn kind(&self) -> ParseErrorKind {
         self.0
     }
 }
@@ -516,12 +516,8 @@ fn format_inner(
         Item::Numeric(ref spec, ref pad) => {
             use self::Numeric::*;
 
-            let week_from_sun = |d: &NaiveDate| {
-                (d.ordinal() as i32 - d.weekday().num_days_from_sunday() as i32 + 7) / 7
-            };
-            let week_from_mon = |d: &NaiveDate| {
-                (d.ordinal() as i32 - d.weekday().num_days_from_monday() as i32 + 7) / 7
-            };
+            let week_from_sun = |d: &NaiveDate| d.weeks_from(Weekday::Sun);
+            let week_from_mon = |d: &NaiveDate| d.weeks_from(Weekday::Mon);
 
             let (width, v) = match *spec {
                 Year => (4, date.map(|d| i64::from(d.year()))),

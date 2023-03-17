@@ -129,7 +129,7 @@ pub struct Days(pub(crate) u64);
 
 impl Days {
     /// Construct a new `Days` from a number of days
-    pub fn new(num: u64) -> Self {
+    pub const fn new(num: u64) -> Self {
         Self(num)
     }
 }
@@ -234,6 +234,9 @@ fn test_date_bounds() {
 }
 
 impl NaiveDate {
+    pub(crate) fn weeks_from(&self, day: Weekday) -> i32 {
+        (self.ordinal() as i32 - self.weekday().num_days_from(day) as i32 + 6) / 7
+    }
     /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
     fn from_of(year: i32, of: Of) -> Option<NaiveDate> {
         if (MIN_YEAR..=MAX_YEAR).contains(&year) && of.valid() {
@@ -644,6 +647,10 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd_opt(2022, 7, 31).unwrap().checked_add_days(Days::new(2)),
     ///     Some(NaiveDate::from_ymd_opt(2022, 8, 2).unwrap())
     /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2022, 7, 31).unwrap().checked_add_days(Days::new(1000000000000)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
@@ -663,6 +670,10 @@ impl NaiveDate {
     ///     NaiveDate::from_ymd_opt(2022, 2, 20).unwrap().checked_sub_days(Days::new(6)),
     ///     Some(NaiveDate::from_ymd_opt(2022, 2, 14).unwrap())
     /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd_opt(2022, 2, 20).unwrap().checked_sub_days(Days::new(1000000000000)),
+    ///     None
+    /// );
     /// ```
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         if days.0 == 0 {
@@ -673,7 +684,11 @@ impl NaiveDate {
     }
 
     fn diff_days(self, days: i64) -> Option<Self> {
-        self.checked_add_signed(TimeDelta::days(days))
+        let secs = days.checked_mul(86400)?; // 86400 seconds in one day
+        if secs >= core::i64::MAX / 1000 || secs <= core::i64::MIN / 1000 {
+            return None; // See the `time` 0.1 crate. Outside these bounds, `TimeDelta::seconds` will panic
+        }
+        self.checked_add_signed(TimeDelta::seconds(secs))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -691,7 +706,7 @@ impl NaiveDate {
     /// assert_eq!(dt.time(), t);
     /// ```
     #[inline]
-    pub fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
+    pub const fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime::new(*self, time)
     }
 
@@ -881,7 +896,7 @@ impl NaiveDate {
 
     /// Returns the packed ordinal-flags.
     #[inline]
-    fn of(&self) -> Of {
+    const fn of(&self) -> Of {
         Of((self.ymdf & 0b1_1111_1111_1111) as u32)
     }
 
@@ -1204,7 +1219,7 @@ impl NaiveDate {
     /// }
     /// ```
     #[inline]
-    pub fn iter_days(&self) -> NaiveDateDaysIterator {
+    pub const fn iter_days(&self) -> NaiveDateDaysIterator {
         NaiveDateDaysIterator { value: *self }
     }
 
@@ -1235,14 +1250,14 @@ impl NaiveDate {
     /// }
     /// ```
     #[inline]
-    pub fn iter_weeks(&self) -> NaiveDateWeeksIterator {
+    pub const fn iter_weeks(&self) -> NaiveDateWeeksIterator {
         NaiveDateWeeksIterator { value: *self }
     }
 
     /// Returns the [`NaiveWeek`] that the date belongs to, starting with the [`Weekday`]
     /// specified.
     #[inline]
-    pub fn week(&self, start: Weekday) -> NaiveWeek {
+    pub const fn week(&self, start: Weekday) -> NaiveWeek {
         NaiveWeek { date: *self, start }
     }
 
@@ -2784,6 +2799,16 @@ mod tests {
         assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
         assert!(NaiveDate::parse_from_str("2014-57", "%Y-%m-%d").is_err());
         assert!(NaiveDate::parse_from_str("2014", "%Y").is_err()); // insufficient
+
+        assert_eq!(
+            NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),
+            NaiveDate::from_ymd_opt(2020, 1, 12),
+        );
+
+        assert_eq!(
+            NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").ok(),
+            NaiveDate::from_ymd_opt(2019, 1, 13),
+        );
     }
 
     #[test]
@@ -2822,7 +2847,7 @@ mod tests {
         // corner cases
         assert_eq!(
             NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2008,08,53,53,01"
+            "2008,08,52,53,01"
         );
         assert_eq!(
             NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
@@ -2869,6 +2894,69 @@ mod tests {
             assert_eq!(Ok(week.first_day()), NaiveDate::parse_from_str(first_day, "%Y-%m-%d"));
             assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%Y-%m-%d"));
             assert!(days.contains(&date));
+        }
+    }
+
+    #[test]
+    fn test_weeks_from() {
+        // tests per: https://github.com/chronotope/chrono/issues/961
+        // these internally use `weeks_from` via the parsing infrastructure
+        assert_eq!(
+            NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),
+            NaiveDate::from_ymd_opt(2020, 1, 12),
+        );
+        assert_eq!(
+            NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").ok(),
+            NaiveDate::from_ymd_opt(2019, 1, 13),
+        );
+
+        // direct tests
+        for (y, starts_on) in &[
+            (2019, Weekday::Tue),
+            (2020, Weekday::Wed),
+            (2021, Weekday::Fri),
+            (2022, Weekday::Sat),
+            (2023, Weekday::Sun),
+            (2024, Weekday::Mon),
+            (2025, Weekday::Wed),
+            (2026, Weekday::Thu),
+        ] {
+            for day in &[
+                Weekday::Mon,
+                Weekday::Tue,
+                Weekday::Wed,
+                Weekday::Thu,
+                Weekday::Fri,
+                Weekday::Sat,
+                Weekday::Sun,
+            ] {
+                assert_eq!(
+                    NaiveDate::from_ymd_opt(*y, 1, 1).map(|d| d.weeks_from(*day)),
+                    Some(if day == starts_on { 1 } else { 0 })
+                );
+
+                // last day must always be in week 52 or 53
+                assert!([52, 53]
+                    .contains(&NaiveDate::from_ymd_opt(*y, 12, 31).unwrap().weeks_from(*day)),);
+            }
+        }
+
+        let base = NaiveDate::from_ymd_opt(2019, 1, 1).unwrap();
+
+        // 400 years covers all year types
+        for day in &[
+            Weekday::Mon,
+            Weekday::Tue,
+            Weekday::Wed,
+            Weekday::Thu,
+            Weekday::Fri,
+            Weekday::Sat,
+            Weekday::Sun,
+        ] {
+            // must always be below 54
+            for dplus in 1..(400 * 366) {
+                assert!((base + Days::new(dplus)).weeks_from(*day) < 54)
+            }
         }
     }
 }

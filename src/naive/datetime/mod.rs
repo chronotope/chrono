@@ -126,7 +126,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.time(), t);
     /// ```
     #[inline]
-    pub fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
+    pub const fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime { date, time }
     }
 
@@ -303,6 +303,16 @@ impl NaiveDateTime {
     /// assert!(parse_from_str("2001-09-09 01:46:39 = UNIX timestamp 999999999", fmt).is_ok());
     /// assert!(parse_from_str("1970-01-01 00:00:00 = UNIX timestamp 1", fmt).is_err());
     /// ```
+    ///
+    /// Years before 1 BCE or after 9999 CE, require an initial sign
+    ///
+    ///```
+    /// # use chrono::{NaiveDate, NaiveDateTime};
+    /// # let parse_from_str = NaiveDateTime::parse_from_str;
+    /// let fmt = "%Y-%m-%d %H:%M:%S";
+    /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
+    /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
+    ///```     
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
@@ -320,7 +330,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2016, 7, 8).unwrap());
     /// ```
     #[inline]
-    pub fn date(&self) -> NaiveDate {
+    pub const fn date(&self) -> NaiveDate {
         self.date
     }
 
@@ -335,7 +345,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.time(), NaiveTime::from_hms_opt(9, 10, 11).unwrap());
     /// ```
     #[inline]
-    pub fn time(&self) -> NaiveTime {
+    pub const fn time(&self) -> NaiveTime {
         self.time
     }
 

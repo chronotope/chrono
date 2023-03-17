@@ -48,7 +48,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
     let mut n = 0i64;
     for (i, c) in bytes.iter().take(max).cloned().enumerate() {
         // cloned() = copied()
-        if !(b'0'..=b'9').contains(&c) {
+        if !c.is_ascii_digit() {
             if i < min {
                 return Err(INVALID);
             } else {
@@ -79,7 +79,7 @@ pub(super) fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
     let v = v.checked_mul(SCALE[consumed]).ok_or(OUT_OF_RANGE)?;
 
     // if there are more than 9 digits, skip next digits.
-    let s = s.trim_left_matches(|c: char| ('0'..='9').contains(&c));
+    let s = s.trim_left_matches(|c: char| c.is_ascii_digit());
 
     Ok((s, v))
 }
