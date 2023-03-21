@@ -28,7 +28,7 @@ use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime
 ///
 /// # Safety
 ///
-/// This macro can only check one idea, and provided error ID must be the corresponding error ID.
+/// The provided error ID must align with the provided Windows API, providing the wrong ID could lead to UB.
 macro_rules! windows_sys_call {
     ($name:ident($($arg:expr),*), $error_id:expr) => {
         if $name($($arg),*) == $error_id {
@@ -68,6 +68,8 @@ impl LocalSysTime {
     fn local() -> Self {
         let mut now = MaybeUninit::<SYSTEMTIME>::uninit();
         unsafe { GetLocalTime(now.as_mut_ptr()) }
+        // SAFETY: GetLocalTime cannot fail according to spec, so we can assume the value
+        // is initialized.
         let st = unsafe { now.assume_init() };
 
         Self::from_local_time(st).expect("Current local time must exist")
@@ -132,6 +134,8 @@ pub(crate) fn local_to_utc_time(local: &SYSTEMTIME) -> Result<SYSTEMTIME, Error>
             0
         )
     };
+    // SAFETY: TzSpecificLocalTimeToSystemTime must have succeeded at this point, so we can
+    // assume the value is initialized.
     Ok(unsafe { sys_time.assume_init() })
 }
 
@@ -143,6 +147,8 @@ pub(crate) fn utc_to_local_time(utc_time: &SYSTEMTIME) -> Result<SYSTEMTIME, Err
             0
         )
     };
+    // SAFETY: SystemTimeToTzSpecificLocalTime must have succeeded at this point, so we can
+    // assume the value is initialized.
     Ok(unsafe { local.assume_init() })
 }
 
@@ -150,6 +156,8 @@ pub(crate) fn utc_to_local_time(utc_time: &SYSTEMTIME) -> Result<SYSTEMTIME, Err
 pub(crate) fn system_time_as_unix_seconds(st: &SYSTEMTIME) -> Result<i64, Error> {
     let mut init = MaybeUninit::<FILETIME>::uninit();
     unsafe { windows_sys_call!(SystemTimeToFileTime(st, init.as_mut_ptr()), 0) }
+    // SystemTimeToFileTime must have succeeded at this point, so we can assum the value is
+    // initalized.
     let filetime = unsafe { init.assume_init() };
     let bit_shift = ((filetime.dwHighDateTime as u64) << 32) | (filetime.dwLowDateTime as u64);
     let unix_secs = (bit_shift as i64 - HECTONANOSEC_TO_UNIX_EPOCH) / HECTONANOSECS_IN_SEC;
