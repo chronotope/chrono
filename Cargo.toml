@@ -44,7 +44,7 @@ js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS
 
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi"], optional = true }
+winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi", "sysinfoapi"], optional = true }
 
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
