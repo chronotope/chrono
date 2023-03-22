@@ -313,7 +313,7 @@ impl std::error::Error for RoundingError {
 mod tests {
     use super::{DurationRound, SubsecRound, TimeDelta};
     use crate::offset::{FixedOffset, TimeZone, Utc};
-    use crate::NaiveDate;
+    use crate::{NaiveDate, Error};
     use crate::Timelike;
 
     #[test]
@@ -638,11 +638,12 @@ mod tests {
     }
 
     #[test]
-    fn test_duration_trunc_pre_epoch() {
-        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
+    fn test_duration_trunc_pre_epoch() -> Result<(), Error> {
+        let dt = Utc.ymd(1969, 12, 12)?.and_hms(12, 12, 12)?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
         );
+        Ok(())
     }
 }

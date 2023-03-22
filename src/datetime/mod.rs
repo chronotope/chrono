@@ -588,20 +588,6 @@ impl DateTime<FixedOffset> {
     /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
     /// sequences.
     ///
-    /// See also [`TimeZone::datetime_from_str`] which gives a local
-    /// [`DateTime`] on specific time zone.
-    ///
-    /// Note that this method *requires a timezone* in the string. See
-    /// [`NaiveDateTime::parse_from_str`]
-    /// for a version that does not require a timezone in the to-be-parsed str.
-    ///
-    /// See also [`TimeZone::datetime_from_str`] which gives a local
-    /// [`DateTime`] on specific time zone.
-    ///
-    /// Note that this method *requires a timezone* in the string. See
-    /// [`NaiveDateTime::parse_from_str`]
-    /// for a version that does not require a timezone in the to-be-parsed str.
-    ///
     /// # Example
     ///
     /// ```rust
