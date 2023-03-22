@@ -634,14 +634,11 @@ fn test_strftime_docs() {
     use crate::NaiveDate;
     use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
-    let dt = FixedOffset::east_opt(34200)
+    let dt = FixedOffset::east(34200)
         .unwrap()
-        .from_local_datetime(
-            &NaiveDate::from_ymd_opt(2001, 7, 8)
-                .unwrap()
-                .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
-                .unwrap(),
-        )
+        .ymd(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano(0, 34, 59, 1_026_490_708)
         .unwrap();
 
     // date specifiers
@@ -707,19 +704,19 @@ fn test_strftime_docs() {
     assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
 
     assert_eq!(
-        dt.with_timezone(&Utc).format("%+").to_string(),
+        dt.with_timezone(&Utc).unwrap().format("%+").to_string(),
         "2001-07-07T15:04:60.026490708+00:00"
     );
     assert_eq!(
-        dt.with_timezone(&Utc),
+        dt.with_timezone(&Utc).unwrap(),
         DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
     );
     assert_eq!(
-        dt.with_timezone(&Utc),
+        dt.with_timezone(&Utc).unwrap(),
         DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
     );
     assert_eq!(
-        dt.with_timezone(&Utc),
+        dt.with_timezone(&Utc).unwrap(),
         DateTime::<FixedOffset>::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
     );
 
@@ -747,10 +744,11 @@ fn test_strftime_docs() {
 fn test_strftime_docs_localized() {
     use crate::{FixedOffset, NaiveDate};
 
-    let dt = NaiveDate::from_ymd_opt(2001, 7, 8)
-        .and_then(|d| d.and_hms_nano_opt(0, 34, 59, 1_026_490_708))
+    let dt = FixedOffset::east(34200)
         .unwrap()
-        .and_local_timezone(FixedOffset::east_opt(34200).unwrap())
+        .ymd(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano(0, 34, 59, 1_026_490_708)
         .unwrap();
 
     // date specifiers
@@ -778,7 +776,7 @@ fn test_strftime_docs_localized() {
         "dim 08 jui 2001 00:34:60 +09:30"
     );
 
-    let nd = NaiveDate::from_ymd_opt(2001, 7, 8).unwrap();
+    let nd = NaiveDate::from_ymd(2001, 7, 8).unwrap();
 
     // date specifiers
     assert_eq!(nd.format_localized("%b", Locale::de_DE).to_string(), "Jul");

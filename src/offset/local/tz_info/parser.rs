@@ -1,11 +1,10 @@
-use std::io::{self, ErrorKind};
 use std::iter;
 use std::num::ParseIntError;
 use std::str::{self, FromStr};
 
 use super::rule::TransitionRule;
 use super::timezone::{LeapSecond, LocalTimeType, TimeZone, Transition};
-use super::Error;
+use crate::Error;
 
 #[allow(clippy::map_clone)] // MSRV: 1.36
 pub(super) fn parse(bytes: &[u8]) -> Result<TimeZone, Error> {
@@ -249,28 +248,28 @@ impl<'a> Cursor<'a> {
     }
 
     /// Read exactly `count` bytes, reducing remaining data and incrementing read count
-    pub(crate) fn read_exact(&mut self, count: usize) -> Result<&'a [u8], io::Error> {
+    pub(crate) fn read_exact(&mut self, count: usize) -> Result<&'a [u8], Error> {
         match (self.remaining.get(..count), self.remaining.get(count..)) {
             (Some(result), Some(remaining)) => {
                 self.remaining = remaining;
                 self.read_count += count;
                 Ok(result)
             }
-            _ => Err(io::Error::from(ErrorKind::UnexpectedEof)),
+            _ => Err(Error::UnexpectedEOF),
         }
     }
 
     /// Read bytes and compare them to the provided tag
-    pub(crate) fn read_tag(&mut self, tag: &[u8]) -> Result<(), io::Error> {
+    pub(crate) fn read_tag(&mut self, tag: &[u8]) -> Result<(), Error> {
         if self.read_exact(tag.len())? == tag {
             Ok(())
         } else {
-            Err(io::Error::from(ErrorKind::InvalidData))
+            Err(Error::InvalidData)
         }
     }
 
     /// Read bytes if the remaining data is prefixed by the provided tag
-    pub(crate) fn read_optional_tag(&mut self, tag: &[u8]) -> Result<bool, io::Error> {
+    pub(crate) fn read_optional_tag(&mut self, tag: &[u8]) -> Result<bool, Error> {
         if self.remaining.starts_with(tag) {
             self.read_exact(tag.len())?;
             Ok(true)
@@ -280,7 +279,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Read bytes as long as the provided predicate is true
-    pub(crate) fn read_while<F: Fn(&u8) -> bool>(&mut self, f: F) -> Result<&'a [u8], io::Error> {
+    pub(crate) fn read_while<F: Fn(&u8) -> bool>(&mut self, f: F) -> Result<&'a [u8], Error> {
         match self.remaining.iter().position(|x| !f(x)) {
             None => self.read_exact(self.remaining.len()),
             Some(position) => self.read_exact(position),
@@ -294,7 +293,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Read bytes until the provided predicate is true
-    pub(crate) fn read_until<F: Fn(&u8) -> bool>(&mut self, f: F) -> Result<&'a [u8], io::Error> {
+    pub(crate) fn read_until<F: Fn(&u8) -> bool>(&mut self, f: F) -> Result<&'a [u8], Error> {
         match self.remaining.iter().position(f) {
             None => self.read_exact(self.remaining.len()),
             Some(position) => self.read_exact(position),

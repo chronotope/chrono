@@ -9,15 +9,15 @@ use self::wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
 fn now() {
-    let utc: DateTime<Utc> = Utc::now();
-    let local: DateTime<Local> = Local::now();
+    let utc: DateTime<Utc> = Utc::now()?;
+    let local: DateTime<Local> = Local::now()?;
 
     // Ensure time set by the test script is correct
     let now = env!("NOW");
-    let actual = Utc.datetime_from_str(&now, "%s").unwrap();
+    let actual = Utc.datetime_from_str(&now, "%s")?;
     let diff = utc - actual;
     assert!(
-        diff < chrono::Duration::minutes(5),
+        diff < chrono::TimeDelta::minutes(5),
         "expected {} - {} == {} < 5m (env var: {})",
         utc,
         actual,
@@ -30,11 +30,11 @@ fn now() {
 
     // Ensure offset retrieved when getting local time is correct
     let expected_offset = match tz {
-        "ACST-9:30" => FixedOffset::east_opt(19 * 30 * 60).unwrap(),
-        "Asia/Katmandu" => FixedOffset::east_opt(23 * 15 * 60).unwrap(), // No DST thankfully
-        "EDT" | "EST4" | "-0400" => FixedOffset::east_opt(-4 * 60 * 60).unwrap(),
-        "EST" | "-0500" => FixedOffset::east_opt(-5 * 60 * 60).unwrap(),
-        "UTC0" | "+0000" => FixedOffset::east_opt(0).unwrap(),
+        "ACST-9:30" => FixedOffset::east(19 * 30 * 60).unwrap(),
+        "Asia/Katmandu" => FixedOffset::east(23 * 15 * 60).unwrap(), // No DST thankfully
+        "EDT" | "EST4" | "-0400" => FixedOffset::east(-4 * 60 * 60).unwrap(),
+        "EST" | "-0500" => FixedOffset::east(-5 * 60 * 60).unwrap(),
+        "UTC0" | "+0000" => FixedOffset::east(0).unwrap(),
         tz => panic!("unexpected TZ {}", tz),
     };
     assert_eq!(
@@ -50,19 +50,16 @@ fn now() {
 fn from_is_exact() {
     let now = js_sys::Date::new_0();
 
-    let dt = DateTime::<Utc>::from(now.clone());
+    let dt = DateTime::<Utc>::try_from(now.clone()).unwrap();
 
     assert_eq!(now.get_time() as i64, dt.timestamp_millis_opt().unwrap());
 }
 
 #[wasm_bindgen_test]
 fn local_from_local_datetime() {
-    let now = Local::now();
+    let now = Local::now()?;
     let ndt = now.naive_local();
-    let res = match Local.from_local_datetime(&ndt).single() {
-        Some(v) => v,
-        None => panic! {"Required for test!"},
-    };
+    let res = Local.from_local_datetime(&ndt)?.single()?;
     assert_eq!(now, res);
 }
 

@@ -11,7 +11,8 @@ use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
-use core::fmt::Write;
+#[cfg(feature = "clock")]
+use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
@@ -26,15 +27,13 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-#[allow(deprecated)]
-use crate::Date;
-use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
+use crate::offset::{FixedOffset, FixedTimeZone, Offset, TimeZone, Utc};
+use crate::{Date, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 /// documented at re-export site
 #[cfg(feature = "serde")]
@@ -102,8 +101,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
     ///
-    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
-    /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
+    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0)?, Utc);
+    /// assert_eq!(Utc.timestamp(61, 0)?, dt);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
@@ -122,19 +122,20 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::naive::NaiveDate;
     /// use chrono::offset::{Utc, FixedOffset};
     ///
-    /// let naivedatetime_utc = NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(2, 0, 0).unwrap();
+    /// let naivedatetime_utc = NaiveDate::from_ymd(2000, 1, 12)?.and_hms(2, 0, 0)?;
     /// let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
     ///
-    /// let timezone_east = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    /// let naivedatetime_east = NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(10, 0, 0).unwrap();
+    /// let timezone_east = FixedOffset::east_opt(8 * 60 * 60).unwrap()?;
+    /// let naivedatetime_east = NaiveDate::from_ymd(2000, 1, 12)?.unwrap().and_hms(10, 0, 0).unwrap()?;
     /// let datetime_east = DateTime::<FixedOffset>::from_local(naivedatetime_east, timezone_east);
     ///
-    /// let timezone_west = FixedOffset::west_opt(7 * 60 * 60).unwrap();
-    /// let naivedatetime_west = NaiveDate::from_ymd_opt(2000, 1, 11).unwrap().and_hms_opt(19, 0, 0).unwrap();
+    /// let timezone_west = FixedOffset::west(7 * 60 * 60)?;
+    /// let naivedatetime_west = NaiveDate::from_ymd(2000, 1, 11)?.and_hms(19, 0, 0)?;
     /// let datetime_west = DateTime::<FixedOffset>::from_local(naivedatetime_west, timezone_west);
-
-    /// assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
-    /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
+    ///
+    /// assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east)?);
+    /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west)?);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
@@ -148,6 +149,18 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Unless you are immediately planning on turning this into a `DateTime`
     /// with the same Timezone you should use the
     /// [`date_naive`](DateTime::date_naive) method.
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// let date: Date<Utc> = Utc.ymd(2020, 1, 1)?.single()?;
+    /// let dt: DateTime<Utc> = date.and_hms(0, 0, 0)?;
+    ///
+    /// assert_eq!(dt.date(), date);
+    ///
+    /// assert_eq!(dt.date().and_hms(1, 1, 1)?, date.and_hms(1, 1, 1)?);
+    /// # Ok::<_, chrono::Error>(())
+    /// ```
     #[inline]
     #[deprecated(since = "0.4.23", note = "Use `date_naive()` instead")]
     #[allow(deprecated)]
@@ -163,14 +176,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// let date: DateTime<Utc> = Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
-    /// let other: DateTime<FixedOffset> = FixedOffset::east_opt(23).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
+    /// let date: DateTime<Utc> = Utc.ymd(2020, 1, 1)?.and_hms(0, 0, 0)?;
+    /// let other: DateTime<FixedOffset> = FixedOffset::east(23)?.ymd(2020, 1, 1)?.and_hms(0, 0, 0)?;
     /// assert_eq!(date.date_naive(), other.date_naive());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn date_naive(&self) -> NaiveDate {
-        let local = self.naive_local();
-        NaiveDate::from_ymd_opt(local.year(), local.month(), local.day()).unwrap()
+        self.naive_local().date()
     }
 
     /// Retrieves a time component.
@@ -199,11 +212,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{Utc, TimeZone, NaiveDate};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = Utc.ymd(1970, 1, 1)?.and_hms_milli(0, 0, 1, 444)?;
     /// assert_eq!(dt.timestamp_millis(), 1_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_milli_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = Utc.ymd(2001, 9, 9)?.and_hms_milli(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
@@ -222,11 +236,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{Utc, TimeZone, NaiveDate};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_micro_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = Utc.ymd(1970, 1, 1)?.and_hms_micro(0, 0, 1, 444)?;
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_micro_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = Utc.ymd(2001, 9, 9)?.and_hms_micro(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_micros(&self) -> i64 {
@@ -245,11 +260,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{Utc, TimeZone, NaiveDate};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = Utc.ymd(1970, 1, 1)?.and_hms_nano(0, 0, 1, 444)?;
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = Utc.ymd(2001, 9, 9)?.and_hms_nano(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_nanos(&self) -> i64 {
@@ -301,74 +317,70 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Changes the associated time zone.
     /// The returned `DateTime` references the same instant of time from the perspective of the provided time zone.
     #[inline]
-    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
+    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Result<DateTime<Tz2>, Error> {
         tz.from_utc_datetime(&self.datetime)
+    }
+
+    /// Changes the associated time zone.
+    /// The returned `DateTime` references the same instant of time from the perspective of the provided time zone.
+    #[inline]
+    pub(crate) fn with_fixed_timezone<Tz2: FixedTimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
+        tz.from_utc_datetime_fixed(&self.datetime)
     }
 
     /// Adds given `Duration` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
-        Some(tz.from_utc_datetime(&datetime))
+        tz.from_utc_datetime(&datetime)
     }
 
     /// Adds given `Months` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow, or if the
+    /// Returns `Err(Error)` when it will result in overflow, or if the
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_add_months`] for more details on behavior
-    pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
-            .checked_add_months(rhs)?
-            .and_local_timezone(Tz::from_offset(&self.offset))
-            .single()
+    pub fn checked_add_months(self, rhs: Months) -> Result<Self, Error> {
+        let datetime = self.naive_local().checked_add_months(rhs)?;
+        datetime.and_local_timezone(Tz::from_offset(&self.offset))
     }
 
     /// Subtracts given `Duration` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
-        Some(tz.from_utc_datetime(&datetime))
+        tz.from_utc_datetime(&datetime)
     }
 
     /// Subtracts given `Months` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow, or if the
+    /// Returns `Err(Error)` when it will result in overflow, or if the
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_sub_months`] for more details on behavior
-    pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
-            .checked_sub_months(rhs)?
-            .and_local_timezone(Tz::from_offset(&self.offset))
-            .single()
+    pub fn checked_sub_months(self, rhs: Months) -> Result<Self, Error> {
+        self.naive_local().checked_sub_months(rhs)?.and_local_timezone(Tz::from_offset(&self.offset))
     }
 
     /// Add a duration in [`Days`] to the date part of the `DateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_add_days(days)?
-            .and_local_timezone(TimeZone::from_offset(&self.offset))
-            .single()
+    /// Returns `Err(Error)` if the resulting date would be out of range.
+    pub fn checked_add_days(self, days: Days) -> Result<Self, Error> {
+        self.datetime.checked_add_days(days)?.and_local_timezone(TimeZone::from_offset(&self.offset))
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_sub_days(days)?
-            .and_local_timezone(TimeZone::from_offset(&self.offset))
-            .single()
+    /// Returns `Err(Error)` if the resulting date would be out of range.
+    pub fn checked_sub_days(self, days: Days) -> Result<Self, Error> {
+        self.datetime.checked_sub_days(days)?.and_local_timezone(TimeZone::from_offset(&self.offset))
     }
 
     /// Subtracts another `DateTime` from the current date and time.
@@ -415,7 +427,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
 impl Default for DateTime<Utc> {
     fn default() -> Self {
-        Utc.from_utc_datetime(&NaiveDateTime::default())
+        Utc.from_utc_datetime_fixed(&NaiveDateTime::default())
     }
 }
 
@@ -423,13 +435,14 @@ impl Default for DateTime<Utc> {
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Default for DateTime<Local> {
     fn default() -> Self {
-        Local.from_utc_datetime(&NaiveDateTime::default())
+        // TODO: Cannot avoid fallible operation, so this probably has to be removed.
+        Local.from_utc_datetime(&NaiveDateTime::default()).unwrap()
     }
 }
 
 impl Default for DateTime<FixedOffset> {
     fn default() -> Self {
-        FixedOffset::west_opt(0).unwrap().from_utc_datetime(&NaiveDateTime::default())
+        FixedOffset::UTC.from_utc_datetime_fixed(&NaiveDateTime::default())
     }
 }
 
@@ -440,19 +453,21 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
     /// Conversion is done via [`DateTime::with_timezone`]. Note that the converted value returned by
     /// this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&FixedOffset::east_opt(0).unwrap())
+        src.with_fixed_timezone(&FixedOffset::UTC)
     }
 }
 
 /// Convert a `DateTime<Utc>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
-impl From<DateTime<Utc>> for DateTime<Local> {
+impl TryFrom<DateTime<Utc>> for DateTime<Local> {
+    type Error = Error;
+
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in timezones.
-    fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&Local)
+    fn try_from(value: DateTime<Utc>) -> Result<Self, Self::Error> {
+        value.with_timezone(&Local)
     }
 }
 
@@ -463,20 +478,22 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the timezone
     /// difference.
     fn from(src: DateTime<FixedOffset>) -> Self {
-        src.with_timezone(&Utc)
+        src.with_fixed_timezone(&Utc)
     }
 }
 
 /// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
-impl From<DateTime<FixedOffset>> for DateTime<Local> {
+impl TryFrom<DateTime<FixedOffset>> for DateTime<Local> {
+    type Error = Error;
+
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
     /// Conversion is performed via [`DateTime::with_timezone`]. Returns the equivalent value in local
     /// time.
-    fn from(src: DateTime<FixedOffset>) -> Self {
-        src.with_timezone(&Local)
+    fn try_from(value: DateTime<FixedOffset>) -> Result<Self, Self::Error> {
+        value.with_timezone(&Local)
     }
 }
 
@@ -489,7 +506,7 @@ impl From<DateTime<Local>> for DateTime<Utc> {
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in
     /// timezones.
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&Utc)
+        src.with_fixed_timezone(&Utc)
     }
 }
 
@@ -502,16 +519,17 @@ impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Conversion is performed via [`DateTime::with_timezone`]. Note that the converted value returned
     /// by this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&FixedOffset::east_opt(0).unwrap())
+        src.with_fixed_timezone(&FixedOffset::UTC)
     }
 }
 
 /// Maps the local datetime to other datetime with given conversion function.
-fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz>>
+fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Result<DateTime<Tz>, Error>
 where
-    F: FnMut(NaiveDateTime) -> Option<NaiveDateTime>,
+    F: FnMut(NaiveDateTime) -> Result<NaiveDateTime, Error>,
 {
-    f(dt.naive_local()).and_then(|datetime| dt.timezone().from_local_datetime(&datetime).single())
+    let datetime = f(dt.naive_local())?;
+    dt.timezone().from_local_datetime(&datetime)?.single()
 }
 
 impl DateTime<FixedOffset> {
@@ -523,19 +541,17 @@ impl DateTime<FixedOffset> {
     /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
     /// and email headers.
     ///
-    /// The RFC 2822 standard allows arbitrary intermixed whitespace.
-    /// See [RFC 2822 Appendix A.5]
-    ///
     /// ```
     /// # use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
     /// assert_eq!(
-    ///     DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
-    ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    ///     DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT")?,
+    ///     FixedOffset::east(0)?.ymd(2015, 2, 18)?.and_hms(23, 16, 9)?
     /// );
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
     ///
     /// [RFC 2822 Appendix A.5]: https://www.rfc-editor.org/rfc/rfc2822#appendix-A.5
-    pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+    pub fn parse_from_rfc2822(s: &str) -> Result<DateTime<FixedOffset>, Error> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, ITEMS.iter())?;
@@ -555,7 +571,7 @@ impl DateTime<FixedOffset> {
     /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
     /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
     /// values (or the other way around).
-    pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
+    pub fn parse_from_rfc3339(s: &str) -> Result<DateTime<FixedOffset>, Error> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, ITEMS.iter())?;
@@ -572,16 +588,30 @@ impl DateTime<FixedOffset> {
     /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
     /// sequences.
     ///
+    /// See also [`TimeZone::datetime_from_str`] which gives a local
+    /// [`DateTime`] on specific time zone.
+    ///
+    /// Note that this method *requires a timezone* in the string. See
+    /// [`NaiveDateTime::parse_from_str`]
+    /// for a version that does not require a timezone in the to-be-parsed str.
+    ///
+    /// See also [`TimeZone::datetime_from_str`] which gives a local
+    /// [`DateTime`] on specific time zone.
+    ///
+    /// Note that this method *requires a timezone* in the string. See
+    /// [`NaiveDateTime::parse_from_str`]
+    /// for a version that does not require a timezone in the to-be-parsed str.
+    ///
     /// # Example
     ///
     /// ```rust
     /// use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
     ///
-    /// let dt = DateTime::<FixedOffset>::parse_from_str(
-    ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(FixedOffset::east_opt(0).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(12, 9, 14, 274).unwrap()).unwrap()));
+    /// let dt = DateTime::<FixedOffset>::parse_from_str("1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z")?;
+    /// assert_eq!(dt, FixedOffset::east(0)?.ymd(1983, 4, 13)?.and_hms_milli(12, 9, 14, 274)?);
+    /// # Ok::<_, Box<dyn std::error::Error>>(())
     /// ```
-    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
+    pub fn parse_from_str(s: &str, fmt: &str) -> Result<DateTime<FixedOffset>, Error> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime()
@@ -597,7 +627,7 @@ impl DateTime<Utc> {
     ///
     /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
     /// and email headers.
-    pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<Utc>> {
+    pub fn parse_from_rfc2822(s: &str) -> Result<DateTime<Utc>, Error> {
         DateTime::<FixedOffset>::parse_from_rfc2822(s).map(|result| result.into())
     }
 
@@ -615,7 +645,7 @@ impl DateTime<Utc> {
     /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
     /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
     /// values (or the other way around).
-    pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<Utc>> {
+    pub fn parse_from_rfc3339(s: &str) -> Result<DateTime<Utc>, Error> {
         DateTime::<FixedOffset>::parse_from_rfc3339(s).map(|result| result.into())
     }
 
@@ -639,7 +669,7 @@ impl DateTime<Utc> {
     ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
     /// assert_eq!(dt, Ok(Utc.ymd(1983, 4, 13).and_hms_milli(11, 9, 14, 274)));
     /// ```
-    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<Utc>> {
+    pub fn parse_from_str(s: &str, fmt: &str) -> Result<DateTime<Utc>, Error> {
         DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())
     }
 }
@@ -678,8 +708,8 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// # use chrono::{DateTime, FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(18, 30, 9, 453_829).unwrap().and_local_timezone(Utc).unwrap();
+    /// # use chrono::{DateTime, FixedOffset, SecondsFormat, TimeZone, Utc};
+    /// let dt = Utc.ymd(2018, 1, 26)?.and_hms_micro(18, 30, 9, 453_829)?;
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
     ///            "2018-01-26T18:30:09.453+00:00");
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true),
@@ -687,10 +717,11 @@ where
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T18:30:09Z");
     ///
-    /// let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(10, 30, 9, 453_829).unwrap()).unwrap();
+    /// let pst = FixedOffset::east(8 * 60 * 60)?;
+    /// let dt = pst.ymd(2018, 1, 26)?.and_hms_micro(10, 30, 9, 453_829)?;
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -757,9 +788,10 @@ where
     /// ```rust
     /// use chrono::prelude::*;
     ///
-    /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
+    /// let date_time: DateTime<Utc> = Utc.ymd(2017, 04, 02)?.and_hms(12, 50, 32)?;
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -847,37 +879,37 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
+    fn with_year(&self, year: i32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_year(year))
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Option<DateTime<Tz>> {
+    fn with_month(&self, month: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_month(month))
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<DateTime<Tz>> {
+    fn with_month0(&self, month0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_month0(month0))
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Option<DateTime<Tz>> {
+    fn with_day(&self, day: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_day(day))
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<DateTime<Tz>> {
+    fn with_day0(&self, day0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_day0(day0))
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Tz>> {
+    fn with_ordinal(&self, ordinal: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_ordinal(ordinal))
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
 }
@@ -901,22 +933,22 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     }
 
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
+    fn with_hour(&self, hour: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_hour(hour))
     }
 
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<DateTime<Tz>> {
+    fn with_minute(&self, min: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_minute(min))
     }
 
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
+    fn with_second(&self, sec: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_second(sec))
     }
 
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
+    fn with_nanosecond(&self, nano: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
 }
@@ -941,13 +973,14 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// let earlier = Utc.with_ymd_and_hms(2015, 5, 15, 2, 0, 0).unwrap().with_timezone(&FixedOffset::west_opt(1 * 3600).unwrap());
-    /// let later   = Utc.with_ymd_and_hms(2015, 5, 15, 3, 0, 0).unwrap().with_timezone(&FixedOffset::west_opt(5 * 3600).unwrap());
+    /// let earlier = Utc.ymd(2015, 5, 15)?.and_hms(2, 0, 0)?.with_timezone(&FixedOffset::west(1 * 3600)?)?;
+    /// let later = Utc.ymd(2015, 5, 15)?.and_hms(3, 0, 0)?.with_timezone(&FixedOffset::west(5 * 3600)?)?;
     ///
     /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
     ///
     /// assert!(later > earlier);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     fn partial_cmp(&self, other: &DateTime<Tz2>) -> Option<Ordering> {
         self.datetime.partial_cmp(&other.datetime)
@@ -981,7 +1014,7 @@ impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
         let datetime =
             self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
         let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime);
+        *self = tz.from_utc_datetime(&datetime).unwrap();
     }
 }
 
@@ -1008,7 +1041,7 @@ impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
         let datetime =
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime)
+        *self = tz.from_utc_datetime(&datetime).unwrap();
     }
 }
 
@@ -1058,7 +1091,7 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.naive_local().fmt(f)?;
-        f.write_char(' ')?;
+        f.write_str(" ")?;
         self.offset.fmt(f)
     }
 }
@@ -1075,10 +1108,11 @@ where
 /// "2012-  12-12T12:  12:12Z".parse::<DateTime<Utc>>();
 /// ```
 impl str::FromStr for DateTime<Utc> {
-    type Err = ParseError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> ParseResult<DateTime<Utc>> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Utc))
+    fn from_str(s: &str) -> Result<DateTime<Utc>, Error> {
+        let dt = s.parse::<DateTime<FixedOffset>>()?;
+        dt.with_timezone(&Utc).map_err(|_| Error::ParsingOutOfRange)
     }
 }
 
@@ -1096,10 +1130,11 @@ impl str::FromStr for DateTime<Utc> {
 #[cfg(feature = "clock")]
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl str::FromStr for DateTime<Local> {
-    type Err = ParseError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> ParseResult<DateTime<Local>> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Local))
+    fn from_str(s: &str) -> Result<DateTime<Local>, Error> {
+        let dt = s.parse::<DateTime<FixedOffset>>()?;
+        dt.with_timezone(&Local).map_err(|_| Error::ParsingOutOfRange)
     }
 }
 
@@ -1120,7 +1155,9 @@ impl From<SystemTime> for DateTime<Utc> {
                 }
             }
         };
-        Utc.timestamp_opt(sec, nsec).unwrap()
+
+        // TODO: remove this conversion since it can panic or can we make it not panic?
+        Utc.timestamp(sec, nsec).unwrap()
     }
 }
 
@@ -1128,7 +1165,8 @@ impl From<SystemTime> for DateTime<Utc> {
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
-        DateTime::<Utc>::from(t).with_timezone(&Local)
+        // TODO: can we get rid of this panic?
+        DateTime::<Utc>::from(t).with_timezone(&Local).unwrap()
     }
 }
 
@@ -1162,9 +1200,11 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))
 )]
-impl From<js_sys::Date> for DateTime<Utc> {
-    fn from(date: js_sys::Date) -> DateTime<Utc> {
-        DateTime::<Utc>::from(&date)
+impl std::convert::TryFrom<js_sys::Date> for DateTime<Utc> {
+    type Error = Error;
+
+    fn try_from(date: js_sys::Date) -> Result<Self, Self::Error> {
+        DateTime::<Utc>::try_from(&date)
     }
 }
 
@@ -1181,9 +1221,11 @@ impl From<js_sys::Date> for DateTime<Utc> {
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))
 )]
-impl From<&js_sys::Date> for DateTime<Utc> {
-    fn from(date: &js_sys::Date) -> DateTime<Utc> {
-        Utc.timestamp_millis_opt(date.get_time() as i64).unwrap()
+impl std::convert::TryFrom<&js_sys::Date> for DateTime<Utc> {
+    type Error = Error;
+
+    fn try_from(date: &js_sys::Date) -> Result<Self, Self::Error> {
+        Utc.timestamp_millis(date.get_time() as i64)
     }
 }
 
@@ -1227,27 +1269,29 @@ where
 
 #[test]
 fn test_add_sub_months() {
-    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt + Months::new(15), Utc.with_ymd_and_hms(2019, 12, 5, 23, 58, 0).unwrap());
+    let utc_dt = Utc.ymd(2018, 9, 5).unwrap().and_hms(23, 58, 0).unwrap();
+    assert_eq!(utc_dt + Months::new(15), Utc.ymd(2019, 12, 5).unwrap().and_hms(23, 58, 0).unwrap());
 
-    let utc_dt = Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt + Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
-    assert_eq!(utc_dt + Months::new(2), Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap());
+    let utc_dt = Utc.ymd(2020, 1, 31).unwrap().and_hms(23, 58, 0).unwrap();
+    assert_eq!(utc_dt + Months::new(1), Utc.ymd(2020, 2, 29).unwrap().and_hms(23, 58, 0).unwrap());
+    assert_eq!(utc_dt + Months::new(2), Utc.ymd(2020, 3, 31).unwrap().and_hms(23, 58, 0).unwrap());
 
-    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt - Months::new(15), Utc.with_ymd_and_hms(2017, 6, 5, 23, 58, 0).unwrap());
+    let utc_dt = Utc.ymd(2018, 9, 5).unwrap().and_hms(23, 58, 0).unwrap();
+    assert_eq!(utc_dt - Months::new(15), Utc.ymd(2017, 6, 5).unwrap().and_hms(23, 58, 0).unwrap());
 
-    let utc_dt = Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt - Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
-    assert_eq!(utc_dt - Months::new(2), Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap());
+    let utc_dt = Utc.ymd(2020, 3, 31).unwrap().and_hms(23, 58, 0).unwrap();
+    assert_eq!(utc_dt - Months::new(1), Utc.ymd(2020, 2, 29).unwrap().and_hms(23, 58, 0).unwrap());
+    assert_eq!(utc_dt - Months::new(2), Utc.ymd(2020, 1, 31).unwrap().and_hms(23, 58, 0).unwrap());
 }
 
 #[test]
 fn test_auto_conversion() {
-    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
-    let cdt_dt = FixedOffset::west_opt(5 * 60 * 60)
+    let utc_dt = Utc.ymd(2018, 9, 5).unwrap().and_hms(23, 58, 0).unwrap();
+    let cdt_dt = FixedOffset::west(5 * 60 * 60)
         .unwrap()
-        .with_ymd_and_hms(2018, 9, 5, 18, 58, 0)
+        .ymd(2018, 9, 5)
+        .unwrap()
+        .and_hms(18, 58, 0)
         .unwrap();
     let utc_dt2: DateTime<Utc> = cdt_dt.into();
     assert_eq!(utc_dt, utc_dt2);
@@ -1261,20 +1305,20 @@ where
     E: ::core::fmt::Debug,
 {
     assert_eq!(
-        to_string_utc(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()).ok(),
+        to_string_utc(&Utc.ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()).ok(),
         Some(r#""2014-07-24T12:34:06Z""#.into())
     );
 
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east_opt(3660).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3660).unwrap().ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()
         )
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:01""#.into())
     );
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east_opt(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3650).unwrap().ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()
         )
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:00:50""#.into())
@@ -1299,25 +1343,27 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
 
     assert_eq!(
         norm(&utc_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
-        norm(&Some(Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
+        norm(&Some(Utc.ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()))
     );
     assert_eq!(
         norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
-        norm(&Some(Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
+        norm(&Some(Utc.ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()))
     );
 
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
         norm(&Some(
-            FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            FixedOffset::east(0).unwrap().ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()
         ))
     );
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
         norm(&Some(
-            FixedOffset::east_opt(60 * 60 + 23 * 60)
+            FixedOffset::east(60 * 60 + 23 * 60)
                 .unwrap()
-                .with_ymd_and_hms(2014, 7, 24, 13, 57, 6)
+                .ymd(2014, 7, 24)
+                .unwrap()
+                .and_hms(13, 57, 6)
                 .unwrap()
         ))
     );
@@ -1326,11 +1372,11 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     // the conversion didn't change the instant itself
     assert_eq!(
         local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local shouuld parse"),
-        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+        Utc.ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()
     );
     assert_eq!(
         local_from_str(r#""2014-07-24T13:57:06+01:23""#).expect("local should parse with offset"),
-        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+        Utc.ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()
     );
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());

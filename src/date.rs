@@ -20,8 +20,7 @@ use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
 use crate::time_delta::TimeDelta;
-use crate::DateTime;
-use crate::{Datelike, Weekday};
+use crate::{DateTime, Datelike, Error, Weekday};
 
 /// ISO 8601 calendar date with time zone.
 ///
@@ -84,145 +83,108 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
     ///
-    /// Panics on invalid datetime.
+    /// Returns `Err(Error)` on invalid datetime.
     #[inline]
-    pub fn and_time(&self, time: NaiveTime) -> Option<DateTime<Tz>> {
+    pub fn and_time(&self, time: NaiveTime) -> Result<DateTime<Tz>, Error> {
         let localdt = self.naive_local().and_time(time);
-        self.timezone().from_local_datetime(&localdt).single()
+        self.timezone().from_local_datetime(&localdt)?.single()
     }
 
     /// Makes a new `DateTime` from the current date, hour, minute and second.
     /// The offset in the current date is preserved.
     ///
-    /// Panics on invalid hour, minute and/or second.
-    #[deprecated(since = "0.4.23", note = "Use and_hms_opt() instead")]
+    /// Returns `Err(Error)` on invalid hour, minute and/or second.
     #[inline]
-    pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTime<Tz> {
-        self.and_hms_opt(hour, min, sec).expect("invalid time")
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute and second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Returns `None` on invalid hour, minute and/or second.
-    #[inline]
-    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTime<Tz>> {
-        NaiveTime::from_hms_opt(hour, min, sec).and_then(|time| self.and_time(time))
+    pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> Result<DateTime<Tz>, Error> {
+        let time = NaiveTime::from_hms(hour, min, sec)?;
+        self.and_time(time)
     }
 
     /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
-    /// Panics on invalid hour, minute, second and/or millisecond.
-    #[deprecated(since = "0.4.23", note = "Use and_hms_milli_opt() instead")]
+    /// Returns `Err(Error)` on invalid hour, minute, second and/or millisecond.
     #[inline]
-    pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTime<Tz> {
-        self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
-    /// The millisecond part can exceed 1,000 in order to represent the leap second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Returns `None` on invalid hour, minute, second and/or millisecond.
-    #[inline]
-    pub fn and_hms_milli_opt(
+    pub fn and_hms_milli(
         &self,
         hour: u32,
         min: u32,
         sec: u32,
         milli: u32,
-    ) -> Option<DateTime<Tz>> {
-        NaiveTime::from_hms_milli_opt(hour, min, sec, milli).and_then(|time| self.and_time(time))
+    ) -> Result<DateTime<Tz>, Error> {
+        let time = NaiveTime::from_hms_milli(hour, min, sec, milli)?;
+        self.and_time(time)
     }
 
     /// Makes a new `DateTime` from the current date, hour, minute, second and microsecond.
     /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
-    /// Panics on invalid hour, minute, second and/or microsecond.
-    #[deprecated(since = "0.4.23", note = "Use and_hms_micro_opt() instead")]
+    /// Returns `Err(Error)` on invalid hour, minute, second and/or microsecond.
     #[inline]
-    pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTime<Tz> {
-        self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute, second and microsecond.
-    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Returns `None` on invalid hour, minute, second and/or microsecond.
-    #[inline]
-    pub fn and_hms_micro_opt(
+    pub fn and_hms_micro(
         &self,
         hour: u32,
         min: u32,
         sec: u32,
         micro: u32,
-    ) -> Option<DateTime<Tz>> {
-        NaiveTime::from_hms_micro_opt(hour, min, sec, micro).and_then(|time| self.and_time(time))
+    ) -> Result<DateTime<Tz>, Error> {
+        let time = NaiveTime::from_hms_micro(hour, min, sec, micro)?;
+        self.and_time(time)
     }
 
     /// Makes a new `DateTime` from the current date, hour, minute, second and nanosecond.
     /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
     ///
-    /// Panics on invalid hour, minute, second and/or nanosecond.
-    #[deprecated(since = "0.4.23", note = "Use and_hms_nano_opt() instead")]
+    /// Returns `Err(Error)` on invalid hour, minute, second and/or nanosecond.
     #[inline]
-    pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTime<Tz> {
-        self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute, second and nanosecond.
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
-    #[inline]
-    pub fn and_hms_nano_opt(
+    pub fn and_hms_nano(
         &self,
         hour: u32,
         min: u32,
         sec: u32,
         nano: u32,
-    ) -> Option<DateTime<Tz>> {
-        NaiveTime::from_hms_nano_opt(hour, min, sec, nano).and_then(|time| self.and_time(time))
+    ) -> Result<DateTime<Tz>, Error> {
+        let time = NaiveTime::from_hms_nano(hour, min, sec, nano)?;
+        self.and_time(time)
     }
 
     /// Makes a new `Date` for the next date.
     ///
-    /// Panics when `self` is the last representable date.
-    #[deprecated(since = "0.4.23", note = "Use succ_opt() instead")]
-    #[inline]
-    pub fn succ(&self) -> Date<Tz> {
-        self.succ_opt().expect("out of bound")
-    }
-
-    /// Makes a new `Date` for the next date.
+    /// Returns `Err(Error)` when `self` is the last representable date.
     ///
-    /// Returns `None` when `self` is the last representable date.
-    #[inline]
-    pub fn succ_opt(&self) -> Option<Date<Tz>> {
-        self.date.succ_opt().map(|date| Date::from_utc(date, self.offset.clone()))
-    }
-
-    /// Makes a new `Date` for the prior date.
+    /// ```
+    /// use chrono::prelude::*;
     ///
-    /// Panics when `self` is the first representable date.
-    #[deprecated(since = "0.4.23", note = "Use pred_opt() instead")]
+    /// assert_eq!(Utc.ymd(2022, 09, 12)?.single()?.succ()?, Utc.ymd(2022, 09, 13)?.single()?);
+    ///
+    /// assert!(Date::<Utc>::MAX_UTC.succ().is_err());
+    /// Ok::<_, Error>(())
+    /// ```
     #[inline]
-    pub fn pred(&self) -> Date<Tz> {
-        self.pred_opt().expect("out of bound")
+    pub fn succ(&self) -> Result<Date<Tz>, Error> {
+        let date = self.date.succ()?;
+        Ok(Date::from_utc(date, self.offset.clone()))
     }
 
     /// Makes a new `Date` for the prior date.
     ///
-    /// Returns `None` when `self` is the first representable date.
+    /// Returns `Err(Error)` when `self` is the first representable date.
+    ///
+    /// ```
+    /// use chrono::prelude::*;
+    ///
+    /// assert_eq!(Utc.ymd(2022, 09, 12)?.single()?.succ()?, Utc.ymd(2022, 09, 13)?.single()?);
+    ///
+    /// assert!(Date::<Utc>::MIN_UTC.pred().is_err());
+    /// Ok::<_, Error>(())
+    /// ```
     #[inline]
-    pub fn pred_opt(&self) -> Option<Date<Tz>> {
-        self.date.pred_opt().map(|date| Date::from_utc(date, self.offset.clone()))
+    pub fn pred(&self) -> Result<Date<Tz>, Error> {
+        let date = self.date.pred()?;
+        Ok(Date::from_utc(date, self.offset.clone()))
     }
 
     /// Retrieves an associated offset from UTC.
@@ -240,26 +202,26 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Changes the associated time zone.
     /// This does not change the actual `Date` (but will change the string representation).
     #[inline]
-    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Date<Tz2> {
+    pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Result<Date<Tz2>, Error> {
         tz.from_utc_date(&self.date)
     }
 
     /// Adds given `Duration` to the current date.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<Date<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
         let date = self.date.checked_add_signed(rhs)?;
-        Some(Date { date, offset: self.offset })
+        Ok(Self { date, offset: self.offset })
     }
 
     /// Subtracts given `Duration` from the current date.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<Date<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
         let date = self.date.checked_sub_signed(rhs)?;
-        Some(Date { date, offset: self.offset })
+        Ok(Self { date, offset: self.offset })
     }
 
     /// Subtracts another `Date` from the current date.
@@ -290,7 +252,15 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Returns the number of whole years from the given `base` until `self`.
     pub fn years_since(&self, base: Self) -> Option<u32> {
-        self.date.years_since(base.date)
+        let mut years = self.year() - base.year();
+        if (self.month(), self.day()) < (base.month(), base.day()) {
+            years -= 1;
+        }
+
+        match years >= 0 {
+            true => Some(years as u32),
+            false => None,
+        }
     }
 
     /// The minimum possible `Date`.
@@ -300,11 +270,12 @@ impl<Tz: TimeZone> Date<Tz> {
 }
 
 /// Maps the local date to other date with given conversion function.
-fn map_local<Tz: TimeZone, F>(d: &Date<Tz>, mut f: F) -> Option<Date<Tz>>
+fn map_local<Tz: TimeZone, F>(d: &Date<Tz>, mut f: F) -> Result<Date<Tz>, Error>
 where
-    F: FnMut(NaiveDate) -> Option<NaiveDate>,
+    F: FnMut(NaiveDate) -> Result<NaiveDate, Error>,
 {
-    f(d.naive_local()).and_then(|date| d.timezone().from_local_date(&date).single())
+    let date = f(d.naive_local())?;
+    d.timezone().from_local_date(&date)?.single()
 }
 
 impl<Tz: TimeZone> Date<Tz>
@@ -326,6 +297,16 @@ where
     /// Formats the date with the specified format string.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
+    ///
+    /// # Example
+    /// ```rust
+    /// use chrono::prelude::*;
+    ///
+    /// let date_time: Date<Utc> = Utc.ymd(2017, 04, 02)?.single()?;
+    /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
+    /// assert_eq!(formatted, "02/04/2017");
+    /// Ok::<_, chrono::Error>(())
+    /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
@@ -409,37 +390,37 @@ impl<Tz: TimeZone> Datelike for Date<Tz> {
     }
 
     #[inline]
-    fn with_year(&self, year: i32) -> Option<Date<Tz>> {
+    fn with_year(&self, year: i32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_year(year))
     }
 
     #[inline]
-    fn with_month(&self, month: u32) -> Option<Date<Tz>> {
+    fn with_month(&self, month: u32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_month(month))
     }
 
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<Date<Tz>> {
+    fn with_month0(&self, month0: u32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_month0(month0))
     }
 
     #[inline]
-    fn with_day(&self, day: u32) -> Option<Date<Tz>> {
+    fn with_day(&self, day: u32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_day(day))
     }
 
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<Date<Tz>> {
+    fn with_day0(&self, day0: u32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_day0(day0))
     }
 
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<Date<Tz>> {
+    fn with_ordinal(&self, ordinal: u32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_ordinal(ordinal))
     }
 
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<Date<Tz>> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<Date<Tz>, Error> {
         map_local(self, |date| date.with_ordinal0(ordinal0))
     }
 }
@@ -563,36 +544,38 @@ mod tests {
         const WEEKS_PER_YEAR: f32 = 52.1775;
 
         // This is always at least one year because 1 year = 52.1775 weeks.
-        let one_year_ago = Utc::today() - TimeDelta::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        let one_year_ago =
+            Utc::today().unwrap() - TimeDelta::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
         // A bit more than 2 years.
-        let two_year_ago = Utc::today() - TimeDelta::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+        let two_year_ago =
+            Utc::today().unwrap() - TimeDelta::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
 
-        assert_eq!(Utc::today().years_since(one_year_ago), Some(1));
-        assert_eq!(Utc::today().years_since(two_year_ago), Some(2));
+        assert_eq!(Utc::today().unwrap().years_since(one_year_ago), Some(1));
+        assert_eq!(Utc::today().unwrap().years_since(two_year_ago), Some(2));
 
         // If the given DateTime is later than now, the function will always return 0.
-        let future = Utc::today() + TimeDelta::weeks(12);
-        assert_eq!(Utc::today().years_since(future), None);
+        let future = Utc::today().unwrap() + TimeDelta::weeks(12);
+        assert_eq!(Utc::today().unwrap().years_since(future), None);
     }
 
     #[test]
     fn test_date_add_assign() {
-        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        let naivedate = NaiveDate::from_ymd(2000, 1, 1).unwrap();
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_add = date;
 
         date_add += TimeDelta::days(5);
         assert_eq!(date_add, date + TimeDelta::days(5));
 
-        let timezone = FixedOffset::east_opt(60 * 60).unwrap();
-        let date = date.with_timezone(&timezone);
-        let date_add = date_add.with_timezone(&timezone);
+        let timezone = FixedOffset::east(60 * 60).unwrap();
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_add = date_add.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_add, date + TimeDelta::days(5));
 
-        let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-        let date = date.with_timezone(&timezone);
-        let date_add = date_add.with_timezone(&timezone);
+        let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_add = date_add.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_add, date + TimeDelta::days(5));
     }
@@ -600,9 +583,9 @@ mod tests {
     #[test]
     #[cfg(feature = "clock")]
     fn test_date_add_assign_local() {
-        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        let naivedate = NaiveDate::from_ymd(2000, 1, 1).unwrap();
 
-        let date = Local.from_utc_date(&naivedate);
+        let date = Local.from_utc_date(&naivedate).unwrap();
         let mut date_add = date;
 
         date_add += TimeDelta::days(5);
@@ -611,22 +594,22 @@ mod tests {
 
     #[test]
     fn test_date_sub_assign() {
-        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        let naivedate = NaiveDate::from_ymd(2000, 1, 1).unwrap();
         let date = Date::<Utc>::from_utc(naivedate, Utc);
         let mut date_sub = date;
 
         date_sub -= TimeDelta::days(5);
         assert_eq!(date_sub, date - TimeDelta::days(5));
 
-        let timezone = FixedOffset::east_opt(60 * 60).unwrap();
-        let date = date.with_timezone(&timezone);
-        let date_sub = date_sub.with_timezone(&timezone);
+        let timezone = FixedOffset::east(60 * 60).unwrap();
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_sub = date_sub.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_sub, date - TimeDelta::days(5));
 
-        let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-        let date = date.with_timezone(&timezone);
-        let date_sub = date_sub.with_timezone(&timezone);
+        let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
+        let date = date.with_timezone(&timezone).unwrap();
+        let date_sub = date_sub.with_timezone(&timezone).unwrap();
 
         assert_eq!(date_sub, date - TimeDelta::days(5));
     }
@@ -634,9 +617,9 @@ mod tests {
     #[test]
     #[cfg(feature = "clock")]
     fn test_date_sub_assign_local() {
-        let naivedate = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+        let naivedate = NaiveDate::from_ymd(2000, 1, 1).unwrap();
 
-        let date = Local.from_utc_date(&naivedate);
+        let date = Local.from_utc_date(&naivedate).unwrap();
         let mut date_sub = date;
 
         date_sub -= TimeDelta::days(5);

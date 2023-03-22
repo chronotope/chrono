@@ -10,21 +10,27 @@ use crate::OutOfRange;
 /// This enum is just a convenience implementation.
 /// The month in dates created by DateLike objects does not return this enum.
 ///
-/// It is possible to convert from a date to a month independently
+/// It is possible to convert from a date to a month independently.
+///
 /// ```
 /// # use std::convert::TryFrom;
 /// use chrono::prelude::*;
-/// let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
+/// use std::convert::TryFrom;
+/// let date = Utc.ymd(2019, 10, 28)?.and_hms(9, 10, 11)?;
 /// // `2019-10-28T09:10:11Z`
-/// let month = Month::try_from(u8::try_from(date.month()).unwrap()).ok();
-/// assert_eq!(month, Some(Month::October))
+/// let month = Month::try_from(u8::try_from(date.month())?).ok();
+/// assert_eq!(month, Some(Month::October));
+/// # Ok::<_, Box<dyn std::error::Error>>(())
 /// ```
+///
 /// Or from a Month to an integer usable by dates
+///
 /// ```
 /// # use chrono::prelude::*;
 /// let month = Month::January;
-/// let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+/// let dt = Utc.ymd(2019, month.number_from_month(), 28)?.and_hms(9, 10, 11)?;
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
+/// # Ok::<_, chrono::Error>(())
 /// ```
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde
@@ -319,11 +325,11 @@ mod tests {
         assert_eq!(Month::try_from(12), Ok(Month::December));
         assert_eq!(Month::try_from(13), Err(OutOfRange::new()));
 
-        let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
-        assert_eq!(Month::try_from(date.month() as u8).ok(), Some(Month::October));
+        let date = Utc.ymd(2019, 10, 28).unwrap().and_hms(9, 10, 11).unwrap();
+        assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
         let month = Month::January;
-        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+        let dt = Utc.ymd(2019, month.number_from_month(), 28).unwrap().and_hms(9, 10, 11).unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 

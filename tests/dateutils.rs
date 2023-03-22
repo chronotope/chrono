@@ -1,11 +1,11 @@
 use chrono::offset::TimeZone;
 use chrono::Local;
-use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
+use chrono::{Datelike, Error, NaiveDate, NaiveDateTime, Timelike};
 
 use std::{path, process};
 
 #[cfg(unix)]
-fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
+fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) -> Result<(), Error> {
     let output = process::Command::new(path)
         .arg("-d")
         .arg(format!("{}-{:02}-{:02} {:02}:05:01", dt.year(), dt.month(), dt.day(), dt.hour()))
@@ -34,18 +34,16 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     // be exactly matched, or whether LocalResult::Ambigious should be handled
     // differently
 
-    let date = NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap();
-    match Local.from_local_datetime(&date.and_hms_opt(dt.hour(), 5, 1).unwrap()) {
-        chrono::LocalResult::Ambiguous(a, b) => assert!(
-            format!("{}\n", a) == date_command_str || format!("{}\n", b) == date_command_str
-        ),
+    let date = NaiveDate::from_ymd(dt.year(), dt.month(), dt.day())?.and_hms(dt.hour(), 5, 1)?;
+    match Local.from_local_datetime(&date).unwrap() {
+        chrono::LocalResult::Ambiguous(a, b) => {
+            assert!(format!("{}\n", a) == date_command_str || format!("{}\n", b) == date_command_str);
+        },
         chrono::LocalResult::Single(a) => {
             assert_eq!(format!("{}\n", a), date_command_str);
-        }
-        chrono::LocalResult::None => {
-            assert_eq!("", date_command_str);
-        }
+        },
     }
+    Ok(())
 }
 
 #[test]
@@ -61,7 +59,7 @@ fn try_verify_against_date_command() {
         return;
     }
 
-    let mut date = NaiveDate::from_ymd_opt(1975, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let mut date = NaiveDate::from_ymd(1975, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
 
     while date.year() < 2078 {
         if (1975..=1977).contains(&date.year())
@@ -106,9 +104,11 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
         .unwrap();
 
     let date_command_str = String::from_utf8(output.stdout).unwrap();
-    let date = NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap();
+    let date = NaiveDate::from_ymd(dt.year(), dt.month(), dt.day()).unwrap();
     let ldt = Local
-        .from_local_datetime(&date.and_hms_opt(dt.hour(), dt.minute(), dt.second()).unwrap())
+        .from_local_datetime(&date.and_hms(dt.hour(), dt.minute(), dt.second()).unwrap())
+        .unwrap()
+        .single()
         .unwrap();
     let formated_date = format!("{}\n", ldt.format(required_format));
     assert_eq!(date_command_str, formated_date);
@@ -123,7 +123,7 @@ fn try_verify_against_date_command_format() {
         // date command not found, skipping
         return;
     }
-    let mut date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(12, 11, 13).unwrap();
+    let mut date = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms(12, 11, 13).unwrap();
     while date.year() < 2008 {
         verify_against_date_command_format_local(date_path, date);
         date += chrono::TimeDelta::days(55);

@@ -35,28 +35,18 @@ fn bench_datetime_from_str(c: &mut Criterion) {
 }
 
 fn bench_datetime_to_rfc2822(c: &mut Criterion) {
-    let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    let dt = pst
-        .from_local_datetime(
-            &NaiveDate::from_ymd_opt(2018, 1, 11)
-                .unwrap()
-                .and_hms_nano_opt(10, 5, 13, 84_660_000)
-                .unwrap(),
-        )
-        .unwrap();
+    let pst = FixedOffset::east(8 * 60 * 60).unwrap();
+    let dt = pst.from_local_datetime(
+        &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?
+    );
     c.bench_function("bench_datetime_to_rfc2822", |b| b.iter(|| black_box(dt).to_rfc2822()));
 }
 
 fn bench_datetime_to_rfc3339(c: &mut Criterion) {
-    let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    let dt = pst
-        .from_local_datetime(
-            &NaiveDate::from_ymd_opt(2018, 1, 11)
-                .unwrap()
-                .and_hms_nano_opt(10, 5, 13, 84_660_000)
-                .unwrap(),
-        )
-        .unwrap();
+    let pst = FixedOffset::east(8 * 60 * 60).unwrap();
+    let dt = pst.from_local_datetime(
+        &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?
+    );
     c.bench_function("bench_datetime_to_rfc3339", |b| b.iter(|| black_box(dt).to_rfc3339()));
 }
 
@@ -112,7 +102,7 @@ fn num_days_from_ce_alt<Date: Datelike>(date: &Date) -> i32 {
 fn bench_num_days_from_ce(c: &mut Criterion) {
     let mut group = c.benchmark_group("num_days_from_ce");
     for year in &[1, 500, 2000, 2019] {
-        let d = NaiveDate::from_ymd_opt(*year, 1, 1).unwrap();
+        let d = NaiveDate::from_ymd(*year, 1, 1).unwrap();
         group.bench_with_input(BenchmarkId::new("new", year), &d, |b, y| {
             b.iter(|| num_days_from_ce_alt(y))
         });

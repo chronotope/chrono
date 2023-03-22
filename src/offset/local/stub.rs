@@ -11,9 +11,11 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::{FixedOffset, Local};
-use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use crate::{
+    DateTime, Datelike, Error, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike,
+};
 
-pub(super) fn now() -> DateTime<Local> {
+pub(super) fn now() -> Result<DateTime<Local>, Error> {
     tm_to_datetime(Timespec::now().local())
 }
 
@@ -23,7 +25,10 @@ pub(super) fn now() -> DateTime<Local> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 )))]
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+pub(super) fn naive_to_local(
+    d: &NaiveDateTime,
+    local: bool,
+) -> Result<LocalResult<DateTime<Local>>, Error> {
     let tm = Tm {
         tm_sec: d.second() as i32,
         tm_min: d.minute() as i32,
@@ -53,7 +58,7 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
     assert_eq!(tm.tm_nsec, 0);
     tm.tm_nsec = d.nanosecond() as i32;
 
-    LocalResult::Single(tm_to_datetime(tm))
+    Ok(LocalResult::Single(tm_to_datetime(tm)?))
 }
 
 /// Converts a `time::Tm` struct into the timezone-aware `DateTime`.
@@ -63,22 +68,22 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 )))]
-fn tm_to_datetime(mut tm: Tm) -> DateTime<Local> {
+fn tm_to_datetime(mut tm: Tm) -> Result<DateTime<Local>, Error> {
     if tm.tm_sec >= 60 {
         tm.tm_nsec += (tm.tm_sec - 59) * 1_000_000_000;
         tm.tm_sec = 59;
     }
 
-    let date = NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1);
+    let date = NaiveDate::from_yo(tm.tm_year + 1900, tm.tm_yday as u32 + 1)?;
     let time = NaiveTime::from_hms_nano(
         tm.tm_hour as u32,
         tm.tm_min as u32,
         tm.tm_sec as u32,
         tm.tm_nsec as u32,
-    );
+    )?;
 
-    let offset = FixedOffset::east_opt(tm.tm_utcoff).unwrap();
-    DateTime::from_utc(date.and_time(time) - offset, offset)
+    let offset = FixedOffset::east(tm.tm_utcoff)?;
+    Ok(DateTime::from_utc(date.and_time(time) - offset, offset))
 }
 
 /// A record specifying a time value in seconds and nanoseconds, where

@@ -211,14 +211,14 @@ impl TimeDelta {
     }
 
     /// Add two durations, returning `None` if overflow occurred.
-    pub fn checked_add(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
+    pub fn checked_add(&self, rhs: &TimeDelta) -> Option<Self> {
         let mut secs = try_opt!(self.secs.checked_add(rhs.secs));
         let mut nanos = self.nanos + rhs.nanos;
         if nanos >= NANOS_PER_SEC {
             nanos -= NANOS_PER_SEC;
             secs = try_opt!(secs.checked_add(1));
         }
-        let d = TimeDelta { secs, nanos };
+        let d = Self { secs, nanos };
         // Even if d is within the bounds of i64 seconds,
         // it might still overflow i64 milliseconds.
         if d < MIN || d > MAX {
@@ -229,14 +229,14 @@ impl TimeDelta {
     }
 
     /// Subtract two durations, returning `None` if overflow occurred.
-    pub fn checked_sub(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
+    pub fn checked_sub(&self, rhs: &TimeDelta) -> Option<Self> {
         let mut secs = try_opt!(self.secs.checked_sub(rhs.secs));
         let mut nanos = self.nanos - rhs.nanos;
         if nanos < 0 {
             nanos += NANOS_PER_SEC;
             secs = try_opt!(secs.checked_sub(1));
         }
-        let d = TimeDelta { secs, nanos };
+        let d = Self { secs, nanos };
         // Even if d is within the bounds of i64 seconds,
         // it might still overflow i64 milliseconds.
         if d < MIN || d > MAX {

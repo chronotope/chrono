@@ -1,5 +1,6 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
+#![allow(dead_code)]
 
 //! ISO 8601 date and time without timezone.
 
@@ -17,10 +18,10 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
-use crate::{DateTime, Datelike, LocalResult, Months, TimeDelta, TimeZone, Timelike, Weekday};
+use crate::{DateTime, Datelike, Error, Months, TimeDelta, TimeZone, Timelike, Weekday};
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
@@ -58,8 +59,9 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// ```
 /// use chrono::{NaiveDate, NaiveDateTime};
 ///
-/// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
+/// let dt: NaiveDateTime = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(9, 10, 11)?;
 /// # let _ = dt;
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// You can use typical [date-like](../trait.Datelike.html) and
@@ -68,11 +70,12 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 ///
 /// ```
 /// # use chrono::{NaiveDate, NaiveDateTime};
-/// # let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
+/// # let dt: NaiveDateTime = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(9, 10, 11)?;
 /// use chrono::{Datelike, Timelike, Weekday};
 ///
 /// assert_eq!(dt.weekday(), Weekday::Fri);
 /// assert_eq!(dt.num_seconds_from_midnight(), 33011);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
@@ -109,6 +112,9 @@ impl TimestampUnit {
 }
 
 impl NaiveDateTime {
+    pub(crate) const UNIX_EPOCH: NaiveDateTime =
+        NaiveDateTime { date: NaiveDate::MIN, time: NaiveTime::MIDNIGHT };
+
     /// Makes a new `NaiveDateTime` from date and time components.
     /// Equivalent to [`date.and_time(time)`](./struct.NaiveDate.html#method.and_time)
     /// and many other helper constructors on `NaiveDate`.
@@ -118,43 +124,24 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveTime, NaiveDateTime};
     ///
-    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let d = NaiveDate::from_ymd(2015, 6, 3)?;
+    /// let t = NaiveTime::from_hms_milli(12, 34, 56, 789)?;
     ///
     /// let dt = NaiveDateTime::new(d, t);
     /// assert_eq!(dt.date(), d);
     /// assert_eq!(dt.time(), t);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub const fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime { date, time }
     }
 
-    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
-    /// from the number of non-leap seconds
-    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
-    ///
-    /// For a non-naive version of this function see
-    /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
-    ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the
-    /// [leap second](./struct.NaiveTime.html#leap-second-handling). (The true "UNIX
-    /// timestamp" cannot represent a leap second unambiguously.)
-    ///
-    /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
-    #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
-    #[inline]
-    pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
-        let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
-        datetime.expect("invalid or out-of-range datetime")
-    }
-
     /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
     ///
     /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
     ///
-    /// Returns `None` on an out-of-range number of milliseconds.
+    /// Returns `Err(Error)` on an out-of-range number of milliseconds.
     ///
     /// # Example
     ///
@@ -172,7 +159,7 @@ impl NaiveDateTime {
     /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
     /// ```
     #[inline]
-    pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
+    pub fn from_timestamp_millis(millis: i64) -> Result<NaiveDateTime, Error> {
         Self::from_timestamp_unit(millis, TimestampUnit::Millis)
     }
 
@@ -180,7 +167,7 @@ impl NaiveDateTime {
     ///
     /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
     ///
-    /// Returns `None` on an out-of-range number of microseconds.
+    /// Returns `Err(Error)` on an out-of-range number of microseconds.
     ///
     /// # Example
     ///
@@ -198,21 +185,24 @@ impl NaiveDateTime {
     /// assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
     /// ```
     #[inline]
-    pub fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
+    pub fn from_timestamp_micros(micros: i64) -> Result<NaiveDateTime, Error> {
         Self::from_timestamp_unit(micros, TimestampUnit::Micros)
     }
 
-    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
-    /// from the number of non-leap seconds
-    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
+    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time, from
+    /// the number of non-leap seconds since the midnight UTC on January 1, 1970
+    /// (aka "UNIX timestamp") and the number of nanoseconds since the last
+    /// whole non-leap second.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    /// For a non-naive version of this function see
+    /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
     ///
-    /// Returns `None` on the out-of-range number of seconds (more than 262 000 years away
-    /// from common era) and/or invalid nanosecond (2 seconds or more).
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent the
+    /// [leap second](./struct.NaiveTime.html#leap-second-handling). (The true
+    /// "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
+    /// Returns `Err(Error)` on the out-of-range number of seconds and/or
+    /// invalid nanosecond.
     ///
     /// # Example
     ///
@@ -220,26 +210,32 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDateTime, NaiveDate};
     /// use std::i64;
     ///
-    /// let from_timestamp_opt = NaiveDateTime::from_timestamp_opt;
+    /// let dt = NaiveDateTime::from_timestamp(0, 42_000_000)?;
+    /// assert_eq!(dt, NaiveDate::from_ymd(1970, 1, 1)?.and_hms_milli(0, 0, 0, 42)?);
     ///
-    /// assert!(from_timestamp_opt(0, 0).is_some());
-    /// assert!(from_timestamp_opt(0, 999_999_999).is_some());
-    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_some()); // leap second
-    /// assert!(from_timestamp_opt(0, 2_000_000_000).is_none());
-    /// assert!(from_timestamp_opt(i64::MAX, 0).is_none());
+    /// let dt = NaiveDateTime::from_timestamp(1_000_000_000, 0)?;
+    /// assert_eq!(dt, NaiveDate::from_ymd(2001, 9, 9)?.and_hms(1, 46, 40)?);
+    ///
+    /// let from_timestamp = NaiveDateTime::from_timestamp;
+    ///
+    /// assert!(from_timestamp(0, 0).is_ok());
+    /// assert!(from_timestamp(0, 999_999_999).is_ok());
+    /// assert!(from_timestamp(0, 1_500_000_000).is_ok()); // leap second
+    /// assert!(from_timestamp(0, 2_000_000_000).is_err());
+    /// assert!(from_timestamp(i64::MAX, 0).is_err());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+    pub fn from_timestamp(secs: i64, nsecs: u32) -> Result<NaiveDateTime, Error> {
         let (days, secs) = div_mod_floor(secs, 86_400);
         let date = i32::try_from(days)
             .ok()
             .and_then(|days| days.checked_add(719_163))
-            .and_then(NaiveDate::from_num_days_from_ce_opt);
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
-        match (date, time) {
-            (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
-            (_, _) => None,
-        }
+            .ok_or_else(|| Error::InvalidDateTime)
+            .and_then(NaiveDate::from_num_days_from_ce)?;
+
+        let time = NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs)?;
+        Ok(NaiveDateTime { date, time })
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
@@ -254,9 +250,10 @@ impl NaiveDateTime {
     /// let parse_from_str = NaiveDateTime::parse_from_str;
     ///
     /// assert_eq!(parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S"),
-    ///            Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap()));
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?));
     /// assert_eq!(parse_from_str("5sep2015pm012345.6789", "%d%b%Y%p%I%M%S%.f"),
-    ///            Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_micro_opt(13, 23, 45, 678_900).unwrap()));
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5)?.and_hms_micro(13, 23, 45, 678_900)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Offset is ignored for the purpose of parsing.
@@ -265,7 +262,8 @@ impl NaiveDateTime {
     /// # use chrono::{NaiveDateTime, NaiveDate};
     /// # let parse_from_str = NaiveDateTime::parse_from_str;
     /// assert_eq!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-    ///            Ok(NaiveDate::from_ymd_opt(2014, 5, 17).unwrap().and_hms_opt(12, 34, 56).unwrap()));
+    ///            Ok(NaiveDate::from_ymd(2014, 5, 17)?.and_hms(12, 34, 56)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// [Leap seconds](./struct.NaiveTime.html#leap-second-handling) are correctly handled by
@@ -276,7 +274,8 @@ impl NaiveDateTime {
     /// # use chrono::{NaiveDateTime, NaiveDate};
     /// # let parse_from_str = NaiveDateTime::parse_from_str;
     /// assert_eq!(parse_from_str("2015-07-01 08:59:60.123", "%Y-%m-%d %H:%M:%S%.f"),
-    ///            Ok(NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_milli_opt(8, 59, 59, 1_123).unwrap()));
+    ///            Ok(NaiveDate::from_ymd(2015, 7, 1)?.and_hms_milli(8, 59, 59, 1_123)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Missing seconds are assumed to be zero,
@@ -286,12 +285,13 @@ impl NaiveDateTime {
     /// # use chrono::{NaiveDateTime, NaiveDate};
     /// # let parse_from_str = NaiveDateTime::parse_from_str;
     /// assert_eq!(parse_from_str("94/9/4 7:15", "%y/%m/%d %H:%M"),
-    ///            Ok(NaiveDate::from_ymd_opt(1994, 9, 4).unwrap().and_hms_opt(7, 15, 0).unwrap()));
+    ///            Ok(NaiveDate::from_ymd(1994, 9, 4)?.and_hms(7, 15, 0)?));
     ///
     /// assert!(parse_from_str("04m33s", "%Mm%Ss").is_err());
     /// assert!(parse_from_str("94/9/4 12", "%y/%m/%d %H").is_err());
     /// assert!(parse_from_str("94/9/4 17:60", "%y/%m/%d %H:%M").is_err());
     /// assert!(parse_from_str("94/9/4 24:00:00", "%y/%m/%d %H:%M:%S").is_err());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// All parsed fields should be consistent to each other, otherwise it's an error.
@@ -313,7 +313,7 @@ impl NaiveDateTime {
     /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
     /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
     ///```     
-    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
+    pub fn parse_from_str(s: &str, fmt: &str) -> Result<NaiveDateTime, Error> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_datetime_with_offset(0) // no offset adjustment
@@ -326,8 +326,9 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
-    /// assert_eq!(dt.date(), NaiveDate::from_ymd_opt(2016, 7, 8).unwrap());
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(9, 10, 11)?;
+    /// assert_eq!(dt.date(), NaiveDate::from_ymd(2016, 7, 8)?);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub const fn date(&self) -> NaiveDate {
@@ -341,8 +342,9 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveTime};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
-    /// assert_eq!(dt.time(), NaiveTime::from_hms_opt(9, 10, 11).unwrap());
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(9, 10, 11)?;
+    /// assert_eq!(dt.time(), NaiveTime::from_hms(9, 10, 11)?);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub const fn time(&self) -> NaiveTime {
@@ -359,17 +361,18 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 980).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_milli(0, 0, 1, 980)?;
     /// assert_eq!(dt.timestamp(), 1);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_opt(1, 46, 40).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.unwrap().and_hms(1, 46, 40).unwrap()?;
     /// assert_eq!(dt.timestamp(), 1_000_000_000);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 59).unwrap();
+    /// let dt = NaiveDate::from_ymd(1969, 12, 31)?.unwrap().and_hms(23, 59, 59).unwrap()?;
     /// assert_eq!(dt.timestamp(), -1);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    /// let dt = NaiveDate::from_ymd(-1, 1, 1)?.and_hms(0, 0, 0)?;
     /// assert_eq!(dt.timestamp(), -62198755200);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp(&self) -> i64 {
@@ -394,14 +397,15 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 444).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_milli(0, 0, 1, 444)?;
     /// assert_eq!(dt.timestamp_millis(), 1_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_milli_opt(1, 46, 40, 555).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.unwrap().and_hms_milli_opt(1, 46, 40, 555).unwrap()?;
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_milli_opt(23, 59, 59, 100).unwrap();
+    /// let dt = NaiveDate::from_ymd(1969, 12, 31)?.and_hms_milli(23, 59, 59, 100)?;
     /// assert_eq!(dt.timestamp_millis(), -900);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
@@ -424,11 +428,12 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_micro_opt(0, 0, 1, 444).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_micro(0, 0, 1, 444)?;
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_micro_opt(1, 46, 40, 555).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_micro(1, 46, 40, 555)?;
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_micros(&self) -> i64 {
@@ -456,18 +461,19 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_nano(0, 0, 1, 444)?;
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 40, 555)?;
     ///
     /// const A_BILLION: i64 = 1_000_000_000;
     /// let nanos = dt.timestamp_nanos();
     /// assert_eq!(nanos, 1_000_000_000_000_000_555);
     /// assert_eq!(
     ///     dt,
-    ///     NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    ///     NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)?
     /// );
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_nanos(&self) -> i64 {
@@ -485,11 +491,12 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 123_456_789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms_nano(9, 10, 11, 123_456_789)?;
     /// assert_eq!(dt.timestamp_subsec_millis(), 123);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_nano_opt(8, 59, 59, 1_234_567_890).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1)?.and_hms_nano(8, 59, 59, 1_234_567_890)?;
     /// assert_eq!(dt.timestamp_subsec_millis(), 1_234);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_subsec_millis(&self) -> u32 {
@@ -506,11 +513,12 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 123_456_789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms_nano(9, 10, 11, 123_456_789)?;
     /// assert_eq!(dt.timestamp_subsec_micros(), 123_456);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_nano_opt(8, 59, 59, 1_234_567_890).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1)?.and_hms_nano(8, 59, 59, 1_234_567_890)?;
     /// assert_eq!(dt.timestamp_subsec_micros(), 1_234_567);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_subsec_micros(&self) -> u32 {
@@ -527,11 +535,12 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 123_456_789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms_nano(9, 10, 11, 123_456_789)?;
     /// assert_eq!(dt.timestamp_subsec_nanos(), 123_456_789);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_nano_opt(8, 59, 59, 1_234_567_890).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1)?.and_hms_nano(8, 59, 59, 1_234_567_890)?;
     /// assert_eq!(dt.timestamp_subsec_nanos(), 1_234_567_890);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_subsec_nanos(&self) -> u32 {
@@ -545,39 +554,39 @@ impl NaiveDateTime {
     /// except when the `NaiveDateTime` itself represents a leap second
     /// in which case the assumption becomes that **there is exactly a single leap second ever**.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{TimeDelta, NaiveDate};
     ///
-    /// let from_ymd = NaiveDate::from_ymd;
+    /// let d = NaiveDate::from_ymd(2016, 7, 8)?;
     ///
-    /// let d = from_ymd(2016, 7, 8);
-    /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::zero()),
-    ///            Some(hms(3, 5, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(1)),
-    ///            Some(hms(3, 5, 8)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(-1)),
-    ///            Some(hms(3, 5, 6)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(3600 + 60)),
-    ///            Some(hms(4, 6, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::seconds(86_400)),
-    ///            Some(from_ymd(2016, 7, 9).and_hms_opt(3, 5, 7).unwrap()));
+    /// let hms = |h, m, s| d.and_hms(h, m, s);
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::zero()),
+    ///            Some(hms(3, 5, 7)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(1)),
+    ///            Some(hms(3, 5, 8)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(-1)),
+    ///            Some(hms(3, 5, 6)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(3600 + 60)),
+    ///            Some(hms(4, 6, 7)?));
+    /// assert_eq!(hms(3, 5, 7)?.checked_add_signed(TimeDelta::seconds(86_400)),
+    ///            Some(NaiveDate::from_ymd(2016, 7, 9)?.and_hms(3, 5, 7)?));
     ///
-    /// let hmsm = |h, m, s, milli| d.and_hms_milli_opt(h, m, s, milli).unwrap();
-    /// assert_eq!(hmsm(3, 5, 7, 980).checked_add_signed(TimeDelta::milliseconds(450)),
-    ///            Some(hmsm(3, 5, 8, 430)));
+    /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+    /// assert_eq!(hmsm(3, 5, 7, 980)?.checked_add_signed(TimeDelta::milliseconds(450)),
+    ///            Some(hmsm(3, 5, 8, 430)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
-    /// Overflow returns `None`.
+    /// Overflow returns `Err(Error)`.
     ///
     /// ```
-    /// # use chrono::{TimeDelta, NaiveDate};
-    /// # let hms = |h, m, s| NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::days(1_000_000_000)), None);
+    /// use chrono::{TimeDelta, NaiveDate};
+    /// assert!(NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?.checked_add_signed(TimeDelta::days(1_000_000_000)).is_none());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Leap seconds are handled,
@@ -586,40 +595,39 @@ impl NaiveDateTime {
     /// ```
     /// # use chrono::{TimeDelta, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
-    /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
-    /// let leap = hmsm(3, 5, 59, 1_300);
+    /// # let hmsm = |h, m, s, milli| Ok::<_, chrono::Error>(from_ymd(2016, 7, 8)?.and_hms_milli(h, m, s, milli)?);
+    /// let leap = hmsm(3, 5, 59, 1_300)?;
     /// assert_eq!(leap.checked_add_signed(TimeDelta::zero()),
-    ///            Some(hmsm(3, 5, 59, 1_300)));
+    ///            Some(hmsm(3, 5, 59, 1_300)?));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(-500)),
-    ///            Some(hmsm(3, 5, 59, 800)));
+    ///            Some(hmsm(3, 5, 59, 800)?));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(500)),
-    ///            Some(hmsm(3, 5, 59, 1_800)));
+    ///            Some(hmsm(3, 5, 59, 1_800)?));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::milliseconds(800)),
-    ///            Some(hmsm(3, 6, 0, 100)));
+    ///            Some(hmsm(3, 6, 0, 100)?));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(10)),
-    ///            Some(hmsm(3, 6, 9, 300)));
+    ///            Some(hmsm(3, 6, 9, 300)?));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(-10)),
-    ///            Some(hmsm(3, 5, 50, 300)));
+    ///            Some(hmsm(3, 5, 50, 300)?));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::days(1)),
-    ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
+    ///            Some(from_ymd(2016, 7, 9)?.and_hms_milli(3, 5, 59, 300)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
 
         // early checking to avoid overflow in OldTimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
+            return Err(Error::ParsingOutOfRange);
         }
 
         let date = self.date.checked_add_signed(TimeDelta::seconds(rhs))?;
-        Some(NaiveDateTime { date, time })
+        Ok(Self { date, time })
     }
 
     /// Adds given `Months` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
-    ///
-    /// Overflow returns `None`.
+    /// Returns `Err(Error)` when it will result in overflow.
     ///
     /// # Example
     ///
@@ -628,19 +636,20 @@ impl NaiveDateTime {
     /// use chrono::{Months, NaiveDate, NaiveDateTime};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
     ///         .checked_add_months(Months::new(1)),
-    ///     Some(NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap())
+    ///     Ok(NaiveDate::from_ymd(2014, 2, 1)?.unwrap().and_hms(1, 0, 0).unwrap()?)
     /// );
     ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
-    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1)),
-    ///     None
+    /// assert!(
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
+    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1))
+    ///         .is_err()
     /// );
+    /// # Ok::<_, chrono::Error>(())
     /// ```
-    pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    pub fn checked_add_months(self, rhs: Months) -> Result<Self, Error> {
+        Ok(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
     }
 
     /// Subtracts given `TimeDelta` from the current date and time.
@@ -650,77 +659,69 @@ impl NaiveDateTime {
     /// except when the `NaiveDateTime` itself represents a leap second
     /// in which case the assumption becomes that **there is exactly a single leap second ever**.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Returns `Err(Error)` when it will result in overflow.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{TimeDelta, NaiveDate};
     ///
-    /// let from_ymd = NaiveDate::from_ymd;
+    /// let d = NaiveDate::from_ymd(2016, 7, 8)?;
     ///
-    /// let d = from_ymd(2016, 7, 8);
-    /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::zero()),
-    ///            Some(hms(3, 5, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(1)),
-    ///            Some(hms(3, 5, 6)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(-1)),
-    ///            Some(hms(3, 5, 8)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(3600 + 60)),
-    ///            Some(hms(2, 4, 7)));
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::seconds(86_400)),
-    ///            Some(from_ymd(2016, 7, 7).and_hms_opt(3, 5, 7).unwrap()));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::zero()),
+    ///            Some(d.and_hms(3, 5, 7)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(1)),
+    ///            Some(d.and_hms(3, 5, 6)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(-1)),
+    ///            Some(d.and_hms(3, 5, 8)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(3600 + 60)),
+    ///            Some(d.and_hms(2, 4, 7)?));
+    /// assert_eq!(d.and_hms(3, 5, 7)?.checked_sub_signed(TimeDelta::seconds(86_400)),
+    ///            Some(NaiveDate::from_ymd(2016, 7, 7)?.and_hms(3, 5, 7)?));
     ///
-    /// let hmsm = |h, m, s, milli| d.and_hms_milli_opt(h, m, s, milli).unwrap();
-    /// assert_eq!(hmsm(3, 5, 7, 450).checked_sub_signed(TimeDelta::milliseconds(670)),
-    ///            Some(hmsm(3, 5, 6, 780)));
+    /// assert_eq!(d.and_hms_milli(3, 5, 7, 450)?.checked_sub_signed(TimeDelta::milliseconds(670)),
+    ///            Some(d.and_hms_milli(3, 5, 6, 780)?));
+    ///
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?;
+    /// assert!(dt.checked_sub_signed(TimeDelta::days(1_000_000_000)).is_none());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
-    /// Overflow returns `None`.
-    ///
-    /// ```
-    /// # use chrono::{TimeDelta, NaiveDate};
-    /// # let hms = |h, m, s| NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
-    /// ```
-    ///
-    /// Leap seconds are handled,
-    /// but the subtraction assumes that it is the only leap second happened.
+    /// Leap seconds are handled, but the subtraction assumes that it is the
+    /// only leap second happened.
     ///
     /// ```
     /// # use chrono::{TimeDelta, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
-    /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
-    /// let leap = hmsm(3, 5, 59, 1_300);
+    /// # let hmsm = |h, m, s, milli| Ok::<_, chrono::Error>(from_ymd(2016, 7, 8)?.and_hms_milli(h, m, s, milli)?);
+    /// let leap = hmsm(3, 5, 59, 1_300)?;
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::zero()),
-    ///            Some(hmsm(3, 5, 59, 1_300)));
+    ///            Some(hmsm(3, 5, 59, 1_300)?));
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(200)),
-    ///            Some(hmsm(3, 5, 59, 1_100)));
+    ///            Some(hmsm(3, 5, 59, 1_100)?));
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::milliseconds(500)),
-    ///            Some(hmsm(3, 5, 59, 800)));
+    ///            Some(hmsm(3, 5, 59, 800)?));
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::seconds(60)),
-    ///            Some(hmsm(3, 5, 0, 300)));
+    ///            Some(hmsm(3, 5, 0, 300)?));
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::days(1)),
-    ///            Some(from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap()));
+    ///            Some(from_ymd(2016, 7, 7)?.and_hms_milli(3, 6, 0, 300)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
 
         // early checking to avoid overflow in OldTimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
+            return Err(Error::ParsingOutOfRange);
         }
 
         let date = self.date.checked_sub_signed(TimeDelta::seconds(rhs))?;
-        Some(NaiveDateTime { date, time })
+        Ok(Self { date, time })
     }
 
     /// Subtracts given `Months` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
-    ///
-    /// Overflow returns `None`.
+    /// Returns `Err(Error)` when it will result in overflow.
     ///
     /// # Example
     ///
@@ -729,33 +730,34 @@ impl NaiveDateTime {
     /// use chrono::{Months, NaiveDate, NaiveDateTime};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
     ///         .checked_sub_months(Months::new(1)),
-    ///     Some(NaiveDate::from_ymd_opt(2013, 12, 1).unwrap().and_hms_opt(1, 0, 0).unwrap())
+    ///     Some(NaiveDate::from_ymd(2013, 12, 1)?.unwrap().and_hms(1, 0, 0).unwrap()?)
     /// );
     ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
-    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
-    ///     None
+    /// assert!(
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)?
+    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1))
+    ///         .is_none()
     /// );
+    /// # Ok::<_, chrono::Error>(())
     /// ```
-    pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
+    pub fn checked_sub_months(self, rhs: Months) -> Result<Self, Error> {
+        Ok(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
     }
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: self.date.checked_add_days(days)?, ..self })
+    /// Returns `Err(Error)` if the resulting date would be out of range.
+    pub fn checked_add_days(self, days: Days) -> Result<Self, Error> {
+        Ok(Self { date: self.date.checked_add_days(days)?, ..self })
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: self.date.checked_sub_days(days)?, ..self })
+    /// Returns `Err(Error)` if the resulting date would be out of range.
+    pub fn checked_sub_days(self, days: Days) -> Result<Self, Error> {
+        Ok(Self { date: self.date.checked_sub_days(days)?, ..self })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -774,14 +776,15 @@ impl NaiveDateTime {
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
-    /// let d = from_ymd(2016, 7, 8);
-    /// assert_eq!(d.and_hms_opt(3, 5, 7).unwrap().signed_duration_since(d.and_hms_opt(2, 4, 6).unwrap()),
+    /// let d = from_ymd(2016, 7, 8)?;
+    /// assert_eq!(d.and_hms(3, 5, 7)?.signed_duration_since(d.and_hms(2, 4, 6)?),
     ///            TimeDelta::seconds(3600 + 60 + 1));
     ///
     /// // July 8 is 190th day in the year 2016
-    /// let d0 = from_ymd(2016, 1, 1);
-    /// assert_eq!(d.and_hms_milli_opt(0, 7, 6, 500).unwrap().signed_duration_since(d0.and_hms_opt(0, 0, 0).unwrap()),
+    /// let d0 = from_ymd(2016, 1, 1)?;
+    /// assert_eq!(d.and_hms_milli(0, 7, 6, 500)?.signed_duration_since(d0.and_hms(0, 0, 0)?),
     ///            TimeDelta::seconds(189 * 86_400 + 7 * 60 + 6) + TimeDelta::milliseconds(500));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// Leap seconds are handled, but the subtraction assumes that
@@ -790,11 +793,12 @@ impl NaiveDateTime {
     /// ```
     /// # use chrono::{TimeDelta, NaiveDate};
     /// # let from_ymd = NaiveDate::from_ymd;
-    /// let leap = from_ymd(2015, 6, 30).and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
-    /// assert_eq!(leap.signed_duration_since(from_ymd(2015, 6, 30).and_hms_opt(23, 0, 0).unwrap()),
+    /// let leap = from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_500)?;
+    /// assert_eq!(leap.signed_duration_since(from_ymd(2015, 6, 30)?.and_hms(23, 0, 0)?),
     ///            TimeDelta::seconds(3600) + TimeDelta::milliseconds(500));
-    /// assert_eq!(from_ymd(2015, 7, 1).and_hms_opt(1, 0, 0).unwrap().signed_duration_since(leap),
+    /// assert_eq!(from_ymd(2015, 7, 1)?.and_hms(1, 0, 0)?.signed_duration_since(leap),
     ///            TimeDelta::seconds(3600) - TimeDelta::milliseconds(500));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> TimeDelta {
         self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
@@ -813,9 +817,10 @@ impl NaiveDateTime {
     /// use chrono::format::strftime::StrftimeItems;
     ///
     /// let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S");
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?;
     /// assert_eq!(dt.format_with_items(fmt.clone()).to_string(), "2015-09-05 23:56:04");
     /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(),    "2015-09-05 23:56:04");
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
@@ -824,8 +829,9 @@ impl NaiveDateTime {
     /// # use chrono::NaiveDate;
     /// # use chrono::format::strftime::StrftimeItems;
     /// # let fmt = StrftimeItems::new("%Y-%m-%d %H:%M:%S").clone();
-    /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    /// # let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?;
     /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -857,18 +863,20 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?;
     /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2015-09-05 23:56:04");
     /// assert_eq!(dt.format("around %l %p on %b %-d").to_string(), "around 11 PM on Sep 5");
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     ///
     /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
     ///
     /// ```
     /// # use chrono::NaiveDate;
-    /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    /// # let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?;
     /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
     /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -892,10 +900,12 @@ impl NaiveDateTime {
     ///
     /// ```
     /// use chrono::{NaiveDate, Utc};
-    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 5)?.and_hms(23, 56, 4)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.timezone(), Utc);
-    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
-        tz.from_local_datetime(self)
+    /// # Ok::<_, chrono::Error>(())
+    /// ```
+    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> Result<DateTime<Tz>, Error> {
+        tz.from_local_datetime(self)?.single()
     }
 
     /// The minimum possible `NaiveDateTime`.
@@ -907,7 +917,7 @@ impl NaiveDateTime {
     ///
     /// This is a private function used by [from_timestamp_millis] and [from_timestamp_micros].
     #[inline]
-    fn from_timestamp_unit(value: i64, unit: TimestampUnit) -> Option<NaiveDateTime> {
+    fn from_timestamp_unit(value: i64, unit: TimestampUnit) -> Result<NaiveDateTime, Error> {
         let (secs, subsecs) =
             (value / i64::from(unit.per_second()), value % i64::from(unit.per_second()));
 
@@ -917,18 +927,24 @@ impl NaiveDateTime {
                 // hence we subtract one from the seconds part, and we then add a whole second worth of nanos
                 // to our nanos part. Due to the use of u32 datatype, it is more convenient to subtract
                 // the absolute value of the subsec nanos from a whole second worth of nanos
-                let nsecs = u32::try_from(subsecs.abs()).ok()? * unit.nanos_per();
-                NaiveDateTime::from_timestamp_opt(
-                    secs.checked_sub(1)?,
-                    NANOS_IN_SECOND.checked_sub(nsecs)?,
+                let nsecs = u32::try_from(subsecs.abs())? * unit.nanos_per();
+                NaiveDateTime::from_timestamp(
+                    match secs.checked_sub(1) {
+                        None => return Err(Error::ParsingOutOfRange),
+                        Some(secs) => secs,
+                    },
+                    match NANOS_IN_SECOND.checked_sub(nsecs) {
+                        None => return Err(Error::ParsingOutOfRange),
+                        Some(nsecs) => nsecs,
+                    },
                 )
             }
-            Ordering::Equal => NaiveDateTime::from_timestamp_opt(secs, 0),
+            Ordering::Equal => NaiveDateTime::from_timestamp(secs, 0),
             Ordering::Greater => {
                 // convert the subsec millis into nanosecond scale so they can be supplied
                 // as the nanoseconds parameter
-                let nsecs = u32::try_from(subsecs).ok()? * unit.nanos_per();
-                NaiveDateTime::from_timestamp_opt(secs, nsecs)
+                let nsecs = u32::try_from(subsecs)? * unit.nanos_per();
+                NaiveDateTime::from_timestamp(secs, nsecs)
             }
         }
     }
@@ -944,8 +960,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.year(), 2015);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn year(&self) -> i32 {
@@ -963,8 +980,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.month(), 9);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn month(&self) -> u32 {
@@ -982,8 +1000,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.month0(), 8);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn month0(&self) -> u32 {
@@ -1001,8 +1020,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.day(), 25);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn day(&self) -> u32 {
@@ -1020,8 +1040,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.day0(), 24);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn day0(&self) -> u32 {
@@ -1039,8 +1060,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.ordinal(), 268);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn ordinal(&self) -> u32 {
@@ -1058,8 +1080,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.ordinal0(), 267);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn ordinal0(&self) -> u32 {
@@ -1075,8 +1098,9 @@ impl Datelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Weekday};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
     /// assert_eq!(dt.weekday(), Weekday::Fri);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn weekday(&self) -> Weekday {
@@ -1090,158 +1114,158 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the year number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_year`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_year(2016), Some(NaiveDate::from_ymd_opt(2016, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_year(-308), Some(NaiveDate::from_ymd_opt(-308, 9, 25).unwrap().and_hms_opt(12, 34, 56).unwrap()));
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_year(2016)?, NaiveDate::from_ymd(2016, 9, 25)?.and_hms(12, 34, 56)?);
+    /// assert_eq!(dt.with_year(-308)?, NaiveDate::from_ymd(-308, 9, 25)?.and_hms(12, 34, 56)?);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
-        self.date.with_year(year).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_year(&self, year: i32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_year(year)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_month`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_month(10), Some(NaiveDate::from_ymd_opt(2015, 10, 30).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_month(13), None); // no month 13
-    /// assert_eq!(dt.with_month(2), None); // no February 30
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 30)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_month(10)?, NaiveDate::from_ymd(2015, 10, 30)?.and_hms(12, 34, 56)?);
+    /// assert!(dt.with_month(13).is_err()); // no month 13
+    /// assert!(dt.with_month(2).is_err()); // no February 30
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
-        self.date.with_month(month).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_month(&self, month: u32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_month(month)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_month0`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_month0(9), Some(NaiveDate::from_ymd_opt(2015, 10, 30).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_month0(12), None); // no month 13
-    /// assert_eq!(dt.with_month0(1), None); // no February 30
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 30)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_month0(9)?, NaiveDate::from_ymd(2015, 10, 30)?.and_hms(12, 34, 56)?);
+    /// assert!(dt.with_month0(12).is_err()); // no month 13
+    /// assert!(dt.with_month0(1).is_err()); // no February 30
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
-        self.date.with_month0(month0).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_month0(&self, month0: u32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_month0(month0)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_day`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_day(30), Some(NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_day(31), None); // no September 31
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_day(30)?, NaiveDate::from_ymd(2015, 9, 30)?.and_hms(12, 34, 56)?);
+    /// assert!(dt.with_day(31).is_err()); // no September 31
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
-        self.date.with_day(day).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_day(&self, day: u32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_day(day)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_day0`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_day0(29), Some(NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_day0(30), None); // no September 31
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_day0(29)?, NaiveDate::from_ymd(2015, 9, 30)?.and_hms(12, 34, 56)?);
+    /// assert!(dt.with_day0(30).is_err()); // no September 31
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
-        self.date.with_day0(day0).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_day0(&self, day0: u32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_day0(day0)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_ordinal`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 3, 1).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_ordinal(366), None); // 2015 had only 365 days
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_ordinal(60)?,
+    ///            NaiveDate::from_ymd(2015, 3, 1)?.and_hms(12, 34, 56)?);
+    /// assert!(dt.with_ordinal(366).is_err()); // 2015 had only 365 days
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd_opt(2016, 2, 29).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_ordinal(366),
-    ///            Some(NaiveDate::from_ymd_opt(2016, 12, 31).unwrap().and_hms_opt(12, 34, 56).unwrap()));
+    /// let dt = NaiveDate::from_ymd(2016, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_ordinal(60)?,
+    ///            NaiveDate::from_ymd(2016, 2, 29)?.and_hms(12, 34, 56)?);
+    /// assert_eq!(dt.with_ordinal(366)?,
+    ///            NaiveDate::from_ymd(2016, 12, 31)?.and_hms(12, 34, 56)?);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
-        self.date.with_ordinal(ordinal).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_ordinal(&self, ordinal: u32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_ordinal(ordinal)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
-    /// See also the [`NaiveDate::with_ordinal0`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Datelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 3, 1).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_ordinal0(365), None); // 2015 had only 365 days
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_ordinal0(59)?,
+    ///            NaiveDate::from_ymd(2015, 3, 1)?.and_hms(12, 34, 56)?);
+    /// assert!(dt.with_ordinal0(365).is_err()); // 2015 had only 365 days
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 9, 8).unwrap().and_hms_opt(12, 34, 56).unwrap();
-    /// assert_eq!(dt.with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd_opt(2016, 2, 29).unwrap().and_hms_opt(12, 34, 56).unwrap()));
-    /// assert_eq!(dt.with_ordinal0(365),
-    ///            Some(NaiveDate::from_ymd_opt(2016, 12, 31).unwrap().and_hms_opt(12, 34, 56).unwrap()));
+    /// let dt = NaiveDate::from_ymd(2016, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_ordinal0(59)?,
+    ///            NaiveDate::from_ymd(2016, 2, 29)?.and_hms(12, 34, 56)?);
+    /// assert_eq!(dt.with_ordinal0(365)?,
+    ///            NaiveDate::from_ymd(2016, 12, 31)?.and_hms(12, 34, 56)?);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
-        self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<NaiveDateTime, Error> {
+        let d = self.date.with_ordinal0(ordinal0)?;
+        Ok(NaiveDateTime { date: d, ..*self })
     }
 }
 
@@ -1255,8 +1279,9 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
     /// assert_eq!(dt.hour(), 12);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn hour(&self) -> u32 {
@@ -1272,8 +1297,9 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
     /// assert_eq!(dt.minute(), 34);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn minute(&self) -> u32 {
@@ -1289,8 +1315,9 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
     /// assert_eq!(dt.second(), 56);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn second(&self) -> u32 {
@@ -1308,8 +1335,9 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
     /// assert_eq!(dt.nanosecond(), 789_000_000);
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {
@@ -1318,7 +1346,7 @@ impl Timelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the hour number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// See also the [`NaiveTime::with_hour`] method.
     ///
@@ -1327,19 +1355,21 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
-    /// assert_eq!(dt.with_hour(7),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(7, 34, 56, 789).unwrap()));
-    /// assert_eq!(dt.with_hour(24), None);
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
+    /// assert_eq!(dt.with_hour(7)?,
+    ///            NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(7, 34, 56, 789)?);
+    /// assert!(dt.with_hour(24).is_err());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
-        self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
+    fn with_hour(&self, hour: u32) -> Result<NaiveDateTime, Error> {
+        let t = self.time.with_hour(hour)?;
+        Ok(NaiveDateTime { time: t, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the minute number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     ///
     /// See also the
     /// [`NaiveTime::with_minute`] method.
@@ -1349,62 +1379,64 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
-    /// assert_eq!(dt.with_minute(45),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 45, 56, 789).unwrap()));
-    /// assert_eq!(dt.with_minute(60), None);
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
+    /// assert_eq!(dt.with_minute(45)?,
+    ///            NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 45, 56, 789)?);
+    /// assert!(dt.with_minute(60).is_err());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
-        self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
+    fn with_minute(&self, min: u32) -> Result<NaiveDateTime, Error> {
+        let t = self.time.with_minute(min)?;
+        Ok(NaiveDateTime { time: t, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the second number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid. As
-    /// with the [`NaiveDateTime::second`] method, the input range is
-    /// restricted to 0 through 59.
-    ///
-    /// See also the [`NaiveTime::with_second`] method.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
+    /// As with the [`NaiveDateTime::second`] method, the input range
+    /// is restricted to 0 through 59.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
-    /// assert_eq!(dt.with_second(17),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 17, 789).unwrap()));
-    /// assert_eq!(dt.with_second(60), None);
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
+    /// assert_eq!(dt.with_second(17)?,
+    ///            NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 17, 789)?);
+    /// assert!(dt.with_second(60).is_err());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
-        self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
+    fn with_second(&self, sec: u32) -> Result<NaiveDateTime, Error> {
+        let t = self.time.with_second(sec)?;
+        Ok(NaiveDateTime { time: t, ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// Returns `Err(Error)` when the resulting `NaiveDateTime` would be invalid.
     /// As with the [`NaiveDateTime::nanosecond`] method,
     /// the input range can exceed 1,000,000,000 for leap seconds.
-    ///
-    /// See also the [`NaiveTime::with_nanosecond`] method.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
-    /// assert_eq!(dt.with_nanosecond(333_333_333),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 56, 333_333_333).unwrap()));
-    /// assert_eq!(dt.with_nanosecond(1_333_333_333), // leap second
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 56, 1_333_333_333).unwrap()));
-    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
+    /// assert_eq!(dt.with_nanosecond(333_333_333)?,
+    ///            NaiveDate::from_ymd(2015, 9, 8)?.and_hms_nano(12, 34, 56, 333_333_333)?);
+    /// assert_eq!(dt.with_nanosecond(1_333_333_333)?, // leap second
+    ///            NaiveDate::from_ymd(2015, 9, 8)?.and_hms_nano(12, 34, 56, 1_333_333_333)?);
+    /// assert!(dt.with_nanosecond(2_000_000_000).is_err());
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
-        self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
+    fn with_nanosecond(&self, nano: u32) -> Result<NaiveDateTime, Error> {
+        let t = self.time.with_nanosecond(nano)?;
+        Ok(NaiveDateTime { time: t, ..*self })
     }
 }
 
@@ -1423,21 +1455,20 @@ impl Timelike for NaiveDateTime {
 /// ```
 /// use chrono::{TimeDelta, NaiveDate};
 ///
-/// let from_ymd = NaiveDate::from_ymd;
+/// let d = NaiveDate::from_ymd(2016, 7, 8)?;
+/// let hms = |h, m, s| d.and_hms(h, m, s);
+/// assert_eq!(hms(3, 5, 7)? + TimeDelta::zero(), hms(3, 5, 7)?);
+/// assert_eq!(hms(3, 5, 7)? + TimeDelta::seconds(1), hms(3, 5, 8)?);
+/// assert_eq!(hms(3, 5, 7)? + TimeDelta::seconds(-1), hms(3, 5, 6)?);
+/// assert_eq!(hms(3, 5, 7)? + TimeDelta::seconds(3600 + 60), hms(4, 6, 7)?);
+/// assert_eq!(hms(3, 5, 7)? + TimeDelta::seconds(86_400),
+///            NaiveDate::from_ymd(2016, 7, 9)?.and_hms(3, 5, 7)?);
+/// assert_eq!(hms(3, 5, 7)? + TimeDelta::days(365),
+///            NaiveDate::from_ymd(2017, 7, 8)?.and_hms(3, 5, 7)?);
 ///
-/// let d = from_ymd(2016, 7, 8);
-/// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
-/// assert_eq!(hms(3, 5, 7) + TimeDelta::zero(),             hms(3, 5, 7));
-/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(1),         hms(3, 5, 8));
-/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(-1),        hms(3, 5, 6));
-/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(3600 + 60), hms(4, 6, 7));
-/// assert_eq!(hms(3, 5, 7) + TimeDelta::seconds(86_400),
-///            from_ymd(2016, 7, 9).and_hms_opt(3, 5, 7).unwrap());
-/// assert_eq!(hms(3, 5, 7) + TimeDelta::days(365),
-///            from_ymd(2017, 7, 8).and_hms_opt(3, 5, 7).unwrap());
-///
-/// let hmsm = |h, m, s, milli| d.and_hms_milli_opt(h, m, s, milli).unwrap();
-/// assert_eq!(hmsm(3, 5, 7, 980) + TimeDelta::milliseconds(450), hmsm(3, 5, 8, 430));
+/// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 980)? + TimeDelta::milliseconds(450), hmsm(3, 5, 8, 430)?);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds are handled,
@@ -1446,16 +1477,17 @@ impl Timelike for NaiveDateTime {
 /// ```
 /// # use chrono::{TimeDelta, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
-/// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
-/// let leap = hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap + TimeDelta::zero(),             hmsm(3, 5, 59, 1_300));
-/// assert_eq!(leap + TimeDelta::milliseconds(-500), hmsm(3, 5, 59, 800));
-/// assert_eq!(leap + TimeDelta::milliseconds(500),  hmsm(3, 5, 59, 1_800));
-/// assert_eq!(leap + TimeDelta::milliseconds(800),  hmsm(3, 6, 0, 100));
-/// assert_eq!(leap + TimeDelta::seconds(10),        hmsm(3, 6, 9, 300));
-/// assert_eq!(leap + TimeDelta::seconds(-10),       hmsm(3, 5, 50, 300));
+/// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8)?.and_hms_milli(h, m, s, milli);
+/// let leap = hmsm(3, 5, 59, 1_300)?;
+/// assert_eq!(leap + TimeDelta::zero(), hmsm(3, 5, 59, 1_300)?);
+/// assert_eq!(leap + TimeDelta::milliseconds(-500), hmsm(3, 5, 59, 800)?);
+/// assert_eq!(leap + TimeDelta::milliseconds(500), hmsm(3, 5, 59, 1_800)?);
+/// assert_eq!(leap + TimeDelta::milliseconds(800), hmsm(3, 6, 0, 100)?);
+/// assert_eq!(leap + TimeDelta::seconds(10), hmsm(3, 6, 9, 300)?);
+/// assert_eq!(leap + TimeDelta::seconds(-10), hmsm(3, 5, 50, 300)?);
 /// assert_eq!(leap + TimeDelta::days(1),
-///            from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap());
+///            from_ymd(2016, 7, 9)?.and_hms_milli(3, 5, 59, 300)?);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Add<TimeDelta> for NaiveDateTime {
     type Output = NaiveDateTime;
@@ -1489,29 +1521,30 @@ impl Add<Months> for NaiveDateTime {
     /// use std::str::FromStr;
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(1, 0, 0)? + Months::new(1),
+    ///     NaiveDate::from_ymd(2014, 2, 1)?.and_hms(1, 0, 0)?
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 2, 0).unwrap() + Months::new(11),
-    ///     NaiveDate::from_ymd_opt(2014, 12, 1).unwrap().and_hms_opt(0, 2, 0).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(0, 2, 0)? + Months::new(11),
+    ///     NaiveDate::from_ymd(2014, 12, 1)?.and_hms(0, 2, 0)?
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap() + Months::new(12),
-    ///     NaiveDate::from_ymd_opt(2015, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(0, 0, 3)? + Months::new(12),
+    ///     NaiveDate::from_ymd(2015, 1, 1)?.and_hms(0, 0, 3)?
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 4).unwrap() + Months::new(13),
-    ///     NaiveDate::from_ymd_opt(2015, 2, 1).unwrap().and_hms_opt(0, 0, 4).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.and_hms(0, 0, 4)? + Months::new(13),
+    ///     NaiveDate::from_ymd(2015, 2, 1)?.and_hms(0, 0, 4)?
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 31).unwrap().and_hms_opt(0, 5, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2014, 2, 28).unwrap().and_hms_opt(0, 5, 0).unwrap()
+    ///     NaiveDate::from_ymd(2014, 1, 31)?.and_hms(0, 5, 0)? + Months::new(1),
+    ///     NaiveDate::from_ymd(2014, 2, 28)?.and_hms(0, 5, 0)?
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2020, 1, 31).unwrap().and_hms_opt(6, 0, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2020, 2, 29).unwrap().and_hms_opt(6, 0, 0).unwrap()
+    ///     NaiveDate::from_ymd(2020, 1, 31)?.and_hms(6, 0, 0)? + Months::new(1),
+    ///     NaiveDate::from_ymd(2020, 2, 29)?.and_hms(6, 0, 0)?
     /// );
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     fn add(self, rhs: Months) -> Self::Output {
         Self { date: self.date.checked_add_months(rhs).unwrap(), time: self.time }
@@ -1536,19 +1569,20 @@ impl Add<Months> for NaiveDateTime {
 ///
 /// let from_ymd = NaiveDate::from_ymd;
 ///
-/// let d = from_ymd(2016, 7, 8);
-/// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
-/// assert_eq!(hms(3, 5, 7) - TimeDelta::zero(),             hms(3, 5, 7));
-/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(1),         hms(3, 5, 6));
-/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(-1),        hms(3, 5, 8));
-/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(3600 + 60), hms(2, 4, 7));
-/// assert_eq!(hms(3, 5, 7) - TimeDelta::seconds(86_400),
-///            from_ymd(2016, 7, 7).and_hms_opt(3, 5, 7).unwrap());
-/// assert_eq!(hms(3, 5, 7) - TimeDelta::days(365),
-///            from_ymd(2015, 7, 9).and_hms_opt(3, 5, 7).unwrap());
+/// let d = from_ymd(2016, 7, 8)?;
+/// let hms = |h, m, s| d.and_hms(h, m, s);
+/// assert_eq!(hms(3, 5, 7)? - TimeDelta::zero(), hms(3, 5, 7)?);
+/// assert_eq!(hms(3, 5, 7)? - TimeDelta::seconds(1), hms(3, 5, 6)?);
+/// assert_eq!(hms(3, 5, 7)? - TimeDelta::seconds(-1), hms(3, 5, 8)?);
+/// assert_eq!(hms(3, 5, 7)? - TimeDelta::seconds(3600 + 60), hms(2, 4, 7)?);
+/// assert_eq!(hms(3, 5, 7)? - TimeDelta::seconds(86_400),
+///            from_ymd(2016, 7, 7)?.and_hms(3, 5, 7)?);
+/// assert_eq!(hms(3, 5, 7)? - TimeDelta::days(365),
+///            from_ymd(2015, 7, 9)?.and_hms(3, 5, 7)?);
 ///
-/// let hmsm = |h, m, s, milli| d.and_hms_milli_opt(h, m, s, milli).unwrap();
-/// assert_eq!(hmsm(3, 5, 7, 450) - TimeDelta::milliseconds(670), hmsm(3, 5, 6, 780));
+/// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
+/// assert_eq!(hmsm(3, 5, 7, 450)? - TimeDelta::milliseconds(670), hmsm(3, 5, 6, 780)?);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds are handled,
@@ -1557,14 +1591,15 @@ impl Add<Months> for NaiveDateTime {
 /// ```
 /// # use chrono::{TimeDelta, NaiveDate};
 /// # let from_ymd = NaiveDate::from_ymd;
-/// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
-/// let leap = hmsm(3, 5, 59, 1_300);
-/// assert_eq!(leap - TimeDelta::zero(),            hmsm(3, 5, 59, 1_300));
-/// assert_eq!(leap - TimeDelta::milliseconds(200), hmsm(3, 5, 59, 1_100));
-/// assert_eq!(leap - TimeDelta::milliseconds(500), hmsm(3, 5, 59, 800));
-/// assert_eq!(leap - TimeDelta::seconds(60),       hmsm(3, 5, 0, 300));
+/// # let hmsm = |h, m, s, milli| Ok::<_, chrono::Error>(from_ymd(2016, 7, 8)?.and_hms_milli(h, m, s, milli)?);
+/// let leap = hmsm(3, 5, 59, 1_300)?;
+/// assert_eq!(leap - TimeDelta::zero(), hmsm(3, 5, 59, 1_300)?);
+/// assert_eq!(leap - TimeDelta::milliseconds(200), hmsm(3, 5, 59, 1_100)?);
+/// assert_eq!(leap - TimeDelta::milliseconds(500), hmsm(3, 5, 59, 800)?);
+/// assert_eq!(leap - TimeDelta::seconds(60), hmsm(3, 5, 0, 300)?);
 /// assert_eq!(leap - TimeDelta::days(1),
-///            from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap());
+///            from_ymd(2016, 7, 7)?.and_hms_milli(3, 6, 0, 300)?);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Sub<TimeDelta> for NaiveDateTime {
     type Output = NaiveDateTime;
@@ -1595,17 +1630,18 @@ impl SubAssign<TimeDelta> for NaiveDateTime {
 /// use std::str::FromStr;
 ///
 /// assert_eq!(
-///     NaiveDate::from_ymd_opt(2014, 01, 01).unwrap().and_hms_opt(01, 00, 00).unwrap() - Months::new(11),
-///     NaiveDate::from_ymd_opt(2013, 02, 01).unwrap().and_hms_opt(01, 00, 00).unwrap()
+///     NaiveDate::from_ymd(2014, 01, 01)?.and_hms(01, 00, 00)? - Months::new(11),
+///     NaiveDate::from_ymd(2013, 02, 01)?.and_hms(01, 00, 00)?
 /// );
 /// assert_eq!(
-///     NaiveDate::from_ymd_opt(2014, 01, 01).unwrap().and_hms_opt(00, 02, 00).unwrap() - Months::new(12),
-///     NaiveDate::from_ymd_opt(2013, 01, 01).unwrap().and_hms_opt(00, 02, 00).unwrap()
+///     NaiveDate::from_ymd(2014, 01, 01)?.unwrap().and_hms(00, 02, 00).unwrap()? - Months::new(12),
+///     NaiveDate::from_ymd(2013, 01, 01)?.unwrap().and_hms(00, 02, 00).unwrap()?
 /// );
 /// assert_eq!(
-///     NaiveDate::from_ymd_opt(2014, 01, 01).unwrap().and_hms_opt(00, 00, 03).unwrap() - Months::new(13),
-///     NaiveDate::from_ymd_opt(2012, 12, 01).unwrap().and_hms_opt(00, 00, 03).unwrap()
+///     NaiveDate::from_ymd(2014, 01, 01)?.and_hms(00, 00, 03)? - Months::new(13),
+///     NaiveDate::from_ymd(2012, 12, 01)?.and_hms(00, 00, 03)?
 /// );
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Sub<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
@@ -1631,15 +1667,14 @@ impl Sub<Months> for NaiveDateTime {
 /// ```
 /// use chrono::{TimeDelta, NaiveDate};
 ///
-/// let from_ymd = NaiveDate::from_ymd;
-///
-/// let d = from_ymd(2016, 7, 8);
-/// assert_eq!(d.and_hms_opt(3, 5, 7).unwrap() - d.and_hms_opt(2, 4, 6).unwrap(), TimeDelta::seconds(3600 + 60 + 1));
+/// let d = NaiveDate::from_ymd(2016, 7, 8)?;
+/// assert_eq!(d.and_hms(3, 5, 7)? - d.and_hms(2, 4, 6)?, TimeDelta::seconds(3600 + 60 + 1));
 ///
 /// // July 8 is 190th day in the year 2016
-/// let d0 = from_ymd(2016, 1, 1);
-/// assert_eq!(d.and_hms_milli_opt(0, 7, 6, 500).unwrap() - d0.and_hms_opt(0, 0, 0).unwrap(),
+/// let d0 = NaiveDate::from_ymd(2016, 1, 1)?;
+/// assert_eq!(d.and_hms_milli(0, 7, 6, 500)? - d0.and_hms(0, 0, 0)?,
 ///            TimeDelta::seconds(189 * 86_400 + 7 * 60 + 6) + TimeDelta::milliseconds(500));
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds are handled, but the subtraction assumes that no other leap
@@ -1647,12 +1682,14 @@ impl Sub<Months> for NaiveDateTime {
 ///
 /// ```
 /// # use chrono::{TimeDelta, NaiveDate};
-/// # let from_ymd = NaiveDate::from_ymd;
-/// let leap = from_ymd(2015, 6, 30).and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
-/// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms_opt(23, 0, 0).unwrap(),
+/// let leap = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_500)?;
+///
+/// assert_eq!(leap - NaiveDate::from_ymd(2015, 6, 30)?.and_hms(23, 0, 0)?,
 ///            TimeDelta::seconds(3600) + TimeDelta::milliseconds(500));
-/// assert_eq!(from_ymd(2015, 7, 1).and_hms_opt(1, 0, 0).unwrap() - leap,
+///
+/// assert_eq!(NaiveDate::from_ymd(2015, 7, 1)?.and_hms(1, 0, 0)? - leap,
 ///            TimeDelta::seconds(3600) - TimeDelta::milliseconds(500));
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Sub<NaiveDateTime> for NaiveDateTime {
     type Output = TimeDelta;
@@ -1695,16 +1732,18 @@ impl Sub<Days> for NaiveDateTime {
 /// ```
 /// use chrono::NaiveDate;
 ///
-/// let dt = NaiveDate::from_ymd_opt(2016, 11, 15).unwrap().and_hms_opt(7, 39, 24).unwrap();
+/// let dt = NaiveDate::from_ymd(2016, 11, 15)?.and_hms(7, 39, 24)?;
 /// assert_eq!(format!("{:?}", dt), "2016-11-15T07:39:24");
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds may also be used.
 ///
 /// ```
 /// # use chrono::NaiveDate;
-/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
+/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_500)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60.500");
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl fmt::Debug for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1728,16 +1767,18 @@ impl fmt::Debug for NaiveDateTime {
 /// ```
 /// use chrono::NaiveDate;
 ///
-/// let dt = NaiveDate::from_ymd_opt(2016, 11, 15).unwrap().and_hms_opt(7, 39, 24).unwrap();
+/// let dt = NaiveDate::from_ymd(2016, 11, 15)?.and_hms(7, 39, 24)?;
 /// assert_eq!(format!("{}", dt), "2016-11-15 07:39:24");
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Leap seconds may also be used.
 ///
 /// ```
 /// # use chrono::NaiveDate;
-/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
+/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_500)?;
 /// assert_eq!(format!("{}", dt), "2015-06-30 23:59:60.500");
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl fmt::Display for NaiveDateTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1755,18 +1796,19 @@ impl fmt::Display for NaiveDateTime {
 /// ```
 /// use chrono::{NaiveDateTime, NaiveDate};
 ///
-/// let dt = NaiveDate::from_ymd_opt(2015, 9, 18).unwrap().and_hms_opt(23, 56, 4).unwrap();
+/// let dt = NaiveDate::from_ymd(2015, 9, 18)?.and_hms(23, 56, 4)?;
 /// assert_eq!("2015-09-18T23:56:04".parse::<NaiveDateTime>(), Ok(dt));
 ///
-/// let dt = NaiveDate::from_ymd_opt(12345, 6, 7).unwrap().and_hms_milli_opt(7, 59, 59, 1_500).unwrap(); // leap second
+/// let dt = NaiveDate::from_ymd(12345, 6, 7)?.and_hms_milli(7, 59, 59, 1_500)?; // leap second
 /// assert_eq!("+12345-6-7T7:59:60.5".parse::<NaiveDateTime>(), Ok(dt));
 ///
 /// assert!("foo".parse::<NaiveDateTime>().is_err());
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl str::FromStr for NaiveDateTime {
-    type Err = ParseError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
+    fn from_str(s: &str) -> Result<NaiveDateTime, Error> {
         const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
             Item::Space(""),
@@ -1803,11 +1845,12 @@ impl str::FromStr for NaiveDateTime {
 /// use chrono::NaiveDateTime;
 ///
 /// let default_date = NaiveDateTime::default();
-/// assert_eq!(default_date, NaiveDateTime::from_timestamp(0, 0));
+/// assert_eq!(default_date, NaiveDateTime::from_timestamp(0, 0)?);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 impl Default for NaiveDateTime {
     fn default() -> Self {
-        NaiveDateTime::from_timestamp_opt(0, 0).unwrap()
+        NaiveDateTime::UNIX_EPOCH
     }
 }
 
@@ -1818,37 +1861,30 @@ where
     E: ::std::fmt::Debug,
 {
     assert_eq!(
-        to_string(
-            &NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap()
-        )
-        .ok(),
+        to_string(&NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli(9, 10, 48, 90).unwrap())
+            .ok(),
         Some(r#""2016-07-08T09:10:48.090""#.into())
     );
     assert_eq!(
-        to_string(&NaiveDate::from_ymd_opt(2014, 7, 24).unwrap().and_hms_opt(12, 34, 6).unwrap())
-            .ok(),
+        to_string(&NaiveDate::from_ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()).ok(),
         Some(r#""2014-07-24T12:34:06""#.into())
     );
     assert_eq!(
-        to_string(
-            &NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap()
-        )
-        .ok(),
+        to_string(&NaiveDate::from_ymd(0, 1, 1).unwrap().and_hms_milli(0, 0, 59, 1_000).unwrap())
+            .ok(),
         Some(r#""0000-01-01T00:00:60""#.into())
     );
     assert_eq!(
-        to_string(
-            &NaiveDate::from_ymd_opt(-1, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap()
-        )
-        .ok(),
+        to_string(&NaiveDate::from_ymd(-1, 12, 31).unwrap().and_hms_nano(23, 59, 59, 7).unwrap())
+            .ok(),
         Some(r#""-0001-12-31T23:59:59.000000007""#.into())
     );
     assert_eq!(
-        to_string(&NaiveDate::MIN.and_hms_opt(0, 0, 0).unwrap()).ok(),
+        to_string(&NaiveDate::MIN.and_hms(0, 0, 0).unwrap()).ok(),
         Some(r#""-262144-01-01T00:00:00""#.into())
     );
     assert_eq!(
-        to_string(&NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap()).ok(),
+        to_string(&NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999).unwrap()).ok(),
         Some(r#""+262143-12-31T23:59:60.999999999""#.into())
     );
 }
@@ -1860,44 +1896,42 @@ where
     E: ::std::fmt::Debug,
 {
     assert_eq!(
-        from_str(r#""2016-07-08T09:10:48.090""#).ok(),
-        Some(
-            NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap()
-        )
+        from_str(r#""2016-07-08T09:10:48.090""#).unwrap(),
+        NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli(9, 10, 48, 90).unwrap()
     );
     assert_eq!(
-        from_str(r#""2016-7-8T9:10:48.09""#).ok(),
-        Some(
-            NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap()
-        )
+        from_str(r#""2016-7-8T9:10:48.09""#).unwrap(),
+        
+            NaiveDate::from_ymd(2016, 7, 8).unwrap().unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap()
+        .unwrap()
     );
     assert_eq!(
-        from_str(r#""2014-07-24T12:34:06""#).ok(),
-        Some(NaiveDate::from_ymd_opt(2014, 7, 24).unwrap().and_hms_opt(12, 34, 6).unwrap())
+        from_str(r#""2014-07-24T12:34:06""#).unwrap(),
+        NaiveDate::from_ymd(2014, 7, 24).unwrap().unwrap().and_hms(12, 34, 6).unwrap().unwrap()
     );
     assert_eq!(
-        from_str(r#""0000-01-01T00:00:60""#).ok(),
-        Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap())
+        from_str(r#""0000-01-01T00:00:60""#).unwrap(),
+        NaiveDate::from_ymd(0, 1, 1).unwrap().unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap().unwrap()
     );
     assert_eq!(
-        from_str(r#""0-1-1T0:0:60""#).ok(),
-        Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap())
+        from_str(r#""0-1-1T0:0:60""#).unwrap(),
+        NaiveDate::from_ymd(0, 1, 1).unwrap().unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap().unwrap()
     );
     assert_eq!(
-        from_str(r#""-0001-12-31T23:59:59.000000007""#).ok(),
-        Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap())
+        from_str(r#""-0001-12-31T23:59:59.000000007""#).unwrap(),
+        NaiveDate::from_ymd(-1, 12, 31).unwrap().unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap().unwrap()
     );
     assert_eq!(
-        from_str(r#""-262144-01-01T00:00:00""#).ok(),
-        Some(NaiveDate::MIN.and_hms_opt(0, 0, 0).unwrap())
+        from_str(r#""-262144-01-01T00:00:00""#).unwrap(),
+        NaiveDate::MIN.and_hms(0, 0, 0).unwrap()
     );
     assert_eq!(
-        from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
-        Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
+        from_str(r#""+262143-12-31T23:59:60.999999999""#).unwrap(),
+        NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999).unwrap()
     );
     assert_eq!(
-        from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
-        Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
+        from_str(r#""+262143-12-31T23:59:60.9999999999997""#).unwrap(), // excess digits are ignored
+        NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999).unwrap()
     );
 
     // bad formats

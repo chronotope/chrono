@@ -20,7 +20,7 @@ use core::{fmt, i32};
 
 use num_integer::{div_rem, mod_floor};
 
-use crate::Weekday;
+use crate::{Error, Weekday};
 
 /// The internal date representation. This also includes the packed `Mdf` value.
 pub(super) type DateImpl = i32;
@@ -272,10 +272,10 @@ pub(super) struct Of(pub(crate) u32);
 
 impl Of {
     #[inline]
-    pub(super) fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
+    pub(super) fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Result<Of, Error> {
         match ordinal <= 366 {
-            true => Some(Of((ordinal << 4) | u32::from(flags))),
-            false => None,
+            true => Ok(Of((ordinal << 4) | u32::from(flags))),
+            false => Err(Error::InvalidDate),
         }
     }
 
@@ -302,13 +302,13 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn with_ordinal(&self, ordinal: u32) -> Option<Of> {
+    pub(super) fn with_ordinal(&self, ordinal: u32) -> Result<Of, Error> {
         if ordinal > 366 {
-            return None;
+            return Err(Error::ParsingOutOfRange);
         }
 
         let Of(of) = *self;
-        Some(Of((of & 0b1111) | (ordinal << 4)))
+        Ok(Of((of & 0b1111) | (ordinal << 4)))
     }
 
     #[inline]
@@ -373,10 +373,10 @@ pub(super) struct Mdf(pub(super) u32);
 
 impl Mdf {
     #[inline]
-    pub(super) fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
+    pub(super) fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Result<Mdf, Error> {
         match month <= 12 && day <= 31 {
-            true => Some(Mdf((month << 9) | (day << 4) | u32::from(flags))),
-            false => None,
+            true => Ok(Mdf((month << 9) | (day << 4) | u32::from(flags))),
+            false => Err(Error::InvalidDate),
         }
     }
 
@@ -406,13 +406,13 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_month(&self, month: u32) -> Option<Mdf> {
+    pub(super) fn with_month(&self, month: u32) -> Result<Mdf, Error> {
         if month > 12 {
-            return None;
+            return Err(Error::InvalidDate);
         }
 
         let Mdf(mdf) = *self;
-        Some(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
+        Ok(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
     }
 
     #[inline]
@@ -422,13 +422,13 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_day(&self, day: u32) -> Option<Mdf> {
+    pub(super) fn with_day(&self, day: u32) -> Result<Mdf, Error> {
         if day > 31 {
-            return None;
+            return Err(Error::InvalidDate);
         }
 
         let Mdf(mdf) = *self;
-        Some(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
+        Ok(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
     }
 
     #[inline]
@@ -511,9 +511,9 @@ mod tests {
         fn check(expected: bool, flags: YearFlags, ordinal1: u32, ordinal2: u32) {
             for ordinal in range_inclusive(ordinal1, ordinal2) {
                 let of = match Of::new(ordinal, flags) {
-                    Some(of) => of,
-                    None if !expected => continue,
-                    None => panic!("Of::new({}, {:?}) returned None", ordinal, flags),
+                    Ok(of) => of,
+                    Err(..) if !expected => continue,
+                    Err(..) => panic!("Of::new({}, {:?}) returned None", ordinal, flags),
                 };
 
                 assert!(
@@ -548,9 +548,9 @@ mod tests {
             for month in range_inclusive(month1, month2) {
                 for day in range_inclusive(day1, day2) {
                     let mdf = match Mdf::new(month, day, flags) {
-                        Some(mdf) => mdf,
-                        None if !expected => continue,
-                        None => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
+                        Ok(mdf) => mdf,
+                        Err(..) if !expected => continue,
+                        Err(..) => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
                     };
 
                     assert!(
@@ -652,9 +652,9 @@ mod tests {
 
             for ordinal in range_inclusive(0u32, 1024) {
                 let of = match of.with_ordinal(ordinal) {
-                    Some(of) => of,
-                    None if ordinal > 366 => continue,
-                    None => panic!("failed to create Of with ordinal {}", ordinal),
+                    Ok(of) => of,
+                    Err(..) if ordinal > 366 => continue,
+                    Err(..) => panic!("failed to create Of with ordinal {}", ordinal),
                 };
 
                 assert_eq!(of.valid(), Of::new(ordinal, flags).unwrap().valid());
@@ -708,8 +708,8 @@ mod tests {
             for month in range_inclusive(1u32, 12) {
                 for day in range_inclusive(1u32, 31) {
                     let mdf = match Mdf::new(month, day, flags) {
-                        Some(mdf) => mdf,
-                        None => continue,
+                        Ok(mdf) => mdf,
+                        Err(..) => continue,
                     };
 
                     if mdf.valid() {
@@ -728,9 +728,9 @@ mod tests {
 
             for month in range_inclusive(0u32, 16) {
                 let mdf = match mdf.with_month(month) {
-                    Some(mdf) => mdf,
-                    None if month > 12 => continue,
-                    None => panic!("failed to create Mdf with month {}", month),
+                    Ok(mdf) => mdf,
+                    Err(..) if month > 12 => continue,
+                    Err(..) => panic!("failed to create Mdf with month {}", month),
                 };
 
                 if mdf.valid() {
@@ -741,9 +741,9 @@ mod tests {
 
             for day in range_inclusive(0u32, 1024) {
                 let mdf = match mdf.with_day(day) {
-                    Some(mdf) => mdf,
-                    None if day > 31 => continue,
-                    None => panic!("failed to create Mdf with month {}", month),
+                    Ok(mdf) => mdf,
+                    Err(..) if day > 31 => continue,
+                    Err(..) => panic!("failed to create Mdf with month {}", month),
                 };
 
                 if mdf.valid() {

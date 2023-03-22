@@ -7,19 +7,28 @@
 // <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
+#![allow(dead_code)]
 
 use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::SystemTime};
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
-use crate::{Datelike, LocalResult, Utc};
+use crate::offset::LocalResult;
+use crate::{Datelike, Error, Utc};
 
-pub(super) fn now() -> DateTime<Local> {
-    let now = Utc::now().naive_utc();
-    naive_to_local(&now, false).unwrap()
+pub(super) fn now() -> Result<DateTime<Local>, Error> {
+    let now = Utc::now()?.naive_utc();
+
+    match naive_to_local(&now, false)? {
+        LocalResult::Single(dt) => Ok(dt),
+        _ => Err(Error::AmbiguousDate),
+    }
 }
 
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+pub(super) fn naive_to_local(
+    d: &NaiveDateTime,
+    local: bool,
+) -> Result<LocalResult<DateTime<Local>>, Error> {
     TZ_INFO.with(|maybe_cache| {
         maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
     })
@@ -102,61 +111,26 @@ fn current_zone(var: Option<&str>) -> TimeZone {
 }
 
 impl Cache {
-    fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
-        let now = SystemTime::now();
+    fn offset(
+        &mut self,
+        d: NaiveDateTime,
+        local: bool,
+    ) -> Result<LocalResult<DateTime<Local>>, Error> {
 
-        match now.duration_since(self.last_checked) {
-            // If the cache has been around for less than a second then we reuse it
-            // unconditionally. This is a reasonable tradeoff because the timezone
-            // generally won't be changing _that_ often, but if the time zone does
-            // change, it will reflect sufficiently quickly from an application
-            // user's perspective.
-            Ok(d) if d.as_secs() < 1 => (),
-            Ok(_) | Err(_) => {
-                let env_tz = env::var("TZ").ok();
-                let env_ref = env_tz.as_deref();
-                let new_source = Source::new(env_ref);
-
-                let out_of_date = match (&self.source, &new_source) {
-                    // change from env to file or file to env, must recreate the zone
-                    (Source::Environment { .. }, Source::LocalTime { .. })
-                    | (Source::LocalTime { .. }, Source::Environment { .. }) => true,
-                    // stay as file, but mtime has changed
-                    (Source::LocalTime { mtime: old_mtime }, Source::LocalTime { mtime })
-                        if old_mtime != mtime =>
-                    {
-                        true
-                    }
-                    // stay as env, but hash of variable has changed
-                    (Source::Environment { hash: old_hash }, Source::Environment { hash })
-                        if old_hash != hash =>
-                    {
-                        true
-                    }
-                    // cache can be reused
-                    _ => false,
-                };
-
-                if out_of_date {
-                    self.zone = current_zone(env_ref);
-                }
-
-                self.last_checked = now;
-                self.source = new_source;
-            }
-        }
+        // TODO Check why this was added
+        // if self.source.out_of_date() {
+        //     *self = Cache::default();
+        // }
 
         if !local {
-            let offset = self
-                .zone
-                .find_local_time_type(d.timestamp())
-                .expect("unable to select local time type")
-                .offset();
+            let offset = FixedOffset::east(
+                self.zone
+                    .find_local_time_type(d.timestamp())
+                    .expect("unable to select local time type")
+                    .offset(),
+            )?;
 
-            return match FixedOffset::east_opt(offset) {
-                Some(offset) => LocalResult::Single(DateTime::from_utc(d, offset)),
-                None => LocalResult::None,
-            };
+            return Ok(LocalResult::Single(DateTime::from_utc(d, offset)));
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
@@ -166,19 +140,19 @@ impl Cache {
             .find_local_time_type_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
         {
-            LocalResult::None => LocalResult::None,
-            LocalResult::Ambiguous(early, late) => {
-                let early_offset = FixedOffset::east_opt(early.offset()).unwrap();
-                let late_offset = FixedOffset::east_opt(late.offset()).unwrap();
+            None => Err(Error::MissingDate),
+            Some(LocalResult::Ambiguous(early, late)) => {
+                let early_offset = FixedOffset::east(early.offset())?;
+                let late_offset = FixedOffset::east(late.offset())?;
 
-                LocalResult::Ambiguous(
+                Ok(LocalResult::Ambiguous(
                     DateTime::from_utc(d - early_offset, early_offset),
                     DateTime::from_utc(d - late_offset, late_offset),
-                )
+                ))
             }
-            LocalResult::Single(tt) => {
-                let offset = FixedOffset::east_opt(tt.offset()).unwrap();
-                LocalResult::Single(DateTime::from_utc(d - offset, offset))
+            Some(LocalResult::Single(tt)) => {
+                let offset = FixedOffset::east(tt.offset())?;
+                Ok(LocalResult::Single(DateTime::from_utc(d - offset, offset)))
             }
         }
     }

@@ -3,9 +3,11 @@ use std::cmp::Ordering;
 use super::parser::Cursor;
 use super::timezone::{LocalTimeType, SECONDS_PER_WEEK};
 use super::{
-    rem_euclid, Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
+    rem_euclid, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
     SECONDS_PER_DAY,
 };
+use crate::offset::LocalResult;
+use crate::Error;
 
 /// Transition rule
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -84,10 +86,10 @@ impl TransitionRule {
         &self,
         local_time: i64,
         year: i32,
-    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
+    ) -> Result<Option<LocalResult<LocalTimeType>>, Error> {
         match self {
             TransitionRule::Fixed(local_time_type) => {
-                Ok(crate::LocalResult::Single(*local_time_type))
+                Ok(Some(LocalResult::Single(*local_time_type)))
             }
             TransitionRule::Alternate(alternate_time) => {
                 alternate_time.find_local_time_type_from_local(local_time, year)
@@ -232,7 +234,7 @@ impl AlternateTime {
         &self,
         local_time: i64,
         current_year: i32,
-    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
+    ) -> Result<Option<LocalResult<LocalTimeType>>, Error> {
         // Check if the current year is valid for the following computations
         if !(i32::min_value() + 2 <= current_year && current_year <= i32::max_value() - 2) {
             return Err(Error::OutOfRange("out of range date time"));
@@ -253,7 +255,7 @@ impl AlternateTime {
             - i64::from(self.dst.ut_offset);
 
         match self.std.ut_offset.cmp(&self.dst.ut_offset) {
-            Ordering::Equal => Ok(crate::LocalResult::Single(self.std)),
+            Ordering::Equal => Ok(Some(LocalResult::Single(self.std))),
             Ordering::Less => {
                 if self.dst_start.transition_date(current_year).0
                     < self.dst_end.transition_date(current_year).0
@@ -261,41 +263,41 @@ impl AlternateTime {
                     // northern hemisphere
                     // For the DST END transition, the `start` happens at a later timestamp than the `end`.
                     if local_time <= dst_start_transition_start {
-                        Ok(crate::LocalResult::Single(self.std))
+                        Ok(Some(LocalResult::Single(self.std)))
                     } else if local_time > dst_start_transition_start
                         && local_time < dst_start_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(None)
                     } else if local_time >= dst_start_transition_end
                         && local_time < dst_end_transition_end
                     {
-                        Ok(crate::LocalResult::Single(self.dst))
+                        Ok(Some(LocalResult::Single(self.dst)))
                     } else if local_time >= dst_end_transition_end
                         && local_time <= dst_end_transition_start
                     {
-                        Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                        Ok(Some(LocalResult::Ambiguous(self.std, self.dst)))
                     } else {
-                        Ok(crate::LocalResult::Single(self.std))
+                        Ok(Some(LocalResult::Single(self.std)))
                     }
                 } else {
                     // southern hemisphere regular DST
                     // For the DST END transition, the `start` happens at a later timestamp than the `end`.
                     if local_time < dst_end_transition_end {
-                        Ok(crate::LocalResult::Single(self.dst))
+                        Ok(Some(LocalResult::Single(self.dst)))
                     } else if local_time >= dst_end_transition_end
                         && local_time <= dst_end_transition_start
                     {
-                        Ok(crate::LocalResult::Ambiguous(self.std, self.dst))
+                        Ok(Some(LocalResult::Ambiguous(self.std, self.dst)))
                     } else if local_time > dst_end_transition_end
                         && local_time < dst_start_transition_start
                     {
-                        Ok(crate::LocalResult::Single(self.std))
+                        Ok(Some(LocalResult::Single(self.std)))
                     } else if local_time >= dst_start_transition_start
                         && local_time < dst_start_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(None)
                     } else {
-                        Ok(crate::LocalResult::Single(self.dst))
+                        Ok(Some(LocalResult::Single(self.dst)))
                     }
                 }
             }
@@ -306,41 +308,41 @@ impl AlternateTime {
                     // southern hemisphere reverse DST
                     // For the DST END transition, the `start` happens at a later timestamp than the `end`.
                     if local_time < dst_start_transition_end {
-                        Ok(crate::LocalResult::Single(self.std))
+                        Ok(Some(LocalResult::Single(self.std)))
                     } else if local_time >= dst_start_transition_end
                         && local_time <= dst_start_transition_start
                     {
-                        Ok(crate::LocalResult::Ambiguous(self.dst, self.std))
+                        Ok(Some(LocalResult::Ambiguous(self.dst, self.std)))
                     } else if local_time > dst_start_transition_start
                         && local_time < dst_end_transition_start
                     {
-                        Ok(crate::LocalResult::Single(self.dst))
+                        Ok(Some(LocalResult::Single(self.dst)))
                     } else if local_time >= dst_end_transition_start
                         && local_time < dst_end_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(None)
                     } else {
-                        Ok(crate::LocalResult::Single(self.std))
+                        Ok(Some(LocalResult::Single(self.std)))
                     }
                 } else {
                     // northern hemisphere reverse DST
                     // For the DST END transition, the `start` happens at a later timestamp than the `end`.
                     if local_time <= dst_end_transition_start {
-                        Ok(crate::LocalResult::Single(self.dst))
+                        Ok(Some(LocalResult::Single(self.dst)))
                     } else if local_time > dst_end_transition_start
                         && local_time < dst_end_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(None)
                     } else if local_time >= dst_end_transition_end
                         && local_time < dst_start_transition_end
                     {
-                        Ok(crate::LocalResult::Single(self.std))
+                        Ok(Some(LocalResult::Single(self.std)))
                     } else if local_time >= dst_start_transition_end
                         && local_time <= dst_start_transition_start
                     {
-                        Ok(crate::LocalResult::Ambiguous(self.dst, self.std))
+                        Ok(Some(LocalResult::Ambiguous(self.dst, self.std)))
                     } else {
-                        Ok(crate::LocalResult::Single(self.dst))
+                        Ok(Some(LocalResult::Single(self.dst)))
                     }
                 }
             }
@@ -775,9 +777,9 @@ pub(crate) fn is_leap_year(year: i32) -> bool {
 #[cfg(test)]
 mod tests {
     use super::super::timezone::Transition;
-    use super::super::{Error, TimeZone};
+    use super::super::TimeZone;
     use super::{AlternateTime, LocalTimeType, RuleDay, TransitionRule};
-    use crate::matches;
+    use crate::{Error, matches};
 
     #[test]
     fn test_quoted() -> Result<(), Error> {

@@ -47,9 +47,9 @@ Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time)
 if you want.
 
 Chrono inherently does not support an inaccurate or partial date and time representation.
-Any operation that can be ambiguous will return `None` in such cases.
+Any operation that can be ambiguous will return `Err(chrono::Error)` in such cases.
 For example, "a month later" of 2014-01-30 is not well-defined
-and consequently `Utc.ymd_opt(2014, 1, 30).unwrap().with_month(2)` returns `None`.
+and consequently `Utc.ymd(2014, 1, 30).with_month(2)` returns `Err(chrono::Error)`.
 
 Non ISO week handling is not yet supported.
 For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
