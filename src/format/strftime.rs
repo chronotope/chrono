@@ -743,6 +743,7 @@ fn test_strftime_docs() {
 #[test]
 fn test_strftime_docs_localized() {
     use crate::{FixedOffset, NaiveDate};
+    use crate::offset::TimeZone;
 
     let dt = FixedOffset::east(34200)
         .unwrap()

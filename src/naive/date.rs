@@ -204,7 +204,7 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
         let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
         let max_days = YearFlags::from_year(year).ndays();
         let ord = u.int_in_range(1..=max_days)?;
-        NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
+        NaiveDate::from_yo(year, ord).map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 

@@ -1892,25 +1892,23 @@ where
     );
     assert_eq!(
         from_str(r#""2016-7-8T9:10:48.09""#).unwrap(),
-        
-            NaiveDate::from_ymd(2016, 7, 8).unwrap().unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap()
-        .unwrap()
+        NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli(9, 10, 48, 90).unwrap()
     );
     assert_eq!(
         from_str(r#""2014-07-24T12:34:06""#).unwrap(),
-        NaiveDate::from_ymd(2014, 7, 24).unwrap().unwrap().and_hms(12, 34, 6).unwrap().unwrap()
+        NaiveDate::from_ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap()
     );
     assert_eq!(
         from_str(r#""0000-01-01T00:00:60""#).unwrap(),
-        NaiveDate::from_ymd(0, 1, 1).unwrap().unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap().unwrap()
+        NaiveDate::from_ymd(0, 1, 1).unwrap().and_hms_milli(0, 0, 59, 1_000).unwrap()
     );
     assert_eq!(
         from_str(r#""0-1-1T0:0:60""#).unwrap(),
-        NaiveDate::from_ymd(0, 1, 1).unwrap().unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap().unwrap()
+        NaiveDate::from_ymd(0, 1, 1).unwrap().and_hms_milli(0, 0, 59, 1_000).unwrap()
     );
     assert_eq!(
         from_str(r#""-0001-12-31T23:59:59.000000007""#).unwrap(),
-        NaiveDate::from_ymd(-1, 12, 31).unwrap().unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap().unwrap()
+        NaiveDate::from_ymd(-1, 12, 31).unwrap().and_hms_nano(23, 59, 59, 7).unwrap()
     );
     assert_eq!(
         from_str(r#""-262144-01-01T00:00:00""#).unwrap(),

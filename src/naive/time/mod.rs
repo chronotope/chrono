@@ -198,7 +198,7 @@ impl arbitrary::Arbitrary<'_> for NaiveTime {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveTime> {
         let secs = u.int_in_range(0..=86_399)?;
         let nano = u.int_in_range(0..=1_999_999_999)?;
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs, nano)
+        let time = NaiveTime::from_num_seconds_from_midnight(secs, nano)
             .expect("Could not generate a valid chrono::NaiveTime. It looks like implementation of Arbitrary for NaiveTime is erroneous.");
         Ok(time)
     }
@@ -1379,11 +1379,11 @@ where
     assert_eq!(from_str(r#""07:08:09""#).unwrap(), NaiveTime::from_hms(7, 8, 9).unwrap());
     assert_eq!(
         from_str(r#""12:34:56.000789""#).unwrap(),
-        NaiveTime::from_hms_micro_opt(12, 34, 56, 789).unwrap().unwrap()
+        NaiveTime::from_hms_micro(12, 34, 56, 789).unwrap()
     );
     assert_eq!(
         from_str(r#""23:59:60.999999999""#).unwrap(),
-        NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999).unwrap().unwrap()
+        NaiveTime::from_hms_nano(23, 59, 59, 1_999_999_999).unwrap()
     );
     assert_eq!(
         from_str(r#""23:59:60.9999999999997""#).unwrap(), // excess digits are ignored
