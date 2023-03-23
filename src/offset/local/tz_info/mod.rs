@@ -7,7 +7,6 @@ pub(crate) use timezone::TimeZone;
 mod parser;
 mod rule;
 
-
 // MSRV: 1.38
 #[inline]
 fn rem_euclid(v: i64, rhs: i64) -> i64 {

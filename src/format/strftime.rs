@@ -742,8 +742,8 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use crate::{FixedOffset, NaiveDate};
     use crate::offset::TimeZone;
+    use crate::{FixedOffset, NaiveDate};
 
     let dt = FixedOffset::east(34200)
         .unwrap()

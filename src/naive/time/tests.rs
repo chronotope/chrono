@@ -97,36 +97,12 @@ fn test_time_add() {
 
     check!(hmsm(3, 5, 7, 900), TimeDelta::zero(), hmsm(3, 5, 7, 900));
     check!(hmsm(3, 5, 7, 900), TimeDelta::milliseconds(100), hmsm(3, 5, 8, 0));
-    check!(
-        hmsm(3, 5, 7, 1_300),
-        TimeDelta::milliseconds(-1800),
-        hmsm(3, 5, 6, 500)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_300),
-        TimeDelta::milliseconds(-800),
-        hmsm(3, 5, 7, 500)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_300),
-        TimeDelta::milliseconds(-100),
-        hmsm(3, 5, 7, 1_200)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_300),
-        TimeDelta::milliseconds(100),
-        hmsm(3, 5, 7, 1_400)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_300),
-        TimeDelta::milliseconds(800),
-        hmsm(3, 5, 8, 100)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_300),
-        TimeDelta::milliseconds(1800),
-        hmsm(3, 5, 9, 100)
-    );
+    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-1800), hmsm(3, 5, 6, 500));
+    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-800), hmsm(3, 5, 7, 500));
+    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-100), hmsm(3, 5, 7, 1_200));
+    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(100), hmsm(3, 5, 7, 1_400));
+    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(800), hmsm(3, 5, 8, 100));
+    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 5, 9, 100));
     check!(hmsm(3, 5, 7, 900), TimeDelta::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
     check!(hmsm(3, 5, 7, 900), TimeDelta::seconds(-86399), hmsm(3, 5, 8, 900));
     check!(hmsm(3, 5, 7, 900), TimeDelta::days(12345), hmsm(3, 5, 7, 900));
@@ -135,11 +111,7 @@ fn test_time_add() {
 
     // regression tests for #37
     check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10));
-    check!(
-        hmsm(0, 0, 0, 0),
-        TimeDelta::milliseconds(-9990),
-        hmsm(23, 59, 50, 10)
-    );
+    check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-9990), hmsm(23, 59, 50, 10));
 }
 
 #[test]
@@ -204,11 +176,7 @@ fn test_time_sub() {
 
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), TimeDelta::zero());
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::milliseconds(300));
-    check!(
-        hmsm(3, 5, 7, 200),
-        hmsm(2, 4, 6, 200),
-        TimeDelta::seconds(3600 + 60 + 1)
-    );
+    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), TimeDelta::seconds(3600 + 60 + 1));
     check!(
         hmsm(3, 5, 7, 200),
         hmsm(2, 4, 6, 300),
@@ -217,32 +185,14 @@ fn test_time_sub() {
 
     // treats the leap second as if it coincides with the prior non-leap second,
     // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
-    check!(
-        hmsm(3, 5, 7, 200),
-        hmsm(3, 5, 6, 1_800),
-        TimeDelta::milliseconds(400)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_200),
-        hmsm(3, 5, 6, 1_800),
-        TimeDelta::milliseconds(1400)
-    );
-    check!(
-        hmsm(3, 5, 7, 1_200),
-        hmsm(3, 5, 6, 800),
-        TimeDelta::milliseconds(1400)
-    );
+    check!(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(400));
+    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(1400));
+    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), TimeDelta::milliseconds(1400));
 
     // additional equality: `time1 + duration = time2` is equivalent to
     // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
-    assert_eq!(
-        hmsm(3, 5, 6, 800) + TimeDelta::milliseconds(400),
-        hmsm(3, 5, 7, 200)
-    );
-    assert_eq!(
-        hmsm(3, 5, 6, 1_800) + TimeDelta::milliseconds(400),
-        hmsm(3, 5, 7, 200)
-    );
+    assert_eq!(hmsm(3, 5, 6, 800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
+    assert_eq!(hmsm(3, 5, 6, 1_800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
 }
 
 #[test]

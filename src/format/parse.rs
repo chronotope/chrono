@@ -12,7 +12,7 @@ use core::usize;
 
 use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
-use crate::{Error, DateTime, FixedOffset, Weekday};
+use crate::{DateTime, Error, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> Result<(), Error> {
     p.set_weekday(match v {
@@ -1360,12 +1360,27 @@ fn test_rfc2822() {
     assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 -0800").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // normal case
     assert_eq!(rfc("Fri,  2 Jan 2015 17:35:20 -0800").unwrap(), "Fri, 02 Jan 2015 17:35:20 -0800"); // folding whitespace
     assert_eq!(rfc("Fri, 02 Jan 2015 17:35:20 -0800").unwrap(), "Fri, 02 Jan 2015 17:35:20 -0800"); // leading zero
-    assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // trailing comment
-    assert_eq!(rfc("Tue,  20 Jan 2015 17:35:20 -0800 (UTC)").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // intermixed arbitrary whitespace
-    assert_eq!(rfc("Tue, 20     Jan   2015\t17:35:20\t-0800\t\t(UTC)").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // intermixed arbitrary whitespace
-    assert_eq!(rfc(r"Tue, 20 Jan 2015 17:35:20 -0800 ( (UTC ) (\( (a)\(( \t ) ) \\( \) ))").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // complex trailing comment
+    assert_eq!(
+        rfc("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)").unwrap(),
+        "Tue, 20 Jan 2015 17:35:20 -0800"
+    ); // trailing comment
+    assert_eq!(
+        rfc("Tue,  20 Jan 2015 17:35:20 -0800 (UTC)").unwrap(),
+        "Tue, 20 Jan 2015 17:35:20 -0800"
+    ); // intermixed arbitrary whitespace
+    assert_eq!(
+        rfc("Tue, 20     Jan   2015\t17:35:20\t-0800\t\t(UTC)").unwrap(),
+        "Tue, 20 Jan 2015 17:35:20 -0800"
+    ); // intermixed arbitrary whitespace
+    assert_eq!(
+        rfc(r"Tue, 20 Jan 2015 17:35:20 -0800 ( (UTC ) (\( (a)\(( \t ) ) \\( \) ))").unwrap(),
+        "Tue, 20 Jan 2015 17:35:20 -0800"
+    ); // complex trailing comment
     assert_eq!(rfc(r"Tue, 20 Jan 2015 17:35:20 -0800 (UTC\)").unwrap_err(), Error::ParsingTooLong); // incorrect comment, not enough closing parentheses
-    assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)\t \r\n(Anothercomment)").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // multiple comments
+    assert_eq!(
+        rfc("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)\t \r\n(Anothercomment)").unwrap(),
+        "Tue, 20 Jan 2015 17:35:20 -0800"
+    ); // multiple comments
     assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 -0800 (UTC) ").unwrap_err(), Error::ParsingTooLong); // trailing whitespace after comment
     assert_eq!(rfc("20 Jan 2015 17:35:20 -0800").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // no day of week
     assert_eq!(rfc("20 JAN 2015 17:35:20 -0800").unwrap(), "Tue, 20 Jan 2015 17:35:20 -0800"); // upper case month
@@ -1375,13 +1390,14 @@ fn test_rfc2822() {
     assert_eq!(rfc("Tue, 20 Jan 2015").unwrap_err(), Error::ParsingTooShort); // omitted fields
     assert_eq!(rfc("Tue, 20 Avr 2015 17:35:20 -0800").unwrap_err(), Error::ParsingInvalid); // bad month name
     assert_eq!(rfc("Tue, 20 Jan 2015 25:35:20 -0800").unwrap_err(), Error::ParsingOutOfRange); // bad hour
-    assert_eq!(rfc("Tue, 20 Jan 2015 7:35:20 -0800").unwrap_err(), Error::ParsingInvalid);  // bad # of digits in hour
+    assert_eq!(rfc("Tue, 20 Jan 2015 7:35:20 -0800").unwrap_err(), Error::ParsingInvalid); // bad # of digits in hour
     assert_eq!(rfc("Tue, 20 Jan 2015 17:65:20 -0800").unwrap_err(), Error::ParsingOutOfRange); // bad minute
     assert_eq!(rfc("Tue, 20 Jan 2015 17:35:90 -0800").unwrap_err(), Error::ParsingOutOfRange); // bad second
     assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 -0890").unwrap_err(), Error::ParsingOutOfRange); // bad offset
-    assert_eq!(rfc("6 Jun 1944 04:00:00Z").unwrap_err(), Error::ParsingInvalid);            // bad offset (zulu not allowed)
-    assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 HAS").unwrap_err(), Error::ParsingNotEnough);// bad named time zone
-    assert_eq!(rfc("Tue, 20 Jan 2015😈17:35:20 -0800").unwrap_err(), Error::ParsingInvalid); // bad character!
+    assert_eq!(rfc("6 Jun 1944 04:00:00Z").unwrap_err(), Error::ParsingInvalid); // bad offset (zulu not allowed)
+    assert_eq!(rfc("Tue, 20 Jan 2015 17:35:20 HAS").unwrap_err(), Error::ParsingNotEnough); // bad named time zone
+    assert_eq!(rfc("Tue, 20 Jan 2015😈17:35:20 -0800").unwrap_err(), Error::ParsingInvalid);
+    // bad character!
 }
 
 #[cfg(test)]
@@ -1457,31 +1473,37 @@ fn test_rfc3339() {
 
     // Test data
     assert_eq!(rfc("2015-01-20T17:35:20-08:00").unwrap(), "2015-01-20T17:35:20-08:00"); // normal case
-    assert_eq!(rfc("1944-06-06T04:04:00Z").unwrap(), "1944-06-06T04:04:00+00:00");      // D-day
+    assert_eq!(rfc("1944-06-06T04:04:00Z").unwrap(), "1944-06-06T04:04:00+00:00"); // D-day
     assert_eq!(rfc("2001-09-11T09:45:00-08:00").unwrap(), "2001-09-11T09:45:00-08:00");
     assert_eq!(rfc("2015-01-20T17:35:20.001-08:00").unwrap(), "2015-01-20T17:35:20.001-08:00");
-    assert_eq!(rfc("2015-01-20T17:35:20.000031-08:00").unwrap(), "2015-01-20T17:35:20.000031-08:00");
-    assert_eq!(rfc("2015-01-20T17:35:20.000000004-08:00").unwrap(), "2015-01-20T17:35:20.000000004-08:00");
+    assert_eq!(
+        rfc("2015-01-20T17:35:20.000031-08:00").unwrap(),
+        "2015-01-20T17:35:20.000031-08:00"
+    );
+    assert_eq!(
+        rfc("2015-01-20T17:35:20.000000004-08:00").unwrap(),
+        "2015-01-20T17:35:20.000000004-08:00"
+    );
     assert_eq!(rfc("2015-01-20T17:35:20.000000000452-08:00").unwrap(), "2015-01-20T17:35:20-08:00"); // too small
     assert_eq!(rfc("2015-01-20 17:35:20.001-08:00").unwrap_err(), Error::ParsingInvalid); // missing separator 'T'
     assert_eq!(rfc("2015/01/20T17:35:20.001-08:00").unwrap_err(), Error::ParsingInvalid); // wrong separator char YMD
     assert_eq!(rfc("2015-01-20T17-35-20.001-08:00").unwrap_err(), Error::ParsingInvalid); // wrong separator char HMS
-    assert_eq!(rfc("99999-01-20T17:35:20-08:00").unwrap_err(), Error::ParsingInvalid);    // bad year value
-    assert_eq!(rfc("-2000-01-20T17:35:20-08:00").unwrap_err(), Error::ParsingInvalid);    // bad year value
+    assert_eq!(rfc("99999-01-20T17:35:20-08:00").unwrap_err(), Error::ParsingInvalid); // bad year value
+    assert_eq!(rfc("-2000-01-20T17:35:20-08:00").unwrap_err(), Error::ParsingInvalid); // bad year value
     assert_eq!(rfc("2015-02-30T17:35:20-08:00").unwrap_err(), Error::ParsingOutOfRange); // bad day of month value
     assert_eq!(rfc("2015-01-20T25:35:20-08:00").unwrap_err(), Error::ParsingOutOfRange); // bad hour value
     assert_eq!(rfc("2015-01-20T17:65:20-08:00").unwrap_err(), Error::ParsingOutOfRange); // bad minute value
     assert_eq!(rfc("2015-01-20T17:35:90-08:00").unwrap_err(), Error::ParsingOutOfRange); // bad second value
     assert_eq!(rfc("2015-01-20T17:35:20-24:00").unwrap_err(), Error::ParsingOutOfRange); // bad offset value
-    assert_eq!(rfc("15-01-20T17:35:20-08:00").unwrap_err(), Error::ParsingInvalid);       // bad year format
-    assert_eq!(rfc("15-01-20T17:35:20-08:00:00").unwrap_err(), Error::ParsingInvalid);    // bad year format, bad offset format
-    assert_eq!(rfc("2015-01-20T17:35:20-0800").unwrap_err(), Error::ParsingInvalid);      // bad offset format
+    assert_eq!(rfc("15-01-20T17:35:20-08:00").unwrap_err(), Error::ParsingInvalid); // bad year format
+    assert_eq!(rfc("15-01-20T17:35:20-08:00:00").unwrap_err(), Error::ParsingInvalid); // bad year format, bad offset format
+    assert_eq!(rfc("2015-01-20T17:35:20-0800").unwrap_err(), Error::ParsingInvalid); // bad offset format
     assert_eq!(rfc("2015-01-20T17:35:20.001-08 : 00").unwrap_err(), Error::ParsingInvalid); // bad offset format
     assert_eq!(rfc("2015-01-20T17:35:20-08:00:00").unwrap_err(), Error::ParsingTooLong); // bad offset format
-    assert_eq!(rfc("2015-01-20T17:35:20-08:").unwrap_err(), Error::ParsingTooShort);     // bad offset format
-    assert_eq!(rfc("2015-01-20T17:35:20-08").unwrap_err(), Error::ParsingTooShort);      // bad offset format
-    assert_eq!(rfc("2015-01-20T").unwrap_err(), Error::ParsingTooShort);                 // missing HMS
-    assert_eq!(rfc("2015-01-20T00:00:1").unwrap_err(), Error::ParsingTooShort);          // missing complete S
-    assert_eq!(rfc("2015-01-20T00:00:1-08:00").unwrap_err(), Error::ParsingInvalid);      // missing complete S
-
+    assert_eq!(rfc("2015-01-20T17:35:20-08:").unwrap_err(), Error::ParsingTooShort); // bad offset format
+    assert_eq!(rfc("2015-01-20T17:35:20-08").unwrap_err(), Error::ParsingTooShort); // bad offset format
+    assert_eq!(rfc("2015-01-20T").unwrap_err(), Error::ParsingTooShort); // missing HMS
+    assert_eq!(rfc("2015-01-20T00:00:1").unwrap_err(), Error::ParsingTooShort); // missing complete S
+    assert_eq!(rfc("2015-01-20T00:00:1-08:00").unwrap_err(), Error::ParsingInvalid);
+    // missing complete S
 }

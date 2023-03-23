@@ -1,6 +1,6 @@
 use super::NaiveDateTime;
 use crate::time_delta::TimeDelta;
-use crate::{Datelike, Error, FixedOffset, Utc, NaiveDate};
+use crate::{Datelike, Error, FixedOffset, NaiveDate, Utc};
 use std::i64;
 
 #[test]
@@ -105,11 +105,7 @@ fn test_datetime_add() {
     }
 
     check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(3600 + 60 + 1), Ok((2014, 5, 6, 8, 9, 10)));
-    check!(
-        (2014, 5, 6, 7, 8, 9),
-        TimeDelta::seconds(-(3600 + 60 + 1)),
-        Ok((2014, 5, 6, 6, 7, 8))
-    );
+    check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-(3600 + 60 + 1)), Ok((2014, 5, 6, 6, 7, 8)));
     check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86399), Ok((2014, 5, 7, 7, 8, 8)));
     check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Ok((2014, 5, 16, 7, 8, 9)));
     check!((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-86_400 * 10), Ok((2014, 4, 26, 7, 8, 9)));
@@ -120,23 +116,27 @@ fn test_datetime_add() {
     // (they are private constants, but the equivalence is tested in that module.)
     let max_days_from_year_0 =
         NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(0, 1, 1).unwrap());
-    check!(
-        (0, 1, 1, 0, 0, 0),
-        max_days_from_year_0,
-        Ok((NaiveDate::MAX.year(), 12, 31, 0, 0, 0))
-    );
+    check!((0, 1, 1, 0, 0, 0), max_days_from_year_0, Ok((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
     check!(
         (0, 1, 1, 0, 0, 0),
         max_days_from_year_0 + TimeDelta::seconds(86399),
         Ok((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
-    check!((0, 1, 1, 0, 0, 0), max_days_from_year_0 + TimeDelta::seconds(86_400), Err(Error::ParsingOutOfRange),);
+    check!(
+        (0, 1, 1, 0, 0, 0),
+        max_days_from_year_0 + TimeDelta::seconds(86_400),
+        Err(Error::ParsingOutOfRange),
+    );
     check!((0, 1, 1, 0, 0, 0), TimeDelta::max_value(), Err(Error::ParsingOutOfRange),);
 
     let min_days_from_year_0 =
         NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(0, 1, 1).unwrap());
     check!((0, 1, 1, 0, 0, 0), min_days_from_year_0, Ok((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
-    check!((0, 1, 1, 0, 0, 0), min_days_from_year_0 - TimeDelta::seconds(1), Err(Error::ParsingOutOfRange),);
+    check!(
+        (0, 1, 1, 0, 0, 0),
+        min_days_from_year_0 - TimeDelta::seconds(1),
+        Err(Error::ParsingOutOfRange),
+    );
     check!((0, 1, 1, 0, 0, 0), TimeDelta::min_value(), Err(Error::ParsingOutOfRange),);
 }
 
@@ -308,10 +308,7 @@ fn test_datetime_parse_from_str() {
     .is_err());
     assert!(NaiveDateTime::parse_from_str("2014-5-7 12:3456", "%Y-%m-%d %H:%M:%S").is_err());
     assert!(NaiveDateTime::parse_from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
-    assert_eq!(
-        NaiveDateTime::parse_from_str("1441497364", "%s"),
-        ymdhms(2015, 9, 5, 23, 56, 4)
-    );
+    assert_eq!(NaiveDateTime::parse_from_str("1441497364", "%s"), ymdhms(2015, 9, 5, 23, 56, 4));
     assert_eq!(
         NaiveDateTime::parse_from_str("1283929614.1234", "%s.%f"),
         ymdhmsn(2010, 9, 8, 7, 6, 54, 1234)

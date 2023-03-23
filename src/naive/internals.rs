@@ -550,7 +550,9 @@ mod tests {
                     let mdf = match Mdf::new(month, day, flags) {
                         Ok(mdf) => mdf,
                         Err(..) if !expected => continue,
-                        Err(..) => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
+                        Err(..) => {
+                            panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags)
+                        }
                     };
 
                     assert!(

@@ -313,8 +313,8 @@ impl std::error::Error for RoundingError {
 mod tests {
     use super::{DurationRound, SubsecRound, TimeDelta};
     use crate::offset::{FixedOffset, TimeZone, Utc};
-    use crate::{NaiveDate, Error};
     use crate::Timelike;
+    use crate::{Error, NaiveDate};
 
     #[test]
     fn test_round_subsecs() {

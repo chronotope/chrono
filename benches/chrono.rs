@@ -37,7 +37,7 @@ fn bench_datetime_from_str(c: &mut Criterion) {
 fn bench_datetime_to_rfc2822(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     let dt = pst.from_local_datetime(
-        &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?
+        &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?,
     );
     c.bench_function("bench_datetime_to_rfc2822", |b| b.iter(|| black_box(dt).to_rfc2822()));
 }
@@ -45,7 +45,7 @@ fn bench_datetime_to_rfc2822(c: &mut Criterion) {
 fn bench_datetime_to_rfc3339(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     let dt = pst.from_local_datetime(
-        &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?
+        &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?,
     );
     c.bench_function("bench_datetime_to_rfc3339", |b| b.iter(|| black_box(dt).to_rfc3339()));
 }

@@ -1024,7 +1024,9 @@ impl NaiveDate {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = i32::try_from((cycle as i64).checked_add(rhs.num_days()).ok_or(Error::ParsingOutOfRange)?)?;
+        let cycle = i32::try_from(
+            (cycle as i64).checked_add(rhs.num_days()).ok_or(Error::ParsingOutOfRange)?,
+        )?;
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
@@ -1056,7 +1058,9 @@ impl NaiveDate {
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = i32::try_from((cycle as i64).checked_sub(rhs.num_days()).ok_or(Error::ParsingOutOfRange)?)?;
+        let cycle = i32::try_from(
+            (cycle as i64).checked_sub(rhs.num_days()).ok_or(Error::ParsingOutOfRange)?,
+        )?;
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
@@ -2198,7 +2202,7 @@ mod tests {
         MIN_YEAR,
     };
     use crate::time_delta::TimeDelta;
-    use crate::{Datelike, Weekday, Error};
+    use crate::{Datelike, Error, Weekday};
     use std::{
         convert::{TryFrom, TryInto},
         i32, u32,
@@ -2247,7 +2251,9 @@ mod tests {
         assert!(ymd!(2022, 8, 3).checked_add_months(Months::new(i32::MAX as u32 + 1)).is_err());
 
         // sub with months exceeindg `i32::MIN`
-        assert!(ymd!(2022, 8, 3).checked_sub_months(Months::new((i32::MIN as i64).abs() as u32 + 1)).is_err());
+        assert!(ymd!(2022, 8, 3)
+            .checked_sub_months(Months::new((i32::MIN as i64).abs() as u32 + 1))
+            .is_err());
 
         // add overflowing year
         assert!(NaiveDate::MAX.checked_add_months(Months::new(1)).is_err());
@@ -2256,7 +2262,10 @@ mod tests {
         assert!(NaiveDate::MIN.checked_sub_months(Months::new(1)).is_err());
 
         // sub crossing year 0 boundary
-        assert_eq!(ymd!(2022, 8, 3).checked_sub_months(Months::new(2050 * 12)),Ok(ymd!(-28, 8, 3)));
+        assert_eq!(
+            ymd!(2022, 8, 3).checked_sub_months(Months::new(2050 * 12)),
+            Ok(ymd!(-28, 8, 3))
+        );
 
         // add crossing year boundary
         assert_eq!(ymd!(2022, 8, 3).checked_add_months(Months::new(6)), Ok(ymd!(2023, 2, 3)));
@@ -2933,8 +2942,9 @@ mod tests {
                 );
 
                 // last day must always be in week 52 or 53
-                assert!([52, 53]
-                    .contains(&NaiveDate::from_ymd(*y, 12, 31).unwrap().weeks_from(*day)),);
+                assert!(
+                    [52, 53].contains(&NaiveDate::from_ymd(*y, 12, 31).unwrap().weeks_from(*day)),
+                );
             }
         }
 

@@ -366,21 +366,27 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// See [`NaiveDate::checked_sub_months`] for more details on behavior
     pub fn checked_sub_months(self, rhs: Months) -> Result<Self, Error> {
-        self.naive_local().checked_sub_months(rhs)?.and_local_timezone(Tz::from_offset(&self.offset))
+        self.naive_local()
+            .checked_sub_months(rhs)?
+            .and_local_timezone(Tz::from_offset(&self.offset))
     }
 
     /// Add a duration in [`Days`] to the date part of the `DateTime`
     ///
     /// Returns `Err(Error)` if the resulting date would be out of range.
     pub fn checked_add_days(self, days: Days) -> Result<Self, Error> {
-        self.datetime.checked_add_days(days)?.and_local_timezone(TimeZone::from_offset(&self.offset))
+        self.datetime
+            .checked_add_days(days)?
+            .and_local_timezone(TimeZone::from_offset(&self.offset))
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
     /// Returns `Err(Error)` if the resulting date would be out of range.
     pub fn checked_sub_days(self, days: Days) -> Result<Self, Error> {
-        self.datetime.checked_sub_days(days)?.and_local_timezone(TimeZone::from_offset(&self.offset))
+        self.datetime
+            .checked_sub_days(days)?
+            .and_local_timezone(TimeZone::from_offset(&self.offset))
     }
 
     /// Subtracts another `DateTime` from the current date and time.

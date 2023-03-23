@@ -116,7 +116,6 @@ impl Cache {
         d: NaiveDateTime,
         local: bool,
     ) -> Result<LocalResult<DateTime<Local>>, Error> {
-
         // TODO Check why this was added
         // if self.source.out_of_date() {
         //     *self = Cache::default();

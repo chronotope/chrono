@@ -14,14 +14,16 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) -> R
         .unwrap();
 
     let date_command_str = String::from_utf8(output.stdout)?;
-    
+
     match Local.from_local_datetime(
-        &NaiveDate::from_ymd(dt.year(), dt.month(), dt.day())?.and_hms(dt.hour(), 5, 1)?
+        &NaiveDate::from_ymd(dt.year(), dt.month(), dt.day())?.and_hms(dt.hour(), 5, 1)?,
     ) {
         // compare a legit date to the "date" output
         Ok(chrono::LocalResult::Single(dt)) => assert_eq!(format!("{}\n", dt), date_command_str),
         // "date" command always returns a given time when it is ambiguous (dt.earliest())
-        Ok(chrono::LocalResult::Ambiguous(dt1, _dt2)) => assert_eq!(format!("{}\n", dt1), date_command_str),
+        Ok(chrono::LocalResult::Ambiguous(dt1, _dt2)) => {
+            assert_eq!(format!("{}\n", dt1), date_command_str)
+        }
         // "date" command returns an empty string for an invalid time (e.g. spring forward gap due to DST)
         Err(_) => assert_eq!(date_command_str, ""),
     }

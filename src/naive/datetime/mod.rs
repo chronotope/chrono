@@ -576,7 +576,7 @@ impl NaiveDateTime {
     /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli);
     /// assert_eq!(hmsm(3, 5, 7, 980)?.checked_add_signed(TimeDelta::milliseconds(450)),
     ///            Ok(hmsm(3, 5, 8, 430)?));
-    /// 
+    ///
     /// assert!(NaiveDate::from_ymd(2016, 7, 8)?.and_hms(3, 5, 7)?.checked_add_signed(TimeDelta::days(1_000_000_000)).is_err());
     /// # Ok::<_, chrono::Error>(())
     /// ```

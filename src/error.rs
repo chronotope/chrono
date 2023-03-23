@@ -112,7 +112,6 @@ impl fmt::Display for Error {
             #[cfg(all(windows, feature = "clock"))]
             Error::SystemTimeBeforeEpoch => write!(f, "system time before Unix epoch"),
             #[cfg(all(windows, feature = "clock"))]
-
             Error::SystemError(error) => write!(f, "system error: {}", error),
             Error::ParsingOutOfRange => write!(f, "input is out of range"),
             Error::ParsingImpossible => write!(f, "no possible date and time matching input"),
