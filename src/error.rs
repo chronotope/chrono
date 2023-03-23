@@ -1,7 +1,7 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-use core::{fmt, num::{TryFromIntError, ParseIntError}, str::Utf8Error};
+use core::fmt;
 use std::time::SystemTimeError;
 
 /// Chrono error
@@ -70,7 +70,7 @@ pub enum Error {
     /// Out of range error
     OutOfRange(&'static str),
     /// Integer parsing error
-    ParseInt(ParseIntError),
+    ParseInt(core::num::ParseIntError),
     /// Date time projection error
     ProjectDateTime(&'static str),
     /// System time error
@@ -84,10 +84,13 @@ pub enum Error {
     /// Unsupported TZ string
     UnsupportedTzString(&'static str),
     /// UTF-8 error
-    Utf8(Utf8Error),
+    Utf8(core::str::Utf8Error),
 
     /// Error when tryint to convert from int
-    TryFromIntError(TryFromIntError),
+    TryFromIntError,
+
+    /// Error when tryint to convert a string to utf8
+    FromUtf8Error,
 
     /// Unexpected end of file
     UnexpectedEOF,
@@ -136,7 +139,8 @@ impl fmt::Display for Error {
             Error::UnsupportedTzString(error) => write!(f, "unsupported TZ string: {}", error),
             Error::Utf8(error) => error.fmt(f),
 
-            Error::TryFromIntError(error) => error.fmt(f),
+            Error::TryFromIntError => write!(f, "failed to convert int"),
+            Error::FromUtf8Error => write!(f, "failed to convert utf8"),
 
             Error::UnexpectedEOF => write!(f, "unexpected end of file"),
             Error::InvalidData => write!(f, "invalid data"),
@@ -155,9 +159,15 @@ impl std::error::Error for Error {
     }
 }
 
-impl From<TryFromIntError> for Error {
-    fn from(error: TryFromIntError) -> Self {
-        Error::TryFromIntError(error)
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(_: std::string::FromUtf8Error) -> Self {
+        Error::FromUtf8Error
+    }
+}
+
+impl From<core::num::TryFromIntError> for Error {
+    fn from(_: core::num::TryFromIntError) -> Self {
+        Error::TryFromIntError
     }
 }
 
@@ -167,8 +177,8 @@ impl From<std::io::Error> for Error {
     }
 }
 
-impl From<ParseIntError> for Error {
-    fn from(error: ParseIntError) -> Self {
+impl From<core::num::ParseIntError> for Error {
+    fn from(error: core::num::ParseIntError) -> Self {
         Error::ParseInt(error)
     }
 }
@@ -179,8 +189,8 @@ impl From<SystemTimeError> for Error {
     }
 }
 
-impl From<Utf8Error> for Error {
-    fn from(error: Utf8Error) -> Self {
+impl From<core::str::Utf8Error> for Error {
+    fn from(error: core::str::Utf8Error) -> Self {
         Error::Utf8(error)
     }
 }

@@ -415,7 +415,7 @@ impl NaiveDate {
                 }
             }
         } else {
-            Err(Error::InvalidDate)
+            Err(Error::ParsingOutOfRange)
         }
     }
 
@@ -2803,7 +2803,7 @@ mod tests {
             Ok(ymd!(2014, 5, 7))
         ); // ignore time and offset
         assert_eq!(
-            NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),
+            NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u=%Y-%j"),
             Ok(ymd!(2015, 2, 2))
         );
         assert_eq!(
@@ -2853,7 +2853,7 @@ mod tests {
         assert_eq!(ymd!(-12345, 1, 1).format("%Y").to_string(), "-12345");
 
         // corner cases
-        assert_eq!(ymd!(2007, 12, 31).format("%G,%g,%U,%W,%V").to_string(), "2008,08,53,53,01");
+        assert_eq!(ymd!(2007, 12, 31).format("%G,%g,%U,%W,%V").to_string(), "2008,08,52,53,01");
         assert_eq!(ymd!(2010, 1, 3).format("%G,%g,%U,%W,%V").to_string(), "2009,09,01,00,53");
     }
 

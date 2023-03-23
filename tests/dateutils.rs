@@ -13,42 +13,24 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) -> R
         .output()
         .unwrap();
 
-    let date_command_str = String::from_utf8(output.stdout).unwrap();
-
-    // The below would be preferred. At this stage neither earliest() or latest()
-    // seems to be consistent with the output of the `date` command, so we simply
-    // compare both.
-    // let local = Local
-    //     .with_ymd_and_hms(year, month, day, hour, 5, 1)
-    //     // looks like the "date" command always returns a given time when it is ambiguous
-    //     .earliest();
-
-    // if let Some(local) = local {
-    //     assert_eq!(format!("{}\n", local), date_command_str);
-    // } else {
-    //     // we are in a "Spring forward gap" due to DST, and so date also returns ""
-    //     assert_eq!("", date_command_str);
-    // }
-
-    // This is used while a decision is made wheter the `date` output needs to
-    // be exactly matched, or whether LocalResult::Ambigious should be handled
-    // differently
-
-    let date = NaiveDate::from_ymd(dt.year(), dt.month(), dt.day())?.and_hms(dt.hour(), 5, 1)?;
-    match Local.from_local_datetime(&date).unwrap() {
-        chrono::LocalResult::Ambiguous(a, b) => {
-            assert!(format!("{}\n", a) == date_command_str || format!("{}\n", b) == date_command_str);
-        },
-        chrono::LocalResult::Single(a) => {
-            assert_eq!(format!("{}\n", a), date_command_str);
-        },
+    let date_command_str = String::from_utf8(output.stdout)?;
+    
+    match Local.from_local_datetime(
+        &NaiveDate::from_ymd(dt.year(), dt.month(), dt.day())?.and_hms(dt.hour(), 5, 1)?
+    ) {
+        // compare a legit date to the "date" output
+        Ok(chrono::LocalResult::Single(dt)) => assert_eq!(format!("{}\n", dt), date_command_str),
+        // "date" command always returns a given time when it is ambiguous (dt.earliest())
+        Ok(chrono::LocalResult::Ambiguous(dt1, _dt2)) => assert_eq!(format!("{}\n", dt1), date_command_str),
+        // "date" command returns an empty string for an invalid time (e.g. spring forward gap due to DST)
+        Err(_) => assert_eq!(date_command_str, ""),
     }
     Ok(())
 }
 
 #[test]
 #[cfg(unix)]
-fn try_verify_against_date_command() {
+fn try_verify_against_date_command() -> Result<(), Error> {
     let date_path = "/usr/bin/date";
 
     if !path::Path::new(date_path).exists() {
@@ -56,7 +38,7 @@ fn try_verify_against_date_command() {
         // avoid running this on macOS, which has path /bin/date
         // as the required CLI arguments are not present in the
         // macOS build.
-        return;
+        return Ok(());
     }
 
     let mut date = NaiveDate::from_ymd(1975, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
@@ -66,11 +48,12 @@ fn try_verify_against_date_command() {
             || (2020..=2022).contains(&date.year())
             || (2073..=2077).contains(&date.year())
         {
-            verify_against_date_command_local(date_path, date);
+            verify_against_date_command_local(date_path, date)?;
         }
 
         date += chrono::TimeDelta::hours(1);
     }
+    Ok(())
 }
 
 #[cfg(target_os = "linux")]

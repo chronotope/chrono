@@ -294,7 +294,7 @@ fn test_datetime_parse_from_str() {
         NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S").is_err()
     );
     assert_eq!(
-        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
+        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u %H%M%S"),
         Ok(ymdhms(2015, 2, 2, 0, 0, 0).unwrap())
     );
     assert_eq!(
@@ -310,23 +310,23 @@ fn test_datetime_parse_from_str() {
     assert!(NaiveDateTime::parse_from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
     assert_eq!(
         NaiveDateTime::parse_from_str("1441497364", "%s"),
-        Ok(ymdhms(2015, 9, 5, 23, 56, 4).unwrap())
+        ymdhms(2015, 9, 5, 23, 56, 4)
     );
     assert_eq!(
         NaiveDateTime::parse_from_str("1283929614.1234", "%s.%f"),
-        Ok(ymdhmsn(2010, 9, 8, 7, 6, 54, 1234).unwrap())
+        ymdhmsn(2010, 9, 8, 7, 6, 54, 1234)
     );
     assert_eq!(
         NaiveDateTime::parse_from_str("1441497364.649", "%s%.3f"),
-        Ok(ymdhmsn(2015, 9, 5, 23, 56, 4, 649000000).unwrap())
+        ymdhmsn(2015, 9, 5, 23, 56, 4, 649000000)
     );
     assert_eq!(
         NaiveDateTime::parse_from_str("1497854303.087654", "%s%.6f"),
-        Ok(ymdhmsn(2017, 6, 19, 6, 38, 23, 87654000).unwrap())
+        ymdhmsn(2017, 6, 19, 6, 38, 23, 87654000)
     );
     assert_eq!(
         NaiveDateTime::parse_from_str("1437742189.918273645", "%s%.9f"),
-        Ok(ymdhmsn(2015, 7, 24, 12, 49, 49, 918273645).unwrap())
+        ymdhmsn(2015, 7, 24, 12, 49, 49, 918273645)
     );
 }
 
