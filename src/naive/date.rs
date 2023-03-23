@@ -13,6 +13,10 @@ use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+/// L10n locales.
+#[cfg(feature = "unstable-locales")]
+use pure_rust_locales::Locale;
+
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
 use crate::format::{parse, write_hundreds, Parsed, StrftimeItems};
