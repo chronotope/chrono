@@ -275,7 +275,7 @@ impl Of {
     pub(super) fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Result<Of, Error> {
         match ordinal <= 366 {
             true => Ok(Of((ordinal << 4) | u32::from(flags))),
-            false => Err(Error::InvalidDate),
+            false => Err(Error::ParsingOutOfRange),
         }
     }
 
@@ -376,7 +376,7 @@ impl Mdf {
     pub(super) fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Result<Mdf, Error> {
         match month <= 12 && day <= 31 {
             true => Ok(Mdf((month << 9) | (day << 4) | u32::from(flags))),
-            false => Err(Error::InvalidDate),
+            false => Err(Error::ParsingOutOfRange),
         }
     }
 
@@ -408,7 +408,7 @@ impl Mdf {
     #[inline]
     pub(super) fn with_month(&self, month: u32) -> Result<Mdf, Error> {
         if month > 12 {
-            return Err(Error::InvalidDate);
+            return Err(Error::ParsingOutOfRange);
         }
 
         let Mdf(mdf) = *self;
@@ -424,7 +424,7 @@ impl Mdf {
     #[inline]
     pub(super) fn with_day(&self, day: u32) -> Result<Mdf, Error> {
         if day > 31 {
-            return Err(Error::InvalidDate);
+            return Err(Error::ParsingOutOfRange);
         }
 
         let Mdf(mdf) = *self;

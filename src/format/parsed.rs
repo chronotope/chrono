@@ -129,7 +129,7 @@ impl Parsed {
     /// Tries to set the [`year`](#structfield.year) field from given value.
     #[inline]
     pub fn set_year(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.year, i32::try_from(value)?)
+        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`year_div_100`](#structfield.year_div_100) field from given value.
@@ -138,7 +138,7 @@ impl Parsed {
         if value < 0 {
             return Err(Error::ParsingOutOfRange);
         }
-        set_if_consistent(&mut self.year_div_100, i32::try_from(value)?)
+        set_if_consistent(&mut self.year_div_100, i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`year_mod_100`](#structfield.year_mod_100) field from given value.
@@ -147,13 +147,13 @@ impl Parsed {
         if value < 0 {
             return Err(Error::ParsingOutOfRange);
         }
-        set_if_consistent(&mut self.year_mod_100, i32::try_from(value)?)
+        set_if_consistent(&mut self.year_mod_100, i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`isoyear`](#structfield.isoyear) field from given value.
     #[inline]
     pub fn set_isoyear(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.isoyear, i32::try_from(value)?)
+        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`isoyear_div_100`](#structfield.isoyear_div_100) field from given value.
@@ -164,7 +164,7 @@ impl Parsed {
         }
         set_if_consistent(
             &mut self.isoyear_div_100,
-            i32::try_from(value)?,
+            i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?,
         )
     }
 
@@ -176,32 +176,32 @@ impl Parsed {
         }
         set_if_consistent(
             &mut self.isoyear_mod_100,
-            i32::try_from(value)?,
+            i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?,
         )
     }
 
     /// Tries to set the [`month`](#structfield.month) field from given value.
     #[inline]
     pub fn set_month(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.month, u32::try_from(value)?)
+        set_if_consistent(&mut self.month, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`week_from_sun`](#structfield.week_from_sun) field from given value.
     #[inline]
     pub fn set_week_from_sun(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.week_from_sun, u32::try_from(value)?)
+        set_if_consistent(&mut self.week_from_sun, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`week_from_mon`](#structfield.week_from_mon) field from given value.
     #[inline]
     pub fn set_week_from_mon(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.week_from_mon, u32::try_from(value)?)
+        set_if_consistent(&mut self.week_from_mon, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`isoweek`](#structfield.isoweek) field from given value.
     #[inline]
     pub fn set_isoweek(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.isoweek, u32::try_from(value)?)
+        set_if_consistent(&mut self.isoweek, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`weekday`](#structfield.weekday) field from given value.
@@ -213,13 +213,13 @@ impl Parsed {
     /// Tries to set the [`ordinal`](#structfield.ordinal) field from given value.
     #[inline]
     pub fn set_ordinal(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.ordinal, u32::try_from(value)?)
+        set_if_consistent(&mut self.ordinal, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`day`](#structfield.day) field from given value.
     #[inline]
     pub fn set_day(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.day, u32::try_from(value)?)
+        set_if_consistent(&mut self.day, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`hour_div_12`](#structfield.hour_div_12) field from given value.
@@ -252,19 +252,19 @@ impl Parsed {
     /// Tries to set the [`minute`](#structfield.minute) field from given value.
     #[inline]
     pub fn set_minute(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.minute, u32::try_from(value)?)
+        set_if_consistent(&mut self.minute, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`second`](#structfield.second) field from given value.
     #[inline]
     pub fn set_second(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.second, u32::try_from(value)?)
+        set_if_consistent(&mut self.second, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`nanosecond`](#structfield.nanosecond) field from given value.
     #[inline]
     pub fn set_nanosecond(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.nanosecond, u32::try_from(value)?)
+        set_if_consistent(&mut self.nanosecond, u32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Tries to set the [`timestamp`](#structfield.timestamp) field from given value.
@@ -276,7 +276,7 @@ impl Parsed {
     /// Tries to set the [`offset`](#structfield.offset) field from given value.
     #[inline]
     pub fn set_offset(&mut self, value: i64) -> Result<(), Error> {
-        set_if_consistent(&mut self.offset, i32::try_from(value)?)
+        set_if_consistent(&mut self.offset, i32::try_from(value).map_err(|_| Error::ParsingOutOfRange)?)
     }
 
     /// Returns a parsed naive date out of given fields.
@@ -559,8 +559,8 @@ impl Parsed {
 
             // If either is problematic, fallback on the timestamp
             // TODO, the condition for reconstruction of date and time fields from timestamp is unclear
-            (Err(e1), _, Some(ts)) => self.reconstruct_from_timestamp(ts, offset).ok().ok_or(e1),
-            (_, Err(e2), Some(ts)) => self.reconstruct_from_timestamp(ts, offset).ok().ok_or(e2),
+            (Err(e1), _, Some(ts)) => self.reconstruct_from_timestamp(ts, offset).map_err(|_| e1),
+            (_, Err(e2), Some(ts)) => self.reconstruct_from_timestamp(ts, offset).map_err(|_| e2),
 
             // If both are problematic or timestamp is not available, return the first error
             (Err(e1), _, None) => Err(e1),
@@ -763,10 +763,7 @@ mod tests {
         assert_eq!(parse!(year_div_100: 19), Err(Error::ParsingNotEnough));
         assert_eq!(parse!(year_div_100: 19, year_mod_100: 84), Err(Error::ParsingNotEnough));
         assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, month: 1), Err(Error::ParsingNotEnough));
-        assert_eq!(
-            parse!(year_div_100: 19, year_mod_100: 84, month: 1, day: 2),
-            Ok(ymd!(1984, 1, 2))
-        );
+        assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, month: 1, day: 2), Ok(ymd!(1984, 1, 2)));
         assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, day: 2), Err(Error::ParsingNotEnough));
         assert_eq!(parse!(year_div_100: 19, month: 1, day: 2), Err(Error::ParsingNotEnough));
         assert_eq!(parse!(year_mod_100: 70, month: 1, day: 2), Ok(ymd!(1970, 1, 2)));
@@ -1081,23 +1078,14 @@ mod tests {
         );
 
         // leap seconds #1: partial fields
-        assert_eq!(parse!(second: 59, timestamp: 1_341_100_798), Err(Error::ParsingImpossible));
-        assert_eq!(
-            parse!(second: 59, timestamp: 1_341_100_799),
-            Ok(ymdhms(2012, 6, 30, 23, 59, 59))
-        );
-        assert_eq!(parse!(second: 59, timestamp: 1_341_100_800), Err(Error::ParsingImpossible));
-        assert_eq!(
-            parse!(second: 60, timestamp: 1_341_100_799),
-            Ok(ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000))
-        );
-        assert_eq!(
-            parse!(second: 60, timestamp: 1_341_100_800),
-            Ok(ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000))
-        );
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_798), Err(Error::ParsingNotEnough));
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_799), Ok(ymdhms(2012, 6, 30, 23, 59, 59)));
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_800), Err(Error::ParsingNotEnough));
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_799), Ok(ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)));
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_800), Ok(ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)));
         assert_eq!(parse!(second: 0, timestamp: 1_341_100_800), Ok(ymdhms(2012, 7, 1, 0, 0, 0)));
-        assert_eq!(parse!(second: 1, timestamp: 1_341_100_800), Err(Error::ParsingImpossible));
-        assert_eq!(parse!(second: 60, timestamp: 1_341_100_801), Err(Error::ParsingImpossible));
+        assert_eq!(parse!(second: 1, timestamp: 1_341_100_800), Err(Error::ParsingNotEnough));
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_801), Err(Error::ParsingNotEnough));
 
         // leap seconds #2: full fields
         // we need to have separate tests for them since it uses another control flow.
@@ -1191,7 +1179,7 @@ mod tests {
         assert_eq!(
             parse!(year: 2015, ordinal: 1, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 86_400),
-            Err(Error::ParsingOutOfRange)
+            Err(Error::InvalidTimeZone)
         ); // `FixedOffset` does not support such huge offset
     }
 

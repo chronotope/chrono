@@ -608,13 +608,13 @@ impl NaiveDate {
     ///
     /// assert_eq!(
     ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_months(Months::new(6)),
-    ///     Some(NaiveDate::from_ymd(2021, 8, 20)?)
+    ///     NaiveDate::from_ymd(2021, 8, 20)
     /// );
     ///
     /// assert!(
     ///     NaiveDate::from_ymd(2014, 1, 1)?
     ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1))
-    ///         .is_none()
+    ///         .is_err()
     /// );
     /// # Ok::<_, chrono::Error>(())
     /// ```
@@ -623,11 +623,7 @@ impl NaiveDate {
             return Ok(self);
         }
 
-        let d = match i32::try_from(months.0)?.checked_neg() {
-            None => return Err(Error::InvalidDate),
-            Some(d) => d,
-        };
-
+        let d = i32::try_from(months.0)?.checked_neg().ok_or(Error::ParsingOutOfRange)?;
         self.diff_months(d)
     }
 
@@ -639,7 +635,7 @@ impl NaiveDate {
         let year = if (years > 0 && years > (MAX_YEAR - self.year()))
             || (years < 0 && years < (MIN_YEAR - self.year()))
         {
-            return Err(Error::InvalidDate);
+            return Err(Error::ParsingOutOfRange);
         } else {
             self.year() + years
         };
@@ -649,13 +645,13 @@ impl NaiveDate {
         let month = self.month() as i32 + left;
         let (year, month) = if month <= 0 {
             if year == MIN_YEAR {
-                return Err(Error::InvalidDate);
+                return Err(Error::ParsingOutOfRange);
             }
 
             (year - 1, month + 12)
         } else if month > 12 {
             if year == MAX_YEAR {
-                return Err(Error::InvalidDate);
+                return Err(Error::ParsingOutOfRange);
             }
 
             (year + 1, month - 12)
