@@ -125,8 +125,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let naivedatetime_utc = NaiveDate::from_ymd(2000, 1, 12)?.and_hms(2, 0, 0)?;
     /// let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
     ///
-    /// let timezone_east = FixedOffset::east_opt(8 * 60 * 60).unwrap()?;
-    /// let naivedatetime_east = NaiveDate::from_ymd(2000, 1, 12)?.unwrap().and_hms(10, 0, 0).unwrap()?;
+    /// let timezone_east = FixedOffset::east(8 * 60 * 60)?;
+    /// let naivedatetime_east = NaiveDate::from_ymd(2000, 1, 12)?.and_hms(10, 0, 0)?;
     /// let datetime_east = DateTime::<FixedOffset>::from_local(naivedatetime_east, timezone_east);
     ///
     /// let timezone_west = FixedOffset::west(7 * 60 * 60)?;
@@ -651,9 +651,9 @@ impl DateTime<Utc> {
     /// ```rust
     /// use chrono::{DateTime, TimeZone, Utc};
     ///
-    /// let dt = DateTime::<Utc>::parse_from_str(
-    ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(Utc.ymd(1983, 4, 13).and_hms_milli(11, 9, 14, 274)));
+    /// let dt = DateTime::<Utc>::parse_from_str("1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
+    /// assert_eq!(dt, Ok(Utc.ymd(1983, 4, 13)?.and_hms_milli(11, 9, 14, 274)?));
+    /// # Ok::<_, chrono::Error>(())
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> Result<DateTime<Utc>, Error> {
         DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())

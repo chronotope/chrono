@@ -580,11 +580,11 @@ impl NaiveDate {
     /// # use chrono::{NaiveDate, Months};
     /// assert_eq!(
     ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_months(Months::new(6)),
-    ///     Some(NaiveDate::from_ymd(2022, 8, 20)?)
+    ///     Ok(NaiveDate::from_ymd(2022, 8, 20)?)
     /// );
     /// assert_eq!(
     ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_months(Months::new(2)),
-    ///     Some(NaiveDate::from_ymd(2022, 9, 30)?)
+    ///     Ok(NaiveDate::from_ymd(2022, 9, 30)?)
     /// );
     /// # Ok::<_, chrono::Error>(())
     /// ```
@@ -1008,7 +1008,7 @@ impl NaiveDate {
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5)?;
     /// assert_eq!(d.checked_add_signed(TimeDelta::days(40)),
-    ///            Ok(NaiveDate::from_ymd(2015, 10, 15).unwrap()?));
+    ///            Ok(NaiveDate::from_ymd(2015, 10, 15)?));
     /// assert_eq!(d.checked_add_signed(TimeDelta::days(-40)),
     ///            Ok(NaiveDate::from_ymd(2015, 7, 27)?));
     /// assert!(d.checked_add_signed(TimeDelta::days(1_000_000_000)).is_err());
@@ -1616,10 +1616,10 @@ impl Datelike for NaiveDate {
     ///            NaiveDate::from_ymd(2015, 3, 1)?);
     /// assert!(NaiveDate::from_ymd(2015, 1, 1)?.with_ordinal(366).is_err()); // 2015 had only 365 days
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.unwrap().with_ordinal(60)?,
-    ///            NaiveDate::from_ymd(2016, 2, 29).unwrap()?);
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.unwrap().with_ordinal(366)?,
-    ///            NaiveDate::from_ymd(2016, 12, 31).unwrap()?);
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal(60)?,
+    ///            NaiveDate::from_ymd(2016, 2, 29)?);
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal(366)?,
+    ///            NaiveDate::from_ymd(2016, 12, 31)?);
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
@@ -1640,10 +1640,10 @@ impl Datelike for NaiveDate {
     ///            NaiveDate::from_ymd(2015, 3, 1)?);
     /// assert!(NaiveDate::from_ymd(2015, 1, 1)?.with_ordinal0(365).is_err()); // 2015 had only 365 days
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.unwrap().with_ordinal0(59)?,
-    ///            NaiveDate::from_ymd(2016, 2, 29).unwrap()?);
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.unwrap().with_ordinal0(365)?,
-    ///            NaiveDate::from_ymd(2016, 12, 31).unwrap()?);
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal0(59)?,
+    ///            NaiveDate::from_ymd(2016, 2, 29)?);
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal0(365)?,
+    ///            NaiveDate::from_ymd(2016, 12, 31)?);
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
@@ -2039,7 +2039,7 @@ impl str::FromStr for NaiveDate {
 /// ```
 impl Default for NaiveDate {
     fn default() -> Self {
-        NaiveDate::MIN
+        NaiveDate::from_ymd(1970, 1, 1).unwrap()
     }
 }
 

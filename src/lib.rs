@@ -301,7 +301,7 @@
 //!
 //! ```rust
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::{DateTime, FixedOffset, FixedOffset, TimeZone, Utc};
+//! use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 //!
 //! // Construct a datetime from epoch:
 //! let dt = Utc.timestamp(1_500_000_000, 0)?;

@@ -13,7 +13,6 @@ use crate::OutOfRange;
 /// It is possible to convert from a date to a month independently.
 ///
 /// ```
-/// # use std::convert::TryFrom;
 /// use chrono::prelude::*;
 /// use std::convert::TryFrom;
 /// let date = Utc.ymd(2019, 10, 28)?.and_hms(9, 10, 11)?;

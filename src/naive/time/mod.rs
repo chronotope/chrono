@@ -181,6 +181,7 @@ mod tests;
 /// let dt = Utc.ymd(2015, 6, 30)?.and_hms(23, 56, 5)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 /// assert_eq!(DateTime::<Utc>::parse_from_rfc3339("2015-06-30T23:56:05Z")?, dt);
+/// # Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Since Chrono alone cannot determine any existence of leap seconds,
@@ -960,12 +961,9 @@ impl Timelike for NaiveTime {
     /// ```
     /// use chrono::{NaiveTime, Timelike};
     ///
-    /// assert_eq!(NaiveTime::from_hms(1, 2, 3)?.num_seconds_from_midnight(),
-    ///            3723);
-    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?.unwrap().num_seconds_from_midnight(),
-    ///            86164);
-    /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000)?.num_seconds_from_midnight(),
-    ///            86399);
+    /// assert_eq!(NaiveTime::from_hms(1, 2, 3)?.num_seconds_from_midnight(), 3723);
+    /// assert_eq!(NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?.num_seconds_from_midnight(), 86164);
+    /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000)?.num_seconds_from_midnight(), 86399);
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
@@ -1268,7 +1266,7 @@ impl fmt::Display for NaiveTime {
 /// let t = NaiveTime::from_hms(23, 56, 4)?;
 /// assert_eq!("23:56:04".parse::<NaiveTime>(), Ok(t));
 ///
-/// let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap()?;
+/// let t = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
 /// assert_eq!("23:56:4.012345678".parse::<NaiveTime>(), Ok(t));
 ///
 /// let t = NaiveTime::from_hms_nano(23, 59, 59, 1_234_567_890)?; // leap second
