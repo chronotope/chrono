@@ -1,7 +1,9 @@
 use super::NaiveDateTime;
 use crate::oldtime::Duration;
 use crate::NaiveDate;
-use crate::{Datelike, FixedOffset, Utc};
+#[cfg(feature = "clock")]
+use crate::offset::Local;
+use crate::{Datelike, LocalResult, TimeZone, FixedOffset, Utc};
 use std::i64;
 
 #[test]
@@ -340,4 +342,64 @@ fn test_and_timezone() {
     let dt_offset = ndt.and_local_timezone(offset_tz).unwrap();
     assert_eq!(dt_offset.naive_local(), ndt);
     assert_eq!(dt_offset.timezone(), offset_tz);
+}
+
+#[test]
+#[cfg(target_os = "windows")]
+fn test_from_naive_date_time_windows() {
+    let min_year = NaiveDate::from_ymd_opt(1601, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
+
+    let max_year = NaiveDate::from_ymd_opt(30827, 12, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
+
+    let too_low_year =
+        NaiveDate::from_ymd_opt(1600, 12, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
+
+    let too_high_year = NaiveDate::from_ymd_opt(30829, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
+
+    let _ = Local.from_utc_datetime(&min_year);
+    let _ = Local.from_utc_datetime(&max_year);
+
+    let _ = Local.from_local_datetime(&min_year);
+    let _ = Local.from_local_datetime(&max_year);
+
+    let local_too_low = Local.from_local_datetime(&too_low_year);
+    let local_too_high = Local.from_local_datetime(&too_high_year);
+
+    assert_ne!(local_too_low, LocalResult::None);
+    assert_ne!(local_too_high, LocalResult::None);
+
+    let _ = Local.from_utc_datetime(&too_low_year);
+    let _ = Local.from_utc_datetime(&too_high_year);
+}
+
+#[test]
+#[cfg(target_os = "windows")]
+fn test_windows_extreme_years() {
+    let way_to_high =
+        NaiveDate::from_ymd_opt(262143, 2, 28).unwrap().and_hms_opt(23, 59, 59).unwrap();
+    let way_to_low =
+        NaiveDate::from_ymd_opt(-262144, 2, 28).unwrap().and_hms_opt(23, 59, 59).unwrap();
+
+    let _ = Local.from_utc_datetime(&way_to_high);
+    let _ = Local.from_utc_datetime(&way_to_low);
+
+    let local_too_high = Local.from_local_datetime(&way_to_high);
+    let local_too_low = Local.from_local_datetime(&way_to_low);
+
+    assert_ne!(local_too_high, LocalResult::None);
+    assert_ne!(local_too_low, LocalResult::None);
+}
+
+#[test]
+#[cfg(target_os = "windows")]
+fn test_windows_naive_date_leap_year() {
+    let leap = NaiveDate::from_ymd_opt(1600, 2, 28).unwrap().and_hms_opt(23, 59, 59).unwrap();
+
+    let mut leap_year = Local.from_utc_datetime(&leap);
+    leap_year += Duration::days(1);
+
+    let leap_day = NaiveDate::from_ymd_opt(1600, 2, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
+    let next_day = Local.from_utc_datetime(&leap_day);
+
+    assert_eq!(leap_year, next_day);
 }

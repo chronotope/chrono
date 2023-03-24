@@ -13,6 +13,7 @@ use std::io::Error;
 use std::ptr;
 use std::result::Result;
 
+use num_traits::Zero;
 use winapi::shared::minwindef::FILETIME;
 use winapi::um::minwinbase::SYSTEMTIME;
 use winapi::um::sysinfoapi::GetLocalTime;
@@ -66,8 +67,8 @@ struct LocalSysTime {
     inner: SYSTEMTIME,
     /// The offset value from UTC
     offset: i32,
-    // Denotes whether we have +/- shifted a year value from invalid to valid
-    shifted: bool,
+    // Denotes the +/- 400 shifted a year value from invalid to valid
+    shifted: i32,
 }
 
 impl LocalSysTime {
@@ -78,10 +79,10 @@ impl LocalSysTime {
         // is initialized.
         let st = unsafe { now.assume_init() };
 
-        Self::from_local_time(st, false).expect("Current local time must exist")
+        Self::from_local_time(st, 0).expect("Current local time must exist")
     }
 
-    fn from_utc_time(utc_time: SYSTEMTIME, shifted: bool) -> Result<Self, Error> {
+    fn from_utc_time(utc_time: SYSTEMTIME, shifted: i32) -> Result<Self, Error> {
         let local_time = utc_to_local_time(&utc_time)?;
         let utc_secs = system_time_as_unix_seconds(&utc_time)?;
         let local_secs = system_time_as_unix_seconds(&local_time)?;
@@ -89,7 +90,7 @@ impl LocalSysTime {
         Ok(Self { inner: local_time, offset, shifted })
     }
 
-    fn from_local_time(local_time: SYSTEMTIME, shifted: bool) -> Result<Self, Error> {
+    fn from_local_time(local_time: SYSTEMTIME, shifted: i32) -> Result<Self, Error> {
         let utc_time = local_to_utc_time(&local_time)?;
         let utc_secs = system_time_as_unix_seconds(&utc_time)?;
         let local_secs = system_time_as_unix_seconds(&local_time)?;
@@ -100,9 +101,13 @@ impl LocalSysTime {
     fn datetime(self) -> DateTime<Local> {
         let st = self.inner;
 
-        let year = if self.shifted { st.wYear - 1600 } else { st.wYear };
+        let year = if !self.shifted.is_zero() {
+            st.wYear as i32 + (400 * self.shifted)
+        } else {
+            st.wYear as i32
+        };
 
-        let date = NaiveDate::from_ymd_opt(year as i32, st.wMonth as u32, st.wDay as u32).unwrap();
+        let date = NaiveDate::from_ymd_opt(year, st.wMonth as u32, st.wDay as u32).unwrap();
         let time = NaiveTime::from_hms_milli_opt(
             st.wHour as u32,
             st.wMinute as u32,
@@ -116,11 +121,18 @@ impl LocalSysTime {
     }
 }
 
-fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> (SYSTEMTIME, bool) {
+fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> (SYSTEMTIME, i32) {
+    // Compute year to handle invalid Window dates allowed by `NaiveDateTime`
     let (year, shifted) = if dt.year() < 1601 {
-        ((dt.year() + 1600) as u16, true)
+        // PANICS: `abs_diff` should be panic-safe here as `NaiveDateTime`
+        // has a MIN_YEAR of i32::MIN >> 13
+        let interval = ((dt.year().abs_diff(1600) / 400) + 1) as i32;
+        ((dt.year() + (400 * interval)) as u16, 0 - interval)
+    } else if dt.year() > 30827 {
+        let interval = ((dt.year() - 30827) / 400) + 1;
+        ((dt.year() - (400 * interval)) as u16, interval)
     } else {
-        (dt.year() as u16, false)
+        (dt.year() as u16, 0)
     };
     let sys_time = SYSTEMTIME {
         // Valid values: 1601-30827
