@@ -27,7 +27,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable, RustcDecodable))]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -351,5 +351,14 @@ mod tests {
         assert_eq!(Month::December.succ(), Month::January);
         assert_eq!(Month::January.pred(), Month::December);
         assert_eq!(Month::February.pred(), Month::January);
+    }
+
+    #[test]
+    fn test_month_partial_ord() {
+        assert!(Month::January <= Month::January);
+        assert!(Month::January < Month::February);
+        assert!(Month::January < Month::December);
+        assert!(Month::July >= Month::May);
+        assert!(Month::September > Month::March);
     }
 }
