@@ -39,6 +39,7 @@ macro_rules! windows_sys_call {
 
 const HECTONANOSECS_IN_SEC: i64 = 10_000_000;
 const HECTONANOSEC_TO_UNIX_EPOCH: i64 = 11_644_473_600 * HECTONANOSECS_IN_SEC;
+const NANOSECONDS_IN_MILLI: u32 = 1_000_000;
 
 pub(super) fn now() -> DateTime<Local> {
     LocalSysTime::local().datetime()
@@ -46,11 +47,11 @@ pub(super) fn now() -> DateTime<Local> {
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
-    let naive_sys_time = system_time_from_naive_date_time(d);
+    let (naive_sys_time, shifted) = system_time_from_naive_date_time(d);
 
     let local_sys_time = match local {
-        false => LocalSysTime::from_utc_time(naive_sys_time),
-        true => LocalSysTime::from_local_time(naive_sys_time),
+        false => LocalSysTime::from_utc_time(naive_sys_time, shifted),
+        true => LocalSysTime::from_local_time(naive_sys_time, shifted),
     };
 
     if let Ok(local) = local_sys_time {
@@ -62,6 +63,7 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
 struct LocalSysTime {
     inner: SYSTEMTIME,
     offset: i32,
+    shifted: bool,
 }
 
 impl LocalSysTime {
@@ -72,41 +74,52 @@ impl LocalSysTime {
         // is initialized.
         let st = unsafe { now.assume_init() };
 
-        Self::from_local_time(st).expect("Current local time must exist")
+        Self::from_local_time(st, false).expect("Current local time must exist")
     }
 
-    fn from_utc_time(utc_time: SYSTEMTIME) -> Result<Self, Error> {
+    fn from_utc_time(utc_time: SYSTEMTIME, shifted: bool) -> Result<Self, Error> {
         let local_time = utc_to_local_time(&utc_time)?;
         let utc_secs = system_time_as_unix_seconds(&utc_time)?;
         let local_secs = system_time_as_unix_seconds(&local_time)?;
         let offset = (local_secs - utc_secs) as i32;
-        Ok(Self { inner: local_time, offset })
+        Ok(Self { inner: local_time, offset, shifted })
     }
 
-    fn from_local_time(local_time: SYSTEMTIME) -> Result<Self, Error> {
+    fn from_local_time(local_time: SYSTEMTIME, shifted: bool) -> Result<Self, Error> {
         let utc_time = local_to_utc_time(&local_time)?;
         let utc_secs = system_time_as_unix_seconds(&utc_time)?;
         let local_secs = system_time_as_unix_seconds(&local_time)?;
         let offset = (local_secs - utc_secs) as i32;
-        Ok(Self { inner: local_time, offset })
+        Ok(Self { inner: local_time, offset, shifted })
     }
 
     fn datetime(self) -> DateTime<Local> {
         let st = self.inner;
 
+        let year = if self.shifted {
+            st.wYear - 1601
+        } else {
+            st.wYear
+        };
+
         let date =
-            NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32).unwrap();
-        let time = NaiveTime::from_hms(st.wHour as u32, st.wMinute as u32, st.wSecond as u32);
+            NaiveDate::from_ymd_opt(year as i32, st.wMonth as u32, st.wDay as u32).unwrap();
+        let time = NaiveTime::from_hms_milli_opt(st.wHour as u32, st.wMinute as u32, st.wSecond as u32, st.wMilliseconds as u32).unwrap();
 
         let offset = FixedOffset::east_opt(self.offset).unwrap();
         DateTime::from_utc(date.and_time(time) - offset, offset)
     }
 }
 
-fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> SYSTEMTIME {
-    SYSTEMTIME {
+fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> (SYSTEMTIME, bool) {
+    let (year, shifted) = if dt.year() < 1601 {
+        ((dt.year() + 1601) as u16, true)
+    } else {
+        (dt.year() as u16, false)
+    };
+    let sys_time = SYSTEMTIME {
         // Valid values: 1601-30827
-        wYear: dt.year() as u16,
+        wYear: year,
         // Valid values:1-12
         wMonth: dt.month() as u16,
         // Valid values: 0-6, starting Sunday.
@@ -122,8 +135,9 @@ fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> SYSTEMTIME {
         // Valid values: 0-59
         wSecond: dt.second() as u16,
         // Valid values: 0-999
-        wMilliseconds: 0,
-    }
+        wMilliseconds: (dt.nanosecond() / NANOSECONDS_IN_MILLI) as u16,
+    };
+    (sys_time, shifted)
 }
 
 pub(crate) fn local_to_utc_time(local: &SYSTEMTIME) -> Result<SYSTEMTIME, Error> {
