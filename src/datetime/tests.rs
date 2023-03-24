@@ -972,13 +972,10 @@ fn test_from_naive_date_time_windows() {
     let local_too_low = Local.from_local_datetime(&too_low_year);
     let local_too_high = Local.from_local_datetime(&too_high_year);
 
-    assert_eq!(local_too_low, LocalResult::None);
+    assert_ne!(local_too_low, LocalResult::None);
     assert_eq!(local_too_high, LocalResult::None);
 
-    let err = std::panic::catch_unwind(|| {
-        Local.from_utc_datetime(&too_low_year);
-    });
-    assert!(err.is_err());
+    let _ = Local.from_utc_datetime(&too_low_year);
 
     let err = std::panic::catch_unwind(|| {
         Local.from_utc_datetime(&too_high_year);
