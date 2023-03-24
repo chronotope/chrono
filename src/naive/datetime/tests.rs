@@ -1,9 +1,9 @@
 use super::NaiveDateTime;
-use crate::oldtime::Duration;
-use crate::NaiveDate;
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::{Datelike, LocalResult, TimeZone, FixedOffset, Utc};
+use crate::oldtime::Duration;
+use crate::NaiveDate;
+use crate::{Datelike, FixedOffset, LocalResult, TimeZone, Utc};
 use std::i64;
 
 #[test]

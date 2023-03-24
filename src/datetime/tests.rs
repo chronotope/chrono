@@ -1,14 +1,11 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::DateTime;
-use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, TimeZone, Utc};
 use crate::oldtime::Duration;
-#[cfg(feature = "clock")]
-use crate::Datelike;
-use crate::{Days, LocalResult, Months, NaiveDateTime};
+use crate::{Datelike, Days, LocalResult, Months, NaiveDate, NaiveDateTime, NaiveTime};
 
 #[derive(Clone)]
 struct DstTester;
