@@ -41,6 +41,8 @@ macro_rules! windows_sys_call {
 const HECTONANOSECS_IN_SEC: i64 = 10_000_000;
 const HECTONANOSEC_TO_UNIX_EPOCH: i64 = 11_644_473_600 * HECTONANOSECS_IN_SEC;
 const NANOSECONDS_IN_MILLI: u32 = 1_000_000;
+const SYSTEMTIME_MIN_YEAR: i32 = 1601;
+const SYSTEMTIME_MAX_YEAR: i32 = 30827;
 
 pub(super) fn now() -> DateTime<Local> {
     LocalSysTime::local().datetime()
@@ -123,13 +125,13 @@ impl LocalSysTime {
 
 fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> (SYSTEMTIME, i32) {
     // Compute year to handle invalid Window dates allowed by `NaiveDateTime`
-    let (year, shifted) = if dt.year() < 1601 {
+    let (year, shifted) = if dt.year() < SYSTEMTIME_MIN_YEAR {
         // PANICS: `abs_diff` should be panic-safe here as `NaiveDateTime`
         // has a MIN_YEAR of i32::MIN >> 13
         let interval = ((dt.year().abs_diff(1600) / 400) + 1) as i32;
         ((dt.year() + (400 * interval)) as u16, 0 - interval)
-    } else if dt.year() > 30827 {
-        let interval = ((dt.year() - 30827) / 400) + 1;
+    } else if dt.year() > SYSTEMTIME_MAX_YEAR {
+        let interval = ((dt.year() - SYSTEMTIME_MAX_YEAR) / 400) + 1;
         ((dt.year() - (400 * interval)) as u16, interval)
     } else {
         (dt.year() as u16, 0)
