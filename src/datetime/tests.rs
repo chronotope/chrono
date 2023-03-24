@@ -982,3 +982,17 @@ fn test_from_naive_date_time_windows() {
     });
     assert!(err.is_err());
 }
+
+#[test]
+#[cfg(target_os = "windows")]
+fn test_windows_naive_date_leap_year() {
+    let leap = NaiveDate::from_ymd_opt(1600, 2, 28).unwrap().and_hms_opt(23, 59, 59).unwrap();
+
+    let mut leap_year = Local.from_utc_datetime(&leap);
+    leap_year += Duration::days(1);
+
+    let leap_day = NaiveDate::from_ymd_opt(1600, 2, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
+    let next_day = Local.from_utc_datetime(&leap_day);
+
+    assert_eq!(leap_year, next_day);
+}

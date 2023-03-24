@@ -60,9 +60,13 @@ pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<Date
     LocalResult::None
 }
 
+/// Internal representation of a local windows' `SYSTEMTIME` with offset and other conversion fields
 struct LocalSysTime {
+    /// The inner SYSTEMTIME
     inner: SYSTEMTIME,
+    /// The offset value from UTC
     offset: i32,
+    // Denotes whether we have +/- shifted a year value from invalid to valid
     shifted: bool,
 }
 
@@ -96,7 +100,7 @@ impl LocalSysTime {
     fn datetime(self) -> DateTime<Local> {
         let st = self.inner;
 
-        let year = if self.shifted { st.wYear - 1601 } else { st.wYear };
+        let year = if self.shifted { st.wYear - 1600 } else { st.wYear };
 
         let date = NaiveDate::from_ymd_opt(year as i32, st.wMonth as u32, st.wDay as u32).unwrap();
         let time = NaiveTime::from_hms_milli_opt(
@@ -114,7 +118,7 @@ impl LocalSysTime {
 
 fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> (SYSTEMTIME, bool) {
     let (year, shifted) = if dt.year() < 1601 {
-        ((dt.year() + 1601) as u16, true)
+        ((dt.year() + 1600) as u16, true)
     } else {
         (dt.year() as u16, false)
     };
