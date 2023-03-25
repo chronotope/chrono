@@ -13,7 +13,6 @@ use std::io::Error;
 use std::ptr;
 use std::result::Result;
 
-use num_traits::Zero;
 use winapi::shared::minwindef::FILETIME;
 use winapi::um::minwinbase::SYSTEMTIME;
 use winapi::um::sysinfoapi::GetLocalTime;
@@ -103,7 +102,7 @@ impl LocalSysTime {
     fn datetime(self) -> DateTime<Local> {
         let st = self.inner;
 
-        let year = if !self.shifted.is_zero() {
+        let year = if self.shifted != 0 {
             st.wYear as i32 + (400 * self.shifted)
         } else {
             st.wYear as i32
