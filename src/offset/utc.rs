@@ -51,6 +51,7 @@ pub struct Utc;
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
+    #[allow(deprecated)]
     pub fn today() -> Result<Date<Utc>, Error> {
         Ok(Utc::now()?.date())
     }
@@ -64,7 +65,7 @@ impl Utc {
     pub fn now() -> Result<DateTime<Utc>, Error> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos() as u32)?;
+        let naive = NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos())?;
         Ok(DateTime::from_utc(naive, Utc))
     }
 

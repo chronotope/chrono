@@ -22,7 +22,9 @@ use core::fmt;
 
 use crate::format::{parse, Parsed, StrftimeItems};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use crate::{Date, DateTime, Error, Weekday};
+#[allow(deprecated)]
+use crate::Date;
+use crate::{DateTime, Error, Weekday};
 
 mod fixed;
 pub use self::fixed::FixedOffset;
@@ -205,6 +207,7 @@ pub trait TimeZone: Sized + Clone {
     /// assert!(Utc.ymd(2000, 0, 0).is_err());
     /// # Ok::<_, chrono::Error>(())
     /// ```
+    #[allow(deprecated)]
     fn ymd(&self, year: i32, month: u32, day: u32) -> Result<LocalResult<Date<Self>>, Error> {
         let d = NaiveDate::from_ymd(year, month, day)?;
         self.from_local_date(&d)
@@ -226,6 +229,7 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.yo(2015, 135)?.single()?.to_string(), "2015-05-15UTC");
     /// # Ok::<_, chrono::Error>(())
     /// ```
+    #[allow(deprecated)]
     fn yo(&self, year: i32, ordinal: u32) -> Result<LocalResult<Date<Self>>, Error> {
         let d = NaiveDate::from_yo(year, ordinal)?;
         self.from_local_date(&d)
@@ -251,6 +255,7 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.isoywd(2015, 20, Weekday::Fri)?.single()?.to_string(), "2015-05-15UTC");
     /// # Ok::<_, chrono::Error>(())
     /// ```
+    #[allow(deprecated)]
     fn isoywd(
         &self,
         year: i32,
@@ -358,6 +363,7 @@ pub trait TimeZone: Sized + Clone {
 
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
     #[allow(clippy::wrong_self_convention)]
+    #[allow(deprecated)]
     fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Self>>, Error> {
         let offset = self.offset_from_local_date(local)?;
         let offset = offset.map(|offset| Date::from_utc(*local, offset));
@@ -384,6 +390,7 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     #[allow(clippy::wrong_self_convention)]
+    #[allow(deprecated)]
     fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Self>, Error> {
         Ok(Date::from_utc(*utc, self.offset_from_utc_date(utc)?))
     }
@@ -409,6 +416,7 @@ pub(crate) trait FixedTimeZone: TimeZone {
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     #[allow(clippy::wrong_self_convention)]
+    #[allow(deprecated)]
     fn from_utc_date_fixed(&self, utc: &NaiveDate) -> Date<Self> {
         Date::from_utc(*utc, self.offset_from_utc_date_fixed(utc))
     }

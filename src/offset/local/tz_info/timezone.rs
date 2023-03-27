@@ -604,7 +604,7 @@ fn find_tz_file(path: impl AsRef<Path>) -> Result<File, Error> {
             }
         }
 
-        Err(Error::Io(io::ErrorKind::NotFound.into()))
+        Err(Error::Io(io::ErrorKind::NotFound))
     }
 }
 

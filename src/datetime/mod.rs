@@ -33,7 +33,9 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, FixedTimeZone, Offset, TimeZone, Utc};
-use crate::{Date, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
+#[allow(deprecated)]
+use crate::Date;
+use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 /// documented at re-export site
 #[cfg(feature = "serde")]

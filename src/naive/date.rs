@@ -2202,7 +2202,7 @@ mod tests {
         MIN_YEAR,
     };
     use crate::time_delta::TimeDelta;
-    use crate::{Datelike, Error, Weekday};
+    use crate::{Datelike, Weekday};
     use std::{
         convert::{TryFrom, TryInto},
         i32, u32,

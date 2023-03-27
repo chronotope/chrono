@@ -9,7 +9,9 @@ use rkyv::{Archive, Deserialize, Serialize};
 use super::fixed::FixedOffset;
 use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::offset::LocalResult;
-use crate::{Date, DateTime, Error, TimeZone};
+#[allow(deprecated)]
+use crate::Date;
+use crate::{DateTime, Error, TimeZone};
 
 // we don't want `stub.rs` when the target_os is not wasi or emscripten
 // as we use js-sys to get the date instead
@@ -58,6 +60,7 @@ pub struct Local;
 
 impl Local {
     /// Returns a `Date` which corresponds to the current date.
+    #[allow(deprecated)]
     pub fn today() -> Result<Date<Local>, Error> {
         Ok(Local::now()?.date())
     }
@@ -119,6 +122,7 @@ impl TimeZone for Local {
     }
 
     // override them for avoiding redundant works
+    #[allow(deprecated)]
     fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Local>>, Error> {
         // this sounds very strange, but required for keeping `TimeZone::ymd` sane.
         // in the other words, we use the offset at the local midnight
@@ -155,6 +159,7 @@ impl TimeZone for Local {
         inner::naive_to_local(local, true)
     }
 
+    #[allow(deprecated)]
     fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Local>, Error> {
         let midnight = self.from_utc_datetime(&utc.and_midnight())?;
         Ok(Date::from_utc(*utc, *midnight.offset()))
