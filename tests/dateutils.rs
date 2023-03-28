@@ -52,19 +52,23 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     }
 }
 
+/// path to Unix `date` command. Should work on most Linux and Unixes. Not the
+/// path for MacOS (/bin/date) which uses a different version of `date` with
+/// different arguments (so it won't run which is okay).
+/// for testing only
+#[allow(dead_code)]
+#[cfg(not(target_os = "aix"))]
+const DATE_PATH: &'static str = "/usr/bin/date";
+#[allow(dead_code)]
+#[cfg(target_os = "aix")]
+const DATE_PATH: &'static str = "/opt/freeware/bin/date";
+
 #[test]
 #[cfg(unix)]
 fn try_verify_against_date_command() {
-    #[cfg(not(target_os = "aix"))]
-    let date_path = "/usr/bin/date";
-    #[cfg(target_os = "aix")]
-    let date_path = "/opt/freeware/bin/date";
 
-    if !path::Path::new(date_path).exists() {
-        // date command not found, skipping
-        // avoid running this on macOS, which has path /bin/date
-        // as the required CLI arguments are not present in the
-        // macOS build.
+    if !path::Path::new(DATE_PATH).exists() {
+        eprintln!("date command {:?} not found, skipping", DATE_PATH);
         return;
     }
 
@@ -75,7 +79,7 @@ fn try_verify_against_date_command() {
             || (2020..=2022).contains(&date.year())
             || (2073..=2077).contains(&date.year())
         {
-            verify_against_date_command_local(date_path, date);
+            verify_against_date_command_local(DATE_PATH, date);
         }
 
         date += chrono::Duration::hours(1);
@@ -124,15 +128,13 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
 #[test]
 #[cfg(target_os = "linux")]
 fn try_verify_against_date_command_format() {
-    let date_path = "/usr/bin/date";
-
-    if !path::Path::new(date_path).exists() {
-        // date command not found, skipping
+    if !path::Path::new(DATE_PATH).exists() {
+        eprintln!("date command {:?} not found, skipping", DATE_PATH);
         return;
     }
     let mut date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(12, 11, 13).unwrap();
     while date.year() < 2008 {
-        verify_against_date_command_format_local(date_path, date);
+        verify_against_date_command_format_local(DATE_PATH, date);
         date += chrono::Duration::days(55);
     }
 }
