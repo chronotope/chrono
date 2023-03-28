@@ -916,6 +916,7 @@ fn test_parse() {
     check!("4x",           [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
     check!("  4",          [internal_fix!(Nanosecond3NoDot)]; INVALID);
     check!(".421",         [internal_fix!(Nanosecond3NoDot)]; INVALID);
+    check!(".",            [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
 
     check!("",             [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
     check!("0",            [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
@@ -929,6 +930,7 @@ fn test_parse() {
     check!("4x",           [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
     check!("     4",       [internal_fix!(Nanosecond6NoDot)]; INVALID);
     check!(".42100",       [internal_fix!(Nanosecond6NoDot)]; INVALID);
+    check!(".",            [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
 
     check!("",             [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
     check!("42195",        [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
@@ -941,6 +943,7 @@ fn test_parse() {
     check!("00000000x",    [internal_fix!(Nanosecond9NoDot)]; INVALID);
     check!("        4",    [internal_fix!(Nanosecond9NoDot)]; INVALID);
     check!(".42100000",    [internal_fix!(Nanosecond9NoDot)]; INVALID);
+    check!(".",            [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
 
     // fixed: timezone offsets
 
