@@ -486,29 +486,50 @@ struct TimeZoneName {
 
 impl TimeZoneName {
     /// Construct a time zone name
+    ///
+    /// Note: Converts `−` MINUS SIGN (U+2212) to `-` HYPHEN-MINUS (U+2D).
+    ///       Multi-byte MINUS SIGN is allowed in [ISO 8601 / RFC 3339]. But
+    ///       working with single-byte HYPHEN-MINUS is easier and more common.
+    ///
+    /// [ISO 8601 / RFC 3339]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
     fn new(input: &[u8]) -> Result<Self, Error> {
-        let len = input.len();
+        let s = match str::from_utf8(input) {
+            Ok(s) => s,
+            Err(_err) => return Err(Error::LocalTimeType("invalid UTF-8")),
+        };
+        let schars = s.chars().count();
 
-        if !(3..=7).contains(&len) {
+        if !(3..=7).contains(&schars) {
             return Err(Error::LocalTimeType(
                 "time zone name must have between 3 and 7 characters",
             ));
         }
 
         let mut bytes = [0; 8];
-        bytes[0] = input.len() as u8;
-
-        let mut i = 0;
-        while i < len {
-            let b = input[i];
-            match b {
-                b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'+' | b'-' => {}
+        let mut copied: usize = 0;
+        for (i, c) in s.chars().enumerate() {
+            match c {
+                '0'..='9' | 'A'..='Z' | 'a'..='z'
+                // ISO 8601 / RFC 3339 proscribes use of `+` (U+2B) PLUS SIGN
+                // in timezone
+                | '+'
+                // ISO 8601 / RFC 3339 allows use of `-` HYPHEN-MINUS (U+2D)
+                // in timezone
+                | '-' => {
+                    bytes[i + 1] = c as u8;
+                }
+                // ISO 8601 / RFC 3339 recommends the use of
+                // `−` MINUS SIGN (U+2212) in timezone.
+                // But replace with single-byte `-` HYPHEN-MINUS (U+2D) for
+                // easier byte <-> char conversions later on.
+                | '−' => {
+                    bytes[i + 1] = b'-';
+                }
                 _ => return Err(Error::LocalTimeType("invalid characters in time zone name")),
             }
-
-            bytes[i + 1] = b;
-            i += 1;
+            copied += 1;
         }
+        bytes[0] = copied as u8;
 
         Ok(Self { bytes })
     }
@@ -752,20 +773,61 @@ mod tests {
     }
 
     #[test]
-    fn test_tz_ascii_str() -> Result<(), Error> {
-        assert!(matches!(TimeZoneName::new(b""), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"1"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"12"), Err(Error::LocalTimeType(_))));
-        assert_eq!(TimeZoneName::new(b"123")?.as_bytes(), b"123");
-        assert_eq!(TimeZoneName::new(b"1234")?.as_bytes(), b"1234");
-        assert_eq!(TimeZoneName::new(b"12345")?.as_bytes(), b"12345");
-        assert_eq!(TimeZoneName::new(b"123456")?.as_bytes(), b"123456");
-        assert_eq!(TimeZoneName::new(b"1234567")?.as_bytes(), b"1234567");
-        assert!(matches!(TimeZoneName::new(b"12345678"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"123456789"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"1234567890"), Err(Error::LocalTimeType(_))));
-
-        assert!(matches!(TimeZoneName::new(b"123\0\0\0"), Err(Error::LocalTimeType(_))));
+    fn test_timezonename_new() -> Result<(), Error> {
+        // expect Error::LocalTimeType()
+        for input_ in [
+            "",
+            "1",
+            "+",
+            "-",
+            "−", // MINUS SIGN (U+2212)
+            "12",
+            "--",
+            "−−", // MINUS SIGN (U+2212)
+            "AB",
+            "ab",
+            "12345678",
+            "ABCDEFGH",
+            "123456789",
+            "1234567890",
+            "--------",
+            "123\0\0\0",
+            "\0\0\0",
+            "\0123",
+            "123\0",
+        ] {
+            eprintln!("TimeZoneName::new({:?}) (expect Error::LocalTimeType)", input_);
+            let input_ = input_.as_bytes();
+            let err = TimeZoneName::new(input_);
+            eprintln!("err = {:?}", err);
+            assert!(matches!(err, Err(Error::LocalTimeType(_))));
+        }
+        // expect Ok
+        for (input_, expect) in [
+            ("123", "123"),
+            ("abc", "abc"),
+            ("ABC", "ABC"),
+            ("1234", "1234"),
+            ("12345", "12345"),
+            ("123456", "123456"),
+            ("1234567", "1234567"),
+            ("+1234", "+1234"),
+            ("+1234", "+1234"),
+            ("-1234", "-1234"),
+            ("−1234", "-1234"), // MINUS SIGN (U+2212) to HYPHEN-MINUS (U+002D)
+            // Ok nonsense
+            ("+++", "+++"),
+            ("-----", "-----"),
+            ("−−−", "---"),         // MINUS SIGN (U+2212) to HYPHEN-MINUS (U+002D)
+            ("−−−−−−−", "-------"), // MINUS SIGN (U+2212) to HYPHEN-MINUS (U+002D)
+        ] {
+            eprintln!("TimeZoneName::new({:?})", input_);
+            let output = TimeZoneName::new(input_.as_bytes());
+            match output {
+                Ok(output) => assert_eq!(output.as_bytes(), expect.as_bytes()),
+                Err(error) => panic!("Failed: input {:?}, error {}", input_, error),
+            }
+        }
 
         Ok(())
     }

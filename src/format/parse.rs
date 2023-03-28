@@ -665,7 +665,10 @@ fn test_parse() {
     check!("",    [lit!("a")]; TOO_SHORT);
     check!(" ",   [lit!("a")]; INVALID);
     check!("a",   [lit!("a")]; );
-    // a Literal may contain whitespace and match whitespace, but this should not be done
+    check!("+",   [lit!("+")]; );
+    check!("-",   [lit!("-")]; );
+    check!("−",   [lit!("−")]; ); // MINUS SIGN (U+2212)
+                                  // a Literal may contain whitespace and match whitespace, but this should not be done
     check!(" ",   [lit!(" ")]; );
     check!("aa",  [lit!("a")]; TOO_LONG);
     check!("🤠",  [lit!("a")]; INVALID);
@@ -681,6 +684,8 @@ fn test_parse() {
     check!("1",   [lit!("1")]; );
     check!("1234", [lit!("1234")]; );
     check!("+1234", [lit!("+1234")]; );
+    check!("-1234", [lit!("-1234")]; );
+    check!("−1234", [lit!("−1234")]; ); // MINUS SIGN (U+2212)
     check!("PST", [lit!("PST")]; );
     check!("🤠",  [lit!("🤠")]; );
     check!("🤠a", [lit!("🤠"), lit!("a")]; );
@@ -747,6 +752,7 @@ fn test_parse() {
     check!("-0042",       [num!(Year)]; year: -42);
     check!("+0042",       [num!(Year)]; year: 42);
     check!("-42195",      [num!(Year)]; year: -42195);
+    check!("−42195",      [num!(Year)]; INVALID); // MINUS SIGN (U+2212)
     check!("+42195",      [num!(Year)]; year: 42195);
     check!(" -42195",     [num!(Year)]; INVALID);
     check!(" +42195",     [num!(Year)]; INVALID);
@@ -757,6 +763,7 @@ fn test_parse() {
     check!("  -   42",    [num!(Year)]; INVALID);
     check!("  +   42",    [num!(Year)]; INVALID);
     check!("  -42195",    [sp!("  "), num!(Year)]; year: -42195);
+    check!("  −42195",    [sp!("  "), num!(Year)]; INVALID); // MINUS SIGN (U+2212)
     check!("  +42195",    [sp!("  "), num!(Year)]; year: 42195);
     check!("  -   42",    [sp!("  "), num!(Year)]; INVALID);
     check!("  +   42",    [sp!("  "), num!(Year)]; INVALID);
@@ -767,6 +774,7 @@ fn test_parse() {
     check!("345",   [num!(Ordinal)]; ordinal: 345);
     check!("+345",  [num!(Ordinal)]; INVALID);
     check!("-345",  [num!(Ordinal)]; INVALID);
+    check!("−345",  [num!(Ordinal)]; INVALID); // MINUS SIGN (U+2212)
     check!(" 345",  [num!(Ordinal)]; INVALID);
     check!("345 ",  [num!(Ordinal)]; TOO_LONG);
     check!(" 345",  [sp!(" "), num!(Ordinal)]; ordinal: 345);
@@ -956,6 +964,7 @@ fn test_parse() {
     check!("+12:3",        [fix!(TimezoneOffset)]; TOO_SHORT);
     check!("+12:34",       [fix!(TimezoneOffset)]; offset: 45_240);
     check!("-12:34",       [fix!(TimezoneOffset)]; offset: -45_240);
+    check!("−12:34",       [fix!(TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12:34:",      [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12:34:5",     [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12:34:56",    [fix!(TimezoneOffset)]; TOO_LONG);
@@ -975,12 +984,14 @@ fn test_parse() {
     check!("+1234:567",    [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+00:00",       [fix!(TimezoneOffset)]; offset: 0);
     check!("-00:00",       [fix!(TimezoneOffset)]; offset: 0);
+    check!("−00:00",       [fix!(TimezoneOffset)]; offset: 0); // MINUS SIGN (U+2212)
     check!("+00:01",       [fix!(TimezoneOffset)]; offset: 60);
     check!("-00:01",       [fix!(TimezoneOffset)]; offset: -60);
     check!("+00:30",       [fix!(TimezoneOffset)]; offset: 1_800);
     check!("-00:30",       [fix!(TimezoneOffset)]; offset: -1_800);
     check!("+24:00",       [fix!(TimezoneOffset)]; offset: 86_400);
     check!("-24:00",       [fix!(TimezoneOffset)]; offset: -86_400);
+    check!("−24:00",       [fix!(TimezoneOffset)]; offset: -86_400); // MINUS SIGN (U+2212)
     check!("+99:59",       [fix!(TimezoneOffset)]; offset: 359_940);
     check!("-99:59",       [fix!(TimezoneOffset)]; offset: -359_940);
     check!("+00:60",       [fix!(TimezoneOffset)]; OUT_OF_RANGE);
@@ -990,6 +1001,7 @@ fn test_parse() {
     check!("+12 34 ",      [fix!(TimezoneOffset)]; INVALID);
     check!(" +12:34",      [fix!(TimezoneOffset)]; offset: 45_240);
     check!(" -12:34",      [fix!(TimezoneOffset)]; offset: -45_240);
+    check!(" −12:34",      [fix!(TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("  +12:34",     [fix!(TimezoneOffset)]; INVALID);
     check!("  -12:34",     [fix!(TimezoneOffset)]; INVALID);
     check!("\t -12:34",    [fix!(TimezoneOffset)]; INVALID);
@@ -1012,10 +1024,16 @@ fn test_parse() {
     check!("X12:34",       [fix!(TimezoneOffset)]; INVALID);
     check!("Z+12:34",      [fix!(TimezoneOffset)]; INVALID);
     check!("X+12:34",      [fix!(TimezoneOffset)]; INVALID);
+    check!("X−12:34",      [fix!(TimezoneOffset)]; INVALID); // MINUS SIGN (U+2212)
     check!("🤠+12:34",     [fix!(TimezoneOffset)]; INVALID);
     check!("+12:34🤠",     [fix!(TimezoneOffset)]; TOO_LONG);
     check!("+12:🤠34",     [fix!(TimezoneOffset)]; INVALID);
+    check!("+1234🤠",     [fix!(TimezoneOffset), lit!("🤠")]; offset: 45_240);
+    check!("-1234🤠",     [fix!(TimezoneOffset), lit!("🤠")]; offset: -45_240);
+    check!("−1234🤠",      [fix!(TimezoneOffset), lit!("🤠")]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12:34🤠",     [fix!(TimezoneOffset), lit!("🤠")]; offset: 45_240);
+    check!("-12:34🤠",     [fix!(TimezoneOffset), lit!("🤠")]; offset: -45_240);
+    check!("−12:34🤠",     [fix!(TimezoneOffset), lit!("🤠")]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("🤠+12:34",     [lit!("🤠"), fix!(TimezoneOffset)]; offset: 45_240);
     check!("Z",            [fix!(TimezoneOffset)]; INVALID);
     check!("A",            [fix!(TimezoneOffset)]; INVALID);
@@ -1044,6 +1062,7 @@ fn test_parse() {
     check!("+123",         [fix!(TimezoneOffsetColon)]; TOO_SHORT);
     check!("+1234",        [fix!(TimezoneOffsetColon)]; offset: 45_240);
     check!("-1234",        [fix!(TimezoneOffsetColon)]; offset: -45_240);
+    check!("−1234",        [fix!(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12345",       [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!("+123456",      [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!("+1234567",     [fix!(TimezoneOffsetColon)]; TOO_LONG);
@@ -1060,6 +1079,7 @@ fn test_parse() {
     check!("+12:3",        [fix!(TimezoneOffsetColon)]; TOO_SHORT);
     check!("+12:34",       [fix!(TimezoneOffsetColon)]; offset: 45_240);
     check!("-12:34",       [fix!(TimezoneOffsetColon)]; offset: -45_240);
+    check!("−12:34",       [fix!(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12:34:",      [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!("+12:34:5",     [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!("+12:34:56",    [fix!(TimezoneOffsetColon)]; TOO_LONG);
@@ -1068,10 +1088,15 @@ fn test_parse() {
     check!("+12:34:56:78", [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!("+12:3456",     [fix!(TimezoneOffsetColon)]; TOO_LONG);
     check!("+1234:56",     [fix!(TimezoneOffsetColon)]; TOO_LONG);
+    check!("−12:34",       [fix!(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
+    check!("−12 : 34",     [fix!(TimezoneOffsetColon)]; INVALID); // MINUS SIGN (U+2212)
+    check!("+12 :34",      [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("+12: 34",      [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12 34",       [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12: 34",      [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12 :34",      [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12 : 34",     [fix!(TimezoneOffsetColon)]; INVALID);
+    check!("-12 : 34",     [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12  : 34",    [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12 :  34",    [fix!(TimezoneOffsetColon)]; INVALID);
     check!("+12  :  34",   [fix!(TimezoneOffsetColon)]; INVALID);
@@ -1125,6 +1150,7 @@ fn test_parse() {
     check!("+123",         [fix!(TimezoneOffsetZ)]; TOO_SHORT);
     check!("+1234",        [fix!(TimezoneOffsetZ)]; offset: 45_240);
     check!("-1234",        [fix!(TimezoneOffsetZ)]; offset: -45_240);
+    check!("−1234",        [fix!(TimezoneOffsetZ)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12345",       [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+123456",      [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+1234567",     [fix!(TimezoneOffsetZ)]; TOO_LONG);
@@ -1141,6 +1167,7 @@ fn test_parse() {
     check!("+12:3",        [fix!(TimezoneOffsetZ)]; TOO_SHORT);
     check!("+12:34",       [fix!(TimezoneOffsetZ)]; offset: 45_240);
     check!("-12:34",       [fix!(TimezoneOffsetZ)]; offset: -45_240);
+    check!("−12:34",       [fix!(TimezoneOffsetZ)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12:34:",      [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+12:34:5",     [fix!(TimezoneOffsetZ)]; TOO_LONG);
     check!("+12:34:56",    [fix!(TimezoneOffsetZ)]; TOO_LONG);
@@ -1211,6 +1238,7 @@ fn test_parse() {
     check!("+123",         [internal_fix!(TimezoneOffsetPermissive)]; TOO_SHORT);
     check!("+1234",        [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
     check!("-1234",        [internal_fix!(TimezoneOffsetPermissive)]; offset: -45_240);
+    check!("−1234",        [internal_fix!(TimezoneOffsetPermissive)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12345",       [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!("+123456",      [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!("+1234567",     [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
@@ -1227,6 +1255,7 @@ fn test_parse() {
     check!("+12:3",        [internal_fix!(TimezoneOffsetPermissive)]; TOO_SHORT);
     check!("+12:34",       [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
     check!("-12:34",       [internal_fix!(TimezoneOffsetPermissive)]; offset: -45_240);
+    check!("−12:34",       [internal_fix!(TimezoneOffsetPermissive)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12:34:",      [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!("+12:34:5",     [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!("+12:34:56",    [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
@@ -1254,6 +1283,8 @@ fn test_parse() {
     check!(" 12:34",       [internal_fix!(TimezoneOffsetPermissive)]; INVALID);
     check!("+12:34 ",      [internal_fix!(TimezoneOffsetPermissive)]; TOO_LONG);
     check!(" +12:34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: 45_240);
+    check!(" -12:34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: -45_240);
+    check!(" −12:34",      [internal_fix!(TimezoneOffsetPermissive)]; offset: -45_240); // MINUS SIGN (U+2212)
     check!("+12345",       [internal_fix!(TimezoneOffsetPermissive), num!(Day)]; offset: 45_240, day: 5);
     check!("+12:345",      [internal_fix!(TimezoneOffsetPermissive), num!(Day)]; offset: 45_240, day: 5);
     check!("+12:34:",      [internal_fix!(TimezoneOffsetPermissive), lit!(":")]; offset: 45_240);
@@ -1300,6 +1331,16 @@ fn test_parse() {
             num!(Hour), lit!(":"), num!(Minute), lit!(":"), num!(Second), fix!(TimezoneOffset)];
            year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
            minute: 37, second: 5, offset: 32400);
+    check!("2015-02-04T14:37:05-09:00",
+           [num!(Year), lit!("-"), num!(Month), lit!("-"), num!(Day), lit!("T"),
+            num!(Hour), lit!(":"), num!(Minute), lit!(":"), num!(Second), fix!(TimezoneOffset)];
+           year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
+           minute: 37, second: 5, offset: -32400);
+    check!("2015-02-04T14:37:05−09:00", // timezone offset using MINUS SIGN (U+2212)
+           [num!(Year), lit!("-"), num!(Month), lit!("-"), num!(Day), lit!("T"),
+            num!(Hour), lit!(":"), num!(Minute), lit!(":"), num!(Second), fix!(TimezoneOffset)];
+           year: 2015, month: 2, day: 4, hour_div_12: 1, hour_mod_12: 2,
+           minute: 37, second: 5, offset: -32400);
     check!("20150204143705567",
             [num!(Year), num!(Month), num!(Day),
             num!(Hour), num!(Minute), num!(Second), internal_fix!(Nanosecond3NoDot)];
@@ -1397,7 +1438,9 @@ fn test_rfc2822() {
         ("20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // no day of week
         ("20 JAN 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // upper case month
         ("Tue, 20 Jan 2015 17:35 -0800", Ok("Tue, 20 Jan 2015 17:35:00 -0800")), // no second
+        ("11 Sep 2001 09:45:00 +0000", Ok("Tue, 11 Sep 2001 09:45:00 +0000")),
         ("11 Sep 2001 09:45:00 EST", Ok("Tue, 11 Sep 2001 09:45:00 -0500")),
+        ("11 Sep 2001 09:45:00 GMT", Ok("Tue, 11 Sep 2001 09:45:00 +0000")),
         ("30 Feb 2015 17:35:20 -0800", Err(OUT_OF_RANGE)), // bad day of month
         ("Tue, 20 Jan 2015", Err(TOO_SHORT)),              // omitted fields
         ("Tue, 20 Avr 2015 17:35:20 -0800", Err(INVALID)), // bad month name
@@ -1430,6 +1473,13 @@ fn test_rfc2822() {
         ("Tue, 20 Jan 2015 17:35:20 k", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
         // named single-letter timezone "J" is specifically not valid
         ("Tue, 20 Jan 2015 17:35:20 J", Err(NOT_ENOUGH)),
+        ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset minutes
+        ("Tue, 20 Jan 2015 17:35:20Z", Err(INVALID)),           // bad offset: zulu not allowed
+        ("Tue, 20 Jan 2015 17:35:20 Zulu", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
+        ("Tue, 20 Jan 2015 17:35:20 ZULU", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
+        ("Tue, 20 Jan 2015 17:35:20 −0800", Err(INVALID)), // bad offset: timezone offset using MINUS SIGN (U+2212), not specified for RFC 2822
+        ("Tue, 20 Jan 2015 17:35:20 0800", Err(INVALID)),  // missing offset sign
+        ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named timezone
         ("Tue, 20 Jan 2015😈17:35:20 -0800", Err(INVALID)), // bad character!
     ];
 
@@ -1445,6 +1495,8 @@ fn test_rfc2822() {
 
     // Test against test data above
     for &(date, checkdate) in testdates.iter() {
+        eprintln!("Test input: {:?}", date);
+        eprintln!("    Expect: {:?}", checkdate);
         let d = rfc2822_to_datetime(date); // parse a date
         let dt = match d {
             // did we get a value?
@@ -1500,6 +1552,25 @@ fn parse_rfc850() {
     for val in &testdates {
         assert_eq!(Ok(val.0), Utc.datetime_from_str(val.1, RFC850_FMT));
     }
+
+    let testdates_fail = [
+        "Saturday, 12-Nov-94 08:49:37",
+        "Saturday, 12-Nov-94 08:49:37 Z",
+        "Saturday, 12-Nov-94 08:49:37 GMTTTT",
+        "Saturday, 12-Nov-94 08:49:37 gmt",
+        "Saturday, 12-Nov-94 08:49:37 +08:00",
+        "Caturday, 12-Nov-94 08:49:37 GMT",
+        "Saturday, 99-Nov-94 08:49:37 GMT",
+        "Saturday, 12-Nov-2000 08:49:37 GMT",
+        "Saturday, 12-Mop-94 08:49:37 GMT",
+        "Saturday, 12-Nov-94 28:49:37 GMT",
+        "Saturday, 12-Nov-94 08:99:37 GMT",
+        "Saturday, 12-Nov-94 08:49:99 GMT",
+    ];
+
+    for val in &testdates_fail {
+        assert!(Utc.datetime_from_str(val, RFC850_FMT).is_err());
+    }
 }
 
 #[cfg(test)]
@@ -1512,15 +1583,21 @@ fn test_rfc3339() {
     // Test data - (input, Ok(expected result after parse and format) or Err(error code))
     let testdates = [
         ("2015-01-20T17:35:20-08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case
+        ("2015-01-20T17:35:20−08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case with MINUS SIGN (U+2212)
         ("1944-06-06T04:04:00Z", Ok("1944-06-06T04:04:00+00:00")),      // D-day
         ("2001-09-11T09:45:00-08:00", Ok("2001-09-11T09:45:00-08:00")),
         ("2015-01-20T17:35:20.001-08:00", Ok("2015-01-20T17:35:20.001-08:00")),
+        ("2015-01-20T17:35:20.001−08:00", Ok("2015-01-20T17:35:20.001-08:00")), // with MINUS SIGN (U+2212)
         ("2015-01-20T17:35:20.000031-08:00", Ok("2015-01-20T17:35:20.000031-08:00")),
         ("2015-01-20T17:35:20.000000004-08:00", Ok("2015-01-20T17:35:20.000000004-08:00")),
+        ("2015-01-20T17:35:20.000000004−08:00", Ok("2015-01-20T17:35:20.000000004-08:00")), // with MINUS SIGN (U+2212)
         ("2015-01-20T17:35:20.000000000452-08:00", Ok("2015-01-20T17:35:20-08:00")), // too small
+        ("2015-01-20T17:35:20.000000000452−08:00", Ok("2015-01-20T17:35:20-08:00")), // too small with MINUS SIGN (U+2212)
         ("2015-01-20 17:35:20.001-08:00", Err(INVALID)), // missing separator 'T'
         ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YMD
         ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HMS
+        ("-01-20T17:35:20-08:00", Err(INVALID)),         // missing year
+        ("99-01-20T17:35:20-08:00", Err(INVALID)),       // bad year format
         ("99999-01-20T17:35:20-08:00", Err(INVALID)),    // bad year value
         ("-2000-01-20T17:35:20-08:00", Err(INVALID)),    // bad year value
         ("2015-02-30T17:35:20-08:00", Err(OUT_OF_RANGE)), // bad day of month value
@@ -1530,14 +1607,32 @@ fn test_rfc3339() {
         ("2015-01-20T17:35:20-24:00", Err(OUT_OF_RANGE)), // bad offset value
         ("15-01-20T17:35:20-08:00", Err(INVALID)),       // bad year format
         ("15-01-20T17:35:20-08:00:00", Err(INVALID)),    // bad year format, bad offset format
-        ("2015-01-20T17:35:20-0800", Err(INVALID)),      // bad offset format
-        ("2015-01-20T17:35:20.001-08 : 00", Err(INVALID)), // bad offset format
+        ("2015-01-20T17:35:2008:00", Err(INVALID)),      // missing offset sign
+        ("2015-01-20T17:35:20 08:00", Err(INVALID)),     // missing offset sign
+        ("2015-01-20T17:35:20Zulu", Err(TOO_LONG)),      // bad offset format
+        ("2015-01-20T17:35:20 Zulu", Err(INVALID)),      // bad offset format
+        ("2015-01-20T17:35:20GMT", Err(INVALID)),        // bad offset format
+        ("2015-01-20T17:35:20 GMT", Err(INVALID)),       // bad offset format
+        ("2015-01-20T17:35:20+GMT", Err(INVALID)),       // bad offset format
+        ("2015-01-20T17:35:20++08:00", Err(INVALID)),    // bad offset format
+        ("2015-01-20T17:35:20--08:00", Err(INVALID)),    // bad offset format
+        ("2015-01-20T17:35:20−−08:00", Err(INVALID)), // bad offset format with MINUS SIGN (U+2212)
+        ("2015-01-20T17:35:20±08:00", Err(INVALID)),  // bad offset sign
+        ("2015-01-20T17:35:20-08-00", Err(INVALID)),  // bad offset separator
+        ("2015-01-20T17:35:20-08;00", Err(INVALID)),  // bad offset separator
+        ("2015-01-20T17:35:20-0800", Err(INVALID)),   // bad offset separator
+        ("2015-01-20T17:35:20-08:0", Err(TOO_SHORT)), // bad offset minutes
+        ("2015-01-20T17:35:20-08:AA", Err(INVALID)),  // bad offset minutes
+        ("2015-01-20T17:35:20-08:ZZ", Err(INVALID)),  // bad offset minutes
+        ("2015-01-20T17:35:20.001-08 : 00", Err(INVALID)), // bad offset separator
         ("2015-01-20T17:35:20-08:00:00", Err(TOO_LONG)), // bad offset format
-        ("2015-01-20T17:35:20-08:", Err(TOO_SHORT)),     // bad offset format
-        ("2015-01-20T17:35:20-08", Err(TOO_SHORT)),      // bad offset format
-        ("2015-01-20T", Err(TOO_SHORT)),                 // missing HMS
-        ("2015-01-20T00:00:1", Err(TOO_SHORT)),          // missing complete S
-        ("2015-01-20T00:00:1-08:00", Err(INVALID)),      // missing complete S
+        ("2015-01-20T17:35:20+08:", Err(TOO_SHORT)),  // bad offset format
+        ("2015-01-20T17:35:20-08:", Err(TOO_SHORT)),  // bad offset format
+        ("2015-01-20T17:35:20−08:", Err(TOO_SHORT)),  // bad offset format with MINUS SIGN (U+2212)
+        ("2015-01-20T17:35:20-08", Err(TOO_SHORT)),   // bad offset format
+        ("2015-01-20T", Err(TOO_SHORT)),              // missing HMS
+        ("2015-01-20T00:00:1", Err(TOO_SHORT)),       // missing complete S
+        ("2015-01-20T00:00:1-08:00", Err(INVALID)),   // missing complete S
     ];
 
     fn rfc3339_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {

@@ -243,13 +243,26 @@ pub(super) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
-    timezone_offset_internal(s, consume_colon, false)
+    timezone_offset_internal(s, consume_colon, false, true)
 }
 
+/// The `consume_colon` function is used to parse a mandatory or optional `:`
+/// separator between hours offset and minutes offset.
+///
+/// The `allow_missing_minutes` flag allows the timezone minutes offset to be
+/// missing from `s`.
+///
+/// The `allow_tz_minus_sign` flag allows the timezone offset negative character
+/// to also be `−` MINUS SIGN (U+2212) in addition to the typical
+/// ASCII-compatible `-` HYPHEN-MINUS (U+2D).
+/// This is part of [RFC 3339 & ISO 8601].
+///
+/// [RFC 3339 & ISO 8601]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
 fn timezone_offset_internal<F>(
     mut s: &str,
     mut consume_colon: F,
     allow_missing_minutes: bool,
+    allow_tz_minus_sign: bool,
 ) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
@@ -262,13 +275,30 @@ where
             Ok((b[0], b[1]))
         }
     }
-    let negative = match s.as_bytes().first() {
-        Some(&b'+') => false,
-        Some(&b'-') => true,
+    let negative = match s.chars().next() {
+        Some('+') => {
+            s = &s['+'.len_utf8()..];
+
+            false
+        }
+        Some('-') => {
+            // HYPHEN-MINUS (U+2D)
+            s = &s['-'.len_utf8()..];
+
+            true
+        }
+        Some('−') => {
+            // MINUS SIGN (U+2212)
+            if !allow_tz_minus_sign {
+                return Err(INVALID);
+            }
+            s = &s['−'.len_utf8()..];
+
+            true
+        }
         Some(_) => return Err(INVALID),
         None => return Err(TOO_SHORT),
     };
-    s = &s[1..];
 
     // hours (00--99)
     let hours = match digits(s)? {
@@ -334,7 +364,7 @@ where
 {
     match s.as_bytes().first() {
         Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
-        _ => timezone_offset_internal(s, colon, true),
+        _ => timezone_offset_internal(s, colon, true, true),
     }
 }
 
@@ -372,7 +402,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
             Ok((s, None))
         }
     } else {
-        let (s_, offset) = timezone_offset(s, |s| Ok(s))?;
+        let (s_, offset) = timezone_offset_internal(s, |s| Ok(s), false, false)?;
         Ok((s_, Some(offset)))
     }
 }
