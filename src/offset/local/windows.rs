@@ -68,7 +68,12 @@ struct LocalSysTime {
     inner: SYSTEMTIME,
     /// The offset value from UTC
     offset: i32,
-    // Denotes the +/- 400 shifted a year value from invalid to valid
+    // Denotes the multiple of 400 year intervals shifted to create a valid year value. The
+    // value is stored as +/- depending on whether the initial value was lower (-) or higher (+).
+    //
+    // An example case would be the year 1100. 1100 is not a valid SYSTEMTIME year value, so
+    // it is shifted by 2 400-year intervals to 1900, which is a valid year value. The initial
+    // value would then reverted by `LocalSysTime::datetime()` by calculating 1900 + (-2 * 400).
     shifted: i32,
 }
 
@@ -102,6 +107,7 @@ impl LocalSysTime {
     fn datetime(self) -> DateTime<Local> {
         let st = self.inner;
 
+        // Revert date back to invalid value if the value had been shifted.
         let year = if self.shifted != 0 {
             st.wYear as i32 + (400 * self.shifted)
         } else {
@@ -127,7 +133,7 @@ fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> (SYSTEMTIME, i32) {
     let (year, shifted) = if dt.year() < SYSTEMTIME_MIN_YEAR {
         // PANICS: `abs_diff` should be panic-safe here as `NaiveDateTime`
         // has a MIN_YEAR of i32::MIN >> 13
-        let interval = ((dt.year().abs_diff(1600) / 400) + 1) as i32;
+        let interval = ((dt.year().abs_diff(SYSTEMTIME_MIN_YEAR - 1) / 400) + 1) as i32;
         ((dt.year() + (400 * interval)) as u16, 0 - interval)
     } else if dt.year() > SYSTEMTIME_MAX_YEAR {
         let interval = ((dt.year() - SYSTEMTIME_MAX_YEAR) / 400) + 1;
