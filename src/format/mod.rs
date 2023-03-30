@@ -506,7 +506,7 @@ fn format_inner(
 ) -> fmt::Result {
     let locale = Locales::new(locale);
 
-    use num_integer::{div_floor, mod_floor};
+    use crate::utils::{div_floor, mod_floor};
 
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
