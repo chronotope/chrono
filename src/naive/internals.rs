@@ -18,8 +18,7 @@
 use core::convert::TryFrom;
 use core::{fmt, i32};
 
-use num_integer::{div_rem, mod_floor};
-
+use crate::utils::{div_rem, mod_floor};
 use crate::Weekday;
 
 /// The internal date representation. This also includes the packed `Mdf` value.

@@ -9,7 +9,6 @@ use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -23,6 +22,7 @@ use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, Strf
 use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
+use crate::utils::div_mod_floor;
 use crate::{Datelike, TimeDelta, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
