@@ -114,6 +114,7 @@ impl YearFlags {
     #[allow(unreachable_pub)] // public as an alias for benchmarks only
     #[doc(hidden)] // for benchmarks only
     #[inline]
+    #[must_use]
     pub fn from_year(year: i32) -> YearFlags {
         let year = mod_floor(year, 400);
         YearFlags::from_year_mod_400(year)

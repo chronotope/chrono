@@ -113,6 +113,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
+    #[must_use]
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         DateTime { datetime, offset }
     }
@@ -142,6 +143,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         let datetime_utc = datetime - offset.fix();
 
@@ -156,6 +158,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[deprecated(since = "0.4.23", note = "Use `date_naive()` instead")]
     #[allow(deprecated)]
+    #[must_use]
     pub fn date(&self) -> Date<Tz> {
         Date::from_utc(self.naive_local().date(), self.offset.clone())
     }
@@ -173,6 +176,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(date.date_naive(), other.date_naive());
     /// ```
     #[inline]
+    #[must_use]
     pub fn date_naive(&self) -> NaiveDate {
         let local = self.naive_local();
         NaiveDate::from_ymd_opt(local.year(), local.month(), local.day()).unwrap()
@@ -181,6 +185,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Retrieves a time component.
     /// Unlike `date`, this is not associated to the time zone.
     #[inline]
+    #[must_use]
     pub fn time(&self) -> NaiveTime {
         self.datetime.time() + self.offset.fix()
     }
@@ -188,6 +193,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
     /// (aka "UNIX timestamp").
     #[inline]
+    #[must_use]
     pub fn timestamp(&self) -> i64 {
         self.datetime.timestamp()
     }
@@ -211,6 +217,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_millis(&self) -> i64 {
         self.datetime.timestamp_millis()
     }
@@ -234,6 +241,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_micros(&self) -> i64 {
         self.datetime.timestamp_micros()
     }
@@ -257,6 +265,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_nanos(&self) -> i64 {
         self.datetime.timestamp_nanos()
     }
@@ -267,6 +276,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// note: this is not the number of milliseconds since January 1, 1970 0:00:00 UTC
     #[inline]
+    #[must_use]
     pub fn timestamp_subsec_millis(&self) -> u32 {
         self.datetime.timestamp_subsec_millis()
     }
@@ -277,6 +287,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// note: this is not the number of microseconds since January 1, 1970 0:00:00 UTC
     #[inline]
+    #[must_use]
     pub fn timestamp_subsec_micros(&self) -> u32 {
         self.datetime.timestamp_subsec_micros()
     }
@@ -287,18 +298,21 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// note: this is not the number of nanoseconds since January 1, 1970 0:00:00 UTC
     #[inline]
+    #[must_use]
     pub fn timestamp_subsec_nanos(&self) -> u32 {
         self.datetime.timestamp_subsec_nanos()
     }
 
     /// Retrieves an associated offset from UTC.
     #[inline]
+    #[must_use]
     pub fn offset(&self) -> &Tz::Offset {
         &self.offset
     }
 
     /// Retrieves an associated time zone.
     #[inline]
+    #[must_use]
     pub fn timezone(&self) -> Tz {
         TimeZone::from_offset(&self.offset)
     }
@@ -306,6 +320,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Changes the associated time zone.
     /// The returned `DateTime` references the same instant of time from the perspective of the provided time zone.
     #[inline]
+    #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
         tz.from_utc_datetime(&self.datetime)
     }
@@ -314,6 +329,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
+    #[must_use]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
@@ -326,6 +342,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_add_months`] for more details on behavior
+    #[must_use]
     pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
         self.naive_local()
             .checked_add_months(rhs)?
@@ -337,6 +354,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
+    #[must_use]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
@@ -349,6 +367,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// local time is not valid on the newly calculated date.
     ///
     /// See [`NaiveDate::checked_sub_months`] for more details on behavior
+    #[must_use]
     pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
         self.naive_local()
             .checked_sub_months(rhs)?
@@ -359,6 +378,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Add a duration in [`Days`] to the date part of the `DateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
+    #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         self.naive_local()
             .checked_add_days(days)?
@@ -369,6 +389,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
+    #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         self.naive_local()
             .checked_sub_days(days)?
@@ -379,23 +400,27 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Subtracts another `DateTime` from the current date and time.
     /// This does not overflow or underflow at all.
     #[inline]
+    #[must_use]
     pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
         self.datetime.signed_duration_since(rhs.datetime)
     }
 
     /// Returns a view to the naive UTC datetime.
     #[inline]
+    #[must_use]
     pub fn naive_utc(&self) -> NaiveDateTime {
         self.datetime
     }
 
     /// Returns a view to the naive local datetime.
     #[inline]
+    #[must_use]
     pub fn naive_local(&self) -> NaiveDateTime {
         self.datetime + self.offset.fix()
     }
 
     /// Retrieve the elapsed years from now to the given [`DateTime`].
+    #[must_use]
     pub fn years_since(&self, base: Self) -> Option<u32> {
         let mut years = self.year() - base.year();
         let earlier_time =
@@ -588,6 +613,7 @@ where
     /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[must_use]
     pub fn to_rfc2822(&self) -> String {
         let mut result = String::with_capacity(32);
         crate::format::write_rfc2822(&mut result, self.naive_local(), self.offset.fix())
@@ -598,6 +624,7 @@ where
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[must_use]
     pub fn to_rfc3339(&self) -> String {
         let mut result = String::with_capacity(32);
         crate::format::write_rfc3339(&mut result, self.naive_local(), self.offset.fix())
@@ -631,6 +658,7 @@ where
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[must_use]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         use crate::format::Numeric::*;
         use crate::format::Pad::Zero;
@@ -677,6 +705,7 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
@@ -701,6 +730,7 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
@@ -709,6 +739,7 @@ where
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
+    #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
         items: I,
@@ -736,6 +767,7 @@ where
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
+    #[must_use]
     pub fn format_localized<'a>(
         &self,
         fmt: &'a str,

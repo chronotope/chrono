@@ -60,6 +60,7 @@ impl Local {
     /// Returns a `Date` which corresponds to the current date.
     #[deprecated(since = "0.4.23", note = "use `Local::now()` instead")]
     #[allow(deprecated)]
+    #[must_use]
     pub fn today() -> Date<Local> {
         Local::now().date()
     }
@@ -70,6 +71,7 @@ impl Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
+    #[must_use]
     pub fn now() -> DateTime<Local> {
         inner::now()
     }
@@ -80,6 +82,7 @@ impl Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
+    #[must_use]
     pub fn now() -> DateTime<Local> {
         use super::Utc;
         let now: DateTime<Utc> = super::Utc::now();

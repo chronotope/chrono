@@ -77,6 +77,7 @@ impl<Tz: TimeZone> Date<Tz> {
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
+    #[must_use]
     pub fn from_utc(date: NaiveDate, offset: Tz::Offset) -> Date<Tz> {
         Date { date, offset }
     }
@@ -86,6 +87,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Panics on invalid datetime.
     #[inline]
+    #[must_use]
     pub fn and_time(&self, time: NaiveTime) -> Option<DateTime<Tz>> {
         let localdt = self.naive_local().and_time(time);
         self.timezone().from_local_datetime(&localdt).single()
@@ -97,6 +99,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Panics on invalid hour, minute and/or second.
     #[deprecated(since = "0.4.23", note = "Use and_hms_opt() instead")]
     #[inline]
+    #[must_use]
     pub fn and_hms(&self, hour: u32, min: u32, sec: u32) -> DateTime<Tz> {
         self.and_hms_opt(hour, min, sec).expect("invalid time")
     }
@@ -106,6 +109,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` on invalid hour, minute and/or second.
     #[inline]
+    #[must_use]
     pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTime<Tz>> {
         NaiveTime::from_hms_opt(hour, min, sec).and_then(|time| self.and_time(time))
     }
@@ -117,6 +121,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Panics on invalid hour, minute, second and/or millisecond.
     #[deprecated(since = "0.4.23", note = "Use and_hms_milli_opt() instead")]
     #[inline]
+    #[must_use]
     pub fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> DateTime<Tz> {
         self.and_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
     }
@@ -127,6 +132,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     #[inline]
+    #[must_use]
     pub fn and_hms_milli_opt(
         &self,
         hour: u32,
@@ -144,6 +150,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Panics on invalid hour, minute, second and/or microsecond.
     #[deprecated(since = "0.4.23", note = "Use and_hms_micro_opt() instead")]
     #[inline]
+    #[must_use]
     pub fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> DateTime<Tz> {
         self.and_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
     }
@@ -154,6 +161,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     #[inline]
+    #[must_use]
     pub fn and_hms_micro_opt(
         &self,
         hour: u32,
@@ -171,6 +179,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Panics on invalid hour, minute, second and/or nanosecond.
     #[deprecated(since = "0.4.23", note = "Use and_hms_nano_opt() instead")]
     #[inline]
+    #[must_use]
     pub fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> DateTime<Tz> {
         self.and_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
@@ -181,6 +190,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     #[inline]
+    #[must_use]
     pub fn and_hms_nano_opt(
         &self,
         hour: u32,
@@ -196,6 +206,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Panics when `self` is the last representable date.
     #[deprecated(since = "0.4.23", note = "Use succ_opt() instead")]
     #[inline]
+    #[must_use]
     pub fn succ(&self) -> Date<Tz> {
         self.succ_opt().expect("out of bound")
     }
@@ -204,6 +215,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` when `self` is the last representable date.
     #[inline]
+    #[must_use]
     pub fn succ_opt(&self) -> Option<Date<Tz>> {
         self.date.succ_opt().map(|date| Date::from_utc(date, self.offset.clone()))
     }
@@ -213,6 +225,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Panics when `self` is the first representable date.
     #[deprecated(since = "0.4.23", note = "Use pred_opt() instead")]
     #[inline]
+    #[must_use]
     pub fn pred(&self) -> Date<Tz> {
         self.pred_opt().expect("out of bound")
     }
@@ -221,18 +234,21 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` when `self` is the first representable date.
     #[inline]
+    #[must_use]
     pub fn pred_opt(&self) -> Option<Date<Tz>> {
         self.date.pred_opt().map(|date| Date::from_utc(date, self.offset.clone()))
     }
 
     /// Retrieves an associated offset from UTC.
     #[inline]
+    #[must_use]
     pub fn offset(&self) -> &Tz::Offset {
         &self.offset
     }
 
     /// Retrieves an associated time zone.
     #[inline]
+    #[must_use]
     pub fn timezone(&self) -> Tz {
         TimeZone::from_offset(&self.offset)
     }
@@ -240,6 +256,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Changes the associated time zone.
     /// This does not change the actual `Date` (but will change the string representation).
     #[inline]
+    #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> Date<Tz2> {
         tz.from_utc_date(&self.date)
     }
@@ -248,6 +265,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
+    #[must_use]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
         let date = self.date.checked_add_signed(rhs)?;
         Some(Date { date, offset: self.offset })
@@ -257,6 +275,7 @@ impl<Tz: TimeZone> Date<Tz> {
     ///
     /// Returns `None` when it will result in overflow.
     #[inline]
+    #[must_use]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<Date<Tz>> {
         let date = self.date.checked_sub_signed(rhs)?;
         Some(Date { date, offset: self.offset })
@@ -268,12 +287,14 @@ impl<Tz: TimeZone> Date<Tz> {
     /// This does not overflow or underflow at all,
     /// as all possible output fits in the range of `Duration`.
     #[inline]
+    #[must_use]
     pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: Date<Tz2>) -> OldDuration {
         self.date.signed_duration_since(rhs.date)
     }
 
     /// Returns a view to the naive UTC date.
     #[inline]
+    #[must_use]
     pub fn naive_utc(&self) -> NaiveDate {
         self.date
     }
@@ -284,11 +305,13 @@ impl<Tz: TimeZone> Date<Tz> {
     /// because the offset is restricted to never exceed one day,
     /// but provided for the consistency.
     #[inline]
+    #[must_use]
     pub fn naive_local(&self) -> NaiveDate {
         self.date
     }
 
     /// Returns the number of whole years from the given `base` until `self`.
+    #[must_use]
     pub fn years_since(&self, base: Self) -> Option<u32> {
         self.date.years_since(base.date)
     }
@@ -315,6 +338,7 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
@@ -329,6 +353,7 @@ where
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
@@ -337,6 +362,7 @@ where
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
+    #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
         items: I,
@@ -361,6 +387,7 @@ where
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
+    #[must_use]
     pub fn format_localized<'a>(
         &self,
         fmt: &'a str,
