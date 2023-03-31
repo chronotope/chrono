@@ -65,6 +65,7 @@ impl Month {
     /// ----------- | ---------  | ---------- | --- | ---------
     /// `m.succ()`: | `February` | `March`    | `...` | `January`
     #[inline]
+    #[must_use]
     pub fn succ(&self) -> Month {
         match *self {
             Month::January => Month::February,
@@ -88,6 +89,7 @@ impl Month {
     /// ----------- | ---------  | ---------- | --- | ---------
     /// `m.pred()`: | `December` | `January`  | `...` | `November`
     #[inline]
+    #[must_use]
     pub fn pred(&self) -> Month {
         match *self {
             Month::January => Month::December,
@@ -111,6 +113,7 @@ impl Month {
     /// -------------------------| --------- | ---------- | --- | -----
     /// `m.number_from_month()`: | 1         | 2          | `...` | 12
     #[inline]
+    #[must_use]
     pub fn number_from_month(&self) -> u32 {
         match *self {
             Month::January => 1,
@@ -135,6 +138,7 @@ impl Month {
     ///
     /// assert_eq!(Month::January.name(), "January")
     /// ```
+    #[must_use]
     pub fn name(&self) -> &'static str {
         match *self {
             Month::January => "January",

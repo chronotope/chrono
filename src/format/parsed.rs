@@ -127,6 +127,7 @@ fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<(
 
 impl Parsed {
     /// Returns the initial value of parsed parts.
+    #[must_use]
     pub fn new() -> Parsed {
         Parsed::default()
     }

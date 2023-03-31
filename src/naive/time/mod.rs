@@ -214,6 +214,7 @@ impl NaiveTime {
     /// Panics on invalid hour, minute and/or second.
     #[deprecated(since = "0.4.23", note = "use `from_hms_opt()` instead")]
     #[inline]
+    #[must_use]
     pub fn from_hms(hour: u32, min: u32, sec: u32) -> NaiveTime {
         NaiveTime::from_hms_opt(hour, min, sec).expect("invalid time")
     }
@@ -239,6 +240,7 @@ impl NaiveTime {
     /// assert!(from_hms_opt(23, 59, 60).is_none());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_hms_opt(hour: u32, min: u32, sec: u32) -> Option<NaiveTime> {
         NaiveTime::from_hms_nano_opt(hour, min, sec, 0)
     }
@@ -251,6 +253,7 @@ impl NaiveTime {
     /// Panics on invalid hour, minute, second and/or millisecond.
     #[deprecated(since = "0.4.23", note = "use `from_hms_milli_opt()` instead")]
     #[inline]
+    #[must_use]
     pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> NaiveTime {
         NaiveTime::from_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
     }
@@ -278,6 +281,7 @@ impl NaiveTime {
     /// assert!(from_hmsm_opt(23, 59, 59, 2_000).is_none());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_hms_milli_opt(hour: u32, min: u32, sec: u32, milli: u32) -> Option<NaiveTime> {
         milli
             .checked_mul(1_000_000)
@@ -292,6 +296,7 @@ impl NaiveTime {
     /// Panics on invalid hour, minute, second and/or microsecond.
     #[deprecated(since = "0.4.23", note = "use `from_hms_micro_opt()` instead")]
     #[inline]
+    #[must_use]
     pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> NaiveTime {
         NaiveTime::from_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
     }
@@ -319,6 +324,7 @@ impl NaiveTime {
     /// assert!(from_hmsu_opt(23, 59, 59, 2_000_000).is_none());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_hms_micro_opt(hour: u32, min: u32, sec: u32, micro: u32) -> Option<NaiveTime> {
         micro.checked_mul(1_000).and_then(|nano| NaiveTime::from_hms_nano_opt(hour, min, sec, nano))
     }
@@ -331,6 +337,7 @@ impl NaiveTime {
     /// Panics on invalid hour, minute, second and/or nanosecond.
     #[deprecated(since = "0.4.23", note = "use `from_hms_nano_opt()` instead")]
     #[inline]
+    #[must_use]
     pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> NaiveTime {
         NaiveTime::from_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
     }
@@ -358,6 +365,7 @@ impl NaiveTime {
     /// assert!(from_hmsn_opt(23, 59, 59, 2_000_000_000).is_none());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
             return None;
@@ -374,6 +382,7 @@ impl NaiveTime {
     /// Panics on invalid number of seconds and/or nanosecond.
     #[deprecated(since = "0.4.23", note = "use `from_num_seconds_from_midnight_opt()` instead")]
     #[inline]
+    #[must_use]
     pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
         NaiveTime::from_num_seconds_from_midnight_opt(secs, nano).expect("invalid time")
     }
@@ -399,6 +408,7 @@ impl NaiveTime {
     /// assert!(from_nsecs_opt(86399, 2_000_000_000).is_none());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return None;
@@ -492,6 +502,7 @@ impl NaiveTime {
     /// assert_eq!(from_hms(3, 4, 5).overflowing_add_signed(Duration::hours(-7)),
     ///            (from_hms(20, 4, 5), -86_400));
     /// ```
+    #[must_use]
     pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
         let mut secs = self.secs;
         let mut frac = self.frac;
@@ -575,6 +586,7 @@ impl NaiveTime {
     ///            (from_hms(1, 4, 5), -86_400));
     /// ```
     #[inline]
+    #[must_use]
     pub fn overflowing_sub_signed(&self, rhs: OldDuration) -> (NaiveTime, i64) {
         let (time, rhs) = self.overflowing_add_signed(-rhs);
         (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
@@ -634,6 +646,7 @@ impl NaiveTime {
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(2, 59, 59, 1_000)),
     ///            Duration::seconds(61));
     /// ```
+    #[must_use]
     pub fn signed_duration_since(self, rhs: NaiveTime) -> OldDuration {
         //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
         //     |    |    :    |    |    |    |    |    |    |    :    |    |
@@ -696,6 +709,7 @@ impl NaiveTime {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
@@ -741,6 +755,7 @@ impl NaiveTime {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }

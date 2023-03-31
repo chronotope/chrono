@@ -54,6 +54,7 @@ impl Utc {
         note = "use `Utc::now()` instead, potentially with `.date_naive()`"
     )]
     #[allow(deprecated)]
+    #[must_use]
     pub fn today() -> Date<Utc> {
         Utc::now().date()
     }
@@ -64,6 +65,7 @@ impl Utc {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
+    #[must_use]
     pub fn now() -> DateTime<Utc> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
@@ -78,6 +80,7 @@ impl Utc {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
+    #[must_use]
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
         DateTime::<Utc>::from(now)

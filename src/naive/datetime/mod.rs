@@ -150,6 +150,7 @@ impl NaiveDateTime {
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
     #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
     #[inline]
+    #[must_use]
     pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
         datetime.expect("invalid or out-of-range datetime")
@@ -177,6 +178,7 @@ impl NaiveDateTime {
     /// assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
         Self::from_timestamp_unit(millis, TimestampUnit::Millis)
     }
@@ -203,6 +205,7 @@ impl NaiveDateTime {
     /// assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
         Self::from_timestamp_unit(micros, TimestampUnit::Micros)
     }
@@ -234,6 +237,7 @@ impl NaiveDateTime {
     /// assert!(from_timestamp_opt(i64::MAX, 0).is_none());
     /// ```
     #[inline]
+    #[must_use]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let (days, secs) = div_mod_floor(secs, 86_400);
         let date = days
@@ -317,7 +321,7 @@ impl NaiveDateTime {
     /// let fmt = "%Y-%m-%d %H:%M:%S";
     /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
     /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
-    ///```     
+    ///```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
@@ -377,6 +381,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timestamp(), -62198755200);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp(&self) -> i64 {
         const UNIX_EPOCH_DAY: i64 = 719_163;
         let gregorian_day = i64::from(self.date.num_days_from_ce());
@@ -409,6 +414,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timestamp_millis(), -900);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_millis(&self) -> i64 {
         let as_ms = self.timestamp() * 1000;
         as_ms + i64::from(self.timestamp_subsec_millis())
@@ -436,6 +442,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_micros(&self) -> i64 {
         let as_us = self.timestamp() * 1_000_000;
         as_us + i64::from(self.timestamp_subsec_micros())
@@ -475,6 +482,7 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_nanos(&self) -> i64 {
         let as_ns = self.timestamp() * 1_000_000_000;
         as_ns + i64::from(self.timestamp_subsec_nanos())
@@ -497,6 +505,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timestamp_subsec_millis(), 1_234);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_subsec_millis(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000_000
     }
@@ -518,6 +527,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timestamp_subsec_micros(), 1_234_567);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_subsec_micros(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000
     }
@@ -539,6 +549,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timestamp_subsec_nanos(), 1_234_567_890);
     /// ```
     #[inline]
+    #[must_use]
     pub fn timestamp_subsec_nanos(&self) -> u32 {
         self.time.nanosecond()
     }
@@ -608,6 +619,7 @@ impl NaiveDateTime {
     /// assert_eq!(leap.checked_add_signed(Duration::days(1)),
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
     /// ```
+    #[must_use]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
 
@@ -644,6 +656,7 @@ impl NaiveDateTime {
     ///     None
     /// );
     /// ```
+    #[must_use]
     pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
     }
@@ -709,6 +722,7 @@ impl NaiveDateTime {
     /// assert_eq!(leap.checked_sub_signed(Duration::days(1)),
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap()));
     /// ```
+    #[must_use]
     pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
 
@@ -745,6 +759,7 @@ impl NaiveDateTime {
     ///     None
     /// );
     /// ```
+    #[must_use]
     pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
     }
@@ -752,6 +767,7 @@ impl NaiveDateTime {
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
+    #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         Some(Self { date: self.date.checked_add_days(days)?, ..self })
     }
@@ -759,6 +775,7 @@ impl NaiveDateTime {
     /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
+    #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         Some(Self { date: self.date.checked_sub_days(days)?, ..self })
     }
@@ -801,6 +818,7 @@ impl NaiveDateTime {
     /// assert_eq!(from_ymd(2015, 7, 1).and_hms_opt(1, 0, 0).unwrap().signed_duration_since(leap),
     ///            Duration::seconds(3600) - Duration::milliseconds(500));
     /// ```
+    #[must_use]
     pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
         self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
     }
@@ -835,6 +853,7 @@ impl NaiveDateTime {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
@@ -878,6 +897,7 @@ impl NaiveDateTime {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
+    #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
@@ -899,6 +919,7 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, Utc};
     /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timezone(), Utc);
+    #[must_use]
     pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
         tz.from_local_datetime(self)
     }
