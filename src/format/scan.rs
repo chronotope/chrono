@@ -363,8 +363,8 @@ where
     }
 }
 
-/// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones. May
-/// return `None` which indicates an insufficient offset data (i.e. `-0000`).
+/// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
+/// May return `Err(Error)` which indicates an insufficient offset data (i.e. `-0000`).
 pub(super) fn timezone_offset_2822(s: &str) -> Result<(&str, Option<i32>), Error> {
     // tries to parse legacy time zone names
     let upto = s.as_bytes().iter().position(|c| !c.is_ascii_alphabetic()).unwrap_or(s.len());
