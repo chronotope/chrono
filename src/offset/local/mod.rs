@@ -98,37 +98,12 @@ impl TimeZone for Local {
         Local
     }
 
-    // they are easier to define in terms of the finished date and time unlike other offsets
-    fn offset_from_local_date(
-        &self,
-        local: &NaiveDate,
-    ) -> Result<LocalResult<Self::Offset>, Error> {
-        Ok(self.from_local_date(local)?.map(|o| *o.offset()))
+    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<FixedOffset>, Error> {
+        self.from_local_datetime(local)?.single()?.offset()
     }
 
-    fn offset_from_local_datetime(
-        &self,
-        local: &NaiveDateTime,
-    ) -> Result<LocalResult<Self::Offset>, Error> {
-        Ok(self.from_local_datetime(local)?.map(|o| *o.offset()))
-    }
-
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Result<FixedOffset, Error> {
-        Ok(*self.from_utc_date(utc)?.offset())
-    }
-
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<FixedOffset, Error> {
-        Ok(*self.from_utc_datetime(utc)?.offset())
-    }
-
-    // override them for avoiding redundant works
-    #[allow(deprecated)]
-    fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Local>>, Error> {
-        // this sounds very strange, but required for keeping `TimeZone::ymd` sane.
-        // in the other words, we use the offset at the local midnight
-        // but keep the actual date unaltered (much like `FixedOffset`).
-        let midnight = self.from_local_datetime(&local.and_midnight())?;
-        Ok(midnight.map(|midnight| Date::from_utc(*local, *midnight.offset())))
+    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
+        *self.from_utc_datetime(utc).offset()
     }
 
     #[cfg(all(
@@ -136,13 +111,11 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    fn from_local_datetime(
-        &self,
-        local: &NaiveDateTime,
-    ) -> Result<LocalResult<DateTime<Local>>, Error> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Local>>, Error> {
         let mut local = local.clone();
         // Get the offset from the js runtime
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
+        let offset =
+            FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
         local -= crate::TimeDelta::seconds(offset.local_minus_utc() as i64);
         Ok(LocalResult::Single(DateTime::from_utc(local, offset)))
     }
@@ -152,17 +125,8 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    fn from_local_datetime(
-        &self,
-        local: &NaiveDateTime,
-    ) -> Result<LocalResult<DateTime<Local>>, Error> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Local>>, Error> {
         inner::naive_to_local(local, true)
-    }
-
-    #[allow(deprecated)]
-    fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Local>, Error> {
-        let midnight = self.from_utc_datetime(&utc.and_midnight())?;
-        Ok(Date::from_utc(*utc, *midnight.offset()))
     }
 
     #[cfg(all(
@@ -170,10 +134,12 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Local>, Error> {
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
         // Get the offset from the js runtime
-        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
-        Ok(DateTime::from_utc(*utc, offset))
+        let offset =
+            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
+                .unwrap();
+        DateTime::from_utc(*utc, offset)
     }
 
     #[cfg(not(all(
@@ -181,8 +147,10 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Local>, Error> {
-        inner::naive_to_local(utc, false)?.single()
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
+        // this is OK to unwrap as getting local time from a UTC
+        // timestamp is never ambiguous
+        inner::naive_to_local(utc, false).unwrap()
     }
 }
 

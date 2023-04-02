@@ -177,6 +177,7 @@ pub trait Offset: Sized + Clone + fmt::Debug {
     fn fix(&self) -> FixedOffset;
 }
 
+
 /// The time zone.
 ///
 /// The methods here are the primarily constructors for [`Date`](../struct.Date.html) and
@@ -187,119 +188,62 @@ pub trait TimeZone: Sized + Clone {
     /// The original `TimeZone` value can be recovered via `TimeZone::from_offset`.
     type Offset: Offset;
 
-    /// Makes a new `Date` from year, month, day and the current time zone. This
-    /// assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
+    /// Make a new `DateTime` from year, month, day, time components and current time zone.
     ///
-    /// The time zone normally does not affect the date (unless it is between
-    /// UTC-24 and UTC+24), but it will propagate to the `DateTime` values
-    /// constructed via this date.
-    ///
-    /// Returns `Err(Error)` on the out-of-range date, invalid month
-    /// and/or day.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.ymd(2015, 5, 15)?.single()?.to_string(), "2015-05-15UTC");
-    /// assert_eq!(Utc.ymd(2015, 5, 15)?.single()?.to_string(), "2015-05-15UTC");
-    /// assert!(Utc.ymd(2000, 0, 0).is_err());
-    /// # Ok::<_, chrono::Error>(())
-    /// ```
-    #[allow(deprecated)]
-    fn ymd(&self, year: i32, month: u32, day: u32) -> Result<LocalResult<Date<Self>>, Error> {
-        let d = NaiveDate::from_ymd(year, month, day)?;
-        self.from_local_date(&d)
-    }
-
-    /// Makes a new `Date` from year, day of year (DOY or "ordinal") and the current time zone.
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Returns `Err(Error)` on the out-of-range date and/or invalid DOY.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Error, Utc, TimeZone};
-    ///
-    /// assert_eq!(Utc.yo(2015, 135)?.single()?.to_string(), "2015-05-15UTC");
-    /// # Ok::<_, chrono::Error>(())
-    /// ```
-    #[allow(deprecated)]
-    fn yo(&self, year: i32, ordinal: u32) -> Result<LocalResult<Date<Self>>, Error> {
-        let d = NaiveDate::from_yo(year, ordinal)?;
-        self.from_local_date(&d)
-    }
-
-    /// Makes a new `Date` from ISO week date (year and week number), day of the
-    /// week (DOW) and the current time zone. This assumes the proleptic
-    /// Gregorian calendar, with the year 0 being 1 BCE. The resulting `Date`
-    /// may have a different year from the input year.
-    ///
-    /// The time zone normally does not affect the date (unless it is between
-    /// UTC-24 and UTC+24), but it will propagate to the `DateTime` values
-    /// constructed via this date.
-    ///
-    /// Returns `Err(Error)` on the out-of-range date and/or invalid week
-    /// number.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Utc, Weekday, TimeZone};
-    ///
-    /// assert_eq!(Utc.isoywd(2015, 20, Weekday::Fri)?.single()?.to_string(), "2015-05-15UTC");
-    /// # Ok::<_, chrono::Error>(())
-    /// ```
-    #[allow(deprecated)]
-    fn isoywd(
+    /// Returns `Err(chrono::Error)` on invalid input data.
+    fn with_ymd_and_hms(
         &self,
         year: i32,
-        week: u32,
-        weekday: Weekday,
-    ) -> Result<LocalResult<Date<Self>>, Error> {
-        let d = NaiveDate::from_isoywd(year, week, weekday)?;
-        self.from_local_date(&d)
+        month: u32,
+        day: u32,
+        hour: u32,
+        min: u32,
+        sec: u32,
+    ) -> Result<LocalResult<DateTime<Self>>, Error> {
+            Ok(self.from_local_datetime(
+                NaiveDate::from_ymd(year, month, day).and_then(|d| d.and_hms(hour, min, sec))?
+            ))
     }
 
     /// Makes a new `DateTime` from the number of non-leap seconds
-    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp") and the number
-    /// of nanoseconds since the last whole non-leap second.
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// Returns `Err(Error)` on out-of-range number of seconds and/or
-    /// invalid nanosecond, otherwise always returns [`LocalResult::Single`].
+    /// Returns `Err(chrono::Error)` on out-of-range number of seconds and/or
+    /// invalid nanosecond, otherwise always returns `Ok(LocalResult::Single)`.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(Utc.timestamp(1431648000, 0)?.to_string(), "2015-05-15 00:00:00 UTC");
-    /// # Ok::<_, chrono::Error>(())
+    /// assert_eq!(Utc.timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
-    fn timestamp(&self, secs: i64, nsecs: u32) -> Result<DateTime<Self>, Error> {
-        let dt = NaiveDateTime::from_timestamp(secs, nsecs)?;
-        self.from_utc_datetime(&dt)
+    fn timestamp(&self, secs: i64, nsecs: u32) -> Result<LocalResult<DateTime<Self>>, Error> {
+        Ok(LocalResult::Single(self.from_utc_datetime(NaiveDateTime::from_timestamp(secs, nsecs)?)))
     }
 
-    /// Makes a new `DateTime` from the number of non-leap milliseconds since
-    /// January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
+    /// Makes a new `DateTime` from the number of non-leap milliseconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// Returns `Err(Error)` on out-of-range number of milliseconds and/or
-    /// invalid nanosecond.
+    ///
+    /// Returns `Err(chrono::Error)` on out-of-range number of milliseconds
+    /// and/or invalid nanosecond, otherwise always returns
+    /// `LocalResult::Single`.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone};
-    /// assert_eq!(Utc.timestamp_millis(1431648000)?.timestamp(), 1431648);
-    /// # Ok::<_, chrono::Error>(())
+    /// use chrono::{Utc, TimeZone, LocalResult};
+    /// match Utc.timestamp_millis_opt(1431648000) {
+    ///     Ok(LocalResult::Single(dt)) => assert_eq!(dt.timestamp(), 1431648),
+    ///     Ok(LocalResult::Ambiguous(dt1, dt2)) => panic!("Ambiguous timestamp should not be possible"),
+    ///     Err(_) => panic!("Incorrect timestamp_millis"),
+    /// };
     /// ```
-    fn timestamp_millis(&self, millis: i64) -> Result<DateTime<Self>, Error> {
+    fn timestamp_millis(&self, millis: i64) -> Result<LocalResult<DateTime<Self>>, Error> {
         let (mut secs, mut millis) = (millis / 1000, millis % 1000);
         if millis < 0 {
             secs -= 1;
@@ -311,16 +255,15 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap nanoseconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// Unlike [`timestamp_millis`](#method.timestamp_millis), this never
-    /// panics.
+    /// Just like [`timestamp_millis`](#method.timestamp_millis), this
+    /// returns `Err(chrono::Error)` in case of failure.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(Utc.timestamp_nanos(1431648000000000)?.timestamp(), 1431648);
-    /// # Ok::<_, chrono::Error>(())
+    /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
     /// ```
     fn timestamp_nanos(&self, nanos: i64) -> Result<DateTime<Self>, Error> {
         let (mut secs, mut nanos) = (nanos / 1_000_000_000, nanos % 1_000_000_000);
@@ -328,7 +271,7 @@ pub trait TimeZone: Sized + Clone {
             secs -= 1;
             nanos += 1_000_000_000;
         }
-        self.timestamp(secs, nanos as u32)
+        self.timestamp(secs, nanos as u32)?
     }
 
     /// Parses a string with the specified format string and returns a
@@ -352,54 +295,29 @@ pub trait TimeZone: Sized + Clone {
     fn from_offset(offset: &Self::Offset) -> Self;
 
     /// Creates the offset(s) for given local `NaiveDate` if possible.
-    fn offset_from_local_date(&self, local: &NaiveDate)
-        -> Result<LocalResult<Self::Offset>, Error>;
+    fn offset_from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Self::Offset>, Error>;
 
     /// Creates the offset(s) for given local `NaiveDateTime` if possible.
-    fn offset_from_local_datetime(
-        &self,
-        local: &NaiveDateTime,
-    ) -> Result<LocalResult<Self::Offset>, Error>;
-
-    /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
-    #[allow(clippy::wrong_self_convention)]
-    #[allow(deprecated)]
-    fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Self>>, Error> {
-        let offset = self.offset_from_local_date(local)?;
-        let offset = offset.map(|offset| Date::from_utc(*local, offset));
-        Ok(offset)
-    }
+    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<Self::Offset>, Error>;
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
-    fn from_local_datetime(
-        &self,
-        local: &NaiveDateTime,
-    ) -> Result<LocalResult<DateTime<Self>>, Error> {
-        let offset = self.offset_from_local_datetime(local)?;
-        let offset = offset.map(|offset| DateTime::from_utc(*local - offset.fix(), offset));
-        Ok(offset)
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Self>>, Error> {
+        self.offset_from_local_datetime(local)
+            .map(|offset| DateTime::from_utc(*local - offset.fix(), offset))
     }
 
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Result<Self::Offset, Error>;
+    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Self::Offset;
 
     /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<Self::Offset, Error>;
-
-    /// Converts the UTC `NaiveDate` to the local time.
-    /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    #[allow(clippy::wrong_self_convention)]
-    #[allow(deprecated)]
-    fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Self>, Error> {
-        Ok(Date::from_utc(*utc, self.offset_from_utc_date(utc)?))
-    }
+    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset;
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     #[allow(clippy::wrong_self_convention)]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Self>, Error> {
-        Ok(DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc)?))
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
+        DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc))
     }
 }
 

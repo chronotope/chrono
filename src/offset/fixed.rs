@@ -105,11 +105,11 @@ impl TimeZone for FixedOffset {
         Ok(LocalResult::Single(*self))
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Result<Self, Error> {
-        Ok(*self)
+    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Self {
+        *self
     }
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Result<Self, Error> {
-        Ok(*self)
+    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Self {
+        *self
     }
 }
 
