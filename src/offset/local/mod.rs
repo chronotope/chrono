@@ -98,8 +98,17 @@ impl TimeZone for Local {
         Local
     }
 
+    // they are easier to define in terms of the finished date and time unlike other offsets
+    fn offset_from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<FixedOffset>, Error> {
+        self.from_local_datetime(local).map(|date| *date.offset())
+    }
+
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<FixedOffset>, Error> {
-        self.from_local_datetime(local)?.single()?.offset()
+        self.from_local_datetime(local).map(|datetime| *datetime.offset())
+    }
+
+    fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
+        *self.from_utc_datedate(utc).offset()
     }
 
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
@@ -111,13 +120,14 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Local>>, Error> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         let mut local = local.clone();
         // Get the offset from the js runtime
         let offset =
-            FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
+            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
+                .unwrap();
         local -= crate::TimeDelta::seconds(offset.local_minus_utc() as i64);
-        Ok(LocalResult::Single(DateTime::from_utc(local, offset)))
+        LocalResult::Single(DateTime::from_utc(local, offset))
     }
 
     #[cfg(not(all(
@@ -125,10 +135,10 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Local>>, Error> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
         inner::naive_to_local(local, true)
     }
-
+    
     #[cfg(all(
         target_arch = "wasm32",
         feature = "wasmbind",
