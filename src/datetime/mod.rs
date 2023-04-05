@@ -23,7 +23,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -622,6 +622,40 @@ impl DateTime<FixedOffset> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime()
+    }
+
+    /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value, and a
+    /// slice with the remaining portion of the string.
+    ///
+    /// Note that this method *requires a timezone* in the input string. See
+    /// [`NaiveDateTime::parse_and_remainder`] for a version that does not
+    /// require a timezone in `s`. The returned [`DateTime`] value will have a [`FixedOffset`]
+    /// reflecting the parsed timezone.
+    ///
+    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
+    /// sequences.
+    ///
+    /// Similar to [`parse_from_str`](#method.parse_from_str).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
+    /// let (datetime, remainder) = DateTime::parse_and_remainder(
+    ///     "2015-02-18 23:16:09 +0200 trailing text", "%Y-%m-%d %H:%M:%S %z").unwrap();
+    /// assert_eq!(
+    ///     datetime,
+    ///     FixedOffset::east_opt(2*3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    /// );
+    /// assert_eq!(remainder, " trailing text");
+    /// ```
+    pub fn parse_and_remainder<'a>(
+        s: &'a str,
+        fmt: &str,
+    ) -> ParseResult<(DateTime<FixedOffset>, &'a str)> {
+        let mut parsed = Parsed::new();
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parsed.to_datetime().map(|d| (d, remainder))
     }
 }
 
