@@ -15,7 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
@@ -298,6 +298,31 @@ impl NaiveDateTime {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_datetime_with_offset(0) // no offset adjustment
+    }
+
+    /// Parses a string with the specified format string and returns a new `NaiveDateTime`, and a
+    /// slice with the remaining portion of the string.
+    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// on the supported escape sequences.
+    ///
+    /// Similar to [`parse_from_str`](#method.parse_from_str).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{NaiveDate, NaiveDateTime};
+    /// let (datetime, remainder) = NaiveDateTime::parse_and_remainder(
+    ///     "2015-02-18 23:16:09 trailing text", "%Y-%m-%d %H:%M:%S").unwrap();
+    /// assert_eq!(
+    ///     datetime,
+    ///     NaiveDate::from_ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap()
+    /// );
+    /// assert_eq!(remainder, " trailing text");
+    /// ```
+    pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDateTime, &'a str)> {
+        let mut parsed = Parsed::new();
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
     }
 
     /// Retrieves a date component.

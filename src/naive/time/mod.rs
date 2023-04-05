@@ -13,8 +13,10 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
-use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::format::{
+    parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
+    Parsed, StrftimeItems,
+};
 use crate::oldtime::Duration as OldDuration;
 use crate::Timelike;
 
@@ -480,6 +482,28 @@ impl NaiveTime {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_time()
+    }
+
+    /// Parses a string from a user-specified format into a new `NaiveTime` value, and a slice with
+    /// the remaining portion of the string.
+    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// on the supported escape sequences.
+    ///
+    /// Similar to [`parse_from_str`](#method.parse_from_str).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{NaiveTime};
+    /// let (time, remainder) = NaiveTime::parse_and_remainder(
+    ///     "3h4m33s trailing text", "%-Hh%-Mm%-Ss").unwrap();
+    /// assert_eq!(time, NaiveTime::from_hms_opt(3, 4, 33).unwrap());
+    /// assert_eq!(remainder, " trailing text");
+    /// ```
+    pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveTime, &'a str)> {
+        let mut parsed = Parsed::new();
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parsed.to_naive_time().map(|t| (t, remainder))
     }
 
     /// Adds given `Duration` to the current time,

@@ -57,7 +57,7 @@ use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 #[cfg(feature = "unstable-locales")]
 pub(crate) mod locales;
 
-pub use parse::parse;
+pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
