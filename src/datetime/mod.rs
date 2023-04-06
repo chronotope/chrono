@@ -104,7 +104,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0)?, Utc);
     /// assert_eq!(Utc.timestamp(61, 0).unwrap(), dt);
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     //
     // note: this constructor is purposely not named to `new` to discourage the direct usage.
@@ -136,7 +136,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east)?);
     /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west)?);
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
     pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
@@ -168,7 +168,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let date: DateTime<Utc> = Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0)?.single()?;
     /// let other: DateTime<FixedOffset> = FixedOffset::east(23)?.with_ymd_and_hms(2020, 1, 1, 0, 0, 0)?.single()?;
     /// assert_eq!(date.date_naive(), other.date_naive());
-    /// Ok(())
+    /// Ok::<(), Error>(())
     /// ```
     #[inline]
     pub fn date_naive(&self) -> NaiveDate {
@@ -207,7 +207,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_milli(1, 46, 40, 555)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_millis(&self) -> i64 {
@@ -231,6 +231,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_micro(1, 46, 40, 555)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
+    /// Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_micros(&self) -> i64 {
@@ -254,7 +255,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 40, 555)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
     pub fn timestamp_nanos(&self) -> i64 {
@@ -541,7 +542,7 @@ impl DateTime<FixedOffset> {
     ///     DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
     ///     FixedOffset::east(0)?.with_ymd_and_hms(2015, 2, 18, 23, 16, 9)?.single()?
     /// );
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     ///
     /// [RFC 2822 Appendix A.5]: https://www.rfc-editor.org/rfc/rfc2822#appendix-A.5
@@ -590,7 +591,7 @@ impl DateTime<FixedOffset> {
     /// let dt = DateTime::<FixedOffset>::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
     /// assert_eq!(dt, FixedOffset::east(0)?.from_local_datetime(&NaiveDate::from_ymd(1983, 4, 13)?.and_hms_milli(12, 9, 14, 274)?)?);
-    /// Ok(())
+    /// Ok::<(), Error>(())
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> Result<DateTime<FixedOffset>, Error> {
         let mut parsed = Parsed::new();
@@ -771,6 +772,7 @@ where
     /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32)?;
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
+    /// Ok::<(), Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -959,7 +961,7 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
     ///
     /// assert!(later > earlier);
-    /// Ok(())
+    /// Ok::<(), Error>(())
     /// ```
     fn partial_cmp(&self, other: &DateTime<Tz2>) -> Option<Ordering> {
         self.datetime.partial_cmp(&other.datetime)

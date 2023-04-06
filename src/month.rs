@@ -15,11 +15,11 @@ use crate::OutOfRange;
 /// ```
 /// use chrono::prelude::*;
 /// use std::convert::TryFrom;
-/// let date = Utc.ymd(2019, 10, 28)?.and_hms(9, 10, 11)?;
+/// let date = NaiveDate::from_ymd(2019, 10, 28)?.and_hms(9, 10, 11)?;
 /// // `2019-10-28T09:10:11Z`
 /// let month = Month::try_from(u8::try_from(date.month())?).ok();
 /// assert_eq!(month, Some(Month::October));
-/// # Ok::<_, Box<dyn std::error::Error>>(())
+/// Ok::<(), chrono::Error>(())
 /// ```
 ///
 /// Or from a Month to an integer usable by dates
@@ -27,7 +27,7 @@ use crate::OutOfRange;
 /// ```
 /// # use chrono::prelude::*;
 /// let month = Month::January;
-/// let dt = Utc.ymd(2019, month.number_from_month(), 28)?.and_hms(9, 10, 11)?;
+/// let dt = NaiveDate::from_ymd(2019, month.number_from_month(), 28)?.and_hms(9, 10, 11)?;
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
 /// # Ok::<_, chrono::Error>(())
 /// ```

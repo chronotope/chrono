@@ -52,7 +52,7 @@ fn from_is_exact() {
 
     let dt = DateTime::<Utc>::try_from(now.clone()).unwrap();
 
-    assert_eq!(now.get_time() as i64, dt.timestamp_millis_opt().unwrap());
+    assert_eq!(now.get_time() as i64, dt.timestamp_millis().unwrap());
 }
 
 #[wasm_bindgen_test]

@@ -158,7 +158,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// assert_eq!(Utc.ymd(2022, 09, 12)?.single()?.succ()?, Utc.ymd(2022, 09, 13)?.single()?);
+    /// assert_eq!(NaiveDate::from_ymd(2022, 09, 12)?.succ()?, NaiveDate::from_ymd(2022, 09, 13)?);
     ///
     /// assert!(Date::<Utc>::MAX_UTC.succ().is_err());
     /// Ok::<_, Error>(())
@@ -302,7 +302,7 @@ where
     /// ```rust
     /// use chrono::prelude::*;
     ///
-    /// let date_time: Date<Utc> = Utc.ymd(2017, 04, 02)?.single()?;
+    /// let date_time = NaiveDate::from_ymd(2017, 04, 02)?.and_hms(0, 0, 0)?.and_local_timezone(Utc)?;
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y"));
     /// assert_eq!(formatted, "02/04/2017");
     /// Ok::<_, chrono::Error>(())

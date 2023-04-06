@@ -1259,9 +1259,7 @@ mod tests {
 
         let ymdhmsn = |y, m, d, h, n, s, nano, off| {
             FixedOffset::east(off)?
-                .from_local_datetime(
-                    &NaiveDate::from_ymd(y, m, d)?.and_hms_nano(h, n, s, nano)?,
-                )?
+                .from_local_datetime(&NaiveDate::from_ymd(y, m, d)?.and_hms_nano(h, n, s, nano)?)?
                 .single()
         };
 

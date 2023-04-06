@@ -49,11 +49,7 @@ pub enum LocalResult<T> {
 
 impl<T> LocalResult<T> {
     /// Returns the single value that this local result corresponds to or
-    /// `Err(Error)` if the result is ambiguous.
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err(Error)` in case the value is not
+    /// `Err(chrono::Error)` if the result is ambiguous.
     /// [LocalResult::Single].
     pub fn single(self) -> Result<T, Error> {
         match self {
@@ -233,7 +229,7 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// ```
     /// use chrono::{Utc, TimeZone, LocalResult};
-    /// match Utc.timestamp_millis_opt(1431648000) {
+    /// match Utc.timestamp_millis(1431648000) {
     ///     Ok(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     Err(_) => panic!("Incorrect timestamp_millis"),
     /// };
@@ -258,7 +254,8 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
+    /// assert_eq!(Utc.timestamp_nanos(1431648000000000)?.timestamp(), 1431648);
+    /// Ok::<(), chrono::Error>(())
     /// ```
     fn timestamp_nanos(&self, nanos: i64) -> Result<DateTime<Self>, Error> {
         let (mut secs, mut nanos) = (nanos / 1_000_000_000, nanos % 1_000_000_000);

@@ -368,33 +368,33 @@ fn test_datetime_offset() -> Result<(), crate::Error> {
         "2014-05-06T07:08:09-04:00"
     );
     assert_eq!(
-        format!("{:?}", kst.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap()),
+        format!("{:?}", kst.with_ymd_and_hms(2014, 5, 6, 7, 8, 9)?.single()?),
         "2014-05-06T07:08:09+09:00"
     );
 
     // edge cases
     assert_eq!(
-        format!("{:?}", Utc.with_ymd_and_hms(2014, 5, 6, 0, 0, 0).unwrap()),
+        format!("{:?}", Utc.with_ymd_and_hms(2014, 5, 6, 0, 0, 0)?.single()?),
         "2014-05-06T00:00:00Z"
     );
     assert_eq!(
-        format!("{:?}", edt.with_ymd_and_hms(2014, 5, 6, 0, 0, 0).unwrap()),
+        format!("{:?}", edt.with_ymd_and_hms(2014, 5, 6, 0, 0, 0)?.single()?),
         "2014-05-06T00:00:00-04:00"
     );
     assert_eq!(
-        format!("{:?}", kst.with_ymd_and_hms(2014, 5, 6, 0, 0, 0).unwrap()),
+        format!("{:?}", kst.with_ymd_and_hms(2014, 5, 6, 0, 0, 0)?.single()?),
         "2014-05-06T00:00:00+09:00"
     );
     assert_eq!(
-        format!("{:?}", Utc.with_ymd_and_hms(2014, 5, 6, 23, 59, 59).unwrap()),
+        format!("{:?}", Utc.with_ymd_and_hms(2014, 5, 6, 23, 59, 59)?.single()?),
         "2014-05-06T23:59:59Z"
     );
     assert_eq!(
-        format!("{:?}", edt.with_ymd_and_hms(2014, 5, 6, 23, 59, 59).unwrap()),
+        format!("{:?}", edt.with_ymd_and_hms(2014, 5, 6, 23, 59, 59)?.single()?),
         "2014-05-06T23:59:59-04:00"
     );
     assert_eq!(
-        format!("{:?}", kst.with_ymd_and_hms(2014, 5, 6, 23, 59, 59).unwrap()),
+        format!("{:?}", kst.with_ymd_and_hms(2014, 5, 6, 23, 59, 59)?.single()?),
         "2014-05-06T23:59:59+09:00"
     );
 
@@ -1518,11 +1518,12 @@ fn test_datetime_format_with_local() -> Result<(), crate::Error> {
 
 #[test]
 #[cfg(feature = "clock")]
-fn test_datetime_is_copy() {
+fn test_datetime_is_copy() -> Result<(), crate::Error> {
     // UTC is known to be `Copy`.
-    let a = Utc::now();
+    let a = Utc::now()?;
     let b = a;
     assert_eq!(a, b);
+    Ok(())
 }
 
 #[test]
@@ -1531,7 +1532,7 @@ fn test_datetime_is_send() {
     use std::thread;
 
     // UTC is known to be `Send`.
-    let a = Utc::now();
+    let a = Utc::now().unwrap();
     thread::spawn(move || {
         let _ = a;
     })
@@ -1540,18 +1541,15 @@ fn test_datetime_is_send() {
 }
 
 #[test]
-fn test_subsecond_part() {
+fn test_subsecond_part() -> Result<(), crate::Error> {
     let datetime = Utc
-        .from_local_datetime(
-            &NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_nano(9, 10, 11, 1234567).unwrap(),
-        )
-        .unwrap()
-        .single()
-        .unwrap();
+        .from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8)?.and_hms_nano(9, 10, 11, 1234567)?)?
+        .single()?;
 
     assert_eq!(1, datetime.timestamp_subsec_millis());
     assert_eq!(1234, datetime.timestamp_subsec_micros());
     assert_eq!(1234567, datetime.timestamp_subsec_nanos());
+    Ok(())
 }
 
 #[test]
@@ -1670,8 +1668,8 @@ fn test_from_system_time() {
 }
 
 #[test]
-fn test_datetime_format_alignment() {
-    let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0).unwrap();
+fn test_datetime_format_alignment() -> Result<(), crate::Error> {
+    let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0)?.single()?;
 
     // Item::Literal
     let percent = datetime.format("%%");
@@ -1697,6 +1695,7 @@ fn test_datetime_format_alignment() {
     assert_eq!(format!("  {}", ymd_formatted), format!("{:>17}", ymd));
     assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
     assert_eq!(format!(" {} ", ymd_formatted), format!("{:^17}", ymd));
+    Ok(())
 }
 
 #[test]

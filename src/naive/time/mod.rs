@@ -76,9 +76,9 @@ mod tests;
 ///
 /// let dt1 = NaiveDate::from_ymd(2015, 7, 1)?.and_hms_micro(8, 59, 59, 1_000_000)?;
 ///
-/// let dt2 = Utc.ymd(2015, 6, 30)?.and_hms_nano(23, 59, 59, 1_000_000_000)?;
-/// # let _ = (t, dt1, dt2);
-/// # Ok::<_, chrono::Error>(())
+/// let dt2 = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_nano(23, 59, 59, 1_000_000_000)?;
+/// let _ = (t, dt1, dt2);
+/// Ok::<_, chrono::Error>(())
 /// ```
 ///
 /// Note that the leap second can happen anytime given an appropriate time zone;
@@ -160,9 +160,9 @@ mod tests;
 /// ```
 /// use chrono::{Utc, TimeZone, NaiveDate};
 ///
-/// let dt = Utc.ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_000)?;
+/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_000)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
-/// # Ok::<_, chrono::Error>(())
+/// Ok::<(), chrono::Error>(())
 /// ```
 ///
 /// There are hypothetical leap seconds not on the minute boundary
@@ -175,10 +175,10 @@ mod tests;
 /// ```
 /// use chrono::{DateTime, Utc, TimeZone, NaiveDate};
 ///
-/// let dt = Utc.ymd(2015, 6, 30)?.and_hms_milli(23, 56, 4, 1_000)?;
+/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 56, 4, 1_000)?.and_local_timezone(Utc)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 ///
-/// let dt = Utc.ymd(2015, 6, 30)?.and_hms(23, 56, 5)?;
+/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms(23, 56, 5)?.and_local_timezone(Utc)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 /// assert_eq!(DateTime::<Utc>::parse_from_rfc3339("2015-06-30T23:56:05Z")?, dt);
 /// # Ok::<_, chrono::Error>(())

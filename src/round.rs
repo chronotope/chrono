@@ -25,10 +25,10 @@ pub trait SubsecRound {
     /// # Example
     /// ``` rust
     /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11).?.and_hms_milli(12, 0, 0, 154).?.and_local_timezone(Utc).?;
+    /// let dt = NaiveDate::from_ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     fn round_subsecs(self, digits: u16) -> Self;
 
@@ -38,10 +38,10 @@ pub trait SubsecRound {
     /// # Example
     /// ``` rust
     /// # use chrono::{DateTime, SubsecRound, Timelike, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11).?.and_hms_milli(12, 0, 0, 154).?.and_local_timezone(Utc).?;
+    /// let dt = NaiveDate::from_ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?.and_local_timezone(Utc)?;
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     fn trunc_subsecs(self, digits: u16) -> Self;
 }
@@ -110,16 +110,16 @@ pub trait DurationRound: Sized {
     /// # Example
     /// ``` rust
     /// # use chrono::{DateTime, DurationRound, TimeDelta, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11).?.and_hms_milli(12, 0, 0, 154).?.and_local_timezone(Utc).?;
+    /// let dt = NaiveDate::from_ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?.and_local_timezone(Utc)?;
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::milliseconds(10)).?.to_string(),
+    ///     dt.duration_round(TimeDelta::milliseconds(10))?.to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::days(1)).?.to_string(),
+    ///     dt.duration_round(TimeDelta::days(1))?.to_string(),
     ///     "2018-01-12 00:00:00 UTC"
     /// );
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     fn duration_round(self, duration: TimeDelta) -> Result<Self, Error>;
 
@@ -128,16 +128,16 @@ pub trait DurationRound: Sized {
     /// # Example
     /// ``` rust
     /// # use chrono::{DateTime, DurationRound, TimeDelta, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11).?.and_hms_milli(12, 0, 0, 154).?.and_local_timezone(Utc).?;
+    /// let dt = NaiveDate::from_ymd(2018, 1, 11)?.and_hms_milli(12, 0, 0, 154)?.and_local_timezone(Utc)?;
     /// assert_eq!(
-    ///     dt.duration_trunc(TimeDelta::milliseconds(10)).?.to_string(),
+    ///     dt.duration_trunc(TimeDelta::milliseconds(10))?.to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_trunc(TimeDelta::days(1)).?.to_string(),
+    ///     dt.duration_trunc(TimeDelta::days(1))?.to_string(),
     ///     "2018-01-11 00:00:00 UTC"
     /// );
-    /// Ok(())
+    /// Ok::<(), chrono::Error>(())
     /// ```
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Error>;
 }

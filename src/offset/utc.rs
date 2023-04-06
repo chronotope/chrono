@@ -38,9 +38,9 @@ use crate::{Error, LocalResult};
 ///
 /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(61, 0)?, Utc);
 ///
-/// assert_eq!(Utc.timestamp(61, 0), dt);
-/// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1)?.single()?, dt);
-/// Ok(())
+/// assert_eq!(dt, Utc.timestamp(61, 0)?);
+/// assert_eq!(dt, Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1)?.single()?);
+/// Ok::<(), chrono::Error>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
