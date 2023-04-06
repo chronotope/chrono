@@ -177,7 +177,6 @@ pub trait Offset: Sized + Clone + fmt::Debug {
     fn fix(&self) -> FixedOffset;
 }
 
-
 /// The time zone.
 ///
 /// The methods here are the primarily constructors for [`Date`](../struct.Date.html) and
@@ -202,9 +201,7 @@ pub trait TimeZone: Sized + Clone {
         min: u32,
         sec: u32,
     ) -> Result<LocalResult<DateTime<Self>>, Error> {
-            self.from_local_datetime(
-                &NaiveDate::from_ymd(year, month, day)?.and_hms(hour, min, sec)?
-            )
+        self.from_local_datetime(&NaiveDate::from_ymd(year, month, day)?.and_hms(hour, min, sec)?)
     }
 
     /// Makes a new `DateTime` from the number of non-leap seconds
@@ -293,10 +290,14 @@ pub trait TimeZone: Sized + Clone {
     fn from_offset(offset: &Self::Offset) -> Self;
 
     /// Creates the offset(s) for given local `NaiveDate` if possible.
-    fn offset_from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Self::Offset>, Error>;
+    fn offset_from_local_date(&self, local: &NaiveDate)
+        -> Result<LocalResult<Self::Offset>, Error>;
 
     /// Creates the offset(s) for given local `NaiveDateTime` if possible.
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<Self::Offset>, Error>;
+    fn offset_from_local_datetime(
+        &self,
+        local: &NaiveDateTime,
+    ) -> Result<LocalResult<Self::Offset>, Error>;
 
     /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
     #[allow(clippy::wrong_self_convention)]
@@ -304,14 +305,19 @@ pub trait TimeZone: Sized + Clone {
     fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Self>>, Error> {
         // TODO: This might be total nonsense, but the functionality is required at quite a few places
         // Is the default time of a day midnight or noon?
-        Ok(self.offset_from_local_date(local)?
+        Ok(self
+            .offset_from_local_date(local)?
             .map(|offset| Date::from_utc((local.and_midnight() - offset.fix()).date(), offset)))
     }
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Self>>, Error> {
-        Ok(self.offset_from_local_datetime(local)?
+    fn from_local_datetime(
+        &self,
+        local: &NaiveDateTime,
+    ) -> Result<LocalResult<DateTime<Self>>, Error> {
+        Ok(self
+            .offset_from_local_datetime(local)?
             .map(|offset| DateTime::from_utc(*local - offset.fix(), offset)))
     }
 

@@ -99,11 +99,14 @@ impl TimeZone for Local {
     }
 
     // they are easier to define in terms of the finished date and time unlike other offsets
-    fn offset_from_local_date(&self, local: &NaiveDate,) -> Result<LocalResult<FixedOffset>, Error> {
+    fn offset_from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<FixedOffset>, Error> {
         Ok(self.from_local_date(local)?.map(|o| *o.offset()))
     }
 
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime,) -> Result<LocalResult<FixedOffset>, Error> {
+    fn offset_from_local_datetime(
+        &self,
+        local: &NaiveDateTime,
+    ) -> Result<LocalResult<FixedOffset>, Error> {
         Ok(self.from_local_datetime(local)?.map(|o| *o.offset()))
     }
 
@@ -135,10 +138,13 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Local>>, Error> {
+    fn from_local_datetime(
+        &self,
+        local: &NaiveDateTime,
+    ) -> Result<LocalResult<DateTime<Local>>, Error> {
         inner::naive_to_local(local, true)
     }
-    
+
     #[cfg(all(
         target_arch = "wasm32",
         feature = "wasmbind",
