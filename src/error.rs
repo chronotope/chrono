@@ -97,6 +97,16 @@ pub enum Error {
 
     /// Invalid data
     InvalidData,
+
+    /* Rounding errors */
+    /// Error when the TimeDelta exceeds the TimeDelta from or until the Unix epoch.
+    DurationExceedsTimestamp,
+
+    /// Error when `TimeDelta.num_nanoseconds` exceeds the limit.
+    DurationExceedsLimit,
+
+    /// Error when `DateTime.timestamp_nanos` exceeds the limit.
+    TimestampExceedsLimit,
 }
 
 impl fmt::Display for Error {
@@ -143,6 +153,12 @@ impl fmt::Display for Error {
 
             Error::UnexpectedEOF => write!(f, "unexpected end of file"),
             Error::InvalidData => write!(f, "invalid data"),
+
+            Error::DurationExceedsTimestamp => {
+                write!(f, "duration in nanoseconds exceeds timestamp")
+            }
+            Error::DurationExceedsLimit => write!(f, "duration exceeds num_nanoseconds limit"),
+            Error::TimestampExceedsLimit => write!(f, "timestamp exceeds num_nanoseconds limit"),
         }
     }
 }

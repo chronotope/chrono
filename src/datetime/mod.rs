@@ -31,7 +31,7 @@ use crate::format::{Fixed, Item};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::offset::{FixedOffset, Offset, TimeZone, Utc, FixedTimeZone};
+use crate::offset::{FixedOffset, FixedTimeZone, Offset, TimeZone, Utc};
 #[allow(deprecated)]
 use crate::Date;
 use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
@@ -449,7 +449,7 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
     /// Conversion is done via [`DateTime::with_timezone`]. Note that the converted value returned by
     /// this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&FixedOffset::east(0).unwrap())
+        src.with_fixed_timezone(&FixedOffset::UTC)
     }
 }
 
@@ -461,7 +461,7 @@ impl From<DateTime<Utc>> for DateTime<Local> {
     ///
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in timezones.
     fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&Local)
+        src.with_timezone(&Local).unwrap()
     }
 }
 
@@ -472,7 +472,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the timezone
     /// difference.
     fn from(src: DateTime<FixedOffset>) -> Self {
-        src.with_timezone(&Utc)
+        src.with_fixed_timezone(&Utc)
     }
 }
 
@@ -485,7 +485,7 @@ impl From<DateTime<FixedOffset>> for DateTime<Local> {
     /// Conversion is performed via [`DateTime::with_timezone`]. Returns the equivalent value in local
     /// time.
     fn from(src: DateTime<FixedOffset>) -> Self {
-        src.with_timezone(&Local)
+        src.with_timezone(&Local).unwrap()
     }
 }
 
@@ -498,7 +498,7 @@ impl From<DateTime<Local>> for DateTime<Utc> {
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in
     /// timezones.
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&Utc)
+        src.with_fixed_timezone(&Utc)
     }
 }
 
@@ -511,7 +511,7 @@ impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Conversion is performed via [`DateTime::with_timezone`]. Note that the converted value returned
     /// by this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&FixedOffset::east(0).unwrap())
+        src.with_fixed_timezone(&FixedOffset::UTC)
     }
 }
 
@@ -1090,7 +1090,7 @@ impl str::FromStr for DateTime<Utc> {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<DateTime<Utc>, Error> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Utc))
+        s.parse::<DateTime<FixedOffset>>()?.with_timezone(&Utc)
     }
 }
 
@@ -1111,7 +1111,7 @@ impl str::FromStr for DateTime<Local> {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<DateTime<Local>, Error> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Local))
+        s.parse::<DateTime<FixedOffset>>()?.with_timezone(&Local)
     }
 }
 
@@ -1140,7 +1140,7 @@ impl From<SystemTime> for DateTime<Utc> {
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
-        DateTime::<Utc>::from(t).with_timezone(&Local)
+        DateTime::<Utc>::from(t).with_timezone(&Local).unwrap()
     }
 }
 

@@ -4,10 +4,10 @@
 use crate::datetime::DateTime;
 use crate::naive::NaiveDateTime;
 use crate::time_delta::TimeDelta;
+use crate::Error;
 use crate::TimeZone;
 use crate::Timelike;
 use core::cmp::Ordering;
-use core::fmt;
 use core::marker::Sized;
 use core::ops::{Add, Sub};
 
@@ -102,10 +102,6 @@ fn span_for_digits(digits: u16) -> u32 {
 /// will also fail if the `TimeDelta` is bigger than the timestamp.
 pub trait DurationRound: Sized {
     /// Error that can occur in rounding or truncating
-    #[cfg(any(feature = "std", test))]
-    type Err: std::error::Error;
-
-    /// Error that can occur in rounding or truncating
     #[cfg(not(any(feature = "std", test)))]
     type Err: fmt::Debug + fmt::Display;
 
@@ -125,7 +121,7 @@ pub trait DurationRound: Sized {
     /// );
     /// Ok(())
     /// ```
-    fn duration_round(self, duration: TimeDelta) -> Result<Self, Self::Err>;
+    fn duration_round(self, duration: TimeDelta) -> Result<Self, Error>;
 
     /// Return a copy truncated by TimeDelta.
     ///
@@ -143,51 +139,43 @@ pub trait DurationRound: Sized {
     /// );
     /// Ok(())
     /// ```
-    fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err>;
+    fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Error>;
 }
 
 /// The maximum number of seconds a DateTime can be to be represented as nanoseconds
 const MAX_SECONDS_TIMESTAMP_FOR_NANOS: i64 = 9_223_372_036;
 
 impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
-    type Err = RoundingError;
-
-    fn duration_round(self, duration: TimeDelta) -> Result<Self, Self::Err> {
+    fn duration_round(self, duration: TimeDelta) -> Result<Self, Error> {
         duration_round(self.naive_local(), self, duration)
     }
 
-    fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err> {
+    fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Error> {
         duration_trunc(self.naive_local(), self, duration)
     }
 }
 
 impl DurationRound for NaiveDateTime {
-    type Err = RoundingError;
-
-    fn duration_round(self, duration: TimeDelta) -> Result<Self, Self::Err> {
+    fn duration_round(self, duration: TimeDelta) -> Result<Self, Error> {
         duration_round(self, self, duration)
     }
 
-    fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err> {
+    fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Error> {
         duration_trunc(self, self, duration)
     }
 }
 
-fn duration_round<T>(
-    naive: NaiveDateTime,
-    original: T,
-    duration: TimeDelta,
-) -> Result<T, RoundingError>
+fn duration_round<T>(naive: NaiveDateTime, original: T, duration: TimeDelta) -> Result<T, Error>
 where
     T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
 {
     if let Some(span) = duration.num_nanoseconds() {
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
+            return Err(Error::TimestampExceedsLimit);
         }
         let stamp = naive.timestamp_nanos();
         if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
+            return Err(Error::DurationExceedsTimestamp);
         }
         if span == 0 {
             return Ok(original);
@@ -208,25 +196,21 @@ where
             }
         }
     } else {
-        Err(RoundingError::DurationExceedsLimit)
+        Err(Error::DurationExceedsLimit)
     }
 }
 
-fn duration_trunc<T>(
-    naive: NaiveDateTime,
-    original: T,
-    duration: TimeDelta,
-) -> Result<T, RoundingError>
+fn duration_trunc<T>(naive: NaiveDateTime, original: T, duration: TimeDelta) -> Result<T, Error>
 where
     T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
 {
     if let Some(span) = duration.num_nanoseconds() {
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
+            return Err(Error::TimestampExceedsLimit);
         }
         let stamp = naive.timestamp_nanos();
         if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
+            return Err(Error::DurationExceedsTimestamp);
         }
         let delta_down = stamp % span;
         match delta_down.cmp(&0) {
@@ -235,77 +219,7 @@ where
             Ordering::Less => Ok(original - TimeDelta::nanoseconds(span - delta_down.abs())),
         }
     } else {
-        Err(RoundingError::DurationExceedsLimit)
-    }
-}
-
-/// An error from rounding by `TimeDelta`
-///
-/// See: [`DurationRound`]
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum RoundingError {
-    /// Error when the TimeDelta exceeds the TimeDelta from or until the Unix epoch.
-    ///
-    /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, TimeDelta, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0)?.single()?;
-    ///
-    /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::days(365)),
-    ///     Err(RoundingError::DurationExceedsTimestamp),
-    /// );
-    /// Ok(())
-    /// ```
-    DurationExceedsTimestamp,
-
-    /// Error when `TimeDelta.num_nanoseconds` exceeds the limit.
-    ///
-    /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, TimeDelta, RoundingError, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2260, 12, 31).?.and_hms_nano(23, 59, 59, 1_75_500_000).?.and_local_timezone(Utc).?;
-    ///
-    /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::days(300 * 365)),
-    ///     Err(RoundingError::DurationExceedsLimit)
-    /// );
-    /// Ok(())
-    /// ```
-    DurationExceedsLimit,
-
-    /// Error when `DateTime.timestamp_nanos` exceeds the limit.
-    ///
-    /// ``` rust
-    /// # use chrono::{DateTime, DurationRound, TimeDelta, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0)?.single()?;
-    ///
-    /// assert_eq!(dt.duration_round(TimeDelta::days(1)), Err(RoundingError::TimestampExceedsLimit),);
-    /// Ok(())
-    /// ```
-    TimestampExceedsLimit,
-}
-
-impl fmt::Display for RoundingError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            RoundingError::DurationExceedsTimestamp => {
-                write!(f, "duration in nanoseconds exceeds timestamp")
-            }
-            RoundingError::DurationExceedsLimit => {
-                write!(f, "duration exceeds num_nanoseconds limit")
-            }
-            RoundingError::TimestampExceedsLimit => {
-                write!(f, "timestamp exceeds num_nanoseconds limit")
-            }
-        }
-    }
-}
-
-#[cfg(any(feature = "std", test))]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::error::Error for RoundingError {
-    #[allow(deprecated)]
-    fn description(&self) -> &str {
-        "error from rounding or truncating with DurationRound"
+        Err(Error::DurationExceedsLimit)
     }
 }
 
@@ -553,12 +467,14 @@ mod tests {
 
     #[test]
     fn test_duration_trunc() -> Result<(), crate::Error> {
-        let dt = Utc.from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
-            23,
-            59,
-            59,
-            175_500_000,
-        )?)?.single()?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
+                23,
+                59,
+                59,
+                175_500_000,
+            )?)?
+            .single()?;
 
         assert_eq!(
             dt.duration_trunc(TimeDelta::milliseconds(10))?.to_string(),
@@ -566,17 +482,19 @@ mod tests {
         );
 
         // would round up
-        let dt = Utc.from_local_datetime(
-            &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?,
-        )?.single()?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?
+            .single()?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(5))?.to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         // would round down
-        let dt = Utc.from_local_datetime(
-            &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
-        )?.single()?;
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
+            )?
+            .single()?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(5))?.to_string(),
             "2012-12-12 18:20:00 UTC"
@@ -634,14 +552,16 @@ mod tests {
 
         // would round up
         let dt = Utc
-            .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?.single()?
+            .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?
+            .single()?
             .naive_utc();
         assert_eq!(dt.duration_trunc(TimeDelta::minutes(5))?.to_string(), "2012-12-12 18:20:00");
         // would round down
         let dt = Utc
             .from_local_datetime(
                 &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
-            )?.single()?
+            )?
+            .single()?
             .naive_utc();
         assert_eq!(dt.duration_trunc(TimeDelta::minutes(5))?.to_string(), "2012-12-12 18:20:00");
         assert_eq!(dt.duration_trunc(TimeDelta::minutes(10))?.to_string(), "2012-12-12 18:20:00");
@@ -657,6 +577,27 @@ mod tests {
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(10))?.to_string(),
             "1969-12-12 12:10:00 UTC"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_duration_round_error() -> Result<(), crate::Error> {
+        use crate::{DateTime, DurationRound, Error, NaiveDate, TimeDelta, TimeZone, Utc};
+        let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0)?.single()?;
+        assert_eq!(dt.duration_round(TimeDelta::days(365)), Err(Error::DurationExceedsTimestamp),);
+
+        let dt = NaiveDate::from_ymd(2260, 12, 31)?
+            .and_hms_nano(23, 59, 59, 1_75_500_000)?
+            .and_local_timezone(Utc)?;
+
+        assert_eq!(dt.duration_round(TimeDelta::days(300 * 365)), Err(Error::DurationExceedsLimit));
+
+        let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0)?.single()?;
+
+        assert_eq!(
+            dt.duration_round(TimeDelta::days(1)),
+            Err(RoundingError::TimestampExceedsLimit),
         );
         Ok(())
     }
