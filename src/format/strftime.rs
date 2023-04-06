@@ -628,18 +628,13 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("%#m"), [Item::Error]);
 }
 
-#[cfg(test)]
+#[cfg(feature = "unstable-locales")]
 #[test]
-fn test_strftime_docs() {
-    use crate::NaiveDate;
-    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
+fn test_strftime_docs_localized() -> Result<(), Error> {
+    use crate::offset::TimeZone;
+    use crate::{FixedOffset, NaiveDate};
 
-    let dt = FixedOffset::east(34200)
-        .unwrap()
-        .ymd(2001, 7, 8)
-        .unwrap()
-        .and_hms_nano(0, 34, 59, 1_026_490_708)
-        .unwrap();
+    let dt = FixedOffset::east(34200)?.ymd(2001, 7, 8)?.and_hms_nano(0, 34, 59, 1_026_490_708)?;
 
     // date specifiers
     assert_eq!(dt.format("%Y").to_string(), "2001");

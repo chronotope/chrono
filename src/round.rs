@@ -292,9 +292,11 @@ mod tests {
     #[test]
     fn test_trunc_subsecs() -> Result<(), crate::Error> {
         let pst = FixedOffset::east(8 * 60 * 60)?;
-        let dt = pst.from_local_datetime(
-            &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_684)?,
-        )?;
+        let dt = pst
+            .from_local_datetime(
+                &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_684)?,
+            )?
+            .single()?;
 
         assert_eq!(dt.trunc_subsecs(10), dt);
         assert_eq!(dt.trunc_subsecs(9), dt);
@@ -315,7 +317,7 @@ mod tests {
             5,
             27,
             750_500_000,
-        )?)?;
+        )?)?.single()?;
         assert_eq!(dt.trunc_subsecs(9), dt);
         assert_eq!(dt.trunc_subsecs(4), dt);
         assert_eq!(dt.trunc_subsecs(3).nanosecond(), 750_000_000);
@@ -370,17 +372,19 @@ mod tests {
         );
 
         // round up
-        let dt = Utc.from_local_datetime(
-            &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?,
-        )?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?
+            .single()?;
         assert_eq!(
             dt.duration_round(TimeDelta::minutes(5))?.to_string(),
             "2012-12-12 18:25:00 UTC"
         );
         // round down
-        let dt = Utc.from_local_datetime(
-            &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
-        )?;
+        let dt = Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
+            )?
+            .single()?;
         assert_eq!(
             dt.duration_round(TimeDelta::minutes(5))?.to_string(),
             "2012-12-12 18:20:00 UTC"
@@ -430,6 +434,7 @@ mod tests {
                 59,
                 175_500_000,
             )?)?
+            .single()?
             .naive_utc();
 
         assert_eq!(dt.duration_round(TimeDelta::zero())?.to_string(), "2016-12-31 23:59:59.175500");
@@ -442,6 +447,7 @@ mod tests {
         // round up
         let dt = Utc
             .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?
+            .single()?
             .naive_utc();
         assert_eq!(dt.duration_round(TimeDelta::minutes(5))?.to_string(), "2012-12-12 18:25:00");
         // round down
@@ -449,6 +455,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
             )?
+            .single()?
             .naive_utc();
         assert_eq!(dt.duration_round(TimeDelta::minutes(5))?.to_string(), "2012-12-12 18:20:00");
 
@@ -461,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_duration_round_pre_epoch() -> Result<(), crate::Error> {
-        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12)?;
+        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12)?.single()?;
         assert_eq!(
             dt.duration_round(TimeDelta::minutes(10))?.to_string(),
             "1969-12-12 12:10:00 UTC"
@@ -565,6 +572,7 @@ mod tests {
                 59,
                 175_500_000,
             )?)?
+            .single()?
             .naive_utc();
 
         assert_eq!(
