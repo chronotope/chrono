@@ -329,12 +329,14 @@ mod tests {
 
     #[test]
     fn test_trunc_leap_nanos() -> Result<(), crate::Error> {
-        let dt = Utc.from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
-            23,
-            59,
-            59,
-            1_750_500_000,
-        )?)?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
+                23,
+                59,
+                59,
+                1_750_500_000,
+            )?)?
+            .single()?;
         assert_eq!(dt.trunc_subsecs(9), dt);
         assert_eq!(dt.trunc_subsecs(4), dt);
         assert_eq!(dt.trunc_subsecs(2).nanosecond(), 1_750_000_000);
@@ -348,12 +350,14 @@ mod tests {
 
     #[test]
     fn test_duration_round() -> Result<(), crate::Error> {
-        let dt = Utc.from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
-            23,
-            59,
-            59,
-            175_500_000,
-        )?)?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
+                23,
+                59,
+                59,
+                175_500_000,
+            )?)?
+            .single()?;
 
         assert_eq!(
             dt.duration_round(TimeDelta::zero())?.to_string(),
@@ -535,6 +539,24 @@ mod tests {
     }
 
     #[test]
+    fn test_duration_round_error() -> Result<(), crate::Error> {
+        use crate::{DurationRound, Error, NaiveDate, TimeDelta, TimeZone, Utc};
+
+        let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0)?.single()?;
+        assert_eq!(dt.duration_round(TimeDelta::days(365)), Err(Error::DurationExceedsTimestamp),);
+
+        let dt = NaiveDate::from_ymd(2260, 12, 31)?
+            .and_hms_nano(23, 59, 59, 1_75_500_000)?
+            .and_local_timezone(Utc)?;
+        assert_eq!(dt.duration_round(TimeDelta::days(300 * 365)), Err(Error::DurationExceedsLimit));
+
+        let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0)?.single()?;
+        assert_eq!(dt.duration_round(TimeDelta::days(1)), Err(Error::TimestampExceedsLimit),);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_duration_trunc_naive() -> Result<(), crate::Error> {
         let dt = Utc
             .from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
@@ -577,27 +599,6 @@ mod tests {
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(10))?.to_string(),
             "1969-12-12 12:10:00 UTC"
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_duration_round_error() -> Result<(), crate::Error> {
-        use crate::{DateTime, DurationRound, Error, NaiveDate, TimeDelta, TimeZone, Utc};
-        let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0)?.single()?;
-        assert_eq!(dt.duration_round(TimeDelta::days(365)), Err(Error::DurationExceedsTimestamp),);
-
-        let dt = NaiveDate::from_ymd(2260, 12, 31)?
-            .and_hms_nano(23, 59, 59, 1_75_500_000)?
-            .and_local_timezone(Utc)?;
-
-        assert_eq!(dt.duration_round(TimeDelta::days(300 * 365)), Err(Error::DurationExceedsLimit));
-
-        let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0)?.single()?;
-
-        assert_eq!(
-            dt.duration_round(TimeDelta::days(1)),
-            Err(RoundingError::TimestampExceedsLimit),
         );
         Ok(())
     }
