@@ -100,6 +100,12 @@ impl<Tz: TimeZone> Date<Tz> {
         self.and_time(time)
     }
 
+    /// Wraps `and_hms` for backwards compability.
+    #[deprecated(since = "0.5.0", note = "Use and_hms instead")]
+    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Result<DateTime<Tz>, Error> {
+        self.and_hms(hour, min, sec)
+    }
+
     /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
     /// The millisecond part can exceed 1,000 in order to represent the leap second.
     /// The offset in the current date is preserved.
