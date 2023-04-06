@@ -324,11 +324,11 @@ mod tests {
         assert_eq!(Month::try_from(12), Ok(Month::December));
         assert_eq!(Month::try_from(13), Err(OutOfRange::new()));
 
-        let date = Utc.ymd(2019, 10, 28).unwrap().and_hms(9, 10, 11).unwrap();
+        let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap().single().unwrap();
         assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
         let month = Month::January;
-        let dt = Utc.ymd(2019, month.number_from_month(), 28).unwrap().and_hms(9, 10, 11).unwrap();
+        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap().single().unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 

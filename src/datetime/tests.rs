@@ -666,7 +666,7 @@ fn test_rfc3339_opts() -> Result<(), crate::Error> {
     let pst = FixedOffset::east(8 * 60 * 60)?;
     let dt = pst
         .from_local_datetime(
-            &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?
+            &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_000)?,
         )?
         .single()?;
     assert_eq!(dt.to_rfc3339_opts(Secs, false), "2018-01-11T10:05:13+08:00");
@@ -1511,7 +1511,7 @@ fn test_to_string_round_trip_with_local() -> Result<(), crate::Error> {
 #[cfg(feature = "clock")]
 fn test_datetime_format_with_local() {
     // if we are not around the year boundary, local and UTC date should have the same year
-    let dt = Local::now().with_month(5).unwrap();
+    let dt = Local::now()?.with_month(5).unwrap();
     assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&Utc).format("%Y").to_string());
 }
 
@@ -1544,7 +1544,7 @@ fn test_subsecond_part() {
         .from_local_datetime(
             &NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_nano(9, 10, 11, 1234567).unwrap(),
         )
-        .unwrap();
+        .unwrap().single().unwrap();
 
     assert_eq!(1, datetime.timestamp_subsec_millis());
     assert_eq!(1234, datetime.timestamp_subsec_micros());
@@ -1773,7 +1773,7 @@ fn test_datetime_add_assign() -> Result<(), crate::Error> {
 fn test_datetime_add_assign_local() -> Result<(), crate::Error> {
     let naivedatetime = NaiveDate::from_ymd(2022, 1, 1)?.and_hms(0, 0, 0)?;
 
-    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let datetime = Local.from_utc_datetime(&naivedatetime)?;
     let mut datetime_add = Local.from_utc_datetime(&naivedatetime)?;
 
     // ensure we cross a DST transition

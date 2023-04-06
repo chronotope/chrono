@@ -573,7 +573,7 @@ mod tests {
     fn test_date_add_assign_local() {
         let naivedate = NaiveDate::from_ymd(2000, 1, 1).unwrap();
 
-        let date = Local.from_utc(&naivedate).unwrap();
+        let date = Local.from_utc_date(&naivedate).unwrap();
         let mut date_add = date;
 
         date_add += TimeDelta::days(5);
