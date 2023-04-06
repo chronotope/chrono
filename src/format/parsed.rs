@@ -1250,7 +1250,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parsed_to_datetime() {
+    fn test_parsed_to_datetime() -> Result<(), crate::Error> {
         macro_rules! parse {
             ($($k:ident: $v:expr),*) => (
                 Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime()
@@ -1258,12 +1258,11 @@ mod tests {
         }
 
         let ymdhmsn = |y, m, d, h, n, s, nano, off| {
-            FixedOffset::east(off)
-                .unwrap()
-                .ymd(y, m, d)
-                .unwrap()
-                .and_hms_nano(h, n, s, nano)
-                .unwrap()
+            FixedOffset::east(off)?
+                .from_local_datetime(
+                    &NaiveDate::from_ymd(y, m, d)?.and_hms_nano(h, n, s, nano)?,
+                )?
+                .single()
         };
 
         assert_eq!(parse!(offset: 0), Err(Error::ParsingNotEnough));
@@ -1275,27 +1274,28 @@ mod tests {
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
-            Ok(ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678, 0))
+            ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678, 0)
         );
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
-            Ok(ymdhmsn(2014, 12, 31, 13, 26, 40, 12_345_678, 32400))
+            ymdhmsn(2014, 12, 31, 13, 26, 40, 12_345_678, 32400)
         );
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 1,
                           minute: 42, second: 4, nanosecond: 12_345_678, offset: -9876),
-            Ok(ymdhmsn(2014, 12, 31, 1, 42, 4, 12_345_678, -9876))
+            ymdhmsn(2014, 12, 31, 1, 42, 4, 12_345_678, -9876)
         );
         assert_eq!(
             parse!(year: 2015, ordinal: 1, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 86_400),
             Err(Error::InvalidTimeZone)
         ); // `FixedOffset` does not support such huge offset
+        Ok(())
     }
 
     #[test]
-    fn test_parsed_to_datetime_with_timezone() {
+    fn test_parsed_to_datetime_with_timezone() -> Result<(), crate::Error> {
         macro_rules! parse {
             ($tz:expr; $($k:ident: $v:expr),*) => (
                 Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime_with_timezone(&$tz)
@@ -1307,7 +1307,10 @@ mod tests {
             parse!(Utc;
                           year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
-            Ok(Utc.ymd(2014, 12, 31).unwrap().and_hms_nano(4, 26, 40, 12_345_678).unwrap())
+            Utc.from_local_datetime(
+                &NaiveDate::from_ymd(2014, 12, 31)?.and_hms_nano(4, 26, 40, 12_345_678)?
+            )?
+            .single()
         );
         assert_eq!(
             parse!(Utc;
@@ -1325,18 +1328,17 @@ mod tests {
             parse!(FixedOffset::east(32400).unwrap();
                           year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
-            Ok(FixedOffset::east(32400)
-                .unwrap()
-                .ymd(2014, 12, 31)
-                .unwrap()
-                .and_hms_nano(13, 26, 40, 12_345_678)
-                .unwrap())
+            FixedOffset::east(32400)?
+                .from_local_datetime(
+                    &NaiveDate::from_ymd(2014, 12, 31)?.and_hms_nano(13, 26, 40, 12_345_678)?
+                )?
+                .single()
         );
 
         // single result from timestamp
         assert_eq!(
             parse!(Utc; timestamp: 1_420_000_000, offset: 0),
-            Ok(Utc.ymd(2014, 12, 31).unwrap().and_hms(4, 26, 40).unwrap())
+            Utc.with_ymd_and_hms(2014, 12, 31, 4, 26, 40)?.single()
         );
         assert_eq!(
             parse!(Utc; timestamp: 1_420_000_000, offset: 32400),
@@ -1348,14 +1350,10 @@ mod tests {
         );
         assert_eq!(
             parse!(FixedOffset::east(32400).unwrap(); timestamp: 1_420_000_000, offset: 32400),
-            Ok(FixedOffset::east(32400)
-                .unwrap()
-                .ymd(2014, 12, 31)
-                .unwrap()
-                .and_hms(13, 26, 40)
-                .unwrap())
+            FixedOffset::east(32400)?.with_ymd_and_hms(2014, 12, 31, 13, 26, 40)?.single()
         );
 
         // TODO test with a variable time zone (for None and Ambiguous cases)
+        Ok(())
     }
 }

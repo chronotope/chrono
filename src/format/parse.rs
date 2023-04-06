@@ -1402,13 +1402,13 @@ fn test_rfc2822() {
 
 #[cfg(test)]
 #[test]
-fn parse_rfc850() {
+fn parse_rfc850() -> Result<(), crate::Error> {
     use crate::{TimeZone, Utc};
 
     static RFC850_FMT: &str = "%A, %d-%b-%y %T GMT";
 
     let dt_str = "Sunday, 06-Nov-94 08:49:37 GMT";
-    let dt = Utc.ymd(1994, 11, 6).unwrap().and_hms(8, 49, 37).unwrap();
+    let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37)?.single()?;
 
     // Check that the format is what we expect
     assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
@@ -1419,28 +1419,25 @@ fn parse_rfc850() {
     // Check that the rest of the weekdays parse correctly (this test originally failed because
     // Sunday parsed incorrectly).
     let testdates = [
+        (Utc.with_ymd_and_hms(1994, 11, 7, 8, 49, 37)?.single()?, "Monday, 07-Nov-94 08:49:37 GMT"),
         (
-            Utc.ymd(1994, 11, 7).unwrap().and_hms(8, 49, 37).unwrap(),
-            "Monday, 07-Nov-94 08:49:37 GMT",
-        ),
-        (
-            Utc.ymd(1994, 11, 8).unwrap().and_hms(8, 49, 37).unwrap(),
+            Utc.with_ymd_and_hms(1994, 11, 8, 8, 49, 37)?.single()?,
             "Tuesday, 08-Nov-94 08:49:37 GMT",
         ),
         (
-            Utc.ymd(1994, 11, 9).unwrap().and_hms(8, 49, 37).unwrap(),
+            Utc.with_ymd_and_hms(1994, 11, 9, 8, 49, 37)?.single()?,
             "Wednesday, 09-Nov-94 08:49:37 GMT",
         ),
         (
-            Utc.ymd(1994, 11, 10).unwrap().and_hms(8, 49, 37).unwrap(),
+            Utc.with_ymd_and_hms(1994, 11, 10, 8, 49, 37)?.single()?,
             "Thursday, 10-Nov-94 08:49:37 GMT",
         ),
         (
-            Utc.ymd(1994, 11, 11).unwrap().and_hms(8, 49, 37).unwrap(),
+            Utc.with_ymd_and_hms(1994, 11, 11, 8, 49, 37)?.single()?,
             "Friday, 11-Nov-94 08:49:37 GMT",
         ),
         (
-            Utc.ymd(1994, 11, 12).unwrap().and_hms(8, 49, 37).unwrap(),
+            Utc.with_ymd_and_hms(1994, 11, 12, 8, 49, 37)?.single()?,
             "Saturday, 12-Nov-94 08:49:37 GMT",
         ),
     ];
@@ -1448,6 +1445,7 @@ fn parse_rfc850() {
     for val in &testdates {
         assert_eq!(Ok(val.0), Utc.datetime_from_str(val.1, RFC850_FMT));
     }
+    Ok(())
 }
 
 #[cfg(test)]

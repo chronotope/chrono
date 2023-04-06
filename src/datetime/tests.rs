@@ -1781,7 +1781,7 @@ fn test_datetime_add_assign_local() -> Result<(), crate::Error> {
 }
 
 #[test]
-fn test_datetime_sub_assign() {
+fn test_datetime_sub_assign() -> Result<(), crate::Error> {
     let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms(12, 0, 0).unwrap();
     let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
     let mut datetime_sub = datetime;
@@ -1789,17 +1789,18 @@ fn test_datetime_sub_assign() {
     datetime_sub -= TimeDelta::minutes(90);
     assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 
-    let timezone = FixedOffset::east(60 * 60).unwrap();
-    let datetime = datetime.with_timezone(&timezone);
-    let datetime_sub = datetime_sub.with_timezone(&timezone);
+    let timezone = FixedOffset::east(60 * 60)?;
+    let datetime = datetime.with_timezone(&timezone)?;
+    let datetime_sub = datetime_sub.with_timezone(&timezone)?;
 
     assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
 
-    let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
-    let datetime = datetime.with_timezone(&timezone);
-    let datetime_sub = datetime_sub.with_timezone(&timezone);
+    let timezone = FixedOffset::west(2 * 60 * 60)?;
+    let datetime = datetime.with_timezone(&timezone)?;
+    let datetime_sub = datetime_sub.with_timezone(&timezone)?;
 
     assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
+    Ok(())
 }
 
 #[test]
@@ -1807,7 +1808,7 @@ fn test_datetime_sub_assign() {
 fn test_datetime_sub_assign_local() -> Result<(), crate::Error> {
     let naivedatetime = NaiveDate::from_ymd(2022, 1, 1)?.and_hms(0, 0, 0)?;
 
-    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let datetime = Local.from_utc_datetime(&naivedatetime)?;
     let mut datetime_sub = Local.from_utc_datetime(&naivedatetime)?;
 
     // ensure we cross a DST transition
@@ -1815,4 +1816,5 @@ fn test_datetime_sub_assign_local() -> Result<(), crate::Error> {
         datetime_sub -= TimeDelta::days(1);
         assert_eq!(datetime_sub, datetime - TimeDelta::days(i))
     }
+    Ok(())
 }
