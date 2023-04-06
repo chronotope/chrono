@@ -118,6 +118,16 @@ impl TimeZone for Local {
         Ok(*self.from_utc_datetime(utc)?.offset())
     }
 
+    // override them for avoiding redundant works
+    #[allow(deprecated)]
+    fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Local>>, Error> {
+        // this sounds very strange, but required for keeping `TimeZone::ymd` sane.
+        // in the other words, we use the offset at the local midnight
+        // but keep the actual date unaltered (much like `FixedOffset`).
+        let midnight = self.from_local_datetime(&local.and_midnight())?;
+        Ok(midnight.map(|datetime| Date::from_utc(*local, *datetime.offset())))
+    }
+
     #[cfg(all(
         target_arch = "wasm32",
         feature = "wasmbind",
@@ -143,6 +153,12 @@ impl TimeZone for Local {
         local: &NaiveDateTime,
     ) -> Result<LocalResult<DateTime<Local>>, Error> {
         inner::naive_to_local(local, true)
+    }
+
+    #[allow(deprecated)]
+    fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Local>, Error> {
+        let midnight = self.from_utc_datetime(&utc.and_midnight())?;
+        Ok(Date::from_utc(*utc, *midnight.offset()))
     }
 
     #[cfg(all(
