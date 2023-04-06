@@ -43,6 +43,14 @@ impl TimeZone {
             return Self::from_tz_data(&fs::read("/etc/localtime")?);
         }
 
+        // attributes are not allowed on if blocks in Rust 1.38
+        #[cfg(target_os = "android")]
+        {
+            if let Ok(bytes) = android_tzdata::find_tz_data(tz_string) {
+                return Self::from_tz_data(&bytes);
+            }
+        }
+
         let mut chars = tz_string.chars();
         if chars.next() == Some(':') {
             return Self::from_file(&mut find_tz_file(chars.as_str())?);
@@ -50,14 +58,6 @@ impl TimeZone {
 
         if let Ok(mut file) = find_tz_file(tz_string) {
             return Self::from_file(&mut file);
-        }
-
-        // attributes are not allowed on if blocks in Rust 1.38
-        #[cfg(target_os = "android")]
-        {
-            if let Ok(bytes) = android_tzdata::find_tz_data(tz_string) {
-                return Self::from_tz_data(&bytes);
-            }
         }
 
         // TZ string extensions are not allowed
