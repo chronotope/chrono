@@ -319,9 +319,11 @@ mod tests {
     #[test]
     fn test_round_subsecs() -> Result<(), crate::Error> {
         let pst = FixedOffset::east(8 * 60 * 60)?;
-        let dt = pst.from_local_datetime(
-            &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_684)?,
-        )?.single()?;
+        let dt = pst
+            .from_local_datetime(
+                &NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(10, 5, 13, 84_660_684)?,
+            )?
+            .single()?;
 
         assert_eq!(dt.round_subsecs(10), dt);
         assert_eq!(dt.round_subsecs(9), dt);
@@ -556,7 +558,7 @@ mod tests {
             59,
             59,
             175_500_000,
-        )?)?;
+        )?)?.single()?;
 
         assert_eq!(
             dt.duration_trunc(TimeDelta::milliseconds(10))?.to_string(),
@@ -566,7 +568,7 @@ mod tests {
         // would round up
         let dt = Utc.from_local_datetime(
             &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?,
-        )?;
+        )?.single()?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(5))?.to_string(),
             "2012-12-12 18:20:00 UTC"
@@ -574,7 +576,7 @@ mod tests {
         // would round down
         let dt = Utc.from_local_datetime(
             &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
-        )?;
+        )?.single()?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(5))?.to_string(),
             "2012-12-12 18:20:00 UTC"
@@ -591,7 +593,7 @@ mod tests {
         assert_eq!(dt.duration_trunc(TimeDelta::days(1))?.to_string(), "2012-12-12 00:00:00 UTC");
 
         // timezone east
-        let dt = FixedOffset::east(3600)?.with_ymd_and_hms(2020, 10, 27, 15, 0, 0)?;
+        let dt = FixedOffset::east(3600)?.with_ymd_and_hms(2020, 10, 27, 15, 0, 0)?.single()?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1))?.to_string(),
             "2020-10-27 00:00:00 +01:00"
@@ -602,7 +604,7 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west(3600)?.with_ymd_and_hms(2020, 10, 27, 15, 0, 0)?;
+        let dt = FixedOffset::west(3600)?.with_ymd_and_hms(2020, 10, 27, 15, 0, 0)?.single()?;
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1))?.to_string(),
             "2020-10-27 00:00:00 -01:00"
@@ -632,14 +634,14 @@ mod tests {
 
         // would round up
         let dt = Utc
-            .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?
+            .from_local_datetime(&NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 30, 0)?)?.single()?
             .naive_utc();
         assert_eq!(dt.duration_trunc(TimeDelta::minutes(5))?.to_string(), "2012-12-12 18:20:00");
         // would round down
         let dt = Utc
             .from_local_datetime(
                 &NaiveDate::from_ymd(2012, 12, 12)?.and_hms_milli(18, 22, 29, 999)?,
-            )?
+            )?.single()?
             .naive_utc();
         assert_eq!(dt.duration_trunc(TimeDelta::minutes(5))?.to_string(), "2012-12-12 18:20:00");
         assert_eq!(dt.duration_trunc(TimeDelta::minutes(10))?.to_string(), "2012-12-12 18:20:00");

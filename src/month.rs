@@ -328,7 +328,11 @@ mod tests {
         assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
         let month = Month::January;
-        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap().single().unwrap();
+        let dt = Utc
+            .with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11)
+            .unwrap()
+            .single()
+            .unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 
