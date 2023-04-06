@@ -99,20 +99,20 @@ impl TimeZone for Local {
     }
 
     // they are easier to define in terms of the finished date and time unlike other offsets
-    fn offset_from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<FixedOffset>, Error> {
-        self.from_local_datetime(local).map(|date| *date.offset())
+    fn offset_from_local_date(&self, local: &NaiveDate,) -> Result<LocalResult<FixedOffset>, Error> {
+        Ok(self.from_local_date(local)?.map(|o| *o.offset()))
     }
 
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<FixedOffset>, Error> {
-        self.from_local_datetime(local).map(|datetime| *datetime.offset())
+    fn offset_from_local_datetime(&self, local: &NaiveDateTime,) -> Result<LocalResult<FixedOffset>, Error> {
+        Ok(self.from_local_datetime(local)?.map(|o| *o.offset()))
     }
 
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
-        *self.from_utc_datedate(utc).offset()
+    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Result<FixedOffset, Error> {
+        Ok(*self.from_utc_date(utc)?.offset())
     }
 
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
-        *self.from_utc_datetime(utc).offset()
+    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<FixedOffset, Error> {
+        Ok(*self.from_utc_datetime(utc)?.offset())
     }
 
     #[cfg(all(
@@ -135,7 +135,7 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
+    fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Local>>, Error> {
         inner::naive_to_local(local, true)
     }
     
@@ -151,16 +151,16 @@ impl TimeZone for Local {
                 .unwrap();
         DateTime::from_utc(*utc, offset)
     }
-
+    // TODO: A local time from a UTC timestamp is never ambiguous,
+    // but this still returns `Result<T,E>`. If it reall is not ambiguous,
+    // make sure that `inner::naive_to_local` returns `T` first.
     #[cfg(not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     )))]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
-        // this is OK to unwrap as getting local time from a UTC
-        // timestamp is never ambiguous
-        inner::naive_to_local(utc, false).unwrap()
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Local>, Error> {
+        inner::naive_to_local(utc, false)?.single()
     }
 }
 

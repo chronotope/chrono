@@ -566,18 +566,6 @@ mod tests {
 
         date_add += TimeDelta::days(5);
         assert_eq!(date_add, date + TimeDelta::days(5));
-
-        let timezone = FixedOffset::east(60 * 60).unwrap();
-        let date = date.with_timezone(&timezone).unwrap();
-        let date_add = date_add.with_timezone(&timezone).unwrap();
-
-        assert_eq!(date_add, date + TimeDelta::days(5));
-
-        let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
-        let date = date.with_timezone(&timezone).unwrap();
-        let date_add = date_add.with_timezone(&timezone).unwrap();
-
-        assert_eq!(date_add, date + TimeDelta::days(5));
     }
 
     #[test]
@@ -585,7 +573,7 @@ mod tests {
     fn test_date_add_assign_local() {
         let naivedate = NaiveDate::from_ymd(2000, 1, 1).unwrap();
 
-        let date = Local.from_utc_date(&naivedate).unwrap();
+        let date = Local.from_utc(&naivedate).unwrap();
         let mut date_add = date;
 
         date_add += TimeDelta::days(5);

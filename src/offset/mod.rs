@@ -24,7 +24,7 @@ use crate::format::{parse, Parsed, StrftimeItems};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 #[allow(deprecated)]
 use crate::Date;
-use crate::{DateTime, Error, Weekday};
+use crate::{DateTime, Error};
 
 mod fixed;
 pub use self::fixed::FixedOffset;
@@ -202,9 +202,9 @@ pub trait TimeZone: Sized + Clone {
         min: u32,
         sec: u32,
     ) -> Result<LocalResult<DateTime<Self>>, Error> {
-            Ok(self.from_local_datetime(
-                NaiveDate::from_ymd(year, month, day).and_then(|d| d.and_hms(hour, min, sec))?
-            ))
+            self.from_local_datetime(
+                &NaiveDate::from_ymd(year, month, day)?.and_hms(hour, min, sec)?
+            )
     }
 
     /// Makes a new `DateTime` from the number of non-leap seconds
@@ -221,8 +221,8 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// assert_eq!(Utc.timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
-    fn timestamp(&self, secs: i64, nsecs: u32) -> Result<LocalResult<DateTime<Self>>, Error> {
-        Ok(LocalResult::Single(self.from_utc_datetime(NaiveDateTime::from_timestamp(secs, nsecs)?)))
+    fn timestamp(&self, secs: i64, nsecs: u32) -> Result<DateTime<Self>, Error> {
+        self.from_utc_datetime(&NaiveDateTime::from_timestamp(secs, nsecs)?)
     }
 
     /// Makes a new `DateTime` from the number of non-leap milliseconds
@@ -230,20 +230,18 @@ pub trait TimeZone: Sized + Clone {
     ///
     ///
     /// Returns `Err(chrono::Error)` on out-of-range number of milliseconds
-    /// and/or invalid nanosecond, otherwise always returns
-    /// `LocalResult::Single`.
+    /// and/or invalid nanosecond
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{Utc, TimeZone, LocalResult};
     /// match Utc.timestamp_millis_opt(1431648000) {
-    ///     Ok(LocalResult::Single(dt)) => assert_eq!(dt.timestamp(), 1431648),
-    ///     Ok(LocalResult::Ambiguous(dt1, dt2)) => panic!("Ambiguous timestamp should not be possible"),
+    ///     Ok(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     Err(_) => panic!("Incorrect timestamp_millis"),
     /// };
     /// ```
-    fn timestamp_millis(&self, millis: i64) -> Result<LocalResult<DateTime<Self>>, Error> {
+    fn timestamp_millis(&self, millis: i64) -> Result<DateTime<Self>, Error> {
         let (mut secs, mut millis) = (millis / 1000, millis % 1000);
         if millis < 0 {
             secs -= 1;
@@ -271,7 +269,7 @@ pub trait TimeZone: Sized + Clone {
             secs -= 1;
             nanos += 1_000_000_000;
         }
-        self.timestamp(secs, nanos as u32)?
+        self.timestamp(secs, nanos as u32)
     }
 
     /// Parses a string with the specified format string and returns a
@@ -300,24 +298,41 @@ pub trait TimeZone: Sized + Clone {
     /// Creates the offset(s) for given local `NaiveDateTime` if possible.
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<Self::Offset>, Error>;
 
+    /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
+    #[allow(clippy::wrong_self_convention)]
+    #[allow(deprecated)]
+    fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Self>>, Error> {
+        // TODO: This might be total nonsense, but the functionality is required at quite a few places
+        // Is the default time of a day midnight or noon?
+        Ok(self.offset_from_local_date(local)?
+            .map(|offset| Date::from_utc((local.and_midnight() - offset.fix()).date(), offset)))
+    }
+
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> Result<LocalResult<DateTime<Self>>, Error> {
-        self.offset_from_local_datetime(local)
-            .map(|offset| DateTime::from_utc(*local - offset.fix(), offset))
+        Ok(self.offset_from_local_datetime(local)?
+            .map(|offset| DateTime::from_utc(*local - offset.fix(), offset)))
     }
 
-    /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Self::Offset;
+    /// Creates the offset for given UTC `NaiveDate`.
+    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Result<Self::Offset, Error>;
 
-    /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset;
+    /// Creates the offset for given UTC `NaiveDateTime`.
+    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<Self::Offset, Error>;
+
+    /// Converts the UTC `NaiveDate` to the local date.
+    #[allow(deprecated)]
+    fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Self>, Error> {
+        Ok(Date::from_utc(*utc, self.offset_from_utc_date(utc)?))
+    }
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
+    // TODO: At least one implementation of this function can fail.
     #[allow(clippy::wrong_self_convention)]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
-        DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc))
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Self>, Error> {
+        Ok(DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc)?))
     }
 }
 

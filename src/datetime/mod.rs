@@ -1150,7 +1150,8 @@ impl From<SystemTime> for DateTime<Utc> {
             }
         };
 
-        // TODO: remove this conversion since it can panic or can we make it not panic?
+        // TODO: This may panic
+        // Either return Result instead or ensure that timestamp() cannot fail.
         Utc.timestamp(sec, nsec).unwrap()
     }
 }
