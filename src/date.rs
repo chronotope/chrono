@@ -153,8 +153,7 @@ impl<Tz: TimeZone> Date<Tz> {
         sec: u32,
         nano: u32,
     ) -> Result<DateTime<Tz>, Error> {
-        let time = NaiveTime::from_hms_nano(hour, min, sec, nano)?;
-        self.and_time(time)
+        self.and_time(NaiveTime::from_hms_nano(hour, min, sec, nano)?)
     }
 
     /// Makes a new `Date` for the next date.
@@ -162,8 +161,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Returns `Err(Error)` when `self` is the last representable date.
     #[inline]
     pub fn succ(&self) -> Result<Date<Tz>, Error> {
-        let date = self.date.succ()?;
-        Ok(Date::from_utc(date, self.offset.clone()))
+        Ok(Date::from_utc(self.date.succ()?, self.offset.clone()))
     }
 
     /// Makes a new `Date` for the prior date.
@@ -171,8 +169,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Returns `Err(Error)` when `self` is the first representable date.
     #[inline]
     pub fn pred(&self) -> Result<Date<Tz>, Error> {
-        let date = self.date.pred()?;
-        Ok(Date::from_utc(date, self.offset.clone()))
+        Ok(Date::from_utc(self.date.pred()?, self.offset.clone()))
     }
 
     /// Retrieves an associated offset from UTC.
@@ -199,8 +196,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
-        let date = self.date.checked_add_signed(rhs)?;
-        Ok(Self { date, offset: self.offset })
+        Ok(Self { date: self.date.checked_add_signed(rhs)?, offset: self.offset })
     }
 
     /// Subtracts given `Duration` from the current date.
@@ -208,8 +204,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Returns `Err(Error)` when it will result in overflow.
     #[inline]
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Result<Self, Error> {
-        let date = self.date.checked_sub_signed(rhs)?;
-        Ok(Self { date, offset: self.offset })
+        Ok(Self { date: self.date.checked_sub_signed(rhs)?, offset: self.offset })
     }
 
     /// Subtracts another `Date` from the current date.
@@ -240,15 +235,7 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Returns the number of whole years from the given `base` until `self`.
     pub fn years_since(&self, base: Self) -> Option<u32> {
-        let mut years = self.year() - base.year();
-        if (self.month(), self.day()) < (base.month(), base.day()) {
-            years -= 1;
-        }
-
-        match years >= 0 {
-            true => Some(years as u32),
-            false => None,
-        }
+        self.date.years_since(base.date)
     }
 
     /// The minimum possible `Date`.

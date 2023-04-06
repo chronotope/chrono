@@ -118,7 +118,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = Utc.ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?;
+/// let time = NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?.and_local_timezone(Utc).ok();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -153,7 +153,7 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Utc.ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?,
+    ///     time: NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?.and_local_timezone(Utc).ok(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -236,7 +236,7 @@ pub mod ts_nanoseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(Utc.ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?);
+/// let time = NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?.and_local_timezone(Utc).ok();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -272,7 +272,7 @@ pub mod ts_nanoseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(Utc.ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17)?.and_hms_nano(02, 04, 59, 918355733)?.and_local_timezone(Utc).ok(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
