@@ -1828,6 +1828,12 @@ impl Sub<NaiveDate> for NaiveDate {
     }
 }
 
+impl From<NaiveDateTime> for NaiveDate {
+    fn from(naive_datetime: NaiveDateTime) -> Self {
+        naive_datetime.date()
+    }
+}
+
 /// Iterator over `NaiveDate` with a step size of one day.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateDaysIterator {
