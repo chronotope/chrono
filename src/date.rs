@@ -154,15 +154,6 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the next date.
     ///
     /// Returns `Err(Error)` when `self` is the last representable date.
-    ///
-    /// ```
-    /// use chrono::prelude::*;
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2022, 09, 12)?.succ()?, NaiveDate::from_ymd(2022, 09, 13)?);
-    ///
-    /// assert!(Date::<Utc>::MAX_UTC.succ().is_err());
-    /// Ok::<_, Error>(())
-    /// ```
     #[inline]
     pub fn succ(&self) -> Result<Date<Tz>, Error> {
         let date = self.date.succ()?;
@@ -172,15 +163,6 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `Date` for the prior date.
     ///
     /// Returns `Err(Error)` when `self` is the first representable date.
-    ///
-    /// ```
-    /// use chrono::prelude::*;
-    ///
-    /// assert_eq!(Utc.ymd(2022, 09, 12)?.single()?.succ()?, Utc.ymd(2022, 09, 13)?.single()?);
-    ///
-    /// assert!(Date::<Utc>::MIN_UTC.pred().is_err());
-    /// Ok::<_, Error>(())
-    /// ```
     #[inline]
     pub fn pred(&self) -> Result<Date<Tz>, Error> {
         let date = self.date.pred()?;

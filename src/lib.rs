@@ -111,26 +111,31 @@
 //!
 //! ```rust
 //! use chrono::prelude::*;
+//! use chrono::offset::LocalResult;
 //!
-//! let dt = Utc.ymd(2014, 7, 8)?.and_hms(9, 10, 11)?; // `2014-07-08T09:10:11Z`
+//! let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11)?.single()?; // `2014-07-08T09:10:11Z`
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
-//! assert_eq!(dt, Utc.yo(2014, 189)?.and_hms(9, 10, 11)?);
+//! assert_eq!(dt, Utc.yo(2014, 189).and_hms(9, 10, 11)?);
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, Utc.isoywd(2014, 28, Weekday::Tue)?.and_hms(9, 10, 11)?);
+//! assert_eq!(dt, Utc.isoywd(2014, 28, Weekday::Tue).and_hms(9, 10, 11)?);
 //!
-//! let dt = Utc.ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12)?; // `2014-07-08T09:10:11.012Z`
-//! assert_eq!(dt, Utc.ymd(2014, 7, 8)?.and_hms_micro(9, 10, 11, 12_000)?);
-//! assert_eq!(dt, Utc.ymd(2014, 7, 8)?.and_hms_nano(9, 10, 11, 12_000_000)?);
+//! let dt = NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
+//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_micro(9, 10, 11, 12_000).unwrap().and_local_timezone(Utc).unwrap());
+//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_nano(9, 10, 11, 12_000_000).unwrap().and_local_timezone(Utc).unwrap());
 //!
 //! // dynamic verification
-//! assert!(Utc.ymd(2014, 7, 8)?.and_hms(21, 15, 33).is_ok());
-//! assert!(Utc.ymd(2014, 7, 8)?.and_hms(80, 15, 33).is_err());
-//! assert!(Utc.ymd(2014, 7, 38).is_err());
+//! assert!(Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33)?.single().is_ok());
+//! assert!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33).is_err());
+//! assert!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33).is_err());
 //!
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
-//! let local_dt = Local.ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12)?;
-//! let fixed_dt = FixedOffset::east(9 * 3600)?.ymd(2014, 7, 8)?.and_hms_milli(18, 10, 11, 12)?;
+//! let local_dt = Local.from_local_datetime(
+//!     &NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12)?
+//! )?.single()?;
+//! let fixed_dt = FixedOffset::east(9 * 3600)?.from_local_datetime(
+//!     &NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli(18, 10, 11, 12)?
+//! )?.single()?;
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
 //! # Ok::<_, chrono::Error>(())
@@ -147,7 +152,9 @@
 //! use chrono::TimeDelta;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
-//! let dt = FixedOffset::east(9*3600)?.ymd(2014, 11, 28)?.and_hms_nano(21, 45, 59, 324310806)?;
+//! let dt = FixedOffset::east(9*3600)?.from_local_datetime(
+//!     &NaiveDate::from_ymd(2014, 11, 28)?.and_hms_nano(21, 45, 59, 324310806)?
+//! )?.single()?;
 //!
 //! // property accessors
 //! assert_eq!((dt.year(), dt.month(), dt.day()), (2014, 11, 28));
@@ -161,7 +168,7 @@
 //! // time zone accessor and manipulation
 //! assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 //! assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600)?);
-//! assert_eq!(dt.with_timezone(&Utc)?, Utc.ymd(2014, 11, 28)?.and_hms_nano(12, 45, 59, 324310806)?);
+//! assert_eq!(dt.with_timezone(&Utc)?, Utc.with_ymd_and_hms(2014, 11, 28, 12, 45, 59)?.single().and_nano(324310806)?);
 //!
 //! // a sample of property manipulations (validates dynamically)
 //! assert_eq!(dt.with_day(29)?.weekday(), Weekday::Sat); // 2014-11-29 is Saturday
@@ -169,14 +176,14 @@
 //! assert_eq!(dt.with_year(-300)?.num_days_from_ce(), -109606); // November 29, 301 BCE
 //!
 //! // arithmetic operations
-//! let dt1 = Utc.ymd(2014, 11, 14)?.and_hms(8, 9, 10)?;
-//! let dt2 = Utc.ymd(2014, 11, 14)?.and_hms(10, 9, 8)?;
+//! let dt1 = Utc.with_ymd_and_hms(2014, 11, 14, 8, 9, 10)?.single()?;
+//! let dt2 = Utc.with_ymd_and_hms(2014, 11, 14, 10, 9, 8)?.single()?;
 //! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
 //! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.ymd(1970, 1, 1)?.and_hms(0, 0, 0)? + TimeDelta::seconds(1_000_000_000),
-//!            Utc.ymd(2001, 9, 9)?.and_hms(1, 46, 40)?);
-//! assert_eq!(Utc.ymd(1970, 1, 1)?.and_hms(0, 0, 0)? - TimeDelta::seconds(1_000_000_000),
-//!            Utc.ymd(1938, 4, 24)?.and_hms(22, 13, 20)?);
+//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0)?.single()? + TimeDelta::seconds(1_000_000_000),
+//!            Utc.with_ymd_and_hms(2001, 9, 9, 1, 46, 40)?.single()?);
+//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0)?.single()? - TimeDelta::seconds(1_000_000_000),
+//!            Utc.with_ymd_and_hms(1938, 4, 24, 22, 13, 20)?.single()?);
 //! # Ok::<_, chrono::Error>(())
 //! ```
 //!
@@ -257,7 +264,7 @@
 //! ```rust
 //! use chrono::prelude::*;
 //!
-//! let dt = Utc.ymd(2014, 11, 28)?.and_hms(12, 0, 9)?;
+//! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9)?.single()?;
 //! let fixed_dt = dt.with_timezone(&FixedOffset::east(9*3600)?)?;
 //!
 //! // method 1
@@ -323,14 +330,14 @@
 //! use chrono::prelude::*;
 //!
 //! # // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
-//! assert_eq!(Utc::today()?, Utc::now()?.date());
-//! assert_eq!(Local::today()?, Local::now()?.date());
+//! assert_eq!(Utc::today()?.naive_utc(), Utc::now()?.date_naive());
+//! assert_eq!(Local::today()?.naive_local(), Local::now()?.date_naive());
 //!
-//! assert_eq!(Utc.ymd(2014, 11, 28)?.single()?.weekday(), Weekday::Fri);
-//! assert!(Utc.ymd(2014, 11, 31).is_err());
-//! assert_eq!(Utc.ymd(2014, 11, 28)?.and_hms_milli(7, 8, 9, 10)?.format("%H%M%S").to_string(),
+//! assert_eq!(Utc.with_ymd_and_hms(2014, 11, 28, 0, 0, 0)?.single()?.weekday(), Weekday::Fri);
+//! assert!(Utc.with_ymd_and_hms(2014, 11, 31, 0, 0, 0)?.single().is_err());
+//! assert_eq!(Utc.with_ymd_and_hms(2014, 11, 28, 7, 8, 9)?.single()?.format("%H%M%S").to_string(),
 //!            "070809");
-//! # Ok::<_, chrono::Error>(())
+//! Ok::<(), chrono::Error>(())
 //! ```
 //!
 //! There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.

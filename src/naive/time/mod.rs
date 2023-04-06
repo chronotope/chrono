@@ -160,7 +160,7 @@ mod tests;
 /// ```
 /// use chrono::{Utc, TimeZone, NaiveDate};
 ///
-/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_000)?;
+/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 59, 59, 1_000)?.and_local_timezone(Utc)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// Ok::<(), chrono::Error>(())
 /// ```
@@ -178,10 +178,10 @@ mod tests;
 /// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms_milli(23, 56, 4, 1_000)?.and_local_timezone(Utc)?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 ///
-/// let dt = NaiveDate::from_ymd(2015, 6, 30)?.and_hms(23, 56, 5)?.and_local_timezone(Utc)?;
+/// let dt = Utc.with_ymd_and_hms(2015, 6, 30, 23, 56, 5)?.single()?;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
 /// assert_eq!(DateTime::<Utc>::parse_from_rfc3339("2015-06-30T23:56:05Z")?, dt);
-/// # Ok::<_, chrono::Error>(())
+/// Ok::<(), chrono::Error>(())
 /// ```
 ///
 /// Since Chrono alone cannot determine any existence of leap seconds,

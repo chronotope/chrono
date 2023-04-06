@@ -590,8 +590,10 @@ impl DateTime<FixedOffset> {
     ///
     /// let dt = DateTime::<FixedOffset>::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, FixedOffset::east(0)?.from_local_datetime(&NaiveDate::from_ymd(1983, 4, 13)?.and_hms_milli(12, 9, 14, 274)?)?);
-    /// Ok::<(), Error>(())
+    /// assert_eq!(dt, FixedOffset::east(0)?.from_local_datetime(
+    ///     &NaiveDate::from_ymd(1983, 4, 13)?.and_hms_milli(12, 9, 14, 274)?
+    /// )?.single()?);
+    /// Ok::<(), chrono::Error>(())
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> Result<DateTime<FixedOffset>, Error> {
         let mut parsed = Parsed::new();
@@ -645,11 +647,12 @@ impl DateTime<Utc> {
     /// # Example
     ///
     /// ```rust
-    /// use chrono::{DateTime, TimeZone, Utc};
+    /// use chrono::{DateTime, NaiveDate, TimeZone, Utc};
     ///
     /// let dt = DateTime::<Utc>::parse_from_str(
-    ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(Utc.ymd(1983, 4, 13).and_hms_milli(11, 9, 14, 274)));
+    ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z")?;
+    /// assert_eq!(dt, NaiveDate::from_ymd(1983, 4, 13)?.and_hms_milli(11, 9, 14, 274)?.and_local_timezone(Utc)?);
+    /// Ok::<(), chrono::Error>(())
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> Result<DateTime<Utc>, Error> {
         DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())
@@ -700,9 +703,10 @@ where
     ///            "2018-01-26T18:30:09Z");
     ///
     /// let pst = FixedOffset::east(8 * 60 * 60)?;
-    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd(2018, 1, 26)?.and_hms_micro(10, 30, 9, 453_829)?)?;
+    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd(2018, 1, 26)?.single()?.and_hms_micro(10, 30, 9, 453_829)?)?;
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
+    /// Ok::<(), chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -769,7 +773,7 @@ where
     /// ```rust
     /// use chrono::prelude::*;
     ///
-    /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32)?;
+    /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32)?.single()?;
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// Ok::<(), Error>(())

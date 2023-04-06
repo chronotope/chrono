@@ -41,7 +41,7 @@ impl FixedOffset {
     /// ```
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::east(5 * hour)?.with_ymd(2016, 11, 08)?.and_hms(0, 0, 0)?;
+    /// let datetime = FixedOffset::east(5 * hour)?.with_ymd_and_hms(2016, 11, 08, 0, 0, 0)?.single()?;
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00");
     /// Ok::<(), chrono::Error>(())
     /// ```
