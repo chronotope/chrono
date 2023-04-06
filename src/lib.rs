@@ -115,13 +115,13 @@
 //!
 //! let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11)?.single()?; // `2014-07-08T09:10:11Z`
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
-//! assert_eq!(dt, Utc.yo(2014, 189).and_hms(9, 10, 11)?);
+//! assert_eq!(dt, NaiveDate::from_yo(2014, 189)?.and_hms(9, 10, 11)?.and_local_timezone(Utc)?);
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, Utc.isoywd(2014, 28, Weekday::Tue).and_hms(9, 10, 11)?);
+//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue)?.and_hms(9, 10, 11)?.and_local_timezone(Utc)?);
 //!
-//! let dt = NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
-//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_micro(9, 10, 11, 12_000).unwrap().and_local_timezone(Utc).unwrap());
-//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_nano(9, 10, 11, 12_000_000).unwrap().and_local_timezone(Utc).unwrap());
+//! let dt = NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12)?.and_local_timezone(Utc)?; // `2014-07-08T09:10:11.012Z`
+//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms_micro(9, 10, 11, 12_000)?.and_local_timezone(Utc)?);
+//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms_nano(9, 10, 11, 12_000_000)?.and_local_timezone(Utc)?);
 //!
 //! // dynamic verification
 //! assert!(Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33)?.single().is_ok());
@@ -168,7 +168,7 @@
 //! // time zone accessor and manipulation
 //! assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 //! assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600)?);
-//! assert_eq!(dt.with_timezone(&Utc)?, Utc.with_ymd_and_hms(2014, 11, 28, 12, 45, 59)?.single().and_nano(324310806)?);
+//! assert_eq!(dt.with_timezone(&Utc)?, NaiveDate::from_ymd(2014, 11, 28)?.and_hms_nano(12, 45, 59, 324310806)?.and_local_timezone(Utc)?);
 //!
 //! // a sample of property manipulations (validates dynamically)
 //! assert_eq!(dt.with_day(29)?.weekday(), Weekday::Sat); // 2014-11-29 is Saturday
@@ -334,7 +334,7 @@
 //! assert_eq!(Local::today()?.naive_local(), Local::now()?.date_naive());
 //!
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 11, 28, 0, 0, 0)?.single()?.weekday(), Weekday::Fri);
-//! assert!(Utc.with_ymd_and_hms(2014, 11, 31, 0, 0, 0)?.single().is_err());
+//! assert!(Utc.with_ymd_and_hms(2014, 11, 31, 0, 0, 0).is_err());
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 11, 28, 7, 8, 9)?.single()?.format("%H%M%S").to_string(),
 //!            "070809");
 //! Ok::<(), chrono::Error>(())

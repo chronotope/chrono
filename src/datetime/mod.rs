@@ -589,7 +589,7 @@ impl DateTime<FixedOffset> {
     /// use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
     ///
     /// let dt = DateTime::<FixedOffset>::parse_from_str(
-    ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
+    ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z")?;
     /// assert_eq!(dt, FixedOffset::east(0)?.from_local_datetime(
     ///     &NaiveDate::from_ymd(1983, 4, 13)?.and_hms_milli(12, 9, 14, 274)?
     /// )?.single()?);
@@ -703,7 +703,7 @@ where
     ///            "2018-01-26T18:30:09Z");
     ///
     /// let pst = FixedOffset::east(8 * 60 * 60)?;
-    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd(2018, 1, 26)?.single()?.and_hms_micro(10, 30, 9, 453_829)?)?;
+    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd(2018, 1, 26)?.and_hms_micro(10, 30, 9, 453_829)?)?.single()?;
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
     /// Ok::<(), chrono::Error>(())
@@ -958,8 +958,8 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// let earlier = Utc.with_ymd_and_hms(2015, 5, 15, 2, 0, 0)?.single().with_timezone(&FixedOffset::west(1 * 3600)?);
-    /// let later   = Utc.with_ymd_and_hms(2015, 5, 15, 3, 0, 0)?.single().with_timezone(&FixedOffset::west(5 * 3600)?);
+    /// let earlier = Utc.with_ymd_and_hms(2015, 5, 15, 2, 0, 0)?.single()?.with_timezone(&FixedOffset::west(1 * 3600)?)?;
+    /// let later   = Utc.with_ymd_and_hms(2015, 5, 15, 3, 0, 0)?.single()?.with_timezone(&FixedOffset::west(5 * 3600)?)?;
     ///
     /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
