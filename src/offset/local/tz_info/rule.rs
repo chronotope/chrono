@@ -1,10 +1,11 @@
 use std::cmp::Ordering;
 
 use super::parser::Cursor;
+use super::rule_check::check_dst_transition_rules_consistency;
 use super::timezone::{LocalTimeType, SECONDS_PER_WEEK};
 use super::{
-    rem_euclid, Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
-    SECONDS_PER_DAY,
+    rem_euclid, Error, CUMUL_DAYS_IN_MONTHS_LEAP_YEAR, CUMUL_DAYS_IN_MONTHS_NORMAL_YEAR,
+    DAYS_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, SECONDS_PER_DAY,
 };
 
 /// Transition rule
@@ -135,11 +136,37 @@ impl AlternateTime {
         dst_end: RuleDay,
         dst_end_time: i32,
     ) -> Result<Self, Error> {
+        let std_ut_offset = std.ut_offset as i64;
+        let dst_ut_offset = dst.ut_offset as i64;
+
+        // Limit UTC offset to POSIX-required range
+        if !(-25 * SECONDS_PER_HOUR < std_ut_offset && std_ut_offset < 26 * SECONDS_PER_HOUR) {
+            return Err(Error::TransitionRule("invalid standard time UTC offset"));
+        }
+
+        if !(-25 * SECONDS_PER_HOUR < dst_ut_offset && dst_ut_offset < 26 * SECONDS_PER_HOUR) {
+            return Err(Error::TransitionRule("invalid Daylight Saving Time UTC offset"));
+        }
+
         // Overflow is not possible
         if !((dst_start_time as i64).abs() < SECONDS_PER_WEEK
             && (dst_end_time as i64).abs() < SECONDS_PER_WEEK)
         {
             return Err(Error::TransitionRule("invalid DST start or end time"));
+        }
+
+        // Check DST transition rules consistency
+        if !check_dst_transition_rules_consistency(
+            &std,
+            &dst,
+            dst_start,
+            dst_start_time,
+            dst_end,
+            dst_end_time,
+        ) {
+            return Err(Error::TransitionRule(
+                "DST transition rules are not consistent from one year to another",
+            ));
         }
 
         Ok(Self { std, dst, dst_start, dst_start_time, dst_end, dst_end_time })
@@ -166,7 +193,9 @@ impl AlternateTime {
         let current_year_dst_end_unix_time =
             self.dst_end.unix_time(current_year, dst_end_time_in_utc);
 
-        // Check DST start/end Unix times for previous/current/next years to support for transition day times outside of [0h, 24h] range
+        // Check DST start/end Unix times for previous/current/next years to support for transition day times outside of [0h, 24h] range.
+        // This is enough since the absolute value of DST start/end time in UTC is less than 2 weeks.
+        // Moreover, inconsistent DST transition rules are not allowed, so there won't be additional transitions at the year boundary.
         let is_dst =
             match Ord::cmp(&current_year_dst_start_unix_time, &current_year_dst_end_unix_time) {
                 Ordering::Less | Ordering::Equal => {
@@ -448,10 +477,10 @@ fn parse_signed_hhmmss(cursor: &mut Cursor) -> Result<(i32, i32, i32, i32), Erro
 
 /// Transition rule day
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum RuleDay {
-    /// Julian day in `[1, 365]`, without taking occasional Feb 29 into account, which is not referenceable
+pub(super) enum RuleDay {
+    /// Julian day in `[1, 365]`, without taking occasional February 29th into account, which is not referenceable
     Julian1WithoutLeap(u16),
-    /// Zero-based Julian day in `[0, 365]`, taking occasional Feb 29 into account
+    /// Zero-based Julian day in `[0, 365]`, taking occasional February 29th into account and allowing December 32nd
     Julian0WithLeap(u16),
     /// Day represented by a month, a month week and a week day
     MonthWeekday {
@@ -494,8 +523,8 @@ impl RuleDay {
         ))
     }
 
-    /// Construct a transition rule day represented by a Julian day in `[1, 365]`, without taking occasional Feb 29 into account, which is not referenceable
-    fn julian_1(julian_day_1: u16) -> Result<Self, Error> {
+    /// Construct a transition rule day represented by a Julian day in `[1, 365]`, without taking occasional February 29th into account, which is not referenceable
+    pub(super) fn julian_1(julian_day_1: u16) -> Result<Self, Error> {
         if !(1..=365).contains(&julian_day_1) {
             return Err(Error::TransitionRule("invalid rule day julian day"));
         }
@@ -503,8 +532,8 @@ impl RuleDay {
         Ok(RuleDay::Julian1WithoutLeap(julian_day_1))
     }
 
-    /// Construct a transition rule day represented by a zero-based Julian day in `[0, 365]`, taking occasional Feb 29 into account
-    fn julian_0(julian_day_0: u16) -> Result<Self, Error> {
+    /// Construct a transition rule day represented by a zero-based Julian day in `[0, 365]`, taking occasional February 29th into account and allowing December 32nd
+    pub(super) fn julian_0(julian_day_0: u16) -> Result<Self, Error> {
         if julian_day_0 > 365 {
             return Err(Error::TransitionRule("invalid rule day julian day"));
         }
@@ -513,7 +542,7 @@ impl RuleDay {
     }
 
     /// Construct a transition rule day represented by a month, a month week and a week day
-    fn month_weekday(month: u8, week: u8, week_day: u8) -> Result<Self, Error> {
+    pub(super) fn month_weekday(month: u8, week: u8, week_day: u8) -> Result<Self, Error> {
         if !(1..=12).contains(&month) {
             return Err(Error::TransitionRule("invalid rule day month"));
         }
@@ -540,32 +569,21 @@ impl RuleDay {
             RuleDay::Julian1WithoutLeap(year_day) => {
                 let year_day = year_day as i64;
 
-                let month = match CUMUL_DAY_IN_MONTHS_NORMAL_YEAR.binary_search(&(year_day - 1)) {
+                let month = match CUMUL_DAYS_IN_MONTHS_NORMAL_YEAR.binary_search(&(year_day - 1)) {
                     Ok(x) => x + 1,
                     Err(x) => x,
                 };
 
-                let month_day = year_day - CUMUL_DAY_IN_MONTHS_NORMAL_YEAR[month - 1];
+                let month_day = year_day - CUMUL_DAYS_IN_MONTHS_NORMAL_YEAR[month - 1];
 
                 (month, month_day)
             }
             RuleDay::Julian0WithLeap(year_day) => {
-                let leap = is_leap_year(year) as i64;
-
-                let cumul_day_in_months = [
-                    0,
-                    31,
-                    59 + leap,
-                    90 + leap,
-                    120 + leap,
-                    151 + leap,
-                    181 + leap,
-                    212 + leap,
-                    243 + leap,
-                    273 + leap,
-                    304 + leap,
-                    334 + leap,
-                ];
+                let cumul_day_in_months = if is_leap_year(year) {
+                    CUMUL_DAYS_IN_MONTHS_LEAP_YEAR
+                } else {
+                    CUMUL_DAYS_IN_MONTHS_NORMAL_YEAR
+                };
 
                 let year_day = year_day as i64;
 
@@ -583,7 +601,7 @@ impl RuleDay {
 
                 let month = rule_month as usize;
 
-                let mut day_in_month = DAY_IN_MONTHS_NORMAL_YEAR[month - 1];
+                let mut day_in_month = DAYS_IN_MONTHS_NORMAL_YEAR[month - 1];
                 if month == 2 {
                     day_in_month += leap;
                 }
@@ -762,7 +780,7 @@ pub(crate) fn days_since_unix_epoch(year: i32, month: usize, month_day: i64) -> 
         }
     }
 
-    result += CUMUL_DAY_IN_MONTHS_NORMAL_YEAR[month - 1] + month_day - 1;
+    result += CUMUL_DAYS_IN_MONTHS_NORMAL_YEAR[month - 1] + month_day - 1;
 
     result
 }

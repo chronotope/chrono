@@ -630,8 +630,14 @@ const SECONDS_PER_28_DAYS: i64 = SECONDS_PER_DAY * 28;
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::path::Path;
+
     use super::super::Error;
-    use super::{LeapSecond, LocalTimeType, TimeZone, TimeZoneName, Transition, TransitionRule};
+    use super::{
+        LeapSecond, LocalTimeType, TimeZone, TimeZoneName, Transition, TransitionRule,
+        ZONE_INFO_DIRECTORIES,
+    };
     use crate::matches;
 
     #[test]
@@ -898,6 +904,31 @@ mod tests {
             time_zone.find_local_time_type(i64::max_value()),
             Err(Error::FindLocalTimeType(_))
         ));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_read_all_tz_files() -> Result<(), Error> {
+        fn check_dirs(dir: &Path) -> Result<(), Error> {
+            if dir.is_dir() {
+                for entry in fs::read_dir(dir).into_iter().flatten().flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        check_dirs(&path)?;
+                        continue;
+                    }
+                    if let Ok(bytes @ [b'T', b'Z', b'i', b'f', ..]) = fs::read(&path).as_deref() {
+                        assert!(TimeZone::from_tz_data(bytes).is_ok());
+                    }
+                }
+            }
+            Ok(())
+        }
+
+        for dir in ZONE_INFO_DIRECTORIES {
+            check_dirs(Path::new(dir))?;
+        }
 
         Ok(())
     }
