@@ -1605,14 +1605,8 @@ fn test_from_system_time() -> Result<(), crate::Error> {
     {
         assert_eq!(SystemTime::from(epoch.with_timezone(&Local)?), UNIX_EPOCH);
     }
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400)?)?),
-        UNIX_EPOCH
-    );
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800)?)?),
-        UNIX_EPOCH
-    );
+    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400)?)?), UNIX_EPOCH);
+    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800)?)?), UNIX_EPOCH);
     Ok(())
 }
 
@@ -1629,9 +1623,7 @@ fn test_from_system_time() {
     assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
-        Utc.from_local_datetime(
-            &NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 39, nanos)?
-        )?
+        Utc.from_local_datetime(&NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 39, nanos)?)?
     );
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
@@ -1708,7 +1700,7 @@ fn test_datetime_format_alignment() {
 }
 
 #[test]
-fn test_datetime_from_local() {
+fn test_datetime_from_local() -> Result<(), crate::Error> {
     // 2000-01-12T02:00:00Z
     let naivedatetime_utc = NaiveDate::from_ymd(2000, 1, 12).unwrap().and_hms(2, 0, 0).unwrap();
     let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
@@ -1723,8 +1715,9 @@ fn test_datetime_from_local() {
     let naivedatetime_west = NaiveDate::from_ymd(2000, 1, 11).unwrap().and_hms(19, 0, 0).unwrap();
     let datetime_west = DateTime::<FixedOffset>::from_local(naivedatetime_west, timezone_west);
 
-    assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
-    assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
+    assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east)?);
+    assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west)?);
+    Ok(())
 }
 
 #[test]

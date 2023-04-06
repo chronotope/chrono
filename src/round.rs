@@ -253,12 +253,14 @@ mod tests {
         assert_eq!(dt.round_subsecs(0).nanosecond(), 0);
         assert_eq!(dt.round_subsecs(0).second(), 13);
 
-        let dt = Utc.from_local_datetime(&NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(
-            10,
-            5,
-            27,
-            750_500_000,
-        )?)?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(
+                10,
+                5,
+                27,
+                750_500_000,
+            )?)?
+            .single()?;
         assert_eq!(dt.round_subsecs(9), dt);
         assert_eq!(dt.round_subsecs(4), dt);
         assert_eq!(dt.round_subsecs(3).nanosecond(), 751_000_000);
@@ -272,12 +274,14 @@ mod tests {
 
     #[test]
     fn test_round_leap_nanos() -> Result<(), crate::Error> {
-        let dt = Utc.from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
-            23,
-            59,
-            59,
-            1_750_500_000,
-        )?)?.single()?;
+        let dt = Utc
+            .from_local_datetime(&NaiveDate::from_ymd(2016, 12, 31)?.and_hms_nano(
+                23,
+                59,
+                59,
+                1_750_500_000,
+            )?)?
+            .single()?;
         assert_eq!(dt.round_subsecs(9), dt);
         assert_eq!(dt.round_subsecs(4), dt);
         assert_eq!(dt.round_subsecs(2).nanosecond(), 1_750_000_000);
@@ -312,12 +316,14 @@ mod tests {
         assert_eq!(dt.trunc_subsecs(0).nanosecond(), 0);
         assert_eq!(dt.trunc_subsecs(0).second(), 13);
 
-        let dt = pst.from_local_datetime(&NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(
-            10,
-            5,
-            27,
-            750_500_000,
-        )?)?.single()?;
+        let dt = pst
+            .from_local_datetime(&NaiveDate::from_ymd(2018, 1, 11)?.and_hms_nano(
+                10,
+                5,
+                27,
+                750_500_000,
+            )?)?
+            .single()?;
         assert_eq!(dt.trunc_subsecs(9), dt);
         assert_eq!(dt.trunc_subsecs(4), dt);
         assert_eq!(dt.trunc_subsecs(3).nanosecond(), 750_000_000);

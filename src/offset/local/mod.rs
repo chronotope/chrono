@@ -300,7 +300,10 @@ mod tests {
     #[test]
     fn test_local_date_sanity_check() {
         // issue #27
-        assert_eq!(Local.ymd(2999, 12, 28).unwrap().unwrap().day(), 28);
+        assert_eq!(
+            Local.with_ymd_and_hms(2999, 12, 28, 0, 0, 0).unwrap().single().unwrap().day(),
+            28
+        );
     }
 
     #[test]
