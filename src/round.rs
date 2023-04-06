@@ -277,7 +277,7 @@ mod tests {
             59,
             59,
             1_750_500_000,
-        )?)?;
+        )?)?.single()?;
         assert_eq!(dt.round_subsecs(9), dt);
         assert_eq!(dt.round_subsecs(4), dt);
         assert_eq!(dt.round_subsecs(2).nanosecond(), 1_750_000_000);
