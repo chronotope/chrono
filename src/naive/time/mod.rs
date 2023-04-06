@@ -8,7 +8,6 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -16,6 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, write_hundreds, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::utils::div_mod_floor;
 use crate::{Error, TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
@@ -236,13 +236,8 @@ impl NaiveTime {
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_hms(hour: u32, min: u32, sec: u32) -> Result<NaiveTime, Error> {
+    pub const fn from_hms(hour: u32, min: u32, sec: u32) -> Result<NaiveTime, Error> {
         NaiveTime::from_hms_nano(hour, min, sec, 0)
-    }
-
-    /// Makes a new `NaiveTime` which is set to midnight at `00:00`.
-    pub(crate) fn midnight() -> NaiveTime {
-        NaiveTime::MIDNIGHT
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
@@ -347,7 +342,7 @@ impl NaiveTime {
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Result<NaiveTime, Error> {
+    pub const fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Result<NaiveTime, Error> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
             return Err(Error::InvalidTime);
         }
@@ -385,7 +380,7 @@ impl NaiveTime {
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Result<NaiveTime, Error> {
+    pub const fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Result<NaiveTime, Error> {
         if secs >= 86_400 || nano >= 2_000_000_000 {
             return Err(Error::InvalidTime);
         }
@@ -1307,7 +1302,7 @@ impl str::FromStr for NaiveTime {
 /// ```
 impl Default for NaiveTime {
     fn default() -> Self {
-        NaiveTime::midnight()
+        NaiveTime::MIDNIGHT
     }
 }
 

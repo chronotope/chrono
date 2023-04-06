@@ -71,7 +71,7 @@ impl Month {
     /// ----------- | ---------  | ---------- | --- | ---------
     /// `m.succ()`: | `February` | `March`    | `...` | `January`
     #[inline]
-    pub fn succ(&self) -> Month {
+    pub const fn succ(&self) -> Month {
         match *self {
             Month::January => Month::February,
             Month::February => Month::March,
@@ -94,7 +94,7 @@ impl Month {
     /// ----------- | ---------  | ---------- | --- | ---------
     /// `m.pred()`: | `December` | `January`  | `...` | `November`
     #[inline]
-    pub fn pred(&self) -> Month {
+    pub const fn pred(&self) -> Month {
         match *self {
             Month::January => Month::December,
             Month::February => Month::January,
@@ -117,7 +117,7 @@ impl Month {
     /// -------------------------| --------- | ---------- | --- | -----
     /// `m.number_from_month()`: | 1         | 2          | `...` | 12
     #[inline]
-    pub fn number_from_month(&self) -> u32 {
+    pub const fn number_from_month(&self) -> u32 {
         match *self {
             Month::January => 1,
             Month::February => 2,
@@ -141,7 +141,7 @@ impl Month {
     ///
     /// assert_eq!(Month::January.name(), "January")
     /// ```
-    pub fn name(&self) -> &'static str {
+    pub const fn name(&self) -> &'static str {
         match *self {
             Month::January => "January",
             Month::February => "February",

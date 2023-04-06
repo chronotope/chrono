@@ -6,10 +6,9 @@
 
 use core::convert::TryFrom;
 
-use num_integer::div_rem;
-
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, Offset, TimeZone};
+use crate::utils::div_rem;
 use crate::{DateTime, Datelike, Error, TimeDelta, Timelike, Weekday};
 
 /// Parsed parts of date and time. There are two classes of methods:

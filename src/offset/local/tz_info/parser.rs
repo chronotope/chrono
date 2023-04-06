@@ -237,7 +237,7 @@ impl<'a> Cursor<'a> {
     }
 
     /// Returns `true` if data is remaining
-    pub(crate) fn is_empty(&self) -> bool {
+    pub(crate) const fn is_empty(&self) -> bool {
         self.remaining.is_empty()
     }
 

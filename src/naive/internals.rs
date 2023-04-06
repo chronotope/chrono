@@ -18,8 +18,7 @@
 use core::convert::TryFrom;
 use core::{fmt, i32};
 
-use num_integer::{div_rem, mod_floor};
-
+use crate::utils::{div_rem, mod_floor};
 use crate::{Error, Weekday};
 
 /// The internal date representation. This also includes the packed `Mdf` value.
@@ -302,7 +301,7 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn with_ordinal(&self, ordinal: u32) -> Result<Of, Error> {
+    pub(super) const fn with_ordinal(&self, ordinal: u32) -> Result<Of, Error> {
         if ordinal > 366 {
             return Err(Error::ParsingOutOfRange);
         }
@@ -406,7 +405,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_month(&self, month: u32) -> Result<Mdf, Error> {
+    pub(super) const fn with_month(&self, month: u32) -> Result<Mdf, Error> {
         if month > 12 {
             return Err(Error::ParsingOutOfRange);
         }
@@ -422,7 +421,7 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_day(&self, day: u32) -> Result<Mdf, Error> {
+    pub(super) const fn with_day(&self, day: u32) -> Result<Mdf, Error> {
         if day > 31 {
             return Err(Error::ParsingOutOfRange);
         }

@@ -9,7 +9,6 @@ use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -23,6 +22,7 @@ use crate::format::{parse, write_hundreds, Parsed, StrftimeItems};
 use crate::format::{Item, Numeric, Pad};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
+use crate::utils::div_mod_floor;
 use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
@@ -790,7 +790,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` with the time set to midnight.
     #[cfg(feature = "clock")]
     pub(crate) fn and_midnight(&self) -> NaiveDateTime {
-        self.and_time(NaiveTime::midnight())
+        self.and_time(NaiveTime::MIDNIGHT)
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.

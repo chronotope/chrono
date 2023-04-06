@@ -6,14 +6,14 @@
 use core::fmt;
 use core::ops::{Add, Sub};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{DateTime, Error, FixedTimeZone, Offset, TimeZone};
+use super::{FixedTimeZone, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::time_delta::TimeDelta;
-use crate::{LocalResult, Timelike};
+use crate::utils::div_mod_floor;
+use crate::{DateTime, Error, LocalResult, Timelike};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
@@ -45,7 +45,7 @@ impl FixedOffset {
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00");
     /// Ok::<(), chrono::Error>(())
     /// ```
-    pub fn east(secs: i32) -> Result<FixedOffset, Error> {
+    pub const fn east(secs: i32) -> Result<FixedOffset, Error> {
         if -86_400 < secs && secs < 86_400 {
             Ok(FixedOffset { local_minus_utc: secs })
         } else {
@@ -66,7 +66,7 @@ impl FixedOffset {
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00");
     /// Ok::<(), chrono::Error>(())
     /// ```
-    pub fn west(secs: i32) -> Result<FixedOffset, Error> {
+    pub const fn west(secs: i32) -> Result<FixedOffset, Error> {
         if -86_400 < secs && secs < 86_400 {
             Ok(FixedOffset { local_minus_utc: -secs })
         } else {

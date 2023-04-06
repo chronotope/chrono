@@ -218,17 +218,9 @@ pub(super) fn trim1(s: &str) -> &str {
     }
 }
 
-/// Is `s.next()` whitespace?
-/// Helper function to `maybe_colon_or_space`.
-fn next_is_whitespace(s: &str) -> bool {
-    s.chars().next().map(|c| c.is_whitespace()).unwrap_or_default()
-}
-
-/// Allow a colon with possible one-character whitespace padding.
-/// Consumes zero or one of these leading patterns:
-/// `":"`, `" "`, `" :"`, `": "`, or `" : "`.
+/// Consumes one colon char `:` if it is at the front of `s`.
 /// Always returns `Ok(s)`.
-pub(super) fn maybe_colon_or_space(mut s: &str) -> Result<&str, Error> {
+pub(super) fn consume_colon_maybe(mut s: &str) -> Result<&str, Error> {
     if s.is_empty() {
         // nothing consumed
         return Ok(s);
@@ -236,27 +228,9 @@ pub(super) fn maybe_colon_or_space(mut s: &str) -> Result<&str, Error> {
 
     if s.starts_with(':') {
         s = s_next(s);
-        if next_is_whitespace(s) {
-            s = s_next(s);
-        }
-        // consumed `":"` or `": "`
-        return Ok(s);
-    } else if !next_is_whitespace(s) {
-        return Ok(s);
+        // consumed `':'`
     }
 
-    s = s_next(s);
-    if s.starts_with(':') {
-        s = s_next(s);
-    } else {
-        // consumed `" "`
-        return Ok(s);
-    }
-    if next_is_whitespace(s) {
-        s = s_next(s);
-    }
-
-    // consumed `" :"` or `" : "`
     Ok(s)
 }
 
@@ -279,7 +253,7 @@ fn timezone_offset_internal<F>(
 where
     F: FnMut(&str) -> Result<&str, Error>,
 {
-    fn digits(s: &str) -> Result<(u8, u8), Error> {
+    const fn digits(s: &str) -> Result<(u8, u8), Error> {
         let b = s.as_bytes();
         if b.len() < 2 {
             Err(Error::ParsingTooShort)
@@ -502,48 +476,25 @@ fn test_trim1() {
 }
 
 #[test]
-fn test_next_is_whitespace() {
-    assert!(!next_is_whitespace(""));
-    assert!(!next_is_whitespace("a"));
-    assert!(!next_is_whitespace("😼😼"));
-    assert!(next_is_whitespace(" "));
-    assert!(next_is_whitespace("\t\t"));
-    assert!(next_is_whitespace("\ta\t"));
-    assert!(next_is_whitespace("\t😼\t"));
-}
-
-#[test]
-fn test_maybe_colon_or_space() {
-    assert_eq!(maybe_colon_or_space(""), Ok(""));
-    assert_eq!(maybe_colon_or_space(" "), Ok(""));
-    assert_eq!(maybe_colon_or_space("\n"), Ok(""));
-    assert_eq!(maybe_colon_or_space("  "), Ok(" "));
-    assert_eq!(maybe_colon_or_space("   "), Ok("  "));
-    assert_eq!(maybe_colon_or_space("    "), Ok("   "));
-    assert_eq!(maybe_colon_or_space("\t\t\t\t"), Ok("\t\t\t"));
-    assert_eq!(maybe_colon_or_space(":"), Ok(""));
-    assert_eq!(maybe_colon_or_space(" :"), Ok(""));
-    assert_eq!(maybe_colon_or_space(": "), Ok(""));
-    assert_eq!(maybe_colon_or_space(" : "), Ok(""));
-    assert_eq!(maybe_colon_or_space(" :  "), Ok(" "));
-    assert_eq!(maybe_colon_or_space("  :"), Ok(" :"));
-    assert_eq!(maybe_colon_or_space("  : "), Ok(" : "));
-    assert_eq!(maybe_colon_or_space(" :: "), Ok(": "));
-    assert_eq!(maybe_colon_or_space(" : : "), Ok(": "));
-    assert_eq!(maybe_colon_or_space("😸"), Ok("😸"));
-    assert_eq!(maybe_colon_or_space("😸😸"), Ok("😸😸"));
-    assert_eq!(maybe_colon_or_space("😸:"), Ok("😸:"));
-    assert_eq!(maybe_colon_or_space("😸 "), Ok("😸 "));
-    assert_eq!(maybe_colon_or_space(" 😸"), Ok("😸"));
-    assert_eq!(maybe_colon_or_space(":😸"), Ok("😸"));
-    assert_eq!(maybe_colon_or_space(":😸 "), Ok("😸 "));
-    assert_eq!(maybe_colon_or_space(" :😸"), Ok("😸"));
-    assert_eq!(maybe_colon_or_space(" :😸 "), Ok("😸 "));
-    assert_eq!(maybe_colon_or_space(" :😸:"), Ok("😸:"));
-    assert_eq!(maybe_colon_or_space(": 😸"), Ok("😸"));
-    assert_eq!(maybe_colon_or_space(":  😸"), Ok(" 😸"));
-    assert_eq!(maybe_colon_or_space(": :😸"), Ok(":😸"));
-    assert_eq!(maybe_colon_or_space(" : 😸"), Ok("😸"));
-    assert_eq!(maybe_colon_or_space(" ::😸"), Ok(":😸"));
-    assert_eq!(maybe_colon_or_space(" :: 😸"), Ok(": 😸"));
+fn test_consume_colon_maybe() {
+    assert_eq!(consume_colon_maybe(""), Ok(""));
+    assert_eq!(consume_colon_maybe(" "), Ok(" "));
+    assert_eq!(consume_colon_maybe("\n"), Ok("\n"));
+    assert_eq!(consume_colon_maybe("  "), Ok("  "));
+    assert_eq!(consume_colon_maybe(":"), Ok(""));
+    assert_eq!(consume_colon_maybe(" :"), Ok(" :"));
+    assert_eq!(consume_colon_maybe(": "), Ok(" "));
+    assert_eq!(consume_colon_maybe(" : "), Ok(" : "));
+    assert_eq!(consume_colon_maybe(":  "), Ok("  "));
+    assert_eq!(consume_colon_maybe("  :"), Ok("  :"));
+    assert_eq!(consume_colon_maybe(":: "), Ok(": "));
+    assert_eq!(consume_colon_maybe("😸"), Ok("😸"));
+    assert_eq!(consume_colon_maybe("😸😸"), Ok("😸😸"));
+    assert_eq!(consume_colon_maybe("😸:"), Ok("😸:"));
+    assert_eq!(consume_colon_maybe("😸 "), Ok("😸 "));
+    assert_eq!(consume_colon_maybe(":😸"), Ok("😸"));
+    assert_eq!(consume_colon_maybe(":😸 "), Ok("😸 "));
+    assert_eq!(consume_colon_maybe(": 😸"), Ok(" 😸"));
+    assert_eq!(consume_colon_maybe(":  😸"), Ok("  😸"));
+    assert_eq!(consume_colon_maybe(": :😸"), Ok(" :😸"));
 }

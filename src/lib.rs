@@ -487,6 +487,8 @@ pub use traits::{Datelike, Timelike};
 #[doc(hidden)]
 pub use naive::__BenchYearFlags;
 
+mod utils;
+
 /// Serialization/Deserialization with serde.
 ///
 /// This module provides default implementations for `DateTime` using the [RFC 3339][1] format and various
@@ -509,7 +511,7 @@ pub struct OutOfRange {
 }
 
 impl OutOfRange {
-    fn new() -> OutOfRange {
+    const fn new() -> OutOfRange {
         OutOfRange { _private: () }
     }
 }

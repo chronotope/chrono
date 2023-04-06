@@ -375,7 +375,7 @@ impl<'a> TimeZoneRef<'a> {
     }
 
     /// Convert Unix time to Unix leap time, from the list of leap seconds in a time zone
-    fn unix_time_to_unix_leap_time(&self, unix_time: i64) -> Result<i64, Error> {
+    const fn unix_time_to_unix_leap_time(&self, unix_time: i64) -> Result<i64, Error> {
         let mut unix_leap_time = unix_time;
 
         let mut i = 0;
@@ -564,7 +564,7 @@ impl LocalTimeType {
     }
 
     /// Construct a local time type with the specified UTC offset in seconds
-    pub(super) fn with_offset(ut_offset: i32) -> Result<Self, Error> {
+    pub(super) const fn with_offset(ut_offset: i32) -> Result<Self, Error> {
         if ut_offset == i32::min_value() {
             return Err(Error::LocalTimeType("invalid UTC offset"));
         }
@@ -609,7 +609,7 @@ fn find_tz_file(path: impl AsRef<Path>) -> Result<File, Error> {
 }
 
 #[inline]
-fn saturating_abs(v: i32) -> i32 {
+const fn saturating_abs(v: i32) -> i32 {
     if v.is_positive() {
         v
     } else if v == i32::min_value() {
