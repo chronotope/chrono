@@ -27,7 +27,7 @@
 //!
 //! let parsed = Utc.datetime_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?;
 //! assert_eq!(parsed, date_time);
-//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! # Ok::<(), chrono::Error>(())
 //! ```
 
 #[cfg(feature = "alloc")]

@@ -289,7 +289,7 @@
 //! assert!(Utc.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
 //! // oops, the weekday is incorrect!
 //! assert!(Utc.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
-//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! # Ok::<(), chrono::Error>(())
 //! ```
 //!
 //! Again : See [`format::strftime`](./format/strftime/index.html#specifiers)
@@ -317,7 +317,7 @@
 //! // Get epoch value from a datetime:
 //! let dt = DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000")?;
 //! assert_eq!(dt.timestamp(), 1_500_000_000);
-//! # Ok::<_, Box<dyn std::error::Error>>(())
+//! # Ok::<(), chrono::Error>(())
 //! ```
 //!
 //! ### Individual date
