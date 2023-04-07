@@ -239,3 +239,11 @@ impl From<core::str::Utf8Error> for Error {
         Error::Utf8(error)
     }
 }
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl From<serde_json::Error> for Error {
+    fn from(_: serde_json::Error) -> Self {
+        Error::SerializationError
+    }
+}
