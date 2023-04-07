@@ -1624,7 +1624,8 @@ fn test_from_system_time() -> Result<(), crate::Error> {
         SystemTime::from(
             Utc.from_local_datetime(
                 &NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano(1, 46, 39, nanos).unwrap()
-            )?.single()?
+            )?
+            .single()?
         ),
         UNIX_EPOCH + Duration::new(999_999_999, nanos)
     );
@@ -1632,7 +1633,8 @@ fn test_from_system_time() -> Result<(), crate::Error> {
         SystemTime::from(
             Utc.from_local_datetime(
                 &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano(22, 13, 20, 1_000).unwrap()
-            )?.single()?
+            )?
+            .single()?
         ),
         UNIX_EPOCH - Duration::new(999_999_999, nanos)
     );
