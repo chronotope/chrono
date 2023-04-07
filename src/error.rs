@@ -168,7 +168,7 @@ impl fmt::Display for Error {
             Error::TimeZone(error) => write!(f, "invalid time zone: {}", error),
             Error::UnsupportedTzFile(error) => error.fmt(f),
             Error::UnsupportedTzString(error) => write!(f, "unsupported TZ string: {}", error),
-            
+
             #[cfg(feature = "std")]
             Error::Utf8(error) => error.fmt(f),
 
@@ -239,4 +239,3 @@ impl From<core::str::Utf8Error> for Error {
         Error::Utf8(error)
     }
 }
-

@@ -1280,7 +1280,6 @@ where
     FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
     FFixed: Fn(&DateTime<FixedOffset>) -> Result<String, E>,
     E: ::core::fmt::Debug,
-    crate::Error: From<E>,
 {
     assert_eq!(
         to_string_utc(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?).ok(),
