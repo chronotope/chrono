@@ -628,13 +628,20 @@ fn test_strftime_items() {
     assert_eq!(parse_and_collect("%#m"), [Item::Error]);
 }
 
-#[cfg(feature = "unstable-locales")]
+#[cfg(test)]
 #[test]
-fn test_strftime_docs_localized() -> Result<(), Error> {
-    use crate::offset::TimeZone;
-    use crate::{FixedOffset, NaiveDate};
+fn test_strftime_docs() -> Result<(), crate::Error> {
+    use crate::NaiveDate;
+    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
-    let dt = FixedOffset::east(34200)?.ymd(2001, 7, 8)?.and_hms_nano(0, 34, 59, 1_026_490_708)?;
+    let dt = FixedOffset::east(34200)?
+        .from_local_datetime(&NaiveDate::from_ymd(2001, 7, 8)?.and_hms_nano(
+            0,
+            34,
+            59,
+            1_026_490_708,
+        )?)?
+        .single()?;
 
     // date specifiers
     assert_eq!(dt.format("%Y").to_string(), "2001");
@@ -732,20 +739,23 @@ fn test_strftime_docs_localized() -> Result<(), Error> {
         dt.format("  %Y%d%m%%%%%t%H:%P:%M%S%:::z\t").to_string(),
         "  20010807%%\t00:am:3460+09\t"
     );
+    Ok(())
 }
 
 #[cfg(feature = "unstable-locales")]
 #[test]
-fn test_strftime_docs_localized() {
+fn test_strftime_docs_localized() -> Result<(), crate::Error> {
     use crate::offset::TimeZone;
     use crate::{FixedOffset, NaiveDate};
 
-    let dt = FixedOffset::east(34200)
-        .unwrap()
-        .ymd(2001, 7, 8)
-        .unwrap()
-        .and_hms_nano(0, 34, 59, 1_026_490_708)
-        .unwrap();
+    let dt = FixedOffset::east(34200)?
+        .from_local_datetime(&NaiveDate::from_ymd(2001, 7, 8)?.and_hms_nano(
+            0,
+            34,
+            59,
+            1_026_490_708,
+        )?)?
+        .single()?;
 
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");
@@ -784,4 +794,5 @@ fn test_strftime_docs_localized() {
     assert_eq!(nd.format_localized("%x", Locale::de_DE).to_string(), "08.07.2001");
     assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
     assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
+    Ok(())
 }

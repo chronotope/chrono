@@ -1101,29 +1101,30 @@ pub mod ts_seconds_option {
 }
 
 #[test]
-fn test_serde_serialize() {
-    super::test_encodable_json(serde_json::to_string, serde_json::to_string);
+fn test_serde_serialize() -> Result<(), crate::Error> {
+    super::test_encodable_json(serde_json::to_string, serde_json::to_string)
 }
 
 #[cfg(feature = "clock")]
 #[test]
-fn test_serde_deserialize() {
+fn test_serde_deserialize() -> Result<(), crate::Error> {
     super::test_decodable_json(
         |input| serde_json::from_str(input),
         |input| serde_json::from_str(input),
         |input| serde_json::from_str(input),
-    );
+    )
 }
 
 #[test]
-fn test_serde_bincode() {
+fn test_serde_bincode() -> Result<(), crate::Error> {
     // Bincode is relevant to test separately from JSON because
     // it is not self-describing.
     use bincode::{deserialize, serialize};
 
-    let dt = Utc.ymd(2014, 7, 24).unwrap().and_hms(12, 34, 6).unwrap();
+    let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?;
     let encoded = serialize(&dt).unwrap();
     let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
     assert_eq!(dt, decoded);
     assert_eq!(dt.offset(), decoded.offset());
+    Ok(())
 }

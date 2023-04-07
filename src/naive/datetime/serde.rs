@@ -1053,7 +1053,7 @@ fn test_serde_bincode() {
 }
 
 #[test]
-fn test_serde_bincode_optional() {
+fn test_serde_bincode_optional() -> Result<(), crate::Error> {
     use crate::prelude::*;
     use crate::serde::ts_nanoseconds_option;
     use bincode::{deserialize, serialize};
@@ -1067,9 +1067,10 @@ fn test_serde_bincode_optional() {
     }
 
     let expected =
-        Test { one: Some(1), two: Some(Utc.ymd(1970, 1, 1).unwrap().and_hms(0, 1, 1).unwrap()) };
+        Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1)?.single()?) };
     let bytes: Vec<u8> = serialize(&expected).unwrap();
     let actual = deserialize::<Test>(&(bytes)).unwrap();
 
     assert_eq!(expected, actual);
+    Ok(())
 }

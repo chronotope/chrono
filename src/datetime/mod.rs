@@ -1272,31 +1272,36 @@ fn test_auto_conversion() -> Result<(), crate::Error> {
 }
 
 #[cfg(all(test, feature = "serde"))]
-fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
+fn test_encodable_json<FUtc, FFixed, E>(
+    to_string_utc: FUtc,
+    to_string_fixed: FFixed,
+) -> Result<(), crate::Error>
 where
     FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
     FFixed: Fn(&DateTime<FixedOffset>) -> Result<String, E>,
     E: ::core::fmt::Debug,
+    crate::Error: From<E>,
 {
     assert_eq!(
-        to_string_utc(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()).ok(),
+        to_string_utc(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?).ok(),
         Some(r#""2014-07-24T12:34:06Z""#.into())
     );
 
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east(3660).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3660)?.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?
         )
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:01""#.into())
     );
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3650)?.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?
         )
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:00:50""#.into())
     );
+    Ok(())
 }
 
 #[cfg(all(test, feature = "clock", feature = "serde"))]
@@ -1304,7 +1309,8 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     utc_from_str: FUtc,
     fixed_from_str: FFixed,
     local_from_str: FLocal,
-) where
+) -> Result<(), crate::Error>
+where
     FUtc: Fn(&str) -> Result<DateTime<Utc>, E>,
     FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
     FLocal: Fn(&str) -> Result<DateTime<Local>, E>,
@@ -1317,40 +1323,39 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
 
     assert_eq!(
         norm(&utc_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
-        norm(&Some(Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
+        norm(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single().ok())
     );
     assert_eq!(
         norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
-        norm(&Some(Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
+        norm(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single().ok())
     );
 
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
-        norm(&Some(
-            FixedOffset::east(0).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
-        ))
+        norm(&FixedOffset::east(0)?.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single().ok())
     );
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
-        norm(&Some(
-            FixedOffset::east(60 * 60 + 23 * 60)
-                .unwrap()
-                .with_ymd_and_hms(2014, 7, 24, 13, 57, 6)
-                .unwrap()
-        ))
+        norm(
+            &FixedOffset::east(60 * 60 + 23 * 60)?
+                .with_ymd_and_hms(2014, 7, 24, 13, 57, 6)?
+                .single()
+                .ok()
+        )
     );
 
     // we don't know the exact local offset but we can check that
     // the conversion didn't change the instant itself
     assert_eq!(
         local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local shouuld parse"),
-        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?
     );
     assert_eq!(
         local_from_str(r#""2014-07-24T13:57:06+01:23""#).expect("local should parse with offset"),
-        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6)?.single()?
     );
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+    Ok(())
 }

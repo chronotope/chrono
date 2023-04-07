@@ -98,7 +98,6 @@ pub enum Error {
     /// Invalid data
     InvalidData,
 
-    /* Rounding errors */
     /// Error when the TimeDelta exceeds the TimeDelta from or until the Unix epoch.
     DurationExceedsTimestamp,
 
@@ -107,6 +106,9 @@ pub enum Error {
 
     /// Error when `DateTime.timestamp_nanos` exceeds the limit.
     TimestampExceedsLimit,
+
+    /// Error when serialization fails.
+    SerializationError,
 }
 
 impl fmt::Display for Error {
@@ -159,6 +161,8 @@ impl fmt::Display for Error {
             }
             Error::DurationExceedsLimit => write!(f, "duration exceeds num_nanoseconds limit"),
             Error::TimestampExceedsLimit => write!(f, "timestamp exceeds num_nanoseconds limit"),
+
+            Error::SerializationError => write!(f, "date could not be serialized"),
         }
     }
 }
@@ -207,5 +211,12 @@ impl From<SystemTimeError> for Error {
 impl From<core::str::Utf8Error> for Error {
     fn from(error: core::str::Utf8Error) -> Self {
         Error::Utf8(error)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl From<serde_json::Error> for Error {
+    fn from(_: serde_json::Error) -> Self {
+        Error::SerializationError
     }
 }
