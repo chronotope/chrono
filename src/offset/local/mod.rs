@@ -51,7 +51,7 @@ mod tz_info;
 ///
 /// let dt: DateTime<Local> = Local::now()?;
 /// let dt: DateTime<Local> = Local.timestamp(0, 0)?;
-/// # Ok::<_, chrono::Error>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]

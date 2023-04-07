@@ -19,7 +19,7 @@ use crate::OutOfRange;
 /// // `2019-10-28T09:10:11Z`
 /// let month = Month::try_from(u8::try_from(date.month())?).ok();
 /// assert_eq!(month, Some(Month::October));
-/// Ok::<(), chrono::Error>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 ///
 /// Or from a Month to an integer usable by dates
@@ -29,7 +29,7 @@ use crate::OutOfRange;
 /// let month = Month::January;
 /// let dt = NaiveDate::from_ymd(2019, month.number_from_month(), 28)?.and_hms(9, 10, 11)?;
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
-/// # Ok::<_, chrono::Error>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde

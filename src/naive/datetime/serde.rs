@@ -75,7 +75,7 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -194,7 +194,7 @@ pub mod ts_nanoseconds {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -320,7 +320,7 @@ pub mod ts_nanoseconds_option {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -439,7 +439,7 @@ pub mod ts_microseconds {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -565,7 +565,7 @@ pub mod ts_microseconds_option {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -684,7 +684,7 @@ pub mod ts_milliseconds {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -810,7 +810,7 @@ pub mod ts_milliseconds_option {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1431684000}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
@@ -924,7 +924,7 @@ pub mod ts_seconds {
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
 /// assert_eq!(as_string, r#"{"time":1526522699}"#);
-/// let my_s: S = serde_json::from_str(&as_string)?;
+/// let my_s: S = serde_json::from_str(&as_string).unwrap();
 /// assert_eq!(my_s.time, time);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```

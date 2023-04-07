@@ -40,7 +40,7 @@ use crate::{Error, LocalResult};
 ///
 /// assert_eq!(dt, Utc.timestamp(61, 0)?);
 /// assert_eq!(dt, Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1)?.single()?);
-/// Ok::<(), chrono::Error>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]

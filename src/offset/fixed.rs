@@ -43,7 +43,7 @@ impl FixedOffset {
     /// let hour = 3600;
     /// let datetime = FixedOffset::east(5 * hour)?.with_ymd_and_hms(2016, 11, 08, 0, 0, 0)?.single()?;
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00");
-    /// Ok::<(), chrono::Error>(())
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     pub const fn east(secs: i32) -> Result<FixedOffset, Error> {
         if -86_400 < secs && secs < 86_400 {
@@ -64,7 +64,7 @@ impl FixedOffset {
     /// let hour = 3600;
     /// let datetime = FixedOffset::west(5 * hour)?.with_ymd_and_hms(2016, 11, 08, 0, 0, 0)?.single()?;
     /// assert_eq!(datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00");
-    /// Ok::<(), chrono::Error>(())
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     pub const fn west(secs: i32) -> Result<FixedOffset, Error> {
         if -86_400 < secs && secs < 86_400 {

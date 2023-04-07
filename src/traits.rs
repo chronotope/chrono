@@ -99,7 +99,7 @@ pub trait Datelike: Sized {
     /// assert_eq!(NaiveDate::from_ymd(2, 1, 1)?.num_days_from_ce(), 366);
     /// assert_eq!(NaiveDate::from_ymd(1, 1, 1)?.num_days_from_ce(), 1);
     /// assert_eq!(NaiveDate::from_ymd(0, 1, 1)?.num_days_from_ce(), -365);
-    /// # Ok::<_, chrono::Error>(())
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     fn num_days_from_ce(&self) -> i32 {
         // See test_num_days_from_ce_against_alternative_impl below for a more straightforward

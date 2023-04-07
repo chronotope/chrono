@@ -255,7 +255,7 @@ pub trait TimeZone: Sized + Clone {
     /// use chrono::{Utc, TimeZone};
     ///
     /// assert_eq!(Utc.timestamp_nanos(1431648000000000)?.timestamp(), 1431648);
-    /// Ok::<(), chrono::Error>(())
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     fn timestamp_nanos(&self, nanos: i64) -> Result<DateTime<Self>, Error> {
         let (mut secs, mut nanos) = (nanos / 1_000_000_000, nanos % 1_000_000_000);
