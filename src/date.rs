@@ -27,17 +27,15 @@ use crate::{DateTime, Datelike, Error, Weekday};
 /// You almost certainly want to be using a [`NaiveDate`] instead of this type.
 ///
 /// This type primarily exists to aid in the construction of DateTimes that
-/// have a timezone by way of the [`TimeZone`] datelike constructors (e.g.
-/// [`TimeZone::ymd`]).
+/// have a timezone by way of the [`TimeZone`] datelike constructors.
 ///
 /// This type should be considered ambiguous at best, due to the inherent lack
 /// of precision required for the time zone resolution.
 ///
 /// There are some guarantees on the usage of `Date<Tz>`:
 ///
-/// - If properly constructed via [`TimeZone::ymd`] and others without an error,
-///   the corresponding local date should exist for at least a moment.
-///   (It may still have a gap from the offset changes.)
+/// - If properly constructed without an error, the corresponding local date should
+///   exist for at least a moment. (It may still have a gap from the offset changes.)
 ///
 /// - The `TimeZone` is free to assign *any* [`Offset`](crate::offset::Offset) to the
 ///   local date, as long as that offset did occur in given day.
@@ -47,8 +45,7 @@ use crate::{DateTime, Datelike, Error, Weekday};
 ///   but *not* `2015-03-08+00:00` and others.
 ///
 /// - Once constructed as a full `DateTime`, [`DateTime::date`] and other associated
-///   methods should return those for the original `Date`. For example, if `dt =
-///   tz.ymd_opt(y,m,d).unwrap().hms(h,n,s)` were valid, `dt.date() == tz.ymd_opt(y,m,d).unwrap()`.
+///   methods should return those for the original `Date`.
 ///
 /// - The date is timezone-agnostic up to one day (i.e. practically always),
 ///   so the local date and UTC date should be equal for most cases

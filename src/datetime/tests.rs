@@ -1598,7 +1598,7 @@ fn test_from_system_time() -> Result<(), crate::Error> {
 
 #[test]
 #[cfg(target_os = "windows")]
-fn test_from_system_time() {
+fn test_from_system_time() -> Result<(), crate::Error> {
     use std::time::Duration;
 
     let nanos = 999_999_000;
@@ -1624,8 +1624,7 @@ fn test_from_system_time() {
         SystemTime::from(
             Utc.from_local_datetime(
                 &NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano(1, 46, 39, nanos).unwrap()
-            )
-            .unwrap()
+            )?.single()?
         ),
         UNIX_EPOCH + Duration::new(999_999_999, nanos)
     );
@@ -1633,8 +1632,7 @@ fn test_from_system_time() {
         SystemTime::from(
             Utc.from_local_datetime(
                 &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano(22, 13, 20, 1_000).unwrap()
-            )
-            .unwrap()
+            )?.single()?
         ),
         UNIX_EPOCH - Duration::new(999_999_999, nanos)
     );

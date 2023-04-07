@@ -11,7 +11,6 @@
 use std::io;
 use std::mem;
 use std::ptr;
-use std::ptr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use windows_sys::Win32::Foundation::FILETIME;
@@ -23,7 +22,7 @@ use windows_sys::Win32::System::Time::SystemTimeToTzSpecificLocalTime;
 use windows_sys::Win32::System::Time::TzSpecificLocalTimeToSystemTime;
 
 use super::{FixedOffset, Local};
-use crate::error::{Error, ErrorKind};
+use crate::Error;
 use crate::offset::LocalResult;
 use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
@@ -103,7 +102,7 @@ impl Timespec {
     fn now() -> Result<Timespec, Error> {
         let st = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|_| ErrorKind::SystemTimeBeforeEpoch)?;
+            .map_err(|_| Error::SystemTimeBeforeEpoch)?;
         Ok(Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 })
     }
 
@@ -240,7 +239,7 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
 macro_rules! call {
     ($name:ident($($arg:expr),*)) => {
         if $name($($arg),*) == 0 {
-            return Err(Error::new(ErrorKind::SystemError(io::Error::last_os_error())))
+            return Err(io::Error::last_os_error())
         }
     }
 }
