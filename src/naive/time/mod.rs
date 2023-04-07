@@ -342,7 +342,12 @@ impl NaiveTime {
     /// # Ok::<_, chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Result<NaiveTime, Error> {
+    pub const fn from_hms_nano(
+        hour: u32,
+        min: u32,
+        sec: u32,
+        nano: u32,
+    ) -> Result<NaiveTime, Error> {
         if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
             return Err(Error::InvalidTime);
         }

@@ -102,8 +102,8 @@ impl<Tz: TimeZone> Date<Tz> {
 
     /// Wraps `and_hms` for backwards compability.
     #[deprecated(since = "0.5.0", note = "Use and_hms instead")]
-    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Result<DateTime<Tz>, Error> {
-        self.and_hms(hour, min, sec)
+    pub fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<DateTime<Tz>> {
+        self.and_hms(hour, min, sec).ok()
     }
 
     /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
