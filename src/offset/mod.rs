@@ -326,6 +326,7 @@ pub trait TimeZone: Sized + Clone {
 
     /// Converts the UTC `NaiveDate` to the local date.
     #[allow(deprecated)]
+    #[allow(clippy::wrong_self_convention)]
     fn from_utc_date(&self, utc: &NaiveDate) -> Result<Date<Self>, Error> {
         Ok(Date::from_utc(*utc, self.offset_from_utc_date(utc)?))
     }
