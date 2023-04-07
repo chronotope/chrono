@@ -215,7 +215,7 @@
 //!
 //! # #[cfg(feature = "unstable-locales")]
 //! # fn main() -> Result<(), chrono::Error> {
-//! let dt = Utc.ymd(2014, 11, 28)?.and_hms(12, 0, 9)?;
+//! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9)?.single()?;
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
 //! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
@@ -227,7 +227,7 @@
 //! assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 //!
 //! // Note that milli/nanoseconds are only printed if they are non-zero
-//! let dt_nano = Utc.ymd(2014, 11, 28)?.and_hms_nano(12, 0, 9, 1)?;
+//! let dt_nano = NaiveDate::from_ymd(2014, 11, 28)?.and_hms_nano(12, 0, 9, 1)?.and_local_timezone(Utc)?;
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # Ok(()) }
 //! # #[cfg(not(feature = "unstable-locales"))]
@@ -382,7 +382,7 @@
 //! Chrono inherently does not support an inaccurate or partial date and time representation.
 //! Any operation that can be ambiguous will return `Err(chrono::Error)` in such cases.
 //! For example, "a month later" of 2014-01-30 is not well-defined
-//! and consequently `Utc.ymd(2014, 1, 30)?.with_month(2)?` returns `Err(chrono::Error)`.
+//! and consequently `NaiveDate::from_ymd(2014, 1, 30)?.with_month(2)` returns `Err(chrono::Error)`.
 //!
 //! Non ISO week handling is not yet supported.
 //! For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
