@@ -133,14 +133,15 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Local>> {
+    fn from_local_datetime(
+        &self,
+        local: &NaiveDateTime,
+    ) -> Result<LocalResult<DateTime<Local>>, Error> {
         let mut local = local.clone();
         // Get the offset from the js runtime
-        let offset =
-            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
-                .unwrap();
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
         local -= crate::TimeDelta::seconds(offset.local_minus_utc() as i64);
-        LocalResult::Single(DateTime::from_utc(local, offset))
+        Ok(LocalResult::Single(DateTime::from_utc(local, offset)))
     }
 
     #[cfg(not(all(
@@ -166,15 +167,13 @@ impl TimeZone for Local {
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Local> {
+    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> Result<DateTime<Local>, Error> {
         // Get the offset from the js runtime
-        let offset =
-            FixedOffset::west_opt((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)
-                .unwrap();
-        DateTime::from_utc(*utc, offset)
+        let offset = FixedOffset::west((js_sys::Date::new_0().get_timezone_offset() as i32) * 60)?;
+        Ok(DateTime::from_utc(*utc, offset))
     }
     // TODO: A local time from a UTC timestamp is never ambiguous,
-    // but this still returns `Result<T,E>`. If it reall is not ambiguous,
+    // but this still returns `Result<T,E>`. If it really is not ambiguous,
     // make sure that `inner::naive_to_local` returns `T` first.
     #[cfg(not(all(
         target_arch = "wasm32",

@@ -76,10 +76,8 @@ impl Utc {
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
     pub fn now() -> Result<DateTime<Utc>, Error> {
-        use std::convert::TryFrom;
-
         let now = js_sys::Date::new_0();
-        DateTime::<Utc>::try_from(now)
+        Ok(DateTime::<Utc>::from(now))
     }
 }
 
