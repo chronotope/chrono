@@ -790,7 +790,7 @@ fn test_parse_datetime_utc() {
     }
 
     // some invalid cases
-    // since `ParseErrorKind` is private, all we can do is to check if there was an error
+    // TODO: check the error type
     let invalid = [
         "",                                                          // empty
         "Z",                                                         // missing data
@@ -1646,8 +1646,8 @@ fn test_from_system_time() -> Result<(), crate::Error> {
     {
         assert_eq!(SystemTime::from(epoch.with_timezone(&Local)?), UNIX_EPOCH);
     }
-    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400)?)), UNIX_EPOCH);
-    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800)?)), UNIX_EPOCH);
+    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400)?)?), UNIX_EPOCH);
+    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800)?)?), UNIX_EPOCH);
     Ok(())
 }
 

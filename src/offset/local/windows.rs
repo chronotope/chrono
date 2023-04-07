@@ -239,7 +239,7 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
 macro_rules! call {
     ($name:ident($($arg:expr),*)) => {
         if $name($($arg),*) == 0 {
-            return Err(error::Error::SystemError(io::Error::last_os_error()))
+            return Err(Error::SystemError(io::Error::last_os_error()))
         }
     }
 }

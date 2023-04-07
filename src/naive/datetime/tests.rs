@@ -234,7 +234,7 @@ fn test_datetime_from_str() {
     }
 
     // some invalid cases
-    // since `ParseErrorKind` is private, all we can do is to check if there was an error
+    // TODO: check the error type
     let invalid = [
         "",                                                         // empty
         "x",                                                        // invalid / missing data

@@ -194,7 +194,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             #[cfg(all(windows, feature = "clock"))]
-            ErrorKind::SystemError(error) => Some(error),
+            Error::SystemError(error) => Some(error),
             _ => None,
         }
     }
