@@ -22,8 +22,8 @@ use windows_sys::Win32::System::Time::SystemTimeToTzSpecificLocalTime;
 use windows_sys::Win32::System::Time::TzSpecificLocalTimeToSystemTime;
 
 use super::{FixedOffset, Local};
-use crate::Error;
 use crate::offset::LocalResult;
+use crate::Error;
 use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 pub(super) fn now() -> Result<DateTime<Local>, Error> {

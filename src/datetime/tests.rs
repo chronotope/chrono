@@ -1609,13 +1609,15 @@ fn test_from_system_time() -> Result<(), crate::Error> {
     assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
-        Utc.from_local_datetime(&NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 39, nanos)?)?.single()?
+        Utc.from_local_datetime(&NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 39, nanos)?)?
+            .single()?
     );
     assert_eq!(
         DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
         Utc.from_local_datetime(
             &NaiveDate::from_ymd(1938, 4, 24)?.and_hms_nano(22, 13, 20, 1_000)?
-        )?.single()?
+        )?
+        .single()?
     );
 
     // DateTime<Utc> -> SystemTime
@@ -1644,14 +1646,8 @@ fn test_from_system_time() -> Result<(), crate::Error> {
     {
         assert_eq!(SystemTime::from(epoch.with_timezone(&Local)?), UNIX_EPOCH);
     }
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400)?)),
-        UNIX_EPOCH
-    );
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800)?)),
-        UNIX_EPOCH
-    );
+    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400)?)), UNIX_EPOCH);
+    assert_eq!(SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800)?)), UNIX_EPOCH);
     Ok(())
 }
 
