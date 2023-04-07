@@ -2,6 +2,7 @@
 // See README.md and LICENSE.txt for details.
 
 use core::fmt;
+#[cfg(feature = "std")]
 use std::time::SystemTimeError;
 
 /// Chrono error
@@ -55,35 +56,52 @@ pub enum Error {
 
     /// Date time error
     DateTime(&'static str),
+
     /// Local time type search error
     FindLocalTimeType(&'static str),
+
     /// Local time type error
     LocalTimeType(&'static str),
+
     /// Invalid slice for integer conversion
     InvalidSlice(&'static str),
+
     /// Invalid Tzif file
     InvalidTzFile(&'static str),
+
     /// Invalid TZ string
     InvalidTzString(&'static str),
+
     /// I/O error
+    #[cfg(feature = "std")]
     Io(std::io::ErrorKind),
+
     /// Out of range error
     OutOfRange(&'static str),
+
     /// Integer parsing error
     ParseInt(core::num::ParseIntError),
+
     /// Date time projection error
     ProjectDateTime(&'static str),
+
     /// System time error
     SystemTime,
+
     /// Time zone error
     TimeZone(&'static str),
+
     /// Transition rule error
     TransitionRule(&'static str),
+
     /// Unsupported Tzif file
     UnsupportedTzFile(&'static str),
+
     /// Unsupported TZ string
     UnsupportedTzString(&'static str),
+
     /// UTF-8 error
+    #[cfg(feature = "std")]
     Utf8(core::str::Utf8Error),
 
     /// Error when tryint to convert from int
@@ -139,6 +157,8 @@ impl fmt::Display for Error {
             Error::InvalidSlice(error) => error.fmt(f),
             Error::InvalidTzString(error) => write!(f, "invalid TZ string: {}", error),
             Error::InvalidTzFile(error) => error.fmt(f),
+
+            #[cfg(feature = "std")]
             Error::Io(error) => error.fmt(f),
             Error::OutOfRange(error) => error.fmt(f),
             Error::ParseInt(error) => error.fmt(f),
@@ -148,6 +168,8 @@ impl fmt::Display for Error {
             Error::TimeZone(error) => write!(f, "invalid time zone: {}", error),
             Error::UnsupportedTzFile(error) => error.fmt(f),
             Error::UnsupportedTzString(error) => write!(f, "unsupported TZ string: {}", error),
+            
+            #[cfg(feature = "std")]
             Error::Utf8(error) => error.fmt(f),
 
             Error::TryFromIntError => write!(f, "failed to convert int"),
@@ -178,6 +200,7 @@ impl std::error::Error for Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<std::string::FromUtf8Error> for Error {
     fn from(_: std::string::FromUtf8Error) -> Self {
         Error::FromUtf8Error
@@ -190,6 +213,7 @@ impl From<core::num::TryFromIntError> for Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<std::io::Error> for Error {
     fn from(error: std::io::Error) -> Self {
         Error::Io(error.kind())
@@ -202,21 +226,17 @@ impl From<core::num::ParseIntError> for Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<SystemTimeError> for Error {
     fn from(_: SystemTimeError) -> Self {
         Error::SystemTime
     }
 }
 
+#[cfg(feature = "std")]
 impl From<core::str::Utf8Error> for Error {
     fn from(error: core::str::Utf8Error) -> Self {
         Error::Utf8(error)
     }
 }
 
-#[cfg(feature = "serde")]
-impl From<serde_json::Error> for Error {
-    fn from(_: serde_json::Error) -> Self {
-        Error::SerializationError
-    }
-}

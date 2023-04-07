@@ -101,10 +101,6 @@ const fn span_for_digits(digits: u16) -> u32 {
 /// `TimeDelta` or the `DateTime` are too big to represented as nanoseconds. They
 /// will also fail if the `TimeDelta` is bigger than the timestamp.
 pub trait DurationRound: Sized {
-    /// Error that can occur in rounding or truncating
-    #[cfg(not(any(feature = "std", test)))]
-    type Err: fmt::Debug + fmt::Display;
-
     /// Return a copy rounded by TimeDelta.
     ///
     /// # Example

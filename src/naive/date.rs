@@ -788,7 +788,6 @@ impl NaiveDate {
     }
 
     /// Makes a new `NaiveDateTime` with the time set to midnight.
-    #[cfg(feature = "clock")]
     pub(crate) fn and_midnight(&self) -> NaiveDateTime {
         self.and_time(NaiveTime::MIDNIGHT)
     }

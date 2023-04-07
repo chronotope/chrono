@@ -300,8 +300,8 @@ pub trait TimeZone: Sized + Clone {
     #[allow(clippy::wrong_self_convention)]
     #[allow(deprecated)]
     fn from_local_date(&self, local: &NaiveDate) -> Result<LocalResult<Date<Self>>, Error> {
-        // TODO: This might be total nonsense, but the functionality is required at quite a few places
-        // Is the default time of a day midnight or noon?
+        // TODO: The functionality is required at quite a few places
+        // As seen in other instances, midnight is assumed to be the default time
         Ok(self
             .offset_from_local_date(local)?
             .map(|offset| Date::from_utc((local.and_midnight() - offset.fix()).date(), offset)))
