@@ -22,8 +22,8 @@ use windows_sys::Win32::System::Time::SystemTimeToTzSpecificLocalTime;
 use windows_sys::Win32::System::Time::TzSpecificLocalTimeToSystemTime;
 
 use super::{FixedOffset, Local};
-use crate::offset::LocalResult;
 use crate::Error;
+use crate::offset::LocalResult;
 use crate::{DateTime, Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 pub(super) fn now() -> Result<DateTime<Local>, Error> {
@@ -239,7 +239,7 @@ fn system_time_to_tm(sys: &SYSTEMTIME, tm: &mut Tm) {
 macro_rules! call {
     ($name:ident($($arg:expr),*)) => {
         if $name($($arg),*) == 0 {
-            return Err(io::Error::last_os_error())
+            return Err(error::Error::SystemError(io::Error::last_os_error()))
         }
     }
 }
