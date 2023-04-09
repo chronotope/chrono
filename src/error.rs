@@ -23,8 +23,6 @@ pub enum Error {
     MissingDate,
     #[cfg(all(windows, feature = "clock"))]
     SystemTimeBeforeEpoch,
-    #[cfg(all(windows, feature = "clock"))]
-    SystemError(std::io::Error),
 
     /// Given field is out of permitted range.
     ParsingOutOfRange,
@@ -139,10 +137,10 @@ impl fmt::Display for Error {
             Error::AmbiguousDate => write!(f, "tried to operate over ambiguous date"),
             #[cfg(all(unix, feature = "clock"))]
             Error::MissingDate => write!(f, "missing date"),
+
             #[cfg(all(windows, feature = "clock"))]
             Error::SystemTimeBeforeEpoch => write!(f, "system time before Unix epoch"),
-            #[cfg(all(windows, feature = "clock"))]
-            Error::SystemError(error) => write!(f, "system error: {}", error),
+
             Error::ParsingOutOfRange => write!(f, "input is out of range"),
             Error::ParsingImpossible => write!(f, "no possible date and time matching input"),
             Error::ParsingNotEnough => write!(f, "input is not enough for unique date and time"),
@@ -185,17 +183,6 @@ impl fmt::Display for Error {
             Error::TimestampExceedsLimit => write!(f, "timestamp exceeds num_nanoseconds limit"),
 
             Error::SerializationError => write!(f, "date could not be serialized"),
-        }
-    }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            #[cfg(all(windows, feature = "clock"))]
-            Error::SystemError(error) => Some(error),
-            _ => None,
         }
     }
 }
