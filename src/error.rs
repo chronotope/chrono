@@ -238,11 +238,10 @@ impl From<serde_json::Error> for Error {
 #[test]
 #[cfg(feature = "std")]
 fn test_io() -> Result<(), Error> {
-
     fn fail() -> Result<(), Error> {
         Err(std::io::Error::last_os_error().into())
     }
-    
+
     assert!(fail().is_err());
     Ok(())
 }
