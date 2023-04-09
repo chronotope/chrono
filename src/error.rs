@@ -10,17 +10,24 @@ use std::time::SystemTimeError;
 pub enum Error {
     /// Invalid date
     InvalidDate,
+
     /// Invalid time
     InvalidTime,
+
     /// Invalid date time
     InvalidDateTime,
+
     /// Invalid time zone
     InvalidTimeZone,
+
     /// Ambigious date
     AmbiguousDate,
+
     /// Missing date
     #[cfg(all(unix, feature = "clock"))]
     MissingDate,
+
+    /// Time before the the given epoch
     #[cfg(all(windows, feature = "clock"))]
     SystemTimeBeforeEpoch,
 
@@ -227,6 +234,7 @@ impl From<core::str::Utf8Error> for Error {
     }
 }
 
+#[cfg(test)]
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl From<serde_json::Error> for Error {
