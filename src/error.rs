@@ -234,9 +234,7 @@ impl From<core::str::Utf8Error> for Error {
     }
 }
 
-#[cfg(test)]
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl From<serde_json::Error> for Error {
     fn from(_: serde_json::Error) -> Self {
         Error::SerializationError
@@ -245,9 +243,20 @@ impl From<serde_json::Error> for Error {
 
 #[test]
 #[cfg(feature = "std")]
-fn test_io() -> Result<(), Error> {
+fn test_error_io() -> Result<(), Error> {
     fn fail() -> Result<(), Error> {
         Err(std::io::Error::last_os_error().into())
+    }
+
+    assert!(fail().is_err());
+    Ok(())
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_error_serde() -> Result<(), Error> {
+    fn fail() -> Result<(), Error> {
+        Err(serde_json::Error::from(serde::ser::Error::custom("serde error test")).into())
     }
 
     assert!(fail().is_err());
