@@ -301,10 +301,7 @@ mod tests {
     #[test]
     fn test_local_date_sanity_check() -> Result<(), Error> {
         // issue #27
-        assert_eq!(
-            Local.with_ymd_and_hms(2999, 12, 28, 0, 0, 0)?.single()?.day(),
-            28
-        );
+        assert_eq!(Local.with_ymd_and_hms(2999, 12, 28, 0, 0, 0)?.single()?.day(), 28);
         Ok(())
     }
 
