@@ -334,8 +334,14 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
             offset_hours(-7)
         } else if equals(name, "pst") {
             offset_hours(-8)
+        } else if name.len() == 1 {
+            match name.as_bytes()[0] {
+                // recommended by RFC 2822: consume but treat it as -0000
+                b'a'..=b'i' | b'k'..=b'z' | b'A'..=b'I' | b'K'..=b'Z' => offset_hours(0),
+                _ => Ok((s, None)),
+            }
         } else {
-            Ok((s, None)) // recommended by RFC 2822: consume but treat it as -0000
+            Ok((s, None))
         }
     } else {
         let (s_, offset) = timezone_offset(s, |s| Ok(s))?;
