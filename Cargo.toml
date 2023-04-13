@@ -16,11 +16,11 @@ edition = "2018"
 name = "chrono"
 
 [features]
-default = ["clock", "std", "wasmbind"]
+default = ["clock", "std", "wasmbind", "iana-time-zone"]
 alloc = []
 libc = []
 std = []
-clock = ["std", "windows-sys", "iana-time-zone"]
+clock = ["std", "windows-sys"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
 __internal_bench = ["criterion"]

@@ -78,10 +78,16 @@ const TZDB_LOCATION: &str = "/usr/share/lib/zoneinfo";
 #[cfg(not(any(target_os = "android", target_os = "aix")))]
 const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
 
+#[cfg(feature = "iana-time-zone")]
 fn fallback_timezone() -> Option<TimeZone> {
     let tz_name = iana_time_zone::get_timezone().ok()?;
     let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).ok()?;
     TimeZone::from_tz_data(&bytes).ok()
+}
+
+#[cfg(not(feature = "iana-time-zone"))]
+fn fallback_timezone() -> Option<TimeZone> {
+    None
 }
 
 impl Default for Cache {
