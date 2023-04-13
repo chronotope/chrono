@@ -854,9 +854,11 @@ fn test_rfc2822() {
         ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset
         ("6 Jun 1944 04:00:00Z", Err(INVALID)),            // bad offset (zulu not allowed)
         ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named time zone
-        // named timezones
+        // named timezones that have specific timezone offsets
+        // see https://www.rfc-editor.org/rfc/rfc2822#section-4.3
         ("Tue, 20 Jan 2015 17:35:20 GMT", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
         ("Tue, 20 Jan 2015 17:35:20 UT", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
+        ("Tue, 20 Jan 2015 17:35:20 ut", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
         ("Tue, 20 Jan 2015 17:35:20 EDT", Ok("Tue, 20 Jan 2015 17:35:20 -0400")),
         ("Tue, 20 Jan 2015 17:35:20 EST", Ok("Tue, 20 Jan 2015 17:35:20 -0500")),
         ("Tue, 20 Jan 2015 17:35:20 CDT", Ok("Tue, 20 Jan 2015 17:35:20 -0500")),
@@ -865,9 +867,15 @@ fn test_rfc2822() {
         ("Tue, 20 Jan 2015 17:35:20 MST", Ok("Tue, 20 Jan 2015 17:35:20 -0700")),
         ("Tue, 20 Jan 2015 17:35:20 PDT", Ok("Tue, 20 Jan 2015 17:35:20 -0700")),
         ("Tue, 20 Jan 2015 17:35:20 PST", Ok("Tue, 20 Jan 2015 17:35:20 -0800")),
+        ("Tue, 20 Jan 2015 17:35:20 pst", Ok("Tue, 20 Jan 2015 17:35:20 -0800")),
+        // named single-letter military timezones must fallback to +0000
         ("Tue, 20 Jan 2015 17:35:20 Z", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
         ("Tue, 20 Jan 2015 17:35:20 A", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
+        ("Tue, 20 Jan 2015 17:35:20 a", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
         ("Tue, 20 Jan 2015 17:35:20 K", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
+        ("Tue, 20 Jan 2015 17:35:20 k", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
+        // named single-letter timezone "J" is specifically not valid
+        ("Tue, 20 Jan 2015 17:35:20 J", Err(NOT_ENOUGH)),
     ];
 
     fn rfc2822_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
