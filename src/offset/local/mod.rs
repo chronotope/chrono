@@ -330,7 +330,7 @@ mod tests {
     #[test]
     fn verify_correct_offsets_distant_past() {
         // let distant_past = Local::now() - Duration::days(365 * 100);
-        let distant_past = Local::now() - Duration::days(250 * 31);
+        let distant_past = Local::now() - Duration::days(365 * 500);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + Duration::days(250 * 31);
+        let distant_future = Local::now() + Duration::days(365 * 35000);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 
