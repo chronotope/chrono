@@ -554,6 +554,28 @@ impl NaiveDateTime {
         self.time.nanosecond()
     }
 
+    /// Associated this `NaiveDateTime` with a [`TimeZone`], turning it into a [`DateTime`].
+    ///
+    /// Note that not all datetimes may be valid in the target timezone, or a datetime may be
+    /// ambiguous. Use the methods on [`LocalResult`] to handle such cases.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{Local, NaiveDate};
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(3, 5, 7).unwrap();
+    /// let timezone = Local;
+    /// let d_local = d.with_timezone(&timezone).latest().unwrap();
+    ///
+    /// assert_eq!(d_local.naive_local(), d)
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn with_timezone<Tz: TimeZone>(&self, tz: &Tz) -> LocalResult<DateTime<Tz>> {
+        tz.from_local_datetime(self)
+    }
+
     /// Adds given `Duration` to the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
