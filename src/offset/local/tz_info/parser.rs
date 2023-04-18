@@ -7,7 +7,6 @@ use super::rule::TransitionRule;
 use super::timezone::{LeapSecond, LocalTimeType, TimeZone, Transition};
 use super::Error;
 
-#[allow(clippy::map_clone)] // MSRV: 1.36
 pub(super) fn parse(bytes: &[u8]) -> Result<TimeZone, Error> {
     let mut cursor = Cursor::new(bytes);
     let state = State::new(&mut cursor, true)?;
@@ -66,8 +65,8 @@ pub(super) fn parse(bytes: &[u8]) -> Result<TimeZone, Error> {
         leap_seconds.push(LeapSecond::new(unix_leap_time, correction));
     }
 
-    let std_walls_iter = state.std_walls.iter().map(|&i| i).chain(iter::repeat(0));
-    let ut_locals_iter = state.ut_locals.iter().map(|&i| i).chain(iter::repeat(0));
+    let std_walls_iter = state.std_walls.iter().copied().chain(iter::repeat(0));
+    let ut_locals_iter = state.ut_locals.iter().copied().chain(iter::repeat(0));
     if std_walls_iter.zip(ut_locals_iter).take(state.header.type_count).any(|pair| pair == (0, 1)) {
         return Err(Error::InvalidTzFile(
             "invalid couple of standard/wall and UT/local indicators",
