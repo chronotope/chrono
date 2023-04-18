@@ -12,8 +12,8 @@ use crate::Weekday;
 
 /// Returns true when two slices are equal case-insensitively (in ASCII).
 /// Assumes that the `pattern` is already converted to lower case.
-fn equals(s: &str, pattern: &str) -> bool {
-    let mut xs = s.as_bytes().iter().map(|&c| match c {
+fn equals(s: &[u8], pattern: &str) -> bool {
+    let mut xs = s.iter().map(|&c| match c {
         b'A'..=b'Z' => c + 32,
         _ => c,
     });
@@ -152,7 +152,7 @@ pub(super) fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
 
     // tries to consume the suffix if possible
     let suffix = LONG_MONTH_SUFFIXES[month0 as usize];
-    if s.len() >= suffix.len() && equals(&s[..suffix.len()], suffix) {
+    if s.len() >= suffix.len() && equals(&s.as_bytes()[..suffix.len()], suffix) {
         s = &s[suffix.len()..];
     }
 
@@ -170,7 +170,7 @@ pub(super) fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
 
     // tries to consume the suffix if possible
     let suffix = LONG_WEEKDAY_SUFFIXES[weekday.num_days_from_monday() as usize];
-    if s.len() >= suffix.len() && equals(&s[..suffix.len()], suffix) {
+    if s.len() >= suffix.len() && equals(&s.as_bytes()[..suffix.len()], suffix) {
         s = &s[suffix.len()..];
     }
 
@@ -322,7 +322,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
         })
         .unwrap_or(s.len());
     if upto > 0 {
-        let name = &s[..upto];
+        let name = &s.as_bytes()[..upto];
         let s = &s[upto..];
         let offset_hours = |o| Ok((s, Some(o * 3600)));
         if equals(name, "gmt") || equals(name, "ut") {
@@ -338,7 +338,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
         } else if equals(name, "pst") {
             offset_hours(-8)
         } else if name.len() == 1 {
-            match name.as_bytes()[0] {
+            match name[0] {
                 // recommended by RFC 2822: consume but treat it as -0000
                 b'a'..=b'i' | b'k'..=b'z' | b'A'..=b'I' | b'K'..=b'Z' => offset_hours(0),
                 _ => Ok((s, None)),
