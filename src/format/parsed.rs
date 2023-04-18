@@ -106,6 +106,7 @@ pub struct Parsed {
     pub offset: Option<i32>,
 
     /// A dummy field to make this type not fully destructible (required for API stability).
+    // TODO: Change this to `#[non_exhaustive]` (on the enum) with the next breaking release.
     _dummy: (),
 }
 

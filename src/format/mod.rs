@@ -386,7 +386,7 @@ pub enum ParseErrorKind {
     /// There was an error on the formatting string, or there were non-supported formating items.
     BadFormat,
 
-    // TODO: Change this to `#[non_exhaustive]` (on the enum) when MSRV is increased
+    // TODO: Change this to `#[non_exhaustive]` (on the enum) with the next breaking release.
     #[doc(hidden)]
     __Nonexhaustive,
 }
