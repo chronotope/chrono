@@ -33,7 +33,7 @@ use crate::oldtime::Duration as OldDuration;
 #[allow(deprecated)]
 use crate::Date;
 use crate::Months;
-use crate::{Datelike, Timelike, Weekday};
+use crate::{Datelike, LocalResult, Timelike, Weekday};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -323,6 +323,24 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
         tz.from_utc_datetime(&self.datetime)
+    }
+
+    /// Set the time to a new fixed time on the existing date, taking into account timezone
+    /// effects such as DST transitions.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::{Local, NaiveTime};
+    /// let midnight = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+    /// let today_midnight = Local::now().set_time(midnight);
+    ///
+    /// assert_eq!(today_midnight.unwrap().time(), midnight);
+    /// ```
+    #[must_use]
+    pub fn set_time(&self, time: NaiveTime) -> LocalResult<Self> {
+        let timezone: Tz = TimeZone::from_offset(&self.offset);
+        timezone.from_local_datetime(&self.date_naive().and_time(time))
     }
 
     /// Adds given `Duration` to the current date and time.
