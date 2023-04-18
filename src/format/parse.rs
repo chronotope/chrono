@@ -997,3 +997,11 @@ fn test_rfc3339() {
         }
     }
 }
+
+#[cfg(test)]
+#[test]
+fn test_issue_1010() {
+    let dt = crate::NaiveDateTime::parse_from_str("\u{c}SUN\u{e}\u{3000}\0m@J\u{3000}\0\u{3000}\0m\u{c}!\u{c}\u{b}\u{c}\u{c}\u{c}\u{c}%A\u{c}\u{b}\0SU\u{c}\u{c}",
+    "\u{c}\u{c}%A\u{c}\u{b}\0SUN\u{c}\u{c}\u{c}SUNN\u{c}\u{c}\u{c}SUN\u{c}\u{c}!\u{c}\u{b}\u{c}\u{c}\u{c}\u{c}%A\u{c}\u{b}%a");
+    assert_eq!(dt, Err(ParseError(ParseErrorKind::Invalid)));
+}
