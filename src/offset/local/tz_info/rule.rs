@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use super::parser::Cursor;
 use super::timezone::{LocalTimeType, SECONDS_PER_WEEK};
 use super::{
-    rem_euclid, Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
+    Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
     SECONDS_PER_DAY,
 };
 
@@ -589,9 +589,9 @@ impl RuleDay {
                 }
 
                 let week_day_of_first_month_day =
-                    rem_euclid(4 + days_since_unix_epoch(year, month, 1), DAYS_PER_WEEK);
+                    (4 + days_since_unix_epoch(year, month, 1)).rem_euclid(DAYS_PER_WEEK);
                 let first_week_day_occurence_in_month =
-                    1 + rem_euclid(week_day as i64 - week_day_of_first_month_day, DAYS_PER_WEEK);
+                    1 + (week_day as i64 - week_day_of_first_month_day).rem_euclid(DAYS_PER_WEEK);
 
                 let mut month_day =
                     first_week_day_occurence_in_month + (week as i64 - 1) * DAYS_PER_WEEK;
