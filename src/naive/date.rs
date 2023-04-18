@@ -1559,7 +1559,8 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month0 + 1)?)
+        let month = month0.checked_add(1)?;
+        self.with_mdf(self.mdf().with_month(month)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1597,7 +1598,8 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day0 + 1)?)
+        let day = day0.checked_add(1)?;
+        self.with_mdf(self.mdf().with_day(day)?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
@@ -1645,7 +1647,8 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
-        self.with_of(self.of().with_ordinal(ordinal0 + 1)?)
+        let ordinal = ordinal0.checked_add(1)?;
+        self.with_of(self.of().with_ordinal(ordinal)?)
     }
 }
 
@@ -3031,5 +3034,13 @@ mod tests {
                 assert!((base + Days::new(dplus)).weeks_from(*day) < 54)
             }
         }
+    }
+
+    #[test]
+    fn test_with_0_overflow() {
+        let dt = NaiveDate::from_ymd_opt(2023, 4, 18).unwrap();
+        assert!(dt.with_month0(4294967295).is_none());
+        assert!(dt.with_day0(4294967295).is_none());
+        assert!(dt.with_ordinal0(4294967295).is_none());
     }
 }
