@@ -620,8 +620,8 @@ fn saturating_abs(v: i32) -> i32 {
 
 // Possible system timezone directories
 #[cfg(unix)]
-const ZONE_INFO_DIRECTORIES: [&str; 3] =
-    ["/usr/share/zoneinfo", "/share/zoneinfo", "/etc/zoneinfo"];
+const ZONE_INFO_DIRECTORIES: [&str; 4] =
+    ["/usr/share/zoneinfo", "/share/zoneinfo", "/etc/zoneinfo", "/usr/share/lib/zoneinfo"];
 
 /// Number of seconds in one week
 pub(crate) const SECONDS_PER_WEEK: i64 = SECONDS_PER_DAY * DAYS_PER_WEEK;
