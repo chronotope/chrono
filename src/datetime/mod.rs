@@ -325,6 +325,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
         tz.from_utc_datetime(&self.datetime)
     }
 
+    /// Fix the offset from UTC to its current value, dropping the associated timezone information.
+    /// This it useful for converting a generic `DateTime<Tz: Timezone>` to `DateTime<FixedOffset>`.
+    #[inline]
+    #[must_use]
+    pub fn fixed_offset(&self) -> DateTime<FixedOffset> {
+        self.with_timezone(&self.offset().fix())
+    }
+
     /// Adds given `Duration` to the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
