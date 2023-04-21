@@ -47,6 +47,7 @@ mod tests;
 /// future, so exhaustive matching in external code is not recommended.
 ///
 /// See the `TimeZone::to_rfc3339_opts` function for usage.
+#[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.
@@ -68,10 +69,6 @@ pub enum SecondsFormat {
     /// display all available non-zero sub-second digits.  This corresponds to
     /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond).
     AutoSi,
-
-    // Do not match against this.
-    #[doc(hidden)]
-    __NonExhaustive,
 }
 
 /// ISO 8601 combined date and time with time zone.
@@ -699,8 +696,6 @@ where
         use crate::format::Pad::Zero;
         use crate::SecondsFormat::*;
 
-        debug_assert!(secform != __NonExhaustive, "Do not use __NonExhaustive!");
-
         const PREFIX: &[Item<'static>] = &[
             Item::Numeric(Year, Zero),
             Item::Literal("-"),
@@ -721,7 +716,6 @@ where
             Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
             Nanos => Some(Item::Fixed(Fixed::Nanosecond9)),
             AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
-            __NonExhaustive => unreachable!(),
         };
 
         let tzitem = Item::Fixed(if use_z {
