@@ -12,12 +12,7 @@ use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::Sys
 
 use super::tz_info::TimeZone;
 use super::{DateTime, FixedOffset, Local, NaiveDateTime};
-use crate::{Datelike, LocalResult, Utc};
-
-pub(super) fn now() -> DateTime<Local> {
-    let now = Utc::now().naive_utc();
-    naive_to_local(&now, false).unwrap()
-}
+use crate::{Datelike, LocalResult};
 
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
     TZ_INFO.with(|maybe_cache| {
