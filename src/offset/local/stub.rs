@@ -13,10 +13,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use super::{FixedOffset, Local};
 use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
-pub(super) fn now() -> DateTime<Local> {
-    tm_to_datetime(Timespec::now().local())
-}
-
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 #[cfg(not(all(
     target_arch = "wasm32",
@@ -92,13 +88,6 @@ struct Timespec {
 }
 
 impl Timespec {
-    /// Constructs a timespec representing the current time in UTC.
-    fn now() -> Timespec {
-        let st =
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        Timespec { sec: st.as_secs() as i64, nsec: st.subsec_nanos() as i32 }
-    }
-
     /// Converts this timespec into the system's local time.
     fn local(self) -> Tm {
         let mut tm = Tm {

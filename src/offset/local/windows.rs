@@ -15,7 +15,6 @@ use std::result::Result;
 
 use winapi::shared::minwindef::FILETIME;
 use winapi::um::minwinbase::SYSTEMTIME;
-use winapi::um::sysinfoapi::GetLocalTime;
 use winapi::um::timezoneapi::{
     SystemTimeToFileTime, SystemTimeToTzSpecificLocalTime, TzSpecificLocalTimeToSystemTime,
 };
@@ -40,10 +39,6 @@ macro_rules! windows_sys_call {
 const HECTONANOSECS_IN_SEC: i64 = 10_000_000;
 const HECTONANOSEC_TO_UNIX_EPOCH: i64 = 11_644_473_600 * HECTONANOSECS_IN_SEC;
 
-pub(super) fn now() -> DateTime<Local> {
-    LocalSysTime::local().datetime()
-}
-
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
 pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
     let naive_sys_time = system_time_from_naive_date_time(d);
@@ -65,16 +60,6 @@ struct LocalSysTime {
 }
 
 impl LocalSysTime {
-    fn local() -> Self {
-        let mut now = MaybeUninit::<SYSTEMTIME>::uninit();
-        unsafe { GetLocalTime(now.as_mut_ptr()) }
-        // SAFETY: GetLocalTime cannot fail according to spec, so we can assume the value
-        // is initialized.
-        let st = unsafe { now.assume_init() };
-
-        Self::from_local_time(st).expect("Current local time must exist")
-    }
-
     fn from_utc_time(utc_time: SYSTEMTIME) -> Result<Self, Error> {
         let local_time = utc_to_local_time(&utc_time)?;
         let utc_secs = system_time_as_unix_seconds(&utc_time)?;

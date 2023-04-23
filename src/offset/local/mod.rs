@@ -10,7 +10,8 @@ use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 #[allow(deprecated)]
-use crate::{Date, DateTime};
+use crate::Date;
+use crate::{DateTime, Utc};
 
 // we don't want `stub.rs` when the target_os is not wasi or emscripten
 // as we use js-sys to get the date instead
@@ -74,7 +75,7 @@ impl Local {
     )))]
     #[must_use]
     pub fn now() -> DateTime<Local> {
-        inner::now()
+        Utc::now().with_timezone(&Local)
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
