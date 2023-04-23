@@ -6,7 +6,6 @@
 use core::fmt;
 use core::ops::{Add, Sub};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -142,8 +141,10 @@ impl fmt::Debug for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let offset = self.local_minus_utc;
         let (sign, offset) = if offset < 0 { ('-', -offset) } else { ('+', offset) };
-        let (mins, sec) = div_mod_floor(offset, 60);
-        let (hour, min) = div_mod_floor(mins, 60);
+        let sec = offset.rem_euclid(60);
+        let mins = offset.div_euclid(60);
+        let min = mins.rem_euclid(60);
+        let hour = mins.div_euclid(60);
         if sec == 0 {
             write!(f, "{}{:02}:{:02}", sign, hour, min)
         } else {

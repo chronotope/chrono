@@ -17,7 +17,6 @@
 
 use crate::Weekday;
 use core::{fmt, i32};
-use num_integer::{div_rem, mod_floor};
 use num_traits::FromPrimitive;
 
 /// The internal date representation. This also includes the packed `Mdf` value.
@@ -95,7 +94,8 @@ static YEAR_DELTAS: [u8; 401] = [
 ];
 
 pub(super) fn cycle_to_yo(cycle: u32) -> (u32, u32) {
-    let (mut year_mod_400, mut ordinal0) = div_rem(cycle, 365);
+    let mut year_mod_400 = cycle / 365;
+    let mut ordinal0 = cycle % 365;
     let delta = u32::from(YEAR_DELTAS[year_mod_400 as usize]);
     if ordinal0 < delta {
         year_mod_400 -= 1;
@@ -116,7 +116,7 @@ impl YearFlags {
     #[inline]
     #[must_use]
     pub fn from_year(year: i32) -> YearFlags {
-        let year = mod_floor(year, 400);
+        let year = year.rem_euclid(400);
         YearFlags::from_year_mod_400(year)
     }
 

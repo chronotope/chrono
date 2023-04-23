@@ -9,7 +9,6 @@ use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -210,7 +209,8 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        let (days, secs) = div_mod_floor(secs, 86_400);
+        let days = secs.div_euclid(86_400);
+        let secs = secs.rem_euclid(86_400);
         let date = days
             .to_i32()
             .and_then(|days| days.checked_add(719_163))
