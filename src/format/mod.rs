@@ -512,8 +512,6 @@ fn format_inner(
 ) -> fmt::Result {
     let locale = Locales::new(locale);
 
-    use num_integer::{div_floor, mod_floor};
-
     match *item {
         Item::Literal(s) | Item::Space(s) => result.push_str(s),
         #[cfg(any(feature = "alloc", feature = "std", test))]
@@ -527,11 +525,11 @@ fn format_inner(
 
             let (width, v) = match *spec {
                 Year => (4, date.map(|d| i64::from(d.year()))),
-                YearDiv100 => (2, date.map(|d| div_floor(i64::from(d.year()), 100))),
-                YearMod100 => (2, date.map(|d| mod_floor(i64::from(d.year()), 100))),
+                YearDiv100 => (2, date.map(|d| i64::from(d.year()).div_euclid(100))),
+                YearMod100 => (2, date.map(|d| i64::from(d.year()).rem_euclid(100))),
                 IsoYear => (4, date.map(|d| i64::from(d.iso_week().year()))),
-                IsoYearDiv100 => (2, date.map(|d| div_floor(i64::from(d.iso_week().year()), 100))),
-                IsoYearMod100 => (2, date.map(|d| mod_floor(i64::from(d.iso_week().year()), 100))),
+                IsoYearDiv100 => (2, date.map(|d| i64::from(d.iso_week().year()).div_euclid(100))),
+                IsoYearMod100 => (2, date.map(|d| i64::from(d.iso_week().year()).rem_euclid(100))),
                 Month => (2, date.map(|d| i64::from(d.month()))),
                 Day => (2, date.map(|d| i64::from(d.day()))),
                 WeekFromSun => (2, date.map(|d| i64::from(week_from_sun(d)))),

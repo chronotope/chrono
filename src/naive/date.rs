@@ -9,7 +9,6 @@ use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 use num_traits::ToPrimitive;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -2035,6 +2034,10 @@ impl Default for NaiveDate {
     fn default() -> Self {
         NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()
     }
+}
+
+fn div_mod_floor(val: i32, div: i32) -> (i32, i32) {
+    (val.div_euclid(div), val.rem_euclid(div))
 }
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]

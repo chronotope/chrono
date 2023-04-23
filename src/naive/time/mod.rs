@@ -8,7 +8,6 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
-use num_integer::div_mod_floor;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -762,8 +761,10 @@ impl NaiveTime {
 
     /// Returns a triple of the hour, minute and second numbers.
     fn hms(&self) -> (u32, u32, u32) {
-        let (mins, sec) = div_mod_floor(self.secs, 60);
-        let (hour, min) = div_mod_floor(mins, 60);
+        let sec = self.secs % 60;
+        let mins = self.secs / 60;
+        let min = mins % 60;
+        let hour = mins / 60;
         (hour, min, sec)
     }
 
