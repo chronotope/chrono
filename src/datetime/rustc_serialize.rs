@@ -1,6 +1,6 @@
 #![cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
 
-use super::DateTime;
+use super::{DateTime, SecondsFormat};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, LocalResult, TimeZone, Utc};
@@ -10,7 +10,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 impl<Tz: TimeZone> Encodable for DateTime<Tz> {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
-        format!("{:?}", self).encode(s)
+        self.to_rfc3339_opts(SecondsFormat::AutoSi, true).encode(s)
     }
 }
 
