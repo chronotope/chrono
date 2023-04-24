@@ -1,7 +1,11 @@
+#[cfg(unix)]
 use chrono::offset::TimeZone;
+#[cfg(unix)]
 use chrono::Local;
+#[cfg(unix)]
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
 
+#[cfg(unix)]
 use std::{path, process};
 
 #[cfg(unix)]
