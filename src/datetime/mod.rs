@@ -1241,13 +1241,6 @@ where
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:01""#.into())
     );
-    assert_eq!(
-        to_string_fixed(
-            &FixedOffset::east_opt(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
-        )
-        .ok(),
-        Some(r#""2014-07-24T12:34:06+01:00:50""#.into())
-    );
 }
 
 #[cfg(all(test, feature = "clock", any(feature = "rustc-serialize", feature = "serde")))]

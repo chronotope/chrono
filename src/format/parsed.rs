@@ -1209,8 +1209,8 @@ mod tests {
         );
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 1,
-                          minute: 42, second: 4, nanosecond: 12_345_678, offset: -9876),
-            ymdhmsn(2014, 12, 31, 1, 42, 4, 12_345_678, -9876)
+                          minute: 42, second: 4, nanosecond: 12_345_678, offset: -9900),
+            ymdhmsn(2014, 12, 31, 1, 42, 4, 12_345_678, -9900)
         );
         assert_eq!(
             parse!(year: 2015, ordinal: 1, hour_div_12: 0, hour_mod_12: 4,

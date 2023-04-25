@@ -55,7 +55,7 @@ impl FixedOffset {
     /// ```
     #[must_use]
     pub fn east_opt(secs: i32) -> Option<FixedOffset> {
-        if -86_400 < secs && secs < 86_400 {
+        if -86_400 < secs && secs < 86_400 && secs % 60 == 0 {
             Some(FixedOffset { local_minus_utc: secs })
         } else {
             None
@@ -88,11 +88,7 @@ impl FixedOffset {
     /// ```
     #[must_use]
     pub fn west_opt(secs: i32) -> Option<FixedOffset> {
-        if -86_400 < secs && secs < 86_400 {
-            Some(FixedOffset { local_minus_utc: -secs })
-        } else {
-            None
-        }
+        FixedOffset::east_opt(secs.wrapping_neg())
     }
 
     /// Returns the number of seconds to add to convert from UTC to the local time.
@@ -140,13 +136,9 @@ impl fmt::Debug for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let offset = self.local_minus_utc;
         let (sign, offset) = if offset < 0 { ('-', -offset) } else { ('+', offset) };
-        let (mins, sec) = div_mod_floor(offset, 60);
+        let mins = offset.div_euclid(60);
         let (hour, min) = div_mod_floor(mins, 60);
-        if sec == 0 {
-            write!(f, "{}{:02}:{:02}", sign, hour, min)
-        } else {
-            write!(f, "{}{:02}:{:02}:{:02}", sign, hour, min, sec)
-        }
+        write!(f, "{}{:02}:{:02}", sign, hour, min)
     }
 }
 
@@ -159,8 +151,8 @@ impl fmt::Display for FixedOffset {
 #[cfg(feature = "arbitrary")]
 impl arbitrary::Arbitrary<'_> for FixedOffset {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<FixedOffset> {
-        let secs = u.int_in_range(-86_399..=86_399)?;
-        let fixed_offset = FixedOffset::east_opt(secs)
+        let mins = u.int_in_range(-1439..=1439)?;
+        let fixed_offset = FixedOffset::east_opt(mins * 60)
             .expect("Could not generate a valid chrono::FixedOffset. It looks like implementation of Arbitrary for FixedOffset is erroneous.");
         Ok(fixed_offset)
     }
@@ -247,42 +239,42 @@ mod tests {
         assert_eq!(
             format!(
                 "{:?}",
-                FixedOffset::east_opt(86399)
+                FixedOffset::east_opt(86340)
                     .unwrap()
                     .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
                     .unwrap()
             ),
-            "2012-02-29T05:06:07+23:59:59".to_string()
+            "2012-02-29T05:06:07+23:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
-                FixedOffset::east_opt(86399)
+                FixedOffset::east_opt(86340)
                     .unwrap()
                     .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
                     .unwrap()
             ),
-            "2012-02-29T05:06:07+23:59:59".to_string()
+            "2012-02-29T05:06:07+23:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
-                FixedOffset::west_opt(86399)
+                FixedOffset::west_opt(86340)
                     .unwrap()
                     .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
                     .unwrap()
             ),
-            "2012-03-04T05:06:07-23:59:59".to_string()
+            "2012-03-04T05:06:07-23:59".to_string()
         );
         assert_eq!(
             format!(
                 "{:?}",
-                FixedOffset::west_opt(86399)
+                FixedOffset::west_opt(86340)
                     .unwrap()
                     .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
                     .unwrap()
             ),
-            "2012-03-04T05:06:07-23:59:59".to_string()
+            "2012-03-04T05:06:07-23:59".to_string()
         );
     }
 }
