@@ -25,7 +25,15 @@ use crate::Timelike;
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct FixedOffset {
-    local_minus_utc: i32,
+    // The offset in seconds is always a multiple of 60, and in the open-ended range (-24h, +24h).
+    // This requires 18 bits, with the last two always being 0. We encode it in an `i16` by
+    // shifting the value 2 bits.
+    local_minus_utc: i16,
+    // Niche optimization is not available on padding bytes, but adding an (unused) bool provides
+    // niches. This shrinks the size of `Option<DateTime<FixedOffset>>` from 20 to 16 bytes.
+    // See https://github.com/rust-lang/rust/issues/79531
+    #[allow(dead_code)]
+    _niche: bool,
 }
 
 impl FixedOffset {
@@ -56,7 +64,7 @@ impl FixedOffset {
     #[must_use]
     pub fn east_opt(secs: i32) -> Option<FixedOffset> {
         if -86_400 < secs && secs < 86_400 && secs % 60 == 0 {
-            Some(FixedOffset { local_minus_utc: secs })
+            Some(FixedOffset { local_minus_utc: (secs >> 2) as i16, _niche: false })
         } else {
             None
         }
@@ -94,13 +102,13 @@ impl FixedOffset {
     /// Returns the number of seconds to add to convert from UTC to the local time.
     #[inline]
     pub const fn local_minus_utc(&self) -> i32 {
-        self.local_minus_utc
+        (self.local_minus_utc as i32) << 2
     }
 
     /// Returns the number of seconds to add to convert from the local time to UTC.
     #[inline]
     pub const fn utc_minus_local(&self) -> i32 {
-        -self.local_minus_utc
+        -self.local_minus_utc()
     }
 }
 
@@ -134,7 +142,7 @@ impl Offset for FixedOffset {
 
 impl fmt::Debug for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let offset = self.local_minus_utc;
+        let offset = self.local_minus_utc();
         let (sign, offset) = if offset < 0 { ('-', -offset) } else { ('+', offset) };
         let mins = offset.div_euclid(60);
         let (hour, min) = div_mod_floor(mins, 60);
@@ -160,7 +168,7 @@ impl arbitrary::Arbitrary<'_> for FixedOffset {
 
 // addition or subtraction of FixedOffset to/from Timelike values is the same as
 // adding or subtracting the offset's local_minus_utc value
-// but keep keeps the leap second information.
+// but keep the leap second information.
 // this should be implemented more efficiently, but for the time being, this is generic right now.
 
 fn add_with_leapsecond<T>(lhs: &T, rhs: i32) -> T
@@ -178,7 +186,7 @@ impl Add<FixedOffset> for NaiveTime {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveTime {
-        add_with_leapsecond(&self, rhs.local_minus_utc)
+        add_with_leapsecond(&self, rhs.local_minus_utc())
     }
 }
 
@@ -187,7 +195,7 @@ impl Sub<FixedOffset> for NaiveTime {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveTime {
-        add_with_leapsecond(&self, -rhs.local_minus_utc)
+        add_with_leapsecond(&self, -rhs.local_minus_utc())
     }
 }
 
@@ -196,7 +204,7 @@ impl Add<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveDateTime {
-        add_with_leapsecond(&self, rhs.local_minus_utc)
+        add_with_leapsecond(&self, rhs.local_minus_utc())
     }
 }
 
@@ -205,7 +213,7 @@ impl Sub<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
-        add_with_leapsecond(&self, -rhs.local_minus_utc)
+        add_with_leapsecond(&self, -rhs.local_minus_utc())
     }
 }
 
@@ -214,7 +222,7 @@ impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> DateTime<Tz> {
-        add_with_leapsecond(&self, rhs.local_minus_utc)
+        add_with_leapsecond(&self, rhs.local_minus_utc())
     }
 }
 
@@ -223,7 +231,7 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> DateTime<Tz> {
-        add_with_leapsecond(&self, -rhs.local_minus_utc)
+        add_with_leapsecond(&self, -rhs.local_minus_utc())
     }
 }
 
