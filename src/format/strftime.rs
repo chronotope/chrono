@@ -71,7 +71,7 @@ The following specifiers are available both to formatting and parsing.
 | `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. [^8] |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
 | `%:z` | `+09:30` | Same as `%z` but with a colon.                                             |
-|`%::z`|`+09:30:00`| Offset from the local time to UTC with seconds.                            |
+|`%::z`|`+09:30:00`| Offset from the local time to UTC with seconds. Seconds must always be `00`. |
 |`%:::z`| `+09`    | Offset from the local time to UTC without minutes.                         |
 | `%#z` | `+09`    | *Parsing only:* Same as `%z` but allows minutes to be missing or present.  |
 |       |          |                                                                            |
