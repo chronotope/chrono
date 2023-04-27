@@ -209,10 +209,118 @@ pub trait Offset: Sized + Clone + fmt::Debug {
     fn fix(&self) -> FixedOffset;
 }
 
-/// The time zone.
+/// The [`TimeZone`] trait is the backbone of chrono, allowing it to work with local time.
 ///
-/// The methods here are the primarily constructors for [`Date`](../struct.Date.html) and
-/// [`DateTime`](../struct.DateTime.html) types.
+/// # Using `TimeZone`
+///
+/// Most methods of this trait are deprecated, it is usually better or easier to work with the
+/// methods on [`DateTime`] and [`NaiveDateTime`] instead.
+///
+/// A type implementing [`TimeZone`] can be used to create a [`DateTime`]:
+///
+/// Creating a [`DateTime`] from a [`NaiveDateTime`]:
+/// - [`from_local_datetime`](#method.from_local_datetime) if the datetime is in local time zone.
+/// - [`from_utc_datetime`](#method.from_utc_datetime) if the datetime is in UTC time zone.
+///
+/// Creating a [`DateTime`] from a Unix timestamp in UTC:
+/// - [`timestamp_opt`](#method.timestamp_opt)
+/// - [`timestamp_millis_opt`](#method.timestamp_millis_opt)
+/// - [`timestamp_nanos`](#method.timestamp_nanos)
+///
+/// Creating a [`DateTime`] from year, month, day, time components:
+/// - [`with_ymd_and_hms`](#method.with_ymd_and_hms)
+///
+/// Parsing a [`DateTime`] from a string:
+/// - [`datetime_from_str`](#method.datetime_from_str). Note that if the string contains an offset
+///   from UTC, that offset must match the timezone at that point in time.
+///
+/// # Implementing `TimeZone`
+///
+/// The primary methods are [`offset_from_local_datetime`](#tymethod.offset_from_local_datetime) and
+/// [`offset_from_utc_datetime`](#tymethod.offset_from_utc_datetime), which calculate the offset
+/// from UTC that applies at a specific datetime. That specific datetime can
+/// be given as either local or UTC.
+///
+/// [`from_offset`](#tymethod.from_offset) allows the type to be reconstructed from the associated
+/// [`Offset`] type, which gets stored in a [`DateTime`].
+///
+/// ## Example
+///
+#[cfg_attr(not(feature = "clock"), doc = "```ignore")]
+#[cfg_attr(feature = "clock", doc = "```rust")]
+/// use chrono::{FixedOffset, Local, LocalResult, NaiveDate, NaiveDateTime, Offset, TimeZone};
+///
+/// #[derive(Clone, Debug)]
+/// enum FixedOrLocal {
+///     Fixed(FixedOffset),
+///     Local(Local),
+/// }
+///
+/// impl TimeZone for FixedOrLocal {
+///     type Offset = FixedOrLocalOffset;
+///
+///     fn from_offset(offset: &Self::Offset) -> Self {
+///         match *offset {
+///             FixedOrLocalOffset::Fixed(f) => FixedOrLocal::Fixed(FixedOffset::from_offset(&f)),
+///             FixedOrLocalOffset::Local(l) => FixedOrLocal::Local(Local::from_offset(&l)),
+///         }
+///     }
+///
+///     fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<Self::Offset> {
+///         match self {
+///             FixedOrLocal::Fixed(f) => f
+///                 .offset_from_local_date(local)
+///                 .map(|o| FixedOrLocalOffset::Fixed(o)),
+///             FixedOrLocal::Local(l) => l
+///                 .offset_from_local_date(local)
+///                 .map(|o| FixedOrLocalOffset::Local(o)),
+///         }
+///     }
+///     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<Self::Offset> {
+///         match self {
+///             FixedOrLocal::Fixed(f) => f
+///                 .offset_from_local_datetime(local)
+///                 .map(|o| FixedOrLocalOffset::Fixed(o)),
+///             FixedOrLocal::Local(l) => l
+///                 .offset_from_local_datetime(local)
+///                 .map(|o| FixedOrLocalOffset::Local(o)),
+///         }
+///     }
+///
+///     fn offset_from_utc_date(&self, utc: &NaiveDate) -> Self::Offset {
+///         match self {
+///             FixedOrLocal::Fixed(f) => FixedOrLocalOffset::Fixed(f.offset_from_utc_date(utc)),
+///             FixedOrLocal::Local(l) => FixedOrLocalOffset::Local(l.offset_from_utc_date(utc)),
+///         }
+///     }
+///
+///     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset {
+///         match self {
+///             FixedOrLocal::Fixed(f) => {
+///                 FixedOrLocalOffset::Fixed(f.offset_from_utc_datetime(utc))
+///             }
+///             FixedOrLocal::Local(l) => {
+///                 FixedOrLocalOffset::Local(l.offset_from_utc_datetime(utc))
+///             }
+///         }
+///     }
+/// }
+///
+/// #[derive(Clone, Debug)]
+/// enum FixedOrLocalOffset {
+///     Fixed(FixedOffset),
+///     Local(FixedOffset),
+/// }
+///
+/// impl Offset for FixedOrLocalOffset {
+///     fn fix(&self) -> FixedOffset {
+///         match self {
+///             FixedOrLocalOffset::Fixed(f) => f.fix(),
+///             FixedOrLocalOffset::Local(l) => l.fix(),
+///         }
+///     }
+/// }
+/// ```
 pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
