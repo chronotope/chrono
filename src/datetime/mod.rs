@@ -529,10 +529,9 @@ impl From<DateTime<Local>> for DateTime<Utc> {
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
     ///
-    /// Conversion is performed via [`DateTime::with_timezone`]. Note that the converted value returned
-    /// by this will be created with a fixed timezone offset of 0.
+    /// Conversion is performed via [`DateTime::with_timezone`].
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&FixedOffset::east_opt(0).unwrap())
+        src.with_timezone(&src.offset().fix())
     }
 }
 
