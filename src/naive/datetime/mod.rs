@@ -955,7 +955,7 @@ impl NaiveDateTime {
 impl Datelike for NaiveDateTime {
     /// Returns the year number in the [calendar date](./struct.NaiveDate.html#calendar-date).
     ///
-    /// See also the [`NaiveDate::year`] method.
+    /// See also the [`NaiveDate::year`](./struct.NaiveDate.html#method.year) method.
     ///
     /// # Example
     ///
