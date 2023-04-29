@@ -16,7 +16,6 @@
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use crate::Weekday;
-use core::convert::TryFrom;
 use core::{fmt, i32};
 
 /// The internal date representation. This also includes the packed `Mdf` value.
@@ -321,9 +320,9 @@ impl Of {
     }
 
     #[inline]
-    pub(super) fn weekday(&self) -> Weekday {
+    pub(super) const fn weekday(&self) -> Weekday {
         let Of(of) = *self;
-        Weekday::try_from((((of >> 4) + (of & 0b111)) % 7) as u8).unwrap()
+        weekday_from_u32_mod7((of >> 4) + (of & 0b111))
     }
 
     #[inline]
@@ -331,7 +330,7 @@ impl Of {
         // week ordinal = ordinal + delta
         let Of(of) = *self;
         let weekord = (of >> 4).wrapping_add(self.flags().isoweek_delta());
-        (weekord / 7, Weekday::try_from((weekord % 7) as u8).unwrap())
+        (weekord / 7, weekday_from_u32_mod7(weekord))
     }
 
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
@@ -467,11 +466,28 @@ impl fmt::Debug for Mdf {
     }
 }
 
+/// Create a `Weekday` from an `u32`, with Monday = 0.
+/// Infallible, takes any `n` and applies `% 7`.
+#[inline]
+const fn weekday_from_u32_mod7(n: u32) -> Weekday {
+    match n % 7 {
+        0 => Weekday::Mon,
+        1 => Weekday::Tue,
+        2 => Weekday::Wed,
+        3 => Weekday::Thu,
+        4 => Weekday::Fri,
+        5 => Weekday::Sat,
+        _ => Weekday::Sun,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use num_iter::range_inclusive;
+    use num_traits::FromPrimitive;
     use std::u32;
 
+    use super::weekday_from_u32_mod7;
     use super::{Mdf, Of};
     use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
     use crate::Weekday;
@@ -823,5 +839,13 @@ mod tests {
                 assert_eq!(mdf, mdf.to_of().to_mdf());
             }
         }
+    }
+
+    #[test]
+    fn test_weekday_from_u32_mod7() {
+        for i in 0..=1000 {
+            assert_eq!(weekday_from_u32_mod7(i), Weekday::from_u32(i % 7).unwrap());
+        }
+        assert_eq!(weekday_from_u32_mod7(u32::MAX), Weekday::Thu);
     }
 }
