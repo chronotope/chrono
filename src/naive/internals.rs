@@ -52,7 +52,7 @@ pub(super) const FE: YearFlags = YearFlags(0o07);
 pub(super) const G: YearFlags = YearFlags(0o16);
 pub(super) const GF: YearFlags = YearFlags(0o06);
 
-static YEAR_TO_FLAGS: [YearFlags; 400] = [
+const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
     BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA,
     G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G,
     F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA, G, F,
@@ -71,7 +71,7 @@ static YEAR_TO_FLAGS: [YearFlags; 400] = [
     D, CB, A, G, F, ED, C, B, A, GF, E, D, C, // 400
 ];
 
-static YEAR_DELTAS: [u8; 401] = [
+const YEAR_DELTAS: &[u8; 401] = &[
     0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8,
     8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14,
     15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20,
@@ -93,21 +93,21 @@ static YEAR_DELTAS: [u8; 401] = [
     96, 97, 97, 97, 97, // 400+1
 ];
 
-pub(super) fn cycle_to_yo(cycle: u32) -> (u32, u32) {
+pub(super) const fn cycle_to_yo(cycle: u32) -> (u32, u32) {
     let mut year_mod_400 = cycle / 365;
     let mut ordinal0 = cycle % 365;
-    let delta = u32::from(YEAR_DELTAS[year_mod_400 as usize]);
+    let delta = YEAR_DELTAS[year_mod_400 as usize] as u32;
     if ordinal0 < delta {
         year_mod_400 -= 1;
-        ordinal0 += 365 - u32::from(YEAR_DELTAS[year_mod_400 as usize]);
+        ordinal0 += 365 - YEAR_DELTAS[year_mod_400 as usize] as u32;
     } else {
         ordinal0 -= delta;
     }
     (year_mod_400, ordinal0 + 1)
 }
 
-pub(super) fn yo_to_cycle(year_mod_400: u32, ordinal: u32) -> u32 {
-    year_mod_400 * 365 + u32::from(YEAR_DELTAS[year_mod_400 as usize]) + ordinal - 1
+pub(super) const fn yo_to_cycle(year_mod_400: u32, ordinal: u32) -> u32 {
+    year_mod_400 * 365 + YEAR_DELTAS[year_mod_400 as usize] as u32 + ordinal - 1
 }
 
 impl YearFlags {
@@ -115,26 +115,26 @@ impl YearFlags {
     #[doc(hidden)] // for benchmarks only
     #[inline]
     #[must_use]
-    pub fn from_year(year: i32) -> YearFlags {
+    pub const fn from_year(year: i32) -> YearFlags {
         let year = year.rem_euclid(400);
         YearFlags::from_year_mod_400(year)
     }
 
     #[inline]
-    pub(super) fn from_year_mod_400(year: i32) -> YearFlags {
+    pub(super) const fn from_year_mod_400(year: i32) -> YearFlags {
         YEAR_TO_FLAGS[year as usize]
     }
 
     #[inline]
-    pub(super) fn ndays(&self) -> u32 {
+    pub(super) const fn ndays(&self) -> u32 {
         let YearFlags(flags) = *self;
-        366 - u32::from(flags >> 3)
+        366 - (flags >> 3) as u32
     }
 
     #[inline]
-    pub(super) fn isoweek_delta(&self) -> u32 {
+    pub(super) const fn isoweek_delta(&self) -> u32 {
         let YearFlags(flags) = *self;
-        let mut delta = u32::from(flags) & 0b0111;
+        let mut delta = (flags & 0b0111) as u32;
         if delta < 3 {
             delta += 7;
         }
@@ -178,7 +178,7 @@ pub(super) const MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(
 pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
 const XX: i8 = -128;
-static MDL_TO_OL: [i8; MAX_MDL as usize + 1] = [
+const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, // 0
@@ -221,7 +221,7 @@ static MDL_TO_OL: [i8; MAX_MDL as usize + 1] = [
     100, // 12
 ];
 
-static OL_TO_MDL: [u8; MAX_OL as usize + 1] = [
+const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
     0, 0, // 0
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
@@ -271,27 +271,31 @@ pub(super) struct Of(pub(crate) u32);
 
 impl Of {
     #[inline]
-    pub(super) fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
+    pub(super) const fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
         match ordinal <= 366 {
-            true => Some(Of((ordinal << 4) | u32::from(flags))),
+            true => Some(Of((ordinal << 4) | flags as u32)),
             false => None,
         }
     }
 
     #[inline]
-    pub(super) fn from_mdf(Mdf(mdf): Mdf) -> Of {
+    pub(super) const fn from_mdf(Mdf(mdf): Mdf) -> Of {
         let mdl = mdf >> 3;
-        match MDL_TO_OL.get(mdl as usize) {
-            Some(&v) => Of(mdf.wrapping_sub((i32::from(v) as u32 & 0x3ff) << 3)),
-            None => Of(0),
+        if mdl <= MAX_MDL {
+            // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
+            let v = MDL_TO_OL[mdl as usize];
+            Of(mdf.wrapping_sub((v as i32 as u32 & 0x3ff) << 3))
+        } else {
+            // Panicking here would be reasonable, but we are just going on with a safe value.
+            Of(0)
         }
     }
 
     #[inline]
-    pub(super) fn valid(&self) -> bool {
+    pub(super) const fn valid(&self) -> bool {
         let Of(of) = *self;
         let ol = of >> 3;
-        (MIN_OL..=MAX_OL).contains(&ol)
+        ol >= MIN_OL && ol <= MAX_OL
     }
 
     #[inline]
@@ -332,7 +336,7 @@ impl Of {
 
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
-    pub(super) fn to_mdf(&self) -> Mdf {
+    pub(super) const fn to_mdf(&self) -> Mdf {
         Mdf::from_of(*self)
     }
 
@@ -368,33 +372,39 @@ impl fmt::Debug for Of {
 /// (month, day of month and leap flag),
 /// which is an index to the `MDL_TO_OL` lookup table.
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
-pub(super) struct Mdf(pub(super) u32);
+pub(super) struct Mdf(u32);
 
 impl Mdf {
     #[inline]
-    pub(super) fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
+    pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
         match month <= 12 && day <= 31 {
-            true => Some(Mdf((month << 9) | (day << 4) | u32::from(flags))),
+            true => Some(Mdf((month << 9) | (day << 4) | flags as u32)),
             false => None,
         }
     }
 
     #[inline]
-    pub(super) fn from_of(Of(of): Of) -> Mdf {
+    pub(super) const fn from_of(Of(of): Of) -> Mdf {
         let ol = of >> 3;
-        match OL_TO_MDL.get(ol as usize) {
-            Some(&v) => Mdf(of + (u32::from(v) << 3)),
-            None => Mdf(0),
+        if ol <= MAX_OL {
+            // Array is indexed from `[1..=MAX_OL]`, with a `0` index having a meaningless value.
+            Mdf(of + ((OL_TO_MDL[ol as usize] as u32) << 3))
+        } else {
+            // Panicking here would be reasonable, but we are just going on with a safe value.
+            Mdf(0)
         }
     }
 
     #[cfg(test)]
-    pub(super) fn valid(&self) -> bool {
+    pub(super) const fn valid(&self) -> bool {
         let Mdf(mdf) = *self;
         let mdl = mdf >> 3;
-        match MDL_TO_OL.get(mdl as usize) {
-            Some(&v) => v >= 0,
-            None => false,
+        if mdl <= MAX_MDL {
+            // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
+            MDL_TO_OL[mdl as usize] >= 0
+        } else {
+            // Panicking here would be reasonable, but we are just going on with a safe value.
+            false
         }
     }
 
@@ -431,14 +441,14 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
+    pub(super) const fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
         let Mdf(mdf) = *self;
-        Mdf((mdf & !0b1111) | u32::from(flags))
+        Mdf((mdf & !0b1111) | flags as u32)
     }
 
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
-    pub(super) fn to_of(&self) -> Of {
+    pub(super) const fn to_of(&self) -> Of {
         Of::from_mdf(*self)
     }
 }
