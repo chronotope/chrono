@@ -47,8 +47,8 @@ jobs:
           toolchain: 1.38.0
       - uses: Swatinem/rust-cache@v2
       # run --lib and --doc to avoid the long running integration tests which are run elsewhere
-      - run: cargo test --lib --features unstable-locales,wasmbind,oldtime,clock,rustc-serialize,winapi --color=always -- --color=always
-      - run: cargo test --doc --features unstable-locales,wasmbind,oldtime,clock,rustc-serialize,winapi --color=always -- --color=always
+      - run: cargo test --lib --features unstable-locales,wasmbind,oldtime,clock,rustc-serialize,serde,winapi --color=always -- --color=always
+      - run: cargo test --doc --features unstable-locales,wasmbind,oldtime,clock,rustc-serialize,serde,winapi --color=always -- --color=always
 
   rust_versions:
     strategy:
