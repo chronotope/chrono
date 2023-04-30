@@ -18,7 +18,7 @@
 use crate::Weekday;
 use core::{fmt, i32};
 
-/// The internal date representation. This also includes the packed `Mdf` value.
+/// The internal date representation: `year << 13 | Of`
 pub(super) type DateImpl = i32;
 
 pub(super) const MAX_YEAR: DateImpl = i32::MAX >> 13;
@@ -172,8 +172,9 @@ impl fmt::Debug for YearFlags {
     }
 }
 
+// OL: (ordinal << 1) | leap year flag
 pub(super) const MIN_OL: u32 = 1 << 1;
-pub(super) const MAX_OL: u32 = 366 << 1; // larger than the non-leap last day `(365 << 1) | 1`
+pub(super) const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
 pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
 const XX: i8 = -128;
@@ -265,58 +266,70 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 ///
 /// The whole bits except for the least 3 bits are referred as `Ol` (ordinal and leap flag),
 /// which is an index to the `OL_TO_MDL` lookup table.
+///
+/// The methods implemented on `Of` always return a valid value.
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
-pub(super) struct Of(pub(crate) u32);
+pub(super) struct Of(u32);
 
 impl Of {
     #[inline]
     pub(super) const fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
-        match ordinal <= 366 {
-            true => Some(Of((ordinal << 4) | flags as u32)),
+        let of = Of((ordinal << 4) | flags as u32);
+        of.validate()
+    }
+
+    pub(super) const fn from_date_impl(date_impl: DateImpl) -> Of {
+        // We assume the value in the `DateImpl` is valid.
+        Of((date_impl & 0b1_1111_1111_1111) as u32)
+    }
+
+    #[inline]
+    pub(super) const fn from_mdf(Mdf(mdf): Mdf) -> Option<Of> {
+        let mdl = mdf >> 3;
+        if mdl > MAX_MDL {
+            // Panicking on out-of-bounds indexing would be reasonable, but just return `None`.
+            return None;
+        }
+        // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
+        let v = MDL_TO_OL[mdl as usize];
+        let of = Of(mdf.wrapping_sub((v as i32 as u32 & 0x3ff) << 3));
+        of.validate()
+    }
+
+    #[inline]
+    pub(super) const fn inner(&self) -> u32 {
+        self.0
+    }
+
+    /// Returns `(ordinal << 1) | leap-year-flag`.
+    #[inline]
+    const fn ol(&self) -> u32 {
+        self.0 >> 3
+    }
+
+    #[inline]
+    const fn validate(self) -> Option<Of> {
+        let ol = self.ol();
+        match ol >= MIN_OL && ol <= MAX_OL {
+            true => Some(self),
             false => None,
         }
     }
 
     #[inline]
-    pub(super) const fn from_mdf(Mdf(mdf): Mdf) -> Of {
-        let mdl = mdf >> 3;
-        if mdl <= MAX_MDL {
-            // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
-            let v = MDL_TO_OL[mdl as usize];
-            Of(mdf.wrapping_sub((v as i32 as u32 & 0x3ff) << 3))
-        } else {
-            // Panicking here would be reasonable, but we are just going on with a safe value.
-            Of(0)
-        }
-    }
-
-    #[inline]
-    pub(super) const fn valid(&self) -> bool {
-        let Of(of) = *self;
-        let ol = of >> 3;
-        ol >= MIN_OL && ol <= MAX_OL
-    }
-
-    #[inline]
     pub(super) const fn ordinal(&self) -> u32 {
-        let Of(of) = *self;
-        of >> 4
+        self.0 >> 4
     }
 
     #[inline]
     pub(super) const fn with_ordinal(&self, ordinal: u32) -> Option<Of> {
-        if ordinal > 366 {
-            return None;
-        }
-
-        let Of(of) = *self;
-        Some(Of((of & 0b1111) | (ordinal << 4)))
+        let of = Of((ordinal << 4) | (self.0 & 0b1111));
+        of.validate()
     }
 
     #[inline]
     pub(super) const fn flags(&self) -> YearFlags {
-        let Of(of) = *self;
-        YearFlags((of & 0b1111) as u8)
+        YearFlags((self.0 & 0b1111) as u8)
     }
 
     #[inline]
@@ -339,16 +352,20 @@ impl Of {
         Mdf::from_of(*self)
     }
 
+    /// Returns an `Of` with the next day, or `None` if this is the last day of the year.
     #[inline]
-    pub(super) const fn succ(&self) -> Of {
-        let Of(of) = *self;
-        Of(of + (1 << 4))
+    pub(super) const fn succ(&self) -> Option<Of> {
+        let of = Of(self.0 + (1 << 4));
+        of.validate()
     }
 
+    /// Returns an `Of` with the previous day, or `None` if this is the first day of the year.
     #[inline]
-    pub(super) const fn pred(&self) -> Of {
-        let Of(of) = *self;
-        Of(of - (1 << 4))
+    pub(super) const fn pred(&self) -> Option<Of> {
+        match self.ordinal() {
+            1 => None,
+            _ => Some(Of(self.0 - (1 << 4))),
+        }
     }
 }
 
@@ -370,13 +387,17 @@ impl fmt::Debug for Of {
 /// The whole bits except for the least 3 bits are referred as `Mdl`
 /// (month, day of month and leap flag),
 /// which is an index to the `MDL_TO_OL` lookup table.
+///
+/// The methods implemented on `Mdf` do not always return a valid value.
+/// Dates that can't exist, like February 30, can still be represented.
+/// Use `Mdl::valid` to check whether the date is valid.
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub(super) struct Mdf(u32);
 
 impl Mdf {
     #[inline]
     pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
-        match month <= 12 && day <= 31 {
+        match month >= 1 && month <= 12 && day >= 1 && day <= 31 {
             true => Some(Mdf((month << 9) | (day << 4) | flags as u32)),
             false => None,
         }
@@ -447,7 +468,7 @@ impl Mdf {
 
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
-    pub(super) const fn to_of(&self) -> Of {
+    pub(super) const fn to_of(&self) -> Option<Of> {
         Of::from_mdf(*self)
     }
 }
@@ -542,7 +563,7 @@ mod tests {
                 };
 
                 assert!(
-                    of.valid() == expected,
+                    of.validate().is_some() == expected,
                     "ordinal {} = {:?} should be {} for dominical year {:?}",
                     ordinal,
                     of,
@@ -662,8 +683,7 @@ mod tests {
     fn test_of_fields() {
         for &flags in FLAGS.iter() {
             for ordinal in range_inclusive(1u32, 366) {
-                let of = Of::new(ordinal, flags).unwrap();
-                if of.valid() {
+                if let Some(of) = Of::new(ordinal, flags) {
                     assert_eq!(of.ordinal(), ordinal);
                 }
             }
@@ -676,14 +696,9 @@ mod tests {
             let of = Of::new(ordinal, flags).unwrap();
 
             for ordinal in range_inclusive(0u32, 1024) {
-                let of = match of.with_ordinal(ordinal) {
-                    Some(of) => of,
-                    None if ordinal > 366 => continue,
-                    None => panic!("failed to create Of with ordinal {}", ordinal),
-                };
-
-                assert_eq!(of.valid(), Of::new(ordinal, flags).unwrap().valid());
-                if of.valid() {
+                let of = of.with_ordinal(ordinal);
+                assert_eq!(of, Of::new(ordinal, flags));
+                if let Some(of) = of {
                     assert_eq!(of.ordinal(), ordinal);
                 }
             }
@@ -808,8 +823,9 @@ mod tests {
     #[test]
     fn test_of_to_mdf() {
         for i in range_inclusive(0u32, 8192) {
-            let of = Of(i);
-            assert_eq!(of.valid(), of.to_mdf().valid());
+            if let Some(of) = Of(i).validate() {
+                assert!(of.to_mdf().valid());
+            }
         }
     }
 
@@ -817,16 +833,15 @@ mod tests {
     fn test_mdf_to_of() {
         for i in range_inclusive(0u32, 8192) {
             let mdf = Mdf(i);
-            assert_eq!(mdf.valid(), mdf.to_of().valid());
+            assert_eq!(mdf.valid(), mdf.to_of().is_some());
         }
     }
 
     #[test]
     fn test_of_to_mdf_to_of() {
         for i in range_inclusive(0u32, 8192) {
-            let of = Of(i);
-            if of.valid() {
-                assert_eq!(of, of.to_mdf().to_of());
+            if let Some(of) = Of(i).validate() {
+                assert_eq!(of, of.to_mdf().to_of().unwrap());
             }
         }
     }
@@ -836,9 +851,38 @@ mod tests {
         for i in range_inclusive(0u32, 8192) {
             let mdf = Mdf(i);
             if mdf.valid() {
-                assert_eq!(mdf, mdf.to_of().to_mdf());
+                assert_eq!(mdf, mdf.to_of().unwrap().to_mdf());
             }
         }
+    }
+
+    #[test]
+    fn test_invalid_returns_none() {
+        let regular_year = YearFlags::from_year(2023);
+        let leap_year = YearFlags::from_year(2024);
+        assert!(Of::new(0, regular_year).is_none());
+        assert!(Of::new(366, regular_year).is_none());
+        assert!(Of::new(366, leap_year).is_some());
+        assert!(Of::new(367, regular_year).is_none());
+
+        assert!(Mdf::new(0, 1, regular_year).is_none());
+        assert!(Mdf::new(13, 1, regular_year).is_none());
+        assert!(Mdf::new(1, 0, regular_year).is_none());
+        assert!(Mdf::new(1, 32, regular_year).is_none());
+        assert!(Mdf::new(2, 31, regular_year).is_some());
+
+        assert!(Of::from_mdf(Mdf::new(2, 30, regular_year).unwrap()).is_none());
+        assert!(Of::from_mdf(Mdf::new(2, 30, leap_year).unwrap()).is_none());
+        assert!(Of::from_mdf(Mdf::new(2, 29, regular_year).unwrap()).is_none());
+        assert!(Of::from_mdf(Mdf::new(2, 29, leap_year).unwrap()).is_some());
+        assert!(Of::from_mdf(Mdf::new(2, 28, regular_year).unwrap()).is_some());
+
+        assert!(Of::new(365, regular_year).unwrap().succ().is_none());
+        assert!(Of::new(365, leap_year).unwrap().succ().is_some());
+        assert!(Of::new(366, leap_year).unwrap().succ().is_none());
+
+        assert!(Of::new(1, regular_year).unwrap().pred().is_none());
+        assert!(Of::new(1, leap_year).unwrap().pred().is_none());
     }
 
     #[test]
