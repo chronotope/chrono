@@ -243,8 +243,8 @@ impl NaiveDate {
     }
     /// Makes a new `NaiveDate` from year and packed ordinal-flags, with a verification.
     fn from_of(year: i32, of: Of) -> Option<NaiveDate> {
-        if (MIN_YEAR..=MAX_YEAR).contains(&year) && of.valid() {
-            let Of(of) = of;
+        if (MIN_YEAR..=MAX_YEAR).contains(&year) {
+            let of = of.inner();
             Some(NaiveDate { ymdf: (year << 13) | (of as DateImpl) })
         } else {
             None
@@ -253,7 +253,7 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` from year and packed month-day-flags, with a verification.
     fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
-        NaiveDate::from_of(year, mdf.to_of())
+        NaiveDate::from_of(year, mdf.to_of()?)
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
@@ -924,7 +924,7 @@ impl NaiveDate {
     /// Returns the packed ordinal-flags.
     #[inline]
     const fn of(&self) -> Of {
-        Of((self.ymdf & 0b1_1111_1111_1111) as u32)
+        Of::from_date_impl(self.ymdf)
     }
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
@@ -932,20 +932,16 @@ impl NaiveDate {
     /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
     fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
-        self.with_of(mdf.to_of())
+        Some(self.with_of(mdf.to_of()?))
     }
 
     /// Makes a new `NaiveDate` with the packed ordinal-flags changed.
     ///
     /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    /// Does not check if the year flags match the year.
     #[inline]
-    fn with_of(&self, of: Of) -> Option<NaiveDate> {
-        if of.valid() {
-            let Of(of) = of;
-            Some(NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of as DateImpl })
-        } else {
-            None
-        }
+    const fn with_of(&self, of: Of) -> NaiveDate {
+        NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of.inner() as DateImpl }
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
@@ -974,7 +970,10 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub fn succ_opt(&self) -> Option<NaiveDate> {
-        self.with_of(self.of().succ()).or_else(|| NaiveDate::from_ymd_opt(self.year() + 1, 1, 1))
+        match self.of().succ() {
+            Some(of) => Some(self.with_of(of)),
+            None => NaiveDate::from_ymd_opt(self.year() + 1, 1, 1),
+        }
     }
 
     /// Makes a new `NaiveDate` for the previous calendar date.
@@ -1003,7 +1002,10 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub fn pred_opt(&self) -> Option<NaiveDate> {
-        self.with_of(self.of().pred()).or_else(|| NaiveDate::from_ymd_opt(self.year() - 1, 12, 31))
+        match self.of().pred() {
+            Some(of) => Some(self.with_of(of)),
+            None => NaiveDate::from_ymd_opt(self.year() - 1, 12, 31),
+        }
     }
 
     /// Adds the `days` part of given `Duration` to the current date.
@@ -1622,7 +1624,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
-        self.with_of(self.of().with_ordinal(ordinal)?)
+        self.of().with_ordinal(ordinal).map(|of| self.with_of(of))
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
@@ -1647,7 +1649,7 @@ impl Datelike for NaiveDate {
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
         let ordinal = ordinal0.checked_add(1)?;
-        self.with_of(self.of().with_ordinal(ordinal)?)
+        self.with_ordinal(ordinal)
     }
 }
 
