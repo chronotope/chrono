@@ -1,7 +1,6 @@
 use super::NaiveDateTime;
 use crate::duration::Duration as OldDuration;
-use crate::NaiveDate;
-use crate::{Datelike, FixedOffset, Utc};
+use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, Utc};
 
 #[test]
 fn test_datetime_from_timestamp_millis() {
@@ -489,4 +488,25 @@ fn test_checked_sub_offset() {
 
     assert_eq!(dt.checked_add_offset(positive_offset), Some(dt + positive_offset));
     assert_eq!(dt.checked_sub_offset(positive_offset), Some(dt - positive_offset));
+}
+
+#[test]
+fn test_and_timezone_min_max_dates() {
+    for offset_hour in -23..=23 {
+        dbg!(offset_hour);
+        let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
+
+        let local_max = NaiveDateTime::MAX.and_local_timezone(offset);
+        if offset_hour >= 0 {
+            assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
+        } else {
+            assert_eq!(local_max, LocalResult::None);
+        }
+        let local_min = NaiveDateTime::MIN.and_local_timezone(offset);
+        if offset_hour <= 0 {
+            assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
+        } else {
+            assert_eq!(local_min, LocalResult::None);
+        }
+    }
 }
