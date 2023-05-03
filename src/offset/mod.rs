@@ -500,8 +500,24 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
-        self.offset_from_local_datetime(local)
-            .map(|offset| DateTime::from_naive_utc_and_offset(*local - offset.fix(), offset))
+        // Return `LocalResult::None` when the offset pushes a value out of range, instead of
+        // panicking.
+        match self.offset_from_local_datetime(local) {
+            LocalResult::None => LocalResult::None,
+            LocalResult::Single(offset) => match local.checked_sub_offset(offset.fix()) {
+                Some(dt) => LocalResult::Single(DateTime::from_naive_utc_and_offset(dt, offset)),
+                None => LocalResult::None,
+            },
+            LocalResult::Ambiguous(o1, o2) => {
+                match (local.checked_sub_offset(o1.fix()), local.checked_sub_offset(o2.fix())) {
+                    (Some(d1), Some(d2)) => LocalResult::Ambiguous(
+                        DateTime::from_naive_utc_and_offset(d1, o1),
+                        DateTime::from_naive_utc_and_offset(d2, o2),
+                    ),
+                    _ => LocalResult::None,
+                }
+            }
+        }
     }
 
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
@@ -530,6 +546,32 @@ pub trait TimeZone: Sized + Clone {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_fixed_offset_min_max_dates() {
+        for offset_hour in -23..=23 {
+            dbg!(offset_hour);
+            let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
+
+            let local_max = offset.from_utc_datetime(&NaiveDateTime::MAX);
+            assert_eq!(local_max.naive_utc(), NaiveDateTime::MAX);
+            let local_min = offset.from_utc_datetime(&NaiveDateTime::MIN);
+            assert_eq!(local_min.naive_utc(), NaiveDateTime::MIN);
+
+            let local_max = offset.from_local_datetime(&NaiveDateTime::MAX);
+            if offset_hour >= 0 {
+                assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
+            } else {
+                assert_eq!(local_max, LocalResult::None);
+            }
+            let local_min = offset.from_local_datetime(&NaiveDateTime::MIN);
+            if offset_hour <= 0 {
+                assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
+            } else {
+                assert_eq!(local_min, LocalResult::None);
+            }
+        }
+    }
 
     #[test]
     fn test_negative_millis() {
