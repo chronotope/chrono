@@ -3235,22 +3235,16 @@ mod tests {
     }
 
     //   MAX_YEAR-12-31 minus 0000-01-01
-    // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
-    // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + 365 days
-    // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365 days
+    // = (MAX_YEAR-12-31 minus 0000-12-31) + (0000-12-31 - 0000-01-01)
+    // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365
+    // = (MAX_YEAR + 1) * 365 + (# of leap years from 0001 to MAX_YEAR)
     const MAX_DAYS_FROM_YEAR_0: i32 =
-        MAX_YEAR * 365 + MAX_YEAR / 4 - MAX_YEAR / 100 + MAX_YEAR / 400 + 365;
+        (MAX_YEAR + 1) * 365 + MAX_YEAR / 4 - MAX_YEAR / 100 + MAX_YEAR / 400;
 
     //   MIN_YEAR-01-01 minus 0000-01-01
-    // = (MIN_YEAR+400n+1)-01-01 minus (400n+1)-01-01
-    // = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - ((400n+1)-01-01 minus 0001-01-01)
-    // = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - 146097n days
-    //
-    // n is set to 1000 for convenience.
-    const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 + (MIN_YEAR + 400_000) / 4
-        - (MIN_YEAR + 400_000) / 100
-        + (MIN_YEAR + 400_000) / 400
-        - 146_097_000;
+    // = MIN_YEAR * 365 + (# of leap years from MIN_YEAR to 0000)
+    const MIN_DAYS_FROM_YEAR_0: i32 =
+        MIN_YEAR * 365 + MIN_YEAR / 4 - MIN_YEAR / 100 + MIN_YEAR / 400;
 
     // only used for testing, but duplicated in naive::datetime
     const MAX_BITS: usize = 44;
