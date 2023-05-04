@@ -191,6 +191,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
 impl<T: fmt::Debug> LocalResult<T> {
     /// Returns the single unique conversion result, or panics accordingly.
     #[must_use]
+    #[track_caller]
     pub fn unwrap(self) -> T {
         match self {
             LocalResult::None => panic!("No such local time"),
