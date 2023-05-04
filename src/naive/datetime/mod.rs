@@ -738,6 +738,22 @@ impl NaiveDateTime {
         Some(NaiveDateTime { date, time })
     }
 
+    /// Adds given `FixedOffset` to the current datetime.
+    /// The resulting value may be outside the valid range of [`NaiveDateTime`].
+    ///
+    /// This can be useful for intermediate values, but the resulting out-of-range `NaiveDate`
+    /// should not be exposed to library users.
+    #[must_use]
+    pub(crate) fn overflowing_add_offset(self, rhs: FixedOffset) -> NaiveDateTime {
+        let (time, days) = self.time.overflowing_add_offset(rhs);
+        let date = match days {
+            -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
+            1 => self.date.succ_opt().unwrap_or(NaiveDate::AFTER_MAX),
+            _ => self.date,
+        };
+        NaiveDateTime { date, time }
+    }
+
     /// Subtracts given `Duration` from the current date and time.
     ///
     /// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),

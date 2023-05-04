@@ -510,6 +510,17 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .expect("Local time out of range for `NaiveDateTime`")
     }
 
+    /// Returns the naive local datetime.
+    ///
+    /// This makes use of the buffer space outside of the representable range of values of
+    /// `NaiveDateTime`. The result can be used as intermediate value, but should never be exposed
+    /// outside chrono.
+    #[inline]
+    #[must_use]
+    pub(crate) fn overflowing_naive_local(&self) -> NaiveDateTime {
+        self.datetime.overflowing_add_offset(self.offset.fix())
+    }
+
     /// Retrieve the elapsed years from now to the given [`DateTime`].
     ///
     /// # Errors
