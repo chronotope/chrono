@@ -11,10 +11,18 @@
 use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::SystemTime};
 
 use super::tz_info::TimeZone;
-use super::{DateTime, FixedOffset, Local, NaiveDateTime};
+use super::{FixedOffset, NaiveDateTime};
 use crate::{Datelike, LocalResult};
 
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    offset(utc, false)
+}
+
+pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    offset(local, true)
+}
+
+fn offset(d: &NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
     TZ_INFO.with(|maybe_cache| {
         maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
     })
@@ -96,7 +104,7 @@ fn current_zone(var: Option<&str>) -> TimeZone {
 }
 
 impl Cache {
-    fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+    fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
         let now = SystemTime::now();
 
         match now.duration_since(self.last_checked) {
@@ -148,32 +156,16 @@ impl Cache {
                 .offset();
 
             return match FixedOffset::east_opt(offset) {
-                Some(offset) => LocalResult::Single(DateTime::from_utc(d, offset)),
+                Some(offset) => LocalResult::Single(offset),
                 None => LocalResult::None,
             };
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
-        // the entire time was skipped in which case we will return LocalResult::None anywa.
-        match self
-            .zone
+        // the entire time was skipped in which case we will return LocalResult::None anyway.
+        self.zone
             .find_local_time_type_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
-        {
-            LocalResult::None => LocalResult::None,
-            LocalResult::Ambiguous(early, late) => {
-                let early_offset = FixedOffset::east_opt(early.offset()).unwrap();
-                let late_offset = FixedOffset::east_opt(late.offset()).unwrap();
-
-                LocalResult::Ambiguous(
-                    DateTime::from_utc(d - early_offset, early_offset),
-                    DateTime::from_utc(d - late_offset, late_offset),
-                )
-            }
-            LocalResult::Single(tt) => {
-                let offset = FixedOffset::east_opt(tt.offset()).unwrap();
-                LocalResult::Single(DateTime::from_utc(d - offset, offset))
-            }
-        }
+            .map(|o| FixedOffset::east_opt(o.offset()).unwrap())
     }
 }
