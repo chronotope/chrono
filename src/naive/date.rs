@@ -79,10 +79,13 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub fn first_day(&self) -> NaiveDate {
-        let start = self.start.num_days_from_monday();
-        let end = self.date.weekday().num_days_from_monday();
-        let days = if start > end { 7 - start + end } else { end - start };
-        self.date - Duration::days(days.into())
+        let start = self.start.num_days_from_monday() as i32;
+        let ref_day = self.date.weekday().num_days_from_monday() as i32;
+        // Calculate the number of days to subtract from `self.date`.
+        // Do not construct an intermediate date beyond `self.date`, because that may be out of
+        // range if `date` is close to `NaiveDate::MAX`.
+        let days = start - ref_day - if start > ref_day { 7 } else { 0 };
+        self.date.diff_days(days as i64).unwrap()
     }
 
     /// Returns a date representing the last day of the week.
@@ -99,7 +102,13 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub fn last_day(&self) -> NaiveDate {
-        self.first_day() + Duration::days(6)
+        let end = self.start.pred().num_days_from_monday() as i32;
+        let ref_day = self.date.weekday().num_days_from_monday() as i32;
+        // Calculate the number of days to add to `self.date`.
+        // Do not construct an intermediate date before `self.date` (like with `first_day()`),
+        // because that may be out of range if `date` is close to `NaiveDate::MIN`.
+        let days = end - ref_day + if end < ref_day { 7 } else { 0 };
+        self.date.diff_days(days as i64).unwrap()
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -3034,6 +3043,14 @@ mod tests {
             assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%a %Y-%m-%d"));
             assert!(days.contains(&date));
         }
+    }
+
+    #[test]
+    fn test_naiveweek_min_max() {
+        let date_max = NaiveDate::MAX;
+        assert!(date_max.week(Weekday::Mon).first_day() <= date_max);
+        let date_min = NaiveDate::MIN;
+        assert!(date_min.week(Weekday::Mon).last_day() >= date_min);
     }
 
     #[test]
