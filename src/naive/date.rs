@@ -448,7 +448,7 @@ impl NaiveDate {
     /// ```
     #[must_use]
     pub fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
-        let days = days + 365; // make December 31, 1 BCE equal to day 0
+        let days = days.checked_add(365)?; // make December 31, 1 BCE equal to day 0
         let (year_div_400, cycle) = div_mod_floor(days, 146_097);
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
@@ -2500,6 +2500,9 @@ mod tests {
         assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce() - 1), None);
         assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce()), Some(NaiveDate::MAX));
         assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce() + 1), None);
+
+        assert_eq!(from_ndays_from_ce(i32::MIN), None);
+        assert_eq!(from_ndays_from_ce(i32::MAX), None);
     }
 
     #[test]
