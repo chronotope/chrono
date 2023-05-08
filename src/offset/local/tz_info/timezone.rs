@@ -632,7 +632,6 @@ const SECONDS_PER_28_DAYS: i64 = SECONDS_PER_DAY * 28;
 mod tests {
     use super::super::Error;
     use super::{LeapSecond, LocalTimeType, TimeZone, TimeZoneName, Transition, TransitionRule};
-    use crate::matches;
 
     #[test]
     fn test_no_dst() -> Result<(), Error> {
