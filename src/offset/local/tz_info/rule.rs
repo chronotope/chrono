@@ -777,7 +777,6 @@ mod tests {
     use super::super::timezone::Transition;
     use super::super::{Error, TimeZone};
     use super::{AlternateTime, LocalTimeType, RuleDay, TransitionRule};
-    use crate::matches;
 
     #[test]
     fn test_quoted() -> Result<(), Error> {
