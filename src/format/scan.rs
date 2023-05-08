@@ -313,14 +313,7 @@ where
 /// [RFC 2822 Section 4.3]: https://tools.ietf.org/html/rfc2822#section-4.3
 pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names
-    let upto = s
-        .as_bytes()
-        .iter()
-        .position(|&c| match c {
-            b'a'..=b'z' | b'A'..=b'Z' => false,
-            _ => true,
-        })
-        .unwrap_or(s.len());
+    let upto = s.as_bytes().iter().position(|&c| !c.is_ascii_alphabetic()).unwrap_or(s.len());
     if upto > 0 {
         let name = &s.as_bytes()[..upto];
         let s = &s[upto..];

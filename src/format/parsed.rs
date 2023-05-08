@@ -22,6 +22,7 @@ use crate::{Datelike, Timelike};
 ///
 /// - `to_*` methods try to make a concrete date and time value out of set fields.
 ///   It fully checks any remaining out-of-range conditions and inconsistent/impossible fields.
+#[allow(clippy::manual_non_exhaustive)]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Hash)]
 pub struct Parsed {
     /// Year.

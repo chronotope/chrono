@@ -2249,7 +2249,7 @@ mod tests {
         assert_eq!(
             NaiveDate::from_ymd_opt(2022, 8, 3)
                 .unwrap()
-                .checked_sub_months(Months::new((i32::MIN as i64).abs() as u32 + 1)),
+                .checked_sub_months(Months::new((i32::MIN as i64).unsigned_abs() as u32 + 1)),
             None
         );
 
