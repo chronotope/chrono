@@ -356,6 +356,7 @@ impl ParseError {
 }
 
 /// The category of parse error
+#[allow(clippy::manual_non_exhaustive)]
 #[derive(Debug, Clone, PartialEq, Eq, Copy, Hash)]
 pub enum ParseErrorKind {
     /// Given field is out of permitted range.
