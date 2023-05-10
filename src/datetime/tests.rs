@@ -31,10 +31,6 @@ impl TimeZone for DstTester {
         DstTester
     }
 
-    fn offset_from_local_date(&self, _: &NaiveDate) -> crate::LocalResult<Self::Offset> {
-        unimplemented!()
-    }
-
     fn offset_from_local_datetime(
         &self,
         local: &NaiveDateTime,
@@ -88,10 +84,6 @@ impl TimeZone for DstTester {
         } else {
             panic!("Unexpected local time {}", local)
         }
-    }
-
-    fn offset_from_utc_date(&self, _: &NaiveDate) -> Self::Offset {
-        unimplemented!()
     }
 
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset {

@@ -10,8 +10,8 @@ use core::str::FromStr;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
-use crate::format::{scan, ParseError, OUT_OF_RANGE};
-use crate::naive::{NaiveDate, NaiveDateTime};
+use crate::format::{scan, OUT_OF_RANGE};
+use crate::{NaiveDateTime, ParseError};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
@@ -128,16 +128,10 @@ impl TimeZone for FixedOffset {
         *offset
     }
 
-    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
-        LocalResult::Single(*self)
-    }
     fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         LocalResult::Single(*self)
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset {
-        *self
-    }
     fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset {
         *self
     }

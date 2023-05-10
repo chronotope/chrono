@@ -21,10 +21,8 @@
 use core::fmt;
 
 use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
-use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use crate::Weekday;
-#[allow(deprecated)]
-use crate::{Date, DateTime};
+use crate::naive::{NaiveDate, NaiveDateTime};
+use crate::DateTime;
 
 pub(crate) mod fixed;
 pub use self::fixed::FixedOffset;
@@ -89,105 +87,6 @@ impl<T> LocalResult<T> {
     }
 }
 
-#[allow(deprecated)]
-impl<Tz: TimeZone> LocalResult<Date<Tz>> {
-    /// Makes a new `DateTime` from the current date and given `NaiveTime`.
-    /// The offset in the current date is preserved.
-    ///
-    /// Propagates any error. Ambiguous result would be discarded.
-    #[inline]
-    #[must_use]
-    pub fn and_time(self, time: NaiveTime) -> LocalResult<DateTime<Tz>> {
-        match self {
-            LocalResult::Single(d) => {
-                d.and_time(time).map_or(LocalResult::None, LocalResult::Single)
-            }
-            _ => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute and second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Propagates any error. Ambiguous result would be discarded.
-    #[inline]
-    #[must_use]
-    pub fn and_hms_opt(self, hour: u32, min: u32, sec: u32) -> LocalResult<DateTime<Tz>> {
-        match self {
-            LocalResult::Single(d) => {
-                d.and_hms_opt(hour, min, sec).map_or(LocalResult::None, LocalResult::Single)
-            }
-            _ => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute, second and millisecond.
-    /// The millisecond part can exceed 1,000 in order to represent the leap second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Propagates any error. Ambiguous result would be discarded.
-    #[inline]
-    #[must_use]
-    pub fn and_hms_milli_opt(
-        self,
-        hour: u32,
-        min: u32,
-        sec: u32,
-        milli: u32,
-    ) -> LocalResult<DateTime<Tz>> {
-        match self {
-            LocalResult::Single(d) => d
-                .and_hms_milli_opt(hour, min, sec, milli)
-                .map_or(LocalResult::None, LocalResult::Single),
-            _ => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute, second and microsecond.
-    /// The microsecond part can exceed 1,000,000 in order to represent the leap second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Propagates any error. Ambiguous result would be discarded.
-    #[inline]
-    #[must_use]
-    pub fn and_hms_micro_opt(
-        self,
-        hour: u32,
-        min: u32,
-        sec: u32,
-        micro: u32,
-    ) -> LocalResult<DateTime<Tz>> {
-        match self {
-            LocalResult::Single(d) => d
-                .and_hms_micro_opt(hour, min, sec, micro)
-                .map_or(LocalResult::None, LocalResult::Single),
-            _ => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `DateTime` from the current date, hour, minute, second and nanosecond.
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the leap second.
-    /// The offset in the current date is preserved.
-    ///
-    /// Propagates any error. Ambiguous result would be discarded.
-    #[inline]
-    #[must_use]
-    pub fn and_hms_nano_opt(
-        self,
-        hour: u32,
-        min: u32,
-        sec: u32,
-        nano: u32,
-    ) -> LocalResult<DateTime<Tz>> {
-        match self {
-            LocalResult::Single(d) => d
-                .and_hms_nano_opt(hour, min, sec, nano)
-                .map_or(LocalResult::None, LocalResult::Single),
-            _ => LocalResult::None,
-        }
-    }
-}
-
 impl<T: fmt::Debug> LocalResult<T> {
     /// Returns the single unique conversion result, or panics accordingly.
     #[must_use]
@@ -211,8 +110,7 @@ pub trait Offset: Sized + Clone + fmt::Debug {
 
 /// The time zone.
 ///
-/// The methods here are the primarily constructors for [`Date`](../struct.Date.html) and
-/// [`DateTime`](../struct.DateTime.html) types.
+/// The methods here are the primarily constructors for the [`DateTime`] type.
 pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
@@ -240,115 +138,12 @@ pub trait TimeZone: Sized + Clone {
         }
     }
 
-    /// Makes a new `Date` from year, month, day and the current time zone.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Panics on the out-of-range date, invalid month and/or day.
-    #[deprecated(since = "0.4.23", note = "use `with_ymd_and_hms()` instead")]
-    #[allow(deprecated)]
-    fn ymd(&self, year: i32, month: u32, day: u32) -> Date<Self> {
-        self.ymd_opt(year, month, day).unwrap()
-    }
-
-    /// Makes a new `Date` from year, month, day and the current time zone.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Returns `None` on the out-of-range date, invalid month and/or day.
-    #[deprecated(since = "0.4.23", note = "use `with_ymd_and_hms()` instead")]
-    #[allow(deprecated)]
-    fn ymd_opt(&self, year: i32, month: u32, day: u32) -> LocalResult<Date<Self>> {
-        match NaiveDate::from_ymd_opt(year, month, day) {
-            Some(d) => self.from_local_date(&d),
-            None => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `Date` from year, day of year (DOY or "ordinal") and the current time zone.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Panics on the out-of-range date and/or invalid DOY.
-    #[deprecated(
-        since = "0.4.23",
-        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
-    )]
-    #[allow(deprecated)]
-    fn yo(&self, year: i32, ordinal: u32) -> Date<Self> {
-        self.yo_opt(year, ordinal).unwrap()
-    }
-
-    /// Makes a new `Date` from year, day of year (DOY or "ordinal") and the current time zone.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Returns `None` on the out-of-range date and/or invalid DOY.
-    #[deprecated(
-        since = "0.4.23",
-        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
-    )]
-    #[allow(deprecated)]
-    fn yo_opt(&self, year: i32, ordinal: u32) -> LocalResult<Date<Self>> {
-        match NaiveDate::from_yo_opt(year, ordinal) {
-            Some(d) => self.from_local_date(&d),
-            None => LocalResult::None,
-        }
-    }
-
-    /// Makes a new `Date` from ISO week date (year and week number), day of the week (DOW) and
-    /// the current time zone.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    /// The resulting `Date` may have a different year from the input year.
-    ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Panics on the out-of-range date and/or invalid week number.
-    #[deprecated(
-        since = "0.4.23",
-        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
-    )]
-    #[allow(deprecated)]
-    fn isoywd(&self, year: i32, week: u32, weekday: Weekday) -> Date<Self> {
-        self.isoywd_opt(year, week, weekday).unwrap()
-    }
-
-    /// Makes a new `Date` from ISO week date (year and week number), day of the week (DOW) and
-    /// the current time zone.
-    /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
-    /// The resulting `Date` may have a different year from the input year.
-    ///
-    /// The time zone normally does not affect the date (unless it is between UTC-24 and UTC+24),
-    /// but it will propagate to the `DateTime` values constructed via this date.
-    ///
-    /// Returns `None` on the out-of-range date and/or invalid week number.
-    #[deprecated(
-        since = "0.4.23",
-        note = "use `from_local_datetime()` with a `NaiveDateTime` instead"
-    )]
-    #[allow(deprecated)]
-    fn isoywd_opt(&self, year: i32, week: u32, weekday: Weekday) -> LocalResult<Date<Self>> {
-        match NaiveDate::from_isoywd_opt(year, week, weekday) {
-            Some(d) => self.from_local_date(&d),
-            None => LocalResult::None,
-        }
-    }
-
     /// Makes a new `DateTime` from the number of non-leap seconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Panics
@@ -365,7 +160,7 @@ pub trait TimeZone: Sized + Clone {
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Errors
@@ -480,22 +275,8 @@ pub trait TimeZone: Sized + Clone {
     /// Reconstructs the time zone from the offset.
     fn from_offset(offset: &Self::Offset) -> Self;
 
-    /// Creates the offset(s) for given local `NaiveDate` if possible.
-    fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<Self::Offset>;
-
     /// Creates the offset(s) for given local `NaiveDateTime` if possible.
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<Self::Offset>;
-
-    /// Converts the local `NaiveDate` to the timezone-aware `Date` if possible.
-    #[allow(clippy::wrong_self_convention)]
-    #[deprecated(since = "0.4.23", note = "use `from_local_datetime()` instead")]
-    #[allow(deprecated)]
-    fn from_local_date(&self, local: &NaiveDate) -> LocalResult<Date<Self>> {
-        self.offset_from_local_date(local).map(|offset| {
-            // since FixedOffset is within +/- 1 day, the date is never affected
-            Date::from_utc(*local, offset)
-        })
-    }
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
@@ -504,20 +285,8 @@ pub trait TimeZone: Sized + Clone {
             .map(|offset| DateTime::from_naive_utc_and_offset(*local - offset.fix(), offset))
     }
 
-    /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> Self::Offset;
-
     /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset;
-
-    /// Converts the UTC `NaiveDate` to the local time.
-    /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
-    #[allow(clippy::wrong_self_convention)]
-    #[deprecated(since = "0.4.23", note = "use `from_utc_datetime()` instead")]
-    #[allow(deprecated)]
-    fn from_utc_date(&self, utc: &NaiveDate) -> Date<Self> {
-        Date::from_utc(*utc, self.offset_from_utc_date(utc))
-    }
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).

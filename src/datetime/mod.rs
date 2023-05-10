@@ -26,8 +26,6 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-#[allow(deprecated)]
-use crate::Date;
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(feature = "rkyv")]
@@ -148,28 +146,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime: datetime_utc, offset }
     }
 
-    /// Retrieves the date component with an associated timezone.
-    ///
-    /// Unless you are immediately planning on turning this into a `DateTime`
-    /// with the same timezone you should use the [`date_naive`](DateTime::date_naive) method.
-    ///
-    /// [`NaiveDate`] is a more well-defined type, and has more traits implemented on it,
-    /// so should be preferred to [`Date`] any time you truly want to operate on dates.
-    ///
-    /// # Panics
-    ///
-    /// [`DateTime`] internally stores the date and time in UTC with a [`NaiveDateTime`]. This
-    /// method will panic if the offset from UTC would push the local date outside of the
-    /// representable range of a [`Date`].
-    #[inline]
-    #[deprecated(since = "0.4.23", note = "Use `date_naive()` instead")]
-    #[allow(deprecated)]
-    #[must_use]
-    pub fn date(&self) -> Date<Tz> {
-        Date::from_utc(self.naive_local().date(), self.offset.clone())
-    }
-
-    /// Retrieves the date component.
+    /// Retrieves the date without an associated timezone.
     ///
     /// # Panics
     ///
