@@ -526,3 +526,25 @@ impl fmt::Debug for OutOfRange {
 
 #[cfg(feature = "std")]
 impl std::error::Error for OutOfRange {}
+
+/// Workaround because `?` is not (yet) available in const context.
+#[macro_export]
+macro_rules! try_opt {
+    ($e:expr) => {
+        match $e {
+            Some(v) => v,
+            None => return None,
+        }
+    };
+}
+
+/// Workaround because `.expect()` is not (yet) available in const context.
+#[macro_export]
+macro_rules! expect {
+    ($e:expr, $m:literal) => {
+        match $e {
+            Some(v) => v,
+            None => panic!($m),
+        }
+    };
+}
