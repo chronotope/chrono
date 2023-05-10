@@ -19,6 +19,7 @@ use crate::format::{
 };
 use crate::oldtime::Duration as OldDuration;
 use crate::Timelike;
+use crate::{expect, try_opt};
 
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize;
@@ -216,8 +217,8 @@ impl NaiveTime {
     #[deprecated(since = "0.4.23", note = "use `from_hms_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_hms(hour: u32, min: u32, sec: u32) -> NaiveTime {
-        NaiveTime::from_hms_opt(hour, min, sec).expect("invalid time")
+    pub const fn from_hms(hour: u32, min: u32, sec: u32) -> NaiveTime {
+        expect!(NaiveTime::from_hms_opt(hour, min, sec), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute and second.
@@ -255,8 +256,8 @@ impl NaiveTime {
     #[deprecated(since = "0.4.23", note = "use `from_hms_milli_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> NaiveTime {
-        NaiveTime::from_hms_milli_opt(hour, min, sec, milli).expect("invalid time")
+    pub const fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> NaiveTime {
+        expect!(NaiveTime::from_hms_milli_opt(hour, min, sec, milli), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
@@ -283,10 +284,14 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_hms_milli_opt(hour: u32, min: u32, sec: u32, milli: u32) -> Option<NaiveTime> {
-        milli
-            .checked_mul(1_000_000)
-            .and_then(|nano| NaiveTime::from_hms_nano_opt(hour, min, sec, nano))
+    pub const fn from_hms_milli_opt(
+        hour: u32,
+        min: u32,
+        sec: u32,
+        milli: u32,
+    ) -> Option<NaiveTime> {
+        let nano = try_opt!(milli.checked_mul(1_000_000));
+        NaiveTime::from_hms_nano_opt(hour, min, sec, nano)
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
@@ -298,8 +303,8 @@ impl NaiveTime {
     #[deprecated(since = "0.4.23", note = "use `from_hms_micro_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> NaiveTime {
-        NaiveTime::from_hms_micro_opt(hour, min, sec, micro).expect("invalid time")
+    pub const fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> NaiveTime {
+        expect!(NaiveTime::from_hms_micro_opt(hour, min, sec, micro), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
@@ -326,8 +331,14 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_hms_micro_opt(hour: u32, min: u32, sec: u32, micro: u32) -> Option<NaiveTime> {
-        micro.checked_mul(1_000).and_then(|nano| NaiveTime::from_hms_nano_opt(hour, min, sec, nano))
+    pub const fn from_hms_micro_opt(
+        hour: u32,
+        min: u32,
+        sec: u32,
+        micro: u32,
+    ) -> Option<NaiveTime> {
+        let nano = try_opt!(micro.checked_mul(1_000));
+        NaiveTime::from_hms_nano_opt(hour, min, sec, nano)
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
@@ -339,8 +350,8 @@ impl NaiveTime {
     #[deprecated(since = "0.4.23", note = "use `from_hms_nano_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> NaiveTime {
-        NaiveTime::from_hms_nano_opt(hour, min, sec, nano).expect("invalid time")
+    pub const fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> NaiveTime {
+        expect!(NaiveTime::from_hms_nano_opt(hour, min, sec, nano), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
@@ -384,8 +395,8 @@ impl NaiveTime {
     #[deprecated(since = "0.4.23", note = "use `from_num_seconds_from_midnight_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
-        NaiveTime::from_num_seconds_from_midnight_opt(secs, nano).expect("invalid time")
+    pub const fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
+        expect!(NaiveTime::from_num_seconds_from_midnight_opt(secs, nano), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
