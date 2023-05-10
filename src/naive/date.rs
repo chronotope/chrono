@@ -227,8 +227,7 @@ impl NaiveDate {
         if year < MIN_YEAR || year > MAX_YEAR {
             return None; // Out-of-range
         }
-        // Enable debug check once the MSRV >= 1.57 (panicking in const feature)
-        // debug_assert!(YearFlags::from_year(year).0 == flags.0);
+        debug_assert!(YearFlags::from_year(year).0 == flags.0);
         match Of::new(ordinal, flags) {
             Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as DateImpl) }),
             None => None, // Invalid: Ordinal outside of the nr of days in a year with those flags.

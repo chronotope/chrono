@@ -11,7 +11,7 @@ readme = "README.md"
 license = "MIT OR Apache-2.0"
 exclude = ["/ci/*"]
 edition = "2021"
-rust-version = "1.56.0"
+rust-version = "1.57.0"
 
 [lib]
 name = "chrono"
