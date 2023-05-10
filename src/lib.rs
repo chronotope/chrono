@@ -470,9 +470,6 @@ pub use time_delta::TimeDelta;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
-    #[doc(no_inline)]
-    #[allow(deprecated)]
-    pub use crate::Date;
     #[cfg(feature = "clock")]
     #[doc(no_inline)]
     pub use crate::Local;
@@ -492,10 +489,6 @@ pub mod prelude {
     #[doc(no_inline)]
     pub use crate::{Offset, TimeZone};
 }
-
-mod date;
-#[allow(deprecated)]
-pub use date::{Date, MAX_DATE, MIN_DATE};
 
 mod datetime;
 #[allow(deprecated)]

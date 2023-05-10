@@ -18,10 +18,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::naive::{NaiveDate, NaiveDateTime};
+use crate::naive::NaiveDateTime;
 #[cfg(feature = "clock")]
-#[allow(deprecated)]
-use crate::{Date, DateTime};
+use crate::DateTime;
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -48,17 +47,6 @@ pub struct Utc;
 
 #[cfg(feature = "clock")]
 impl Utc {
-    /// Returns a `Date` which corresponds to the current date.
-    #[deprecated(
-        since = "0.4.23",
-        note = "use `Utc::now()` instead, potentially with `.date_naive()`"
-    )]
-    #[allow(deprecated)]
-    #[must_use]
-    pub fn today() -> Date<Utc> {
-        Utc::now().date()
-    }
-
     /// Returns a `DateTime<Utc>` which corresponds to the current date and time in UTC.
     ///
     /// See also the similar [`Local::now()`] which returns `DateTime<Local>`, i.e. the local date
@@ -115,16 +103,10 @@ impl TimeZone for Utc {
         Utc
     }
 
-    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<Utc> {
-        LocalResult::Single(Utc)
-    }
     fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<Utc> {
         LocalResult::Single(Utc)
     }
 
-    fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Utc {
-        Utc
-    }
     fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Utc {
         Utc
     }

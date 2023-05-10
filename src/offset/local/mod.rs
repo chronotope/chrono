@@ -8,10 +8,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
-use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-#[allow(deprecated)]
-use crate::Date;
-use crate::{DateTime, Utc};
+use crate::{DateTime, NaiveDateTime, Utc};
 
 #[cfg(unix)]
 #[path = "unix.rs"]
@@ -110,14 +107,6 @@ mod tz_info;
 pub struct Local;
 
 impl Local {
-    /// Returns a `Date` which corresponds to the current date.
-    #[deprecated(since = "0.4.23", note = "use `Local::now()` instead")]
-    #[allow(deprecated)]
-    #[must_use]
-    pub fn today() -> Date<Local> {
-        Local::now().date()
-    }
-
     /// Returns a `DateTime<Local>` which corresponds to the current date, time and offset from
     /// UTC.
     ///
@@ -157,20 +146,8 @@ impl TimeZone for Local {
         Local
     }
 
-    #[allow(deprecated)]
-    fn offset_from_local_date(&self, local: &NaiveDate) -> LocalResult<FixedOffset> {
-        // Get the offset at local midnight.
-        self.offset_from_local_datetime(&local.and_time(NaiveTime::MIN))
-    }
-
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         inner::offset_from_local_datetime(local)
-    }
-
-    #[allow(deprecated)]
-    fn offset_from_utc_date(&self, utc: &NaiveDate) -> FixedOffset {
-        // Get the offset at midnight.
-        self.offset_from_utc_datetime(&utc.and_time(NaiveTime::MIN))
     }
 
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
