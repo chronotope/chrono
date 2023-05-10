@@ -330,34 +330,6 @@
 //! assert_eq!(dt.timestamp(), 1_500_000_000);
 //! ```
 //!
-//! ### Individual date
-//!
-//! Chrono also provides an individual date type ([**`Date`**](./struct.Date.html)).
-//! It also has time zones attached, and have to be constructed via time zones.
-//! Most operations available to `DateTime` are also available to `Date` whenever appropriate.
-//!
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-#![cfg_attr(feature = "std", doc = "```rust")]
-//! use chrono::prelude::*;
-//! use chrono::offset::LocalResult;
-//!
-//! # // these *may* fail, but only very rarely. just rerun the test if you were that unfortunate ;)
-//! assert_eq!(Utc::today(), Utc::now().date());
-//! assert_eq!(Local::today(), Local::now().date());
-//!
-//! assert_eq!(Utc.ymd_opt(2014, 11, 28).unwrap().weekday(), Weekday::Fri);
-//! assert_eq!(Utc.ymd_opt(2014, 11, 31), LocalResult::None);
-//! assert_eq!(NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_milli_opt(7, 8, 9, 10).unwrap().and_local_timezone(Utc).unwrap().format("%H%M%S").to_string(),
-//!            "070809");
-//! ```
-//!
-//! There is no timezone-aware `Time` due to the lack of usefulness and also the complexity.
-//!
-//! `DateTime` has [`date`](./struct.DateTime.html#method.date) method
-//! which returns a `Date` which represents its date component.
-//! There is also a [`time`](./struct.DateTime.html#method.time) method,
-//! which simply returns a naive local time described below.
-//!
 //! ### Naive date and time
 //!
 //! Chrono provides naive counterparts to `Date`, (non-existent) `Time` and `DateTime`
