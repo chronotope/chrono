@@ -122,6 +122,7 @@ fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<(
 
 impl Parsed {
     /// Returns the initial value of parsed parts.
+    #[must_use]
     pub fn new() -> Parsed {
         Parsed::default()
     }
@@ -1286,5 +1287,19 @@ mod tests {
         );
 
         // TODO test with a variable time zone (for None and Ambiguous cases)
+    }
+
+    #[test]
+    fn issue_551() {
+        use crate::Weekday;
+        let mut parsed = Parsed::new();
+
+        parsed.year = Some(2002);
+        parsed.week_from_mon = Some(22);
+        parsed.weekday = Some(Weekday::Mon);
+        assert_eq!(NaiveDate::from_ymd_opt(2002, 6, 3).unwrap(), parsed.to_naive_date().unwrap());
+
+        parsed.year = Some(2001);
+        assert_eq!(NaiveDate::from_ymd_opt(2001, 5, 28).unwrap(), parsed.to_naive_date().unwrap());
     }
 }

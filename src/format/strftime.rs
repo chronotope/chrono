@@ -68,7 +68,7 @@ The following specifiers are available both to formatting and parsing.
 | `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
-| `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. [^8] |
+| `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. Identical to `%:z` when formatting. [^8] |
 | `%z`  | `+0930`  | Offset from the local time to UTC (with UTC being `+0000`).                |
 | `%:z` | `+09:30` | Same as `%z` but with a colon.                                             |
 |`%::z`|`+09:30:00`| Offset from the local time to UTC with seconds.                            |
@@ -164,6 +164,12 @@ Notes:
    Note that they can read nothing if the fractional part is zero.
 
 [^8]: `%Z`:
+   Since `chrono` is not aware of timezones beyond their offsets, this specifier
+   **only prints the offset** when used for formatting. The timezone abbreviation
+   will NOT be printed. See [this issue](https://github.com/chronotope/chrono/issues/960)
+   for more information.
+   <br>
+   <br>
    Offset will not be populated from the parsed data, nor will it be validated.
    Timezone is completely ignored. Similar to the glibc `strptime` treatment of
    this format code.
@@ -227,6 +233,7 @@ pub struct StrftimeItems<'a> {
 
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
+    #[must_use]
     pub fn new(s: &'a str) -> StrftimeItems<'a> {
         Self::with_remainer(s)
     }
@@ -234,6 +241,7 @@ impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[must_use]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();

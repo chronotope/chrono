@@ -34,6 +34,7 @@ impl FixedOffset {
     ///
     /// Panics on the out-of-bound `secs`.
     #[deprecated(since = "0.4.23", note = "use `east_opt()` instead")]
+    #[must_use]
     pub fn east(secs: i32) -> FixedOffset {
         FixedOffset::east_opt(secs).expect("FixedOffset::east out of bounds")
     }
@@ -52,6 +53,7 @@ impl FixedOffset {
     ///                                           .and_hms_opt(0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
     /// ```
+    #[must_use]
     pub const fn east_opt(secs: i32) -> Option<FixedOffset> {
         if -86_400 < secs && secs < 86_400 {
             Some(FixedOffset { local_minus_utc: secs })
@@ -65,6 +67,7 @@ impl FixedOffset {
     ///
     /// Panics on the out-of-bound `secs`.
     #[deprecated(since = "0.4.23", note = "use `west_opt()` instead")]
+    #[must_use]
     pub fn west(secs: i32) -> FixedOffset {
         FixedOffset::west_opt(secs).expect("FixedOffset::west out of bounds")
     }
@@ -83,6 +86,7 @@ impl FixedOffset {
     ///                                           .and_hms_opt(0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
     /// ```
+    #[must_use]
     pub const fn west_opt(secs: i32) -> Option<FixedOffset> {
         if -86_400 < secs && secs < 86_400 {
             Some(FixedOffset { local_minus_utc: -secs })

@@ -519,15 +519,3 @@ impl fmt::Debug for OutOfRange {
 
 #[cfg(feature = "std")]
 impl std::error::Error for OutOfRange {}
-
-/// MSRV 1.42
-#[cfg(test)]
-#[macro_export]
-macro_rules! matches {
-    ($expression:expr, $(|)? $( $pattern:pat )|+ $( if $guard: expr )? $(,)?) => {
-        match $expression {
-            $( $pattern )|+ $( if $guard )? => true,
-            _ => false
-        }
-    }
-}

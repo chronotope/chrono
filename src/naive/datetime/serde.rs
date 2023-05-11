@@ -110,6 +110,7 @@ pub mod ts_nanoseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -136,6 +137,7 @@ pub mod ts_nanoseconds {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -230,6 +232,7 @@ pub mod ts_nanoseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -259,6 +262,7 @@ pub mod ts_nanoseconds_option {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -356,6 +360,7 @@ pub mod ts_microseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -382,6 +387,7 @@ pub mod ts_microseconds {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -479,6 +485,7 @@ pub mod ts_microseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -508,6 +515,7 @@ pub mod ts_microseconds_option {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -605,6 +613,7 @@ pub mod ts_milliseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -631,6 +640,7 @@ pub mod ts_milliseconds {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -725,6 +735,7 @@ pub mod ts_milliseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -754,6 +765,7 @@ pub mod ts_milliseconds_option {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -851,6 +863,7 @@ pub mod ts_seconds {
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -877,6 +890,7 @@ pub mod ts_seconds {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -968,6 +982,7 @@ pub mod ts_seconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -997,6 +1012,7 @@ pub mod ts_seconds_option {
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
     /// # Ok::<(), serde_json::Error>(())
     /// ```
+    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,

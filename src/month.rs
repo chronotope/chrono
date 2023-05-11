@@ -29,7 +29,7 @@ use crate::OutOfRange;
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Month {
@@ -66,6 +66,7 @@ impl Month {
     /// ----------- | ---------  | ---------- | --- | ---------
     /// `m.succ()`: | `February` | `March`    | `...` | `January`
     #[inline]
+    #[must_use]
     pub const fn succ(&self) -> Month {
         match *self {
             Month::January => Month::February,
@@ -89,6 +90,7 @@ impl Month {
     /// ----------- | ---------  | ---------- | --- | ---------
     /// `m.pred()`: | `December` | `January`  | `...` | `November`
     #[inline]
+    #[must_use]
     pub const fn pred(&self) -> Month {
         match *self {
             Month::January => Month::December,
@@ -112,6 +114,7 @@ impl Month {
     /// -------------------------| --------- | ---------- | --- | -----
     /// `m.number_from_month()`: | 1         | 2          | `...` | 12
     #[inline]
+    #[must_use]
     pub const fn number_from_month(&self) -> u32 {
         match *self {
             Month::January => 1,
@@ -136,6 +139,7 @@ impl Month {
     ///
     /// assert_eq!(Month::January.name(), "January")
     /// ```
+    #[must_use]
     pub const fn name(&self) -> &'static str {
         match *self {
             Month::January => "January",
@@ -333,5 +337,14 @@ mod tests {
         assert_eq!(Month::December.succ(), Month::January);
         assert_eq!(Month::January.pred(), Month::December);
         assert_eq!(Month::February.pred(), Month::January);
+    }
+
+    #[test]
+    fn test_month_partial_ord() {
+        assert!(Month::January <= Month::January);
+        assert!(Month::January < Month::February);
+        assert!(Month::January < Month::December);
+        assert!(Month::July >= Month::May);
+        assert!(Month::September > Month::March);
     }
 }
