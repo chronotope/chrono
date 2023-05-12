@@ -17,7 +17,7 @@ jobs:
           cargo fmt --check -- --color=always
           cargo fmt --check --manifest-path fuzz/Cargo.toml
       - run: |
-          cargo clippy --color=always -- -D warnings -A clippy::manual-non-exhaustive
+          cargo clippy --color=always -- -D warnings
           cargo clippy --manifest-path fuzz/Cargo.toml --color=always -- -D warnings
         env:
           RUSTFLAGS: "-Dwarnings"
