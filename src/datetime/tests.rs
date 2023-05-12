@@ -6,9 +6,7 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::Local;
 use crate::offset::{FixedOffset, TimeZone, Utc};
 use crate::oldtime::Duration;
-#[cfg(feature = "clock")]
-use crate::Datelike;
-use crate::{Days, LocalResult, Months, NaiveDateTime};
+use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
 
 #[derive(Clone)]
 struct DstTester;
