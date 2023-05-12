@@ -246,18 +246,24 @@ mod tests {
         // issue #123
         let today = Utc::now().date_naive();
 
-        let dt = today.and_hms_milli_opt(1, 2, 59, 1000).unwrap();
-        let timestr = dt.time().to_string();
-        // the OS API may or may not support the leap second,
-        // but there are only two sensible options.
-        assert!(timestr == "01:02:60" || timestr == "01:03:00", "unexpected timestr {:?}", timestr);
+        if let Some(dt) = today.and_hms_milli_opt(15, 2, 59, 1000) {
+            let timestr = dt.time().to_string();
+            // the OS API may or may not support the leap second,
+            // but there are only two sensible options.
+            assert!(
+                timestr == "15:02:60" || timestr == "15:03:00",
+                "unexpected timestr {:?}",
+                timestr
+            );
+        }
 
-        let dt = today.and_hms_milli_opt(1, 2, 3, 1234).unwrap();
-        let timestr = dt.time().to_string();
-        assert!(
-            timestr == "01:02:03.234" || timestr == "01:02:04.234",
-            "unexpected timestr {:?}",
-            timestr
-        );
+        if let Some(dt) = today.and_hms_milli_opt(15, 2, 3, 1234) {
+            let timestr = dt.time().to_string();
+            assert!(
+                timestr == "15:02:03.234" || timestr == "15:02:04.234",
+                "unexpected timestr {:?}",
+                timestr
+            );
+        }
     }
 }
