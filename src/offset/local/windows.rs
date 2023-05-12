@@ -96,7 +96,8 @@ impl LocalSysTime {
 
         let date =
             NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32).unwrap();
-        let time = NaiveTime::from_hms(st.wHour as u32, st.wMinute as u32, st.wSecond as u32);
+        let time =
+            NaiveTime::from_hms_opt(st.wHour as u32, st.wMinute as u32, st.wSecond as u32).unwrap();
 
         let offset = FixedOffset::east_opt(self.offset).unwrap();
         DateTime::from_utc(date.and_time(time) - offset, offset)
