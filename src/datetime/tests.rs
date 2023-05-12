@@ -4,7 +4,7 @@ use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::offset::{FixedOffset, TimeZone, Utc};
+use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::oldtime::Duration;
 use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
 
@@ -982,4 +982,15 @@ fn test_from_naive_date_time_windows() {
         Local.from_utc_datetime(&too_high_year);
     });
     assert!(err.is_err());
+}
+
+#[test]
+fn test_datetime_local_from_preserves_offset() {
+    let naivedatetime = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+
+    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let offset = datetime.offset().fix();
+
+    let datetime_fixed: DateTime<FixedOffset> = datetime.into();
+    assert_eq!(&offset, datetime_fixed.offset());
 }
