@@ -44,7 +44,7 @@ macro_rules! expand_ampm {
 /// it will then match the locale and return its `LC_TIME::T_FMT_AMPM` field.
 /// fallbacks to en_US if the field is an empty string.
 ///
-/// ```rs
+/// ```rust,ignore
 /// // usage:
 /// locale => ( Locale::POSIX, Locale::aa_DJ, ...)
 /// // expands into:
@@ -86,7 +86,7 @@ macro_rules! locale_match_ampm {
 /// causing compile error.
 ///
 /// example:
-/// ```rs
+/// ```rust,ignore
 /// locale_match!(locale => LC_TIME::T_FMT_AMPM)
 ///
 /// error[E0425]: cannot find value `T_FMT_AMPM` in module `$crate::ff_SN::LC_TIME`
