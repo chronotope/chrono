@@ -950,7 +950,7 @@ fn test_datetime_sub_assign_local() {
 }
 
 #[test]
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "clock"))]
 fn test_from_naive_date_time_windows() {
     let min_year = NaiveDate::from_ymd_opt(1601, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
