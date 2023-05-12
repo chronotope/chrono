@@ -2,9 +2,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
+use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
-use crate::offset::Local;
-use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::offset::{Local, Offset};
 use crate::oldtime::Duration;
 use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
 
@@ -985,6 +985,7 @@ fn test_from_naive_date_time_windows() {
 }
 
 #[test]
+#[cfg(feature = "clock")]
 fn test_datetime_local_from_preserves_offset() {
     let naivedatetime = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
