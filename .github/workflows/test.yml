@@ -78,6 +78,8 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - run: cargo hack check --feature-powerset --optional-deps serde,rkyv --skip default --skip __internal_bench --skip __doctest --skip iana-time-zone --skip pure-rust-locales
+      - run: cargo test --lib --no-default-features
+      - run: cargo test --doc --no-default-features
 
   no_std:
     strategy:
