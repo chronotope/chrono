@@ -902,7 +902,7 @@ impl NaiveDateTime {
 }
 
 impl Datelike for NaiveDateTime {
-    /// Returns the year number in the [calendar date](./index.html#calendar-date).
+    /// Returns the year number in the [calendar date](./struct.NaiveDate.html#calendar-date).
     ///
     /// See also the [`NaiveDate::year`] method.
     ///
@@ -1377,10 +1377,9 @@ impl Timelike for NaiveDateTime {
 
 /// An addition of `Duration` to `NaiveDateTime` yields another `NaiveDateTime`.
 ///
-/// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveDateTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// Panics on underflow or overflow. Use [`NaiveDateTime::checked_add_signed`]
 /// to detect that.
@@ -1424,6 +1423,8 @@ impl Timelike for NaiveDateTime {
 /// assert_eq!(leap + Duration::days(1),
 ///            from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap());
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Add<OldDuration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1488,10 +1489,9 @@ impl Add<Months> for NaiveDateTime {
 /// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
 /// It is the same as the addition with a negated `Duration`.
 ///
-/// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveDateTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// Panics on underflow or overflow. Use [`NaiveDateTime::checked_sub_signed`]
 /// to detect that.
@@ -1533,6 +1533,8 @@ impl Add<Months> for NaiveDateTime {
 /// assert_eq!(leap - Duration::days(1),
 ///            from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap());
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Sub<OldDuration> for NaiveDateTime {
     type Output = NaiveDateTime;
 

@@ -139,8 +139,7 @@ impl Days {
 }
 
 /// ISO 8601 calendar date without timezone.
-/// Allows for every [proleptic Gregorian date](#calendar-date)
-/// from Jan 1, 262145 BCE to Dec 31, 262143 CE.
+/// Allows for every [proleptic Gregorian date] from Jan 1, 262145 BCE to Dec 31, 262143 CE.
 /// Also supports the conversion from ISO 8601 ordinal and week date.
 ///
 /// # Calendar Date
@@ -186,6 +185,8 @@ impl Days {
 /// The year number is the same as that of the [calendar date](#calendar-date).
 ///
 /// This is currently the internal format of Chrono's date types.
+///
+/// [proleptic Gregorian date]: crate::NaiveDate#calendar-date
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 pub struct NaiveDate {
@@ -1654,8 +1655,7 @@ impl Datelike for NaiveDate {
 /// An addition of `Duration` to `NaiveDate` discards the fractional days,
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 ///
-/// Panics on underflow or overflow.
-/// Use [`NaiveDate::checked_add_signed`](#method.checked_add_signed) to detect that.
+/// Panics on underflow or overflow. Use [`NaiveDate::checked_add_signed`] to detect that.
 ///
 /// # Example
 ///
@@ -1673,6 +1673,8 @@ impl Datelike for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*4 + 1),    from_ymd(2018, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + Duration::days(365*400 + 97), from_ymd(2414, 1, 1));
 /// ```
+///
+/// [`NaiveDate::checked_add_signed`]: crate::NaiveDate::checked_add_signed
 impl Add<OldDuration> for NaiveDate {
     type Output = NaiveDate;
 
@@ -1762,8 +1764,7 @@ impl Sub<Days> for NaiveDate {
 /// rounding to the closest integral number of days towards `Duration::zero()`.
 /// It is the same as the addition with a negated `Duration`.
 ///
-/// Panics on underflow or overflow.
-/// Use [`NaiveDate::checked_sub_signed`](#method.checked_sub_signed) to detect that.
+/// Panics on underflow or overflow. Use [`NaiveDate::checked_sub_signed`] to detect that.
 ///
 /// # Example
 ///
@@ -1781,6 +1782,8 @@ impl Sub<Days> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*4 + 1),    from_ymd(2010, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - Duration::days(365*400 + 97), from_ymd(1614, 1, 1));
 /// ```
+///
+/// [`NaiveDate::checked_sub_signed`]: crate::NaiveDate::checked_sub_signed
 impl Sub<OldDuration> for NaiveDate {
     type Output = NaiveDate;
 

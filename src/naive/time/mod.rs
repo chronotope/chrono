@@ -987,10 +987,9 @@ impl Timelike for NaiveTime {
 /// An addition of `Duration` to `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 ///
-/// As a part of Chrono's [leap second handling](#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
+/// assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// # Example
 ///
@@ -1033,6 +1032,8 @@ impl Timelike for NaiveTime {
 /// assert_eq!(leap + Duration::seconds(-10),       from_hmsm(3, 5, 50, 300));
 /// assert_eq!(leap + Duration::days(1),            from_hmsm(3, 5, 59, 300));
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Add<OldDuration> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1053,10 +1054,9 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// In particular the addition ignores integral number of days.
 /// It is the same as the addition with a negated `Duration`.
 ///
-/// As a part of Chrono's [leap second handling](#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling], the subtraction assumes that **there is no leap
+/// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
+/// assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// # Example
 ///
@@ -1094,6 +1094,8 @@ impl AddAssign<OldDuration> for NaiveTime {
 /// assert_eq!(leap - Duration::seconds(60),       from_hmsm(3, 5, 0, 300));
 /// assert_eq!(leap - Duration::days(1),           from_hmsm(3, 6, 0, 300));
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Sub<OldDuration> for NaiveTime {
     type Output = NaiveTime;
 
