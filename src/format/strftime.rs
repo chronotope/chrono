@@ -679,14 +679,14 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[cfg(test)]
 fn setup_naive_dt() -> crate::DateTime<crate::FixedOffset> {
-    use crate::{FixedOffset, TimeZone};
+    use crate::{FixedOffset, NaiveDate};
 
-    FixedOffset::east_opt(34200).unwrap().ymd_opt(2001, 7, 8).unwrap().and_hms_nano(
-        0,
-        34,
-        59,
-        1_026_490_708,
-    )
+    NaiveDate::from_ymd_opt(2001, 7, 8)
+        .unwrap()
+        .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+        .unwrap()
+        .and_local_timezone(FixedOffset::east_opt(34200).unwrap())
+        .unwrap()
 }
 
 #[cfg(feature = "unstable-locales")]
