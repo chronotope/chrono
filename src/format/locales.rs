@@ -38,11 +38,11 @@ macro_rules! expand_ampm {
     };
 }
 
-/// hardcoded `locale_match!` fallback for `T_FMT_AMPM`.
+/// Hardcoded `locale_match!` fallback for `T_FMT_AMPM`.
 ///
-/// it takes variable number of possible locales that have `LC_TIME::T_FMT_AMPM` field.
-/// it will then match the locale and return its `LC_TIME::T_FMT_AMPM` field.
-/// fallbacks to en_US if the field is an empty string.
+/// `local_match_ampm` takes variable number of possible locales that have `LC_TIME::T_FMT_AMPM` field.
+/// It will then match the locale and return its `LC_TIME::T_FMT_AMPM` field.
+/// It will fallback to `en_US` if the field is an empty string.
 ///
 /// ```rust,ignore
 /// // usage:
@@ -74,16 +74,16 @@ macro_rules! locale_match_ampm {
     }
 }
 
-/// finds locale's time format in 12 hour AM/PM.
+/// Finds a locale's time format in 12 hour AM/PM.
 ///
-/// uses hardcoded [locale_match_ampm] macro to find `LC_TIME::T_FMT_AMPM` field.
+/// `t_fmt_ampm` uses [`locale_match_ampm`] macro to find `LC_TIME::T_FMT_AMPM` field in `locale`.
 ///
-/// ## Why locale_match won't work
+/// ## Why `locale_match` will not work
 ///
 /// [locale_match] assumes every single locale module to have same field.
-/// however, due to issues in [pure-rust-locales][issue],
+/// however, due to issues in [pure-rust-locales][Issue #4],
 /// three locales (ff_SN, km_KH, ug_CN) are missing `LC_TIME::T_FMT_AMPM` field,
-/// causing compile error.
+/// causing a compile error.
 ///
 /// example:
 /// ```rust,ignore
@@ -108,7 +108,7 @@ macro_rules! locale_match_ampm {
 ///      and 285 other candidates
 /// ```
 ///
-/// [issue]: https://github.com/cecton/pure-rust-locales/issues/4
+/// [Issue #4]: https://github.com/cecton/pure-rust-locales/issues/4
 pub(crate) fn t_fmt_ampm(locale: Locale) -> &'static str {
     #[allow(unused_imports)]
     use pure_rust_locales::Locale::*;
