@@ -678,7 +678,7 @@ fn test_strftime_docs() {
 /// helper function to setup a date time for the localized tests
 #[cfg(feature = "unstable-locales")]
 #[cfg(test)]
-fn setup_naive_dt() -> crate::DateTime<crate::FixedOffset> {
+fn datetime_for_localized_tests() -> crate::DateTime<crate::FixedOffset> {
     use crate::{FixedOffset, NaiveDate};
 
     NaiveDate::from_ymd_opt(2001, 7, 8)
@@ -694,7 +694,7 @@ fn setup_naive_dt() -> crate::DateTime<crate::FixedOffset> {
 fn test_strftime_docs_localized() {
     use crate::NaiveDate;
 
-    let dt = setup_naive_dt();
+    let dt = datetime_for_localized_tests();
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");
     assert_eq!(dt.format_localized("%B", Locale::fr_BE).to_string(), "juillet");
@@ -737,7 +737,7 @@ fn test_strftime_docs_localized() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_localized_korean() {
-    let dt = setup_naive_dt();
+    let dt = datetime_for_localized_tests();
 
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::ko_KR).to_string(), " 7월");
@@ -761,7 +761,7 @@ fn test_strftime_localized_korean() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_localized_japanese() {
-    let dt = setup_naive_dt();
+    let dt = datetime_for_localized_tests();
 
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::ja_JP).to_string(), " 7月");
