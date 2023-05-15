@@ -36,3 +36,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-deadlinks
       - run: RUSTFLAGS="--cfg docsrs" cargo deadlinks -- --features=serde
+      - run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
