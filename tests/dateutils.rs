@@ -1,7 +1,11 @@
+#[cfg(unix)]
 use chrono::offset::TimeZone;
+#[cfg(unix)]
 use chrono::Local;
+#[cfg(unix)]
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
 
+#[cfg(unix)]
 use std::{path, process};
 
 #[cfg(unix)]
@@ -51,7 +55,10 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
 #[test]
 #[cfg(unix)]
 fn try_verify_against_date_command() {
+    #[cfg(not(target_os = "aix"))]
     let date_path = "/usr/bin/date";
+    #[cfg(target_os = "aix")]
+    let date_path = "/opt/freeware/bin/date";
 
     if !path::Path::new(date_path).exists() {
         // date command not found, skipping

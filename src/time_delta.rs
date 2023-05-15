@@ -74,6 +74,7 @@ impl TimeDelta {
     /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
+    #[must_use]
     pub fn weeks(weeks: i64) -> TimeDelta {
         let secs = weeks.checked_mul(SECS_PER_WEEK).expect("Duration::weeks out of bounds");
         TimeDelta::seconds(secs)
@@ -83,6 +84,7 @@ impl TimeDelta {
     /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
+    #[must_use]
     pub fn days(days: i64) -> TimeDelta {
         let secs = days.checked_mul(SECS_PER_DAY).expect("Duration::days out of bounds");
         TimeDelta::seconds(secs)
@@ -92,6 +94,7 @@ impl TimeDelta {
     /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
+    #[must_use]
     pub fn hours(hours: i64) -> TimeDelta {
         let secs = hours.checked_mul(SECS_PER_HOUR).expect("Duration::hours ouf of bounds");
         TimeDelta::seconds(secs)
@@ -101,6 +104,7 @@ impl TimeDelta {
     /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
+    #[must_use]
     pub fn minutes(minutes: i64) -> TimeDelta {
         let secs = minutes.checked_mul(SECS_PER_MINUTE).expect("Duration::minutes out of bounds");
         TimeDelta::seconds(secs)
@@ -110,6 +114,7 @@ impl TimeDelta {
     /// Panics when the duration is more than `i64::MAX` seconds
     /// or less than `i64::MIN` seconds.
     #[inline]
+    #[must_use]
     pub fn seconds(seconds: i64) -> TimeDelta {
         let d = TimeDelta { secs: seconds, nanos: 0 };
         if d < MIN || d > MAX {
@@ -211,6 +216,7 @@ impl TimeDelta {
     }
 
     /// Add two durations, returning `None` if overflow occurred.
+    #[must_use]
     pub fn checked_add(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
         let mut secs = try_opt!(self.secs.checked_add(rhs.secs));
         let mut nanos = self.nanos + rhs.nanos;
@@ -229,6 +235,7 @@ impl TimeDelta {
     }
 
     /// Subtract two durations, returning `None` if overflow occurred.
+    #[must_use]
     pub fn checked_sub(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
         let mut secs = try_opt!(self.secs.checked_sub(rhs.secs));
         let mut nanos = self.nanos - rhs.nanos;

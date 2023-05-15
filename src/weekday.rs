@@ -10,6 +10,26 @@ use crate::OutOfRange;
 /// The order of the days of week depends on the context.
 /// (This is why this type does *not* implement `PartialOrd` or `Ord` traits.)
 /// One should prefer `*_from_monday` or `*_from_sunday` methods to get the correct result.
+///
+/// # Example
+/// ```
+/// use chrono::Weekday;
+/// use std::convert::TryFrom;
+///
+/// let monday = "Monday".parse::<Weekday>().unwrap();
+/// assert_eq!(monday, Weekday::Mon);
+///
+/// let sunday = Weekday::try_from(6).unwrap();
+/// assert_eq!(sunday, Weekday::Sun);
+///
+/// assert_eq!(sunday.num_days_from_monday(), 6); // starts counting with Monday = 0
+/// assert_eq!(sunday.number_from_monday(), 7); // starts counting with Monday = 1
+/// assert_eq!(sunday.num_days_from_sunday(), 0); // starts counting with Sunday = 0
+/// assert_eq!(sunday.number_from_sunday(), 1); // starts counting with Sunday = 1
+///
+/// assert_eq!(sunday.succ(), monday);
+/// assert_eq!(sunday.pred(), Weekday::Sat);
+/// ```
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -37,6 +57,7 @@ impl Weekday {
     /// ----------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.succ()`: | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun` | `Mon`
     #[inline]
+    #[must_use]
     pub const fn succ(&self) -> Weekday {
         match *self {
             Weekday::Mon => Weekday::Tue,
@@ -55,6 +76,7 @@ impl Weekday {
     /// ----------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.pred()`: | `Sun` | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat`
     #[inline]
+    #[must_use]
     pub const fn pred(&self) -> Weekday {
         match *self {
             Weekday::Mon => Weekday::Sun,
@@ -109,7 +131,7 @@ impl Weekday {
 
     /// Returns a day-of-week number starting from the parameter `day` (D) = 0.
     ///
-    /// `w`:                        | `D` | `D+1` | `D+2` | `D+3` | `D+4` | `D+5` | `D+6`
+    /// `w`:                        | `D`   | `D+1` | `D+2` | `D+3` | `D+4` | `D+5` | `D+6`
     /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.num_days_from(wd)`:      | 0     | 1     | 2     | 3     | 4     | 5     | 6
     #[inline]

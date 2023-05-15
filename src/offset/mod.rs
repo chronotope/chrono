@@ -52,6 +52,7 @@ pub enum LocalResult<T> {
 
 impl<T> LocalResult<T> {
     /// Returns `Some` only when the conversion result is unique, or `None` otherwise.
+    #[must_use]
     pub fn single(self) -> Option<T> {
         match self {
             LocalResult::Single(t) => Some(t),
@@ -60,6 +61,7 @@ impl<T> LocalResult<T> {
     }
 
     /// Returns `Some` for the earliest possible conversion result, or `None` if none.
+    #[must_use]
     pub fn earliest(self) -> Option<T> {
         match self {
             LocalResult::Single(t) | LocalResult::Ambiguous(t, _) => Some(t),
@@ -68,6 +70,7 @@ impl<T> LocalResult<T> {
     }
 
     /// Returns `Some` for the latest possible conversion result, or `None` if none.
+    #[must_use]
     pub fn latest(self) -> Option<T> {
         match self {
             LocalResult::Single(t) | LocalResult::Ambiguous(_, t) => Some(t),
@@ -76,6 +79,7 @@ impl<T> LocalResult<T> {
     }
 
     /// Maps a `LocalResult<T>` into `LocalResult<U>` with given function.
+    #[must_use]
     pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> LocalResult<U> {
         match self {
             LocalResult::None => LocalResult::None,
@@ -92,6 +96,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
+    #[must_use]
     pub fn and_time(self, time: NaiveTime) -> LocalResult<DateTime<Tz>> {
         match self {
             LocalResult::Single(d) => {
@@ -106,6 +111,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
+    #[must_use]
     pub fn and_hms_opt(self, hour: u32, min: u32, sec: u32) -> LocalResult<DateTime<Tz>> {
         match self {
             LocalResult::Single(d) => {
@@ -121,6 +127,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
+    #[must_use]
     pub fn and_hms_milli_opt(
         self,
         hour: u32,
@@ -142,6 +149,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
+    #[must_use]
     pub fn and_hms_micro_opt(
         self,
         hour: u32,
@@ -163,6 +171,7 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
     ///
     /// Propagates any error. Ambiguous result would be discarded.
     #[inline]
+    #[must_use]
     pub fn and_hms_nano_opt(
         self,
         hour: u32,
@@ -181,6 +190,8 @@ impl<Tz: TimeZone> LocalResult<Date<Tz>> {
 
 impl<T: fmt::Debug> LocalResult<T> {
     /// Returns the single unique conversion result, or panics accordingly.
+    #[must_use]
+    #[track_caller]
     pub fn unwrap(self) -> T {
         match self {
             LocalResult::None => panic!("No such local time"),
