@@ -9,7 +9,6 @@ use core::convert::TryFrom;
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::utils::div_rem;
 use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 
 /// Parsed parts of date and time. There are two classes of methods:
@@ -310,7 +309,8 @@ impl Parsed {
                     if y < 0 {
                         return Err(OUT_OF_RANGE);
                     }
-                    let (q_, r_) = div_rem(y, 100);
+                    let q_ = y / 100;
+                    let r_ = y % 100;
                     if q.unwrap_or(q_) == q_ && r.unwrap_or(r_) == r_ {
                         Ok(Some(y))
                     } else {
@@ -345,8 +345,7 @@ impl Parsed {
         let verify_ymd = |date: NaiveDate| {
             let year = date.year();
             let (year_div_100, year_mod_100) = if year >= 0 {
-                let (q, r) = div_rem(year, 100);
-                (Some(q), Some(r))
+                (Some(year / 100), Some(year % 100))
             } else {
                 (None, None) // they should be empty to be consistent
             };
@@ -366,8 +365,7 @@ impl Parsed {
             let isoweek = week.week();
             let weekday = date.weekday();
             let (isoyear_div_100, isoyear_mod_100) = if isoyear >= 0 {
-                let (q, r) = div_rem(isoyear, 100);
-                (Some(q), Some(r))
+                (Some(isoyear / 100), Some(isoyear % 100))
             } else {
                 (None, None) // they should be empty to be consistent
             };

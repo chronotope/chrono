@@ -5,7 +5,6 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::cmp::Ordering;
 use core::convert::TryFrom;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -19,7 +18,6 @@ use crate::format::DelayedFormat;
 use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
-use crate::utils::div_mod_floor;
 use crate::{DateTime, Datelike, LocalResult, Months, TimeDelta, TimeZone, Timelike, Weekday};
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -36,11 +34,6 @@ mod tests;
 /// an alternative returning `Option` or `Result`. Thus we need some early bound to avoid
 /// touching that call when we are already sure that it WILL overflow...
 const MAX_SECS_BITS: usize = 44;
-
-/// Number of nanoseconds in a millisecond
-const NANOS_IN_MILLISECOND: u32 = 1_000_000;
-/// Number of nanoseconds in a second
-const NANOS_IN_SECOND: u32 = 1000 * NANOS_IN_MILLISECOND;
 
 /// The minimum possible `NaiveDateTime`.
 #[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MIN instead")]
@@ -80,32 +73,6 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 pub struct NaiveDateTime {
     date: NaiveDate,
     time: NaiveTime,
-}
-
-/// The unit of a timestamp expressed in fractions of a second.
-/// Currently either milliseconds or microseconds.
-///
-/// This is a private type, used in the implementation of
-/// [NaiveDateTime::from_timestamp_millis] and [NaiveDateTime::from_timestamp_micros].
-#[derive(Clone, Copy, Debug)]
-enum TimestampUnit {
-    Millis,
-    Micros,
-}
-
-impl TimestampUnit {
-    fn per_second(self) -> u32 {
-        match self {
-            TimestampUnit::Millis => 1_000,
-            TimestampUnit::Micros => 1_000_000,
-        }
-    }
-    fn nanos_per(self) -> u32 {
-        match self {
-            TimestampUnit::Millis => 1_000_000,
-            TimestampUnit::Micros => 1_000,
-        }
-    }
 }
 
 impl NaiveDateTime {
@@ -175,7 +142,9 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
-        Self::from_timestamp_unit(millis, TimestampUnit::Millis)
+        let secs = millis.div_euclid(1000);
+        let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
     /// Creates a new [NaiveDateTime] from microseconds since the UNIX epoch.
@@ -202,7 +171,9 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
-        Self::from_timestamp_unit(micros, TimestampUnit::Micros)
+        let secs = micros.div_euclid(1_000_000);
+        let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -234,7 +205,8 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        let (days, secs) = div_mod_floor(secs, 86_400);
+        let days = secs.div_euclid(86_400);
+        let secs = secs.rem_euclid(86_400);
         let date = i32::try_from(days)
             .ok()
             .and_then(|days| days.checked_add(719_163))
@@ -923,40 +895,10 @@ impl NaiveDateTime {
     pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
     /// The maximum possible `NaiveDateTime`.
     pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
-
-    /// Creates a new [NaiveDateTime] from milliseconds or microseconds since the UNIX epoch.
-    ///
-    /// This is a private function used by [from_timestamp_millis] and [from_timestamp_micros].
-    #[inline]
-    fn from_timestamp_unit(value: i64, unit: TimestampUnit) -> Option<NaiveDateTime> {
-        let (secs, subsecs) =
-            (value / i64::from(unit.per_second()), value % i64::from(unit.per_second()));
-
-        match subsecs.cmp(&0) {
-            Ordering::Less => {
-                // in the case where our subsec part is negative, then we are actually in the earlier second
-                // hence we subtract one from the seconds part, and we then add a whole second worth of nanos
-                // to our nanos part. Due to the use of u32 datatype, it is more convenient to subtract
-                // the absolute value of the subsec nanos from a whole second worth of nanos
-                let nsecs = u32::try_from(subsecs.abs()).ok()? * unit.nanos_per();
-                NaiveDateTime::from_timestamp_opt(
-                    secs.checked_sub(1)?,
-                    NANOS_IN_SECOND.checked_sub(nsecs)?,
-                )
-            }
-            Ordering::Equal => NaiveDateTime::from_timestamp_opt(secs, 0),
-            Ordering::Greater => {
-                // convert the subsec millis into nanosecond scale so they can be supplied
-                // as the nanoseconds parameter
-                let nsecs = u32::try_from(subsecs).ok()? * unit.nanos_per();
-                NaiveDateTime::from_timestamp_opt(secs, nsecs)
-            }
-        }
-    }
 }
 
 impl Datelike for NaiveDateTime {
-    /// Returns the year number in the [calendar date](./index.html#calendar-date).
+    /// Returns the year number in the [calendar date](./struct.NaiveDate.html#calendar-date).
     ///
     /// See also the [`NaiveDate::year`] method.
     ///
@@ -1431,10 +1373,9 @@ impl Timelike for NaiveDateTime {
 
 /// An addition of `TimeDelta` to `NaiveDateTime` yields another `NaiveDateTime`.
 ///
-/// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveDateTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// Panics on underflow or overflow. Use [`NaiveDateTime::checked_add_signed`]
 /// to detect that.
@@ -1478,6 +1419,8 @@ impl Timelike for NaiveDateTime {
 /// assert_eq!(leap + TimeDelta::days(1),
 ///            from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap());
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Add<TimeDelta> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1542,10 +1485,9 @@ impl Add<Months> for NaiveDateTime {
 /// A subtraction of `TimeDelta` from `NaiveDateTime` yields another `NaiveDateTime`.
 /// It is the same as the addition with a negated `TimeDelta`.
 ///
-/// As a part of Chrono's [leap second handling](./struct.NaiveTime.html#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveDateTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// Panics on underflow or overflow. Use [`NaiveDateTime::checked_sub_signed`]
 /// to detect that.
@@ -1587,6 +1529,8 @@ impl Add<Months> for NaiveDateTime {
 /// assert_eq!(leap - TimeDelta::days(1),
 ///            from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap());
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Sub<TimeDelta> for NaiveDateTime {
     type Output = NaiveDateTime;
 
