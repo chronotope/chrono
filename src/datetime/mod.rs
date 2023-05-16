@@ -317,6 +317,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
         tz.from_utc_datetime(&self.datetime)
     }
 
+    /// Fix the offset from UTC to its current value, dropping the associated timezone information.
+    /// This it useful for converting a generic `DateTime<Tz: Timezone>` to `DateTime<FixedOffset>`.
+    #[inline]
+    #[must_use]
+    pub fn fixed_offset(&self) -> DateTime<FixedOffset> {
+        self.with_timezone(&self.offset().fix())
+    }
+
     /// Adds given `Duration` to the current date and time.
     ///
     /// Returns `None` when it will result in overflow.
@@ -521,10 +529,9 @@ impl From<DateTime<Local>> for DateTime<Utc> {
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
     ///
-    /// Conversion is performed via [`DateTime::with_timezone`]. Note that the converted value returned
-    /// by this will be created with a fixed timezone offset of 0.
+    /// Conversion is performed via [`DateTime::with_timezone`].
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&FixedOffset::east_opt(0).unwrap())
+        src.with_timezone(&src.offset().fix())
     }
 }
 
@@ -544,6 +551,9 @@ impl DateTime<FixedOffset> {
     ///
     /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
     /// and email headers.
+    ///
+    /// The RFC 2822 standard allows arbitrary intermixed whitespace.
+    /// See [RFC 2822 Appendix A.5]
     ///
     /// The RFC 2822 standard allows arbitrary intermixed whitespace.
     /// See [RFC 2822 Appendix A.5]

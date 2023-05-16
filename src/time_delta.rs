@@ -463,31 +463,9 @@ impl Error for OutOfRangeError {
     }
 }
 
-// Copied from libnum
 #[inline]
 const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
-    (div_floor_64(this, other), mod_floor_64(this, other))
-}
-
-#[inline]
-const fn div_floor_64(this: i64, other: i64) -> i64 {
-    match div_rem_64(this, other) {
-        (d, r) if (r > 0 && other < 0) || (r < 0 && other > 0) => d - 1,
-        (d, _) => d,
-    }
-}
-
-#[inline]
-const fn mod_floor_64(this: i64, other: i64) -> i64 {
-    match this % other {
-        r if (r > 0 && other < 0) || (r < 0 && other > 0) => r + other,
-        r => r,
-    }
-}
-
-#[inline]
-const fn div_rem_64(this: i64, other: i64) -> (i64, i64) {
-    (this / other, this % other)
+    (this.div_euclid(other), this.rem_euclid(other))
 }
 
 #[cfg(feature = "arbitrary")]

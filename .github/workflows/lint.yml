@@ -12,13 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu, x86_64-pc-windows-msvc
       - uses: Swatinem/rust-cache@v2
-      - run: |
-          cargo fmt --check -- --color=always
-          cargo fmt --check --manifest-path fuzz/Cargo.toml
-      - run: |
-          cargo clippy --color=always -- -D warnings -A clippy::manual-non-exhaustive
-          cargo clippy --manifest-path fuzz/Cargo.toml --color=always -- -D warnings
+      - run: cargo fmt --check -- --color=always
+      - run: cargo fmt --check --manifest-path fuzz/Cargo.toml
+      - run: cargo clippy --color=always -- -D warnings
+      - run: cargo clippy --color=always --target x86_64-pc-windows-msvc -- -D warnings
+      - run: cargo clippy --manifest-path fuzz/Cargo.toml --color=always -- -D warnings
         env:
           RUSTFLAGS: "-Dwarnings"
 
@@ -27,6 +28,17 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: EmbarkStudios/cargo-deny-action@v1
+
+  check-doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-deadlinks
+      - run: RUSTFLAGS="--cfg docsrs" cargo deadlinks -- --features=serde
+      - run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -Dwarnings
 
   cffconvert:
     runs-on: ubuntu-latest

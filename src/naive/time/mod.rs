@@ -15,7 +15,6 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 use crate::format::{parse, write_hundreds, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
-use crate::utils::div_mod_floor;
 use crate::{TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
@@ -758,8 +757,10 @@ impl NaiveTime {
 
     /// Returns a triple of the hour, minute and second numbers.
     fn hms(&self) -> (u32, u32, u32) {
-        let (mins, sec) = div_mod_floor(self.secs, 60);
-        let (hour, min) = div_mod_floor(mins, 60);
+        let sec = self.secs % 60;
+        let mins = self.secs / 60;
+        let min = mins % 60;
+        let hour = mins / 60;
         (hour, min, sec)
     }
 
@@ -814,7 +815,8 @@ impl Timelike for NaiveTime {
     /// ([Why?](#leap-second-handling))
     /// Use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
-    /// ```
+    #[cfg_attr(not(feature = "std"), doc = "```ignore")]
+    #[cfg_attr(feature = "std", doc = "```")]
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.second(), 59);
@@ -842,7 +844,8 @@ impl Timelike for NaiveTime {
     /// You can reduce the range with `time.nanosecond() % 1_000_000_000`, or
     /// use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
-    /// ```
+    #[cfg_attr(not(feature = "std"), doc = "```ignore")]
+    #[cfg_attr(feature = "std", doc = "```")]
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
@@ -980,10 +983,9 @@ impl Timelike for NaiveTime {
 /// An addition of `TimeDelta` to `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 ///
-/// As a part of Chrono's [leap second handling](#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
+/// assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// # Example
 ///
@@ -1026,6 +1028,8 @@ impl Timelike for NaiveTime {
 /// assert_eq!(leap + TimeDelta::seconds(-10),       from_hmsm(3, 5, 50, 300));
 /// assert_eq!(leap + TimeDelta::days(1),            from_hmsm(3, 5, 59, 300));
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Add<TimeDelta> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1046,10 +1050,9 @@ impl AddAssign<TimeDelta> for NaiveTime {
 /// In particular the addition ignores integral number of days.
 /// It is the same as the addition with a negated `TimeDelta`.
 ///
-/// As a part of Chrono's [leap second handling](#leap-second-handling),
-/// the addition assumes that **there is no leap second ever**,
-/// except when the `NaiveTime` itself represents a leap second
-/// in which case the assumption becomes that **there is exactly a single leap second ever**.
+/// As a part of Chrono's [leap second handling], the subtraction assumes that **there is no leap
+/// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
+/// assumption becomes that **there is exactly a single leap second ever**.
 ///
 /// # Example
 ///
@@ -1087,6 +1090,8 @@ impl AddAssign<TimeDelta> for NaiveTime {
 /// assert_eq!(leap - TimeDelta::seconds(60),       from_hmsm(3, 5, 0, 300));
 /// assert_eq!(leap - TimeDelta::days(1),           from_hmsm(3, 6, 0, 300));
 /// ```
+///
+/// [leap second handling]: crate::NaiveTime#leap-second-handling
 impl Sub<TimeDelta> for NaiveTime {
     type Output = NaiveTime;
 
