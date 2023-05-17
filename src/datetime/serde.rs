@@ -1157,6 +1157,206 @@ pub mod ts_microseconds_string {
     }
 }
 
+/// Ser/de to/from optional string timestamps in microseconds
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use serde_derive::{Deserialize, Serialize};
+/// use chrono::serde::ts_microseconds_string_option;
+/// #[derive(Deserialize, Serialize)]
+/// struct S {
+///     #[serde(with = "ts_microseconds_string_option")]
+///     time: Option<DateTime<Utc>>
+/// }
+///
+/// let time = Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap().and_local_timezone(Utc).unwrap());
+/// let my_s = S {
+///     time: time.clone(),
+/// };
+///
+/// let as_string = serde_json::to_string(&my_s)?;
+/// assert_eq!(as_string, r#"{"time":"1526522699918355"}"#);
+/// let my_s: S = serde_json::from_str(&as_string)?;
+/// assert_eq!(my_s.time, time);
+/// # Ok::<(), serde_json::Error>(())
+/// ```
+#[cfg(any(feature = "alloc", feature = "std", test))]
+pub mod ts_microseconds_string_option {
+    #[cfg(all(not(feature = "std"), feature = "alloc"))]
+    use crate::datetime::alloc::string::ToString;
+
+    use core::fmt;
+    use serde::{de, ser};
+
+    use crate::serde::ts_microseconds_string;
+    use crate::{DateTime, Utc};
+
+    /// Serialize an optional UTC datetime into an integer number of microseconds since the epoch, as string
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use serde_derive::Serialize;
+    /// use chrono::serde::ts_microseconds_string_option::serialize as to_micro_ts;
+    /// #[derive(Serialize)]
+    /// struct S {
+    ///     #[serde(serialize_with = "to_micro_ts")]
+    ///     time: Option<DateTime<Utc>>
+    /// }
+    ///
+    /// let my_s = S {
+    ///     time: Some(NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_micro_opt(02, 04, 59, 918355).unwrap().and_local_timezone(Utc).unwrap()),
+    /// };
+    /// let as_string = serde_json::to_string(&my_s)?;
+    /// assert_eq!(as_string, r#"{"time":"1526522699918355"}"#);
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    #[must_use]
+    pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        match *opt {
+            Some(ref dt) => serializer.serialize_some(&dt.timestamp_micros().to_string()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    /// Deserialize a [`DateTime`] from a microsecond timestamp string or none
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    ///
+    /// # Example:
+    ///
+    /// ```rust
+    /// # use chrono::{DateTime, Utc};
+    /// # use serde_derive::Deserialize;
+    /// use chrono::serde::ts_microseconds_string_option::deserialize as from_micro_ts;
+    /// #[derive(Deserialize)]
+    /// struct S {
+    ///     #[serde(deserialize_with = "from_micro_ts")]
+    ///     time: Option<DateTime<Utc>>
+    /// }
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": "1526522699918355" }"#)?;
+    /// # Ok::<(), serde_json::Error>(())
+    /// ```
+    #[must_use]
+    pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        d.deserialize_option(OptionMicroSecondsTimestampVisitor)
+    }
+
+    pub(super) struct OptionMicroSecondsTimestampVisitor;
+
+    impl<'de> de::Visitor<'de> for OptionMicroSecondsTimestampVisitor {
+        type Value = Option<DateTime<Utc>>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a unix timestamp string in microseconds or none")
+        }
+
+        /// Deserialize a string timestamp in microseconds since the epoch
+        fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+        where
+            D: de::Deserializer<'de>,
+        {
+            d.deserialize_str(ts_microseconds_string::MicroSecondsTimestampVisitor).map(Some)
+        }
+
+        /// Deserialize a string timestamp in microseconds since the epoch
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+
+        /// Deserialize a string timestamp in microseconds since the epoch
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(None)
+        }
+    }
+
+    #[cfg(all(test, feature = "serde"))]
+    mod tests {
+        use crate::serde::ts_microseconds_string_option;
+        use crate::{DateTime, NaiveDate, Utc};
+        use serde_derive::{Deserialize, Serialize};
+
+        #[derive(Deserialize, Serialize)]
+        struct S {
+            #[serde(with = "ts_microseconds_string_option")]
+            time: Option<DateTime<Utc>>,
+        }
+
+        #[test]
+        fn test_serialize_ts_microseconds_string_option_some() -> Result<(), serde_json::Error> {
+            let my_s = S {
+                time: Some(
+                    NaiveDate::from_ymd_opt(2018, 5, 17)
+                        .unwrap()
+                        .and_hms_micro_opt(02, 04, 59, 918355)
+                        .unwrap()
+                        .and_local_timezone(Utc)
+                        .unwrap(),
+                ),
+            };
+
+            let as_string = serde_json::to_string(&my_s)?;
+
+            assert_eq!(as_string, r#"{"time":"1526522699918355"}"#);
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_serialize_ts_microseconds_string_option_none() -> Result<(), serde_json::Error> {
+            let my_s = S { time: None };
+
+            let as_string = serde_json::to_string(&my_s)?;
+
+            assert_eq!(as_string, r#"{"time":null}"#);
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_deserialize_ts_microseconds_string_option_some() -> Result<(), serde_json::Error> {
+            const JSON: &'static str = r#"{"time":"1526522699918355"}"#;
+
+            let my_s: S = serde_json::from_str(JSON)?;
+
+            assert_eq!(my_s.time.unwrap().timestamp_micros(), 1526522699918355);
+
+            Ok(())
+        }
+
+        #[test]
+        fn test_deserialize_ts_microseconds_string_option_none() -> Result<(), serde_json::Error> {
+            const JSON: &'static str = r#"{"time":null}"#;
+
+            let my_s: S = serde_json::from_str(JSON)?;
+
+            assert_eq!(my_s.time, None);
+
+            Ok(())
+        }
+    }
+}
+
 /// Ser/de to/from timestamps in milliseconds
 ///
 /// Intended for use with `serde`s `with` attribute.
