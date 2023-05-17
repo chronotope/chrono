@@ -196,7 +196,7 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDateTime, NaiveDate};
+    /// use chrono::NaiveDateTime;
     /// use std::i64;
     ///
     /// let from_timestamp_opt = NaiveDateTime::from_timestamp_opt;
@@ -288,7 +288,7 @@ impl NaiveDateTime {
     /// Years before 1 BCE or after 9999 CE, require an initial sign
     ///
     ///```
-    /// # use chrono::{NaiveDate, NaiveDateTime};
+    /// # use chrono::NaiveDateTime;
     /// # let parse_from_str = NaiveDateTime::parse_from_str;
     /// let fmt = "%Y-%m-%d %H:%M:%S";
     /// assert!(parse_from_str("10000-09-09 01:46:39", fmt).is_err());
@@ -638,8 +638,7 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use std::str::FromStr;
-    /// use chrono::{Months, NaiveDate, NaiveDateTime};
+    /// use chrono::{Months, NaiveDate};
     ///
     /// assert_eq!(
     ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
@@ -741,8 +740,7 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use std::str::FromStr;
-    /// use chrono::{Months, NaiveDate, NaiveDateTime};
+    /// use chrono::{Months, NaiveDate};
     ///
     /// assert_eq!(
     ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
@@ -929,7 +927,7 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveTime, Utc};
+    /// use chrono::{NaiveDate, Utc};
     /// let dt = NaiveDate::from_ymd_opt(2023, 1, 30).unwrap().and_hms_opt(19, 32, 33).unwrap().and_utc();
     /// assert_eq!(dt.timezone(), Utc);
     /// ```
@@ -1496,8 +1494,7 @@ impl Add<Months> for NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDateTime, Months, NaiveDate};
-    /// use std::str::FromStr;
+    /// use chrono::{Months, NaiveDate};
     ///
     /// assert_eq!(
     ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap() + Months::new(1),
@@ -1603,8 +1600,7 @@ impl SubAssign<OldDuration> for NaiveDateTime {
 /// # Example
 ///
 /// ```
-/// use chrono::{Duration, NaiveDateTime, Months, NaiveDate};
-/// use std::str::FromStr;
+/// use chrono::{Months, NaiveDate};
 ///
 /// assert_eq!(
 ///     NaiveDate::from_ymd_opt(2014, 01, 01).unwrap().and_hms_opt(01, 00, 00).unwrap() - Months::new(11),

@@ -75,7 +75,7 @@ mod tests;
 /// All methods accepting fractional seconds will accept such values.
 ///
 /// ```
-/// use chrono::{NaiveDate, NaiveTime, Utc, TimeZone};
+/// use chrono::{NaiveDate, NaiveTime, Utc};
 ///
 /// let t = NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap();
 ///
@@ -162,7 +162,7 @@ mod tests;
 /// will be represented as the second part being 60, as required by ISO 8601.
 ///
 /// ```
-/// use chrono::{Utc, TimeZone, NaiveDate};
+/// use chrono::{Utc, NaiveDate};
 ///
 /// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap().and_local_timezone(Utc).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
