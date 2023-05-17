@@ -250,7 +250,7 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::naive::{NaiveDate, NaiveDateTime};
+    /// # use chrono::naive::NaiveDateTime;
     /// # use serde_derive::Deserialize;
     /// use chrono::naive::serde::ts_nanoseconds_option::deserialize as from_nano_tsopt;
     /// #[derive(Deserialize)]
@@ -503,7 +503,7 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::naive::{NaiveDate, NaiveDateTime};
+    /// # use chrono::naive::NaiveDateTime;
     /// # use serde_derive::Deserialize;
     /// use chrono::naive::serde::ts_microseconds_option::deserialize as from_micro_tsopt;
     /// #[derive(Deserialize)]
@@ -753,7 +753,7 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::naive::{NaiveDate, NaiveDateTime};
+    /// # use chrono::naive::NaiveDateTime;
     /// # use serde_derive::Deserialize;
     /// use chrono::naive::serde::ts_milliseconds_option::deserialize as from_milli_tsopt;
     /// #[derive(Deserialize)]
@@ -1000,7 +1000,7 @@ pub mod ts_seconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::naive::{NaiveDate, NaiveDateTime};
+    /// # use chrono::naive::NaiveDateTime;
     /// # use serde_derive::Deserialize;
     /// use chrono::naive::serde::ts_seconds_option::deserialize as from_tsopt;
     /// #[derive(Deserialize)]

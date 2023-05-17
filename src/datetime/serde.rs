@@ -122,7 +122,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use chrono::{DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds;
 /// #[derive(Deserialize, Serialize)]
@@ -158,7 +158,7 @@ pub mod ts_nanoseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use chrono::{DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds::serialize as to_nano_ts;
     /// #[derive(Serialize)]
@@ -247,7 +247,7 @@ pub mod ts_nanoseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use chrono::{DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_nanoseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -282,7 +282,7 @@ pub mod ts_nanoseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use chrono::{DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_nanoseconds_option::serialize as to_nano_tsopt;
     /// #[derive(Serialize)]
@@ -378,7 +378,7 @@ pub mod ts_nanoseconds_option {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use chrono::{DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds;
 /// #[derive(Deserialize, Serialize)]
@@ -413,7 +413,7 @@ pub mod ts_microseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use chrono::{DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds::serialize as to_micro_ts;
     /// #[derive(Serialize)]
@@ -502,7 +502,7 @@ pub mod ts_microseconds {
 /// # Example:
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use chrono::{DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_microseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -536,7 +536,7 @@ pub mod ts_microseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use chrono::{DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_microseconds_option::serialize as to_micro_tsopt;
     /// #[derive(Serialize)]
@@ -632,7 +632,7 @@ pub mod ts_microseconds_option {
 /// # Example
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use chrono::{DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds;
 /// #[derive(Deserialize, Serialize)]
@@ -667,7 +667,7 @@ pub mod ts_milliseconds {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use chrono::{DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds::serialize as to_milli_ts;
     /// #[derive(Serialize)]
@@ -753,7 +753,7 @@ pub mod ts_milliseconds {
 /// # Example
 ///
 /// ```rust
-/// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+/// # use chrono::{DateTime, Utc, NaiveDate};
 /// # use serde_derive::{Deserialize, Serialize};
 /// use chrono::serde::ts_milliseconds_option;
 /// #[derive(Deserialize, Serialize)]
@@ -787,7 +787,7 @@ pub mod ts_milliseconds_option {
     /// # Example:
     ///
     /// ```rust
-    /// # use chrono::{TimeZone, DateTime, Utc, NaiveDate};
+    /// # use chrono::{DateTime, Utc, NaiveDate};
     /// # use serde_derive::Serialize;
     /// use chrono::serde::ts_milliseconds_option::serialize as to_milli_tsopt;
     /// #[derive(Serialize)]

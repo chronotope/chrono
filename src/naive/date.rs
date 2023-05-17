@@ -1754,7 +1754,7 @@ impl Add<Months> for NaiveDate {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDate, Months};
+    /// use chrono::{NaiveDate, Months};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
@@ -1782,7 +1782,7 @@ impl Sub<Months> for NaiveDate {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Duration, NaiveDate, Months};
+    /// use chrono::{NaiveDate, Months};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///

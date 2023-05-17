@@ -208,7 +208,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, NaiveDate};
+    /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_millis(), 1_444);
@@ -232,7 +232,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, NaiveDate};
+    /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_micro_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
@@ -256,7 +256,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, NaiveDate};
+    /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
@@ -564,7 +564,7 @@ impl DateTime<FixedOffset> {
     /// See [RFC 2822 Appendix A.5]
     ///
     /// ```
-    /// # use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
+    /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// assert_eq!(
     ///     DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
     ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
@@ -640,7 +640,7 @@ impl DateTime<FixedOffset> {
     /// # Example
     ///
     /// ```rust
-    /// # use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
+    /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// let (datetime, remainder) = DateTime::parse_and_remainder(
     ///     "2015-02-18 23:16:09 +0200 trailing text", "%Y-%m-%d %H:%M:%S %z").unwrap();
     /// assert_eq!(
@@ -695,7 +695,7 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// # use chrono::{DateTime, FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
+    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(18, 30, 9, 453_829).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
     ///            "2018-01-26T18:30:09.453+00:00");
