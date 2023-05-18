@@ -2045,6 +2045,7 @@ impl DoubleEndedIterator for NaiveDateDaysIterator {
     }
 }
 
+/// Iterator over `NaiveDate` with a step size of one week.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateWeeksIterator {
     value: NaiveDate,
