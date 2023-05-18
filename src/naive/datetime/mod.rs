@@ -2123,11 +2123,11 @@ where
     );
     assert_eq!(
         to_string(&NaiveDate::MIN.and_hms_opt(0, 0, 0).unwrap()).ok(),
-        Some(r#""-262144-01-01T00:00:00""#.into())
+        Some(r#""-262143-01-01T00:00:00""#.into())
     );
     assert_eq!(
         to_string(&NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap()).ok(),
-        Some(r#""+262143-12-31T23:59:60.999999999""#.into())
+        Some(r#""+262142-12-31T23:59:60.999999999""#.into())
     );
 }
 
@@ -2166,15 +2166,15 @@ where
         Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap())
     );
     assert_eq!(
-        from_str(r#""-262144-01-01T00:00:00""#).ok(),
+        from_str(r#""-262143-01-01T00:00:00""#).ok(),
         Some(NaiveDate::MIN.and_hms_opt(0, 0, 0).unwrap())
     );
     assert_eq!(
-        from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
+        from_str(r#""+262142-12-31T23:59:60.999999999""#).ok(),
         Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
     );
     assert_eq!(
-        from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
+        from_str(r#""+262142-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
         Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
     );
 

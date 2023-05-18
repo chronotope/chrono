@@ -1457,10 +1457,10 @@ impl NaiveDate {
         self.of().weekday()
     }
 
-    /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
-    pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o07 /*FE*/ };
-    /// The maximum possible `NaiveDate` (December 31, 262143 CE).
-    pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o17 /*F*/ };
+    /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
+    pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/ };
+    /// The maximum possible `NaiveDate` (December 31, 262142 CE).
+    pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/ };
 }
 
 impl Datelike for NaiveDate {
@@ -2277,8 +2277,8 @@ where
         to_string(&NaiveDate::from_ymd_opt(-1, 12, 31).unwrap()).ok(),
         Some(r#""-0001-12-31""#.into())
     );
-    assert_eq!(to_string(&NaiveDate::MIN).ok(), Some(r#""-262144-01-01""#.into()));
-    assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+262143-12-31""#.into()));
+    assert_eq!(to_string(&NaiveDate::MIN).ok(), Some(r#""-262143-01-01""#.into()));
+    assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+262142-12-31""#.into()));
 }
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
@@ -2301,8 +2301,8 @@ where
         from_str(r#""-0001-12-31""#).ok(),
         Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap())
     );
-    assert_eq!(from_str(r#""-262144-01-01""#).ok(), Some(NaiveDate::MIN));
-    assert_eq!(from_str(r#""+262143-12-31""#).ok(), Some(NaiveDate::MAX));
+    assert_eq!(from_str(r#""-262143-01-01""#).ok(), Some(NaiveDate::MIN));
+    assert_eq!(from_str(r#""+262142-12-31""#).ok(), Some(NaiveDate::MAX));
 
     // bad formats
     assert!(from_str(r#""""#).is_err());
@@ -3155,9 +3155,12 @@ mod tests {
 
     #[test]
     fn test_day_iterator_limit() {
-        assert_eq!(NaiveDate::from_ymd_opt(262143, 12, 29).unwrap().iter_days().take(4).count(), 2);
         assert_eq!(
-            NaiveDate::from_ymd_opt(-262144, 1, 3).unwrap().iter_days().rev().take(4).count(),
+            NaiveDate::from_ymd_opt(MAX_YEAR, 12, 29).unwrap().iter_days().take(4).count(),
+            2
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(MIN_YEAR, 1, 3).unwrap().iter_days().rev().take(4).count(),
             2
         );
     }
@@ -3165,11 +3168,11 @@ mod tests {
     #[test]
     fn test_week_iterator_limit() {
         assert_eq!(
-            NaiveDate::from_ymd_opt(262143, 12, 12).unwrap().iter_weeks().take(4).count(),
+            NaiveDate::from_ymd_opt(MAX_YEAR, 12, 12).unwrap().iter_weeks().take(4).count(),
             2
         );
         assert_eq!(
-            NaiveDate::from_ymd_opt(-262144, 1, 15).unwrap().iter_weeks().rev().take(4).count(),
+            NaiveDate::from_ymd_opt(MIN_YEAR, 1, 15).unwrap().iter_weeks().rev().take(4).count(),
             2
         );
     }
