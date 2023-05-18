@@ -160,6 +160,45 @@ mod tests;
 /// The same functionality is also available with implementations of [`Add`] and [`Sub`]. Note that
 /// these may panic if the resulting time would not exist in the local time zone, or on overflow.
 ///
+/// ### Example
+///
+#[cfg_attr(not(feature = "clock"), doc = "```ignore")]
+#[cfg_attr(feature = "clock", doc = "```rust")]
+/// use chrono::{Datelike, Days, Duration, Local, Months};
+///
+/// let start = Local::now();
+/// let mut today = start;
+/// while today < start.with_year(start.year() + 1).unwrap() {
+///     let tomorrow = match today.checked_add_days(Days::new(1)) {
+///         Some(day) => day,
+///         None => {
+///             let non_existing_time = today.naive_local() + Days::new(1);
+///             println!("The time {} does not exist in the local time zone.", non_existing_time);
+///             // I am pretty sure there is not a second DST transition the day after tomorrow,
+///             // and I am also pretty sure you are not running this example ca. 250_000 years
+///             // from now. Otherwise, the next line could panic.
+///             today = today + Days::new(2);
+///             continue;
+///         }
+///     };
+///     assert_eq!(tomorrow, today + Days::new(1));
+///
+///     // Adding 24 hours doesn't panic, unless you are running this code in a far, far future.
+///     let today_plus_24h = today + Duration::days(1);
+///     assert_eq!(Some(today_plus_24h), today.checked_add_signed(Duration::days(1)));
+///     assert_eq!(Some(today_plus_24h), today.checked_add_signed(Duration::hours(24)));
+///
+///     if tomorrow != today_plus_24h {
+///         println!("The difference between {} and {} is not 24 hours.", today, tomorrow);
+///         let difference = tomorrow - today_plus_24h;
+///         assert_eq!(difference, tomorrow.signed_duration_since(today_plus_24h));
+///         println!("Naively adding 24 hours is {}s off.", difference.num_seconds());
+///     }
+///
+///     today = tomorrow;
+/// }
+/// assert!(Some(today) >= start.checked_add_months(Months::new(12)));
+/// ```
 ///
 /// ## Change the time zone
 ///
