@@ -1390,6 +1390,54 @@ fn test_min_max_getters() {
 }
 
 #[test]
+fn test_min_max_setters() {
+    let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+
+    assert_eq!(beyond_min.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_min.with_month(beyond_min.month()), Some(beyond_min));
+    assert_eq!(beyond_min.with_month(3), None);
+    assert_eq!(beyond_min.with_month0(beyond_min.month0()), Some(beyond_min));
+    assert_eq!(beyond_min.with_month0(3), None);
+    assert_eq!(beyond_min.with_day(beyond_min.day()), Some(beyond_min));
+    assert_eq!(beyond_min.with_day(15), None);
+    assert_eq!(beyond_min.with_day0(beyond_min.day0()), Some(beyond_min));
+    assert_eq!(beyond_min.with_day0(15), None);
+    assert_eq!(beyond_min.with_ordinal(beyond_min.ordinal()), Some(beyond_min));
+    assert_eq!(beyond_min.with_ordinal(200), None);
+    assert_eq!(beyond_min.with_ordinal0(beyond_min.ordinal0()), Some(beyond_min));
+    assert_eq!(beyond_min.with_ordinal0(200), None);
+    assert_eq!(beyond_min.with_hour(beyond_min.hour()), Some(beyond_min));
+    assert_eq!(beyond_min.with_hour(23), beyond_min.checked_add_signed(OldDuration::hours(1)));
+    assert_eq!(beyond_min.with_hour(5), None);
+    assert_eq!(beyond_min.with_minute(0), Some(beyond_min));
+    assert_eq!(beyond_min.with_second(0), Some(beyond_min));
+    assert_eq!(beyond_min.with_nanosecond(0), Some(beyond_min));
+
+    assert_eq!(beyond_max.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_max.with_month(beyond_max.month()), Some(beyond_max));
+    assert_eq!(beyond_max.with_month(3), None);
+    assert_eq!(beyond_max.with_month0(beyond_max.month0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_month0(3), None);
+    assert_eq!(beyond_max.with_day(beyond_max.day()), Some(beyond_max));
+    assert_eq!(beyond_max.with_day(15), None);
+    assert_eq!(beyond_max.with_day0(beyond_max.day0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_day0(15), None);
+    assert_eq!(beyond_max.with_ordinal(beyond_max.ordinal()), Some(beyond_max));
+    assert_eq!(beyond_max.with_ordinal(200), None);
+    assert_eq!(beyond_max.with_ordinal0(beyond_max.ordinal0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_ordinal0(200), None);
+    assert_eq!(beyond_max.with_hour(beyond_max.hour()), Some(beyond_max));
+    assert_eq!(beyond_max.with_hour(0), beyond_max.checked_sub_signed(OldDuration::hours(1)));
+    assert_eq!(beyond_max.with_hour(5), None);
+    assert_eq!(beyond_max.with_minute(beyond_max.minute()), Some(beyond_max));
+    assert_eq!(beyond_max.with_second(beyond_max.second()), Some(beyond_max));
+    assert_eq!(beyond_max.with_nanosecond(beyond_max.nanosecond()), Some(beyond_max));
+}
+
+#[test]
 #[should_panic]
 fn test_local_beyond_min_datetime() {
     let min = FixedOffset::west_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MIN);
