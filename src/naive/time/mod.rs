@@ -19,8 +19,8 @@ use crate::format::{
     parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
     Parsed, StrftimeItems,
 };
-use crate::Timelike;
 use crate::{expect, try_opt};
+use crate::{FixedOffset, Timelike};
 
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize;
@@ -752,6 +752,32 @@ impl NaiveTime {
         };
 
         OldDuration::seconds(secs + adjust) + OldDuration::nanoseconds(frac)
+    }
+
+    /// Adds given `FixedOffset` to the current time, and returns the number of days that should be
+    /// added to a date as a result of the offset (either `-1`, `0`, or `1` because the offset is
+    /// always less than 24h).
+    ///
+    /// This method is similar to [`overflowing_add_signed`](#method.overflowing_add_signed), but
+    /// preserves leap seconds.
+    pub(super) const fn overflowing_add_offset(&self, offset: FixedOffset) -> (NaiveTime, i32) {
+        let secs = self.secs as i32 + offset.local_minus_utc();
+        let days = secs.div_euclid(86_400);
+        let secs = secs.rem_euclid(86_400);
+        (NaiveTime { secs: secs as u32, frac: self.frac }, days)
+    }
+
+    /// Subtracts given `FixedOffset` from the current time, and returns the number of days that
+    /// should be added to a date as a result of the offset (either `-1`, `0`, or `1` because the
+    /// offset is always less than 24h).
+    ///
+    /// This method is similar to [`overflowing_sub_signed`](#method.overflowing_sub_signed), but
+    /// preserves leap seconds.
+    pub(super) const fn overflowing_sub_offset(&self, offset: FixedOffset) -> (NaiveTime, i32) {
+        let secs = self.secs as i32 - offset.local_minus_utc();
+        let days = secs.div_euclid(86_400);
+        let secs = secs.rem_euclid(86_400);
+        (NaiveTime { secs: secs as u32, frac: self.frac }, days)
     }
 
     /// Formats the time with the specified formatting items.

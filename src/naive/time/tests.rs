@@ -1,6 +1,6 @@
 use super::NaiveTime;
 use crate::duration::Duration as OldDuration;
-use crate::Timelike;
+use crate::{FixedOffset, Timelike};
 
 #[test]
 fn test_time_from_hms_milli() {
@@ -349,4 +349,30 @@ fn test_time_parse_from_str() {
     assert!(NaiveTime::parse_from_str("\t\t12:59 PM\t", "\t\t%H:%M\t%P\t").is_ok());
     assert!(NaiveTime::parse_from_str("12:59  PM", "%H:%M %P").is_ok());
     assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
+}
+
+#[test]
+fn test_overflowing_offset() {
+    let hmsm = |h, m, s, n| NaiveTime::from_hms_milli_opt(h, m, s, n).unwrap();
+
+    let positive_offset = FixedOffset::east_opt(4 * 60 * 60).unwrap();
+    // regular time
+    let t = hmsm(5, 6, 7, 890);
+    assert_eq!(t.overflowing_add_offset(positive_offset), (hmsm(9, 6, 7, 890), 0));
+    assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(1, 6, 7, 890), 0));
+    // leap second is preserved, and wrap to next day
+    let t = hmsm(23, 59, 59, 1_000);
+    assert_eq!(t.overflowing_add_offset(positive_offset), (hmsm(3, 59, 59, 1_000), 1));
+    assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(19, 59, 59, 1_000), 0));
+    // wrap to previous day
+    let t = hmsm(1, 2, 3, 456);
+    assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(21, 2, 3, 456), -1));
+    // an odd offset
+    let negative_offset = FixedOffset::west_opt(((2 * 60) + 3) * 60 + 4).unwrap();
+    let t = hmsm(5, 6, 7, 890);
+    assert_eq!(t.overflowing_add_offset(negative_offset), (hmsm(3, 3, 3, 890), 0));
+    assert_eq!(t.overflowing_sub_offset(negative_offset), (hmsm(7, 9, 11, 890), 0));
+
+    assert_eq!(t.overflowing_add_offset(positive_offset).0, t + positive_offset);
+    assert_eq!(t.overflowing_sub_offset(positive_offset).0, t - positive_offset);
 }
