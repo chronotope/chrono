@@ -204,7 +204,7 @@ impl Add<FixedOffset> for NaiveTime {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveTime {
-        add_with_leapsecond(&self, rhs.local_minus_utc)
+        self.overflowing_add_offset(rhs).0
     }
 }
 
@@ -213,7 +213,7 @@ impl Sub<FixedOffset> for NaiveTime {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveTime {
-        add_with_leapsecond(&self, -rhs.local_minus_utc)
+        self.overflowing_sub_offset(rhs).0
     }
 }
 
