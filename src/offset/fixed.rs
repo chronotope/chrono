@@ -17,12 +17,46 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 const OFFSET_NORMAL: i32 = 1;
 const OFFSET_UNKNOWN: i32 = 2;
 
-/// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
+/// A fixed offset of clock time from [Coordinated Universal Time] (UTC) stored to seconds granularity.
+/// A `FixedOffset` can be used to indicate a time zone.
 ///
-/// Using the [`TimeZone`](./trait.TimeZone.html) methods
-/// on a `FixedOffset` struct is the preferred way to construct
-/// `DateTime<FixedOffset>` instances. See the [`east_opt`](#method.east_opt) and
-/// [`west_opt`](#method.west_opt) methods for examples.
+/// This type implements the [`TimeZone`] trait.
+///
+/// The valid range of offsets is UTC-23:59:59 to UTC+23:59:59.
+///
+/// ## Creating a `FixedOffset`
+///
+/// - Use [`FixedOffset::east_opt`] with a value in _seconds_ to create a new [`FixedOffset`].
+///   The offset is to be given as local time minus UTC time.
+/// - Use [`FixedOffset::west_opt`] with a value in _seconds_ to create the value from an offset
+///   given as UTC time minus local time.
+///
+/// See the [`east_opt`](#method.east_opt) and [`west_opt`](#method.west_opt) methods for examples.
+///
+/// ## Encoding an unknown offset
+///
+/// RFC 3339 and RFC 2822 make a distinction between an offset of `+00:00` and `-00:00`.
+///
+/// [RFC 2822]:
+/// > The form "+0000" SHOULD be used to indicate a time zone at Universal Time. Though "-0000"
+/// > also indicates Universal Time, it is used to indicate that the time was generated on a system
+/// > that may be in a local time zone other than Universal Time and therefore indicates that the
+/// > date-time contains no information about the local time zone.
+///
+/// [RFC 3339]:
+/// > If the time in UTC is known, but the offset to local time is unknown, this can be represented
+/// > with an offset of "-00:00". This differs semantically from an offset of "Z" or "+00:00",
+/// > which imply that UTC is the preferred reference point for the specified time.
+///
+/// An offset of `00:00` that indicates there is no information about the local timezone can be
+/// created with [`FixedOffset::OFFSET_UNKNOWN`]. Use [`no_offset_info()`](#method.no_offset_info)
+/// to inspect whether `00:00` carries the extra annotation.
+///
+/// Besides formatting `-00:00` is not treated any differently in chrono from `+00:00`.
+///
+/// [Coordinated Universal Time]: https://en.wikipedia.org/wiki/Coordinated_Universal_Time
+/// [RFC 2822]: https://www.rfc-editor.org/rfc/rfc2822.html#section-3.3
+/// [RFC 3339]: https://www.rfc-editor.org/rfc/rfc3339.html#section-4.3
 #[derive(Eq, Copy, Clone)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
