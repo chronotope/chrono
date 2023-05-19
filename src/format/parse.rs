@@ -216,7 +216,8 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     }
 
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
-    if offset <= -86_400 || offset >= 86_400 {
+    const MAX_RFC3339_OFFSET: i32 = 86_400;
+    if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
         return Err(OUT_OF_RANGE);
     }
     parsed.set_offset(i64::from(offset))?;
