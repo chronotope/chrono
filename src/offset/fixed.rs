@@ -109,7 +109,7 @@ impl FixedOffset {
     /// Returns the number of seconds to add to convert from the local time to UTC.
     #[inline]
     pub const fn utc_minus_local(&self) -> i32 {
-        -self.local_minus_utc
+        -self.local_minus_utc()
     }
 }
 
@@ -152,7 +152,7 @@ impl Offset for FixedOffset {
 
 impl fmt::Debug for FixedOffset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let offset = self.local_minus_utc;
+        let offset = self.local_minus_utc();
         let (sign, offset) = if offset < 0 { ('-', -offset) } else { ('+', offset) };
         let sec = offset.rem_euclid(60);
         let mins = offset.div_euclid(60);
@@ -217,11 +217,11 @@ mod tests {
     #[test]
     fn test_parse_offset() {
         let offset = FixedOffset::from_str("-0500").unwrap();
-        assert_eq!(offset.local_minus_utc, -5 * 3600);
+        assert_eq!(offset.local_minus_utc(), -5 * 3600);
         let offset = FixedOffset::from_str("-08:00").unwrap();
-        assert_eq!(offset.local_minus_utc, -8 * 3600);
+        assert_eq!(offset.local_minus_utc(), -8 * 3600);
         let offset = FixedOffset::from_str("+06:30").unwrap();
-        assert_eq!(offset.local_minus_utc, (6 * 3600) + 1800);
+        assert_eq!(offset.local_minus_utc(), (6 * 3600) + 1800);
     }
 
     #[test]
