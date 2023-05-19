@@ -239,8 +239,8 @@ impl<'a> TimeZoneRef<'a> {
 
                 // the end and start here refers to where the time starts prior to the transition
                 // and where it ends up after. not the temporal relationship.
-                let transition_end = transition.unix_leap_time + i64::from(after_ltt.ut_offset);
-                let transition_start = transition.unix_leap_time + i64::from(prev.ut_offset);
+                let transition_end = transition.unix_leap_time + after_ltt.raw_offset() as i64;
+                let transition_start = transition.unix_leap_time + prev.raw_offset() as i64;
 
                 match transition_start.cmp(&transition_end) {
                     Ordering::Greater => {
@@ -251,7 +251,7 @@ impl<'a> TimeZoneRef<'a> {
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
-                            if prev.ut_offset < after_ltt.ut_offset {
+                            if prev.raw_offset() < after_ltt.raw_offset() {
                                 return Ok(crate::LocalResult::Ambiguous(prev, after_ltt));
                             } else {
                                 return Ok(crate::LocalResult::Ambiguous(after_ltt, prev));
@@ -263,7 +263,7 @@ impl<'a> TimeZoneRef<'a> {
                         if local_leap_time < transition_start {
                             return Ok(crate::LocalResult::Single(prev));
                         } else if local_leap_time == transition_end {
-                            if prev.ut_offset < after_ltt.ut_offset {
+                            if prev.raw_offset() < after_ltt.raw_offset() {
                                 return Ok(crate::LocalResult::Ambiguous(prev, after_ltt));
                             } else {
                                 return Ok(crate::LocalResult::Ambiguous(after_ltt, prev));

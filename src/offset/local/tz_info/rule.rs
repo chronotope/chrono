@@ -148,8 +148,8 @@ impl AlternateTime {
     /// Find the local time type associated to the alternate transition rule at the specified Unix time in seconds
     fn find_local_time_type(&self, unix_time: i64) -> Result<&LocalTimeType, Error> {
         // Overflow is not possible
-        let dst_start_time_in_utc = self.dst_start_time as i64 - self.std.ut_offset as i64;
-        let dst_end_time_in_utc = self.dst_end_time as i64 - self.dst.ut_offset as i64;
+        let dst_start_time_in_utc = self.dst_start_time as i64 - self.std.raw_offset() as i64;
+        let dst_end_time_in_utc = self.dst_end_time as i64 - self.dst.raw_offset() as i64;
 
         let current_year = match UtcDateTime::from_timespec(unix_time) {
             Ok(dt) => dt.year,
@@ -242,17 +242,17 @@ impl AlternateTime {
             self.dst_start.unix_time(current_year, 0) + i64::from(self.dst_start_time);
         let dst_start_transition_end = self.dst_start.unix_time(current_year, 0)
             + i64::from(self.dst_start_time)
-            + i64::from(self.dst.ut_offset)
-            - i64::from(self.std.ut_offset);
+            + i64::from(self.dst.raw_offset())
+            - i64::from(self.std.raw_offset());
 
         let dst_end_transition_start =
             self.dst_end.unix_time(current_year, 0) + i64::from(self.dst_end_time);
         let dst_end_transition_end = self.dst_end.unix_time(current_year, 0)
             + i64::from(self.dst_end_time)
-            + i64::from(self.std.ut_offset)
-            - i64::from(self.dst.ut_offset);
+            + i64::from(self.std.raw_offset())
+            - i64::from(self.dst.raw_offset());
 
-        match self.std.ut_offset.cmp(&self.dst.ut_offset) {
+        match self.std.raw_offset().cmp(&self.dst.raw_offset()) {
             Ordering::Equal => Ok(crate::LocalResult::Single(self.std)),
             Ordering::Less => {
                 if self.dst_start.transition_date(current_year).0
