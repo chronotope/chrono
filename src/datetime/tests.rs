@@ -4,7 +4,7 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, Timelike};
+use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, Timelike, Weekday};
 
 #[derive(Clone)]
 struct DstTester;
@@ -1329,6 +1329,64 @@ fn test_datetime_sub_assign() {
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
     assert_eq!(datetime_sub, datetime - OldDuration::minutes(90));
+}
+
+#[test]
+fn test_min_max_getters() {
+    let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+
+    assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
+    // RFC 2822 doesn't support years with more than 4 digits.
+    // assert_eq!(beyond_min.to_rfc2822(), "");
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    assert_eq!(
+        beyond_min.format("%Y-%m-%dT%H:%M:%S%:z").to_string(),
+        "-262144-12-31T22:00:00-02:00"
+    );
+    assert_eq!(beyond_min.year(), -262144);
+    assert_eq!(beyond_min.month(), 12);
+    assert_eq!(beyond_min.month0(), 11);
+    assert_eq!(beyond_min.day(), 31);
+    assert_eq!(beyond_min.day0(), 30);
+    assert_eq!(beyond_min.ordinal(), 366);
+    assert_eq!(beyond_min.ordinal0(), 365);
+    assert_eq!(beyond_min.weekday(), Weekday::Wed);
+    assert_eq!(beyond_min.iso_week().year(), -262143);
+    assert_eq!(beyond_min.iso_week().week(), 1);
+    assert_eq!(beyond_min.hour(), 22);
+    assert_eq!(beyond_min.minute(), 0);
+    assert_eq!(beyond_min.second(), 0);
+    assert_eq!(beyond_min.nanosecond(), 0);
+
+    assert_eq!(format!("{:?}", beyond_max), "+262143-01-01T01:59:59.999999999+02:00");
+    // RFC 2822 doesn't support years with more than 4 digits.
+    // assert_eq!(beyond_max.to_rfc2822(), "");
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    assert_eq!(
+        beyond_max.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string(),
+        "+262143-01-01T01:59:59.999999999+02:00"
+    );
+    assert_eq!(beyond_max.year(), 262143);
+    assert_eq!(beyond_max.month(), 1);
+    assert_eq!(beyond_max.month0(), 0);
+    assert_eq!(beyond_max.day(), 1);
+    assert_eq!(beyond_max.day0(), 0);
+    assert_eq!(beyond_max.ordinal(), 1);
+    assert_eq!(beyond_max.ordinal0(), 0);
+    assert_eq!(beyond_max.weekday(), Weekday::Tue);
+    assert_eq!(beyond_max.iso_week().year(), 262143);
+    assert_eq!(beyond_max.iso_week().week(), 1);
+    assert_eq!(beyond_max.hour(), 1);
+    assert_eq!(beyond_max.minute(), 59);
+    assert_eq!(beyond_max.second(), 59);
+    assert_eq!(beyond_max.nanosecond(), 999_999_999);
 }
 
 #[test]

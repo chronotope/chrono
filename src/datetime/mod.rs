@@ -22,7 +22,7 @@ use crate::format::{
     StrftimeItems, TOO_LONG,
 };
 #[cfg(feature = "alloc")]
-use crate::format::{write_rfc3339, DelayedFormat};
+use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -553,7 +553,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[must_use]
     pub fn to_rfc2822(&self) -> String {
         let mut result = String::with_capacity(32);
-        crate::format::write_rfc2822(&mut result, self.naive_local(), self.offset.fix())
+        write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix())
             .expect("writing rfc2822 datetime to string should never fail");
         result
     }
@@ -564,7 +564,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn to_rfc3339(&self) -> String {
         // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
         let mut result = String::with_capacity(32);
-        let naive = self.naive_local();
+        let naive = self.overflowing_naive_local();
         let offset = self.offset.fix();
         write_rfc3339(&mut result, naive, offset, SecondsFormat::AutoSi, false)
             .expect("writing rfc3339 datetime to string should never fail");
@@ -880,7 +880,7 @@ where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        let local = self.naive_local();
+        let local = self.overflowing_naive_local();
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
 
@@ -916,7 +916,7 @@ where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        let local = self.naive_local();
+        let local = self.overflowing_naive_local();
         DelayedFormat::new_with_offset_and_locale(
             Some(local.date()),
             Some(local.time()),
@@ -946,39 +946,39 @@ where
 impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     #[inline]
     fn year(&self) -> i32 {
-        self.naive_local().year()
+        self.overflowing_naive_local().year()
     }
     #[inline]
     fn month(&self) -> u32 {
-        self.naive_local().month()
+        self.overflowing_naive_local().month()
     }
     #[inline]
     fn month0(&self) -> u32 {
-        self.naive_local().month0()
+        self.overflowing_naive_local().month0()
     }
     #[inline]
     fn day(&self) -> u32 {
-        self.naive_local().day()
+        self.overflowing_naive_local().day()
     }
     #[inline]
     fn day0(&self) -> u32 {
-        self.naive_local().day0()
+        self.overflowing_naive_local().day0()
     }
     #[inline]
     fn ordinal(&self) -> u32 {
-        self.naive_local().ordinal()
+        self.overflowing_naive_local().ordinal()
     }
     #[inline]
     fn ordinal0(&self) -> u32 {
-        self.naive_local().ordinal0()
+        self.overflowing_naive_local().ordinal0()
     }
     #[inline]
     fn weekday(&self) -> Weekday {
-        self.naive_local().weekday()
+        self.overflowing_naive_local().weekday()
     }
     #[inline]
     fn iso_week(&self) -> IsoWeek {
-        self.naive_local().iso_week()
+        self.overflowing_naive_local().iso_week()
     }
 
     #[inline]
@@ -1097,19 +1097,19 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
 impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     #[inline]
     fn hour(&self) -> u32 {
-        self.naive_local().hour()
+        self.overflowing_naive_local().hour()
     }
     #[inline]
     fn minute(&self) -> u32 {
-        self.naive_local().minute()
+        self.overflowing_naive_local().minute()
     }
     #[inline]
     fn second(&self) -> u32 {
-        self.naive_local().second()
+        self.overflowing_naive_local().second()
     }
     #[inline]
     fn nanosecond(&self) -> u32 {
-        self.naive_local().nanosecond()
+        self.overflowing_naive_local().nanosecond()
     }
 
     /// Makes a new `DateTime` with the hour number changed.
@@ -1513,7 +1513,7 @@ impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
 
 impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.naive_local().fmt(f)?;
+        self.overflowing_naive_local().fmt(f)?;
         self.offset.fmt(f)
     }
 }
@@ -1523,7 +1523,7 @@ where
     Tz::Offset: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.naive_local().fmt(f)?;
+        self.overflowing_naive_local().fmt(f)?;
         f.write_char(' ')?;
         self.offset.fmt(f)
     }
