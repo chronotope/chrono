@@ -750,7 +750,9 @@ fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz
 where
     F: FnMut(NaiveDateTime) -> Option<NaiveDateTime>,
 {
-    f(dt.naive_local()).and_then(|datetime| dt.timezone().from_local_datetime(&datetime).single())
+    f(dt.overflowing_naive_local())
+        .and_then(|datetime| dt.timezone().from_local_datetime(&datetime).single())
+        .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC && dt <= &DateTime::<Utc>::MAX_UTC)
 }
 
 impl DateTime<FixedOffset> {
