@@ -25,7 +25,7 @@ use crate::format::{
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Duration, Weekday};
+use crate::{Datelike, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
@@ -771,12 +771,18 @@ impl NaiveDate {
         i32::try_from(days.0).ok().and_then(|d| self.add_days(-d))
     }
 
-    fn add_days(self, days: i32) -> Option<Self> {
-        let secs = (days as i64).checked_mul(86400)?; // 86400 seconds in one day
-        if secs >= core::i64::MAX / 1000 || secs <= core::i64::MIN / 1000 {
-            return None; // See the `time` 0.1 crate. Outside these bounds, `Duration::seconds` will panic
-        }
-        self.checked_add_signed(Duration::seconds(secs))
+    /// Add a duration of `i32` days to the date.
+    pub(crate) fn add_days(self, days: i32) -> Option<Self> {
+        let year = self.year();
+        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
+        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
+        let cycle = (cycle as i32).checked_add(days)?;
+        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
+        year_div_400 += cycle_div_400y;
+
+        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
+        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
+        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -1124,16 +1130,8 @@ impl NaiveDate {
     /// ```
     #[must_use]
     pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
-        let year = self.year();
-        let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
-        let cycle = (cycle as i32).checked_add(i32::try_from(rhs.num_days()).ok()?)?;
-        let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
-        year_div_400 += cycle_div_400y;
-
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
-        let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
+        let days = i32::try_from(rhs.num_days()).ok()?;
+        self.add_days(days)
     }
 
     /// Subtracts the number of whole days in the given `Duration` from the current date.
