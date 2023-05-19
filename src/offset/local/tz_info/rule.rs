@@ -923,7 +923,7 @@ mod tests {
     #[test]
     fn test_transition_rule() -> Result<(), Error> {
         let transition_rule_fixed = TransitionRule::from(LocalTimeType::new(-36000, false, None)?);
-        assert_eq!(transition_rule_fixed.find_local_time_type(0)?.offset(), -36000);
+        assert_eq!(transition_rule_fixed.find_local_time_type(0)?.raw_offset(), -36000);
 
         let transition_rule_dst = TransitionRule::from(AlternateTime::new(
             LocalTimeType::new(43200, false, Some(b"NZST"))?,
@@ -934,10 +934,10 @@ mod tests {
             7200,
         )?);
 
-        assert_eq!(transition_rule_dst.find_local_time_type(953384399)?.offset(), 46800);
-        assert_eq!(transition_rule_dst.find_local_time_type(953384400)?.offset(), 43200);
-        assert_eq!(transition_rule_dst.find_local_time_type(970322399)?.offset(), 43200);
-        assert_eq!(transition_rule_dst.find_local_time_type(970322400)?.offset(), 46800);
+        assert_eq!(transition_rule_dst.find_local_time_type(953384399)?.raw_offset(), 46800);
+        assert_eq!(transition_rule_dst.find_local_time_type(953384400)?.raw_offset(), 43200);
+        assert_eq!(transition_rule_dst.find_local_time_type(970322399)?.raw_offset(), 43200);
+        assert_eq!(transition_rule_dst.find_local_time_type(970322400)?.raw_offset(), 46800);
 
         let transition_rule_negative_dst = TransitionRule::from(AlternateTime::new(
             LocalTimeType::new(3600, false, Some(b"IST"))?,
@@ -948,10 +948,16 @@ mod tests {
             3600,
         )?);
 
-        assert_eq!(transition_rule_negative_dst.find_local_time_type(954032399)?.offset(), 0);
-        assert_eq!(transition_rule_negative_dst.find_local_time_type(954032400)?.offset(), 3600);
-        assert_eq!(transition_rule_negative_dst.find_local_time_type(972781199)?.offset(), 3600);
-        assert_eq!(transition_rule_negative_dst.find_local_time_type(972781200)?.offset(), 0);
+        assert_eq!(transition_rule_negative_dst.find_local_time_type(954032399)?.raw_offset(), 0);
+        assert_eq!(
+            transition_rule_negative_dst.find_local_time_type(954032400)?.raw_offset(),
+            3600
+        );
+        assert_eq!(
+            transition_rule_negative_dst.find_local_time_type(972781199)?.raw_offset(),
+            3600
+        );
+        assert_eq!(transition_rule_negative_dst.find_local_time_type(972781200)?.raw_offset(), 0);
 
         let transition_rule_negative_time_1 = TransitionRule::from(AlternateTime::new(
             LocalTimeType::new(0, false, None)?,
@@ -977,19 +983,19 @@ mod tests {
         )?);
 
         assert_eq!(
-            transition_rule_negative_time_2.find_local_time_type(954032399)?.offset(),
+            transition_rule_negative_time_2.find_local_time_type(954032399)?.raw_offset(),
             -10800
         );
         assert_eq!(
-            transition_rule_negative_time_2.find_local_time_type(954032400)?.offset(),
+            transition_rule_negative_time_2.find_local_time_type(954032400)?.raw_offset(),
             -7200
         );
         assert_eq!(
-            transition_rule_negative_time_2.find_local_time_type(972781199)?.offset(),
+            transition_rule_negative_time_2.find_local_time_type(972781199)?.raw_offset(),
             -7200
         );
         assert_eq!(
-            transition_rule_negative_time_2.find_local_time_type(972781200)?.offset(),
+            transition_rule_negative_time_2.find_local_time_type(972781200)?.raw_offset(),
             -10800
         );
 
@@ -1002,8 +1008,14 @@ mod tests {
             90000,
         )?);
 
-        assert_eq!(transition_rule_all_year_dst.find_local_time_type(946702799)?.offset(), -14400);
-        assert_eq!(transition_rule_all_year_dst.find_local_time_type(946702800)?.offset(), -14400);
+        assert_eq!(
+            transition_rule_all_year_dst.find_local_time_type(946702799)?.raw_offset(),
+            -14400
+        );
+        assert_eq!(
+            transition_rule_all_year_dst.find_local_time_type(946702800)?.raw_offset(),
+            -14400
+        );
 
         Ok(())
     }
