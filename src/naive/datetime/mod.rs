@@ -20,8 +20,10 @@ use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed,
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
-use crate::{expect, DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
-
+use crate::{
+    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeZone, Timelike,
+    Weekday,
+};
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
 
@@ -703,6 +705,37 @@ impl NaiveDateTime {
     #[must_use]
     pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    }
+
+    /// Adds given `FixedOffset` to the current datetime.
+    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
+    ///
+    /// This method is similar to [`checked_add_signed`](#method.checked_add_offset), but preserves
+    /// leap seconds.
+    #[must_use]
+    pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+        let (time, days) = self.time.overflowing_add_offset(rhs);
+        let date = match days {
+            -1 => try_opt!(self.date.pred_opt()),
+            1 => try_opt!(self.date.succ_opt()),
+            _ => self.date,
+        };
+        Some(NaiveDateTime { date, time })
+    }
+
+    /// Subtracts given `FixedOffset` from the current datetime.
+    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
+    ///
+    /// This method is similar to [`checked_sub_signed`](#method.checked_sub_signed), but preserves
+    /// leap seconds.
+    pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+        let (time, days) = self.time.overflowing_sub_offset(rhs);
+        let date = match days {
+            -1 => try_opt!(self.date.pred_opt()),
+            1 => try_opt!(self.date.succ_opt()),
+            _ => self.date,
+        };
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts given `Duration` from the current date and time.
