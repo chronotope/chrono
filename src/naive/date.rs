@@ -736,10 +736,6 @@ impl NaiveDate {
     /// ```
     #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        if days.0 == 0 {
-            return Some(self);
-        }
-
         i32::try_from(days.0).ok().and_then(|d| self.add_days(d))
     }
 
@@ -764,15 +760,14 @@ impl NaiveDate {
     /// ```
     #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        if days.0 == 0 {
-            return Some(self);
-        }
-
         i32::try_from(days.0).ok().and_then(|d| self.add_days(-d))
     }
 
     /// Add a duration of `i32` days to the date.
     pub(crate) fn add_days(self, days: i32) -> Option<Self> {
+        if days == 0 {
+            return Some(self);
+        }
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
