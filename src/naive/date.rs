@@ -3019,19 +3019,19 @@ mod tests {
     fn test_naiveweek() {
         let date = NaiveDate::from_ymd_opt(2022, 5, 18).unwrap();
         let asserts = vec![
-            (Weekday::Mon, "2022-05-16", "2022-05-22"),
-            (Weekday::Tue, "2022-05-17", "2022-05-23"),
-            (Weekday::Wed, "2022-05-18", "2022-05-24"),
-            (Weekday::Thu, "2022-05-12", "2022-05-18"),
-            (Weekday::Fri, "2022-05-13", "2022-05-19"),
-            (Weekday::Sat, "2022-05-14", "2022-05-20"),
-            (Weekday::Sun, "2022-05-15", "2022-05-21"),
+            (Weekday::Mon, "Mon 2022-05-16", "Sun 2022-05-22"),
+            (Weekday::Tue, "Tue 2022-05-17", "Mon 2022-05-23"),
+            (Weekday::Wed, "Wed 2022-05-18", "Tue 2022-05-24"),
+            (Weekday::Thu, "Thu 2022-05-12", "Wed 2022-05-18"),
+            (Weekday::Fri, "Fri 2022-05-13", "Thu 2022-05-19"),
+            (Weekday::Sat, "Sat 2022-05-14", "Fri 2022-05-20"),
+            (Weekday::Sun, "Sun 2022-05-15", "Sat 2022-05-21"),
         ];
         for (start, first_day, last_day) in asserts {
             let week = date.week(start);
             let days = week.days();
-            assert_eq!(Ok(week.first_day()), NaiveDate::parse_from_str(first_day, "%Y-%m-%d"));
-            assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%Y-%m-%d"));
+            assert_eq!(Ok(week.first_day()), NaiveDate::parse_from_str(first_day, "%a %Y-%m-%d"));
+            assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%a %Y-%m-%d"));
             assert!(days.contains(&date));
         }
     }
