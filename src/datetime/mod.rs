@@ -1247,6 +1247,25 @@ impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     }
 }
 
+fn add_with_leapsecond<T>(lhs: &T, rhs: i32) -> T
+where
+    T: Timelike + Add<OldDuration, Output = T>,
+{
+    // extract and temporarily remove the fractional part and later recover it
+    let nanos = lhs.nanosecond();
+    let lhs = lhs.with_nanosecond(0).unwrap();
+    (lhs + OldDuration::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
+}
+
+impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> DateTime<Tz> {
+        add_with_leapsecond(&self, rhs.local_minus_utc())
+    }
+}
+
 impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1291,6 +1310,15 @@ impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
         let rhs = OldDuration::from_std(rhs)
             .expect("overflow converting from core::time::Duration to chrono::Duration");
         *self -= rhs;
+    }
+}
+
+impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> DateTime<Tz> {
+        add_with_leapsecond(&self, -rhs.local_minus_utc())
     }
 }
 
