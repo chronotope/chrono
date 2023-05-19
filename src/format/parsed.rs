@@ -202,12 +202,19 @@ pub struct Parsed {
     pub timestamp: Option<i64>,
 
     /// Offset from the local time to UTC, in seconds.
+    ///
+    /// Use the constant [`NO_OFFSET_INFO`] to indicate there is an offset of `00:00`, but that its
+    /// relation to local time is unknown (`-00:00` in RFC 3339 and 2822).
     pub offset: Option<i32>,
 
     /// A dummy field to make this type not fully destructible (required for API stability).
     // TODO: Change this to `#[non_exhaustive]` (on the enum) with the next breaking release.
     _dummy: (),
 }
+
+/// Constant to be used with [`Parsed::set_offset`] to indicate there is an offset of `00:00`, but
+/// that its relation to local time is unknown (`-00:00` in RFC 3339 and 2822).
+pub const NO_OFFSET_INFO: i32 = i32::MIN;
 
 /// Checks if `old` is either empty or has the same value as `new` (i.e. "consistent"),
 /// and if it is empty, set `old` to `new` as well.
@@ -930,7 +937,10 @@ impl Parsed {
     /// - `OUT_OF_RANGE` if the offset is out of range for a `FixedOffset`.
     /// - `NOT_ENOUGH` if the offset field is not set.
     pub fn to_fixed_offset(&self) -> ParseResult<FixedOffset> {
-        FixedOffset::east_opt(self.offset.ok_or(NOT_ENOUGH)?).ok_or(OUT_OF_RANGE)
+        match self.offset.ok_or(NOT_ENOUGH)? {
+            NO_OFFSET_INFO => Ok(FixedOffset::OFFSET_UNKNOWN),
+            offset => FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE),
+        }
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields.
@@ -958,10 +968,14 @@ impl Parsed {
             (None, Some(_)) => 0, // UNIX timestamp may assume 0 offset
             (None, None) => return Err(NOT_ENOUGH),
         };
-        let datetime = self.to_naive_datetime_with_offset(offset)?;
-        let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
+        let (offset_i32, fixed_offset) = if offset == NO_OFFSET_INFO {
+            (0, FixedOffset::OFFSET_UNKNOWN)
+        } else {
+            (offset, FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?)
+        };
+        let datetime = self.to_naive_datetime_with_offset(offset_i32)?;
 
-        match offset.from_local_datetime(&datetime) {
+        match fixed_offset.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
             LocalResult::Single(t) => Ok(t),
             LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),

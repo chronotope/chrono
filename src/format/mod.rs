@@ -66,7 +66,7 @@ pub use formatting::{format, format_item, DelayedFormat};
 pub use locales::Locale;
 pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
-pub use parsed::Parsed;
+pub use parsed::{Parsed, NO_OFFSET_INFO};
 pub use strftime::StrftimeItems;
 
 /// An uninhabited type used for `InternalNumeric` and `InternalFixed` below.
