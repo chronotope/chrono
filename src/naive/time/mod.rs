@@ -1180,6 +1180,15 @@ impl AddAssign<Duration> for NaiveTime {
     }
 }
 
+impl Add<FixedOffset> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> NaiveTime {
+        self.overflowing_add_offset(rhs).0
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 /// It is the same as the addition with a negated `Duration`.
@@ -1259,6 +1268,15 @@ impl SubAssign<Duration> for NaiveTime {
         let rhs = OldDuration::from_std(rhs)
             .expect("overflow converting from core::time::Duration to chrono::Duration");
         *self -= rhs;
+    }
+}
+
+impl Sub<FixedOffset> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> NaiveTime {
+        self.overflowing_sub_offset(rhs).0
     }
 }
 

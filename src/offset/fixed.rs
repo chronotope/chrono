@@ -13,7 +13,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use super::{LocalResult, Offset, TimeZone};
 use crate::duration::Duration as OldDuration;
 use crate::format::{scan, OUT_OF_RANGE};
-use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::{DateTime, ParseError, Timelike};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -197,24 +197,6 @@ where
     let nanos = lhs.nanosecond();
     let lhs = lhs.with_nanosecond(0).unwrap();
     (lhs + OldDuration::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
-}
-
-impl Add<FixedOffset> for NaiveTime {
-    type Output = NaiveTime;
-
-    #[inline]
-    fn add(self, rhs: FixedOffset) -> NaiveTime {
-        self.overflowing_add_offset(rhs).0
-    }
-}
-
-impl Sub<FixedOffset> for NaiveTime {
-    type Output = NaiveTime;
-
-    #[inline]
-    fn sub(self, rhs: FixedOffset) -> NaiveTime {
-        self.overflowing_sub_offset(rhs).0
-    }
 }
 
 impl Add<FixedOffset> for NaiveDateTime {
