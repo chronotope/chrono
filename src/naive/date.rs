@@ -2405,13 +2405,14 @@ mod tests {
         let calculated_max = NaiveDate::from_ymd_opt(MAX_YEAR, 12, 31).unwrap();
         assert!(
             NaiveDate::MIN == calculated_min,
-            "`NaiveDate::MIN` should have a year flag {:?}",
+            "`NaiveDate::MIN` should have year flag {:?}",
             calculated_min.of().flags()
         );
         assert!(
             NaiveDate::MAX == calculated_max,
-            "`NaiveDate::MAX` should have a year flag {:?}",
-            calculated_max.of().flags()
+            "`NaiveDate::MAX` should have year flag {:?} and ordinal {}",
+            calculated_max.of().flags(),
+            calculated_max.of().ordinal()
         );
 
         // let's also check that the entire range do not exceed 2^44 seconds
