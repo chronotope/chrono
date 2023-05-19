@@ -149,23 +149,18 @@ impl Cache {
         }
 
         if !local {
-            let offset = self
-                .zone
-                .find_local_time_type(d.timestamp())
-                .expect("unable to select local time type")
-                .raw_offset();
-
-            return match FixedOffset::east_opt(offset) {
-                Some(offset) => LocalResult::Single(offset),
-                None => LocalResult::None,
-            };
+            return LocalResult::Single(
+                self.zone
+                    .find_local_time_type(d.timestamp())
+                    .expect("unable to select local time type")
+                    .offset(),
+            );
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
         // the entire time was skipped in which case we will return LocalResult::None anyway.
         self.zone
-            .find_local_time_type_from_local(d.timestamp(), d.year())
+            .find_local_offset_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
-            .map(|o| FixedOffset::east_opt(o.raw_offset()).unwrap())
     }
 }

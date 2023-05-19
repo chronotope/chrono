@@ -127,12 +127,12 @@ impl TimeZone {
     }
 
     // should we pass NaiveDateTime all the way through to this fn?
-    pub(crate) fn find_local_time_type_from_local(
+    pub(crate) fn find_local_offset_from_local(
         &self,
         local_time: i64,
         year: i32,
-    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
-        self.as_ref().find_local_time_type_from_local(local_time, year)
+    ) -> Result<crate::LocalResult<FixedOffset>, Error> {
+        self.as_ref().find_local_offset_from_local(local_time, year)
     }
 
     /// Returns a reference to the time zone
@@ -216,11 +216,11 @@ impl<'a> TimeZoneRef<'a> {
         }
     }
 
-    pub(crate) fn find_local_time_type_from_local(
+    pub(crate) fn find_local_offset_from_local(
         &self,
         local_time: i64,
         year: i32,
-    ) -> Result<crate::LocalResult<LocalTimeType>, Error> {
+    ) -> Result<crate::LocalResult<FixedOffset>, Error> {
         // #TODO: this is wrong as we need 'local_time_to_local_leap_time ?
         // but ... does the local time even include leap seconds ??
         // let unix_leap_time = match self.unix_time_to_unix_leap_time(local_time) {
@@ -248,26 +248,38 @@ impl<'a> TimeZoneRef<'a> {
                         // bakwards transition, eg from DST to regular
                         // this means a given local time could have one of two possible offsets
                         if local_leap_time < transition_end {
-                            return Ok(crate::LocalResult::Single(prev));
+                            return Ok(crate::LocalResult::Single(prev.offset()));
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
                             if prev.raw_offset() < after_ltt.raw_offset() {
-                                return Ok(crate::LocalResult::Ambiguous(prev, after_ltt));
+                                return Ok(crate::LocalResult::Ambiguous(
+                                    prev.offset(),
+                                    after_ltt.offset(),
+                                ));
                             } else {
-                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev));
+                                return Ok(crate::LocalResult::Ambiguous(
+                                    after_ltt.offset(),
+                                    prev.offset(),
+                                ));
                             }
                         }
                     }
                     Ordering::Equal => {
                         // should this ever happen? presumably we have to handle it anyway.
                         if local_leap_time < transition_start {
-                            return Ok(crate::LocalResult::Single(prev));
+                            return Ok(crate::LocalResult::Single(prev.offset()));
                         } else if local_leap_time == transition_end {
                             if prev.raw_offset() < after_ltt.raw_offset() {
-                                return Ok(crate::LocalResult::Ambiguous(prev, after_ltt));
+                                return Ok(crate::LocalResult::Ambiguous(
+                                    prev.offset(),
+                                    after_ltt.offset(),
+                                ));
                             } else {
-                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev));
+                                return Ok(crate::LocalResult::Ambiguous(
+                                    after_ltt.offset(),
+                                    prev.offset(),
+                                ));
                             }
                         }
                     }
@@ -275,11 +287,11 @@ impl<'a> TimeZoneRef<'a> {
                         // forwards transition, eg from regular to DST
                         // this means that times that are skipped are invalid local times
                         if local_leap_time <= transition_start {
-                            return Ok(crate::LocalResult::Single(prev));
+                            return Ok(crate::LocalResult::Single(prev.offset()));
                         } else if local_leap_time < transition_end {
                             return Ok(crate::LocalResult::None);
                         } else if local_leap_time == transition_end {
-                            return Ok(crate::LocalResult::Single(after_ltt));
+                            return Ok(crate::LocalResult::Single(after_ltt.offset()));
                         }
                     }
                 }
@@ -294,13 +306,13 @@ impl<'a> TimeZoneRef<'a> {
         };
 
         if let Some(extra_rule) = self.extra_rule {
-            match extra_rule.find_local_time_type_from_local(local_time, year) {
-                Ok(local_time_type) => Ok(local_time_type),
+            match extra_rule.find_local_offset_from_local(local_time, year) {
+                Ok(offset) => Ok(offset),
                 Err(Error::OutOfRange(error)) => Err(Error::FindLocalTimeType(error)),
                 err => err,
             }
         } else {
-            Ok(crate::LocalResult::Single(offset_after_last))
+            Ok(crate::LocalResult::Single(offset_after_last.offset()))
         }
     }
 
@@ -375,7 +387,7 @@ impl<'a> TimeZoneRef<'a> {
             Err(err) => return Err(err),
         };
 
-        let check = last_local_time_type.ut_offset == rule_local_time_type.ut_offset
+        let check = last_local_time_type.offset() == rule_local_time_type.offset()
             && last_local_time_type.is_dst == rule_local_time_type.is_dst
             && match (&last_local_time_type.name, &rule_local_time_type.name) {
                 (Some(x), Some(y)) => x.equal(y),
@@ -564,7 +576,7 @@ impl fmt::Debug for TimeZoneName {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) struct LocalTimeType {
     /// Offset from UTC in seconds
-    pub(super) ut_offset: FixedOffset,
+    ut_offset: FixedOffset,
     /// Daylight Saving Time indicator
     is_dst: bool,
     /// Time zone name
@@ -596,6 +608,11 @@ impl LocalTimeType {
     /// Returns offset from UTC in seconds
     pub(crate) const fn raw_offset(&self) -> i32 {
         self.ut_offset.local_minus_utc()
+    }
+
+    /// Returns offset from UTC as `FixedOffset`
+    pub(crate) const fn offset(&self) -> FixedOffset {
+        self.ut_offset
     }
 
     /// Returns daylight saving time indicator
