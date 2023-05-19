@@ -1645,8 +1645,9 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:20 PDT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -7))),
             ("Tue, 20 Jan 2015 17:35:20 PST", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))),
             ("Tue, 20 Jan 2015 17:35:20 pst", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))),
-            // named single-letter military timezones must fallback to +0000
+            // Z is the only single-letter military timezones that maps to +0000
             ("Tue, 20 Jan 2015 17:35:20 Z", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            // named single-letter military timezones must fallback to -0000
             ("Tue, 20 Jan 2015 17:35:20 A", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             ("Tue, 20 Jan 2015 17:35:20 a", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             ("Tue, 20 Jan 2015 17:35:20 K", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
@@ -1682,6 +1683,22 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_rfc2822_no_offset_info() {
+        fn rfc2822_to_offset(date: &str) -> FixedOffset {
+            let mut parsed = Parsed::new();
+            parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter()).unwrap();
+            parsed.to_fixed_offset().unwrap()
+        }
+        assert_eq!(
+            rfc2822_to_offset("Tue, 20 Jan 2015 17:35:20 -0000"),
+            FixedOffset::OFFSET_UNKNOWN
+        );
+        assert_eq!(rfc2822_to_offset("Tue, 20 Jan 2015 17:35:20 A"), FixedOffset::OFFSET_UNKNOWN);
+        assert_eq!(rfc2822_to_offset("Tue, 20 Jan 2015 17:35:20 a"), FixedOffset::OFFSET_UNKNOWN);
+        assert_eq!(rfc2822_to_offset("Tue, 20 Jan 2015 17:35:20 K"), FixedOffset::OFFSET_UNKNOWN);
     }
 
     #[test]
