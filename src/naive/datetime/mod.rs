@@ -1619,6 +1619,15 @@ impl AddAssign<Duration> for NaiveDateTime {
     }
 }
 
+impl Add<FixedOffset> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> NaiveDateTime {
+        self.checked_add_offset(rhs).unwrap()
+    }
+}
+
 impl Add<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1743,6 +1752,15 @@ impl SubAssign<Duration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
         *self = self.sub(rhs);
+    }
+}
+
+impl Sub<FixedOffset> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
+        self.checked_sub_offset(rhs).unwrap()
     }
 }
 

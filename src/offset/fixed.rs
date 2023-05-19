@@ -199,24 +199,6 @@ where
     (lhs + OldDuration::seconds(i64::from(rhs))).with_nanosecond(nanos).unwrap()
 }
 
-impl Add<FixedOffset> for NaiveDateTime {
-    type Output = NaiveDateTime;
-
-    #[inline]
-    fn add(self, rhs: FixedOffset) -> NaiveDateTime {
-        self.checked_add_offset(rhs).unwrap()
-    }
-}
-
-impl Sub<FixedOffset> for NaiveDateTime {
-    type Output = NaiveDateTime;
-
-    #[inline]
-    fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
-        self.checked_sub_offset(rhs).unwrap()
-    }
-}
-
 impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
