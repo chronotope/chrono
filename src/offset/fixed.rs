@@ -204,7 +204,7 @@ impl Add<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveDateTime {
-        add_with_leapsecond(&self, rhs.local_minus_utc)
+        self.checked_add_offset(rhs).unwrap()
     }
 }
 
@@ -213,7 +213,7 @@ impl Sub<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
-        add_with_leapsecond(&self, -rhs.local_minus_utc)
+        self.checked_sub_offset(rhs).unwrap()
     }
 }
 
