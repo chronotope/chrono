@@ -205,7 +205,10 @@ impl FromStr for FixedOffset {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (_, offset) = scan::timezone_offset(s, scan::colon_or_space, false, false, true)?;
-        Self::east_opt(offset).ok_or(OUT_OF_RANGE)
+        match offset {
+            Some(offset) => Self::east_opt(offset).ok_or(OUT_OF_RANGE),
+            None => Ok(Self::OFFSET_UNKNOWN),
+        }
     }
 }
 
@@ -314,6 +317,8 @@ mod tests {
         assert_eq!(offset.local_minus_utc(), -8 * 3600);
         let offset = FixedOffset::from_str("+06:30").unwrap();
         assert_eq!(offset.local_minus_utc(), (6 * 3600) + 1800);
+        let offset = FixedOffset::from_str("-00:00").unwrap();
+        assert_eq!(offset, FixedOffset::OFFSET_UNKNOWN);
     }
 
     #[test]

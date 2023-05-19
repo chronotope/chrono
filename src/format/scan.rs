@@ -198,6 +198,8 @@ pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
 /// ASCII-compatible `-` HYPHEN-MINUS (U+2D).
 /// This is part of [RFC 3339 & ISO 8601].
 ///
+/// May return `None` which indicates no offset data is available (i.e. `-0000`).
+///
 /// [RFC 3339 & ISO 8601]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
 pub(crate) fn timezone_offset<F>(
     mut s: &str,
@@ -205,13 +207,13 @@ pub(crate) fn timezone_offset<F>(
     allow_zulu: bool,
     allow_missing_minutes: bool,
     allow_tz_minus_sign: bool,
-) -> ParseResult<(&str, i32)>
+) -> ParseResult<(&str, Option<i32>)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
     if allow_zulu {
         if let Some(&b'Z' | &b'z') = s.as_bytes().first() {
-            return Ok((&s[1..], 0));
+            return Ok((&s[1..], Some(0)));
         }
     }
 
@@ -279,21 +281,25 @@ where
     };
 
     let seconds = hours * 3600 + minutes * 60;
-    Ok((s, if negative { -seconds } else { seconds }))
+
+    if seconds == 0 && negative {
+        return Ok((s, None));
+    }
+    Ok((s, Some(if negative { -seconds } else { seconds })))
 }
 
 /// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
-/// May return `None` which indicates an insufficient offset data (i.e. `-0000`).
+/// May return `None` which indicates no offset data is available (i.e. `-0000`).
 /// See [RFC 2822 Section 4.3].
 ///
 /// [RFC 2822 Section 4.3]: https://tools.ietf.org/html/rfc2822#section-4.3
-pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, i32)> {
+pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> {
     // tries to parse legacy time zone names
     let upto = s.as_bytes().iter().position(|&c| !c.is_ascii_alphabetic()).unwrap_or(s.len());
     if upto > 0 {
         let name = &s.as_bytes()[..upto];
         let s = &s[upto..];
-        let offset_hours = |o| Ok((s, o * 3600));
+        let offset_hours = |o| Ok((s, Some(o * 3600)));
         // RFC 2822 requires support for some named North America timezones, a small subset of all
         // named timezones.
         if name.eq_ignore_ascii_case(b"gmt")
@@ -314,7 +320,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, i32)> {
         } else if name.len() == 1 {
             if let b'a'..=b'i' | b'k'..=b'y' | b'A'..=b'I' | b'K'..=b'Y' = name[0] {
                 // recommended by RFC 2822: consume but treat it as -0000
-                return Ok((s, 0));
+                return Ok((s, None));
             }
         }
         Err(INVALID)
@@ -398,10 +404,10 @@ mod tests {
 
     #[test]
     fn test_timezone_offset_2822() {
-        assert_eq!(timezone_offset_2822("cSt").unwrap(), ("", -21600));
-        assert_eq!(timezone_offset_2822("pSt").unwrap(), ("", -28800));
-        assert_eq!(timezone_offset_2822("mSt").unwrap(), ("", -25200));
-        assert_eq!(timezone_offset_2822("-1551").unwrap(), ("", -57060));
+        assert_eq!(timezone_offset_2822("cSt").unwrap(), ("", Some(-21600)));
+        assert_eq!(timezone_offset_2822("pSt").unwrap(), ("", Some(-28800)));
+        assert_eq!(timezone_offset_2822("mSt").unwrap(), ("", Some(-25200)));
+        assert_eq!(timezone_offset_2822("-1551").unwrap(), ("", Some(-57060)));
         assert_eq!(timezone_offset_2822("Gp"), Err(INVALID));
     }
 

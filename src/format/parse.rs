@@ -12,6 +12,7 @@ use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseResult};
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
+use crate::format::parsed::NO_OFFSET_INFO;
 use crate::{DateTime, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
@@ -142,7 +143,8 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     s = scan::space(s)?; // mandatory
-    parsed.set_offset(i64::from(try_consume!(scan::timezone_offset_2822(s))))?;
+    let offset = try_consume!(scan::timezone_offset_2822(s));
+    parsed.set_offset(i64::from(offset.unwrap_or(NO_OFFSET_INFO)))?;
 
     // optional comments
     while let Ok((s_out, ())) = scan::comment_2822(s) {
@@ -213,16 +215,17 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     }
 
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
-    // This range check is similar to the one in `FixedOffset::east_opt`, so it would be redundant.
-    // But it is possible to read the offset directly from `Parsed`. We want to only successfully
-    // populate `Parsed` if the input is fully valid RFC 3339.
-    // Max for the hours field is `23`, and for the minutes field `59`.
-    const MAX_RFC3339_OFFSET: i32 = (23 * 60 + 59) * 60;
-    if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
-        return Err(OUT_OF_RANGE);
+    if let Some(offset) = offset {
+        // This range check is similar to the one in `FixedOffset::east_opt`, so it would be
+        // redundant. But it is possible to read the offset directly from `Parsed`. We want to only
+        // successfully populate `Parsed` if the input is fully valid RFC 3339.
+        // Max for the hours field is `23`, and for the minutes field `59`.
+        const MAX_RFC3339_OFFSET: i32 = (23 * 60 + 59) * 60;
+        if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
+            return Err(OUT_OF_RANGE);
+        }
     }
-    parsed.set_offset(i64::from(offset))?;
-
+    parsed.set_offset(i64::from(offset.unwrap_or(NO_OFFSET_INFO)))?;
     Ok((s, ()))
 }
 
@@ -463,7 +466,7 @@ where
                             false,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset))?;
+                        parsed.set_offset(i64::from(offset.unwrap_or(NO_OFFSET_INFO)))?;
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
@@ -474,7 +477,7 @@ where
                             false,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset))?;
+                        parsed.set_offset(i64::from(offset.unwrap_or(NO_OFFSET_INFO)))?;
                     }
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
@@ -486,7 +489,7 @@ where
                             true,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset))?;
+                        parsed.set_offset(i64::from(offset.unwrap_or(NO_OFFSET_INFO)))?;
                     }
 
                     &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
@@ -575,11 +578,11 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
     s = parse_internal(parsed, s, TIME_ITEMS.iter())?;
     s = s.trim_start();
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
-        (&s[3..], 0)
+        (&s[3..], Some(0))
     } else {
         scan::timezone_offset(s, scan::colon_or_space, true, false, true)?
     };
-    parsed.set_offset(i64::from(offset))?;
+    parsed.set_offset(i64::from(offset.unwrap_or(NO_OFFSET_INFO)))?;
     Ok((s, ()))
 }
 
@@ -1041,8 +1044,8 @@ mod tests {
         check("+1234:56", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("+1234:567", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("+00:00", &[fixed(TimezoneOffset)], parsed!(offset: 0));
-        check("-00:00", &[fixed(TimezoneOffset)], parsed!(offset: 0));
-        check("−00:00", &[fixed(TimezoneOffset)], parsed!(offset: 0)); // MINUS SIGN (U+2212)
+        check("-00:00", &[fixed(TimezoneOffset)], parsed!(offset: NO_OFFSET_INFO));
+        check("−00:00", &[fixed(TimezoneOffset)], parsed!(offset: NO_OFFSET_INFO)); // MINUS SIGN (U+2212)
         check("+00:01", &[fixed(TimezoneOffset)], parsed!(offset: 60));
         check("-00:01", &[fixed(TimezoneOffset)], parsed!(offset: -60));
         check("+00:30", &[fixed(TimezoneOffset)], parsed!(offset: 1_800));
@@ -1615,6 +1618,7 @@ mod tests {
             ("20 Jan 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // no day of week
             ("20 JAN 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // upper case month
             ("Tue, 20 Jan 2015 17:35 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 0, 0, -8))), // no second
+            ("Tue, 20 Jan 2015 17:35 -0000", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 0, 0, 0))), // -0000 offset
             ("11 Sep 2001 09:45:00 +0000", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, 0))),
             ("11 Sep 2001 09:45:00 EST", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, -5))),
             ("11 Sep 2001 09:45:00 GMT", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, 0))),
@@ -1771,6 +1775,7 @@ mod tests {
             ("2015-01-20T17:35:20.000031-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 31_000, -8))),
             ("2015-01-20T17:35:20.000000004-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 4, -8))),
             ("2015-01-20T17:35:20.000000004−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 4, -8))), // with MINUS SIGN (U+2212)
+            ("2015-01-20T17:35:20-00:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))), // -0000 offset
             (
                 "2015-01-20T17:35:20.000000000452-08:00",
                 Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
