@@ -67,7 +67,7 @@ impl NaiveWeek {
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        self.date.add_days(days as i64).unwrap()
+        self.date.add_days(days).unwrap()
     }
 
     /// Returns a date representing the last day of the week.
@@ -95,7 +95,7 @@ impl NaiveWeek {
         // Do not construct an intermediate date before `self.date` (like with `first_day()`),
         // because that may be out of range if `date` is close to `NaiveDate::MIN`.
         let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        self.date.add_days(days as i64).unwrap()
+        self.date.add_days(days).unwrap()
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -740,7 +740,7 @@ impl NaiveDate {
             return Some(self);
         }
 
-        i64::try_from(days.0).ok().and_then(|d| self.add_days(d))
+        i32::try_from(days.0).ok().and_then(|d| self.add_days(d))
     }
 
     /// Subtract a duration in [`Days`] from the date
@@ -768,11 +768,11 @@ impl NaiveDate {
             return Some(self);
         }
 
-        i64::try_from(days.0).ok().and_then(|d| self.add_days(-d))
+        i32::try_from(days.0).ok().and_then(|d| self.add_days(-d))
     }
 
-    fn add_days(self, days: i64) -> Option<Self> {
-        let secs = days.checked_mul(86400)?; // 86400 seconds in one day
+    fn add_days(self, days: i32) -> Option<Self> {
+        let secs = (days as i64).checked_mul(86400)?; // 86400 seconds in one day
         if secs >= core::i64::MAX / 1000 || secs <= core::i64::MIN / 1000 {
             return None; // See the `time` 0.1 crate. Outside these bounds, `Duration::seconds` will panic
         }
