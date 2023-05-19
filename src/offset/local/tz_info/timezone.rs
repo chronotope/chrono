@@ -7,6 +7,7 @@ use std::{cmp::Ordering, fmt, str};
 
 use super::rule::{AlternateTime, TransitionRule};
 use super::{parser, Error, DAYS_PER_WEEK, SECONDS_PER_DAY};
+use crate::{expect, FixedOffset};
 
 /// Time zone
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -563,7 +564,7 @@ impl fmt::Debug for TimeZoneName {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub(crate) struct LocalTimeType {
     /// Offset from UTC in seconds
-    pub(super) ut_offset: i32,
+    pub(super) ut_offset: FixedOffset,
     /// Daylight Saving Time indicator
     is_dst: bool,
     /// Time zone name
@@ -573,30 +574,28 @@ pub(crate) struct LocalTimeType {
 impl LocalTimeType {
     /// Construct a local time type
     pub(super) fn new(ut_offset: i32, is_dst: bool, name: Option<&[u8]>) -> Result<Self, Error> {
-        if ut_offset == i32::min_value() {
-            return Err(Error::LocalTimeType("invalid UTC offset"));
-        }
+        let ut_offset =
+            FixedOffset::east_opt(ut_offset).ok_or(Error::LocalTimeType("invalid UTC offset"))?;
 
         let name = match name {
-            Some(name) => TimeZoneName::new(name)?,
-            None => return Ok(Self { ut_offset, is_dst, name: None }),
+            Some(name) => Some(TimeZoneName::new(name)?),
+            None => None,
         };
 
-        Ok(Self { ut_offset, is_dst, name: Some(name) })
+        Ok(Self { ut_offset, is_dst, name })
     }
 
     /// Construct a local time type with the specified UTC offset in seconds
     pub(super) const fn with_offset(ut_offset: i32) -> Result<Self, Error> {
-        if ut_offset == i32::min_value() {
-            return Err(Error::LocalTimeType("invalid UTC offset"));
+        match FixedOffset::east_opt(ut_offset) {
+            Some(ut_offset) => Ok(Self { ut_offset, is_dst: false, name: None }),
+            None => Err(Error::LocalTimeType("invalid UTC offset")),
         }
-
-        Ok(Self { ut_offset, is_dst: false, name: None })
     }
 
     /// Returns offset from UTC in seconds
     pub(crate) const fn raw_offset(&self) -> i32 {
-        self.ut_offset
+        self.ut_offset.local_minus_utc()
     }
 
     /// Returns daylight saving time indicator
@@ -604,7 +603,10 @@ impl LocalTimeType {
         self.is_dst
     }
 
-    pub(super) const UTC: LocalTimeType = Self { ut_offset: 0, is_dst: false, name: None };
+    pub(super) const UTC: LocalTimeType = {
+        let ut_offset = expect!(FixedOffset::east_opt(0), "FixedOffset::east out of bounds");
+        Self { ut_offset, is_dst: false, name: None }
+    };
 }
 
 /// Open the TZif file corresponding to a TZ string
