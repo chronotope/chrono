@@ -210,21 +210,8 @@ where
     F: FnMut(&str) -> ParseResult<&str>,
 {
     if allow_zulu {
-        let bytes = s.as_bytes();
-        match bytes.first() {
-            Some(&b'z') | Some(&b'Z') => return Ok((&s[1..], 0)),
-            Some(&b'u') | Some(&b'U') => {
-                if bytes.len() >= 3 {
-                    let (b, c) = (bytes[1], bytes[2]);
-                    match (b | 32, c | 32) {
-                        (b't', b'c') => return Ok((&s[3..], 0)),
-                        _ => return Err(INVALID),
-                    }
-                } else {
-                    return Err(INVALID);
-                }
-            }
-            _ => {}
+        if let Some(&b'Z' | &b'z') = s.as_bytes().first() {
+            return Ok((&s[1..], 0));
         }
     }
 
