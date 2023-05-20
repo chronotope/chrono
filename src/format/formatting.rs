@@ -23,7 +23,10 @@ use crate::{Datelike, Timelike, Weekday};
 #[cfg(feature = "unstable-locales")]
 use super::locales;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use super::{Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, Pad};
+use super::{
+    Colons, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, OffsetFormat,
+    OffsetPrecision, Pad,
+};
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 struct Locales {
@@ -428,20 +431,42 @@ fn format_inner(
                         result.push_str(name);
                         Ok(())
                     }),
-                    TimezoneOffsetColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
-                    TimezoneOffsetDoubleColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
-                    TimezoneOffsetTripleColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
-                    TimezoneOffsetColonZ => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
-                    TimezoneOffset => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::None))
-                    }
-                    TimezoneOffsetZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
-                    }
+                    TimezoneOffset | TimezoneOffsetZ => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Maybe,
+                            allow_zulu: *spec == TimezoneOffsetZ,
+                            padding: Pad::Zero,
+                        }
+                        .format(result, off)
+                    }),
+                    TimezoneOffsetColon | TimezoneOffsetColonZ => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Colon,
+                            allow_zulu: *spec == TimezoneOffsetColonZ,
+                            padding: Pad::Zero,
+                        }
+                        .format(result, off)
+                    }),
+                    TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Seconds,
+                            colons: Colons::Colon,
+                            allow_zulu: false,
+                            padding: Pad::Zero,
+                        }
+                        .format(result, off)
+                    }),
+                    TimezoneOffsetTripleColon => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Hours,
+                            colons: Colons::None,
+                            allow_zulu: false,
+                            padding: Pad::Zero,
+                        }
+                        .format(result, off)
+                    }),
                     Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         return Err(fmt::Error);
                     }
@@ -477,46 +502,82 @@ fn format_inner(
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum Colons {
-    None,
-    Single,
-    Double,
-    Triple,
-}
-
-/// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
-/// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
-#[cfg(any(feature = "alloc", feature = "std"))]
-fn write_local_minus_utc(
-    result: &mut String,
-    off: FixedOffset,
-    allow_zulu: bool,
-    colon_type: Colons,
-) -> fmt::Result {
-    let off = off.local_minus_utc();
-    if allow_zulu && off == 0 {
-        result.push('Z');
-        return Ok(());
-    }
-    let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
-    result.push(sign);
-
-    write_hundreds(result, (off / 3600) as u8)?;
-
-    match colon_type {
-        Colons::None => write_hundreds(result, (off / 60 % 60) as u8),
-        Colons::Single => {
-            result.push(':');
-            write_hundreds(result, (off / 60 % 60) as u8)
+impl OffsetFormat {
+    /// Writes an offset from UTC to `result` with the format defined by `self`.
+    fn format(&self, result: &mut String, off: FixedOffset) -> fmt::Result {
+        let off = off.local_minus_utc();
+        if self.allow_zulu && off == 0 {
+            result.push('Z');
+            return Ok(());
         }
-        Colons::Double => {
-            result.push(':');
-            write_hundreds(result, (off / 60 % 60) as u8)?;
-            result.push(':');
-            write_hundreds(result, (off % 60) as u8)
+        let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
+
+        let hours;
+        let mut mins = 0;
+        let mut secs = 0;
+        let precision = match self.precision {
+            OffsetPrecision::Hours => {
+                // Minutes and seconds are simply truncated
+                hours = (off / 3600) as u8;
+                OffsetPrecision::Hours
+            }
+            OffsetPrecision::Minutes | OffsetPrecision::OptionalMinutes => {
+                // Round seconds to the nearest minute.
+                let minutes = (off + 30) / 60;
+                mins = (minutes % 60) as u8;
+                hours = (minutes / 60) as u8;
+                if self.precision == OffsetPrecision::OptionalMinutes && mins == 0 {
+                    OffsetPrecision::Hours
+                } else {
+                    OffsetPrecision::Minutes
+                }
+            }
+            OffsetPrecision::Seconds
+            | OffsetPrecision::OptionalSeconds
+            | OffsetPrecision::OptionalMinutesAndSeconds => {
+                let minutes = off / 60;
+                secs = (off % 60) as u8;
+                mins = (minutes % 60) as u8;
+                hours = (minutes / 60) as u8;
+                if self.precision != OffsetPrecision::Seconds && secs == 0 {
+                    if self.precision == OffsetPrecision::OptionalMinutesAndSeconds && mins == 0 {
+                        OffsetPrecision::Hours
+                    } else {
+                        OffsetPrecision::Minutes
+                    }
+                } else {
+                    OffsetPrecision::Seconds
+                }
+            }
+        };
+        let colons = self.colons == Colons::Colon;
+
+        if hours < 10 {
+            if self.padding == Pad::Space {
+                result.push(' ');
+            }
+            result.push(sign);
+            if self.padding == Pad::Zero {
+                result.push('0');
+            }
+            result.push((b'0' + hours) as char);
+        } else {
+            result.push(sign);
+            write_hundreds(result, hours)?;
         }
-        Colons::Triple => Ok(()),
+        if let OffsetPrecision::Minutes | OffsetPrecision::Seconds = precision {
+            if colons {
+                result.push(':');
+            }
+            write_hundreds(result, mins)?;
+        }
+        if let OffsetPrecision::Seconds = precision {
+            if colons {
+                result.push(':');
+            }
+            write_hundreds(result, secs)?;
+        }
+        Ok(())
     }
 }
 
@@ -530,7 +591,13 @@ pub(crate) fn write_rfc3339(
     // reuse `Debug` impls which already print ISO 8601 format.
     // this is faster in this way.
     write!(result, "{:?}", dt)?;
-    write_local_minus_utc(result, off, false, Colons::Single)
+    OffsetFormat {
+        precision: OffsetPrecision::Minutes,
+        colons: Colons::Colon,
+        allow_zulu: false,
+        padding: Pad::Zero,
+    }
+    .format(result, off)
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -574,7 +641,13 @@ fn write_rfc2822_inner(
     let sec = t.second() + t.nanosecond() / 1_000_000_000;
     write_hundreds(result, sec as u8)?;
     result.push(' ');
-    write_local_minus_utc(result, off, false, Colons::None)
+    OffsetFormat {
+        precision: OffsetPrecision::Minutes,
+        colons: Colons::None,
+        allow_zulu: false,
+        padding: Pad::Zero,
+    }
+    .format(result, off)
 }
 
 /// Equivalent to `{:02}` formatting for n < 100.
