@@ -743,6 +743,17 @@ fn test_datetime_from_str() {
             )
             .unwrap())
     );
+    assert_eq!(
+        "2015-02-18T23:16:9.15Utc".parse::<DateTime<Utc>>(),
+        Ok(Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2015, 2, 18)
+                    .unwrap()
+                    .and_hms_milli_opt(23, 16, 9, 150)
+                    .unwrap()
+            )
+            .unwrap())
+    );
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),

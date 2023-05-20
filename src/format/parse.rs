@@ -542,7 +542,8 @@ impl str::FromStr for DateTime<FixedOffset> {
 /// Differences with RFC3339:
 /// - Values don't require padding to two digits.
 /// - Years outside the range 0...=9999 are accepted, but they must include a sign.
-/// - `UTC` is accepted as a valid timezone name/offset.
+/// - `UTC` is accepted as a valid timezone name/offset (for compatibility with the debug format of
+///   `DateTime<Utc>`.
 /// - There can be spaces between any of the components.
 /// - The colon in the offset may be missing.
 fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
@@ -565,7 +566,6 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Item::Numeric(Numeric::Second, Pad::Zero),
         Item::Fixed(Fixed::Nanosecond),
         Item::Space(""),
-        Item::Fixed(Fixed::TimezoneOffsetZ),
     ];
 
     s = match parse_internal(parsed, s, DATE_ITEMS.iter()) {
@@ -580,11 +580,19 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         None => return Err(TOO_SHORT),
     };
 
-    match parse_internal(parsed, s, TIME_ITEMS.iter()) {
-        Err((s, e)) if e.0 == ParseErrorKind::TooLong => Ok((s, ())),
-        Err((_s, e)) => Err(e),
-        Ok(s) => Ok((s, ())),
-    }
+    s = match parse_internal(parsed, s, TIME_ITEMS.iter()) {
+        Err((s, e)) if e.0 == ParseErrorKind::TooLong => s,
+        Err((_s, e)) => return Err(e),
+        Ok(_) => return Err(NOT_ENOUGH),
+    };
+    s = s.trim_start();
+    let (s, offset) = if s.len() >= 3 && "UTC".eq_ignore_ascii_case(&s[..3]) {
+        (&s[3..], 0)
+    } else {
+        scan::timezone_offset(s, scan::colon_or_space, true, false, true)?
+    };
+    parsed.set_offset(i64::from(offset))?;
+    Ok((s, ()))
 }
 
 #[cfg(test)]
