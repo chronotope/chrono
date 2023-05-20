@@ -11,7 +11,7 @@ use core::str::FromStr;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
-use crate::format::{scan, OUT_OF_RANGE};
+use crate::format::{scan, Colons, OffsetFormat, OffsetPrecision, Pad, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::{DateTime, ParseError, Timelike};
@@ -118,7 +118,13 @@ impl FixedOffset {
 impl FromStr for FixedOffset {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, offset) = scan::timezone_offset(s, scan::colon_or_space, false, false, true)?;
+        let offset_format = OffsetFormat {
+            precision: OffsetPrecision::Minutes,
+            colons: Colons::Maybe,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        let (_, offset) = scan::utc_offset(s, offset_format)?;
         Self::east_opt(offset).ok_or(OUT_OF_RANGE)
     }
 }
