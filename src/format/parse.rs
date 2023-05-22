@@ -515,7 +515,14 @@ where
 /// A space or a 'T' are acepted as the separator between the date and time
 /// parts. Additional spaces are allowed between each component.
 ///
-/// All of these examples are equivalent:
+/// Differences with RFC3339:
+/// - A space or a 'T' are accepted as the separator between the date and time parts.
+/// - Values don't require padding to two digits.
+/// - `UTC` and `Z` are accepted as a valid timezone offset.
+/// - There can be a space between time and offset.
+/// - The colon in the offset may be missing.
+/// - The offset may optionally have seconds (compatible with the `Debug` format of `DateTime`).
+///
 /// ```
 /// # use chrono::{DateTime, offset::FixedOffset};
 /// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>()?;
@@ -545,6 +552,7 @@ impl str::FromStr for DateTime<FixedOffset> {
 ///   `DateTime<Utc>`.
 /// - There can be spaces between any of the components.
 /// - The colon in the offset may be missing.
+/// - The offset may optionally have seconds (compatible with the `Debug` format of `DateTime`).
 fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     const DATE_ITEMS: &[Item<'static>] = &[
         Item::Numeric(Numeric::Year, Pad::Zero),
@@ -567,7 +575,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Item::Space(""),
     ];
     const OFFSET_FORMAT: OffsetFormat = OffsetFormat {
-        precision: OffsetPrecision::Minutes,
+        precision: OffsetPrecision::OptionalSeconds,
         colons: Colons::Maybe,
         allow_zulu: true,
         padding: Pad::Zero,
