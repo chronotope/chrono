@@ -376,6 +376,10 @@ pub enum ParseErrorKind {
     /// most useful sets of fields however, as such constraint solving can be expensive.
     NotEnough,
 
+    /// The input string contains directives which aren't valid for the given type, e.g. "hour"
+    /// for NaiveDate.
+    TooMany,
+
     /// The input string has some invalid character sequence for given formatting items.
     Invalid,
 
@@ -424,6 +428,7 @@ impl Error for ParseError {
 const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
 const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
 const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
+const TOO_MANY: ParseError = ParseError(ParseErrorKind::TooMany);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
 const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);

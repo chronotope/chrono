@@ -434,13 +434,12 @@ impl NaiveTime {
     ///            Ok(NaiveTime::from_hms_micro_opt(13, 23, 45, 678_900).unwrap()));
     /// ```
     ///
-    /// Date and offset is ignored for the purpose of parsing.
+    /// Date and offset are errors.
     ///
     /// ```
     /// # use chrono::NaiveTime;
     /// # let parse_from_str = NaiveTime::parse_from_str;
-    /// assert_eq!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-    ///            Ok(NaiveTime::from_hms_opt(12, 34, 56).unwrap()));
+    /// assert!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z").is_err());
     /// ```
     ///
     /// [Leap seconds](#leap-second-handling) are correctly handled by
@@ -480,7 +479,7 @@ impl NaiveTime {
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt), false, true)?;
         parsed.to_naive_time()
     }
 
@@ -502,7 +501,7 @@ impl NaiveTime {
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveTime, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt), false, true)?;
         parsed.to_naive_time().map(|t| (t, remainder))
     }
 
@@ -1313,7 +1312,7 @@ impl str::FromStr for NaiveTime {
         ];
 
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        parse(&mut parsed, s, ITEMS.iter(), false, true)?;
         parsed.to_naive_time()
     }
 }

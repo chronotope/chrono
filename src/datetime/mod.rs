@@ -575,7 +575,7 @@ impl DateTime<FixedOffset> {
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        parse(&mut parsed, s, ITEMS.iter(), false, false)?;
         parsed.to_datetime()
     }
 
@@ -595,7 +595,7 @@ impl DateTime<FixedOffset> {
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        parse(&mut parsed, s, ITEMS.iter(), false, false)?;
         parsed.to_datetime()
     }
 
@@ -620,7 +620,7 @@ impl DateTime<FixedOffset> {
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt), false, false)?;
         parsed.to_datetime()
     }
 
@@ -654,7 +654,7 @@ impl DateTime<FixedOffset> {
         fmt: &str,
     ) -> ParseResult<(DateTime<FixedOffset>, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt), false, false)?;
         parsed.to_datetime().map(|d| (d, remainder))
     }
 }

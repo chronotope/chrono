@@ -296,7 +296,7 @@ impl NaiveDateTime {
     ///```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt), false, false)?;
         parsed.to_naive_datetime_with_offset(0) // no offset adjustment
     }
 
@@ -321,7 +321,7 @@ impl NaiveDateTime {
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDateTime, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt), false, false)?;
         parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
     }
 
@@ -1801,7 +1801,7 @@ impl str::FromStr for NaiveDateTime {
         ];
 
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        parse(&mut parsed, s, ITEMS.iter(), false, false)?;
         parsed.to_naive_datetime_with_offset(0)
     }
 }

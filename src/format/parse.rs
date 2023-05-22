@@ -13,7 +13,7 @@ use core::usize;
 use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseErrorKind, ParseResult};
-use super::{BAD_FORMAT, INVALID, NOT_ENOUGH, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
+use super::{BAD_FORMAT, INVALID, NOT_ENOUGH, OUT_OF_RANGE, TOO_LONG, TOO_MANY, TOO_SHORT};
 use crate::{DateTime, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
@@ -244,12 +244,18 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 ///   so one can prepend any number of zeroes before numbers.
 ///
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
-pub fn parse<'a, I, B>(parsed: &mut Parsed, s: &str, items: I) -> ParseResult<()>
+pub fn parse<'a, I, B>(
+    parsed: &mut Parsed,
+    s: &str,
+    items: I,
+    is_date: bool,
+    is_time: bool,
+) -> ParseResult<()>
 where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    parse_internal(parsed, s, items).map(|_| ()).map_err(|(_s, e)| e)
+    parse_internal(parsed, s, items, is_date, is_time).map(|_| ()).map_err(|(_s, e)| e)
 }
 
 /// Tries to parse given string into `parsed` with given formatting items.
@@ -270,12 +276,14 @@ pub fn parse_and_remainder<'a, 'b, I, B>(
     parsed: &mut Parsed,
     s: &'b str,
     items: I,
+    is_date: bool,
+    is_time: bool,
 ) -> ParseResult<&'b str>
 where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    match parse_internal(parsed, s, items) {
+    match parse_internal(parsed, s, items, is_date, is_time) {
         Ok(s) => Ok(s),
         Err((s, ParseError(ParseErrorKind::TooLong))) => Ok(s),
         Err((_s, e)) => Err(e),
@@ -286,6 +294,8 @@ fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
     items: I,
+    is_date: bool,
+    is_time: bool,
 ) -> Result<&'b str, (&'b str, ParseError)>
 where
     I: Iterator<Item = B>,
@@ -364,26 +374,86 @@ where
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
                 let (width, signed, set): (usize, bool, Setter) = match *spec {
-                    Year => (4, true, Parsed::set_year),
-                    YearDiv100 => (2, false, Parsed::set_year_div_100),
-                    YearMod100 => (2, false, Parsed::set_year_mod_100),
-                    IsoYear => (4, true, Parsed::set_isoyear),
-                    IsoYearDiv100 => (2, false, Parsed::set_isoyear_div_100),
-                    IsoYearMod100 => (2, false, Parsed::set_isoyear_mod_100),
-                    Month => (2, false, Parsed::set_month),
-                    Day => (2, false, Parsed::set_day),
-                    WeekFromSun => (2, false, Parsed::set_week_from_sun),
-                    WeekFromMon => (2, false, Parsed::set_week_from_mon),
-                    IsoWeek => (2, false, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    Ordinal => (3, false, Parsed::set_ordinal),
-                    Hour => (2, false, Parsed::set_hour),
-                    Hour12 => (2, false, Parsed::set_hour12),
-                    Minute => (2, false, Parsed::set_minute),
-                    Second => (2, false, Parsed::set_second),
-                    Nanosecond => (9, false, Parsed::set_nanosecond),
-                    Timestamp => (usize::MAX, false, Parsed::set_timestamp),
+                    Year => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (4, true, Parsed::set_year),
+                    },
+                    YearDiv100 => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_year_div_100),
+                    },
+                    YearMod100 => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_year_mod_100),
+                    },
+                    IsoYear => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (4, true, Parsed::set_isoyear),
+                    },
+                    IsoYearDiv100 => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_isoyear_div_100),
+                    },
+                    IsoYearMod100 => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_isoyear_mod_100),
+                    },
+                    Month => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_month),
+                    },
+                    Day => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_day),
+                    },
+                    WeekFromSun => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_week_from_sun),
+                    },
+                    WeekFromMon => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_week_from_mon),
+                    },
+                    IsoWeek => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_isoweek),
+                    },
+                    NumDaysFromSun => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (1, false, set_weekday_with_num_days_from_sunday),
+                    },
+                    WeekdayFromMon => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (1, false, set_weekday_with_number_from_monday),
+                    },
+                    Ordinal => match is_time {
+                        true => return Err((s, TOO_MANY)),
+                        false => (3, false, Parsed::set_ordinal),
+                    },
+                    Hour => match is_date {
+                        false => (2, false, Parsed::set_hour),
+                        true => return Err((s, TOO_MANY)),
+                    },
+                    Hour12 => match is_date {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_hour12),
+                    },
+                    Minute => match is_date {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_minute),
+                    },
+                    Second => match is_date {
+                        true => return Err((s, TOO_MANY)),
+                        false => (2, false, Parsed::set_second),
+                    },
+                    Nanosecond => match is_date {
+                        true => return Err((s, TOO_MANY)),
+                        false => (9, false, Parsed::set_nanosecond),
+                    },
+                    Timestamp => match is_date {
+                        true => return Err((s, TOO_MANY)),
+                        false => (usize::MAX, false, Parsed::set_timestamp),
+                    },
 
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
@@ -555,10 +625,10 @@ impl str::FromStr for DateTime<FixedOffset> {
         ];
 
         let mut parsed = Parsed::new();
-        match parse_internal(&mut parsed, s, DATE_ITEMS.iter()) {
+        match parse_internal(&mut parsed, s, DATE_ITEMS.iter(), false, false) {
             Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => {
                 if remainder.starts_with('T') || remainder.starts_with(' ') {
-                    parse(&mut parsed, &remainder[1..], TIME_ITEMS.iter())?;
+                    parse(&mut parsed, &remainder[1..], TIME_ITEMS.iter(), false, false)?;
                 } else {
                     return Err(INVALID);
                 }
@@ -578,7 +648,7 @@ fn test_parse() {
     // workaround for Rust issue #22255
     fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, items.iter())?;
+        parse(&mut parsed, s, items.iter(), false, false)?;
         Ok(parsed)
     }
 
@@ -1432,7 +1502,7 @@ fn test_rfc2822() {
 
     fn rfc2822_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter())?;
+        parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter(), false, false)?;
         parsed.to_datetime()
     }
 
@@ -1539,7 +1609,7 @@ fn test_rfc3339() {
 
     fn rfc3339_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter())?;
+        parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter(), false, false)?;
         parsed.to_datetime()
     }
 

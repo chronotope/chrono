@@ -526,13 +526,12 @@ impl NaiveDate {
     ///            Ok(NaiveDate::from_ymd_opt(2015, 9, 5).unwrap()));
     /// ```
     ///
-    /// Time and offset is ignored for the purpose of parsing.
+    /// Time and offset are errors.
     ///
     /// ```
     /// # use chrono::NaiveDate;
     /// # let parse_from_str = NaiveDate::parse_from_str;
-    /// assert_eq!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-    ///            Ok(NaiveDate::from_ymd_opt(2014, 5, 17).unwrap()));
+    /// assert!(parse_from_str("2014-5-17T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z").is_err());
     /// ```
     ///
     /// Out-of-bound dates or insufficient fields are errors.
@@ -553,7 +552,7 @@ impl NaiveDate {
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parse(&mut parsed, s, StrftimeItems::new(fmt), true, false)?;
         parsed.to_naive_date()
     }
 
@@ -575,7 +574,7 @@ impl NaiveDate {
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDate, &'a str)> {
         let mut parsed = Parsed::new();
-        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt), true, false)?;
         parsed.to_naive_date().map(|d| (d, remainder))
     }
 
@@ -2050,7 +2049,7 @@ impl str::FromStr for NaiveDate {
         ];
 
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        parse(&mut parsed, s, ITEMS.iter(), true, false)?;
         parsed.to_naive_date()
     }
 }
@@ -2932,10 +2931,9 @@ mod tests {
     #[test]
     fn test_date_parse_from_str() {
         let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-        assert_eq!(
-            NaiveDate::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-            Ok(ymd(2014, 5, 7))
-        ); // ignore time and offset
+        assert!(
+            NaiveDate::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z").is_err(),
+        ); // error on time and offset
         assert_eq!(
             NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u=%Y-%j"),
             Ok(ymd(2015, 2, 2))
@@ -2947,6 +2945,7 @@ mod tests {
         assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
         assert!(NaiveDate::parse_from_str("2014-57", "%Y-%m-%d").is_err());
         assert!(NaiveDate::parse_from_str("2014", "%Y").is_err()); // insufficient
+        assert!(NaiveDate::parse_from_str("2014-01-01 00", "%Y-%m-%d %H").is_err()); // too many
 
         assert_eq!(
             NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),
