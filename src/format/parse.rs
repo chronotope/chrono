@@ -530,8 +530,9 @@ where
 ///
 /// ```
 /// # use chrono::{DateTime, offset::FixedOffset};
-/// "2000-01-02T03:04:05Z".parse::<DateTime<FixedOffset>>();
-/// "2000-01-02 03:04:05Z".parse::<DateTime<FixedOffset>>();
+/// "2000-01-02T03:04:05Z".parse::<DateTime<FixedOffset>>()?;
+/// "2000-01-02 03:04:05Z".parse::<DateTime<FixedOffset>>()?;
+/// # Ok::<(), chrono::ParseError>(())
 /// ```
 impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
