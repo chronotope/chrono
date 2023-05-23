@@ -49,7 +49,7 @@ mod tz_info;
 /// use chrono::{Local, DateTime, TimeZone};
 ///
 /// let dt: DateTime<Local> = Local::now();
-/// let dt: DateTime<Local> = Local.timestamp(0, 0);
+/// let dt: DateTime<Local> = Local.timestamp_opt(0, 0).unwrap();
 /// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]

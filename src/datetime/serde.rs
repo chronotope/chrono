@@ -838,7 +838,7 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s: E<S> = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-    /// assert_eq!(my_s, E::V(S { time: Some(Utc.timestamp(1526522699, 918000000)) }));
+    /// assert_eq!(my_s, E::V(S { time: Some(Utc.timestamp_opt(1526522699, 918000000).unwrap()) }));
     /// let s: E<S> = serde_json::from_str(r#"{ "time": null }"#)?;
     /// assert_eq!(s, E::V(S { time: None }));
     /// let t: E<S> = serde_json::from_str(r#"{}"#)?;

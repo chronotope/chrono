@@ -474,8 +474,8 @@ impl NaiveDateTime {
     /// let nanos = dt.timestamp_nanos();
     /// assert_eq!(nanos, 1_000_000_000_000_000_555);
     /// assert_eq!(
-    ///     dt,
-    ///     NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    ///     Some(dt),
+    ///     NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32)
     /// );
     /// ```
     #[inline]
@@ -565,7 +565,7 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{Duration, NaiveDate};
     ///
-    /// let from_ymd = NaiveDate::from_ymd;
+    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     ///
     /// let d = from_ymd(2016, 7, 8);
     /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
@@ -598,7 +598,7 @@ impl NaiveDateTime {
     ///
     /// ```
     /// # use chrono::{Duration, NaiveDate};
-    /// # let from_ymd = NaiveDate::from_ymd;
+    /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
     /// let leap = hmsm(3, 5, 59, 1_300);
     /// assert_eq!(leap.checked_add_signed(Duration::zero()),
@@ -671,7 +671,7 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{Duration, NaiveDate};
     ///
-    /// let from_ymd = NaiveDate::from_ymd;
+    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     ///
     /// let d = from_ymd(2016, 7, 8);
     /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
@@ -704,7 +704,7 @@ impl NaiveDateTime {
     ///
     /// ```
     /// # use chrono::{Duration, NaiveDate};
-    /// # let from_ymd = NaiveDate::from_ymd;
+    /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
     /// let leap = hmsm(3, 5, 59, 1_300);
     /// assert_eq!(leap.checked_sub_signed(Duration::zero()),
@@ -789,7 +789,7 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{Duration, NaiveDate};
     ///
-    /// let from_ymd = NaiveDate::from_ymd;
+    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     ///
     /// let d = from_ymd(2016, 7, 8);
     /// assert_eq!(d.and_hms_opt(3, 5, 7).unwrap().signed_duration_since(d.and_hms_opt(2, 4, 6).unwrap()),
@@ -806,7 +806,7 @@ impl NaiveDateTime {
     ///
     /// ```
     /// # use chrono::{Duration, NaiveDate};
-    /// # let from_ymd = NaiveDate::from_ymd;
+    /// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
     /// let leap = from_ymd(2015, 6, 30).and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
     /// assert_eq!(leap.signed_duration_since(from_ymd(2015, 6, 30).and_hms_opt(23, 0, 0).unwrap()),
     ///            Duration::seconds(3600) + Duration::milliseconds(500));
@@ -1430,7 +1430,7 @@ impl Timelike for NaiveDateTime {
 /// ```
 /// use chrono::{Duration, NaiveDate};
 ///
-/// let from_ymd = NaiveDate::from_ymd;
+/// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
 ///
 /// let d = from_ymd(2016, 7, 8);
 /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
@@ -1452,7 +1452,7 @@ impl Timelike for NaiveDateTime {
 ///
 /// ```
 /// # use chrono::{Duration, NaiveDate};
-/// # let from_ymd = NaiveDate::from_ymd;
+/// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
 /// let leap = hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap + Duration::zero(),             hmsm(3, 5, 59, 1_300));
@@ -1541,7 +1541,7 @@ impl Add<Months> for NaiveDateTime {
 /// ```
 /// use chrono::{Duration, NaiveDate};
 ///
-/// let from_ymd = NaiveDate::from_ymd;
+/// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
 ///
 /// let d = from_ymd(2016, 7, 8);
 /// let hms = |h, m, s| d.and_hms_opt(h, m, s).unwrap();
@@ -1563,7 +1563,7 @@ impl Add<Months> for NaiveDateTime {
 ///
 /// ```
 /// # use chrono::{Duration, NaiveDate};
-/// # let from_ymd = NaiveDate::from_ymd;
+/// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
 /// # let hmsm = |h, m, s, milli| from_ymd(2016, 7, 8).and_hms_milli_opt(h, m, s, milli).unwrap();
 /// let leap = hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap - Duration::zero(),            hmsm(3, 5, 59, 1_300));
@@ -1639,7 +1639,7 @@ impl Sub<Months> for NaiveDateTime {
 /// ```
 /// use chrono::{Duration, NaiveDate};
 ///
-/// let from_ymd = NaiveDate::from_ymd;
+/// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
 ///
 /// let d = from_ymd(2016, 7, 8);
 /// assert_eq!(d.and_hms_opt(3, 5, 7).unwrap() - d.and_hms_opt(2, 4, 6).unwrap(), Duration::seconds(3600 + 60 + 1));
@@ -1655,7 +1655,7 @@ impl Sub<Months> for NaiveDateTime {
 ///
 /// ```
 /// # use chrono::{Duration, NaiveDate};
-/// # let from_ymd = NaiveDate::from_ymd;
+/// # let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
 /// let leap = from_ymd(2015, 6, 30).and_hms_milli_opt(23, 59, 59, 1_500).unwrap();
 /// assert_eq!(leap - from_ymd(2015, 6, 30).and_hms_opt(23, 0, 0).unwrap(),
 ///            Duration::seconds(3600) + Duration::milliseconds(500));
@@ -1811,7 +1811,7 @@ impl str::FromStr for NaiveDateTime {
 /// use chrono::NaiveDateTime;
 ///
 /// let default_date = NaiveDateTime::default();
-/// assert_eq!(default_date, NaiveDateTime::from_timestamp(0, 0));
+/// assert_eq!(Some(default_date), NaiveDateTime::from_timestamp_opt(0, 0));
 /// ```
 impl Default for NaiveDateTime {
     fn default() -> Self {

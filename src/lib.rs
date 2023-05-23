@@ -323,7 +323,7 @@
 //! use chrono::{DateTime, TimeZone, Utc};
 //!
 //! // Construct a datetime from epoch:
-//! let dt = Utc.timestamp(1_500_000_000, 0);
+//! let dt = Utc.timestamp_opt(1_500_000_000, 0).unwrap();
 //! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
 //!
 //! // Get epoch value from a datetime:
