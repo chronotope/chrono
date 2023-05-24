@@ -178,6 +178,9 @@ where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
     if let Some(span) = duration.num_nanoseconds() {
+        if span < 0 {
+            return Err(RoundingError::DurationExceedsLimit);
+        }
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
@@ -217,6 +220,9 @@ where
     T: Timelike + Add<Duration, Output = T> + Sub<Duration, Output = T>,
 {
     if let Some(span) = duration.num_nanoseconds() {
+        if span < 0 {
+            return Err(RoundingError::DurationExceedsLimit);
+        }
         if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
             return Err(RoundingError::TimestampExceedsLimit);
         }
@@ -304,10 +310,10 @@ impl std::error::Error for RoundingError {
 
 #[cfg(test)]
 mod tests {
-    use super::{Duration, DurationRound, SubsecRound};
+    use super::{Duration, DurationRound, RoundingError, SubsecRound};
     use crate::offset::{FixedOffset, TimeZone, Utc};
-    use crate::NaiveDate;
     use crate::Timelike;
+    use crate::{NaiveDate, NaiveDateTime};
 
     #[test]
     fn test_round_subsecs() {
@@ -759,5 +765,20 @@ mod tests {
             dt.duration_trunc(Duration::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
         );
+    }
+
+    #[test]
+    fn issue1010() {
+        let dt = NaiveDateTime::from_timestamp_opt(-4227854320, 1678774288).unwrap();
+        let span = Duration::microseconds(-7019067213869040);
+        assert_eq!(dt.duration_trunc(span), Err(RoundingError::DurationExceedsLimit));
+
+        let dt = NaiveDateTime::from_timestamp_opt(320041586, 1920103021).unwrap();
+        let span = Duration::nanoseconds(-8923838508697114584);
+        assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
+
+        let dt = NaiveDateTime::from_timestamp_opt(-2621440, 0).unwrap();
+        let span = Duration::nanoseconds(-9223372036854771421);
+        assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
     }
 }
