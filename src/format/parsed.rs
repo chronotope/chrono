@@ -494,6 +494,7 @@ impl Parsed {
     ///
     /// This method is able to determine the time from given subset of fields:
     ///
+    /// - Hour. (minute, second and nanosecond assumed to be 0)
     /// - Hour, minute. (second and nanosecond assumed to be 0)
     /// - Hour, minute, second. (nanosecond assumed to be 0)
     /// - Hour, minute, second, nanosecond.
@@ -512,10 +513,17 @@ impl Parsed {
         };
         let hour = hour_div_12 * 12 + hour_mod_12;
 
+        // we allow omitting minutes, but only if seconds and nanoseconds are also missing.
         let minute = match self.minute {
             Some(v @ 0..=59) => v,
             Some(_) => return Err(OUT_OF_RANGE),
-            None => return Err(NOT_ENOUGH),
+            None => {
+                if self.second.is_none() && self.nanosecond.is_none() {
+                    0
+                } else {
+                    return Err(NOT_ENOUGH);
+                }
+            }
         };
 
         // we allow omitting seconds or nanoseconds, but they should be in the range.
@@ -982,7 +990,7 @@ mod tests {
         // omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
         assert_eq!(parse!(hour_div_12: 0), Err(NOT_ENOUGH));
-        assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1), Err(NOT_ENOUGH));
+        assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1), hms(1, 0, 0));
         assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1, minute: 23), hms(1, 23, 0));
         assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1, minute: 23, second: 45), hms(1, 23, 45));
         assert_eq!(
@@ -992,6 +1000,8 @@ mod tests {
         );
         assert_eq!(parse!(hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6), hms(23, 45, 6));
         assert_eq!(parse!(hour_mod_12: 1, minute: 23), Err(NOT_ENOUGH));
+        assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1, second: 20), Err(NOT_ENOUGH));
+        assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1, nanosecond: 2_345_678), Err(NOT_ENOUGH));
         assert_eq!(
             parse!(hour_div_12: 0, hour_mod_12: 1, minute: 23, nanosecond: 456_789_012),
             Err(NOT_ENOUGH)

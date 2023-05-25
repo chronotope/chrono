@@ -475,19 +475,23 @@ impl NaiveTime {
     ///            Ok(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_123).unwrap()));
     /// ```
     ///
-    /// Missing seconds are assumed to be zero,
-    /// but out-of-bound times or insufficient fields are errors otherwise.
+    /// If nanoseconds are missing, they are assumed to be zero.
+    /// If also seconds are missing, the seconds are assumed to be zero.
+    /// And if also minutes are missing, the minutes are assumed to be zero.
+    /// Out-of-bound times or insufficient fields are errors otherwise.
     ///
     /// ```
     /// # use chrono::NaiveTime;
     /// # let parse_from_str = NaiveTime::parse_from_str;
     /// assert_eq!(parse_from_str("7:15", "%H:%M"),
     ///            Ok(NaiveTime::from_hms_opt(7, 15, 0).unwrap()));
+    /// assert_eq!(parse_from_str("7", "%H"),
+    ///            Ok(NaiveTime::from_hms_opt(7, 0, 0).unwrap()));
     ///
     /// assert!(parse_from_str("04m33s", "%Mm%Ss").is_err());
-    /// assert!(parse_from_str("12", "%H").is_err());
     /// assert!(parse_from_str("17:60", "%H:%M").is_err());
     /// assert!(parse_from_str("24:00:00", "%H:%M:%S").is_err());
+    /// assert!(parse_from_str("12:xx:00", "%H:xx:%S").is_err());
     /// ```
     ///
     /// All parsed fields should be consistent to each other, otherwise it's an error.
