@@ -557,12 +557,24 @@ impl NaiveDate {
     ///            Ok(NaiveDate::from_ymd_opt(2014, 5, 17).unwrap()));
     /// ```
     ///
-    /// Out-of-bound dates or insufficient fields are errors.
+    /// If the format string doesn't contain a day field, it defaults to the first day.
+    /// If year and month are given it defaults to the first day of the month.
+    /// If year and week are given it defaults to the first day of the week.
     ///
     /// ```
     /// # use chrono::NaiveDate;
     /// # let parse_from_str = NaiveDate::parse_from_str;
-    /// assert!(parse_from_str("2015/9", "%Y/%m").is_err());
+    /// assert_eq!(parse_from_str("2015/9", "%Y/%m"),
+    ///            Ok(NaiveDate::from_ymd_opt(2015, 9, 1).unwrap()));
+    /// assert_eq!(parse_from_str("2015 week 6", "%Y week %W"),
+    ///            Ok(NaiveDate::from_ymd_opt(2015, 2, 9).unwrap()));
+    /// ```
+    ///
+    /// Out-of-bound dates are invalid.
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    /// # let parse_from_str = NaiveDate::parse_from_str;
     /// assert!(parse_from_str("2015/9/31", "%Y/%m/%d").is_err());
     /// ```
     ///

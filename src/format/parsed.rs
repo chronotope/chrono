@@ -291,6 +291,9 @@ impl Parsed {
     /// - Year, week number counted from Sunday or Monday, day of the week.
     /// - ISO week date.
     ///
+    /// If the day of the month or day of the week is missing, it will use the first day as
+    /// fallback.
+    ///
     /// Gregorian year and ISO week date year can have their century number (`*_div_100`) omitted,
     /// the two-digit year is used to guess the century number then.
     pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
@@ -347,36 +350,50 @@ impl Parsed {
         // it is consistent with other given fields.
         let (verified, parsed_date) = match (given_year, given_isoyear, self) {
             (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
-                // year, month, day
                 let date = NaiveDate::from_ymd_opt(year, month, day).ok_or(OUT_OF_RANGE)?;
                 (verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-
             (Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
-                // year, day of the year
                 let date = NaiveDate::from_yo_opt(year, ordinal).ok_or(OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-
             (Some(year), _, &Parsed { week_from_sun: Some(week), weekday: Some(weekday), .. }) => {
-                // year, week (starting at 1st Sunday), day of the week
                 let date = resolve_week_number(year, week, Weekday::Sun, weekday)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-
             (Some(year), _, &Parsed { week_from_mon: Some(week), weekday: Some(weekday), .. }) => {
-                // year, week (starting at 1st Monday), day of the week
                 let date = resolve_week_number(year, week, Weekday::Mon, weekday)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-
             (_, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(weekday), .. }) => {
-                // ISO year, week, day of the week
-                let date = NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday);
-                let date = date.ok_or(OUT_OF_RANGE)?;
+                let date =
+                    NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday).ok_or(OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_ordinal(date), date)
             }
-
+            #[rustfmt::skip]
+            (Some(year), None, &Parsed { month: Some(month),
+                                         week_from_sun: None, week_from_mon: None, .. }) => {
+                let date = NaiveDate::from_ymd_opt(year, month, 1).ok_or(OUT_OF_RANGE)?;
+                (verify_isoweekdate(date) && verify_ordinal(date), date)
+            }
+            #[rustfmt::skip]
+            (Some(year), None, &Parsed { week_from_sun: Some(week),
+                                         week_from_mon: None, month: None, .. }) => {
+                let date = resolve_week_number(year, week, Weekday::Sun, Weekday::Sun)?;
+                (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
+            }
+            #[rustfmt::skip]
+            (Some(year), None, &Parsed { week_from_mon: Some(week),
+                                         week_from_sun: None, month: None, .. }) => {
+                let date = resolve_week_number(year, week, Weekday::Mon, Weekday::Mon)?;
+                (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
+            }
+            (None, Some(isoyear), &Parsed { isoweek: Some(isoweek), .. }) => {
+                let weekday = Weekday::Mon;
+                let date =
+                    NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday).ok_or(OUT_OF_RANGE)?;
+                (verify_ymd(date) && verify_ordinal(date), date)
+            }
             (_, _, _) => return Err(NOT_ENOUGH),
         };
 
@@ -776,12 +793,12 @@ mod tests {
         // ymd: omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
         assert_eq!(parse!(year: 1984), Err(NOT_ENOUGH));
-        assert_eq!(parse!(year: 1984, month: 1), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year: 1984, month: 1), ymd(1984, 1, 1));
         assert_eq!(parse!(year: 1984, month: 1, day: 2), ymd(1984, 1, 2));
         assert_eq!(parse!(year: 1984, day: 2), Err(NOT_ENOUGH));
         assert_eq!(parse!(year_div_100: 19), Err(NOT_ENOUGH));
         assert_eq!(parse!(year_div_100: 19, year_mod_100: 84), Err(NOT_ENOUGH));
-        assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, month: 1), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, month: 1), ymd(1984, 1, 1));
         assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, month: 1, day: 2), ymd(1984, 1, 2));
         assert_eq!(parse!(year_div_100: 19, year_mod_100: 84, day: 2), Err(NOT_ENOUGH));
         assert_eq!(parse!(year_div_100: 19, month: 1, day: 2), Err(NOT_ENOUGH));
@@ -858,8 +875,8 @@ mod tests {
         assert_eq!(parse!(year: -1, year_mod_100: 99, month: 1, day: 1), Err(OUT_OF_RANGE));
 
         // weekdates
-        assert_eq!(parse!(year: 2000, week_from_mon: 0), Err(NOT_ENOUGH));
-        assert_eq!(parse!(year: 2000, week_from_sun: 0), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year: 2000, week_from_mon: 1), ymd(2000, 1, 3));
+        assert_eq!(parse!(year: 2000, week_from_sun: 1), ymd(2000, 1, 2));
         assert_eq!(parse!(year: 2000, weekday: Sun), Err(NOT_ENOUGH));
         assert_eq!(parse!(year: 2000, week_from_mon: 0, weekday: Fri), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year: 2000, week_from_sun: 0, weekday: Fri), Err(OUT_OF_RANGE));
@@ -900,12 +917,12 @@ mod tests {
         );
 
         // ISO weekdates
-        assert_eq!(parse!(isoyear: 2004, isoweek: 53), Err(NOT_ENOUGH));
         assert_eq!(parse!(isoyear: 2004, isoweek: 53, weekday: Fri), ymd(2004, 12, 31));
         assert_eq!(parse!(isoyear: 2004, isoweek: 53, weekday: Sat), ymd(2005, 1, 1));
         assert_eq!(parse!(isoyear: 2004, isoweek: 0xffffffff, weekday: Sat), Err(OUT_OF_RANGE));
         assert_eq!(parse!(isoyear: 2005, isoweek: 0, weekday: Thu), Err(OUT_OF_RANGE));
         assert_eq!(parse!(isoyear: 2005, isoweek: 5, weekday: Thu), ymd(2005, 2, 3));
+        assert_eq!(parse!(isoyear: 2004, isoweek: 53), ymd(2004, 12, 27));
         assert_eq!(parse!(isoyear: 2005, weekday: Thu), Err(NOT_ENOUGH));
 
         // year and ordinal
@@ -950,8 +967,29 @@ mod tests {
         // technically unique (2014-12-31) but Chrono gives up
 
         // incomplete year but complete date
-        assert_eq!(parse!(year_div_100: 20, isoyear: 2023, isoweek: 1, weekday: Tue), ymd(2023, 1, 3));
+        assert_eq!(
+            parse!(year_div_100: 20, isoyear: 2023, isoweek: 1, weekday: Tue),
+            ymd(2023, 1, 3)
+        );
         assert_eq!(parse!(isoyear_div_100: 20, year: 2023, ordinal: 3), ymd(2023, 1, 3));
+
+        // If there are two (or more) combinations for which we could pick the first day as
+        // fallback, give up as ambiguous.
+        assert_eq!(parse!(year: 2023, month: 6, week_from_sun: 22), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year: 2023, month: 6, week_from_mon: 22), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year: 2023, week_from_sun: 22, week_from_mon: 22), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year: 2023, month: 6, isoyear: 2023, isoweek: 23), Err(NOT_ENOUGH));
+        assert_eq!(
+            parse!(year: 2023, week_from_sun: 22, isoyear: 2023, isoweek: 23),
+            Err(NOT_ENOUGH)
+        );
+        assert_eq!(
+            parse!(year: 2023, week_from_mon: 22, isoyear: 2023, isoweek: 23),
+            Err(NOT_ENOUGH)
+        );
+        // not ambiguous
+        assert_eq!(parse!(year: 2023, month: 6, isoweek: 22), ymd(2023, 6, 1));
+        assert_eq!(parse!(isoyear: 2023, month: 6, isoweek: 23), ymd(2023, 6, 5));
     }
 
     #[test]

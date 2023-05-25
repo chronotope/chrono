@@ -272,8 +272,10 @@ impl NaiveDateTime {
     ///            Ok(NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_milli_opt(8, 59, 59, 1_123).unwrap()));
     /// ```
     ///
-    /// Missing minutes, seconds and nanoseconds are assumed to be zero,
-    /// but out-of-bound times or insufficient fields are errors otherwise.
+    /// Missing hours, minutes, seconds and nanoseconds are assumed to be zero.
+    /// A missing day will, depending on the other available fields, default to the first day of
+    /// the month or the first day of the week.
+    /// Out-of-bound times or insufficient fields are errors otherwise.
     ///
     /// ```
     /// # use chrono::{NaiveDateTime, NaiveDate};
