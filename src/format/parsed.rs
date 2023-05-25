@@ -551,7 +551,16 @@ impl Parsed {
     /// Either way those fields have to be consistent to each other.
     pub fn to_naive_datetime_with_offset(&self, offset: i32) -> ParseResult<NaiveDateTime> {
         let date = self.to_naive_date();
-        let time = self.to_naive_time();
+        let time = if self.hour_div_12.is_none()
+            && self.hour_mod_12.is_none()
+            && self.minute.is_none()
+            && self.second.is_none()
+            && self.nanosecond.is_none()
+        {
+            Ok(NaiveTime::MIN)
+        } else {
+            self.to_naive_time()
+        };
         if let (Ok(date), Ok(time)) = (date, time) {
             let datetime = date.and_time(time);
 
