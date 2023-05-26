@@ -18,8 +18,7 @@
 //! # Example
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 #![cfg_attr(feature = "std", doc = "```rust")]
-//! # use std::error::Error;
-//! use chrono::prelude::*;
+//! use chrono::{TimeZone, Utc};
 //!
 //! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
 //!
@@ -57,7 +56,7 @@ use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 #[cfg(feature = "unstable-locales")]
 pub(crate) mod locales;
 
-pub use parse::parse;
+pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]

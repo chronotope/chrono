@@ -15,13 +15,12 @@ use std::result::Result;
 
 use windows_sys::Win32::Foundation::FILETIME;
 use windows_sys::Win32::Foundation::SYSTEMTIME;
-use windows_sys::Win32::System::SystemInformation::GetLocalTime;
 use windows_sys::Win32::System::Time::SystemTimeToFileTime;
 use windows_sys::Win32::System::Time::SystemTimeToTzSpecificLocalTime;
 use windows_sys::Win32::System::Time::TzSpecificLocalTimeToSystemTime;
 
-use super::{FixedOffset, Local};
-use crate::{DateTime, Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use super::FixedOffset;
+use crate::{Datelike, LocalResult, NaiveDateTime, Timelike};
 
 /// This macro calls a Windows API FFI and checks whether the function errored with the provided error_id. If an error returns,
 /// the macro will return an `Error::last_os_error()`.
@@ -40,68 +39,43 @@ macro_rules! windows_sys_call {
 const HECTONANOSECS_IN_SEC: i64 = 10_000_000;
 const HECTONANOSEC_TO_UNIX_EPOCH: i64 = 11_644_473_600 * HECTONANOSECS_IN_SEC;
 
-pub(super) fn now() -> DateTime<Local> {
-    LocalSysTime::local().datetime()
+pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    offset(utc, false)
+}
+
+pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+    offset(local, true)
 }
 
 /// Converts a local `NaiveDateTime` to the `time::Timespec`.
-pub(super) fn naive_to_local(d: &NaiveDateTime, local: bool) -> LocalResult<DateTime<Local>> {
+pub(super) fn offset(d: &NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
     let naive_sys_time = system_time_from_naive_date_time(d);
 
     let local_sys_time = match local {
-        false => LocalSysTime::from_utc_time(naive_sys_time),
-        true => LocalSysTime::from_local_time(naive_sys_time),
+        false => from_utc_time(naive_sys_time),
+        true => from_local_time(naive_sys_time),
     };
 
-    if let Ok(local) = local_sys_time {
-        return LocalResult::Single(local.datetime());
+    if let Ok(offset) = local_sys_time {
+        return LocalResult::Single(offset);
     }
     LocalResult::None
 }
 
-struct LocalSysTime {
-    inner: SYSTEMTIME,
-    offset: i32,
+fn from_utc_time(utc_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
+    let local_time = utc_to_local_time(&utc_time)?;
+    let utc_secs = system_time_as_unix_seconds(&utc_time)?;
+    let local_secs = system_time_as_unix_seconds(&local_time)?;
+    let offset = (local_secs - utc_secs) as i32;
+    Ok(FixedOffset::east_opt(offset).unwrap())
 }
 
-impl LocalSysTime {
-    fn local() -> Self {
-        let mut now = MaybeUninit::<SYSTEMTIME>::uninit();
-        unsafe { GetLocalTime(now.as_mut_ptr()) }
-        // SAFETY: GetLocalTime cannot fail according to spec, so we can assume the value
-        // is initialized.
-        let st = unsafe { now.assume_init() };
-
-        Self::from_local_time(st).expect("Current local time must exist")
-    }
-
-    fn from_utc_time(utc_time: SYSTEMTIME) -> Result<Self, Error> {
-        let local_time = utc_to_local_time(&utc_time)?;
-        let utc_secs = system_time_as_unix_seconds(&utc_time)?;
-        let local_secs = system_time_as_unix_seconds(&local_time)?;
-        let offset = (local_secs - utc_secs) as i32;
-        Ok(Self { inner: local_time, offset })
-    }
-
-    fn from_local_time(local_time: SYSTEMTIME) -> Result<Self, Error> {
-        let utc_time = local_to_utc_time(&local_time)?;
-        let utc_secs = system_time_as_unix_seconds(&utc_time)?;
-        let local_secs = system_time_as_unix_seconds(&local_time)?;
-        let offset = (local_secs - utc_secs) as i32;
-        Ok(Self { inner: local_time, offset })
-    }
-
-    fn datetime(self) -> DateTime<Local> {
-        let st = self.inner;
-
-        let date =
-            NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32).unwrap();
-        let time =
-            NaiveTime::from_hms_opt(st.wHour as u32, st.wMinute as u32, st.wSecond as u32).unwrap();
-
-        let offset = FixedOffset::east_opt(self.offset).unwrap();
-        DateTime::from_utc(date.and_time(time) - offset, offset)
-    }
+fn from_local_time(local_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
+    let utc_time = local_to_utc_time(&local_time)?;
+    let utc_secs = system_time_as_unix_seconds(&utc_time)?;
+    let local_secs = system_time_as_unix_seconds(&local_time)?;
+    let offset = (local_secs - utc_secs) as i32;
+    Ok(FixedOffset::east_opt(offset).unwrap())
 }
 
 fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> SYSTEMTIME {
