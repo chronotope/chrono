@@ -49,6 +49,9 @@ winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "tim
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
 
+[target.'cfg(target_os = "android")'.dependencies]
+android-tzdata = "0.1.1"
+
 [dev-dependencies]
 serde_json = { version = "1" }
 serde_derive = { version = "1", default-features = false }
