@@ -13,8 +13,14 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Date;
 use crate::{DateTime, Utc};
 
-// we don't want `stub.rs` when the target_os is not wasi or emscripten
-// as we use js-sys to get the date instead
+#[cfg(unix)]
+#[path = "unix.rs"]
+mod inner;
+
+#[cfg(windows)]
+#[path = "windows.rs"]
+mod inner;
+
 #[cfg(all(
     not(unix),
     not(windows),
@@ -24,16 +30,19 @@ use crate::{DateTime, Utc};
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))
 ))]
-#[path = "stub.rs"]
-mod inner;
+mod inner {
+    use crate::{FixedOffset, LocalResult, NaiveDateTime};
 
-#[cfg(unix)]
-#[path = "unix.rs"]
-mod inner;
+    pub(super) fn offset_from_utc_datetime(_utc_time: &NaiveDateTime) -> LocalResult<FixedOffset> {
+        LocalResult::Single(FixedOffset::east_opt(0).unwrap())
+    }
 
-#[cfg(windows)]
-#[path = "windows.rs"]
-mod inner;
+    pub(super) fn offset_from_local_datetime(
+        _local_time: &NaiveDateTime,
+    ) -> LocalResult<FixedOffset> {
+        LocalResult::Single(FixedOffset::east_opt(0).unwrap())
+    }
+}
 
 #[cfg(unix)]
 mod tz_info;
