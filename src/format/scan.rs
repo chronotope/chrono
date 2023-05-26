@@ -385,8 +385,9 @@ enum CommentState {
 mod tests {
     use super::{
         comment_2822, nanosecond, nanosecond_fixed, short_or_long_month0, short_or_long_weekday,
-        timezone_offset_2822,
+        timezone_offset_2822, utc_offset,
     };
+    use crate::format::{Colons, OffsetFormat, OffsetPrecision, Pad};
     use crate::format::{INVALID, TOO_SHORT};
     use crate::Weekday;
 
@@ -460,5 +461,212 @@ mod tests {
     fn test_nanosecond() {
         assert_eq!(nanosecond("2Ù").unwrap(), ("Ù", 200000000));
         assert_eq!(nanosecond("8").unwrap(), ("", 800000000));
+    }
+
+    #[test]
+    fn test_offset_colons() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::Seconds,
+            colons: Colons::Maybe,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+12 : 34 : 56", offset_format).is_err());
+        assert!(utc_offset("+12.34.56", offset_format).is_err());
+        assert!(utc_offset("+12 34 56", offset_format).is_err());
+        assert!(utc_offset("+12😼34😼56", offset_format).is_err());
+        // colons are optional, but they must match
+        assert!(utc_offset("+12:3456", offset_format).is_err());
+        assert!(utc_offset("+1234:56", offset_format).is_err());
+
+        offset_format.colons = Colons::None;
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+12:34:56", offset_format).is_err());
+        assert!(utc_offset("+12 : 34 : 56", offset_format).is_err());
+        assert!(utc_offset("+12.34.56", offset_format).is_err());
+        assert!(utc_offset("+12 34 56", offset_format).is_err());
+        assert!(utc_offset("+12😼34😼56", offset_format).is_err());
+        assert!(utc_offset("+12:3456", offset_format).is_err());
+        assert!(utc_offset("+1234:56", offset_format).is_err());
+
+        offset_format.colons = Colons::Colon;
+        assert!(utc_offset("+123456", offset_format).is_err());
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+12 : 34 : 56", offset_format).is_err());
+        assert!(utc_offset("+12.34.56", offset_format).is_err());
+        assert!(utc_offset("+12 34 56", offset_format).is_err());
+        assert!(utc_offset("+12😼34😼56", offset_format).is_err());
+        assert!(utc_offset("+12:3456", offset_format).is_err());
+        assert!(utc_offset("+1234:56", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_padding_with_colons() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::OptionalSeconds,
+            colons: Colons::Colon,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+01:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+01:23", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+1:23:45", offset_format).is_err());
+        assert!(utc_offset("+1:23", offset_format).is_err());
+        assert!(utc_offset("+ 1:23:45", offset_format).is_err());
+        assert!(utc_offset(" +1:23:45", offset_format).is_err());
+        assert!(utc_offset("+012:34:56", offset_format).is_err());
+        assert!(utc_offset("+001:23:45", offset_format).is_err());
+
+        offset_format.padding = Pad::None;
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+01:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+01:23", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("+1:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+1:23", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 1:23:45", offset_format).is_err());
+        assert!(utc_offset(" +1:23:45", offset_format).is_err());
+        assert!(utc_offset("+012:34:56", offset_format).is_err());
+        assert!(utc_offset("+001:23:45", offset_format).is_err());
+
+        offset_format.padding = Pad::Space;
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+01:23:45", offset_format).is_err());
+        assert!(utc_offset("+01:23", offset_format).is_err());
+        assert_eq!(utc_offset("+1:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+1:23", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 1:23:45", offset_format).is_err());
+        assert!(utc_offset(" +1:23:45", offset_format).is_err());
+        assert!(utc_offset("+012:34:56", offset_format).is_err());
+        assert!(utc_offset("+001:23:45", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_padding_with_no_colons() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::OptionalSeconds,
+            colons: Colons::None,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+012345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+0123", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("+12345", offset_format).unwrap().1, 45_240); // parsed as +12:34
+        assert!(utc_offset("+123", offset_format).is_err());
+        assert!(utc_offset("+ 12345", offset_format).is_err());
+        assert!(utc_offset(" +12345", offset_format).is_err());
+
+        offset_format.padding = Pad::None;
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+012345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+0123", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("+12345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+123", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 12345", offset_format).is_err());
+        assert!(utc_offset(" +12345", offset_format).is_err());
+
+        offset_format.padding = Pad::Space;
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+012345", offset_format).is_err());
+        assert!(utc_offset("+0123", offset_format).is_err());
+        assert_eq!(utc_offset("+12345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+123", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 12345", offset_format).is_err());
+        assert!(utc_offset(" +12345", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_zulu() {
+        let offset_format = OffsetFormat {
+            precision: OffsetPrecision::Minutes,
+            colons: Colons::Colon,
+            allow_zulu: true,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("Z", offset_format).unwrap().1, 0);
+        assert_eq!(utc_offset("z", offset_format).unwrap().1, 0);
+        assert_eq!(utc_offset("+00:00", offset_format).unwrap().1, 0);
+        assert_eq!(utc_offset("+01:23", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("-00:00", offset_format).unwrap().1, 0);
+        assert!(utc_offset("+Z", offset_format).is_err());
+        assert!(utc_offset("-Z", offset_format).is_err());
+        assert!(utc_offset(" Z", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_precision() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::Hours,
+            colons: Colons::Colon,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+03", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), (":30", 10_800));
+
+        offset_format.precision = OffsetPrecision::Minutes;
+        assert!(utc_offset("+03", offset_format).is_err());
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), (":00", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutes;
+        assert_eq!(utc_offset("+03", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), (":00", 12_600));
+
+        offset_format.precision = OffsetPrecision::Seconds;
+        assert!(utc_offset("+03", offset_format).is_err());
+        assert!(utc_offset("+03:30", offset_format).is_err());
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalSeconds;
+        assert!(utc_offset("+03", offset_format).is_err());
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutesAndSeconds;
+        assert_eq!(utc_offset("+03", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), ("", 12_600));
+    }
+
+    #[test]
+    fn test_offset_precision_no_padding() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::Hours,
+            colons: Colons::None,
+            allow_zulu: false,
+            padding: Pad::None,
+        };
+        assert_eq!(utc_offset("+3", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("0", 33 * 60 * 60));
+
+        offset_format.precision = OffsetPrecision::Minutes;
+        assert!(utc_offset("+3", offset_format).is_err());
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("0", 33 * 60 * 60));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutes;
+        assert_eq!(utc_offset("+3", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("0", 33 * 60 * 60));
+
+        offset_format.precision = OffsetPrecision::Seconds;
+        assert!(utc_offset("+3", offset_format).is_err());
+        assert!(utc_offset("+330", offset_format).is_err());
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalSeconds;
+        assert!(utc_offset("+3", offset_format).is_err());
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutesAndSeconds;
+        assert_eq!(utc_offset("+3", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("", 12_600));
     }
 }
