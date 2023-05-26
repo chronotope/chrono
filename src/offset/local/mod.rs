@@ -44,6 +44,24 @@ mod inner {
     }
 }
 
+#[cfg(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi"))
+))]
+mod inner {
+    use crate::{FixedOffset, LocalResult, NaiveDateTime};
+
+    pub(super) fn offset_from_utc_datetime(_utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
+        let offset = js_sys::Date::new_0().get_timezone_offset();
+        LocalResult::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
+    }
+
+    pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+        offset_from_utc_datetime(local)
+    }
+}
+
 #[cfg(unix)]
 mod tz_info;
 
@@ -119,21 +137,6 @@ impl TimeZone for Local {
         self.offset_from_local_datetime(&local.and_time(NaiveTime::MIN))
     }
 
-    #[cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    ))]
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
-        let offset = js_sys::Date::new_0().get_timezone_offset();
-        LocalResult::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
-    }
-
-    #[cfg(not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))]
     fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<FixedOffset> {
         inner::offset_from_local_datetime(local)
     }
@@ -144,21 +147,6 @@ impl TimeZone for Local {
         self.offset_from_utc_datetime(&utc.and_time(NaiveTime::MIN))
     }
 
-    #[cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    ))]
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
-        let offset = js_sys::Date::new_0().get_timezone_offset();
-        LocalResult::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
-    }
-
-    #[cfg(not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))]
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
         inner::offset_from_utc_datetime(utc).unwrap()
     }
