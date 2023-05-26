@@ -26,7 +26,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-use crate::format::{parse, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -200,7 +200,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, NaiveDate};
+    /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_millis(), 1_444);
@@ -224,7 +224,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, NaiveDate};
+    /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_micro_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
@@ -248,7 +248,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, NaiveDate};
+    /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
@@ -544,7 +544,8 @@ where
 }
 
 impl DateTime<FixedOffset> {
-    /// Parses an RFC 2822 date-and-time string into a `DateTime<FixedOffset>` value.
+    /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
+    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
     ///
     /// This parses valid RFC 2822 datetime strings (such as `Tue, 1 Jul 2003 10:52:37 +0200`)
     /// and returns a new [`DateTime`] instance with the parsed timezone as the [`FixedOffset`].
@@ -555,11 +556,8 @@ impl DateTime<FixedOffset> {
     /// The RFC 2822 standard allows arbitrary intermixed whitespace.
     /// See [RFC 2822 Appendix A.5]
     ///
-    /// The RFC 2822 standard allows arbitrary intermixed whitespace.
-    /// See [RFC 2822 Appendix A.5]
-    ///
     /// ```
-    /// # use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
+    /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// assert_eq!(
     ///     DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
     ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
@@ -574,7 +572,8 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses an RFC 3339 date-and-time string into a `DateTime<FixedOffset>` value.
+    /// Parses an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`,
+    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
     ///
     /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
     /// also valid RFC 3339 date-and-time values) and returns a new [`DateTime`] with a
@@ -594,7 +593,8 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value.
+    /// Parses a string with the specified format string and returns a new
+    /// [`DateTime`] with a parsed [`FixedOffset`].
     ///
     /// Note that this method *requires a timezone* in the input string. See
     /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
@@ -617,6 +617,40 @@ impl DateTime<FixedOffset> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime()
+    }
+
+    /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value, and a
+    /// slice with the remaining portion of the string.
+    ///
+    /// Note that this method *requires a timezone* in the input string. See
+    /// [`NaiveDateTime::parse_and_remainder`] for a version that does not
+    /// require a timezone in `s`. The returned [`DateTime`] value will have a [`FixedOffset`]
+    /// reflecting the parsed timezone.
+    ///
+    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
+    /// sequences.
+    ///
+    /// Similar to [`parse_from_str`](#method.parse_from_str).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{DateTime, FixedOffset, TimeZone};
+    /// let (datetime, remainder) = DateTime::parse_and_remainder(
+    ///     "2015-02-18 23:16:09 +0200 trailing text", "%Y-%m-%d %H:%M:%S %z").unwrap();
+    /// assert_eq!(
+    ///     datetime,
+    ///     FixedOffset::east_opt(2*3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    /// );
+    /// assert_eq!(remainder, " trailing text");
+    /// ```
+    pub fn parse_and_remainder<'a>(
+        s: &'a str,
+        fmt: &str,
+    ) -> ParseResult<(DateTime<FixedOffset>, &'a str)> {
+        let mut parsed = Parsed::new();
+        let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parsed.to_datetime().map(|d| (d, remainder))
     }
 }
 
@@ -665,11 +699,11 @@ impl DateTime<Utc> {
     /// # Example
     ///
     /// ```rust
-    /// use chrono::{DateTime, TimeZone, Utc};
+    /// use chrono::{DateTime, NaiveDate, Utc};
     ///
     /// let dt = DateTime::<Utc>::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(Utc.ymd(1983, 4, 13).and_hms_milli(11, 9, 14, 274)));
+    /// assert_eq!(dt, Ok(NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(11, 9, 14, 274).unwrap().and_utc()));
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<Utc>> {
         DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())
@@ -712,7 +746,7 @@ where
     /// # Examples
     ///
     /// ```rust
-    /// # use chrono::{DateTime, FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
+    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(18, 30, 9, 453_829).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
     ///            "2018-01-26T18:30:09.453+00:00");
@@ -1101,14 +1135,16 @@ where
 
 /// Accepts a relaxed form of RFC3339.
 /// A space or a 'T' are acepted as the separator between the date and time
-/// parts. Additional spaces are allowed between each component.
+/// parts.
 ///
 /// All of these examples are equivalent:
 /// ```
 /// # use chrono::{DateTime, Utc};
-/// "2012-12-12T12:12:12Z".parse::<DateTime<Utc>>();
-/// "2012-12-12 12:12:12Z".parse::<DateTime<Utc>>();
-/// "2012-  12-12T12:  12:12Z".parse::<DateTime<Utc>>();
+/// "2012-12-12T12:12:12Z".parse::<DateTime<Utc>>()?;
+/// "2012-12-12 12:12:12Z".parse::<DateTime<Utc>>()?;
+/// "2012-12-12 12:12:12+0000".parse::<DateTime<Utc>>()?;
+/// "2012-12-12 12:12:12+00:00".parse::<DateTime<Utc>>()?;
+/// # Ok::<(), chrono::ParseError>(())
 /// ```
 impl str::FromStr for DateTime<Utc> {
     type Err = ParseError;
@@ -1120,14 +1156,16 @@ impl str::FromStr for DateTime<Utc> {
 
 /// Accepts a relaxed form of RFC3339.
 /// A space or a 'T' are acepted as the separator between the date and time
-/// parts. Additional spaces are allowed between each component.
+/// parts.
 ///
 /// All of these examples are equivalent:
 /// ```
 /// # use chrono::{DateTime, Local};
-/// "2012-12-12T12:12:12Z".parse::<DateTime<Local>>();
-/// "2012-12-12 12:12:12Z".parse::<DateTime<Local>>();
-/// "2012-  12-12T12:  12:12Z".parse::<DateTime<Local>>();
+/// "2012-12-12T12:12:12Z".parse::<DateTime<Local>>()?;
+/// "2012-12-12 12:12:12Z".parse::<DateTime<Local>>()?;
+/// "2012-12-12 12:12:12+0000".parse::<DateTime<Local>>()?;
+/// "2012-12-12 12:12:12+00:00".parse::<DateTime<Local>>()?;
+/// # Ok::<(), chrono::ParseError>(())
 /// ```
 #[cfg(feature = "clock")]
 #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]

@@ -58,7 +58,7 @@ impl IsoWeek {
     /// ```
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
-    /// let d = NaiveDate::from_isoywd(2015, 1, Weekday::Mon);
+    /// let d = NaiveDate::from_isoywd_opt(2015, 1, Weekday::Mon).unwrap();
     /// assert_eq!(d.iso_week().year(), 2015);
     /// ```
     ///
@@ -67,7 +67,7 @@ impl IsoWeek {
     ///
     /// ```
     /// # use chrono::{NaiveDate, Datelike, Weekday};
-    /// # let d = NaiveDate::from_isoywd(2015, 1, Weekday::Mon);
+    /// # let d = NaiveDate::from_isoywd_opt(2015, 1, Weekday::Mon).unwrap();
     /// assert_eq!(d.year(), 2014);
     /// assert_eq!(d, NaiveDate::from_ymd_opt(2014, 12, 29).unwrap());
     /// ```
@@ -85,7 +85,7 @@ impl IsoWeek {
     /// ```
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
-    /// let d = NaiveDate::from_isoywd(2015, 15, Weekday::Mon);
+    /// let d = NaiveDate::from_isoywd_opt(2015, 15, Weekday::Mon).unwrap();
     /// assert_eq!(d.iso_week().week(), 15);
     /// ```
     #[inline]
@@ -102,7 +102,7 @@ impl IsoWeek {
     /// ```
     /// use chrono::{NaiveDate, Datelike, Weekday};
     ///
-    /// let d = NaiveDate::from_isoywd(2015, 15, Weekday::Mon);
+    /// let d = NaiveDate::from_isoywd_opt(2015, 15, Weekday::Mon).unwrap();
     /// assert_eq!(d.iso_week().week0(), 14);
     /// ```
     #[inline]
