@@ -505,7 +505,7 @@ const fn weekday_from_u32_mod7(n: u32) -> Weekday {
 #[cfg(test)]
 mod tests {
     use num_iter::range_inclusive;
-    use num_traits::FromPrimitive;
+    use std::convert::TryFrom;
     use std::u32;
 
     use super::weekday_from_u32_mod7;
@@ -888,7 +888,7 @@ mod tests {
     #[test]
     fn test_weekday_from_u32_mod7() {
         for i in 0..=1000 {
-            assert_eq!(weekday_from_u32_mod7(i), Weekday::from_u32(i % 7).unwrap());
+            assert_eq!(weekday_from_u32_mod7(i), Weekday::try_from((i % 7) as u8).unwrap());
         }
         assert_eq!(weekday_from_u32_mod7(u32::MAX), Weekday::Thu);
     }
