@@ -677,71 +677,15 @@ impl Parsed {
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
-            (
-                Some(year),
-                _,
-                &Parsed { week_from_sun: Some(week_from_sun), weekday: Some(weekday), .. },
-            ) => {
+            (Some(year), _, &Parsed { week_from_sun: Some(week), weekday: Some(weekday), .. }) => {
                 // year, week (starting at 1st Sunday), day of the week
-                let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
-                let firstweek = match newyear.weekday() {
-                    Weekday::Sun => 0,
-                    Weekday::Mon => 6,
-                    Weekday::Tue => 5,
-                    Weekday::Wed => 4,
-                    Weekday::Thu => 3,
-                    Weekday::Fri => 2,
-                    Weekday::Sat => 1,
-                };
-
-                // `firstweek+1`-th day of January is the beginning of the week 1.
-                if week_from_sun > 53 {
-                    return Err(OUT_OF_RANGE);
-                } // can it overflow?
-                let ndays = firstweek
-                    + (week_from_sun as i32 - 1) * 7
-                    + weekday.num_days_from_sunday() as i32;
-                let date = newyear
-                    .checked_add_signed(TimeDelta::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
-                if date.year() != year {
-                    return Err(OUT_OF_RANGE);
-                } // early exit for correct error
-
+                let date = resolve_week_date(year, week, weekday, Weekday::Sun)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
-            (
-                Some(year),
-                _,
-                &Parsed { week_from_mon: Some(week_from_mon), weekday: Some(weekday), .. },
-            ) => {
+            (Some(year), _, &Parsed { week_from_mon: Some(week), weekday: Some(weekday), .. }) => {
                 // year, week (starting at 1st Monday), day of the week
-                let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
-                let firstweek = match newyear.weekday() {
-                    Weekday::Sun => 1,
-                    Weekday::Mon => 0,
-                    Weekday::Tue => 6,
-                    Weekday::Wed => 5,
-                    Weekday::Thu => 4,
-                    Weekday::Fri => 3,
-                    Weekday::Sat => 2,
-                };
-
-                // `firstweek+1`-th day of January is the beginning of the week 1.
-                if week_from_mon > 53 {
-                    return Err(OUT_OF_RANGE);
-                } // can it overflow?
-                let ndays = firstweek
-                    + (week_from_mon as i32 - 1) * 7
-                    + weekday.num_days_from_monday() as i32;
-                let date = newyear
-                    .checked_add_signed(TimeDelta::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
-                if date.year() != year {
-                    return Err(OUT_OF_RANGE);
-                } // early exit for correct error
-
+                let date = resolve_week_date(year, week, weekday, Weekday::Mon)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
@@ -1190,6 +1134,32 @@ impl Parsed {
     }
 }
 
+/// Create a `NaiveDate` when given a year, week, weekday, and the definition at which day of the
+/// week a week starts.
+///
+/// Returns `IMPOSSIBLE` if `week` is `0` or `53` and the `weekday` falls outside the year.
+fn resolve_week_date(
+    year: i32,
+    week: u32,
+    weekday: Weekday,
+    week_start_day: Weekday,
+) -> ParseResult<NaiveDate> {
+    if week > 53 {
+        return Err(OUT_OF_RANGE);
+    }
+
+    let first_day_of_year = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
+    // Ordinal of the day at which week 1 starts.
+    let first_week_start = 1 + week_start_day.num_days_from(first_day_of_year.weekday()) as i32;
+    // Number of the `weekday`, which is 0 for the first day of the week.
+    let weekday = weekday.num_days_from(week_start_day) as i32;
+    let ordinal = first_week_start + (week as i32 - 1) * 7 + weekday;
+    if ordinal <= 0 {
+        return Err(IMPOSSIBLE);
+    }
+    first_day_of_year.with_ordinal(ordinal as u32).ok_or(IMPOSSIBLE)
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::{IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
@@ -1464,8 +1434,8 @@ mod tests {
         assert_eq!(parse!(year: 2000, week_from_mon: 0), Err(NOT_ENOUGH));
         assert_eq!(parse!(year: 2000, week_from_sun: 0), Err(NOT_ENOUGH));
         assert_eq!(parse!(year: 2000, weekday: Sun), Err(NOT_ENOUGH));
-        assert_eq!(parse!(year: 2000, week_from_mon: 0, weekday: Fri), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2000, week_from_sun: 0, weekday: Fri), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: 2000, week_from_mon: 0, weekday: Fri), Err(IMPOSSIBLE));
+        assert_eq!(parse!(year: 2000, week_from_sun: 0, weekday: Fri), Err(IMPOSSIBLE));
         assert_eq!(parse!(year: 2000, week_from_mon: 0, weekday: Sat), ymd(2000, 1, 1));
         assert_eq!(parse!(year: 2000, week_from_sun: 0, weekday: Sat), ymd(2000, 1, 1));
         assert_eq!(parse!(year: 2000, week_from_mon: 0, weekday: Sun), ymd(2000, 1, 2));
@@ -1479,9 +1449,9 @@ mod tests {
         assert_eq!(parse!(year: 2000, week_from_mon: 2, weekday: Mon), ymd(2000, 1, 10));
         assert_eq!(parse!(year: 2000, week_from_sun: 52, weekday: Sat), ymd(2000, 12, 30));
         assert_eq!(parse!(year: 2000, week_from_sun: 53, weekday: Sun), ymd(2000, 12, 31));
-        assert_eq!(parse!(year: 2000, week_from_sun: 53, weekday: Mon), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: 2000, week_from_sun: 53, weekday: Mon), Err(IMPOSSIBLE));
         assert_eq!(parse!(year: 2000, week_from_sun: 0xffffffff, weekday: Mon), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: 2006, week_from_sun: 0, weekday: Sat), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: 2006, week_from_sun: 0, weekday: Sat), Err(IMPOSSIBLE));
         assert_eq!(parse!(year: 2006, week_from_sun: 1, weekday: Sun), ymd(2006, 1, 1));
 
         // weekdates: conflicting inputs
