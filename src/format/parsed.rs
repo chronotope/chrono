@@ -294,53 +294,6 @@ impl Parsed {
     /// Gregorian year and ISO week date year can have their century number (`*_div_100`) omitted,
     /// the two-digit year is used to guess the century number then.
     pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
-        fn resolve_year(
-            y: Option<i32>,
-            q: Option<i32>,
-            r: Option<i32>,
-        ) -> ParseResult<Option<i32>> {
-            match (y, q, r) {
-                // if there is no further information, simply return the given full year.
-                // this is a common case, so let's avoid division here.
-                (y, None, None) => Ok(y),
-
-                // if there is a full year *and* also quotient and/or modulo,
-                // check if present quotient and/or modulo is consistent to the full year.
-                // since the presence of those fields means a positive full year,
-                // we should filter a negative full year first.
-                (Some(y), q, r @ Some(0..=99)) | (Some(y), q, r @ None) => {
-                    if y < 0 {
-                        return Err(OUT_OF_RANGE);
-                    }
-                    let q_ = y / 100;
-                    let r_ = y % 100;
-                    if q.unwrap_or(q_) == q_ && r.unwrap_or(r_) == r_ {
-                        Ok(Some(y))
-                    } else {
-                        Err(IMPOSSIBLE)
-                    }
-                }
-
-                // the full year is missing but we have quotient and modulo.
-                // reconstruct the full year. make sure that the result is always positive.
-                (None, Some(q), Some(r @ 0..=99)) => {
-                    if q < 0 {
-                        return Err(OUT_OF_RANGE);
-                    }
-                    let y = q.checked_mul(100).and_then(|v| v.checked_add(r));
-                    Ok(Some(y.ok_or(OUT_OF_RANGE)?))
-                }
-
-                // we only have modulo. try to interpret a modulo as a conventional two-digit year.
-                // note: we are affected by Rust issue #18060. avoid multiple range patterns.
-                (None, None, Some(r @ 0..=99)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
-
-                // otherwise it is an out-of-bound or insufficient condition.
-                (None, Some(_), None) => Err(NOT_ENOUGH),
-                (_, _, Some(_)) => Err(OUT_OF_RANGE),
-            }
-        }
-
         let given_year = resolve_year(self.year, self.year_div_100, self.year_mod_100)?;
         let given_isoyear = resolve_year(self.isoyear, self.isoyear_div_100, self.isoyear_mod_100)?;
 
@@ -715,6 +668,49 @@ impl Parsed {
                 }
             }
         }
+    }
+}
+
+fn resolve_year(y: Option<i32>, q: Option<i32>, r: Option<i32>) -> ParseResult<Option<i32>> {
+    match (y, q, r) {
+        // if there is no further information, simply return the given full year.
+        // this is a common case, so let's avoid division here.
+        (y, None, None) => Ok(y),
+
+        // if there is a full year *and* also quotient and/or modulo,
+        // check if present quotient and/or modulo is consistent to the full year.
+        // since the presence of those fields means a positive full year,
+        // we should filter a negative full year first.
+        (Some(y), q, r @ Some(0..=99)) | (Some(y), q, r @ None) => {
+            if y < 0 {
+                return Err(OUT_OF_RANGE);
+            }
+            let q_ = y / 100;
+            let r_ = y % 100;
+            if q.unwrap_or(q_) == q_ && r.unwrap_or(r_) == r_ {
+                Ok(Some(y))
+            } else {
+                Err(IMPOSSIBLE)
+            }
+        }
+
+        // the full year is missing but we have quotient and modulo.
+        // reconstruct the full year. make sure that the result is always positive.
+        (None, Some(q), Some(r @ 0..=99)) => {
+            if q < 0 {
+                return Err(OUT_OF_RANGE);
+            }
+            let y = q.checked_mul(100).and_then(|v| v.checked_add(r));
+            Ok(Some(y.ok_or(OUT_OF_RANGE)?))
+        }
+
+        // we only have modulo. try to interpret a modulo as a conventional two-digit year.
+        // note: we are affected by Rust issue #18060. avoid multiple range patterns.
+        (None, None, Some(r @ 0..=99)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
+
+        // otherwise it is an out-of-bound or insufficient condition.
+        (None, Some(_), None) => Err(NOT_ENOUGH),
+        (_, _, Some(_)) => Err(OUT_OF_RANGE),
     }
 }
 
