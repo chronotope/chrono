@@ -358,71 +358,15 @@ impl Parsed {
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
-            (
-                Some(year),
-                _,
-                &Parsed { week_from_sun: Some(week_from_sun), weekday: Some(weekday), .. },
-            ) => {
+            (Some(year), _, &Parsed { week_from_sun: Some(week), weekday: Some(weekday), .. }) => {
                 // year, week (starting at 1st Sunday), day of the week
-                let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
-                let firstweek = match newyear.weekday() {
-                    Weekday::Sun => 0,
-                    Weekday::Mon => 6,
-                    Weekday::Tue => 5,
-                    Weekday::Wed => 4,
-                    Weekday::Thu => 3,
-                    Weekday::Fri => 2,
-                    Weekday::Sat => 1,
-                };
-
-                // `firstweek+1`-th day of January is the beginning of the week 1.
-                if week_from_sun > 53 {
-                    return Err(OUT_OF_RANGE);
-                } // can it overflow?
-                let ndays = firstweek
-                    + (week_from_sun as i32 - 1) * 7
-                    + weekday.num_days_from_sunday() as i32;
-                let date = newyear
-                    .checked_add_signed(OldDuration::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
-                if date.year() != year {
-                    return Err(OUT_OF_RANGE);
-                } // early exit for correct error
-
+                let date = resolve_week_number(year, week, Weekday::Sun, weekday)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
-            (
-                Some(year),
-                _,
-                &Parsed { week_from_mon: Some(week_from_mon), weekday: Some(weekday), .. },
-            ) => {
+            (Some(year), _, &Parsed { week_from_mon: Some(week), weekday: Some(weekday), .. }) => {
                 // year, week (starting at 1st Monday), day of the week
-                let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
-                let firstweek = match newyear.weekday() {
-                    Weekday::Sun => 1,
-                    Weekday::Mon => 0,
-                    Weekday::Tue => 6,
-                    Weekday::Wed => 5,
-                    Weekday::Thu => 4,
-                    Weekday::Fri => 3,
-                    Weekday::Sat => 2,
-                };
-
-                // `firstweek+1`-th day of January is the beginning of the week 1.
-                if week_from_mon > 53 {
-                    return Err(OUT_OF_RANGE);
-                } // can it overflow?
-                let ndays = firstweek
-                    + (week_from_mon as i32 - 1) * 7
-                    + weekday.num_days_from_monday() as i32;
-                let date = newyear
-                    .checked_add_signed(OldDuration::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
-                if date.year() != year {
-                    return Err(OUT_OF_RANGE);
-                } // early exit for correct error
-
+                let date = resolve_week_number(year, week, Weekday::Mon, weekday)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
@@ -669,6 +613,31 @@ impl Parsed {
             }
         }
     }
+}
+
+fn resolve_week_number(
+    year: i32,
+    week: u32,
+    week_start_day: Weekday,
+    weekday: Weekday,
+) -> ParseResult<NaiveDate> {
+    let newyear = NaiveDate::from_yo_opt(year, 1).ok_or(OUT_OF_RANGE)?;
+    let firstweek =
+        (7 - newyear.weekday().num_days_from_sunday() + week_start_day.num_days_from_sunday()) % 7;
+    // `firstweek`-th day of January is the beginning of the week 1.
+
+    if week > 53 {
+        return Err(OUT_OF_RANGE);
+    }
+    let weekday_nr =
+        (weekday.num_days_from_sunday() + 7 - week_start_day.num_days_from_sunday()) % 7;
+    let ndays = firstweek as i32 + (week as i32 - 1) * 7 + weekday_nr as i32;
+    let date =
+        newyear.checked_add_signed(OldDuration::days(i64::from(ndays))).ok_or(OUT_OF_RANGE)?;
+    if date.year() != year {
+        return Err(OUT_OF_RANGE);
+    }
+    Ok(date)
 }
 
 fn resolve_year(y: Option<i32>, q: Option<i32>, r: Option<i32>) -> ParseResult<Option<i32>> {
