@@ -864,6 +864,7 @@ fn test_parse() {
 
     // fixed: dot plus nanoseconds
     check!("",              [fix!(Nanosecond)]; ); // no field set, but not an error
+    check!(".",             [fix!(Nanosecond)]; TOO_SHORT);
     check!("4",             [fix!(Nanosecond)]; TOO_LONG); // never consumes `4`
     check!("4",             [fix!(Nanosecond), num!(Second)]; second: 4);
     check!(".0",            [fix!(Nanosecond)]; nanosecond: 0);
@@ -886,13 +887,13 @@ fn test_parse() {
     check!(".000000000547", [fix!(Nanosecond)]; nanosecond: 0);
     check!(".0000000009999999999999999999999999", [fix!(Nanosecond)]; nanosecond: 0);
     check!(".4🤠",          [fix!(Nanosecond), lit!("🤠")]; nanosecond: 400_000_000);
-    check!(".",             [fix!(Nanosecond)]; TOO_SHORT);
     check!(".4x",           [fix!(Nanosecond)]; TOO_LONG);
     check!(".  4",          [fix!(Nanosecond)]; INVALID);
     check!("  .4",          [fix!(Nanosecond)]; TOO_LONG); // no automatic trimming
 
     // fixed: nanoseconds without the dot
     check!("",             [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
+    check!(".",            [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
     check!("0",            [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
     check!("4",            [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
     check!("42",           [internal_fix!(Nanosecond3NoDot)]; TOO_SHORT);
@@ -908,6 +909,7 @@ fn test_parse() {
     check!(".421",         [internal_fix!(Nanosecond3NoDot)]; INVALID);
 
     check!("",             [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
+    check!(".",            [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
     check!("0",            [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
     check!("1234",         [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
     check!("12345",        [internal_fix!(Nanosecond6NoDot)]; TOO_SHORT);
@@ -921,6 +923,7 @@ fn test_parse() {
     check!(".42100",       [internal_fix!(Nanosecond6NoDot)]; INVALID);
 
     check!("",             [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
+    check!(".",            [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
     check!("42195",        [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
     check!("12345678",     [internal_fix!(Nanosecond9NoDot)]; TOO_SHORT);
     check!("421950803",    [internal_fix!(Nanosecond9NoDot)]; nanosecond: 421_950_803);
