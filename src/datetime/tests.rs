@@ -1,9 +1,9 @@
 use super::DateTime;
+use crate::duration::Duration as OldDuration;
 use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, Timelike};
 
 #[derive(Clone)]

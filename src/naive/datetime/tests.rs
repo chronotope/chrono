@@ -1,5 +1,5 @@
 use super::NaiveDateTime;
-use crate::oldtime::Duration as OldDuration;
+use crate::duration::Duration as OldDuration;
 use crate::NaiveDate;
 use crate::{Datelike, FixedOffset, Utc};
 

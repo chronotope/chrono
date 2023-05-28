@@ -16,6 +16,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "unstable-locales")]
 use pure_rust_locales::Locale;
 
+use crate::duration::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
 use crate::format::{
@@ -24,7 +25,6 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
-use crate::oldtime::Duration as OldDuration;
 use crate::{expect, try_opt};
 use crate::{Datelike, Weekday};
 
@@ -2390,7 +2390,7 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
-    use crate::oldtime::Duration;
+    use crate::duration::Duration;
     use crate::{Datelike, Weekday};
 
     // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,

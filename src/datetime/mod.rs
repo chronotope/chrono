@@ -14,6 +14,7 @@ use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::duration::Duration as OldDuration;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
 use crate::format::{
@@ -26,7 +27,6 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-use crate::oldtime::Duration as OldDuration;
 #[allow(deprecated)]
 use crate::Date;
 use crate::{Datelike, Months, Timelike, Weekday};

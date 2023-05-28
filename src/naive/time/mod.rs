@@ -12,13 +12,13 @@ use core::{fmt, str};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::duration::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
 use crate::format::{
     parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
     Parsed, StrftimeItems,
 };
-use crate::oldtime::Duration as OldDuration;
 use crate::Timelike;
 use crate::{expect, try_opt};
 

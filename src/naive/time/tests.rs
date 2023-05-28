@@ -1,5 +1,5 @@
 use super::NaiveTime;
-use crate::oldtime::Duration as OldDuration;
+use crate::duration::Duration as OldDuration;
 use crate::Timelike;
 
 #[test]
