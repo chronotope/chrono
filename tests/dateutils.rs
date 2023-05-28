@@ -136,3 +136,80 @@ fn try_verify_against_date_command_format() {
         date += chrono::Duration::days(55);
     }
 }
+
+// The following panic tests should remove `#[should_panic]` after
+// Issue #1010 is fixed.
+
+#[test]
+#[should_panic]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono1/src/main.rs
+fn issue_1010_panic1() {
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp_opt(-4227854320, 1678774288);
+    let _local1 = chrono::Duration::microseconds(-7019067213869040);
+    let _local2_param0_helper1 = _local0.unwrap();
+    // panics
+    _ = chrono::DurationRound::duration_trunc(_local2_param0_helper1, _local1);
+}
+
+#[test]
+#[should_panic]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono2/src/main.rs
+fn issue_1010_panic2() {
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp_opt(320041586, 1920103021);
+    let _local1 = chrono::Duration::nanoseconds(-8923838508697114584);
+    let _local2_param0_helper1 = _local0.unwrap();
+    // panics
+    _ = chrono::DurationRound::duration_round(_local2_param0_helper1, _local1);
+}
+
+#[test]
+#[should_panic]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono3/src/main.rs
+fn issue_1010_panic3() {
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp_opt(-2621440, 0);
+    let _local1 = chrono::Duration::nanoseconds(-9223372036854771421);
+    let _local2_param0_helper1 = _local0.unwrap();
+    // panics
+    _ = chrono::DurationRound::duration_round(_local2_param0_helper1, _local1);
+}
+
+#[test]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono4/src/main.rs
+fn issue_1010_nopanic4() {
+    let _local1 = chrono::offset::FixedOffset::east_opt(17367308);
+    assert!(_local1.is_none());
+}
+
+#[test]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono5/src/main.rs
+fn issue_1010_nopanic5() {
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp_opt(-502509993984, 64);
+    let _local1_param0_helper1 = _local0.unwrap();
+    assert!(chrono::Datelike::with_ordinal0(&(_local1_param0_helper1), 4294967295).is_none());
+}
+
+#[test]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono6/src/main.rs
+fn issue_1010_nopanic6() {
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp_opt(-754576364, 336909572);
+    let _local1_param0_helper1 = _local0.unwrap();
+    assert!(chrono::Datelike::with_day0(&(_local1_param0_helper1), 4294967295).is_none());
+}
+
+#[test]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono7/src/main.rs
+fn issue_1010_nopanic7() {
+    #[allow(deprecated)]
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp(-8377300, 742391807);
+    assert!(chrono::Datelike::with_month0(&(_local0), 4294967295).is_none());
+}
+
+#[test]
+#[should_panic]
+/// Derived from https://github.com/Koral77/replay_files/blob/ce5b5c88c2a45a089d7d5ce19c60a5e50283ba60/replays/chrono/replay_chrono8/src/main.rs
+fn issue_1010_panic8() {
+    #[allow(deprecated)]
+    let _local0 = chrono::naive::NaiveDateTime::from_timestamp(-11676614656, 15282199);
+    // panics
+    _ = chrono::naive::NaiveDateTime::timestamp_nanos(&(&_local0));
+}
