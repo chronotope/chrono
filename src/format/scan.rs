@@ -197,7 +197,7 @@ pub(super) fn space(s: &str) -> ParseResult<&str> {
 }
 
 /// Consumes any number (including zero) of colon or spaces.
-pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
+pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_start_matches(|c: char| c == ':' || c.is_whitespace()))
 }
 
@@ -205,7 +205,7 @@ pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
 ///
 /// The additional `colon` may be used to parse a mandatory or optional `:`
 /// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
-pub(super) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
+pub(crate) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {

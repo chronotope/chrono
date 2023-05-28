@@ -47,8 +47,9 @@ use std::error::Error;
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::naive::{NaiveDate, NaiveTime};
+use crate::offset::FixedOffset;
 #[cfg(any(feature = "alloc", feature = "std", test))]
-use crate::offset::{FixedOffset, Offset};
+use crate::offset::Offset;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::{Datelike, Timelike};
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
@@ -988,6 +989,15 @@ impl FromStr for Weekday {
         } else {
             Err(ParseWeekdayError { _dummy: () })
         }
+    }
+}
+
+/// Parsing a `str` into a `FixedOffset` uses the format [`%z`](./format/strftime/index.html).
+impl FromStr for FixedOffset {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (_, offset) = scan::timezone_offset(s, scan::colon_or_space)?;
+        Self::east_opt(offset).ok_or(OUT_OF_RANGE)
     }
 }
 
