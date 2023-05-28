@@ -2,7 +2,7 @@
 // See README.md and LICENSE.txt for details.
 
 use crate::datetime::DateTime;
-use crate::oldtime::Duration;
+use crate::duration::Duration;
 use crate::NaiveDateTime;
 use crate::TimeZone;
 use crate::Timelike;

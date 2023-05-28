@@ -385,11 +385,10 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-mod oldtime;
-// this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::Duration;
+mod duration;
+pub use duration::Duration;
 #[cfg(feature = "std")]
-pub use oldtime::OutOfRangeError;
+pub use duration::OutOfRangeError;
 
 use core::fmt;
 

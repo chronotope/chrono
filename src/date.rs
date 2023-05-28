@@ -13,13 +13,13 @@ use core::{fmt, hash};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::duration::Duration as OldDuration;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
-use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
 use crate::{Datelike, Weekday};
 
@@ -576,7 +576,7 @@ where
 mod tests {
     use super::Date;
 
-    use crate::oldtime::Duration;
+    use crate::duration::Duration;
     use crate::{FixedOffset, NaiveDate, Utc};
 
     #[cfg(feature = "clock")]
