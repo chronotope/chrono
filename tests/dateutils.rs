@@ -83,7 +83,6 @@ fn assert_run_date_version() {
 #[test]
 #[cfg(unix)]
 fn try_verify_against_date_command() {
-
     if !path::Path::new(DATE_PATH).exists() {
         eprintln!("date command {:?} not found, skipping", DATE_PATH);
         return;
@@ -92,16 +91,29 @@ fn try_verify_against_date_command() {
 
     let mut date = NaiveDate::from_ymd_opt(1975, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
+    eprintln!(
+        "Run command {:?} for every hour from {} to 2077, skipping some years...",
+        DATE_PATH,
+        date.year()
+    );
+    let mut count: u64 = 0;
+    let mut year_at = date.year();
     while date.year() < 2078 {
         if (1975..=1977).contains(&date.year())
             || (2020..=2022).contains(&date.year())
             || (2073..=2077).contains(&date.year())
         {
+            if date.year() != year_at {
+                eprintln!("at year {}...", date.year());
+                year_at = date.year();
+            }
             verify_against_date_command_local(DATE_PATH, date);
+            count += 1;
         }
 
         date += chrono::Duration::hours(1);
     }
+    eprintln!("Command {:?} was run {} times", DATE_PATH, count);
 }
 
 #[cfg(target_os = "linux")]
