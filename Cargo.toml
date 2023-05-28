@@ -23,14 +23,13 @@ libc = []
 winapi = ["windows-targets"]
 std = []
 clock = ["std", "winapi", "iana-time-zone", "android-tzdata"]
-oldtime = ["time"]
+oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
 __internal_bench = []
 __doctest = []
 
 [dependencies]
-time = { version = "0.1.43", optional = true }
 num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
