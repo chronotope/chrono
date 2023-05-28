@@ -578,7 +578,7 @@ impl Parsed {
             (None, Some(_)) => 0, // UNIX timestamp may assume 0 offset
             (None, None) => return Err(NOT_ENOUGH),
         };
-        let datetime = self.to_naive_datetime_with_offset(offset)?;
+        let datetime = self.to_naive_datetime_with_offset_inner(offset, false)?;
         let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
 
         // this is used to prevent an overflow when calling FixedOffset::from_local_datetime
@@ -1265,6 +1265,66 @@ mod tests {
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 86_400),
             Err(OUT_OF_RANGE)
         ); // `FixedOffset` does not support such huge offset
+    }
+
+    #[test]
+    fn test_parsed_to_datetime_no_fallback() {
+        macro_rules! parse {
+            ($($k:ident: $v:expr),*) => (
+                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime()
+            )
+        }
+
+        let ymdhmsn = |y, m, d, h, n, s, off| {
+            Ok(FixedOffset::east_opt(off)
+                .unwrap()
+                .from_local_datetime(
+                    &NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap(),
+                )
+                .unwrap())
+        };
+
+        assert_eq!(
+            parse!(year: 2023, month: 6, day: 1, hour_div_12: 1, hour_mod_12: 3, minute: 5,
+                second: 0, offset: 3600),
+            ymdhmsn(2023, 6, 1, 15, 5, 0, 3600)
+        );
+        assert_eq!(
+            parse!(year: 2023, month: 6, hour_div_12: 1, hour_mod_12: 3, minute: 5, second: 0,
+                offset: 3600),
+            Err(NOT_ENOUGH)
+        );
+        assert_eq!(
+            parse!(year: 2023, week_from_mon: 22, hour_div_12: 1, hour_mod_12: 3, minute: 5,
+                second: 0, offset: 3600),
+            Err(NOT_ENOUGH)
+        );
+        assert_eq!(
+            parse!(year: 2023, week_from_sun: 22, hour_div_12: 1, hour_mod_12: 3, minute: 5,
+                second: 0, offset: 3600),
+            Err(NOT_ENOUGH)
+        );
+        assert_eq!(
+            parse!(isoyear: 2023, isoweek: 22, hour_div_12: 1, hour_mod_12: 3, minute: 5,
+                second: 0, offset: 3600),
+            Err(NOT_ENOUGH)
+        );
+        assert_eq!(
+            parse!(year: 2023, month: 6, day: 1, minute: 5, second: 0,
+                offset: 3600),
+            Err(NOT_ENOUGH)
+        );
+        assert_eq!(
+            parse!(year: 2023, month: 6, day: 1, hour_div_12: 1, hour_mod_12: 3, second: 0,
+                offset: 3600),
+            Err(NOT_ENOUGH)
+        );
+        // Seconds are allowed to be missing.
+        assert_eq!(
+            parse!(year: 2023, month: 6, day: 1, hour_div_12: 1, hour_mod_12: 3, minute: 5,
+                offset: 3600),
+            ymdhmsn(2023, 6, 1, 15, 5, 0, 3600)
+        );
     }
 
     #[test]
