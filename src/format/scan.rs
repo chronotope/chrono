@@ -221,7 +221,7 @@ pub(super) fn trim1(s: &str) -> &str {
 
 /// Consumes one colon char `:` if it is at the front of `s`.
 /// Always returns `Ok(s)`.
-pub(super) fn consume_colon_maybe(mut s: &str) -> ParseResult<&str> {
+pub(crate) fn consume_colon_maybe(mut s: &str) -> ParseResult<&str> {
     if s.is_empty() {
         // nothing consumed
         return Ok(s);
@@ -239,7 +239,7 @@ pub(super) fn consume_colon_maybe(mut s: &str) -> ParseResult<&str> {
 ///
 /// The additional `colon` may be used to parse a mandatory or optional `:`
 /// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
-pub(super) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
+pub(crate) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
