@@ -63,6 +63,23 @@ const DATE_PATH: &'static str = "/usr/bin/date";
 #[cfg(target_os = "aix")]
 const DATE_PATH: &'static str = "/opt/freeware/bin/date";
 
+#[cfg(test)]
+/// test helper to sanity check the date command behaves as expected
+/// asserts the command succeeded
+fn assert_run_date_version() {
+    // note environment variable `LANG`
+    match std::env::var_os("LANG") {
+        Some(lang) => eprintln!("LANG: {:?}", lang),
+        None => eprintln!("LANG not set"),
+    }
+    let out = process::Command::new(DATE_PATH).arg("--version").output().unwrap();
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    let stderr = String::from_utf8(out.stderr).unwrap();
+    // note the `date` binary version
+    eprintln!("command: {:?} --version\nstdout: {:?}\nstderr: {:?}", DATE_PATH, stdout, stderr);
+    assert!(out.status.success(), "command failed: {:?} --version", DATE_PATH);
+}
+
 #[test]
 #[cfg(unix)]
 fn try_verify_against_date_command() {
@@ -71,6 +88,7 @@ fn try_verify_against_date_command() {
         eprintln!("date command {:?} not found, skipping", DATE_PATH);
         return;
     }
+    assert_run_date_version();
 
     let mut date = NaiveDate::from_ymd_opt(1975, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
@@ -132,6 +150,8 @@ fn try_verify_against_date_command_format() {
         eprintln!("date command {:?} not found, skipping", DATE_PATH);
         return;
     }
+    assert_run_date_version();
+
     let mut date = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(12, 11, 13).unwrap();
     while date.year() < 2008 {
         verify_against_date_command_format_local(DATE_PATH, date);
