@@ -678,7 +678,7 @@ fn resolve_year(y: Option<i32>, q: Option<i32>, r: Option<i32>) -> ParseResult<O
         (None, None, Some(r @ 0..=99)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
 
         // otherwise it is an out-of-bound or insufficient condition.
-        (None, Some(_), None) => Err(NOT_ENOUGH),
+        (None, Some(_), None) => Ok(None), // Insufficient
         (_, _, Some(_)) => Err(OUT_OF_RANGE),
     }
 }
@@ -948,6 +948,10 @@ mod tests {
         ); // ambiguous (2014-12-29, 2014-12-30, 2014-12-31)
         assert_eq!(parse!(year_div_100: 20, isoyear_mod_100: 15, ordinal: 366), Err(NOT_ENOUGH));
         // technically unique (2014-12-31) but Chrono gives up
+
+        // incomplete year but complete date
+        assert_eq!(parse!(year_div_100: 20, isoyear: 2023, isoweek: 1, weekday: Tue), ymd(2023, 1, 3));
+        assert_eq!(parse!(isoyear_div_100: 20, year: 2023, ordinal: 3), ymd(2023, 1, 3));
     }
 
     #[test]
