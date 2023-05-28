@@ -297,6 +297,10 @@ impl Parsed {
     /// Gregorian year and ISO week date year can have their century number (`*_div_100`) omitted,
     /// the two-digit year is used to guess the century number then.
     pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
+        self.to_naive_date_inner(true)
+    }
+
+    fn to_naive_date_inner(&self, use_default: bool) -> ParseResult<NaiveDate> {
         let given_year = resolve_year(self.year, self.year_div_100, self.year_mod_100)?;
         let given_isoyear = resolve_year(self.isoyear, self.isoyear_div_100, self.isoyear_mod_100)?;
 
@@ -348,53 +352,52 @@ impl Parsed {
         // test several possibilities.
         // tries to construct a full `NaiveDate` as much as possible, then verifies that
         // it is consistent with other given fields.
-        let (verified, parsed_date) = match (given_year, given_isoyear, self) {
-            (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
+        let (verified, parsed_date) = match (use_default, given_year, given_isoyear, self) {
+            (_, Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
                 let date = NaiveDate::from_ymd_opt(year, month, day).ok_or(OUT_OF_RANGE)?;
                 (verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-            (Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
+            (_, Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
                 let date = NaiveDate::from_yo_opt(year, ordinal).ok_or(OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-            (Some(year), _, &Parsed { week_from_sun: Some(week), weekday: Some(weekday), .. }) => {
-                let date = resolve_week_number(year, week, Weekday::Sun, weekday)?;
+            (_, Some(year), _, &Parsed { week_from_sun: Some(week), weekday: Some(day), .. }) => {
+                let date = resolve_week_number(year, week, Weekday::Sun, day)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-            (Some(year), _, &Parsed { week_from_mon: Some(week), weekday: Some(weekday), .. }) => {
-                let date = resolve_week_number(year, week, Weekday::Mon, weekday)?;
+            (_, Some(year), _, &Parsed { week_from_mon: Some(week), weekday: Some(day), .. }) => {
+                let date = resolve_week_number(year, week, Weekday::Mon, day)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-            (_, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(weekday), .. }) => {
-                let date =
-                    NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday).ok_or(OUT_OF_RANGE)?;
+            (_, _, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(day), .. }) => {
+                let date = NaiveDate::from_isoywd_opt(isoyear, isoweek, day).ok_or(OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_ordinal(date), date)
             }
             #[rustfmt::skip]
-            (Some(year), None, &Parsed { month: Some(month),
-                                         week_from_sun: None, week_from_mon: None, .. }) => {
+            (true, Some(year), None, &Parsed { month: Some(month),
+                                               week_from_sun: None, week_from_mon: None, .. }) => {
                 let date = NaiveDate::from_ymd_opt(year, month, 1).ok_or(OUT_OF_RANGE)?;
                 (verify_isoweekdate(date) && verify_ordinal(date), date)
             }
             #[rustfmt::skip]
-            (Some(year), None, &Parsed { week_from_sun: Some(week),
-                                         week_from_mon: None, month: None, .. }) => {
+            (true, Some(year), None, &Parsed { week_from_sun: Some(week),
+                                               week_from_mon: None, month: None, .. }) => {
                 let date = resolve_week_number(year, week, Weekday::Sun, Weekday::Sun)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
             #[rustfmt::skip]
-            (Some(year), None, &Parsed { week_from_mon: Some(week),
-                                         week_from_sun: None, month: None, .. }) => {
+            (true, Some(year), None, &Parsed { week_from_mon: Some(week),
+                                               week_from_sun: None, month: None, .. }) => {
                 let date = resolve_week_number(year, week, Weekday::Mon, Weekday::Mon)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
-            (None, Some(isoyear), &Parsed { isoweek: Some(isoweek), .. }) => {
+            (true, None, Some(isoyear), &Parsed { isoweek: Some(isoweek), .. }) => {
                 let weekday = Weekday::Mon;
                 let date =
                     NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday).ok_or(OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_ordinal(date), date)
             }
-            (_, _, _) => return Err(NOT_ENOUGH),
+            (_, _, _, _) => return Err(NOT_ENOUGH),
         };
 
         if verified {
@@ -415,6 +418,10 @@ impl Parsed {
     ///
     /// It is able to handle leap seconds when given second is 60.
     pub fn to_naive_time(&self) -> ParseResult<NaiveTime> {
+        self.to_naive_time_inner(true)
+    }
+
+    fn to_naive_time_inner(&self, use_default: bool) -> ParseResult<NaiveTime> {
         let hour_div_12 = match self.hour_div_12 {
             Some(v @ 0..=1) => v,
             Some(_) => return Err(OUT_OF_RANGE),
@@ -427,12 +434,12 @@ impl Parsed {
         };
         let hour = hour_div_12 * 12 + hour_mod_12;
 
-        // we allow omitting minutes, but only if seconds and nanoseconds are also missing.
+        // optionally allow omitting minutes, but only if seconds and nanoseconds are also missing.
         let minute = match self.minute {
             Some(v @ 0..=59) => v,
             Some(_) => return Err(OUT_OF_RANGE),
             None => {
-                if self.second.is_none() && self.nanosecond.is_none() {
+                if use_default && self.second.is_none() && self.nanosecond.is_none() {
                     0
                 } else {
                     return Err(NOT_ENOUGH);
@@ -464,8 +471,17 @@ impl Parsed {
     /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field.
     /// Either way those fields have to be consistent to each other.
     pub fn to_naive_datetime_with_offset(&self, offset: i32) -> ParseResult<NaiveDateTime> {
-        let date = self.to_naive_date();
-        let time = if self.hour_div_12.is_none()
+        self.to_naive_datetime_with_offset_inner(offset, true)
+    }
+
+    fn to_naive_datetime_with_offset_inner(
+        &self,
+        offset: i32,
+        use_default: bool,
+    ) -> ParseResult<NaiveDateTime> {
+        let date = self.to_naive_date_inner(use_default);
+        let time = if use_default
+            && self.hour_div_12.is_none()
             && self.hour_mod_12.is_none()
             && self.minute.is_none()
             && self.second.is_none()
@@ -473,7 +489,7 @@ impl Parsed {
         {
             Ok(NaiveTime::MIN)
         } else {
-            self.to_naive_time()
+            self.to_naive_time_inner(use_default)
         };
         if let (Ok(date), Ok(time)) = (date, time) {
             let datetime = date.and_time(time);
@@ -533,8 +549,8 @@ impl Parsed {
             parsed.set_minute(i64::from(datetime.minute()))?;
 
             // validate other fields (e.g. week) and return
-            let date = parsed.to_naive_date()?;
-            let time = parsed.to_naive_time()?;
+            let date = parsed.to_naive_date_inner(use_default)?;
+            let time = parsed.to_naive_time_inner(use_default)?;
             Ok(date.and_time(time))
         } else {
             // reproduce the previous error(s)
