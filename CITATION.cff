@@ -3,8 +3,8 @@ cff-version: 1.2.0
 message: Please cite this crate using these information.
 
 # Version information.
-date-released: 2023-03-12
-version: 0.4.24
+date-released: 2023-05-29
+version: 0.4.25
 
 # Project information.
 abstract: Date and time library for Rust
