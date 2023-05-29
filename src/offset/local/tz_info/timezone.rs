@@ -486,14 +486,19 @@ struct TimeZoneName {
 
 impl TimeZoneName {
     /// Construct a time zone name
+    ///
+    /// Note: Converts `−` MINUS SIGN (U+2212) to `-` HYPHEN-MINUS (U+2D).
+    ///       Multi-byte MINUS SIGN is allowed in [ISO 8601 / RFC 3339]. But
+    ///       working with single-byte HYPHEN-MINUS is easier and more common.
+    ///
+    /// [ISO 8601 / RFC 3339]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
     fn new(input: &[u8]) -> Result<Self, Error> {
         let s = match str::from_utf8(input) {
             Ok(s) => s,
             Err(_err) => return Err(Error::LocalTimeType("invalid UTF-8")),
         };
-        let schars = s.chars().count();
 
-        if !(3..=7).contains(&schars) {
+        if !(3..=7).contains(&s.chars().count()) {
             return Err(Error::LocalTimeType(
                 "time zone name must have between 3 and 7 characters",
             ));
@@ -504,13 +509,20 @@ impl TimeZoneName {
         for (i, c) in s.chars().enumerate() {
             match c {
                 '0'..='9' | 'A'..='Z' | 'a'..='z'
-                // ISO 8601 / RFC 3339 proscribes use of `+` (U+2B) PLUS SIGN
+                // ISO 8601 / RFC 3339 proscribes use of `+` PLUS SIGN (U+2B)
                 // in timezone
                 | '+'
                 // ISO 8601 / RFC 3339 allows use of `-` HYPHEN-MINUS (U+2D)
                 // in timezone
                 | '-' => {
                     bytes[i + 1] = c as u8;
+                }
+                // ISO 8601 / RFC 3339 recommends the use of
+                // `−` MINUS SIGN (U+2212) in timezone.
+                // But replace with single-byte `-` HYPHEN-MINUS (U+2D) for
+                // easier byte <-> char conversions later on.
+                | '−' => {
+                    bytes[i + 1] = b'-';
                 }
                 _ => return Err(Error::LocalTimeType("invalid characters in time zone name")),
             }
@@ -756,8 +768,10 @@ mod tests {
             "1",
             "+",
             "-",
+            "−", // MINUS SIGN (U+2212)
             "12",
             "--",
+            "−−", // MINUS SIGN (U+2212)
             "AB",
             "ab",
             "12345678",
@@ -789,9 +803,12 @@ mod tests {
             ("+1234", "+1234"),
             ("+1234", "+1234"),
             ("-1234", "-1234"),
+            ("−1234", "-1234"), // MINUS SIGN (U+2212) to HYPHEN-MINUS (U+002D)
             // Ok nonsense
             ("+++", "+++"),
             ("-----", "-----"),
+            ("−−−", "---"),         // MINUS SIGN (U+2212) to HYPHEN-MINUS (U+002D)
+            ("−−−−−−−", "-------"), // MINUS SIGN (U+2212) to HYPHEN-MINUS (U+002D)
         ];
         for (input_, expect) in INPUT_OK_EXPECT.iter() {
             eprintln!("TimeZoneName::new({:?})", input_);
