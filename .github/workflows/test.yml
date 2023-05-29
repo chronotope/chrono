@@ -121,7 +121,8 @@ jobs:
       - run: |
           set -euxo pipefail
           export RUST_BACKTRACE=1
-          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf \
+              | bash --noprofile --norc
           wasm-pack --version
         shell: bash
       - run: cargo build --target ${{ matrix.target }}  --color=always
