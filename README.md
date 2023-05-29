@@ -4,12 +4,14 @@
 [![Chrono GitHub Actions][gh-image]][gh-checks]
 [![Chrono on crates.io][cratesio-image]][cratesio]
 [![Chrono on docs.rs][docsrs-image]][docsrs]
+[![crates.io downloads][cratesio-downloads]][cratesio]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
 
 [gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg
 [gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
+[cratesio-downloads]: https://img.shields.io/crates/d/chrono.svg?logo=rust
 [docsrs-image]: https://docs.rs/chrono/badge.svg
 [docsrs]: https://docs.rs/chrono
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
