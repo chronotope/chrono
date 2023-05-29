@@ -4,6 +4,7 @@
 [![Chrono GitHub Actions][gh-image]][gh-checks]
 [![Chrono on crates.io][cratesio-image]][cratesio]
 [![Chrono on docs.rs][docsrs-image]][docsrs]
+[![License][license-shields]][license-file]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
 
 [gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg
@@ -12,6 +13,8 @@
 [cratesio]: https://crates.io/crates/chrono
 [docsrs-image]: https://docs.rs/chrono/badge.svg
 [docsrs]: https://docs.rs/chrono
+[license-shields]: https://img.shields.io/crates/l/chrono
+[license-file]: https://github.com/chronotope/chrono/blob/main/LICENSE.txt
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
 [gitter]: https://gitter.im/chrono-rs/chrono
 
