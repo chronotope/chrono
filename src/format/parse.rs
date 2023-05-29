@@ -1336,6 +1336,25 @@ fn parse_rfc850() {
     for val in &testdates {
         assert_eq!(Ok(val.0), Utc.datetime_from_str(val.1, RFC850_FMT));
     }
+
+    let test_dates_fail = [
+        "Saturday, 12-Nov-94 08:49:37",
+        "Saturday, 12-Nov-94 08:49:37 Z",
+        "Saturday, 12-Nov-94 08:49:37 GMTTTT",
+        "Saturday, 12-Nov-94 08:49:37 gmt",
+        "Saturday, 12-Nov-94 08:49:37 +08:00",
+        "Caturday, 12-Nov-94 08:49:37 GMT",
+        "Saturday, 99-Nov-94 08:49:37 GMT",
+        "Saturday, 12-Nov-2000 08:49:37 GMT",
+        "Saturday, 12-Mop-94 08:49:37 GMT",
+        "Saturday, 12-Nov-94 28:49:37 GMT",
+        "Saturday, 12-Nov-94 08:99:37 GMT",
+        "Saturday, 12-Nov-94 08:49:99 GMT",
+    ];
+
+    for val in &test_dates_fail {
+        assert!(Utc.datetime_from_str(val, RFC850_FMT).is_err());
+    }
 }
 
 #[cfg(test)]
