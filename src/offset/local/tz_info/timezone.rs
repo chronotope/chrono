@@ -741,20 +741,58 @@ mod tests {
     }
 
     #[test]
-    fn test_tz_ascii_str() -> Result<(), Error> {
-        assert!(matches!(TimeZoneName::new(b""), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"1"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"12"), Err(Error::LocalTimeType(_))));
-        assert_eq!(TimeZoneName::new(b"123")?.as_bytes(), b"123");
-        assert_eq!(TimeZoneName::new(b"1234")?.as_bytes(), b"1234");
-        assert_eq!(TimeZoneName::new(b"12345")?.as_bytes(), b"12345");
-        assert_eq!(TimeZoneName::new(b"123456")?.as_bytes(), b"123456");
-        assert_eq!(TimeZoneName::new(b"1234567")?.as_bytes(), b"1234567");
-        assert!(matches!(TimeZoneName::new(b"12345678"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"123456789"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"1234567890"), Err(Error::LocalTimeType(_))));
-
-        assert!(matches!(TimeZoneName::new(b"123\0\0\0"), Err(Error::LocalTimeType(_))));
+    fn test_timezonename_new() -> Result<(), Error> {
+        // expect Error::LocalTimeType()
+        const INPUT_ERR: &[&str] = &[
+            "",
+            "1",
+            "+",
+            "-",
+            "12",
+            "--",
+            "AB",
+            "ab",
+            "12345678",
+            "ABCDEFGH",
+            "123456789",
+            "1234567890",
+            "--------",
+            "123\0\0\0",
+            "\0\0\0",
+            "\x00123",
+            "123\0",
+        ];
+        for input_ in INPUT_ERR.iter() {
+            eprintln!("TimeZoneName::new({:?}) (expect Error::LocalTimeType)", input_);
+            let input_ = input_.as_bytes();
+            let err = TimeZoneName::new(input_);
+            eprintln!("err = {:?}", err);
+            assert!(matches!(err, Err(Error::LocalTimeType(_))));
+        }
+        // expect Ok
+        const INPUT_OK_EXPECT: &[(&str, &str)] = &[
+            ("123", "123"),
+            ("abc", "abc"),
+            ("ABC", "ABC"),
+            ("1234", "1234"),
+            ("12345", "12345"),
+            ("123456", "123456"),
+            ("1234567", "1234567"),
+            ("+1234", "+1234"),
+            ("+1234", "+1234"),
+            ("-1234", "-1234"),
+            // Ok nonsense
+            ("+++", "+++"),
+            ("-----", "-----"),
+        ];
+        for (input_, expect) in INPUT_OK_EXPECT.iter() {
+            eprintln!("TimeZoneName::new({:?})", input_);
+            let output = TimeZoneName::new(input_.as_bytes());
+            match output {
+                Ok(output) => assert_eq!(output.as_bytes(), expect.as_bytes()),
+                Err(error) => panic!("Failed: input {:?}, error {}", input_, error),
+            }
+        }
 
         Ok(())
     }
