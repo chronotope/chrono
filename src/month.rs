@@ -1,4 +1,4 @@
-use core::{convert::TryFrom, fmt};
+use core::fmt;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -12,7 +12,6 @@ use crate::OutOfRange;
 ///
 /// It is possible to convert from a date to a month independently
 /// ```
-/// # use std::convert::TryFrom;
 /// use chrono::prelude::*;
 /// let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
 /// // `2019-10-28T09:10:11Z`
@@ -349,8 +348,6 @@ mod month_serde {
 
 #[cfg(test)]
 mod tests {
-    use core::convert::TryFrom;
-
     use super::Month;
     use crate::{Datelike, OutOfRange, TimeZone, Utc};
 

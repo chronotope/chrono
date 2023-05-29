@@ -5,7 +5,6 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -2284,10 +2283,7 @@ mod tests {
     };
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
-    use std::{
-        convert::{TryFrom, TryInto},
-        i32, u32,
-    };
+    use std::{i32, u32};
 
     #[test]
     fn diff_months() {

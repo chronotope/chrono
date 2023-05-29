@@ -1,4 +1,4 @@
-use core::{convert::TryFrom, fmt};
+use core::fmt;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -14,7 +14,6 @@ use crate::OutOfRange;
 /// # Example
 /// ```
 /// use chrono::Weekday;
-/// use std::convert::TryFrom;
 ///
 /// let monday = "Monday".parse::<Weekday>().unwrap();
 /// assert_eq!(monday, Weekday::Mon);
@@ -233,7 +232,6 @@ impl fmt::Debug for ParseWeekdayError {
 #[cfg(test)]
 mod tests {
     use super::Weekday;
-    use std::convert::TryFrom;
 
     #[test]
     fn test_num_days_from() {
