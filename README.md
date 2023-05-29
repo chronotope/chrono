@@ -5,6 +5,7 @@
 [![Chrono on crates.io][cratesio-image]][cratesio]
 [![Chrono on docs.rs][docsrs-image]][docsrs]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
+[![Commits since][commits-since]][commits-since-history]
 
 [gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg
 [gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
@@ -14,6 +15,8 @@
 [docsrs]: https://docs.rs/chrono
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
 [gitter]: https://gitter.im/chrono-rs/chrono
+[commits-since]: https://img.shields.io/github/commits-since/chronotope/chrono/latest/0.4.x
+[commits-since-history]: https://github.com/chronotope/chrono/commits/0.4.x
 
 It aims to be a feature-complete superset of
 the [time](https://github.com/rust-lang-deprecated/time) library.
