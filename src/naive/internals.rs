@@ -504,7 +504,6 @@ const fn weekday_from_u32_mod7(n: u32) -> Weekday {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
     use std::u32;
 
     use super::weekday_from_u32_mod7;
