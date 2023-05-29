@@ -219,9 +219,7 @@ mod tests {
             date.ordinal() as i32 + 365 * diff(1) + diff(4) - diff(100) + diff(400)
         }
 
-        use num_iter::range_inclusive;
-
-        for year in range_inclusive(NaiveDate::MIN.year(), NaiveDate::MAX.year()) {
+        for year in NaiveDate::MIN.year()..=NaiveDate::MAX.year() {
             let jan1_year = NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
             assert_eq!(
                 jan1_year.num_days_from_ce(),

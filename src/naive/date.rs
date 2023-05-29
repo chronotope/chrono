@@ -2376,9 +2376,7 @@ mod tests {
 
     #[test]
     fn test_readme_doomsday() {
-        use num_iter::range_inclusive;
-
-        for y in range_inclusive(NaiveDate::MIN.year(), NaiveDate::MAX.year()) {
+        for y in NaiveDate::MIN.year()..=NaiveDate::MAX.year() {
             // even months
             let d4 = NaiveDate::from_ymd_opt(y, 4, 4).unwrap();
             let d6 = NaiveDate::from_ymd_opt(y, 6, 6).unwrap();
