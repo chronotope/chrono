@@ -40,6 +40,8 @@
 //! - `unstable-locales`: Enable localization. This adds various methods with a
 //!   `_localized` suffix. The implementation and API may change or even be
 //!   removed in a patch release. Feedback welcome.
+//! - `oldtime`: this feature no langer has a function, but once offered compatibility with the
+//!   `time` 0.1 crate.
 //!
 //! [`serde`]: https://github.com/serde-rs/serde
 //! [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
@@ -59,14 +61,6 @@
 //! Note that this is an "accurate" duration represented as seconds and
 //! nanoseconds and does not represent "nominal" components such as days or
 //! months.
-//!
-//! When the `oldtime` feature is enabled, [`Duration`] is an alias for the
-//! [`time::Duration`](https://docs.rs/time/0.1.40/time/struct.Duration.html)
-//! type from v0.1 of the time crate. time v0.1 is deprecated, so new code
-//! should disable the `oldtime` feature and use the `chrono::Duration` type
-//! instead. The `oldtime` feature is enabled by default for backwards
-//! compatibility, but future versions of Chrono are likely to remove the
-//! feature entirely.
 //!
 //! Chrono does not yet natively support
 //! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
