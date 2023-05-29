@@ -230,13 +230,20 @@ where
             Ok((b[0], b[1]))
         }
     }
-    let negative = match s.as_bytes().first() {
-        Some(&b'+') => false,
-        Some(&b'-') => true,
+    let negative = match s.chars().next() {
+        Some('+') => {
+            s = &s['+'.len_utf8()..];
+
+            false
+        }
+        Some('-') => {
+            s = &s['-'.len_utf8()..];
+
+            true
+        }
         Some(_) => return Err(INVALID),
         None => return Err(TOO_SHORT),
     };
-    s = &s[1..];
 
     // hours (00--99)
     let hours = match digits(s)? {

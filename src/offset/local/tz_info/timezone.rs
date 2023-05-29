@@ -487,28 +487,36 @@ struct TimeZoneName {
 impl TimeZoneName {
     /// Construct a time zone name
     fn new(input: &[u8]) -> Result<Self, Error> {
-        let len = input.len();
+        let s = match str::from_utf8(input) {
+            Ok(s) => s,
+            Err(_err) => return Err(Error::LocalTimeType("invalid UTF-8")),
+        };
+        let schars = s.chars().count();
 
-        if !(3..=7).contains(&len) {
+        if !(3..=7).contains(&schars) {
             return Err(Error::LocalTimeType(
                 "time zone name must have between 3 and 7 characters",
             ));
         }
 
         let mut bytes = [0; 8];
-        bytes[0] = input.len() as u8;
-
-        let mut i = 0;
-        while i < len {
-            let b = input[i];
-            match b {
-                b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'+' | b'-' => {}
+        let mut copied = 0;
+        for (i, c) in s.chars().enumerate() {
+            match c {
+                '0'..='9' | 'A'..='Z' | 'a'..='z'
+                // ISO 8601 / RFC 3339 proscribes use of `+` (U+2B) PLUS SIGN
+                // in timezone
+                | '+'
+                // ISO 8601 / RFC 3339 allows use of `-` HYPHEN-MINUS (U+2D)
+                // in timezone
+                | '-' => {
+                    bytes[i + 1] = c as u8;
+                }
                 _ => return Err(Error::LocalTimeType("invalid characters in time zone name")),
             }
-
-            bytes[i + 1] = b;
-            i += 1;
+            copied += 1;
         }
+        bytes[0] = copied as u8;
 
         Ok(Self { bytes })
     }
