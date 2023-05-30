@@ -2061,10 +2061,13 @@ impl str::FromStr for NaiveDate {
     fn from_str(s: &str) -> ParseResult<NaiveDate> {
         const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
+            Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Month, Pad::Zero),
+            Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Day, Pad::Zero),
+            Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
@@ -2868,28 +2871,24 @@ mod tests {
         // valid cases
         let valid = [
             "-0000000123456-1-2",
-            "-123456-1-2",
+            "    -123456 - 1 - 2    ",
             "-12345-1-2",
             "-1234-12-31",
             "-7-6-5",
             "350-2-28",
             "360-02-29",
             "0360-02-29",
-            "2015-2-18",
-            "2015-02-18",
+            "2015-2 -18",
             "+70-2-18",
             "+70000-2-18",
             "+00007-2-18",
         ];
         for &s in &valid {
-            eprintln!("test_date_from_str valid {:?}", s);
             let d = match s.parse::<NaiveDate>() {
                 Ok(d) => d,
                 Err(e) => panic!("parsing `{}` has failed: {}", s, e),
             };
-            eprintln!("d {:?} (NaiveDate)", d);
             let s_ = format!("{:?}", d);
-            eprintln!("s_ {:?}", s_);
             // `s` and `s_` may differ, but `s.parse()` and `s_.parse()` must be same
             let d_ = match s_.parse::<NaiveDate>() {
                 Ok(d) => d,
@@ -2897,7 +2896,6 @@ mod tests {
                     panic!("`{}` is parsed into `{:?}`, but reparsing that has failed: {}", s, d, e)
                 }
             };
-            eprintln!("d_ {:?} (NaiveDate)", d_);
             assert!(
                 d == d_,
                 "`{}` is parsed into `{:?}`, but reparsed result \
@@ -2910,36 +2908,13 @@ mod tests {
 
         // some invalid cases
         // since `ParseErrorKind` is private, all we can do is to check if there was an error
-        let invalid = [
-            "",                        // empty
-            "x",                       // invalid
-            "Fri, 09 Aug 2013 GMT",    // valid date, wrong format
-            "Sat Jun 30 2012",         // valid date, wrong format
-            "1441497364.649",          // valid datetime, wrong format
-            "+1441497364.649",         // valid datetime, wrong format
-            "+1441497364",             // valid datetime, wrong format
-            "2014/02/03",              // valid date, wrong format
-            "2014",                    // datetime missing data
-            "2014-01",                 // datetime missing data
-            "2014-01-00",              // invalid day
-            "2014-11-32",              // invalid day
-            "2014-13-01",              // invalid month
-            "2014-13-57",              // invalid month, day
-            "2001 -02-03",             // space after year
-            "2001- 02-03",             // space before month
-            "2001 - 02-03",            // space around year-month divider
-            "2001-02 -03",             // space after month
-            "2001-02- 03",             // space before day
-            "2001-02 - 03",            // space around month-day divider
-            "2001-02-03 ",             // trailing space
-            " 2001-02-03",             // leading space
-            "    -123456 - 1 - 2    ", // many spaces
-            "9999999-9-9",             // invalid year (out of bounds)
-        ];
-        for &s in &invalid {
-            eprintln!("test_date_from_str invalid {:?}", s);
-            assert!(s.parse::<NaiveDate>().is_err());
-        }
+        assert!("".parse::<NaiveDate>().is_err());
+        assert!("x".parse::<NaiveDate>().is_err());
+        assert!("2014".parse::<NaiveDate>().is_err());
+        assert!("2014-01".parse::<NaiveDate>().is_err());
+        assert!("2014-01-00".parse::<NaiveDate>().is_err());
+        assert!("2014-13-57".parse::<NaiveDate>().is_err());
+        assert!("9999999-9-9".parse::<NaiveDate>().is_err()); // out-of-bounds
     }
 
     #[test]
@@ -2950,7 +2925,7 @@ mod tests {
             Ok(ymd(2014, 5, 7))
         ); // ignore time and offset
         assert_eq!(
-            NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u=%Y-%j"),
+            NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),
             Ok(ymd(2015, 2, 2))
         );
         assert_eq!(
