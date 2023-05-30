@@ -197,15 +197,11 @@ fn test_datetime_timestamp() {
 fn test_datetime_from_str() {
     // valid cases
     let valid = [
-        "2001-02-03T04:05:06",
-        "2012-12-12T12:12:12",
-        "2015-02-18T23:16:09.153",
-        "2015-2-18T23:16:09.153",
+        "2015-2-18T23:16:9.15",
         "-77-02-18T23:16:09",
-        "+82701-05-6T15:9:60.898989898989",
+        "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ",
     ];
     for &s in &valid {
-        eprintln!("test_parse_naivedatetime valid {:?}", s);
         let d = match s.parse::<NaiveDateTime>() {
             Ok(d) => d,
             Err(e) => panic!("parsing `{}` has failed: {}", s, e),
@@ -230,48 +226,16 @@ fn test_datetime_from_str() {
 
     // some invalid cases
     // since `ParseErrorKind` is private, all we can do is to check if there was an error
-    let invalid = [
-        "",                                                         // empty
-        "x",                                                        // invalid / missing data
-        "15",                                                       // missing data
-        "15:8:9",                        // looks like a time (invalid date)
-        "15-8-9",                        // looks like a date (invalid)
-        "Fri, 09 Aug 2013 23:54:35 GMT", // valid date, wrong format
-        "Sat Jun 30 23:59:60 2012",      // valid date, wrong format
-        "1441497364.649",                // valid date, wrong format
-        "+1441497364.649",               // valid date, wrong format
-        "+1441497364",                   // valid date, wrong format
-        "2014/02/03 04:05:06",           // valid date, wrong format
-        "2015-15-15T15:15:15",           // invalid date
-        "2012-12-12T12:12:12x",          // bad timezone / trailing literal
-        "2012-12-12T12:12:12+00:00",     // unexpected timezone / trailing literal
-        "2012-12-12T12:12:12 +00:00",    // unexpected timezone / trailing literal
-        "2012-12-12T12:12:12 GMT",       // unexpected timezone / trailing literal
-        "2012-123-12T12:12:12",          // invalid month
-        "2012 -12-12T12:12:12",          // space after year
-        "2012  -12-12T12:12:12",         // multi space after year
-        "2012- 12-12T12:12:12",          // space before month
-        "2012-  12-12T12:12:12",         // multi space before month
-        "2012-12-12 T12:12:12",          // space after day
-        "2012-12-12T 12:12:12",          // space after date-time divider
-        "2012-12-12T12 :12:12",          // space after hour
-        "2012-12-12T12  :12:12",         // multi space after hour
-        "2012-12-12T12: 12:12",          // space before minute
-        "2012-12-12T12:  12:12",         // multi space before minute
-        "2012-12-12T12 : 12:12",         // space around hour-minute divider
-        "2012-12-12T12:12:12 ",          // trailing space
-        " 2012-12-12T12:12:12",          // leading space
-        "2012-12-12t12:12:12",           // bad divider 't'
-        "2012-12-12 12:12:12",           // missing divider 'T'
-        "2012-12-12T12:12:12Z",          // trailing char 'Z'
-        "+ 82701-123-12T12:12:12",       // strange year, invalid month
-        "+802701-123-12T12:12:12",       // out-of-bound year, invalid month
-        "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ", // many spaces
-    ];
-    for &s in invalid.iter() {
-        eprintln!("test_datetime_from_str invalid {:?}", s);
-        assert!(s.parse::<NaiveDateTime>().is_err());
-    }
+    assert!("".parse::<NaiveDateTime>().is_err());
+    assert!("x".parse::<NaiveDateTime>().is_err());
+    assert!("15".parse::<NaiveDateTime>().is_err());
+    assert!("15:8:9".parse::<NaiveDateTime>().is_err());
+    assert!("15-8-9".parse::<NaiveDateTime>().is_err());
+    assert!("2015-15-15T15:15:15".parse::<NaiveDateTime>().is_err());
+    assert!("2012-12-12T12:12:12x".parse::<NaiveDateTime>().is_err());
+    assert!("2012-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
+    assert!("+ 82701-123-12T12:12:12".parse::<NaiveDateTime>().is_err());
+    assert!("+802701-123-12T12:12:12".parse::<NaiveDateTime>().is_err()); // out-of-bound
 }
 
 #[test]
@@ -285,12 +249,8 @@ fn test_datetime_parse_from_str() {
         NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
         Ok(ymdhms(2014, 5, 7, 12, 34, 56))
     ); // ignore offset
-    assert!(
-        // intermixed whitespace
-        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S").is_err()
-    );
     assert_eq!(
-        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u %H%M%S"),
+        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
         Ok(ymdhms(2015, 2, 2, 0, 0, 0))
     );
     assert_eq!(
