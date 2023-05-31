@@ -504,8 +504,6 @@ const fn weekday_from_u32_mod7(n: u32) -> Weekday {
 
 #[cfg(test)]
 mod tests {
-    use num_iter::range_inclusive;
-    use std::convert::TryFrom;
     use std::u32;
 
     use super::weekday_from_u32_mod7;
@@ -555,7 +553,7 @@ mod tests {
     #[test]
     fn test_of() {
         fn check(expected: bool, flags: YearFlags, ordinal1: u32, ordinal2: u32) {
-            for ordinal in range_inclusive(ordinal1, ordinal2) {
+            for ordinal in ordinal1..=ordinal2 {
                 let of = match Of::new(ordinal, flags) {
                     Some(of) => of,
                     None if !expected => continue,
@@ -591,8 +589,8 @@ mod tests {
     #[test]
     fn test_mdf_valid() {
         fn check(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) {
-            for month in range_inclusive(month1, month2) {
-                for day in range_inclusive(day1, day2) {
+            for month in month1..=month2 {
+                for day in day1..=day2 {
                     let mdf = match Mdf::new(month, day, flags) {
                         Some(mdf) => mdf,
                         None if !expected => continue,
@@ -682,7 +680,7 @@ mod tests {
     #[test]
     fn test_of_fields() {
         for &flags in FLAGS.iter() {
-            for ordinal in range_inclusive(1u32, 366) {
+            for ordinal in 1u32..=366 {
                 if let Some(of) = Of::new(ordinal, flags) {
                     assert_eq!(of.ordinal(), ordinal);
                 }
@@ -695,7 +693,7 @@ mod tests {
         fn check(flags: YearFlags, ordinal: u32) {
             let of = Of::new(ordinal, flags).unwrap();
 
-            for ordinal in range_inclusive(0u32, 1024) {
+            for ordinal in 0u32..=1024 {
                 let of = of.with_ordinal(ordinal);
                 assert_eq!(of, Of::new(ordinal, flags));
                 if let Some(of) = of {
@@ -733,7 +731,7 @@ mod tests {
 
         for &flags in FLAGS.iter() {
             let mut prev = Of::new(1, flags).unwrap().weekday();
-            for ordinal in range_inclusive(2u32, flags.ndays()) {
+            for ordinal in 2u32..=flags.ndays() {
                 let of = Of::new(ordinal, flags).unwrap();
                 let expected = prev.succ();
                 assert_eq!(of.weekday(), expected);
@@ -745,8 +743,8 @@ mod tests {
     #[test]
     fn test_mdf_fields() {
         for &flags in FLAGS.iter() {
-            for month in range_inclusive(1u32, 12) {
-                for day in range_inclusive(1u32, 31) {
+            for month in 1u32..=12 {
+                for day in 1u32..31 {
                     let mdf = match Mdf::new(month, day, flags) {
                         Some(mdf) => mdf,
                         None => continue,
@@ -766,7 +764,7 @@ mod tests {
         fn check(flags: YearFlags, month: u32, day: u32) {
             let mdf = Mdf::new(month, day, flags).unwrap();
 
-            for month in range_inclusive(0u32, 16) {
+            for month in 0u32..=16 {
                 let mdf = match mdf.with_month(month) {
                     Some(mdf) => mdf,
                     None if month > 12 => continue,
@@ -779,7 +777,7 @@ mod tests {
                 }
             }
 
-            for day in range_inclusive(0u32, 1024) {
+            for day in 0u32..=1024 {
                 let mdf = match mdf.with_day(day) {
                     Some(mdf) => mdf,
                     None if day > 31 => continue,
@@ -822,7 +820,7 @@ mod tests {
 
     #[test]
     fn test_of_to_mdf() {
-        for i in range_inclusive(0u32, 8192) {
+        for i in 0u32..=8192 {
             if let Some(of) = Of(i).validate() {
                 assert!(of.to_mdf().valid());
             }
@@ -831,7 +829,7 @@ mod tests {
 
     #[test]
     fn test_mdf_to_of() {
-        for i in range_inclusive(0u32, 8192) {
+        for i in 0u32..=8192 {
             let mdf = Mdf(i);
             assert_eq!(mdf.valid(), mdf.to_of().is_some());
         }
@@ -839,7 +837,7 @@ mod tests {
 
     #[test]
     fn test_of_to_mdf_to_of() {
-        for i in range_inclusive(0u32, 8192) {
+        for i in 0u32..=8192 {
             if let Some(of) = Of(i).validate() {
                 assert_eq!(of, of.to_mdf().to_of().unwrap());
             }
@@ -848,7 +846,7 @@ mod tests {
 
     #[test]
     fn test_mdf_to_of_to_mdf() {
-        for i in range_inclusive(0u32, 8192) {
+        for i in 0u32..=8192 {
             let mdf = Mdf(i);
             if mdf.valid() {
                 assert_eq!(mdf, mdf.to_of().unwrap().to_mdf());

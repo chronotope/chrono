@@ -5,7 +5,6 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
-use core::convert::TryFrom;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -2250,10 +2249,7 @@ mod tests {
     };
     use crate::time_delta::TimeDelta;
     use crate::{Datelike, Weekday};
-    use std::{
-        convert::{TryFrom, TryInto},
-        i32, u32,
-    };
+    use std::{i32, u32};
 
     #[test]
     fn diff_months() {
@@ -2342,9 +2338,7 @@ mod tests {
 
     #[test]
     fn test_readme_doomsday() {
-        use num_iter::range_inclusive;
-
-        for y in range_inclusive(NaiveDate::MIN.year(), NaiveDate::MAX.year()) {
+        for y in NaiveDate::MIN.year()..=NaiveDate::MAX.year() {
             // even months
             let d4 = NaiveDate::from_ymd_opt(y, 4, 4).unwrap();
             let d6 = NaiveDate::from_ymd_opt(y, 6, 6).unwrap();
