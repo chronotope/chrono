@@ -2,8 +2,8 @@
 name = "core-test"
 version = "0.1.0"
 authors = [
-    "Kang Seonghoon <public+rust@mearie.org>",
-    "Brandon W Maister <quodlibetor@gmail.com>",
+  "Kang Seonghoon <public+rust@mearie.org>",
+  "Brandon W Maister <quodlibetor@gmail.com>",
 ]
 edition = "2018"
 

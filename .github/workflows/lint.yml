@@ -27,6 +27,14 @@ jobs:
         env:
           RUSTFLAGS: "-Dwarnings"
 
+  toml:
+    runs-on: ubuntu-latest
+    container:
+      image: tamasfe/taplo:0.8.0
+    steps:
+      - run: taplo lint
+      - run: taplo fmt --check --diff
+
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
