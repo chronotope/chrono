@@ -314,6 +314,15 @@ fn test_datetime_offset() {
 }
 
 #[test]
+fn signed_duration_since_autoref() {
+    let dt1 = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
+    let dt2 = Utc.with_ymd_and_hms(2014, 3, 4, 5, 6, 7).unwrap();
+    let diff1 = dt1.signed_duration_since(dt2); // Copy/consume
+    let diff2 = dt2.signed_duration_since(&dt1); // Take by reference
+    assert_eq!(diff1, -diff2);
+}
+
+#[test]
 fn test_datetime_date_and_time() {
     let tz = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     let d = tz.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();

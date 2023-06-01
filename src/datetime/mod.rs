@@ -8,7 +8,6 @@ extern crate alloc;
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::string::{String, ToString};
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Write;
@@ -409,8 +408,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// This does not overflow or underflow at all.
     #[inline]
     #[must_use]
-    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> OldDuration {
-        self.datetime.signed_duration_since(rhs.datetime)
+    pub fn signed_duration_since<Tz2: TimeZone>(
+        self,
+        rhs: impl Borrow<DateTime<Tz2>>,
+    ) -> OldDuration {
+        self.datetime.signed_duration_since(rhs.borrow().datetime)
     }
 
     /// Returns a view to the naive UTC datetime.
