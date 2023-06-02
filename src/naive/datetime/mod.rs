@@ -113,7 +113,11 @@ impl NaiveDateTime {
     /// [leap second](./struct.NaiveTime.html#leap-second-handling). (The true "UNIX
     /// timestamp" cannot represent a leap second unambiguously.)
     ///
-    /// Panics on the out-of-range number of seconds and/or invalid nanosecond.
+    /// # Panics
+    ///
+    /// Panics if the number of seconds would be out of range for a `NaiveDateTime` (more than
+    /// ca. 262,000 years away from common era), and panics on an invalid nanosecond (2 seconds or
+    /// more).
     #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
     #[inline]
     #[must_use]
@@ -126,7 +130,10 @@ impl NaiveDateTime {
     ///
     /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
     ///
-    /// Returns `None` on an out-of-range number of milliseconds.
+    /// # Errors
+    ///
+    /// Returns `None` if the number of milliseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
     ///
     /// # Example
     ///
@@ -155,7 +162,10 @@ impl NaiveDateTime {
     ///
     /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
     ///
-    /// Returns `None` on an out-of-range number of microseconds.
+    /// # Errors
+    ///
+    /// Returns `None` if the number of microseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
     ///
     /// # Example
     ///
@@ -189,8 +199,11 @@ impl NaiveDateTime {
     /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
-    /// Returns `None` on the out-of-range number of seconds (more than 262 000 years away
-    /// from common era) and/or invalid nanosecond (2 seconds or more).
+    /// # Errors
+    ///
+    /// Returns `None` if the number of seconds would be out of range for a `NaiveDateTime` (more
+    /// than ca. 262,000 years away from common era), and panics on an invalid nanosecond
+    /// (2 seconds or more).
     ///
     /// # Example
     ///
@@ -390,11 +403,6 @@ impl NaiveDateTime {
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
     ///
-    /// Note also that this does reduce the number of years that can be
-    /// represented from ~584 Billion to ~584 Million. (If this is a problem,
-    /// please file an issue to let me know what domain needs millisecond
-    /// precision over billions of years, I'm curious.)
-    ///
     /// # Example
     ///
     /// ```
@@ -421,11 +429,6 @@ impl NaiveDateTime {
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
     ///
-    /// Note also that this does reduce the number of years that can be
-    /// represented from ~584 Billion to ~584 Thousand. (If this is a problem,
-    /// please file an issue to let me know what domain needs microsecond
-    /// precision over millennia, I'm curious.)
-    ///
     /// # Example
     ///
     /// ```
@@ -451,13 +454,11 @@ impl NaiveDateTime {
     ///
     /// # Panics
     ///
-    /// Note also that this does reduce the number of years that can be
-    /// represented from ~584 Billion to ~584 years. The dates that can be
-    /// represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
+    /// an out of range `NaiveDateTime`.
     ///
-    /// (If this is a problem, please file an issue to let me know what domain
-    /// needs nanosecond precision over millennia, I'm curious.)
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
     ///
     /// # Example
     ///
@@ -559,7 +560,9 @@ impl NaiveDateTime {
     /// except when the `NaiveDateTime` itself represents a leap second
     /// in which case the assumption becomes that **there is exactly a single leap second ever**.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
     ///
     /// # Example
     ///
@@ -632,9 +635,11 @@ impl NaiveDateTime {
 
     /// Adds given `Months` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Uses the last day of the month if the day does not exist in the resulting month.
     ///
-    /// Overflow returns `None`.
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
     ///
     /// # Example
     ///
@@ -665,7 +670,9 @@ impl NaiveDateTime {
     /// except when the `NaiveDateTime` itself represents a leap second
     /// in which case the assumption becomes that **there is exactly a single leap second ever**.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
     ///
     /// # Example
     ///
@@ -734,9 +741,11 @@ impl NaiveDateTime {
 
     /// Subtracts given `Months` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// Uses the last day of the month if the day does not exist in the resulting month.
     ///
-    /// Overflow returns `None`.
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
     ///
     /// # Example
     ///
@@ -1097,11 +1106,15 @@ impl Datelike for NaiveDateTime {
         self.date.iso_week()
     }
 
-    /// Makes a new `NaiveDateTime` with the year number changed.
-    ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// Makes a new `NaiveDateTime` with the year number changed, while keeping the same month and
+    /// day.
     ///
     /// See also the [`NaiveDate::with_year`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or when the `NaiveDateTime` would be
+    /// out of range.
     ///
     /// # Example
     ///
@@ -1119,9 +1132,11 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveDate::with_month`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or if the value for `month` is invalid.
     ///
     /// # Example
     ///
@@ -1140,9 +1155,12 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveDate::with_month0`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or if the value for `month0` is
+    /// invalid.
     ///
     /// # Example
     ///
@@ -1161,9 +1179,11 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveDate::with_day`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or if the value for `day` is invalid.
     ///
     /// # Example
     ///
@@ -1181,9 +1201,11 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveDate::with_day0`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or if the value for `day0` is invalid.
     ///
     /// # Example
     ///
@@ -1201,9 +1223,12 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveDate::with_ordinal`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal` is
+    /// invalid.
     ///
     /// # Example
     ///
@@ -1228,9 +1253,12 @@ impl Datelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveDate::with_ordinal0`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal0` is
+    /// invalid.
     ///
     /// # Example
     ///
@@ -1327,9 +1355,11 @@ impl Timelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the hour number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    ///
     /// See also the [`NaiveTime::with_hour`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `hour` is invalid.
     ///
     /// # Example
     ///
@@ -1348,10 +1378,11 @@ impl Timelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the minute number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// See also the [`NaiveTime::with_minute`] method.
     ///
-    /// See also the
-    /// [`NaiveTime::with_minute`] method.
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `minute` is invalid.
     ///
     /// # Example
     ///
@@ -1370,11 +1401,14 @@ impl Timelike for NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with the second number changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid. As
-    /// with the [`NaiveDateTime::second`] method, the input range is
-    /// restricted to 0 through 59.
+    /// As with the [`second`](#method.second) method,
+    /// the input range is restricted to 0 through 59.
     ///
     /// See also the [`NaiveTime::with_second`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `second` is invalid.
     ///
     /// # Example
     ///
@@ -1398,6 +1432,10 @@ impl Timelike for NaiveDateTime {
     /// the input range can exceed 1,000,000,000 for leap seconds.
     ///
     /// See also the [`NaiveTime::with_nanosecond`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `nanosecond >= 2,000,000,000`.
     ///
     /// # Example
     ///
@@ -1423,7 +1461,9 @@ impl Timelike for NaiveDateTime {
 /// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
 /// the assumption becomes that **there is exactly a single leap second ever**.
 ///
-/// Panics on underflow or overflow. Use [`NaiveDateTime::checked_add_signed`]
+/// # Panics
+///
+/// Panics if the resulting date would be out of range. Use [`NaiveDateTime::checked_add_signed`]
 /// to detect that.
 ///
 /// # Example
