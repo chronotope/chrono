@@ -3,8 +3,14 @@
 
 //! ISO 8601 calendar date without timezone.
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+use alloc::string::String;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::fmt::Write;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -1210,18 +1216,35 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
-    /// on the supported escape sequences.
     ///
-    /// This returns a `DelayedFormat`,
-    /// which gets converted to a string only when actual formatting happens.
-    /// You may use the `to_string` method to get a `String`,
-    /// or just feed it into `print!` and other formatting macros.
-    /// (In this way it avoids the redundant memory allocation.)
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported escape
+    /// sequences.
     ///
-    /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    /// This returns a `DelayedFormat`, which gets converted to a string only when actual formatting
+    /// happens. You can feed this into [`print!`] and other formatting macros.
+    /// (This can avoid a memory allocation.)
+    ///
+    /// If you want to format to a `String`, consider using the more direct method
+    /// [`format_to_string`](#method.format_to_string).
+    /// This is an alternative to calling [`ToString::to_string`] on the `DelayedFormat` returned by
+    /// this method.
+    ///
+    /// # Errors/panics
+    ///
+    /// This function does not panic or return an error.
+    ///
+    /// However the `Display` implementation of `DelayedFormat` can return an error if the format
+    /// string is invalid, or if the format string contains time or offset fields (which a
+    /// `NaiveDate` can not provide). Returning an error goes against the
+    /// [contract for `Display`][1]. This will be fixed in the next major version of chrono.
+    ///
+    /// Consumers of the `Display` trait, such as [`format!`], [`println!`] and [`to_string`] will
+    /// generally panic on an invalid formatting string. Consider using this function in combination
+    /// with formatting macro's that can pass on an error instead such as [`write!`] and
+    /// [`writeln!`].
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-traits
+    /// [`to_string`]: ToString::to_string
     ///
     /// # Example
     ///
@@ -1233,13 +1256,21 @@ impl NaiveDate {
     /// assert_eq!(d.format("%A, %-d %B, %C%y").to_string(), "Saturday, 5 September, 2015");
     /// ```
     ///
-    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    /// The resulting `DelayedFormat` can be used directly with formatting macro's via the `Display`
+    /// trait.
     ///
     /// ```
+    /// # use core::fmt::{Error, Write};
     /// # use chrono::NaiveDate;
     /// # let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
     /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
-    /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
+    ///
+    /// let mut formatted = String::new();
+    /// write!(formatted, "{}", d.format("%A, %-d %B, %C%y"))?;
+    /// assert_eq!(formatted, "Saturday, 5 September, 2015");
+    ///
+    /// println!("{}", d.format("%Y-%m-%d")); // prints "2015-09-05"
+    /// # Ok::<(), Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -1247,6 +1278,36 @@ impl NaiveDate {
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Format the date with the specified format string directly to a `String`.
+    ///
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported escape
+    /// sequences.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string is invalid, or if the format string contains time or
+    /// offset fields (which a `NaiveDate` can not provide).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
+    /// assert_eq!(d.format_to_string("%Y-%m-%d"), Ok("2015-09-05".to_owned()));
+    /// assert_eq!(
+    ///     d.format_to_string("%A, %-d %B, %C%y"),
+    ///     Ok("Saturday, 5 September, 2015".to_owned())
+    /// );
+    /// ```
+    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    pub fn format_to_string(&self, fmt: &str) -> Result<String, fmt::Error> {
+        let mut s = String::new();
+        write!(s, "{}", self.format_with_items(StrftimeItems::new(fmt)))?;
+        Ok(s)
     }
 
     /// Formats the date with the specified formatting items and locale.
@@ -1992,8 +2053,6 @@ impl DoubleEndedIterator for NaiveDateWeeksIterator {
 /// ```
 impl fmt::Debug for NaiveDate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use core::fmt::Write;
-
         let year = self.year();
         let mdf = self.mdf();
         if (0..=9999).contains(&year) {
