@@ -53,7 +53,7 @@ pub trait Datelike: Sized {
     /// Returns the ISO week.
     fn iso_week(&self) -> IsoWeek;
 
-    /// Makes a new value with the year number changed.
+    /// Makes a new value with the year number changed, while keeping the same month and day.
     ///
     /// Returns `None` when the resulting value would be invalid.
     fn with_year(&self, year: i32) -> Option<Self>;
