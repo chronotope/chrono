@@ -1048,6 +1048,15 @@ impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Sub<&DateTime<Tz>> for DateTime<Tz> {
+    type Output = OldDuration;
+
+    #[inline]
+    fn sub(self, rhs: &DateTime<Tz>) -> OldDuration {
+        self.signed_duration_since(rhs)
+    }
+}
+
 impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 

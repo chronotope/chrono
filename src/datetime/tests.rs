@@ -320,6 +320,10 @@ fn signed_duration_since_autoref() {
     let diff1 = dt1.signed_duration_since(dt2); // Copy/consume
     let diff2 = dt2.signed_duration_since(&dt1); // Take by reference
     assert_eq!(diff1, -diff2);
+
+    let diff1 = dt1 - &dt2; // We can choose to substract rhs by reference
+    let diff2 = dt2 - dt1; // Or consume rhs
+    assert_eq!(diff1, -diff2);
 }
 
 #[test]
