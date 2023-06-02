@@ -66,6 +66,11 @@ pub struct NaiveWeek {
 impl NaiveWeek {
     /// Returns a date representing the first day of the week.
     ///
+    /// # Panics
+    ///
+    /// Panics if the first day of the week happens to fall just out of range of `NaiveDate`
+    /// (more than ca. 262,000 years away from common era).
+    ///
     /// # Examples
     ///
     /// ```
@@ -88,6 +93,11 @@ impl NaiveWeek {
     }
 
     /// Returns a date representing the last day of the week.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the last day of the week happens to fall just out of range of `NaiveDate`
+    /// (more than ca. 262,000 years away from common era).
     ///
     /// # Examples
     ///
@@ -113,6 +123,11 @@ impl NaiveWeek {
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
     /// [first_day](./struct.NaiveWeek.html#method.first_day) and
     /// [last_day](./struct.NaiveWeek.html#method.last_day) functions.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the either the first or last day of the week happens to fall just out of range of
+    /// `NaiveDate` (more than ca. 262,000 years away from common era).
     ///
     /// # Examples
     ///
