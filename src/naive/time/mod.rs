@@ -3,8 +3,14 @@
 
 //! ISO 8601 time without timezone.
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
+use alloc::string::String;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -742,18 +748,35 @@ impl NaiveTime {
     }
 
     /// Formats the time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
-    /// on the supported escape sequences.
     ///
-    /// This returns a `DelayedFormat`,
-    /// which gets converted to a string only when actual formatting happens.
-    /// You may use the `to_string` method to get a `String`,
-    /// or just feed it into `print!` and other formatting macros.
-    /// (In this way it avoids the redundant memory allocation.)
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported escape
+    /// sequences.
     ///
-    /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    /// This returns a `DelayedFormat`, which gets converted to a string only when actual formatting
+    /// happens. You can feed this into [`print!`] and other formatting macros.
+    /// (This can avoid a memory allocation.)
+    ///
+    /// If you want to format to a `String`, consider using the more direct method
+    /// [`format_to_string`](#method.format_to_string).
+    /// This is an alternative to calling [`ToString::to_string`] on the `DelayedFormat` returned by
+    /// this method.
+    ///
+    /// # Errors/panics
+    ///
+    /// This function does not panic or return an error.
+    ///
+    /// However the `Display` implementation of `DelayedFormat` can return an error if the format
+    /// string is invalid, or if the format string contains date or offset fields (which a
+    /// `NaiveTime` can not provide). Returning an error goes against the
+    /// [contract for `Display`][1]. This will be fixed in the next major version of chrono.
+    ///
+    /// Consumers of the `Display` trait, such as [`format!`], [`println!`] and [`to_string`] will
+    /// generally panic on an invalid formatting string. Consider using this function in combination
+    /// with formatting macro's that can pass on an error instead such as [`write!`] and
+    /// [`writeln!`].
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-traits
+    /// [`to_string`]: ToString::to_string
     ///
     /// # Example
     ///
@@ -766,14 +789,21 @@ impl NaiveTime {
     /// assert_eq!(t.format("%-I:%M %p").to_string(), "11:56 PM");
     /// ```
     ///
-    /// The resulting `DelayedFormat` can be formatted directly via the `Display` trait.
+    /// The resulting `DelayedFormat` can be used directly with formatting macro's via the `Display`
+    /// trait.
     ///
     /// ```
+    /// # use core::fmt::{Error, Write};
     /// # use chrono::NaiveTime;
     /// # let t = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
     /// assert_eq!(format!("{}", t.format("%H:%M:%S")), "23:56:04");
-    /// assert_eq!(format!("{}", t.format("%H:%M:%S%.6f")), "23:56:04.012345");
-    /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
+    ///
+    /// let mut formatted = String::new();
+    /// write!(formatted, "{}", t.format("%H:%M:%S%.6f"))?;
+    /// assert_eq!(formatted, "23:56:04.012345");
+    ///
+    /// println!("{}", t.format("%-I:%M %p")); // prints "11:56 PM"
+    /// # Ok::<(), Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -781,6 +811,34 @@ impl NaiveTime {
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Format the time with the specified format string directly to a `String`.
+    ///
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported escape
+    /// sequences.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string is invalid, or if the format string contains date or
+    /// offset fields (which a `NaiveTime` can not provide).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveTime;
+    ///
+    /// let t = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// assert_eq!(t.format_to_string("%H:%M:%S"), Ok("23:56:04".to_owned()));
+    /// assert_eq!(t.format_to_string("%H:%M:%S%.6f"), Ok("23:56:04.012345".to_owned()));
+    /// assert_eq!(t.format_to_string("%-I:%M %p"), Ok("11:56 PM".to_owned()));
+    /// ```
+    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    pub fn format_to_string(&self, fmt: &str) -> Result<String, fmt::Error> {
+        let mut s = String::new();
+        write!(s, "{}", self.format_with_items(StrftimeItems::new(fmt)))?;
+        Ok(s)
     }
 
     /// Returns a triple of the hour, minute and second numbers.
@@ -1227,7 +1285,6 @@ impl fmt::Debug for NaiveTime {
             (sec, self.frac)
         };
 
-        use core::fmt::Write;
         write_hundreds(f, hour as u8)?;
         f.write_char(':')?;
         write_hundreds(f, min as u8)?;
