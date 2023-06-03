@@ -47,7 +47,7 @@ See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference.
 
 Default features:
 
-* `alloc`: Enable features that depend on allocation (primarily string formatting)
+* `alloc`: Enable features that depend on allocation (some formatting methods)
 * `std`: Enables functionality that depends on the standard library. This is a superset of `alloc`
   and adds interoperation with standard library types and traits.
 * `clock`: Enables reading the system time (`now`) and local timezone (`Local`).

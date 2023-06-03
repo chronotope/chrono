@@ -37,7 +37,6 @@ extern crate alloc;
 use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
 use alloc::string::String;
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::fmt;
 use core::fmt::Write;
@@ -46,11 +45,8 @@ use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::naive::{NaiveDate, NaiveTime};
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::offset::{FixedOffset, Offset};
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use crate::{Datelike, Timelike};
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 
@@ -276,7 +272,6 @@ enum InternalInternal {
     Nanosecond9NoDot,
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum Colons {
     None,
@@ -429,7 +424,6 @@ const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
 const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 struct Locales {
     short_months: &'static [&'static str],
     long_months: &'static [&'static str],
@@ -438,7 +432,6 @@ struct Locales {
     am_pm: &'static [&'static str],
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 impl Locales {
     fn new(_locale: Option<Locale>) -> Self {
         #[cfg(feature = "unstable-locales")]
@@ -500,7 +493,6 @@ pub fn format_item(
     format_inner(w, date, time, off, item, None)
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 fn format_inner(
     result: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -700,7 +692,6 @@ fn format_inner(
 
 /// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
 /// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
-#[cfg(any(feature = "alloc", feature = "std", test))]
 fn write_local_minus_utc(
     result: &mut fmt::Formatter,
     off: FixedOffset,
@@ -748,7 +739,6 @@ pub(crate) fn write_rfc3339(
 }
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
-#[cfg(any(feature = "alloc", feature = "std", test))]
 pub(crate) fn write_rfc3339_inner(
     result: &mut fmt::Formatter,
     dt: crate::NaiveDateTime,
@@ -773,7 +763,6 @@ pub(crate) fn write_rfc2822(
     write!(result, "{}", formatter)
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 fn write_rfc2822_inner(
     result: &mut fmt::Formatter,
@@ -822,7 +811,6 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(any(feature = "alloc", feature = "std", test))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 pub fn format<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -851,8 +839,6 @@ pub mod strftime;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
-#[cfg(any(feature = "alloc", feature = "std", test))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 #[derive(Debug)]
 pub struct DelayedFormat<I> {
     /// The date view, if any.
@@ -870,7 +856,6 @@ pub struct DelayedFormat<I> {
     locale: Option<Locale>,
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     #[must_use]
@@ -939,7 +924,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #[cfg(not(feature = "unstable-locales"))]
