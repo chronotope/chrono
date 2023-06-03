@@ -1022,3 +1022,9 @@ fn test_datetime_fixed_offset() {
     let datetime_fixed = fixed_offset.from_local_datetime(&naivedatetime).unwrap();
     assert_eq!(datetime_fixed.fixed_offset(), datetime_fixed);
 }
+
+#[test]
+fn test_formatting_permissive_offset_no_panic() {
+    let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
+    assert!(dt.format_to_string("%#z").is_err());
+}

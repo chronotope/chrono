@@ -675,7 +675,7 @@ fn format_inner(
                         off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
                     }
                     Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
-                        panic!("Do not try to write %#z it is undefined")
+                        None // Do not try to write %#z it is undefined
                     }
                     RFC2822 =>
                     // same as `%a, %d %b %Y %H:%M:%S %z`
