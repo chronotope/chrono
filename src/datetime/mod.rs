@@ -765,17 +765,71 @@ where
         DelayedFormat::new_with_offset(Some(local.date()), Some(local.time()), &self.offset, items)
     }
 
-    /// Formats the combined date and time per the specified format string.
+    /// Formats the date and time with the specified format string.
     ///
-    /// See the [`crate::format::strftime`] module for the supported escape sequences.
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported escape
+    /// sequences.
+    ///
+    /// This returns a `DelayedFormat`, which gets converted to a string only when actual formatting
+    /// happens. You can feed this into [`print!`] and other formatting macros.
+    /// (This can avoid a memory allocation.)
+    ///
+    /// If you want to format to a `String`, consider using the more direct method
+    /// [`format_to_string`](#method.format_to_string).
+    /// This is an alternative to calling [`ToString::to_string`] on the `DelayedFormat` returned by
+    /// this method.
+    ///
+    /// # Errors/panics
+    ///
+    /// This function does not panic or return an error.
+    ///
+    /// However the `Display` implementation of `DelayedFormat` can return an error if the format
+    /// string is invalid. Returning an error goes against the [contract for `Display`][1]. This
+    /// will be fixed in the next major version of chrono.
+    ///
+    /// Consumers of the `Display` trait, such as [`format!`], [`println!`] and [`to_string`] will
+    /// generally panic on an invalid formatting string. Consider using this function in combination
+    /// with formatting macro's that can pass on an error instead such as [`write!`] and
+    /// [`writeln!`].
+    ///
+    /// [1]: https://doc.rust-lang.org/stable/std/fmt/index.html#formatting-traits
+    /// [`to_string`]: ToString::to_string
+    ///
+    /// # Errors
+    ///
+    /// This function does not panic or return an error. But the `Display` implementation can
+    /// return an error if the format string is invalid.
+    ///
+    /// If you need to handle a potentially invalid format string, use this function in combination
+    /// with formatting macro's that can pass on an error instead of panicking, such as [`write!`]
+    /// and [`writeln!`], instead of [`format!`] and [`println!`].
     ///
     /// # Example
-    /// ```rust
-    /// use chrono::prelude::*;
     ///
-    /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
-    /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
-    /// assert_eq!(formatted, "02/04/2017 12:50");
+    /// ```
+    /// use chrono::{TimeZone, Utc};
+    ///
+    /// let dt = Utc.with_ymd_and_hms(2015, 9, 5, 23, 56, 4).unwrap();
+    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S %Z").to_string(), "2015-09-05 23:56:04 UTC");
+    /// assert_eq!(dt.format("%Y-%m-%d %H:%M:%S %:z").to_string(), "2015-09-05 23:56:04 +00:00");
+    /// assert_eq!( dt.format("around %l %p on %b %-d").to_string(), "around 11 PM on Sep 5");
+    /// ```
+    ///
+    /// The resulting `DelayedFormat` can be used directly with formatting macro's via the `Display`
+    /// trait.
+    ///
+    /// ```
+    /// # use core::fmt::{Error, Write};
+    /// # use chrono::{TimeZone, Utc};
+    /// # let dt = Utc.with_ymd_and_hms(2015, 9, 5, 23, 56, 4).unwrap();
+    /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S %Z")), "2015-09-05 23:56:04 UTC");
+    ///
+    /// let mut formatted = String::new();
+    /// write!(formatted, "{}", dt.format("around %l %p on %b %-d"))?;
+    /// assert_eq!(formatted, "around 11 PM on Sep 5");
+    ///
+    /// println!("{}", dt.format("%Y-%m-%d %H:%M:%S %:z")); // prints "2015-09-05 23:56:04 +00:00"
+    /// # Ok::<(), Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
@@ -783,6 +837,42 @@ where
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
         self.format_with_items(StrftimeItems::new(fmt))
+    }
+
+    /// Format the date and time with the specified format string directly to a `String`.
+    ///
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported escape
+    /// sequences.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{TimeZone, Utc};
+    ///
+    /// let dt = Utc.with_ymd_and_hms(2015, 9, 5, 23, 56, 4).unwrap();
+    /// assert_eq!(
+    ///     dt.format_to_string("%Y-%m-%d %H:%M:%S %Z"),
+    ///     Ok("2015-09-05 23:56:04 UTC".to_owned())
+    /// );
+    /// assert_eq!(
+    ///     dt.format_to_string("%Y-%m-%d %H:%M:%S %:z"),
+    ///     Ok("2015-09-05 23:56:04 +00:00".to_owned())
+    /// );
+    /// assert_eq!(
+    ///     dt.format_to_string("around %l %p on %b %-d"),
+    ///     Ok("around 11 PM on Sep 5".to_owned())
+    /// );
+    /// ```
+    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    pub fn format_to_string(&self, fmt: &str) -> Result<String, fmt::Error> {
+        let mut s = String::new();
+        write!(s, "{}", self.format_with_items(StrftimeItems::new(fmt)))?;
+        Ok(s)
     }
 
     /// Formats the combined date and time with the specified formatting items and locale.
