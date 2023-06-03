@@ -204,7 +204,8 @@
 //!
 //! ### Formatting and Parsing
 //!
-//! Formatting is done via the [`format`](./struct.DateTime.html#method.format) method,
+//! Formatting is done via the [`format`](./struct.DateTime.html#method.format) and
+//! [`format_to_string`](./struct.DateTime.html#method.format_to_string) methods,
 //! which format is equivalent to the familiar `strftime` format.
 //!
 //! See [`format::strftime`](./format/strftime/index.html#specifiers)
@@ -233,8 +234,11 @@
 //! # fn test() {
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
-//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
+//! assert_eq!(dt.format_to_string("%a %b %e %T %Y"), Ok("Fri Nov 28 12:00:09 2014".to_owned()));
+//! assert_eq!(
+//!     dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(),
+//!     "vendredi 28 novembre 2014, 12:00:09"
+//! );
 //!
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
