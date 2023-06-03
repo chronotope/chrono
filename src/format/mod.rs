@@ -36,11 +36,12 @@ extern crate alloc;
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 #[cfg(feature = "alloc")]
-use alloc::string::{String, ToString};
+use alloc::string::String;
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::fmt;
 use core::fmt::Write;
+use core::str;
 use core::str::FromStr;
 #[cfg(any(feature = "std", test))]
 use std::error::Error;
@@ -495,6 +496,7 @@ pub fn format_item(
     off: Option<&(String, FixedOffset)>,
     item: &Item<'_>,
 ) -> fmt::Result {
+    let off = off.map(|(name, offset)| (name.as_str(), *offset));
     format_inner(w, date, time, off, item, None)
 }
 
@@ -503,7 +505,7 @@ fn format_inner(
     result: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
+    off: Option<(&str, FixedOffset)>,
     item: &Item<'_>,
     locale: Option<Locale>,
 ) -> fmt::Result {
@@ -544,7 +546,7 @@ fn format_inner(
                     1,
                     match (date, time, off) {
                         (Some(d), Some(t), None) => Some(d.and_time(*t).timestamp()),
-                        (Some(d), Some(t), Some(&(_, off))) => {
+                        (Some(d), Some(t), Some((_, off))) => {
                             Some((d.and_time(*t) - off).timestamp())
                         }
                         (_, _, _) => None,
@@ -653,18 +655,18 @@ fn format_inner(
                         result.write_str(name)
                     }),
                     TimezoneOffsetColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
+                        .map(|(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
                     TimezoneOffsetDoubleColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
+                        .map(|(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
                     TimezoneOffsetTripleColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
+                        .map(|(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
                     TimezoneOffsetColonZ => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
+                        .map(|(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
                     TimezoneOffset => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::None))
+                        off.map(|(_, off)| write_local_minus_utc(result, off, false, Colons::None))
                     }
                     TimezoneOffsetZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
+                        off.map(|(_, off)| write_local_minus_utc(result, off, true, Colons::None))
                     }
                     Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         return Err(fmt::Error);
@@ -672,7 +674,7 @@ fn format_inner(
                     RFC2822 =>
                     // same as `%a, %d %b %Y %H:%M:%S %z`
                     {
-                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                        if let (Some(d), Some(t), Some((_, off))) = (date, time, off) {
                             Some(write_rfc2822_inner(result, d, t, off, locale))
                         } else {
                             None
@@ -681,7 +683,7 @@ fn format_inner(
                     RFC3339 =>
                     // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
                     {
-                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                        if let (Some(d), Some(t), Some((_, off))) = (date, time, off) {
                             Some(write_rfc3339_inner(result, crate::NaiveDateTime::new(*d, *t), off))
                         } else {
                             None
@@ -832,6 +834,7 @@ where
     I: Iterator<Item = B> + Clone,
     B: Borrow<Item<'a>>,
 {
+    let off = off.map(|(name, offset)| (name.as_str(), *offset));
     for item in items {
         format_inner(w, date, time, off, item.borrow(), None)?;
     }
@@ -857,7 +860,7 @@ pub struct DelayedFormat<I> {
     /// The time view, if any.
     time: Option<NaiveTime>,
     /// The name and local-to-UTC difference for the offset (timezone), if any.
-    off: Option<(String, FixedOffset)>,
+    off: Option<(TzName, FixedOffset)>,
     /// An iterator returning formatting items.
     items: I,
     /// Locale used for text.
@@ -893,7 +896,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     where
         Off: Offset + fmt::Display,
     {
-        let name_and_diff = (offset.to_string(), offset.fix());
+        let name_and_diff = (TzName::from_display(offset).unwrap(), offset.fix());
         DelayedFormat {
             date,
             time,
@@ -931,7 +934,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     where
         Off: Offset + fmt::Display,
     {
-        let name_and_diff = (offset.to_string(), offset.fix());
+        let name_and_diff = (TzName::from_display(offset).unwrap(), offset.fix());
         DelayedFormat { date, time, off: Some(name_and_diff), items, locale: Some(locale) }
     }
 }
@@ -944,10 +947,45 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
         #[cfg(feature = "unstable-locales")]
         let locale = self.locale;
 
+        let off = self.off.as_ref().map(|(name, offset)| (name.as_ref(), *offset));
         for item in self.items.clone() {
-            format_inner(f, self.date.as_ref(), self.time.as_ref(), self.off.as_ref(), item.borrow(), locale)?;
+            format_inner(f, self.date.as_ref(), self.time.as_ref(), off, item.borrow(), locale)?;
         }
         Ok(())
+    }
+}
+
+#[derive(Debug)]
+struct TzName {
+    buf: [u8; TZ_NAME_BUF_LEN], // 63 bytes ought to be enough for everybody...
+    len: u8,
+}
+
+const TZ_NAME_BUF_LEN: usize = 63;
+
+impl TzName {
+    fn from_display<D: fmt::Display>(display: D) -> Result<TzName, fmt::Error> {
+        let mut tz_name = TzName { buf: [0u8; TZ_NAME_BUF_LEN], len: 0 };
+        write!(tz_name, "{}", display).map_err(|_| fmt::Error)?;
+        Ok(tz_name)
+    }
+}
+
+impl Write for TzName {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let start = self.len as usize;
+        if start + s.len() > TZ_NAME_BUF_LEN {
+            return Err(fmt::Error);
+        }
+        self.buf[start..(start + s.len())].copy_from_slice(s.as_bytes());
+        self.len += s.len() as u8;
+        Ok(())
+    }
+}
+
+impl AsRef<str> for TzName {
+    fn as_ref(&self) -> &str {
+        str::from_utf8(&self.buf[..self.len as usize]).unwrap()
     }
 }
 
@@ -1000,6 +1038,7 @@ pub fn format_item_localized(
     item: &Item<'_>,
     locale: Locale,
 ) -> fmt::Result {
+    let off = off.map(|(name, offset)| (name.as_str(), *offset));
     format_inner(w, date, time, off, item, Some(locale))
 }
 
@@ -1019,6 +1058,7 @@ where
     I: Iterator<Item = B> + Clone,
     B: Borrow<Item<'a>>,
 {
+    let off = off.map(|(name, offset)| (name.as_str(), *offset));
     for item in items {
         format_inner(w, date, time, off, item.borrow(), Some(locale))?;
     }
