@@ -480,8 +480,10 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub fn timestamp_nanos(&self) -> i64 {
-        let as_ns = self.timestamp() * 1_000_000_000;
-        as_ns + i64::from(self.timestamp_subsec_nanos())
+        self.timestamp()
+            .checked_mul(1_000_000_000)
+            .and_then(|ns| ns.checked_add(i64::from(self.timestamp_subsec_nanos())))
+            .expect("value can not be represented in a timestamp with nanosecond precision.")
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
