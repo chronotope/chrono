@@ -268,7 +268,7 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 /// which is an index to the `OL_TO_MDL` lookup table.
 ///
 /// The methods implemented on `Of` always return a valid value.
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, PartialOrd, Copy, Clone, Ord, Eq)]
 pub(super) struct Of(u32);
 
 impl Of {
@@ -391,7 +391,7 @@ impl fmt::Debug for Of {
 /// The methods implemented on `Mdf` do not always return a valid value.
 /// Dates that can't exist, like February 30, can still be represented.
 /// Use `Mdl::valid` to check whether the date is valid.
-#[derive(PartialEq, PartialOrd, Copy, Clone)]
+#[derive(PartialEq, PartialOrd, Copy, Clone, Ord, Eq)]
 pub(super) struct Mdf(u32);
 
 impl Mdf {
