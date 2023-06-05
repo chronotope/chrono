@@ -926,6 +926,18 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[cfg(any(feature = "alloc", feature = "std", test))]
+        #[allow(clippy::recursive_format_impl)]
+        if f.width().is_some() {
+            // Justify/pad/truncate the formatted result by rendering it to a temporary `String`
+            // first.
+            // We skip this step if there are no 'external' formatting specifiers.
+            // This is the only formatting functionality that is missing without `alloc`.
+            let mut result = String::new();
+            write!(result, "{}", self)?;
+            return f.pad(&result);
+        }
+
         #[cfg(not(feature = "unstable-locales"))]
         let locale = None;
         #[cfg(feature = "unstable-locales")]
