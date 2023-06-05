@@ -64,6 +64,7 @@ const DATE_PATH: &'static str = "/usr/bin/date";
 const DATE_PATH: &'static str = "/opt/freeware/bin/date";
 
 #[cfg(test)]
+#[cfg(unix)]
 /// test helper to sanity check the date command behaves as expected
 /// asserts the command succeeded
 fn assert_run_date_version() {
