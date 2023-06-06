@@ -404,7 +404,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                         num0!(Minute),
                         lit!(":"),
                         num0!(Second),
-                        sp!(" "),
+                        sp!(""),
                         fix!(UpperAmPm)
                     ],
                     's' => num!(Timestamp),
