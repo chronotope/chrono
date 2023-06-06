@@ -1,11 +1,18 @@
+//! Run this test with:
+//! `env TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind`
+//!
+//! The `TZ` and `NOW` variables are used to compare the results inside the WASM environment with
+//! the host system.
+//! The check will fail if the local timezone does not match one of the timezones defined below.
+
 #![cfg(all(
     target_arch = "wasm32",
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
 
-use self::chrono::prelude::*;
-use self::wasm_bindgen_test::*;
+use chrono::prelude::*;
+use wasm_bindgen_test::*;
 
 #[wasm_bindgen_test]
 fn now() {
@@ -52,7 +59,7 @@ fn from_is_exact() {
 
     let dt = DateTime::<Utc>::from(now.clone());
 
-    assert_eq!(now.get_time() as i64, dt.timestamp_millis_opt().unwrap());
+    assert_eq!(now.get_time() as i64, dt.timestamp_millis());
 }
 
 #[wasm_bindgen_test]
@@ -72,7 +79,7 @@ fn convert_all_parts_with_milliseconds() {
     let js_date = js_sys::Date::from(time);
 
     assert_eq!(js_date.get_utc_full_year(), 2020);
-    assert_eq!(js_date.get_utc_month(), 12);
+    assert_eq!(js_date.get_utc_month(), 11); // months are numbered 0..=11
     assert_eq!(js_date.get_utc_date(), 1);
     assert_eq!(js_date.get_utc_hours(), 3);
     assert_eq!(js_date.get_utc_minutes(), 1);
