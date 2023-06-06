@@ -513,9 +513,24 @@ fn format_inner(
     let locale = Locales::new(locale);
 
     match *item {
-        Item::Literal(s) | Item::Space(s) => result.push_str(s),
+        Item::Literal(s) => result.push_str(s),
         #[cfg(any(feature = "alloc", feature = "std", test))]
-        Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
+        Item::OwnedLiteral(ref s) => result.push_str(s),
+        Item::Space(s) => {
+            if s.is_empty() {
+                result.push(' ') // print an optional space
+            } else {
+                result.push_str(s)
+            }
+        }
+        #[cfg(any(feature = "alloc", feature = "std", test))]
+        Item::OwnedSpace(ref s) => {
+            if s.is_empty() {
+                result.push(' ') // print an optional space
+            } else {
+                result.push_str(s)
+            }
+        }
 
         Item::Numeric(ref spec, ref pad) => {
             use self::Numeric::*;
