@@ -293,7 +293,8 @@ pub enum Item<'a> {
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedLiteral(Box<str>),
-    /// Whitespace. Prints literally but reads zero or more whitespace.
+    /// Whitespace. Prints as a literal but reads one or more Unicode whitespaces.
+    /// If the string literal is "" this acts as an optional whitespace.
     Space(&'a str),
     /// Same as `Space` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std", test))]

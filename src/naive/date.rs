@@ -3017,7 +3017,7 @@ mod tests {
             Ok(ymd(2014, 5, 7))
         ); // ignore time and offset
         assert_eq!(
-            NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),
+            NaiveDate::parse_from_str("2015-W06-1 = 2015-033", "%G-W%V-%u = %Y-%j"),
             Ok(ymd(2015, 2, 2))
         );
         assert_eq!(

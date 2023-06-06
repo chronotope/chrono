@@ -320,7 +320,15 @@ where
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(_) => {
+            Item::Space(chars) => {
+                if !chars.is_empty() {
+                    // match at least one character
+                    match s.chars().next() {
+                        None => return Err((s, TOO_SHORT)),
+                        Some(c) if !c.is_whitespace() => return Err((s, INVALID)),
+                        Some(c) => s = &s[c.len_utf8()..],
+                    }
+                }
                 s = s.trim_start();
             }
 

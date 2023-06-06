@@ -82,8 +82,8 @@ The following specifiers are available both to formatting and parsing.
 | `%s`  | `994518299`   | UNIX timestamp, the number of seconds since 1970-01-01 00:00 UTC. [^6]|
 |       |          |                                                                            |
 |       |          | **SPECIAL SPECIFIERS:**                                                    |
-| `%t`  |          | Literal tab (`\t`).                                                        |
-| `%n`  |          | Literal newline (`\n`).                                                    |
+| `%t`  |          | Literal tab (`\t`), accepts any Unicode whitespace when parsing.           |
+| `%n`  |          | Literal newline (`\n`), accepts any Unicode whitespace when parsing.       |
 | `%%`  |          | Literal percent sign.                                                      |
 
 It is possible to override the default padding behavior of numeric specifiers `%?`.
@@ -96,6 +96,9 @@ Modifier | Description
 `%0?`    | Uses zeroes as a padding. (e.g. `%e` = ` 9`, `%0e` = `09`)
 
 Notes:
+
+One or more Unicode whitespace characters are considered one 'space'-item. When formatting it will
+be inserted as a string literal. When parsing it wil match one or more whitespaces.
 
 [^1]: `%C`, `%y`:
    This is floor division, so 100 BCE (year number -99) will print `-1` and `99` respectively.
