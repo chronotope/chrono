@@ -423,6 +423,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                             fix!(TimezoneOffset)
                         }
                     }
+                    ' ' => sp!(""),
                     '+' => fix!(RFC3339),
                     ':' => {
                         if self.remainder.starts_with("::z") {
@@ -549,7 +550,7 @@ mod tests {
         assert_eq!(parse_and_collect("%%%%"), [lit!("%"), lit!("%")]);
         assert_eq!(parse_and_collect("foo%?"), [Item::Error]);
         assert_eq!(parse_and_collect("bar%42"), [Item::Error]);
-        assert_eq!(parse_and_collect("quux% +"), [Item::Error]);
+        assert_eq!(parse_and_collect("quux%"), [Item::Error]);
         assert_eq!(parse_and_collect("%.Z"), [Item::Error]);
         assert_eq!(parse_and_collect("%:Z"), [Item::Error]);
         assert_eq!(parse_and_collect("%-Z"), [Item::Error]);
@@ -568,6 +569,9 @@ mod tests {
         assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
         assert_eq!(parse_and_collect("%#z"), [internal_fix!(TimezoneOffsetPermissive)]);
         assert_eq!(parse_and_collect("%#m"), [Item::Error]);
+        assert_eq!(parse_and_collect("%t"), [sp!("\t")]);
+        assert_eq!(parse_and_collect("%n"), [sp!("\n")]);
+        assert_eq!(parse_and_collect("% "), [sp!("")]);
     }
 
     #[test]
