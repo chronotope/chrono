@@ -379,28 +379,28 @@ where
             Item::Fixed(ref spec) => {
                 use super::Fixed::*;
 
-                match spec {
-                    &ShortMonthName => {
+                match *spec {
+                    ShortMonthName => {
                         let month0 = try_consume!(scan::short_month0(s));
                         parsed.set_month(i64::from(month0) + 1).map_err(|e| (s, e))?;
                     }
 
-                    &LongMonthName => {
+                    LongMonthName => {
                         let month0 = try_consume!(scan::short_or_long_month0(s));
                         parsed.set_month(i64::from(month0) + 1).map_err(|e| (s, e))?;
                     }
 
-                    &ShortWeekdayName => {
+                    ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
                         parsed.set_weekday(weekday).map_err(|e| (s, e))?;
                     }
 
-                    &LongWeekdayName => {
+                    LongWeekdayName => {
                         let weekday = try_consume!(scan::short_or_long_weekday(s));
                         parsed.set_weekday(weekday).map_err(|e| (s, e))?;
                     }
 
-                    &LowerAmPm | &UpperAmPm => {
+                    LowerAmPm | UpperAmPm => {
                         if s.len() < 2 {
                             return Err((s, TOO_SHORT));
                         }
@@ -413,14 +413,14 @@ where
                         s = &s[2..];
                     }
 
-                    &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
+                    Nanosecond | Nanosecond3 | Nanosecond6 | Nanosecond9 => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
                             parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
                         }
                     }
 
-                    &Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                         if s.len() < 3 {
                             return Err((s, TOO_SHORT));
                         }
@@ -428,7 +428,7 @@ where
                         parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
                     }
 
-                    &Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
                         if s.len() < 6 {
                             return Err((s, TOO_SHORT));
                         }
@@ -436,7 +436,7 @@ where
                         parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
                     }
 
-                    &Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
                         if s.len() < 9 {
                             return Err((s, TOO_SHORT));
                         }
@@ -444,14 +444,14 @@ where
                         parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
                     }
 
-                    &TimezoneName => {
+                    TimezoneName => {
                         try_consume!(scan::timezone_name_skip(s));
                     }
 
-                    &TimezoneOffsetColon
-                    | &TimezoneOffsetDoubleColon
-                    | &TimezoneOffsetTripleColon
-                    | &TimezoneOffset => {
+                    TimezoneOffsetColon
+                    | TimezoneOffsetDoubleColon
+                    | TimezoneOffsetTripleColon
+                    | TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(
                             s.trim_start(),
                             scan::colon_or_space
@@ -459,16 +459,14 @@ where
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
-                    &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
+                    TimezoneOffsetColonZ | TimezoneOffsetZ => {
                         let offset = try_consume!(scan::timezone_offset_zulu(
                             s.trim_start(),
                             scan::colon_or_space
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
-                    &Internal(InternalFixed {
-                        val: InternalInternal::TimezoneOffsetPermissive,
-                    }) => {
+                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                         let offset = try_consume!(scan::timezone_offset_permissive(
                             s.trim_start(),
                             scan::colon_or_space
@@ -476,8 +474,8 @@ where
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
-                    &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
-                    &RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                    RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
+                    RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
                 }
             }
 
