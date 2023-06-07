@@ -2076,10 +2076,6 @@ impl DoubleEndedIterator for NaiveDateWeeksIterator {
 
 impl FusedIterator for NaiveDateWeeksIterator {}
 
-// TODO: NaiveDateDaysIterator and NaiveDateWeeksIterator should implement FusedIterator,
-// TrustedLen, and Step once they becomes stable.
-// See: https://github.com/chronotope/chrono/issues/208
-
 /// The `Debug` output of the naive date `d` is the same as
 /// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
 ///
