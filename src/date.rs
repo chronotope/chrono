@@ -83,7 +83,7 @@ impl<Tz: TimeZone> Date<Tz> {
     /// Makes a new `DateTime` from the current date and given `NaiveTime`.
     /// The offset in the current date is preserved.
     ///
-    /// Panics on invalid datetime.
+    /// Returns `None` on invalid datetime.
     #[inline]
     #[must_use]
     pub fn and_time(&self, time: NaiveTime) -> Option<DateTime<Tz>> {
