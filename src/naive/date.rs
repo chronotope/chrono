@@ -5,6 +5,7 @@
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
+use core::iter::FusedIterator;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -2045,6 +2046,8 @@ impl DoubleEndedIterator for NaiveDateDaysIterator {
     }
 }
 
+impl FusedIterator for NaiveDateDaysIterator {}
+
 /// Iterator over `NaiveDate` with a step size of one week.
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd, Eq, Ord)]
 pub struct NaiveDateWeeksIterator {
@@ -2081,6 +2084,8 @@ impl DoubleEndedIterator for NaiveDateWeeksIterator {
         Some(current)
     }
 }
+
+impl FusedIterator for NaiveDateWeeksIterator {}
 
 // TODO: NaiveDateDaysIterator and NaiveDateWeeksIterator should implement FusedIterator,
 // TrustedLen, and Step once they becomes stable.
