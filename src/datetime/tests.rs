@@ -603,6 +603,10 @@ fn test_datetime_parse_from_str() {
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(Utc.with_ymd_and_hms(2013, 8, 9, 23, 54, 35).unwrap())
     );
+    assert_eq!(
+        DateTime::parse_from_str("0", "%s").unwrap(),
+        NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
+    );
 }
 
 #[test]
