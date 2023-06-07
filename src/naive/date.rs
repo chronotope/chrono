@@ -2017,13 +2017,10 @@ impl Iterator for NaiveDateDaysIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.value == NaiveDate::MAX {
-            return None;
-        }
-        // current < NaiveDate::MAX from here on:
+        // We return the current value, and have no way to return `NaiveDate::MAX`.
         let current = self.value;
         // This can't panic because current is < NaiveDate::MAX:
-        self.value = current.succ_opt().unwrap();
+        self.value = current.succ_opt()?;
         Some(current)
     }
 
@@ -2037,11 +2034,9 @@ impl ExactSizeIterator for NaiveDateDaysIterator {}
 
 impl DoubleEndedIterator for NaiveDateDaysIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.value == NaiveDate::MIN {
-            return None;
-        }
+        // We return the current value, and have no way to return `NaiveDate::MIN`.
         let current = self.value;
-        self.value = current.pred_opt().unwrap();
+        self.value = current.pred_opt()?;
         Some(current)
     }
 }
@@ -2058,11 +2053,8 @@ impl Iterator for NaiveDateWeeksIterator {
     type Item = NaiveDate;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if NaiveDate::MAX - self.value < OldDuration::weeks(1) {
-            return None;
-        }
         let current = self.value;
-        self.value = current + OldDuration::weeks(1);
+        self.value = current.checked_add_signed(OldDuration::weeks(1))?;
         Some(current)
     }
 
@@ -2076,11 +2068,8 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.value - NaiveDate::MIN < OldDuration::weeks(1) {
-            return None;
-        }
         let current = self.value;
-        self.value = current - OldDuration::weeks(1);
+        self.value = current.checked_sub_signed(OldDuration::weeks(1))?;
         Some(current)
     }
 }
