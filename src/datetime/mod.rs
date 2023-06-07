@@ -109,8 +109,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
     /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
     /// ```
-    //
-    // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     #[must_use]
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
