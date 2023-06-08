@@ -1128,30 +1128,36 @@ pub mod ts_seconds_option {
     }
 }
 
-#[test]
-fn test_serde_serialize() {
-    super::test_encodable_json(serde_json::to_string, serde_json::to_string);
-}
+#[cfg(test)]
+mod tests {
+    use crate::datetime::{test_decodable_json, test_encodable_json};
+    use crate::{DateTime, TimeZone, Utc};
 
-#[cfg(feature = "clock")]
-#[test]
-fn test_serde_deserialize() {
-    super::test_decodable_json(
-        |input| serde_json::from_str(input),
-        |input| serde_json::from_str(input),
-        |input| serde_json::from_str(input),
-    );
-}
+    #[test]
+    fn test_serde_serialize() {
+        test_encodable_json(serde_json::to_string, serde_json::to_string);
+    }
 
-#[test]
-fn test_serde_bincode() {
-    // Bincode is relevant to test separately from JSON because
-    // it is not self-describing.
-    use bincode::{deserialize, serialize};
+    #[cfg(feature = "clock")]
+    #[test]
+    fn test_serde_deserialize() {
+        test_decodable_json(
+            |input| serde_json::from_str(input),
+            |input| serde_json::from_str(input),
+            |input| serde_json::from_str(input),
+        );
+    }
 
-    let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
-    let encoded = serialize(&dt).unwrap();
-    let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
-    assert_eq!(dt, decoded);
-    assert_eq!(dt.offset(), decoded.offset());
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use bincode::{deserialize, serialize};
+
+        let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
+        let encoded = serialize(&dt).unwrap();
+        let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
+        assert_eq!(dt.offset(), decoded.offset());
+    }
 }
