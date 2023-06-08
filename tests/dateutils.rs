@@ -58,12 +58,13 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
 /// for testing only
 #[allow(dead_code)]
 #[cfg(not(target_os = "aix"))]
-const DATE_PATH: &'static str = "/usr/bin/date";
+const DATE_PATH: &str = "/usr/bin/date";
 #[allow(dead_code)]
 #[cfg(target_os = "aix")]
-const DATE_PATH: &'static str = "/opt/freeware/bin/date";
+const DATE_PATH: &str = "/opt/freeware/bin/date";
 
 #[cfg(test)]
+#[cfg(unix)]
 /// test helper to sanity check the date command behaves as expected
 /// asserts the command succeeded
 fn assert_run_date_version() {

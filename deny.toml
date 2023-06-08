@@ -4,8 +4,8 @@ copyleft = "deny"
 
 [advisories]
 ignore = [
-    "RUSTSEC-2021-0145", # atty (dev-deps only, dependency of criterion)
-    "RUSTSEC-2022-0004", # rustc_serialize, cannot remove due to compatibility
+  "RUSTSEC-2021-0145", # atty (dev-deps only, dependency of criterion)
+  "RUSTSEC-2022-0004", # rustc_serialize, cannot remove due to compatibility
 ]
 unmaintained = "deny"
 unsound = "deny"

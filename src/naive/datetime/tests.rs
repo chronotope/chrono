@@ -370,6 +370,24 @@ fn test_nanosecond_range() {
 }
 
 #[test]
+#[should_panic]
+fn test_nanosecond_just_beyond_range() {
+    let maximum = "2262-04-11T23:47:16.854775804";
+    let parsed: NaiveDateTime = maximum.parse().unwrap();
+    let beyond_max = parsed + TimeDelta::milliseconds(300);
+    let _ = beyond_max.timestamp_nanos();
+}
+
+#[test]
+#[should_panic]
+fn test_nanosecond_far_beyond_range() {
+    let maximum = "2262-04-11T23:47:16.854775804";
+    let parsed: NaiveDateTime = maximum.parse().unwrap();
+    let beyond_max = parsed + TimeDelta::days(365);
+    let _ = beyond_max.timestamp_nanos();
+}
+
+#[test]
 fn test_and_local_timezone() {
     let ndt = NaiveDate::from_ymd_opt(2022, 6, 15).unwrap().and_hms_opt(18, 59, 36).unwrap();
     let dt_utc = ndt.and_local_timezone(Utc).unwrap();

@@ -374,6 +374,7 @@
 #![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
 #![deny(dead_code)]
+#![deny(clippy::tests_outside_test_module)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

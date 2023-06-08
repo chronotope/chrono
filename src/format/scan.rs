@@ -414,98 +414,103 @@ enum CommentState {
 }
 
 #[cfg(test)]
-#[test]
-fn test_rfc2822_comments() {
-    let testdata = [
-        ("", Err(TOO_SHORT)),
-        (" ", Err(TOO_SHORT)),
-        ("x", Err(INVALID)),
-        ("(", Err(TOO_SHORT)),
-        ("()", Ok("")),
-        (" \r\n\t()", Ok("")),
-        ("() ", Ok(" ")),
-        ("()z", Ok("z")),
-        ("(x)", Ok("")),
-        ("(())", Ok("")),
-        ("((()))", Ok("")),
-        ("(x(x(x)x)x)", Ok("")),
-        ("( x ( x ( x ) x ) x )", Ok("")),
-        (r"(\)", Err(TOO_SHORT)),
-        (r"(\()", Ok("")),
-        (r"(\))", Ok("")),
-        (r"(\\)", Ok("")),
-        ("(()())", Ok("")),
-        ("( x ( x ) x ( x ) x )", Ok("")),
-    ];
+mod tests {
+    use super::{comment_2822, consume_colon_maybe, s_next, space, trim1};
+    use crate::format::{INVALID, TOO_SHORT};
 
-    for (test_in, expected) in testdata.iter() {
-        let actual = comment_2822(test_in).map(|(s, _)| s);
-        assert_eq!(
-            *expected, actual,
-            "{:?} expected to produce {:?}, but produced {:?}.",
-            test_in, expected, actual
-        );
+    #[test]
+    fn test_rfc2822_comments() {
+        let testdata = [
+            ("", Err(TOO_SHORT)),
+            (" ", Err(TOO_SHORT)),
+            ("x", Err(INVALID)),
+            ("(", Err(TOO_SHORT)),
+            ("()", Ok("")),
+            (" \r\n\t()", Ok("")),
+            ("() ", Ok(" ")),
+            ("()z", Ok("z")),
+            ("(x)", Ok("")),
+            ("(())", Ok("")),
+            ("((()))", Ok("")),
+            ("(x(x(x)x)x)", Ok("")),
+            ("( x ( x ( x ) x ) x )", Ok("")),
+            (r"(\)", Err(TOO_SHORT)),
+            (r"(\()", Ok("")),
+            (r"(\))", Ok("")),
+            (r"(\\)", Ok("")),
+            ("(()())", Ok("")),
+            ("( x ( x ) x ( x ) x )", Ok("")),
+        ];
+
+        for (test_in, expected) in testdata.iter() {
+            let actual = comment_2822(test_in).map(|(s, _)| s);
+            assert_eq!(
+                *expected, actual,
+                "{:?} expected to produce {:?}, but produced {:?}.",
+                test_in, expected, actual
+            );
+        }
     }
-}
 
-#[test]
-fn test_space() {
-    assert_eq!(space(""), Err(TOO_SHORT));
-    assert_eq!(space(" "), Ok(""));
-    assert_eq!(space(" \t"), Ok(""));
-    assert_eq!(space(" \ta"), Ok("a"));
-    assert_eq!(space(" \ta "), Ok("a "));
-    assert_eq!(space("a"), Err(INVALID));
-    assert_eq!(space("a "), Err(INVALID));
-}
+    #[test]
+    fn test_space() {
+        assert_eq!(space(""), Err(TOO_SHORT));
+        assert_eq!(space(" "), Ok(""));
+        assert_eq!(space(" \t"), Ok(""));
+        assert_eq!(space(" \ta"), Ok("a"));
+        assert_eq!(space(" \ta "), Ok("a "));
+        assert_eq!(space("a"), Err(INVALID));
+        assert_eq!(space("a "), Err(INVALID));
+    }
 
-#[test]
-fn test_s_next() {
-    assert_eq!(s_next(""), "");
-    assert_eq!(s_next(" "), "");
-    assert_eq!(s_next("a"), "");
-    assert_eq!(s_next("ab"), "b");
-    assert_eq!(s_next("abc"), "bc");
-    assert_eq!(s_next("😾b"), "b");
-    assert_eq!(s_next("a😾"), "😾");
-    assert_eq!(s_next("😾bc"), "bc");
-    assert_eq!(s_next("a😾c"), "😾c");
-}
+    #[test]
+    fn test_s_next() {
+        assert_eq!(s_next(""), "");
+        assert_eq!(s_next(" "), "");
+        assert_eq!(s_next("a"), "");
+        assert_eq!(s_next("ab"), "b");
+        assert_eq!(s_next("abc"), "bc");
+        assert_eq!(s_next("😾b"), "b");
+        assert_eq!(s_next("a😾"), "😾");
+        assert_eq!(s_next("😾bc"), "bc");
+        assert_eq!(s_next("a😾c"), "😾c");
+    }
 
-#[test]
-fn test_trim1() {
-    assert_eq!(trim1(""), "");
-    assert_eq!(trim1(" "), "");
-    assert_eq!(trim1("\t"), "");
-    assert_eq!(trim1("\t\t"), "\t");
-    assert_eq!(trim1("  "), " ");
-    assert_eq!(trim1("a"), "a");
-    assert_eq!(trim1("a "), "a ");
-    assert_eq!(trim1("ab"), "ab");
-    assert_eq!(trim1("😼"), "😼");
-    assert_eq!(trim1("😼b"), "😼b");
-}
+    #[test]
+    fn test_trim1() {
+        assert_eq!(trim1(""), "");
+        assert_eq!(trim1(" "), "");
+        assert_eq!(trim1("\t"), "");
+        assert_eq!(trim1("\t\t"), "\t");
+        assert_eq!(trim1("  "), " ");
+        assert_eq!(trim1("a"), "a");
+        assert_eq!(trim1("a "), "a ");
+        assert_eq!(trim1("ab"), "ab");
+        assert_eq!(trim1("😼"), "😼");
+        assert_eq!(trim1("😼b"), "😼b");
+    }
 
-#[test]
-fn test_consume_colon_maybe() {
-    assert_eq!(consume_colon_maybe(""), Ok(""));
-    assert_eq!(consume_colon_maybe(" "), Ok(" "));
-    assert_eq!(consume_colon_maybe("\n"), Ok("\n"));
-    assert_eq!(consume_colon_maybe("  "), Ok("  "));
-    assert_eq!(consume_colon_maybe(":"), Ok(""));
-    assert_eq!(consume_colon_maybe(" :"), Ok(" :"));
-    assert_eq!(consume_colon_maybe(": "), Ok(" "));
-    assert_eq!(consume_colon_maybe(" : "), Ok(" : "));
-    assert_eq!(consume_colon_maybe(":  "), Ok("  "));
-    assert_eq!(consume_colon_maybe("  :"), Ok("  :"));
-    assert_eq!(consume_colon_maybe(":: "), Ok(": "));
-    assert_eq!(consume_colon_maybe("😸"), Ok("😸"));
-    assert_eq!(consume_colon_maybe("😸😸"), Ok("😸😸"));
-    assert_eq!(consume_colon_maybe("😸:"), Ok("😸:"));
-    assert_eq!(consume_colon_maybe("😸 "), Ok("😸 "));
-    assert_eq!(consume_colon_maybe(":😸"), Ok("😸"));
-    assert_eq!(consume_colon_maybe(":😸 "), Ok("😸 "));
-    assert_eq!(consume_colon_maybe(": 😸"), Ok(" 😸"));
-    assert_eq!(consume_colon_maybe(":  😸"), Ok("  😸"));
-    assert_eq!(consume_colon_maybe(": :😸"), Ok(" :😸"));
+    #[test]
+    fn test_consume_colon_maybe() {
+        assert_eq!(consume_colon_maybe(""), Ok(""));
+        assert_eq!(consume_colon_maybe(" "), Ok(" "));
+        assert_eq!(consume_colon_maybe("\n"), Ok("\n"));
+        assert_eq!(consume_colon_maybe("  "), Ok("  "));
+        assert_eq!(consume_colon_maybe(":"), Ok(""));
+        assert_eq!(consume_colon_maybe(" :"), Ok(" :"));
+        assert_eq!(consume_colon_maybe(": "), Ok(" "));
+        assert_eq!(consume_colon_maybe(" : "), Ok(" : "));
+        assert_eq!(consume_colon_maybe(":  "), Ok("  "));
+        assert_eq!(consume_colon_maybe("  :"), Ok("  :"));
+        assert_eq!(consume_colon_maybe(":: "), Ok(": "));
+        assert_eq!(consume_colon_maybe("😸"), Ok("😸"));
+        assert_eq!(consume_colon_maybe("😸😸"), Ok("😸😸"));
+        assert_eq!(consume_colon_maybe("😸:"), Ok("😸:"));
+        assert_eq!(consume_colon_maybe("😸 "), Ok("😸 "));
+        assert_eq!(consume_colon_maybe(":😸"), Ok("😸"));
+        assert_eq!(consume_colon_maybe(":😸 "), Ok("😸 "));
+        assert_eq!(consume_colon_maybe(": 😸"), Ok(" 😸"));
+        assert_eq!(consume_colon_maybe(":  😸"), Ok("  😸"));
+        assert_eq!(consume_colon_maybe(": :😸"), Ok(" :😸"));
+    }
 }

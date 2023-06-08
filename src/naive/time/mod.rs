@@ -208,6 +208,8 @@ impl NaiveTime {
     /// No [leap second](#leap-second-handling) is allowed here;
     /// use `NaiveTime::from_hms_*` methods with a subsecond parameter instead.
     ///
+    /// # Panics
+    ///
     /// Panics on invalid hour, minute and/or second.
     #[deprecated(since = "0.4.23", note = "use `from_hms_opt()` instead")]
     #[inline]
@@ -220,6 +222,8 @@ impl NaiveTime {
     ///
     /// No [leap second](#leap-second-handling) is allowed here;
     /// use `NaiveTime::from_hms_*_opt` methods with a subsecond parameter instead.
+    ///
+    /// # Errors
     ///
     /// Returns `None` on invalid hour, minute and/or second.
     ///
@@ -247,6 +251,8 @@ impl NaiveTime {
     /// The millisecond part can exceed 1,000
     /// in order to represent the [leap second](#leap-second-handling).
     ///
+    /// # Panics
+    ///
     /// Panics on invalid hour, minute, second and/or millisecond.
     #[deprecated(since = "0.4.23", note = "use `from_hms_milli_opt()` instead")]
     #[inline]
@@ -259,6 +265,8 @@ impl NaiveTime {
     ///
     /// The millisecond part can exceed 1,000
     /// in order to represent the [leap second](#leap-second-handling).
+    ///
+    /// # Errors
     ///
     /// Returns `None` on invalid hour, minute, second and/or millisecond.
     ///
@@ -290,6 +298,8 @@ impl NaiveTime {
     /// The microsecond part can exceed 1,000,000
     /// in order to represent the [leap second](#leap-second-handling).
     ///
+    /// # Panics
+    ///
     /// Panics on invalid hour, minute, second and/or microsecond.
     #[deprecated(since = "0.4.23", note = "use `from_hms_micro_opt()` instead")]
     #[inline]
@@ -302,6 +312,8 @@ impl NaiveTime {
     ///
     /// The microsecond part can exceed 1,000,000
     /// in order to represent the [leap second](#leap-second-handling).
+    ///
+    /// # Errors
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
     ///
@@ -331,6 +343,8 @@ impl NaiveTime {
     /// The nanosecond part can exceed 1,000,000,000
     /// in order to represent the [leap second](#leap-second-handling).
     ///
+    /// # Panics
+    ///
     /// Panics on invalid hour, minute, second and/or nanosecond.
     #[deprecated(since = "0.4.23", note = "use `from_hms_nano_opt()` instead")]
     #[inline]
@@ -343,6 +357,8 @@ impl NaiveTime {
     ///
     /// The nanosecond part can exceed 1,000,000,000
     /// in order to represent the [leap second](#leap-second-handling).
+    ///
+    /// # Errors
     ///
     /// Returns `None` on invalid hour, minute, second and/or nanosecond.
     ///
@@ -376,6 +392,8 @@ impl NaiveTime {
     /// The nanosecond part can exceed 1,000,000,000
     /// in order to represent the [leap second](#leap-second-handling).
     ///
+    /// # Panics
+    ///
     /// Panics on invalid number of seconds and/or nanosecond.
     #[deprecated(since = "0.4.23", note = "use `from_num_seconds_from_midnight_opt()` instead")]
     #[inline]
@@ -388,6 +406,8 @@ impl NaiveTime {
     ///
     /// The nanosecond part can exceed 1,000,000,000
     /// in order to represent the [leap second](#leap-second-handling).
+    ///
+    /// # Errors
     ///
     /// Returns `None` on invalid number of seconds and/or nanosecond.
     ///
@@ -502,10 +522,8 @@ impl NaiveTime {
         parsed.to_naive_time().map(|t| (t, remainder))
     }
 
-    /// Adds given `TimeDelta` to the current time,
-    /// and also returns the number of *seconds*
+    /// Adds given `TimeDelta` to the current time, and also returns the number of *seconds*
     /// in the integral number of days ignored from the addition.
-    /// (We cannot return `TimeDelta` because it is subject to overflow or underflow.)
     ///
     /// # Example
     ///
@@ -585,10 +603,8 @@ impl NaiveTime {
         (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
     }
 
-    /// Subtracts given `TimeDelta` from the current time,
-    /// and also returns the number of *seconds*
+    /// Subtracts given `TimeDelta` from the current time, and also returns the number of *seconds*
     /// in the integral number of days ignored from the subtraction.
-    /// (We cannot return `TimeDelta` because it is subject to overflow or underflow.)
     ///
     /// # Example
     ///
@@ -882,7 +898,9 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the hour number changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `hour` is invalid.
     ///
     /// # Example
     ///
@@ -904,7 +922,9 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the minute number changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `minute` is invalid.
     ///
     /// # Example
     ///
@@ -926,9 +946,12 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with the second number changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
     /// As with the [`second`](#method.second) method,
     /// the input range is restricted to 0 through 59.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `second` is invalid.
     ///
     /// # Example
     ///
@@ -950,9 +973,12 @@ impl Timelike for NaiveTime {
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
     ///
-    /// Returns `None` when the resulting `NaiveTime` would be invalid.
     /// As with the [`nanosecond`](#method.nanosecond) method,
     /// the input range can exceed 1,000,000,000 for leap seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `nanosecond >= 2,000,000,000`.
     ///
     /// # Example
     ///

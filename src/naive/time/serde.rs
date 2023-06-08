@@ -42,24 +42,30 @@ impl<'de> de::Deserialize<'de> for NaiveTime {
     }
 }
 
-#[test]
-fn test_serde_serialize() {
-    super::test_encodable_json(serde_json::to_string);
-}
+#[cfg(test)]
+mod tests {
+    use crate::naive::time::{test_decodable_json, test_encodable_json};
+    use crate::NaiveTime;
 
-#[test]
-fn test_serde_deserialize() {
-    super::test_decodable_json(|input| serde_json::from_str(input));
-}
+    #[test]
+    fn test_serde_serialize() {
+        test_encodable_json(serde_json::to_string);
+    }
 
-#[test]
-fn test_serde_bincode() {
-    // Bincode is relevant to test separately from JSON because
-    // it is not self-describing.
-    use bincode::{deserialize, serialize};
+    #[test]
+    fn test_serde_deserialize() {
+        test_decodable_json(|input| serde_json::from_str(input));
+    }
 
-    let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
-    let encoded = serialize(&t).unwrap();
-    let decoded: NaiveTime = deserialize(&encoded).unwrap();
-    assert_eq!(t, decoded);
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use bincode::{deserialize, serialize};
+
+        let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
+        let encoded = serialize(&t).unwrap();
+        let decoded: NaiveTime = deserialize(&encoded).unwrap();
+        assert_eq!(t, decoded);
+    }
 }

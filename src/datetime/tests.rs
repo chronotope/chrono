@@ -240,6 +240,7 @@ fn test_datetime_sub_months() {
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -253,6 +254,7 @@ fn ymdhms(
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms_milli(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -271,6 +273,7 @@ fn ymdhms_milli(
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms_micro(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -289,6 +292,7 @@ fn ymdhms_micro(
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms_nano(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -398,6 +402,20 @@ fn test_datetime_offset() {
     assert_eq!(*Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap().offset(), Utc);
     assert_eq!(*edt.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap().offset(), edt);
     assert!(*edt.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap().offset() != est);
+}
+
+#[test]
+#[allow(clippy::needless_borrow, clippy::op_ref)]
+fn signed_duration_since_autoref() {
+    let dt1 = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
+    let dt2 = Utc.with_ymd_and_hms(2014, 3, 4, 5, 6, 7).unwrap();
+    let diff1 = dt1.signed_duration_since(dt2); // Copy/consume
+    let diff2 = dt2.signed_duration_since(&dt1); // Take by reference
+    assert_eq!(diff1, -diff2);
+
+    let diff1 = dt1 - &dt2; // We can choose to substract rhs by reference
+    let diff2 = dt2 - dt1; // Or consume rhs
+    assert_eq!(diff1, -diff2);
 }
 
 #[test]
@@ -900,6 +918,10 @@ fn test_utc_datetime_from_str() {
     assert_eq!(
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(Utc.with_ymd_and_hms(2013, 8, 9, 23, 54, 35).unwrap())
+    );
+    assert_eq!(
+        DateTime::<FixedOffset>::parse_from_str("0", "%s").unwrap(),
+        NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
     );
 
     assert_eq!(
@@ -1548,4 +1570,32 @@ fn test_datetime_fixed_offset() {
     let fixed_offset = FixedOffset::east_opt(3600).unwrap();
     let datetime_fixed = fixed_offset.from_local_datetime(&naivedatetime).unwrap();
     assert_eq!(datetime_fixed.fixed_offset(), datetime_fixed);
+}
+
+#[test]
+fn test_add_sub_months() {
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt + Months::new(15), Utc.with_ymd_and_hms(2019, 12, 5, 23, 58, 0).unwrap());
+
+    let utc_dt = Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt + Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
+    assert_eq!(utc_dt + Months::new(2), Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap());
+
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt - Months::new(15), Utc.with_ymd_and_hms(2017, 6, 5, 23, 58, 0).unwrap());
+
+    let utc_dt = Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt - Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
+    assert_eq!(utc_dt - Months::new(2), Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap());
+}
+
+#[test]
+fn test_auto_conversion() {
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    let cdt_dt = FixedOffset::west_opt(5 * 60 * 60)
+        .unwrap()
+        .with_ymd_and_hms(2018, 9, 5, 18, 58, 0)
+        .unwrap();
+    let utc_dt2: DateTime<Utc> = cdt_dt.into();
+    assert_eq!(utc_dt, utc_dt2);
 }
