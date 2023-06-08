@@ -1027,3 +1027,31 @@ fn test_datetime_fixed_offset() {
     let datetime_fixed = fixed_offset.from_local_datetime(&naivedatetime).unwrap();
     assert_eq!(datetime_fixed.fixed_offset(), datetime_fixed);
 }
+
+#[test]
+fn test_add_sub_months() {
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt + Months::new(15), Utc.with_ymd_and_hms(2019, 12, 5, 23, 58, 0).unwrap());
+
+    let utc_dt = Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt + Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
+    assert_eq!(utc_dt + Months::new(2), Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap());
+
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt - Months::new(15), Utc.with_ymd_and_hms(2017, 6, 5, 23, 58, 0).unwrap());
+
+    let utc_dt = Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap();
+    assert_eq!(utc_dt - Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
+    assert_eq!(utc_dt - Months::new(2), Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap());
+}
+
+#[test]
+fn test_auto_conversion() {
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    let cdt_dt = FixedOffset::west_opt(5 * 60 * 60)
+        .unwrap()
+        .with_ymd_and_hms(2018, 9, 5, 18, 58, 0)
+        .unwrap();
+    let utc_dt2: DateTime<Utc> = cdt_dt.into();
+    assert_eq!(utc_dt, utc_dt2);
+}
