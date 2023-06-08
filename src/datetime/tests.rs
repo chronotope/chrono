@@ -314,6 +314,7 @@ fn test_datetime_offset() {
 }
 
 #[test]
+#[allow(clippy::needless_borrow, clippy::op_ref)]
 fn signed_duration_since_autoref() {
     let dt1 = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     let dt2 = Utc.with_ymd_and_hms(2014, 3, 4, 5, 6, 7).unwrap();
