@@ -2313,26 +2313,32 @@ mod serde {
         }
     }
 
-    #[test]
-    fn test_serde_serialize() {
-        super::test_encodable_json(serde_json::to_string);
-    }
+    #[cfg(test)]
+    mod tests {
+        use crate::naive::date::{test_decodable_json, test_encodable_json};
+        use crate::NaiveDate;
 
-    #[test]
-    fn test_serde_deserialize() {
-        super::test_decodable_json(|input| serde_json::from_str(input));
-    }
+        #[test]
+        fn test_serde_serialize() {
+            test_encodable_json(serde_json::to_string);
+        }
 
-    #[test]
-    fn test_serde_bincode() {
-        // Bincode is relevant to test separately from JSON because
-        // it is not self-describing.
-        use bincode::{deserialize, serialize};
+        #[test]
+        fn test_serde_deserialize() {
+            test_decodable_json(|input| serde_json::from_str(input));
+        }
 
-        let d = NaiveDate::from_ymd_opt(2014, 7, 24).unwrap();
-        let encoded = serialize(&d).unwrap();
-        let decoded: NaiveDate = deserialize(&encoded).unwrap();
-        assert_eq!(d, decoded);
+        #[test]
+        fn test_serde_bincode() {
+            // Bincode is relevant to test separately from JSON because
+            // it is not self-describing.
+            use bincode::{deserialize, serialize};
+
+            let d = NaiveDate::from_ymd_opt(2014, 7, 24).unwrap();
+            let encoded = serialize(&d).unwrap();
+            let decoded: NaiveDate = deserialize(&encoded).unwrap();
+            assert_eq!(d, decoded);
+        }
     }
 }
 
