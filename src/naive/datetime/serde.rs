@@ -1047,51 +1047,6 @@ pub mod ts_seconds_option {
     }
 }
 
-#[test]
-fn test_serde_serialize() {
-    super::test_encodable_json(serde_json::to_string);
-}
-
-#[test]
-fn test_serde_deserialize() {
-    super::test_decodable_json(|input| serde_json::from_str(input));
-}
-
-// Bincode is relevant to test separately from JSON because
-// it is not self-describing.
-#[test]
-fn test_serde_bincode() {
-    use crate::NaiveDate;
-    use bincode::{deserialize, serialize};
-
-    let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap();
-    let encoded = serialize(&dt).unwrap();
-    let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
-    assert_eq!(dt, decoded);
-}
-
-#[test]
-fn test_serde_bincode_optional() {
-    use crate::prelude::*;
-    use crate::serde::ts_nanoseconds_option;
-    use bincode::{deserialize, serialize};
-    use serde_derive::{Deserialize, Serialize};
-
-    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-    struct Test {
-        one: Option<i64>,
-        #[serde(with = "ts_nanoseconds_option")]
-        two: Option<DateTime<Utc>>,
-    }
-
-    let expected =
-        Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
-    let bytes: Vec<u8> = serialize(&expected).unwrap();
-    let actual = deserialize::<Test>(&(bytes)).unwrap();
-
-    assert_eq!(expected, actual);
-}
-
 // lik? function to convert a LocalResult into a serde-ish Result
 pub(crate) fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
 where
@@ -1137,5 +1092,53 @@ impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
                 timestamp, min, max
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::naive::datetime::{test_decodable_json, test_encodable_json};
+    use crate::serde::ts_nanoseconds_option;
+    use crate::{DateTime, NaiveDate, NaiveDateTime, TimeZone, Utc};
+
+    use bincode::{deserialize, serialize};
+    use serde_derive::{Deserialize, Serialize};
+
+    #[test]
+    fn test_serde_serialize() {
+        test_encodable_json(serde_json::to_string);
+    }
+
+    #[test]
+    fn test_serde_deserialize() {
+        test_decodable_json(|input| serde_json::from_str(input));
+    }
+
+    // Bincode is relevant to test separately from JSON because
+    // it is not self-describing.
+    #[test]
+    fn test_serde_bincode() {
+        let dt =
+            NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap();
+        let encoded = serialize(&dt).unwrap();
+        let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
+    }
+
+    #[test]
+    fn test_serde_bincode_optional() {
+        #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+        struct Test {
+            one: Option<i64>,
+            #[serde(with = "ts_nanoseconds_option")]
+            two: Option<DateTime<Utc>>,
+        }
+
+        let expected =
+            Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
+        let bytes: Vec<u8> = serialize(&expected).unwrap();
+        let actual = deserialize::<Test>(&(bytes)).unwrap();
+
+        assert_eq!(expected, actual);
     }
 }
