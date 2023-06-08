@@ -229,43 +229,6 @@ impl fmt::Debug for ParseWeekdayError {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Weekday;
-
-    #[test]
-    fn test_num_days_from() {
-        for i in 0..7 {
-            let base_day = Weekday::try_from(i).unwrap();
-
-            assert_eq!(base_day.num_days_from_monday(), base_day.num_days_from(Weekday::Mon));
-            assert_eq!(base_day.num_days_from_sunday(), base_day.num_days_from(Weekday::Sun));
-
-            assert_eq!(base_day.num_days_from(base_day), 0);
-
-            assert_eq!(base_day.num_days_from(base_day.pred()), 1);
-            assert_eq!(base_day.num_days_from(base_day.pred().pred()), 2);
-            assert_eq!(base_day.num_days_from(base_day.pred().pred().pred()), 3);
-            assert_eq!(base_day.num_days_from(base_day.pred().pred().pred().pred()), 4);
-            assert_eq!(base_day.num_days_from(base_day.pred().pred().pred().pred().pred()), 5);
-            assert_eq!(
-                base_day.num_days_from(base_day.pred().pred().pred().pred().pred().pred()),
-                6
-            );
-
-            assert_eq!(base_day.num_days_from(base_day.succ()), 6);
-            assert_eq!(base_day.num_days_from(base_day.succ().succ()), 5);
-            assert_eq!(base_day.num_days_from(base_day.succ().succ().succ()), 4);
-            assert_eq!(base_day.num_days_from(base_day.succ().succ().succ().succ()), 3);
-            assert_eq!(base_day.num_days_from(base_day.succ().succ().succ().succ().succ()), 2);
-            assert_eq!(
-                base_day.num_days_from(base_day.succ().succ().succ().succ().succ().succ()),
-                1
-            );
-        }
-    }
-}
-
 // the actual `FromStr` implementation is in the `format` module to leverage the existing code
 
 #[cfg(feature = "serde")]
@@ -365,6 +328,43 @@ mod weekday_serde {
 
         for str in errors {
             from_str::<Weekday>(str).unwrap_err();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Weekday;
+
+    #[test]
+    fn test_num_days_from() {
+        for i in 0..7 {
+            let base_day = Weekday::try_from(i).unwrap();
+
+            assert_eq!(base_day.num_days_from_monday(), base_day.num_days_from(Weekday::Mon));
+            assert_eq!(base_day.num_days_from_sunday(), base_day.num_days_from(Weekday::Sun));
+
+            assert_eq!(base_day.num_days_from(base_day), 0);
+
+            assert_eq!(base_day.num_days_from(base_day.pred()), 1);
+            assert_eq!(base_day.num_days_from(base_day.pred().pred()), 2);
+            assert_eq!(base_day.num_days_from(base_day.pred().pred().pred()), 3);
+            assert_eq!(base_day.num_days_from(base_day.pred().pred().pred().pred()), 4);
+            assert_eq!(base_day.num_days_from(base_day.pred().pred().pred().pred().pred()), 5);
+            assert_eq!(
+                base_day.num_days_from(base_day.pred().pred().pred().pred().pred().pred()),
+                6
+            );
+
+            assert_eq!(base_day.num_days_from(base_day.succ()), 6);
+            assert_eq!(base_day.num_days_from(base_day.succ().succ()), 5);
+            assert_eq!(base_day.num_days_from(base_day.succ().succ().succ()), 4);
+            assert_eq!(base_day.num_days_from(base_day.succ().succ().succ().succ()), 3);
+            assert_eq!(base_day.num_days_from(base_day.succ().succ().succ().succ().succ()), 2);
+            assert_eq!(
+                base_day.num_days_from(base_day.succ().succ().succ().succ().succ().succ()),
+                1
+            );
         }
     }
 }
