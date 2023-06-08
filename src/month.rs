@@ -283,67 +283,6 @@ mod month_serde {
             deserializer.deserialize_str(MonthVisitor)
         }
     }
-
-    #[test]
-    fn test_serde_serialize() {
-        use serde_json::to_string;
-        use Month::*;
-
-        let cases: Vec<(Month, &str)> = vec![
-            (January, "\"January\""),
-            (February, "\"February\""),
-            (March, "\"March\""),
-            (April, "\"April\""),
-            (May, "\"May\""),
-            (June, "\"June\""),
-            (July, "\"July\""),
-            (August, "\"August\""),
-            (September, "\"September\""),
-            (October, "\"October\""),
-            (November, "\"November\""),
-            (December, "\"December\""),
-        ];
-
-        for (month, expected_str) in cases {
-            let string = to_string(&month).unwrap();
-            assert_eq!(string, expected_str);
-        }
-    }
-
-    #[test]
-    fn test_serde_deserialize() {
-        use serde_json::from_str;
-        use Month::*;
-
-        let cases: Vec<(&str, Month)> = vec![
-            ("\"january\"", January),
-            ("\"jan\"", January),
-            ("\"FeB\"", February),
-            ("\"MAR\"", March),
-            ("\"mar\"", March),
-            ("\"april\"", April),
-            ("\"may\"", May),
-            ("\"june\"", June),
-            ("\"JULY\"", July),
-            ("\"august\"", August),
-            ("\"september\"", September),
-            ("\"October\"", October),
-            ("\"November\"", November),
-            ("\"DECEmbEr\"", December),
-        ];
-
-        for (string, expected_month) in cases {
-            let month = from_str::<Month>(string).unwrap();
-            assert_eq!(month, expected_month);
-        }
-
-        let errors: Vec<&str> =
-            vec!["\"not a month\"", "\"ja\"", "\"Dece\"", "Dec", "\"Augustin\""];
-
-        for string in errors {
-            from_str::<Month>(string).unwrap_err();
-        }
-    }
 }
 
 #[cfg(test)]
@@ -402,5 +341,68 @@ mod tests {
         assert!(Month::January < Month::December);
         assert!(Month::July >= Month::May);
         assert!(Month::September > Month::March);
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serde_serialize() {
+        use serde_json::to_string;
+        use Month::*;
+
+        let cases: Vec<(Month, &str)> = vec![
+            (January, "\"January\""),
+            (February, "\"February\""),
+            (March, "\"March\""),
+            (April, "\"April\""),
+            (May, "\"May\""),
+            (June, "\"June\""),
+            (July, "\"July\""),
+            (August, "\"August\""),
+            (September, "\"September\""),
+            (October, "\"October\""),
+            (November, "\"November\""),
+            (December, "\"December\""),
+        ];
+
+        for (month, expected_str) in cases {
+            let string = to_string(&month).unwrap();
+            assert_eq!(string, expected_str);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serde_deserialize() {
+        use serde_json::from_str;
+        use Month::*;
+
+        let cases: Vec<(&str, Month)> = vec![
+            ("\"january\"", January),
+            ("\"jan\"", January),
+            ("\"FeB\"", February),
+            ("\"MAR\"", March),
+            ("\"mar\"", March),
+            ("\"april\"", April),
+            ("\"may\"", May),
+            ("\"june\"", June),
+            ("\"JULY\"", July),
+            ("\"august\"", August),
+            ("\"september\"", September),
+            ("\"October\"", October),
+            ("\"November\"", November),
+            ("\"DECEmbEr\"", December),
+        ];
+
+        for (string, expected_month) in cases {
+            let month = from_str::<Month>(string).unwrap();
+            assert_eq!(month, expected_month);
+        }
+
+        let errors: Vec<&str> =
+            vec!["\"not a month\"", "\"ja\"", "\"Dece\"", "Dec", "\"Augustin\""];
+
+        for string in errors {
+            from_str::<Month>(string).unwrap_err();
+        }
     }
 }
