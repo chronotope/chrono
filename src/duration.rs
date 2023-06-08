@@ -372,13 +372,7 @@ impl Add for Duration {
     type Output = Duration;
 
     fn add(self, rhs: Duration) -> Duration {
-        let mut secs = self.secs + rhs.secs;
-        let mut nanos = self.nanos + rhs.nanos;
-        if nanos >= NANOS_PER_SEC {
-            nanos -= NANOS_PER_SEC;
-            secs += 1;
-        }
-        Duration { secs, nanos }
+        self.checked_add(&rhs).expect("`Duration + Duration` overflowed")
     }
 }
 
@@ -386,13 +380,7 @@ impl Sub for Duration {
     type Output = Duration;
 
     fn sub(self, rhs: Duration) -> Duration {
-        let mut secs = self.secs - rhs.secs;
-        let mut nanos = self.nanos - rhs.nanos;
-        if nanos < 0 {
-            nanos += NANOS_PER_SEC;
-            secs -= 1;
-        }
-        Duration { secs, nanos }
+        self.checked_sub(&rhs).expect("`Duration - Duration` overflowed")
     }
 }
 
