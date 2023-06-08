@@ -272,64 +272,6 @@ mod weekday_serde {
             deserializer.deserialize_str(WeekdayVisitor)
         }
     }
-
-    #[test]
-    fn test_serde_serialize() {
-        use serde_json::to_string;
-        use Weekday::*;
-
-        let cases: Vec<(Weekday, &str)> = vec![
-            (Mon, "\"Mon\""),
-            (Tue, "\"Tue\""),
-            (Wed, "\"Wed\""),
-            (Thu, "\"Thu\""),
-            (Fri, "\"Fri\""),
-            (Sat, "\"Sat\""),
-            (Sun, "\"Sun\""),
-        ];
-
-        for (weekday, expected_str) in cases {
-            let string = to_string(&weekday).unwrap();
-            assert_eq!(string, expected_str);
-        }
-    }
-
-    #[test]
-    fn test_serde_deserialize() {
-        use serde_json::from_str;
-        use Weekday::*;
-
-        let cases: Vec<(&str, Weekday)> = vec![
-            ("\"mon\"", Mon),
-            ("\"MONDAY\"", Mon),
-            ("\"MonDay\"", Mon),
-            ("\"mOn\"", Mon),
-            ("\"tue\"", Tue),
-            ("\"tuesday\"", Tue),
-            ("\"wed\"", Wed),
-            ("\"wednesday\"", Wed),
-            ("\"thu\"", Thu),
-            ("\"thursday\"", Thu),
-            ("\"fri\"", Fri),
-            ("\"friday\"", Fri),
-            ("\"sat\"", Sat),
-            ("\"saturday\"", Sat),
-            ("\"sun\"", Sun),
-            ("\"sunday\"", Sun),
-        ];
-
-        for (str, expected_weekday) in cases {
-            let weekday = from_str::<Weekday>(str).unwrap();
-            assert_eq!(weekday, expected_weekday);
-        }
-
-        let errors: Vec<&str> =
-            vec!["\"not a weekday\"", "\"monDAYs\"", "\"mond\"", "mon", "\"thur\"", "\"thurs\""];
-
-        for str in errors {
-            from_str::<Weekday>(str).unwrap_err();
-        }
-    }
 }
 
 #[cfg(test)]
@@ -365,6 +307,66 @@ mod tests {
                 base_day.num_days_from(base_day.succ().succ().succ().succ().succ().succ()),
                 1
             );
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serde_serialize() {
+        use serde_json::to_string;
+        use Weekday::*;
+
+        let cases: Vec<(Weekday, &str)> = vec![
+            (Mon, "\"Mon\""),
+            (Tue, "\"Tue\""),
+            (Wed, "\"Wed\""),
+            (Thu, "\"Thu\""),
+            (Fri, "\"Fri\""),
+            (Sat, "\"Sat\""),
+            (Sun, "\"Sun\""),
+        ];
+
+        for (weekday, expected_str) in cases {
+            let string = to_string(&weekday).unwrap();
+            assert_eq!(string, expected_str);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serde_deserialize() {
+        use serde_json::from_str;
+        use Weekday::*;
+
+        let cases: Vec<(&str, Weekday)> = vec![
+            ("\"mon\"", Mon),
+            ("\"MONDAY\"", Mon),
+            ("\"MonDay\"", Mon),
+            ("\"mOn\"", Mon),
+            ("\"tue\"", Tue),
+            ("\"tuesday\"", Tue),
+            ("\"wed\"", Wed),
+            ("\"wednesday\"", Wed),
+            ("\"thu\"", Thu),
+            ("\"thursday\"", Thu),
+            ("\"fri\"", Fri),
+            ("\"friday\"", Fri),
+            ("\"sat\"", Sat),
+            ("\"saturday\"", Sat),
+            ("\"sun\"", Sun),
+            ("\"sunday\"", Sun),
+        ];
+
+        for (str, expected_weekday) in cases {
+            let weekday = from_str::<Weekday>(str).unwrap();
+            assert_eq!(weekday, expected_weekday);
+        }
+
+        let errors: Vec<&str> =
+            vec!["\"not a weekday\"", "\"monDAYs\"", "\"mond\"", "mon", "\"thur\"", "\"thurs\""];
+
+        for str in errors {
+            from_str::<Weekday>(str).unwrap_err();
         }
     }
 }
