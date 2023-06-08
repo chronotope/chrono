@@ -33,29 +33,6 @@ use super::isoweek;
 const MAX_YEAR: i32 = internals::MAX_YEAR;
 const MIN_YEAR: i32 = internals::MIN_YEAR;
 
-//   MAX_YEAR-12-31 minus 0000-01-01
-// = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
-// = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + 365 days
-// = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365 days
-#[cfg(test)] // only used for testing
-const MAX_DAYS_FROM_YEAR_0: i32 =
-    MAX_YEAR * 365 + MAX_YEAR / 4 - MAX_YEAR / 100 + MAX_YEAR / 400 + 365;
-
-//   MIN_YEAR-01-01 minus 0000-01-01
-// = (MIN_YEAR+400n+1)-01-01 minus (400n+1)-01-01
-// = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - ((400n+1)-01-01 minus 0001-01-01)
-// = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - 146097n days
-//
-// n is set to 1000 for convenience.
-#[cfg(test)] // only used for testing
-const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 + (MIN_YEAR + 400_000) / 4
-    - (MIN_YEAR + 400_000) / 100
-    + (MIN_YEAR + 400_000) / 400
-    - 146_097_000;
-
-#[cfg(test)] // only used for testing, but duplicated in naive::datetime
-const MAX_BITS: usize = 44;
-
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.
 #[derive(Debug)]
@@ -233,34 +210,6 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
         let ord = u.int_in_range(1..=max_days)?;
         NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
     }
-}
-
-// as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
-// we use a separate run-time test.
-#[test]
-fn test_date_bounds() {
-    let calculated_min = NaiveDate::from_ymd_opt(MIN_YEAR, 1, 1).unwrap();
-    let calculated_max = NaiveDate::from_ymd_opt(MAX_YEAR, 12, 31).unwrap();
-    assert!(
-        NaiveDate::MIN == calculated_min,
-        "`NaiveDate::MIN` should have a year flag {:?}",
-        calculated_min.of().flags()
-    );
-    assert!(
-        NaiveDate::MAX == calculated_max,
-        "`NaiveDate::MAX` should have a year flag {:?}",
-        calculated_max.of().flags()
-    );
-
-    // let's also check that the entire range do not exceed 2^44 seconds
-    // (sometimes used for bounding `Duration` against overflow)
-    let maxsecs = NaiveDate::MAX.signed_duration_since(NaiveDate::MIN).num_seconds();
-    let maxsecs = maxsecs + 86401; // also take care of DateTime
-    assert!(
-        maxsecs < (1 << MAX_BITS),
-        "The entire `NaiveDate` range somehow exceeds 2^{} seconds",
-        MAX_BITS
-    );
 }
 
 impl NaiveDate {
@@ -2389,12 +2338,38 @@ mod serde {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        Days, Months, NaiveDate, MAX_DAYS_FROM_YEAR_0, MAX_YEAR, MIN_DAYS_FROM_YEAR_0, MIN_YEAR,
-    };
+    use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
     use std::{i32, u32};
+
+    // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
+    // we use a separate run-time test.
+    #[test]
+    fn test_date_bounds() {
+        let calculated_min = NaiveDate::from_ymd_opt(MIN_YEAR, 1, 1).unwrap();
+        let calculated_max = NaiveDate::from_ymd_opt(MAX_YEAR, 12, 31).unwrap();
+        assert!(
+            NaiveDate::MIN == calculated_min,
+            "`NaiveDate::MIN` should have a year flag {:?}",
+            calculated_min.of().flags()
+        );
+        assert!(
+            NaiveDate::MAX == calculated_max,
+            "`NaiveDate::MAX` should have a year flag {:?}",
+            calculated_max.of().flags()
+        );
+
+        // let's also check that the entire range do not exceed 2^44 seconds
+        // (sometimes used for bounding `Duration` against overflow)
+        let maxsecs = NaiveDate::MAX.signed_duration_since(NaiveDate::MIN).num_seconds();
+        let maxsecs = maxsecs + 86401; // also take care of DateTime
+        assert!(
+            maxsecs < (1 << MAX_BITS),
+            "The entire `NaiveDate` range somehow exceeds 2^{} seconds",
+            MAX_BITS
+        );
+    }
 
     #[test]
     fn diff_months() {
@@ -3219,4 +3194,25 @@ mod tests {
         assert!(dt.with_day0(4294967295).is_none());
         assert!(dt.with_ordinal0(4294967295).is_none());
     }
+
+    //   MAX_YEAR-12-31 minus 0000-01-01
+    // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
+    // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + 365 days
+    // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365 days
+    const MAX_DAYS_FROM_YEAR_0: i32 =
+        MAX_YEAR * 365 + MAX_YEAR / 4 - MAX_YEAR / 100 + MAX_YEAR / 400 + 365;
+
+    //   MIN_YEAR-01-01 minus 0000-01-01
+    // = (MIN_YEAR+400n+1)-01-01 minus (400n+1)-01-01
+    // = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - ((400n+1)-01-01 minus 0001-01-01)
+    // = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - 146097n days
+    //
+    // n is set to 1000 for convenience.
+    const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 + (MIN_YEAR + 400_000) / 4
+        - (MIN_YEAR + 400_000) / 100
+        + (MIN_YEAR + 400_000) / 400
+        - 146_097_000;
+
+    // only used for testing, but duplicated in naive::datetime
+    const MAX_BITS: usize = 44;
 }
