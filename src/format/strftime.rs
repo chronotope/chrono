@@ -671,14 +671,14 @@ fn test_strftime_docs() {
 #[cfg(feature = "unstable-locales")]
 #[test]
 fn test_strftime_docs_localized() {
-    use crate::{FixedOffset, NaiveDate, TimeZone};
+    use crate::{FixedOffset, NaiveDate, TimeZone, Timelike};
 
-    let dt = FixedOffset::east_opt(34200).unwrap().ymd_opt(2001, 7, 8).unwrap().and_hms_nano(
-        0,
-        34,
-        59,
-        1_026_490_708,
-    );
+    let dt = FixedOffset::east_opt(34200)
+        .unwrap()
+        .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
+        .unwrap()
+        .with_nanosecond(1_026_490_708)
+        .unwrap();
 
     // date specifiers
     assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");
