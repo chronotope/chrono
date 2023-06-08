@@ -240,6 +240,7 @@ fn test_datetime_sub_months() {
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -253,6 +254,7 @@ fn ymdhms(
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms_milli(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -271,6 +273,7 @@ fn ymdhms_milli(
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms_micro(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -289,6 +292,7 @@ fn ymdhms_micro(
 }
 
 // local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
 fn ymdhms_nano(
     fixedoffset: &FixedOffset,
     year: i32,
