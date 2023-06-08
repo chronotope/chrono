@@ -103,21 +103,25 @@ impl Decodable for TsSeconds<Local> {
 }
 
 #[cfg(test)]
-use rustc_serialize::json;
+mod tests {
+    use crate::datetime::test_encodable_json;
+    use crate::datetime::{test_decodable_json, test_decodable_json_timestamps};
+    use rustc_serialize::json;
 
-#[test]
-fn test_encodable() {
-    super::test_encodable_json(json::encode, json::encode);
-}
+    #[test]
+    fn test_encodable() {
+        test_encodable_json(json::encode, json::encode);
+    }
 
-#[cfg(feature = "clock")]
-#[test]
-fn test_decodable() {
-    super::test_decodable_json(json::decode, json::decode, json::decode);
-}
+    #[cfg(feature = "clock")]
+    #[test]
+    fn test_decodable() {
+        test_decodable_json(json::decode, json::decode, json::decode);
+    }
 
-#[cfg(feature = "clock")]
-#[test]
-fn test_decodable_timestamps() {
-    super::test_decodable_json_timestamps(json::decode, json::decode, json::decode);
+    #[cfg(feature = "clock")]
+    #[test]
+    fn test_decodable_timestamps() {
+        test_decodable_json_timestamps(json::decode, json::decode, json::decode);
+    }
 }
