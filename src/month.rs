@@ -28,7 +28,7 @@ use crate::OutOfRange;
 /// Allows mapping from and to month, from 1-January to 12-December.
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
-#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd, Ord)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Month {
@@ -180,7 +180,7 @@ impl TryFrom<u8> for Month {
 }
 
 /// A duration in calendar months
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Months(pub(crate) u32);
 
@@ -245,8 +245,47 @@ mod month_serde {
             deserializer.deserialize_str(MonthVisitor)
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Month;
+    use crate::{Datelike, OutOfRange, TimeZone, Utc};
 
     #[test]
+    fn test_month_enum_try_from() {
+        assert_eq!(Month::try_from(1), Ok(Month::January));
+        assert_eq!(Month::try_from(2), Ok(Month::February));
+        assert_eq!(Month::try_from(12), Ok(Month::December));
+        assert_eq!(Month::try_from(13), Err(OutOfRange::new()));
+
+        let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
+        assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
+
+        let month = Month::January;
+        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+        assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
+    }
+
+    #[test]
+    fn test_month_enum_succ_pred() {
+        assert_eq!(Month::January.succ(), Month::February);
+        assert_eq!(Month::December.succ(), Month::January);
+        assert_eq!(Month::January.pred(), Month::December);
+        assert_eq!(Month::February.pred(), Month::January);
+    }
+
+    #[test]
+    fn test_month_partial_ord() {
+        assert!(Month::January <= Month::January);
+        assert!(Month::January < Month::February);
+        assert!(Month::January < Month::December);
+        assert!(Month::July >= Month::May);
+        assert!(Month::September > Month::March);
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
     fn test_serde_serialize() {
         use serde_json::to_string;
         use Month::*;
@@ -273,6 +312,7 @@ mod month_serde {
     }
 
     #[test]
+    #[cfg(feature = "serde")]
     fn test_serde_deserialize() {
         use serde_json::from_str;
         use Month::*;
@@ -305,43 +345,5 @@ mod month_serde {
         for string in errors {
             from_str::<Month>(string).unwrap_err();
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Month;
-    use crate::{Datelike, OutOfRange, TimeZone, Utc};
-
-    #[test]
-    fn test_month_enum_try_from() {
-        assert_eq!(Month::try_from(1), Ok(Month::January));
-        assert_eq!(Month::try_from(2), Ok(Month::February));
-        assert_eq!(Month::try_from(12), Ok(Month::December));
-        assert_eq!(Month::try_from(13), Err(OutOfRange::new()));
-
-        let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
-        assert_eq!(Month::try_from(date.month() as u8).ok(), Some(Month::October));
-
-        let month = Month::January;
-        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
-        assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
-    }
-
-    #[test]
-    fn test_month_enum_succ_pred() {
-        assert_eq!(Month::January.succ(), Month::February);
-        assert_eq!(Month::December.succ(), Month::January);
-        assert_eq!(Month::January.pred(), Month::December);
-        assert_eq!(Month::February.pred(), Month::January);
-    }
-
-    #[test]
-    fn test_month_partial_ord() {
-        assert!(Month::January <= Month::January);
-        assert!(Month::January < Month::February);
-        assert!(Month::January < Month::December);
-        assert!(Month::July >= Month::May);
-        assert!(Month::September > Month::March);
     }
 }

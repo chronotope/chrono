@@ -158,7 +158,6 @@ pub mod ts_nanoseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -186,7 +185,6 @@ pub mod ts_nanoseconds {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355733).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -285,7 +283,6 @@ pub mod ts_nanoseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -316,7 +313,6 @@ pub mod ts_nanoseconds_option {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355733).single() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -417,7 +413,6 @@ pub mod ts_microseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -445,7 +440,6 @@ pub mod ts_microseconds {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -543,7 +537,6 @@ pub mod ts_microseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -574,7 +567,6 @@ pub mod ts_microseconds_option {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355000).single() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -675,7 +667,6 @@ pub mod ts_milliseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -703,7 +694,6 @@ pub mod ts_milliseconds {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918000000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -798,7 +788,6 @@ pub mod ts_milliseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -840,7 +829,6 @@ pub mod ts_milliseconds_option {
     /// assert_eq!(t, E::V(S { time: None }));
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -942,7 +930,6 @@ pub mod ts_seconds {
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -970,7 +957,6 @@ pub mod ts_seconds {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1431684000, 0).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -1062,7 +1048,6 @@ pub mod ts_seconds_option {
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -1093,7 +1078,6 @@ pub mod ts_seconds_option {
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1431684000, 0).single() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<DateTime<Utc>>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -1136,30 +1120,36 @@ pub mod ts_seconds_option {
     }
 }
 
-#[test]
-fn test_serde_serialize() {
-    super::test_encodable_json(serde_json::to_string, serde_json::to_string);
-}
+#[cfg(test)]
+mod tests {
+    use crate::datetime::{test_decodable_json, test_encodable_json};
+    use crate::{DateTime, TimeZone, Utc};
 
-#[cfg(feature = "clock")]
-#[test]
-fn test_serde_deserialize() {
-    super::test_decodable_json(
-        |input| serde_json::from_str(input),
-        |input| serde_json::from_str(input),
-        |input| serde_json::from_str(input),
-    );
-}
+    #[test]
+    fn test_serde_serialize() {
+        test_encodable_json(serde_json::to_string, serde_json::to_string);
+    }
 
-#[test]
-fn test_serde_bincode() {
-    // Bincode is relevant to test separately from JSON because
-    // it is not self-describing.
-    use bincode::{deserialize, serialize};
+    #[cfg(feature = "clock")]
+    #[test]
+    fn test_serde_deserialize() {
+        test_decodable_json(
+            |input| serde_json::from_str(input),
+            |input| serde_json::from_str(input),
+            |input| serde_json::from_str(input),
+        );
+    }
 
-    let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
-    let encoded = serialize(&dt).unwrap();
-    let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
-    assert_eq!(dt, decoded);
-    assert_eq!(dt.offset(), decoded.offset());
+    #[test]
+    fn test_serde_bincode() {
+        // Bincode is relevant to test separately from JSON because
+        // it is not self-describing.
+        use bincode::{deserialize, serialize};
+
+        let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
+        let encoded = serialize(&dt).unwrap();
+        let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
+        assert_eq!(dt.offset(), decoded.offset());
+    }
 }

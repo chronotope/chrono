@@ -989,12 +989,12 @@ impl FromStr for Weekday {
 /// Formats single formatting item
 #[cfg(feature = "unstable-locales")]
 #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
-pub fn format_item_localized<'a>(
+pub fn format_item_localized(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
-    item: &Item<'a>,
+    item: &Item<'_>,
     locale: Locale,
 ) -> fmt::Result {
     let mut result = String::new();

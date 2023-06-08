@@ -31,12 +31,12 @@ __doctest = []
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.5.2", optional = true }
 criterion = { version = "0.4.0", optional = true }
-rkyv = {version = "0.7", optional = true}
+rkyv = { version = "0.7", optional = true }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
-js-sys = { version = "0.3", optional = true } # contains FFI bindings for the JS Date API
+js-sys = { version = "0.3", optional = true }       # contains FFI bindings for the JS Date API
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.48.0", features = ["Win32_System_Time", "Win32_System_SystemInformation", "Win32_Foundation"], optional = true }

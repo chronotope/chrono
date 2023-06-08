@@ -8,7 +8,6 @@ extern crate alloc;
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::string::{String, ToString};
-#[cfg(any(feature = "alloc", feature = "std", test))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Write;
@@ -102,8 +101,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
     /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
     /// ```
-    //
-    // note: this constructor is purposely not named to `new` to discourage the direct usage.
     #[inline]
     #[must_use]
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
@@ -112,6 +109,13 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Makes a new `DateTime` with given **local** datetime and offset that
     /// presents local timezone.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the local datetime can't be converted to UTC because it would be out of range.
+    ///
+    /// This can happen if `datetime` is near the end of the representable range of `NaiveDateTime`,
+    /// and the offset from UTC pushes it beyond that.
     ///
     /// # Example
     ///
@@ -142,11 +146,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime: datetime_utc, offset }
     }
 
-    /// Retrieves a date component
+    /// Retrieves the date component with an associated timezone.
     ///
     /// Unless you are immediately planning on turning this into a `DateTime`
-    /// with the same Timezone you should use the
-    /// [`date_naive`](DateTime::date_naive) method.
+    /// with the same timezone you should use the [`date_naive`](DateTime::date_naive) method.
+    ///
+    /// [`NaiveDate`] is a more well-defined type, and has more traits implemented on it,
+    /// so should be preferred to [`Date`] any time you truly want to operate on dates.
+    ///
+    /// # Panics
+    ///
+    /// [`DateTime`] internally stores the date and time in UTC with a [`NaiveDateTime`]. This
+    /// method will panic if the offset from UTC would push the local date outside of the
+    /// representable range of a [`Date`].
     #[inline]
     #[deprecated(since = "0.4.23", note = "Use `date_naive()` instead")]
     #[allow(deprecated)]
@@ -155,10 +167,15 @@ impl<Tz: TimeZone> DateTime<Tz> {
         Date::from_utc(self.naive_local().date(), self.offset.clone())
     }
 
-    /// Retrieves the Date without an associated timezone
+    /// Retrieves the date component.
     ///
-    /// [`NaiveDate`] is a more well-defined type, and has more traits implemented on it,
-    /// so should be preferred to [`Date`] any time you truly want to operate on Dates.
+    /// # Panics
+    ///
+    /// [`DateTime`] internally stores the date and time in UTC with a [`NaiveDateTime`]. This
+    /// method will panic if the offset from UTC would push the local date outside of the
+    /// representable range of a [`NaiveDate`].
+    ///
+    /// # Example
     ///
     /// ```
     /// use chrono::prelude::*;
@@ -174,8 +191,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         NaiveDate::from_ymd_opt(local.year(), local.month(), local.day()).unwrap()
     }
 
-    /// Retrieves a time component.
-    /// Unlike `date`, this is not associated to the time zone.
+    /// Retrieves the time component.
     #[inline]
     #[must_use]
     pub fn time(&self) -> NaiveTime {
@@ -190,12 +206,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp()
     }
 
-    /// Returns the number of non-leap-milliseconds since January 1, 1970 UTC
-    ///
-    /// Note that this does reduce the number of years that can be represented
-    /// from ~584 Billion to ~584 Million. (If this is a problem, please file
-    /// an issue to let me know what domain needs millisecond precision over
-    /// billions of years, I'm curious.)
+    /// Returns the number of non-leap-milliseconds since January 1, 1970 UTC.
     ///
     /// # Example
     ///
@@ -214,12 +225,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp_millis()
     }
 
-    /// Returns the number of non-leap-microseconds since January 1, 1970 UTC
-    ///
-    /// Note that this does reduce the number of years that can be represented
-    /// from ~584 Billion to ~584 Thousand. (If this is a problem, please file
-    /// an issue to let me know what domain needs microsecond precision over
-    /// millennia, I'm curious.)
+    /// Returns the number of non-leap-microseconds since January 1, 1970 UTC.
     ///
     /// # Example
     ///
@@ -238,12 +244,15 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp_micros()
     }
 
-    /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC
+    /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
     ///
-    /// Note that this does reduce the number of years that can be represented
-    /// from ~584 Billion to ~584. (If this is a problem, please file
-    /// an issue to let me know what domain needs nanosecond precision over
-    /// millennia, I'm curious.)
+    /// # Panics
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
+    /// an out of range `DateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
     ///
     /// # Example
     ///
@@ -262,22 +271,18 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.datetime.timestamp_nanos()
     }
 
-    /// Returns the number of milliseconds since the last second boundary
+    /// Returns the number of milliseconds since the last second boundary.
     ///
-    /// warning: in event of a leap second, this may exceed 999
-    ///
-    /// note: this is not the number of milliseconds since January 1, 1970 0:00:00 UTC
+    /// In event of a leap second this may exceed 999.
     #[inline]
     #[must_use]
     pub fn timestamp_subsec_millis(&self) -> u32 {
         self.datetime.timestamp_subsec_millis()
     }
 
-    /// Returns the number of microseconds since the last second boundary
+    /// Returns the number of microseconds since the last second boundary.
     ///
-    /// warning: in event of a leap second, this may exceed 999_999
-    ///
-    /// note: this is not the number of microseconds since January 1, 1970 0:00:00 UTC
+    /// In event of a leap second this may exceed 999,999.
     #[inline]
     #[must_use]
     pub fn timestamp_subsec_micros(&self) -> u32 {
@@ -286,9 +291,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Returns the number of nanoseconds since the last second boundary
     ///
-    /// warning: in event of a leap second, this may exceed 999_999_999
-    ///
-    /// note: this is not the number of nanoseconds since January 1, 1970 0:00:00 UTC
+    /// In event of a leap second this may exceed 999,999,999.
     #[inline]
     #[must_use]
     pub fn timestamp_subsec_nanos(&self) -> u32 {
@@ -310,7 +313,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Changes the associated time zone.
-    /// The returned `DateTime` references the same instant of time from the perspective of the provided time zone.
+    /// The returned `DateTime` references the same instant of time from the perspective of the
+    /// provided time zone.
     #[inline]
     #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
@@ -327,7 +331,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Adds given `Duration` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
     #[inline]
     #[must_use]
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
@@ -338,10 +344,16 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Adds given `Months` to the current date and time.
     ///
-    /// Returns `None` when it will result in overflow, or if the
-    /// local time is not valid on the newly calculated date.
+    /// Uses the last day of the month if the day does not exist in the resulting month.
     ///
-    /// See [`NaiveDate::checked_add_months`] for more details on behavior
+    /// See [`NaiveDate::checked_add_months`] for more details on behavior.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date would be out of range.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[must_use]
     pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
         self.naive_local()
@@ -352,7 +364,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts given `Duration` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow.
+    /// # Errors
+    ///
+    /// Returns `None` if the resulting date would be out of range.
     #[inline]
     #[must_use]
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
@@ -363,10 +377,16 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Subtracts given `Months` from the current date and time.
     ///
-    /// Returns `None` when it will result in overflow, or if the
-    /// local time is not valid on the newly calculated date.
+    /// Uses the last day of the month if the day does not exist in the resulting month.
     ///
-    /// See [`NaiveDate::checked_sub_months`] for more details on behavior
+    /// See [`NaiveDate::checked_sub_months`] for more details on behavior.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date would be out of range.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[must_use]
     pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
         self.naive_local()
@@ -375,9 +395,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .single()
     }
 
-    /// Add a duration in [`Days`] to the date part of the `DateTime`
+    /// Add a duration in [`Days`] to the date part of the `DateTime`.
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date would be out of range.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
         self.naive_local()
@@ -386,9 +411,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .single()
     }
 
-    /// Subtract a duration in [`Days`] from the date part of the `DateTime`
+    /// Subtract a duration in [`Days`] from the date part of the `DateTime`.
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date would be out of range.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
         self.naive_local()
@@ -401,8 +431,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// This does not overflow or underflow at all.
     #[inline]
     #[must_use]
-    pub fn signed_duration_since<Tz2: TimeZone>(self, rhs: DateTime<Tz2>) -> TimeDelta {
-        self.datetime.signed_duration_since(rhs.datetime)
+    pub fn signed_duration_since<Tz2: TimeZone>(
+        self,
+        rhs: impl Borrow<DateTime<Tz2>>,
+    ) -> TimeDelta {
+        self.datetime.signed_duration_since(rhs.borrow().datetime)
     }
 
     /// Returns a view to the naive UTC datetime.
@@ -413,6 +446,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Returns a view to the naive local datetime.
+    ///
+    /// # Panics
+    ///
+    /// [`DateTime`] internally stores the date and time in UTC with a [`NaiveDateTime`]. This
+    /// method will panic if the offset from UTC would push the local datetime outside of the
+    /// representable range of a [`NaiveDateTime`].
     #[inline]
     #[must_use]
     pub fn naive_local(&self) -> NaiveDateTime {
@@ -420,6 +459,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Retrieve the elapsed years from now to the given [`DateTime`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `base < self`.
     #[must_use]
     pub fn years_since(&self, base: Self) -> Option<u32> {
         let mut years = self.year() - base.year();
@@ -715,6 +758,11 @@ where
     Tz::Offset: fmt::Display,
 {
     /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the date can not be represented in this format: the year may not be negative and
+    /// can not have more than 4 digits.
     #[cfg(any(feature = "alloc", feature = "std", test))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
@@ -917,35 +965,112 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     }
 
     #[inline]
+    /// Makes a new `DateTime` with the year number changed, while keeping the same month and day.
+    ///
+    /// See also the [`NaiveDate::with_year`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - When the `NaiveDateTime` would be out of range.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_year(year))
     }
 
+    /// Makes a new `DateTime` with the month number (starting from 1) changed.
+    ///
+    /// See also the [`NaiveDate::with_month`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - The value for `month` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_month(&self, month: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_month(month))
     }
 
+    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    ///
+    /// See also the [`NaiveDate::with_month0`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - The value for `month0` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_month0(month0))
     }
 
+    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    ///
+    /// See also the [`NaiveDate::with_day`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - The value for `day` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_day(&self, day: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_day(day))
     }
 
+    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    ///
+    /// See also the [`NaiveDate::with_day0`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - The value for `day0` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_day0(day0))
     }
 
+    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    ///
+    /// See also the [`NaiveDate::with_ordinal`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - The value for `ordinal` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_ordinal(ordinal))
     }
 
+    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    ///
+    /// See also the [`NaiveDate::with_ordinal0`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist.
+    /// - The value for `ordinal0` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
@@ -970,21 +1095,64 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
         self.naive_local().nanosecond()
     }
 
+    /// Makes a new `DateTime` with the hour number changed.
+    ///
+    /// See also the [`NaiveTime::with_hour`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The value for `hour` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_hour(hour))
     }
 
+    /// Makes a new `DateTime` with the minute number changed.
+    ///
+    /// See also the [`NaiveTime::with_minute`] method.
+    ///
+    /// # Errors
+    ///
+    /// - The value for `minute` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_minute(&self, min: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_minute(min))
     }
 
+    /// Makes a new `DateTime` with the second number changed.
+    ///
+    /// As with the [`second`](#method.second) method,
+    /// the input range is restricted to 0 through 59.
+    ///
+    /// See also the [`NaiveTime::with_second`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The value for `second` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
     #[inline]
     fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_second(sec))
     }
 
+    /// Makes a new `DateTime` with nanoseconds since the whole non-leap second changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// As with the [`NaiveDateTime::nanosecond`] method,
+    /// the input range can exceed 1,000,000,000 for leap seconds.
+    ///
+    /// See also the [`NaiveTime::with_nanosecond`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `nanosecond >= 2,000,000,000`.
     #[inline]
     fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_nanosecond(nano))
@@ -1095,6 +1263,15 @@ impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
 
     #[inline]
     fn sub(self, rhs: DateTime<Tz>) -> TimeDelta {
+        self.signed_duration_since(rhs)
+    }
+}
+
+impl<Tz: TimeZone> Sub<&DateTime<Tz>> for DateTime<Tz> {
+    type Output = TimeDelta;
+
+    #[inline]
+    fn sub(self, rhs: &DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }
@@ -1297,34 +1474,6 @@ where
         let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
         Ok(DateTime::from_utc(datetime, offset))
     }
-}
-
-#[test]
-fn test_add_sub_months() {
-    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt + Months::new(15), Utc.with_ymd_and_hms(2019, 12, 5, 23, 58, 0).unwrap());
-
-    let utc_dt = Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt + Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
-    assert_eq!(utc_dt + Months::new(2), Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap());
-
-    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt - Months::new(15), Utc.with_ymd_and_hms(2017, 6, 5, 23, 58, 0).unwrap());
-
-    let utc_dt = Utc.with_ymd_and_hms(2020, 3, 31, 23, 58, 0).unwrap();
-    assert_eq!(utc_dt - Months::new(1), Utc.with_ymd_and_hms(2020, 2, 29, 23, 58, 0).unwrap());
-    assert_eq!(utc_dt - Months::new(2), Utc.with_ymd_and_hms(2020, 1, 31, 23, 58, 0).unwrap());
-}
-
-#[test]
-fn test_auto_conversion() {
-    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
-    let cdt_dt = FixedOffset::west_opt(5 * 60 * 60)
-        .unwrap()
-        .with_ymd_and_hms(2018, 9, 5, 18, 58, 0)
-        .unwrap();
-    let utc_dt2: DateTime<Utc> = cdt_dt.into();
-    assert_eq!(utc_dt, utc_dt2);
 }
 
 #[cfg(all(test, feature = "serde"))]

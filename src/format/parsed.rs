@@ -620,7 +620,12 @@ impl Parsed {
     /// plus a time zone offset.
     /// Either way those fields have to be consistent to each other.
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
-        let offset = self.offset.ok_or(NOT_ENOUGH)?;
+        // If there is no explicit offset, consider a timestamp value as indication of a UTC value.
+        let offset = match (self.offset, self.timestamp) {
+            (Some(off), _) => off,
+            (None, Some(_)) => 0, // UNIX timestamp may assume 0 offset
+            (None, None) => return Err(NOT_ENOUGH),
+        };
         let datetime = self.to_naive_datetime_with_offset(offset)?;
         let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
 

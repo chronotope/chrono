@@ -1,0 +1,4 @@
+include = ["deny.toml", "**/Cargo.toml"]
+
+[formatting]
+inline_table_expand = false

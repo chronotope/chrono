@@ -110,7 +110,6 @@ pub mod ts_nanoseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -138,7 +137,6 @@ pub mod ts_nanoseconds {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355733).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -233,7 +231,6 @@ pub mod ts_nanoseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -264,7 +261,6 @@ pub mod ts_nanoseconds_option {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355733) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -362,7 +358,6 @@ pub mod ts_microseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -390,7 +385,6 @@ pub mod ts_microseconds {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -488,7 +482,6 @@ pub mod ts_microseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -519,7 +512,6 @@ pub mod ts_microseconds_option {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355000) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -617,7 +609,6 @@ pub mod ts_milliseconds {
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -645,7 +636,6 @@ pub mod ts_milliseconds {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918000000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -740,7 +730,6 @@ pub mod ts_milliseconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -771,7 +760,6 @@ pub mod ts_milliseconds_option {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918000000) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -869,7 +857,6 @@ pub mod ts_seconds {
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(dt: &NaiveDateTime, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -897,7 +884,6 @@ pub mod ts_seconds {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1431684000, 0).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -989,7 +975,6 @@ pub mod ts_seconds_option {
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn serialize<S>(opt: &Option<NaiveDateTime>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
@@ -1020,7 +1005,6 @@ pub mod ts_seconds_option {
     /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1431684000, 0) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
-    #[must_use]
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
     where
         D: de::Deserializer<'de>,
@@ -1061,51 +1045,6 @@ pub mod ts_seconds_option {
             Ok(None)
         }
     }
-}
-
-#[test]
-fn test_serde_serialize() {
-    super::test_encodable_json(serde_json::to_string);
-}
-
-#[test]
-fn test_serde_deserialize() {
-    super::test_decodable_json(|input| serde_json::from_str(input));
-}
-
-// Bincode is relevant to test separately from JSON because
-// it is not self-describing.
-#[test]
-fn test_serde_bincode() {
-    use crate::NaiveDate;
-    use bincode::{deserialize, serialize};
-
-    let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap();
-    let encoded = serialize(&dt).unwrap();
-    let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
-    assert_eq!(dt, decoded);
-}
-
-#[test]
-fn test_serde_bincode_optional() {
-    use crate::prelude::*;
-    use crate::serde::ts_nanoseconds_option;
-    use bincode::{deserialize, serialize};
-    use serde_derive::{Deserialize, Serialize};
-
-    #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
-    struct Test {
-        one: Option<i64>,
-        #[serde(with = "ts_nanoseconds_option")]
-        two: Option<DateTime<Utc>>,
-    }
-
-    let expected =
-        Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
-    let bytes: Vec<u8> = serialize(&expected).unwrap();
-    let actual = deserialize::<Test>(&(bytes)).unwrap();
-
-    assert_eq!(expected, actual);
 }
 
 // lik? function to convert a LocalResult into a serde-ish Result
@@ -1153,5 +1092,53 @@ impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
                 timestamp, min, max
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::naive::datetime::{test_decodable_json, test_encodable_json};
+    use crate::serde::ts_nanoseconds_option;
+    use crate::{DateTime, NaiveDate, NaiveDateTime, TimeZone, Utc};
+
+    use bincode::{deserialize, serialize};
+    use serde_derive::{Deserialize, Serialize};
+
+    #[test]
+    fn test_serde_serialize() {
+        test_encodable_json(serde_json::to_string);
+    }
+
+    #[test]
+    fn test_serde_deserialize() {
+        test_decodable_json(|input| serde_json::from_str(input));
+    }
+
+    // Bincode is relevant to test separately from JSON because
+    // it is not self-describing.
+    #[test]
+    fn test_serde_bincode() {
+        let dt =
+            NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap();
+        let encoded = serialize(&dt).unwrap();
+        let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
+        assert_eq!(dt, decoded);
+    }
+
+    #[test]
+    fn test_serde_bincode_optional() {
+        #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+        struct Test {
+            one: Option<i64>,
+            #[serde(with = "ts_nanoseconds_option")]
+            two: Option<DateTime<Utc>>,
+        }
+
+        let expected =
+            Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
+        let bytes: Vec<u8> = serialize(&expected).unwrap();
+        let actual = deserialize::<Test>(&(bytes)).unwrap();
+
+        assert_eq!(expected, actual);
     }
 }

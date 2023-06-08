@@ -321,7 +321,7 @@ impl<'a> TimeZoneRef<'a> {
         // Check leap seconds
         if !(self.leap_seconds.is_empty()
             || self.leap_seconds[0].unix_leap_time >= 0
-                && saturating_abs(self.leap_seconds[0].correction) == 1)
+                && self.leap_seconds[0].correction.saturating_abs() == 1)
         {
             return Err(Error::TimeZone("invalid leap second"));
         }
@@ -336,7 +336,7 @@ impl<'a> TimeZoneRef<'a> {
 
                 let diff_unix_leap_time = x1.unix_leap_time.saturating_sub(x0.unix_leap_time);
                 let abs_diff_correction =
-                    saturating_abs(x1.correction.saturating_sub(x0.correction));
+                    x1.correction.saturating_sub(x0.correction).saturating_abs();
 
                 if !(diff_unix_leap_time >= min_interval && abs_diff_correction == 1) {
                     return Err(Error::TimeZone("invalid leap second"));
@@ -612,17 +612,6 @@ fn find_tz_file(path: impl AsRef<Path>) -> Result<File, Error> {
         }
 
         Err(Error::Io(io::ErrorKind::NotFound.into()))
-    }
-}
-
-#[inline]
-const fn saturating_abs(v: i32) -> i32 {
-    if v.is_positive() {
-        v
-    } else if v == i32::min_value() {
-        i32::max_value()
-    } else {
-        -v
     }
 }
 
