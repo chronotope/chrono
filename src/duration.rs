@@ -10,7 +10,7 @@
 
 //! Temporal quantification
 
-use core::ops::{Add, Div, Mul, Neg, Sub};
+use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::time::Duration as StdDuration;
 use core::{fmt, i64};
 #[cfg(feature = "std")]
@@ -384,6 +384,20 @@ impl Sub for Duration {
     }
 }
 
+impl AddAssign for Duration {
+    fn add_assign(&mut self, rhs: Duration) {
+        let new = self.checked_add(&rhs).expect("`Duration + Duration` overflowed");
+        *self = new;
+    }
+}
+
+impl SubAssign for Duration {
+    fn sub_assign(&mut self, rhs: Duration) {
+        let new = self.checked_sub(&rhs).expect("`Duration - Duration` overflowed");
+        *self = new;
+    }
+}
+
 impl Mul<i32> for Duration {
     type Output = Duration;
 
@@ -533,6 +547,11 @@ mod tests {
             -(Duration::days(3) + Duration::seconds(70)),
             Duration::days(-4) + Duration::seconds(86_400 - 70)
         );
+
+        let mut d = Duration::default();
+        d += Duration::minutes(1);
+        d -= Duration::seconds(30);
+        assert_eq!(d, Duration::seconds(30));
     }
 
     #[test]
