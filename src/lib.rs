@@ -388,6 +388,7 @@
 #![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
 #![deny(dead_code)]
+#![deny(clippy::tests_outside_test_module)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 // can remove this if/when rustc-serialize support is removed
 // keeps clippy happy in the meantime
