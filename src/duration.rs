@@ -184,9 +184,9 @@ impl Duration {
     }
 
     /// Returns the number of nanoseconds such that
-    /// `nanos_mod_sec() + num_seconds() * NANOS_PER_SEC` is the total number of
+    /// `subsec_nanos() + num_seconds() * NANOS_PER_SEC` is the total number of
     /// nanoseconds in the duration.
-    const fn nanos_mod_sec(&self) -> i32 {
+    pub const fn subsec_nanos(&self) -> i32 {
         if self.secs < 0 && self.nanos > 0 {
             self.nanos - NANOS_PER_SEC
         } else {
@@ -199,7 +199,7 @@ impl Duration {
         // A proper Duration will not overflow, because MIN and MAX are defined
         // such that the range is exactly i64 milliseconds.
         let secs_part = self.num_seconds() * MILLIS_PER_SEC;
-        let nanos_part = self.nanos_mod_sec() / NANOS_PER_MILLI;
+        let nanos_part = self.subsec_nanos() / NANOS_PER_MILLI;
         secs_part + nanos_part as i64
     }
 
@@ -207,7 +207,7 @@ impl Duration {
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
     pub const fn num_microseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(MICROS_PER_SEC));
-        let nanos_part = self.nanos_mod_sec() / NANOS_PER_MICRO;
+        let nanos_part = self.subsec_nanos() / NANOS_PER_MICRO;
         secs_part.checked_add(nanos_part as i64)
     }
 
@@ -215,7 +215,7 @@ impl Duration {
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
     pub const fn num_nanoseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64));
-        let nanos_part = self.nanos_mod_sec();
+        let nanos_part = self.subsec_nanos();
         secs_part.checked_add(nanos_part as i64)
     }
 
