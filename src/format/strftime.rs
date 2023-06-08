@@ -718,4 +718,28 @@ mod tests {
         assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
         assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
     }
+
+    /// Ensure parsing a timestamp with the parse-only stftime formatter "%#z" does
+    /// not cause a panic.
+    ///
+    /// See <https://github.com/chronotope/chrono/issues/1139>.
+    #[test]
+    fn test_parse_only_timezone_offset_permissive_no_panic() {
+        use crate::NaiveDate;
+        use crate::{FixedOffset, TimeZone};
+        use std::fmt::Write;
+
+        let dt = FixedOffset::east_opt(34200)
+            .unwrap()
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2001, 7, 8)
+                    .unwrap()
+                    .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+                    .unwrap(),
+            )
+            .unwrap();
+
+        let mut buf = String::new();
+        let _ = write!(buf, "{}", dt.format("%#z")).expect_err("parse-only formatter should fail");
+    }
 }
