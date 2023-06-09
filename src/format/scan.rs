@@ -413,36 +413,41 @@ enum CommentState {
 }
 
 #[cfg(test)]
-#[test]
-fn test_rfc2822_comments() {
-    let testdata = [
-        ("", Err(TOO_SHORT)),
-        (" ", Err(TOO_SHORT)),
-        ("x", Err(INVALID)),
-        ("(", Err(TOO_SHORT)),
-        ("()", Ok("")),
-        (" \r\n\t()", Ok("")),
-        ("() ", Ok(" ")),
-        ("()z", Ok("z")),
-        ("(x)", Ok("")),
-        ("(())", Ok("")),
-        ("((()))", Ok("")),
-        ("(x(x(x)x)x)", Ok("")),
-        ("( x ( x ( x ) x ) x )", Ok("")),
-        (r"(\)", Err(TOO_SHORT)),
-        (r"(\()", Ok("")),
-        (r"(\))", Ok("")),
-        (r"(\\)", Ok("")),
-        ("(()())", Ok("")),
-        ("( x ( x ) x ( x ) x )", Ok("")),
-    ];
+mod tests {
+    use super::comment_2822;
+    use crate::format::{INVALID, TOO_SHORT};
 
-    for (test_in, expected) in testdata.iter() {
-        let actual = comment_2822(test_in).map(|(s, _)| s);
-        assert_eq!(
-            *expected, actual,
-            "{:?} expected to produce {:?}, but produced {:?}.",
-            test_in, expected, actual
-        );
+    #[test]
+    fn test_rfc2822_comments() {
+        let testdata = [
+            ("", Err(TOO_SHORT)),
+            (" ", Err(TOO_SHORT)),
+            ("x", Err(INVALID)),
+            ("(", Err(TOO_SHORT)),
+            ("()", Ok("")),
+            (" \r\n\t()", Ok("")),
+            ("() ", Ok(" ")),
+            ("()z", Ok("z")),
+            ("(x)", Ok("")),
+            ("(())", Ok("")),
+            ("((()))", Ok("")),
+            ("(x(x(x)x)x)", Ok("")),
+            ("( x ( x ( x ) x ) x )", Ok("")),
+            (r"(\)", Err(TOO_SHORT)),
+            (r"(\()", Ok("")),
+            (r"(\))", Ok("")),
+            (r"(\\)", Ok("")),
+            ("(()())", Ok("")),
+            ("( x ( x ) x ( x ) x )", Ok("")),
+        ];
+
+        for (test_in, expected) in testdata.iter() {
+            let actual = comment_2822(test_in).map(|(s, _)| s);
+            assert_eq!(
+                *expected, actual,
+                "{:?} expected to produce {:?}, but produced {:?}.",
+                test_in, expected, actual
+            );
+        }
     }
 }
