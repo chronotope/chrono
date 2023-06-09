@@ -433,3 +433,23 @@ fn test_and_utc() {
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 }
+
+#[test]
+fn test_parse_from_iso8601() {
+    let parse = |s| NaiveDateTime::parse_from_iso8601(s).map(|(dt, _)| dt);
+    let datetime = |y, m, d, h, n, s, nano| {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap()
+    };
+
+    // Taken from ISO 8601
+    assert_eq!(parse("19850412T101530"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0)));
+    assert_eq!(parse("1985-04-12T10:15:30"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0)));
+    assert_eq!(parse("19850412T1015"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0)));
+    assert_eq!(parse("1985-04-12T10:15"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0)));
+    assert_eq!(parse("1985102T1015"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0)));
+    assert_eq!(parse("1985-102T10:15"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0)));
+    assert_eq!(parse("1985W155T1015"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0)));
+    assert_eq!(parse("1985-W15-5T10:15"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0)));
+    // Test 24:00:00 wraps to the next day
+    assert_eq!(parse("2023-06-09T24:00:00"), Ok(datetime(2023, 6, 10, 0, 0, 0, 0)));
+}

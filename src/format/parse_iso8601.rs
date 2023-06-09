@@ -1,12 +1,35 @@
 use super::parse::set_weekday_with_number_from_monday;
 use super::scan;
-use super::{ParseResult, Parsed, INVALID, TOO_SHORT};
+use super::{ParseResult, Parsed, INVALID, OUT_OF_RANGE, TOO_SHORT};
+use crate::{Days, NaiveDateTime};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Iso8601Format {
     Basic,
     Extended,
     Unknown,
+}
+
+/// Returns `(NaiveDateTime, remainder, Iso8601Format)`.
+/// - This method returns a `NaiveDateTime` instead of working with `Parsed` because `Parsed` can't
+///   handle a time of `24:00:00` (which should parse to `00:00:00` the next day).
+/// - The ISO 8601 format of the date and time is returned so the calling function can check it
+///   matches the format of a offset component (basic or extended format).
+pub(crate) fn parse_iso8601_datetime(s: &str) -> ParseResult<(NaiveDateTime, &str, Iso8601Format)> {
+    let mut parsed = Parsed::new();
+
+    let (s, date_format) = parse_iso8601_date(&mut parsed, s)?;
+    let s = scan::char(s, b'T')?;
+    let (s, time_format, hour24) = parse_iso8601_time(&mut parsed, s)?;
+    if time_format != Iso8601Format::Unknown && date_format != time_format {
+        return Err(INVALID);
+    }
+
+    let mut dt = parsed.to_naive_datetime_with_offset(0)?;
+    if hour24 {
+        dt = dt.checked_add_days(Days::new(1)).ok_or(OUT_OF_RANGE)?;
+    }
+    Ok((dt, s, time_format))
 }
 
 /// The ISO 8601 date format is a combination of 12 different date formats:
