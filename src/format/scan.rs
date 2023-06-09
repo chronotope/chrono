@@ -257,7 +257,14 @@ where
     s = &s[2..];
 
     // colons (and possibly other separators)
-    s = consume_colon(s)?;
+    match (allow_missing_minutes, consume_colon(s)) {
+        (false, Err(e)) => return Err(e),
+        (true, Err(_)) => {
+            let seconds = hours * 3600;
+            return Ok((s, if negative { -seconds } else { seconds }));
+        }
+        (_, Ok(s_new)) => s = s_new,
+    }
 
     // minutes (00--59)
     // if the next two items are digits then we have to add minutes
