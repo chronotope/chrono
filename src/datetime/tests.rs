@@ -1519,3 +1519,33 @@ fn nano_roundrip() {
         assert_eq!(nanos, nanos2);
     }
 }
+
+#[test]
+fn test_parse_from_iso8601() {
+    let parse = |s| DateTime::<FixedOffset>::parse_from_iso8601(s).map(|(dt, _)| dt);
+    let datetime = |y, m, d, h, n, s, nano, o| {
+        FixedOffset::east_opt(o)
+            .unwrap()
+            .with_ymd_and_hms(y, m, d, h, n, s)
+            .unwrap()
+            .with_nanosecond(nano)
+            .unwrap()
+    };
+
+    // Taken from ISO 8601
+    assert_eq!(parse("19850412T101530Z"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0, 0)));
+    assert_eq!(parse("19850412T101530+0400"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0, 14400)));
+    assert_eq!(parse("19850412T101530-04"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0, -14400)));
+    assert_eq!(parse("1985-04-12T10:15:30Z"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0, 0)));
+    assert_eq!(parse("1985-04-12T10:15:30+04:00"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0, 14400)));
+    assert_eq!(parse("1985-04-12T10:15:30-04"), Ok(datetime(1985, 4, 12, 10, 15, 30, 0, -14400)));
+    assert_eq!(parse("1985W155T1015+0400"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0, 14400)));
+    assert_eq!(parse("1985-W15-5T10:15+04"), Ok(datetime(1985, 4, 12, 10, 15, 0, 0, 14400)));
+    assert_eq!(parse("1985102T235030Z"), Ok(datetime(1985, 4, 12, 23, 50, 30, 0, 0)));
+    // With fractions
+    assert_eq!(
+        parse("1985102T235030,5+01"),
+        Ok(datetime(1985, 4, 12, 23, 50, 30, 500_000_000, 3600))
+    );
+    assert_eq!(parse("1985102T2350,5+01"), Ok(datetime(1985, 4, 12, 23, 50, 30, 0, 3600)));
+}
