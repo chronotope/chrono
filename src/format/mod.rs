@@ -242,6 +242,10 @@ pub enum Fixed {
     /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
+    ///
+    /// Note that if the year of the `DateTime` is outside of the range 0 through 9999 then the date
+    /// while be formatted as an expanded representation according to ISO 8601. These dates are not
+    /// supported by, and incompatible with, RFC 3339.
     RFC3339,
 
     /// Internal uses only.
