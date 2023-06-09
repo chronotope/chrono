@@ -453,3 +453,12 @@ fn test_parse_from_iso8601() {
     // Test 24:00:00 wraps to the next day
     assert_eq!(parse("2023-06-09T24:00:00"), Ok(datetime(2023, 6, 10, 0, 0, 0, 0)));
 }
+
+#[test]
+fn test_iso8601_parses_debug() {
+    let parse = |s| NaiveDateTime::parse_from_iso8601(s).map(|(dt, _)| dt);
+
+    let dt = NaiveDate::from_ymd_opt(12345, 6, 7).unwrap().and_hms_nano_opt(8, 9, 10, 11).unwrap();
+    let debug = format!("{:?}", dt);
+    assert_eq!(parse(&debug), Ok(dt));
+}

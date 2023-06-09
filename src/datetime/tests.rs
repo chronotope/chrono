@@ -1549,3 +1549,12 @@ fn test_parse_from_iso8601() {
     );
     assert_eq!(parse("1985102T2350,5+01"), Ok(datetime(1985, 4, 12, 23, 50, 30, 0, 3600)));
 }
+
+#[test]
+fn test_iso8601_parses_debug() {
+    let parse = |s| DateTime::<FixedOffset>::parse_from_iso8601(s).map(|(dt, _)| dt);
+
+    let dt = FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(12345, 6, 7, 8, 9, 10).unwrap();
+    let debug = format!("{:?}", dt);
+    assert_eq!(parse(&debug), Ok(dt));
+}
