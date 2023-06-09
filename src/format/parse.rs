@@ -27,7 +27,7 @@ fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<
     })
 }
 
-fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<()> {
+pub(super) fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<()> {
     p.set_weekday(match v {
         1 => Weekday::Mon,
         2 => Weekday::Tue,
