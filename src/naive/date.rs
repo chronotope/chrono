@@ -19,10 +19,9 @@ use pure_rust_locales::Locale;
 use crate::duration::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
-use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
-};
+use crate::format::{parse, parse_and_remainder, parse_iso8601_date, write_hundreds};
+use crate::format::{Item, Numeric, Pad, StrftimeItems};
+use crate::format::{ParseError, ParseResult, Parsed};
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{expect, try_opt};
@@ -604,6 +603,46 @@ impl NaiveDate {
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDate, &'a str)> {
         let mut parsed = Parsed::new();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parsed.to_naive_date().map(|d| (d, remainder))
+    }
+
+    /// Parses an ISO 8601 date string into a `NaiveDate` value.
+    ///
+    /// ISO 8601 allows representing values in a wide range of formats. See below for some examples.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, Weekday};
+    /// // calendar date, basic format
+    /// assert_eq!(
+    ///     NaiveDate::parse_from_iso8601("20230609").unwrap(),
+    ///     (NaiveDate::from_ymd_opt(2023, 6, 9).unwrap(), "")
+    /// );
+    /// // calendar date, extended format
+    /// assert_eq!(
+    ///     NaiveDate::parse_from_iso8601("2023-06-09").unwrap(),
+    ///     (NaiveDate::from_ymd_opt(2023, 6, 9).unwrap(), "")
+    /// );
+    /// // ordinal date, basic format
+    /// assert_eq!(
+    ///     NaiveDate::parse_from_iso8601("2023160").unwrap(),
+    ///     (NaiveDate::from_yo_opt(2023, 160).unwrap(), "")
+    /// );
+    /// // week date, extended format
+    /// assert_eq!(
+    ///     NaiveDate::parse_from_iso8601("2023-W23-5").unwrap(),
+    ///     (NaiveDate::from_isoywd_opt(2023, 23, Weekday::Fri).unwrap(), "")
+    /// );
+    /// // calendar date, extended format, expanded representation
+    /// assert_eq!(
+    ///     NaiveDate::parse_from_iso8601("+12023-06-09").unwrap(),
+    ///     (NaiveDate::from_ymd_opt(12023, 6, 9).unwrap(), "")
+    /// );
+    /// ```
+    pub fn parse_from_iso8601(s: &str) -> ParseResult<(NaiveDate, &str)> {
+        let mut parsed = Parsed::new();
+        let (remainder, _) = parse_iso8601_date(&mut parsed, s)?;
         parsed.to_naive_date().map(|d| (d, remainder))
     }
 
