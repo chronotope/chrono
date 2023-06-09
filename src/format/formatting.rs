@@ -531,6 +531,10 @@ pub enum SecondsFormat {
 }
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
+///
+/// This does not always output a valid RFC 3339 string. RFC 3339 is only defined on years
+/// 0 through 9999. Instead we output an ISO 8601 string with a format that for common dates is
+/// compatible with RFC 3339.
 #[inline]
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 pub(crate) fn write_rfc3339(
