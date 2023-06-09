@@ -5,8 +5,6 @@
  * Various scanning routines for the parser.
  */
 
-#![allow(deprecated)]
-
 use super::{ParseResult, INVALID, OUT_OF_RANGE, TOO_SHORT};
 use crate::Weekday;
 
@@ -79,7 +77,7 @@ pub(super) fn nanosecond(s: &str) -> ParseResult<(&str, i64)> {
     let v = v.checked_mul(SCALE[consumed]).ok_or(OUT_OF_RANGE)?;
 
     // if there are more than 9 digits, skip next digits.
-    let s = s.trim_left_matches(|c: char| c.is_ascii_digit());
+    let s = s.trim_start_matches(|c: char| c.is_ascii_digit());
 
     Ok((s, v))
 }
@@ -188,7 +186,7 @@ pub(super) fn char(s: &str, c1: u8) -> ParseResult<&str> {
 
 /// Tries to consume one or more whitespace.
 pub(super) fn space(s: &str) -> ParseResult<&str> {
-    let s_ = s.trim_left();
+    let s_ = s.trim_start();
     if s_.len() < s.len() {
         Ok(s_)
     } else if s.is_empty() {
@@ -200,7 +198,7 @@ pub(super) fn space(s: &str) -> ParseResult<&str> {
 
 /// Consumes any number (including zero) of colon or spaces.
 pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
-    Ok(s.trim_left_matches(|c: char| c == ':' || c.is_whitespace()))
+    Ok(s.trim_start_matches(|c: char| c == ':' || c.is_whitespace()))
 }
 
 /// Tries to parse `[-+]\d\d` continued by `\d\d`. Return an offset in seconds if possible.
@@ -381,7 +379,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
 /// Tries to consume everything until next whitespace-like symbol.
 /// Does not provide any offset information from the consumed data.
 pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
-    Ok((s.trim_left_matches(|c: char| !c.is_whitespace()), ()))
+    Ok((s.trim_start_matches(|c: char| !c.is_whitespace()), ()))
 }
 
 /// Tries to consume an RFC2822 comment including preceding ` `.
