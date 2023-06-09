@@ -4,8 +4,6 @@
 
 //! Date and time parsing routines.
 
-#![allow(deprecated)]
-
 use core::borrow::Borrow;
 use core::str;
 use core::usize;
@@ -100,7 +98,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     //   since we do not directly go to a `DateTime` so one can recover
     //   the offset information from `Parsed` anyway.
 
-    s = s.trim_left();
+    s = s.trim_start();
 
     if let Ok((s_, weekday)) = scan::short_weekday(s) {
         if !s_.starts_with(',') {
@@ -110,7 +108,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
         parsed.set_weekday(weekday)?;
     }
 
-    s = s.trim_left();
+    s = s.trim_start();
     parsed.set_day(try_consume!(scan::number(s, 1, 2)))?;
     s = scan::space(s)?; // mandatory
     parsed.set_month(1 + i64::from(try_consume!(scan::short_month0(s))))?;
@@ -136,9 +134,9 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
 
     s = scan::space(s)?; // mandatory
     parsed.set_hour(try_consume!(scan::number(s, 2, 2)))?;
-    s = scan::char(s.trim_left(), b':')?.trim_left(); // *S ":" *S
+    s = scan::char(s.trim_start(), b':')?.trim_start(); // *S ":" *S
     parsed.set_minute(try_consume!(scan::number(s, 2, 2)))?;
-    if let Ok(s_) = scan::char(s.trim_left(), b':') {
+    if let Ok(s_) = scan::char(s.trim_start(), b':') {
         // [ ":" *S 2DIGIT ]
         parsed.set_second(try_consume!(scan::number(s_, 2, 2)))?;
     }
@@ -323,12 +321,12 @@ where
             }
 
             Item::Space(_) => {
-                s = s.trim_left();
+                s = s.trim_start();
             }
 
             #[cfg(any(feature = "alloc", feature = "std", test))]
             Item::OwnedSpace(_) => {
-                s = s.trim_left();
+                s = s.trim_start();
             }
 
             Item::Numeric(ref spec, ref _pad) => {
@@ -361,7 +359,7 @@ where
                     Internal(ref int) => match int._dummy {},
                 };
 
-                s = s.trim_left();
+                s = s.trim_start();
                 let v = if signed {
                     if s.starts_with('-') {
                         let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
@@ -455,7 +453,7 @@ where
                     | &TimezoneOffsetTripleColon
                     | &TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(
-                            s.trim_left(),
+                            s.trim_start(),
                             scan::colon_or_space
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
@@ -463,7 +461,7 @@ where
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
                         let offset = try_consume!(scan::timezone_offset_zulu(
-                            s.trim_left(),
+                            s.trim_start(),
                             scan::colon_or_space
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
@@ -472,7 +470,7 @@ where
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
                         let offset = try_consume!(scan::timezone_offset_permissive(
-                            s.trim_left(),
+                            s.trim_start(),
                             scan::colon_or_space
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
