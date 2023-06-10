@@ -635,12 +635,15 @@ impl<Tz: TimeZone> DateTime<Tz> {
         result
     }
 
-    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
-    /// formatted as per `SecondsFormat`.
+    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds formatted as per
+    /// `SecondsFormat`.
     ///
-    /// If `use_z` is true and the timezone is UTC (offset 0), uses `Z` as
-    /// per [`Fixed::TimezoneOffsetColonZ`]. If `use_z` is false, uses
-    /// [`Fixed::TimezoneOffsetColon`]
+    /// If `use_z` is `false` and the time zone is UTC the offset will be formatted as `+00:00`.
+    /// If `use_z` is `true` the offset will be formatted as `Z` instead.
+    ///
+    /// Note that if the year of the `DateTime` is outside of the range 0 through 9999 then the date
+    /// while be formatted as an expanded representation according to ISO 8601. This makes the
+    /// string incompatible with RFC 3339.
     ///
     /// # Examples
     ///
