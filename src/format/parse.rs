@@ -457,14 +457,22 @@ where
                         try_consume!(Ok((s.trim_start_matches(|c: char| !c.is_whitespace()), ())));
                     }
 
-                    &TimezoneOffsetColon
-                    | &TimezoneOffset
-                    | &TimezoneOffsetColonZ
-                    | &TimezoneOffsetZ => {
+                    &TimezoneOffset | &TimezoneOffsetZ => {
                         let offset_format = OffsetFormat {
                             precision: OffsetPrecision::Minutes,
                             colons: Colons::Maybe,
-                            allow_zulu: spec == &TimezoneOffsetColonZ || spec == &TimezoneOffsetZ,
+                            allow_zulu: spec == &TimezoneOffsetZ,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
+                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                    }
+
+                    &TimezoneOffsetColon | &TimezoneOffsetColonZ => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Colon,
+                            allow_zulu: spec == &TimezoneOffsetColonZ,
                             padding: Pad::Zero,
                         };
                         let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
@@ -1170,14 +1178,14 @@ mod tests {
         check("12345678", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("+1", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
         check("+12", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
-        check("+123", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
-        check("+1234", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("-1234", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240));
-        check("−1234", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
-        check("+12345", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+123456", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+1234567", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+12345678", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
+        check("+123", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+1234", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("-1234", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("−1234", &[fixed(TimezoneOffsetColon)], Err(INVALID)); // MINUS SIGN (U+2212)
+        check("+12345", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+123456", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+1234567", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12345678", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("1:", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("12:", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("12:3", &[fixed(TimezoneOffsetColon)], Err(INVALID));
@@ -1198,7 +1206,7 @@ mod tests {
         check("+12:34:56:7", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
         check("+12:34:56:78", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
         check("+12:3456", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+1234:56", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
+        check("+1234:56", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("−12:34", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
         check("−12 : 34", &[fixed(TimezoneOffsetColon)], Err(INVALID)); // MINUS SIGN (U+2212)
         check("+12 :34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
@@ -1227,11 +1235,7 @@ mod tests {
         check("", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
         check("+", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
         check(":", &[fixed(TimezoneOffsetColon)], Err(INVALID));
-        check(
-            "+12345",
-            &[fixed(TimezoneOffsetColon), num(Numeric::Day)],
-            parsed!(offset: 45_240, day: 5),
-        );
+        check("+12345", &[fixed(TimezoneOffsetColon), num(Numeric::Day)], Err(INVALID));
         check(
             "+12:345",
             &[fixed(TimezoneOffsetColon), num(Numeric::Day)],
