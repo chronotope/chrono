@@ -102,16 +102,22 @@ pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign (+/-).
     Year,
-    /// Gregorian year divided by 100 (century number; FW=PW=2). Implies the non-negative year.
+    /// Gregorian year divided by 100 (century number; FW=2, PW=∞).
+    /// Parsing supports only positive centuries.
+    /// Formatting applies Euclidean division, year -1 is in century -1.
     YearDiv100,
     /// Gregorian year modulo 100 (FW=PW=2). Cannot be negative.
+    /// Formatting applies Euclidean modulus, year -1 is formatted as 99.
     YearMod100,
     /// Year in the ISO week date (FW=4, PW=∞).
     /// May accept years before 1 BCE or after 9999 CE, given an initial sign.
     IsoYear,
-    /// Year in the ISO week date, divided by 100 (FW=PW=2). Implies the non-negative year.
+    /// Year in the ISO week date, divided by 100 (FW=2, PW=∞).
+    /// Parsing supports only positive centuries.
+    /// Formatting applies Euclidean division, year -1 is in century -1.
     IsoYearDiv100,
-    /// Year in the ISO week date, modulo 100 (FW=PW=2). Cannot be negative.
+    /// Year in the ISO week date, modulo 100 (FW=PW=2).
+    /// Formatting applies Euclidean modulus, year -1 is formatted as 99.
     IsoYearMod100,
     /// Month (FW=PW=2).
     Month,
