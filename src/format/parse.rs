@@ -458,7 +458,6 @@ where
                     }
 
                     &TimezoneOffsetColon
-                    | &TimezoneOffsetDoubleColon
                     | &TimezoneOffset
                     | &TimezoneOffsetColonZ
                     | &TimezoneOffsetZ => {
@@ -466,6 +465,17 @@ where
                             precision: OffsetPrecision::Minutes,
                             colons: Colons::Maybe,
                             allow_zulu: spec == &TimezoneOffsetColonZ || spec == &TimezoneOffsetZ,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
+                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                    }
+
+                    &TimezoneOffsetDoubleColon => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Seconds,
+                            colons: Colons::Colon,
+                            allow_zulu: false,
                             padding: Pad::Zero,
                         };
                         let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
