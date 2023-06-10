@@ -770,17 +770,24 @@ impl DateTime<FixedOffset> {
 
     /// Parses an RFC 3339 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
-    /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
-    /// also valid RFC 3339 date-and-time values) and returns a new [`DateTime`] with a
-    /// [`FixedOffset`] corresponding to the parsed timezone. While RFC 3339 values come in a wide
-    /// variety of shapes and sizes, `1996-12-19T16:39:57-08:00` is an example of the most commonly
-    /// encountered variety of RFC 3339 formats.
+    /// This parses valid RFC 3339 datetime strings (such as `1996-12-19T16:39:57-08:00`)
+    /// and returns a new [`DateTime`] instance with the parsed timezone as the [`FixedOffset`].
     ///
-    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows representing
-    /// values in a wide range of formats, only some of which represent actual date-and-time
-    /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
-    /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
-    /// values (or the other way around).
+    /// RFC 3339 is a clearly defined subset or profile of ISO 8601.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::{DateTime, FixedOffset, TimeZone};
+    /// assert_eq!(
+    ///     DateTime::parse_from_rfc3339("1996-12-19T16:39:57-08:00").unwrap(),
+    ///     FixedOffset::east_opt(-8 * 3600).unwrap().with_ymd_and_hms(1996, 12, 19, 16, 39, 57).unwrap()
+    /// );
+    /// assert_eq!(
+    ///     DateTime::parse_from_rfc3339("2023-06-10T07:15:00Z").unwrap(),
+    ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2023, 6, 10, 7, 15, 0).unwrap()
+    /// );
+    /// ```
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
         let (s, _) = parse_rfc3339(&mut parsed, s)?;
