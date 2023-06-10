@@ -459,7 +459,6 @@ where
 
                     &TimezoneOffsetColon
                     | &TimezoneOffsetDoubleColon
-                    | &TimezoneOffsetTripleColon
                     | &TimezoneOffset
                     | &TimezoneOffsetColonZ
                     | &TimezoneOffsetZ => {
@@ -467,6 +466,17 @@ where
                             precision: OffsetPrecision::Minutes,
                             colons: Colons::Maybe,
                             allow_zulu: spec == &TimezoneOffsetColonZ || spec == &TimezoneOffsetZ,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
+                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                    }
+
+                    &TimezoneOffsetTripleColon => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Hours,
+                            colons: Colons::None,
+                            allow_zulu: false,
                             padding: Pad::Zero,
                         };
                         let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
@@ -1327,9 +1337,6 @@ mod tests {
         check("zulu", &[fixed(TimezoneOffsetZ), Literal("ulu")], parsed!(offset: 0));
         check("+1234ulu", &[fixed(TimezoneOffsetZ), Literal("ulu")], parsed!(offset: 45_240));
         check("+12:34ulu", &[fixed(TimezoneOffsetZ), Literal("ulu")], parsed!(offset: 45_240));
-        // Testing `TimezoneOffsetZ` also tests same path as `TimezoneOffsetColonZ`
-        // in function `parse_internal`.
-        // No need for separate tests for `TimezoneOffsetColonZ`.
 
         // TimezoneOffsetPermissive
         check("1", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
