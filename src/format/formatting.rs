@@ -599,24 +599,13 @@ pub(crate) fn write_rfc3339(
     .format(w, off)
 }
 
-/// Write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
-///
-/// # Errors
-///
-/// RFC 2822 is only defined on years 0 through 9999, and this function returns an error on dates
-/// outside that range.
+/// Write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, similar to `%a, %d %b %Y %H:%M:%S %z`.
 #[cfg(feature = "alloc")]
 pub(crate) fn write_rfc2822(
     w: &mut impl Write,
     dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
-    let year = dt.year();
-    // RFC2822 is only defined on years 0 through 9999
-    if !(0..=9999).contains(&year) {
-        return Err(fmt::Error);
-    }
-
     let english = default_locale();
 
     w.write_str(short_weekdays(english)[dt.weekday().num_days_from_sunday() as usize])?;
@@ -630,8 +619,13 @@ pub(crate) fn write_rfc2822(
     w.write_char(' ')?;
     w.write_str(short_months(english)[dt.month0() as usize])?;
     w.write_char(' ')?;
-    write_hundreds(w, (year / 100) as u8)?;
-    write_hundreds(w, (year % 100) as u8)?;
+    let year = dt.year();
+    if (0..=9999).contains(&year) {
+        write_hundreds(w, (year / 100) as u8)?;
+        write_hundreds(w, (year % 100) as u8)?;
+    } else {
+        write!(w, "{:04}", year)?;
+    }
     w.write_char(' ')?;
 
     let (hour, min, sec) = dt.time().hms();

@@ -554,8 +554,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[cfg(feature = "alloc")]
     pub fn try_to_rfc2822(&self) -> Option<String> {
+        let naive_local = self.overflowing_naive_local();
+        if !(0..=9999).contains(&naive_local.year()) {
+            return None;
+        }
         let mut result = String::with_capacity(32);
-        write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix()).ok()?;
+        write_rfc2822(&mut result, naive_local, self.offset.fix()).ok()?;
         Some(result)
     }
 

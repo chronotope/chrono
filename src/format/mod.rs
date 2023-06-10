@@ -240,6 +240,10 @@ pub enum Fixed {
     /// Parsing allows an optional colon.
     TimezoneOffsetZ,
     /// RFC 2822 date and time syntax. Commonly used for email and MIME date and time.
+    ///
+    /// This does not always output a strictly valid RFC 2822 string. RFC 2822 is only defined on
+    /// years 0 through 9999. We format a date outside these ranges anyway to prevent a panic when
+    /// formatting.
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
     ///
