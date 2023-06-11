@@ -805,6 +805,8 @@ fn test_parse_datetime_utc() {
         "2001-02-03T04:05:06+0000",
         "2001-02-03T04:05:06-00:00",
         "2001-02-03T04:05:06-01:00",
+        "2012-12-12 12:12:12Z",
+        "2012-12-12t12:12:12Z",
         "2012-12-12T12:12:12Z",
         "2012 -12-12T12:12:12Z",
         "2012  -12-12T12:12:12Z",
@@ -871,7 +873,6 @@ fn test_parse_datetime_utc() {
         "2012-12-12T12:61:12Z",     // invalid minute
         "2012-12-12T12:12:62Z",     // invalid second
         "2012-12-12 T12:12:12Z",    // space after date
-        "2012-12-12t12:12:12Z",     // wrong divider 't'
         "2012-12-12T12:12:12ZZ",    // trailing literal 'Z'
         "+802701-12-12T12:12:12Z",  // invalid year (out of bounds)
         "+ 2012-12-12T12:12:12Z",   // invalid space before year
