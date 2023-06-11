@@ -155,7 +155,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     Ok((s, ()))
 }
 
-fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
+pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     macro_rules! try_consume {
         ($e:expr) => {{
             let (s_, v) = $e?;
@@ -1817,15 +1817,9 @@ mod tests {
             ("2015-01-20T00:00:1-08:00", Err(INVALID)),  // missing complete S
         ];
 
-        fn rfc3339_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
-            let mut parsed = Parsed::new();
-            parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter())?;
-            parsed.to_datetime()
-        }
-
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
-            let dt = rfc3339_to_datetime(date); // parse a date
+            let dt = DateTime::<FixedOffset>::parse_from_rfc3339(date);
             if dt != checkdate {
                 // check for expected result
                 panic!(
