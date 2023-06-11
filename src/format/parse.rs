@@ -488,7 +488,13 @@ where
                     }
 
                     &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
-                    &RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                    &RFC3339 => {
+                        // Used for the `%+` specifier, which has the description:
+                        // "Same as `%Y-%m-%dT%H:%M:%S%.f%:z` (...)
+                        // This format also supports having a `Z` or `UTC` in place of `%:z`."
+                        // Use the relaxed parser to match this description.
+                        try_consume!(parse_rfc3339_relaxed(parsed, s))
+                    }
                 }
             }
 
