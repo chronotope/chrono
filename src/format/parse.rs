@@ -522,42 +522,54 @@ impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const DATE_ITEMS: &[Item<'static>] = &[
-            Item::Numeric(Numeric::Year, Pad::Zero),
-            Item::Space(""),
-            Item::Literal("-"),
-            Item::Numeric(Numeric::Month, Pad::Zero),
-            Item::Space(""),
-            Item::Literal("-"),
-            Item::Numeric(Numeric::Day, Pad::Zero),
-        ];
-        const TIME_ITEMS: &[Item<'static>] = &[
-            Item::Numeric(Numeric::Hour, Pad::Zero),
-            Item::Space(""),
-            Item::Literal(":"),
-            Item::Numeric(Numeric::Minute, Pad::Zero),
-            Item::Space(""),
-            Item::Literal(":"),
-            Item::Numeric(Numeric::Second, Pad::Zero),
-            Item::Fixed(Fixed::Nanosecond),
-            Item::Space(""),
-            Item::Fixed(Fixed::TimezoneOffsetZ),
-            Item::Space(""),
-        ];
-
         let mut parsed = Parsed::new();
-        match parse_internal(&mut parsed, s, DATE_ITEMS.iter()) {
-            Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => {
-                if remainder.starts_with('T') || remainder.starts_with(' ') {
-                    parse(&mut parsed, &remainder[1..], TIME_ITEMS.iter())?;
-                } else {
-                    return Err(INVALID);
-                }
-            }
-            Err((_s, e)) => return Err(e),
-            Ok(_) => return Err(NOT_ENOUGH),
-        };
+        parse_rfc3339_relaxed(&mut parsed, s)?;
         parsed.to_datetime()
+    }
+}
+
+/// Accepts a relaxed form of RFC3339.
+///
+/// Differences with RFC3339:
+/// - Values don't require padding to two digits.
+/// - Years outside the range 0...=9999 are accepted, but they must include a sign.
+/// - `UTC` is accepted as a valid timezone name/offset.
+/// - There can be spaces between any of the components.
+/// - The colon in the offset may be missing.
+fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, s: &'a str) -> ParseResult<(&'a str, ())> {
+    const DATE_ITEMS: &[Item<'static>] = &[
+        Item::Numeric(Numeric::Year, Pad::Zero),
+        Item::Space(""),
+        Item::Literal("-"),
+        Item::Numeric(Numeric::Month, Pad::Zero),
+        Item::Space(""),
+        Item::Literal("-"),
+        Item::Numeric(Numeric::Day, Pad::Zero),
+    ];
+    const TIME_ITEMS: &[Item<'static>] = &[
+        Item::Numeric(Numeric::Hour, Pad::Zero),
+        Item::Space(""),
+        Item::Literal(":"),
+        Item::Numeric(Numeric::Minute, Pad::Zero),
+        Item::Space(""),
+        Item::Literal(":"),
+        Item::Numeric(Numeric::Second, Pad::Zero),
+        Item::Fixed(Fixed::Nanosecond),
+        Item::Space(""),
+        Item::Fixed(Fixed::TimezoneOffsetZ),
+        Item::Space(""),
+    ];
+
+    match parse_internal(parsed, s, DATE_ITEMS.iter()) {
+        Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => {
+            if remainder.starts_with('T') || remainder.starts_with(' ') {
+                parse(parsed, &remainder[1..], TIME_ITEMS.iter()).map(|_| (s, ()))
+            } else {
+                Err(INVALID)
+            }
+        }
+        Err((_s, e)) => Err(e),
+        Ok(_) => Err(NOT_ENOUGH),
     }
 }
 
