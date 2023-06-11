@@ -16,10 +16,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{
+    parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
+    StrftimeItems, TOO_LONG,
+};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::{write_rfc3339, DelayedFormat};
-use crate::format::{Fixed, Item};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -699,9 +701,11 @@ impl DateTime<FixedOffset> {
     /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
     /// values (or the other way around).
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        let (s, _) = parse_rfc3339(&mut parsed, s)?;
+        if !s.is_empty() {
+            return Err(TOO_LONG);
+        }
         parsed.to_datetime()
     }
 
