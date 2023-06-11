@@ -637,6 +637,10 @@ fn test_datetime_rfc3339() {
         DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
         Ok(ymdhms(&edt0, 2015, 2, 18, 23, 16, 9))
     );
+    assert_eq!(
+        DateTime::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00"),
+        Ok(ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567))
+    );
     assert_eq!(ymdhms_utc(2015, 2, 18, 23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
 
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567 +05:00").is_err());
@@ -646,7 +650,6 @@ fn test_datetime_rfc3339() {
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567PST").is_err());
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+0500").is_err());
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00:00").is_err());
-    assert!(DateTime::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00").is_err());
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567:+05:00").is_err());
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00 ").is_err());
     assert!(DateTime::parse_from_rfc3339(" 2015-02-18T23:59:60.234567+05:00").is_err());

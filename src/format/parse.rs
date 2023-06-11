@@ -190,6 +190,8 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     // - unlike RFC 2822, the valid offset ranges from -23:59 to +23:59.
     //   note that this restriction is unique to RFC 3339 and not ISO 8601.
     //   since this is not a typical Chrono behavior, we check it earlier.
+    //
+    // - For readability a full-date and a full-time may be separated by a space character.
 
     parsed.set_year(try_consume!(scan::number(s, 4, 4)))?;
     s = scan::char(s, b'-')?;
@@ -198,7 +200,7 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     parsed.set_day(try_consume!(scan::number(s, 2, 2)))?;
 
     s = match s.as_bytes().first() {
-        Some(&b't') | Some(&b'T') => &s[1..],
+        Some(&b't' | &b'T' | &b' ') => &s[1..],
         Some(_) => return Err(INVALID),
         None => return Err(TOO_SHORT),
     };
@@ -1753,7 +1755,7 @@ mod tests {
                 "2015-01-20T17:35:20.000000000452−08:00",
                 Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
             ), // too small with MINUS SIGN (U+2212)
-            ("2015-01-20 17:35:20.001-08:00", Err(INVALID)), // missing separator 'T'
+            ("2015-01-20 17:35:20-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // without 'T'
             ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YMD
             ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HMS
             ("-01-20T17:35:20-08:00", Err(INVALID)),         // missing year
