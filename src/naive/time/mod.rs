@@ -100,7 +100,8 @@ mod tests;
 /// (short for [`NaiveTime::overflowing_add_signed`](#method.overflowing_add_signed)):
 ///
 /// - `03:00:00 + 1s = 03:00:01`.
-/// - `03:00:59 + 60s = 03:02:00`.
+/// - `03:00:59 + 60s = 03:01:59`.
+/// - `03:00:59 + 61s = 03:02:00`.
 /// - `03:00:59 + 1s = 03:01:00`.
 /// - `03:00:60 + 1s = 03:01:00`.
 ///   Note that the sum is identical to the previous.
