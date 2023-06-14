@@ -19,9 +19,8 @@ name = "chrono"
 [features]
 default = ["clock", "std", "oldtime", "wasmbind"]
 alloc = []
-libc = []
 std = []
-clock = ["std", "winapi", "iana-time-zone"]
+clock = ["std", "winapi", "iana-time-zone", "libc"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
@@ -46,11 +45,11 @@ js-sys = { version = "0.3", optional = true }       # contains FFI bindings for 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "timezoneapi", "sysinfoapi"], optional = true }
 
-[target.'cfg(unix)'.dependencies]
+[target.'cfg(all(unix, not(target_os = "android")))'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
-android-tzdata = "0.1.1"
+libc = { version = "0.2.146", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }
