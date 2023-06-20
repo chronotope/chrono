@@ -415,7 +415,11 @@ enum CommentState {
 
 #[cfg(test)]
 mod tests {
-    use super::{comment_2822, consume_colon_maybe, s_next, space, trim1};
+    use super::{
+        comment_2822, consume_colon_maybe, equals, nanosecond, nanosecond_fixed, s_next,
+        short_or_long_month0, short_or_long_weekday, space, timezone_name_skip,
+        timezone_offset_2822, trim1,
+    };
     use crate::format::{INVALID, TOO_SHORT};
 
     #[test]
@@ -466,72 +470,72 @@ mod tests {
     #[test]
     fn test_timezone_name_skip() {
         let s = "\r";
-        let ans = crate::format::scan::timezone_name_skip(s);
+        let ans = timezone_name_skip(s);
         assert!(ans.is_ok());
     }
 
     #[test]
     fn test_timezone_offset_2822() {
         let s = "cSt";
-        let ans = crate::format::scan::timezone_offset_2822(s);
+        let ans = timezone_offset_2822(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-21600)))");
 
         let s = "pSt";
-        let ans = crate::format::scan::timezone_offset_2822(s);
+        let ans = timezone_offset_2822(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-28800)))");
 
         let s = "mSt";
-        let ans = crate::format::scan::timezone_offset_2822(s);
+        let ans = timezone_offset_2822(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-25200)))");
 
         let s = "Gp";
-        let ans = crate::format::scan::timezone_offset_2822(s);
+        let ans = timezone_offset_2822(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", None))");
 
         let s = "-1551";
-        let ans = crate::format::scan::timezone_offset_2822(s);
+        let ans = timezone_offset_2822(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-57060)))");
     }
 
     #[test]
     fn test_short_or_long_month0() {
         let s = "JUn";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 5))");
 
         let s = "mAy";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 4))");
 
         let s = "AuG";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 7))");
 
         let s = "Aprâ";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"â\", 3))");
 
         let s = "JUl";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 6))");
 
         let s = "mAr";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 2))");
 
         let s = "Jan";
-        let ans = crate::format::scan::short_or_long_month0(s);
+        let ans = short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 0))");
     }
 
     #[test]
     fn test_short_or_long_weekday() {
         let s = "sAtu";
-        let ans = crate::format::scan::short_or_long_weekday(s);
+        let ans = short_or_long_weekday(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"u\", Sat))");
 
         let s = "thu";
-        let ans = crate::format::scan::short_or_long_weekday(s);
+        let ans = short_or_long_weekday(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", Thu))");
     }
 
@@ -539,23 +543,23 @@ mod tests {
     fn test_nanosecond_fixed() {
         let s = "";
         let num = 0usize;
-        let ans = crate::format::scan::nanosecond_fixed(s, num);
+        let ans = nanosecond_fixed(s, num);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 0))");
 
         let s = "";
         let num = 1usize;
-        let ans = crate::format::scan::nanosecond_fixed(s, num);
+        let ans = nanosecond_fixed(s, num);
         assert_eq!(format!("{:?}", ans), "Err(ParseError(TooShort))");
     }
 
     #[test]
     fn test_nanosecond() {
         let s = "2Ù";
-        let ans = crate::format::scan::nanosecond(s);
+        let ans = nanosecond(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"Ù\", 200000000))");
 
         let s = "8";
-        let ans = crate::format::scan::nanosecond(s);
+        let ans = nanosecond(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 800000000))");
     }
 
@@ -563,17 +567,17 @@ mod tests {
     fn test_equals() {
         let s = b"\x5b";
         let pattern = "[";
-        let ans = crate::format::scan::equals(s, pattern);
+        let ans = equals(s, pattern);
         assert!(ans);
 
         let s = b"\x0a\x5b\x4b";
         let pattern = "[K";
-        let ans = crate::format::scan::equals(s, pattern);
+        let ans = equals(s, pattern);
         assert!(!ans);
 
         let s = b"\x00";
         let pattern = "";
-        let ans = crate::format::scan::equals(s, pattern);
+        let ans = equals(s, pattern);
         assert!(!ans);
     }
 

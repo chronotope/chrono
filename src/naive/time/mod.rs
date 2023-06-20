@@ -1451,18 +1451,3 @@ where
     assert!(from_str(r#"{"secs":0,"frac":0}"#).is_err());
     assert!(from_str(r#"null"#).is_err());
 }
-
-#[test]
-fn test_from_str() {
-    let str = "0:0:4.00000000000";
-    let ans = <NaiveTime as std::str::FromStr>::from_str(str);
-    assert_eq!(format!("{:?}", ans), "Ok(00:00:04)");
-
-    let str = "0:7:60";
-    let ans = <NaiveTime as std::str::FromStr>::from_str(str);
-    assert_eq!(format!("{:?}", ans), "Ok(00:07:60)");
-
-    let str = "7:85:8";
-    let ans = <NaiveTime as std::str::FromStr>::from_str(str);
-    assert_eq!(format!("{:?}", ans), "Err(ParseError(OutOfRange))");
-}

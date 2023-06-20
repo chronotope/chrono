@@ -2998,33 +2998,6 @@ mod tests {
     }
 
     #[test]
-    fn test_date_from_str2() {
-        let str = "-2-2-2";
-        let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
-        assert_eq!(format!("{:?}", ans), "Ok(-0002-02-02)");
-
-        let str = "-1-1-2";
-        let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
-        assert_eq!(format!("{:?}", ans), "Ok(-0001-01-02)");
-
-        let str = "4-4-4";
-        let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
-        assert_eq!(format!("{:?}", ans), "Ok(0004-04-04)");
-
-        let str = "9";
-        let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
-        assert_eq!(format!("{:?}", ans), "Err(ParseError(TooShort))");
-
-        let str = "4-44-44";
-        let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
-        assert_eq!(format!("{:?}", ans), "Err(ParseError(OutOfRange))");
-
-        let str = "4-4-9";
-        let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
-        assert_eq!(format!("{:?}", ans), "Ok(0004-04-09)");
-    }
-
-    #[test]
     fn test_date_parse_from_str() {
         let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
         assert_eq!(

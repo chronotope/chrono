@@ -334,15 +334,16 @@ enum Version {
 
 #[cfg(test)]
 mod tests {
+    use crate::offset::local::tz_info::parser::parse;
 
     #[test]
     fn test_parse() {
         let data = b"\x54\x5a\x69\x66\x3d";
-        let ans = crate::offset::local::tz_info::parser::parse(data);
+        let ans = parse(data);
         assert_eq!(format!("{:?}", ans), "Err(UnsupportedTzFile(\"unsupported TZif version\"))");
 
         let data = b"\x0a\x0a\x0a\x0a";
-        let ans = crate::offset::local::tz_info::parser::parse(data);
+        let ans = parse(data);
         assert_eq!(format!("{:?}", ans), "Err(InvalidTzFile(\"invalid magic number\"))");
     }
 }
