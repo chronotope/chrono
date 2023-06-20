@@ -1966,3 +1966,15 @@ where
     assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err());
     assert!(from_str(r#"null"#).is_err());
 }
+
+
+#[test]
+fn test_from_str(){
+    let str = "6";
+    let ans = <NaiveDateTime as std::str::FromStr>::from_str(str);
+    assert_eq!(format!("{:?}", ans), "Err(ParseError(TooShort))");
+
+    let str = "+6666667006";
+    let ans = <NaiveDateTime as std::str::FromStr>::from_str(str);
+    assert_eq!(format!("{:?}", ans), "Err(ParseError(OutOfRange))");
+}
