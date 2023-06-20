@@ -1967,9 +1967,8 @@ where
     assert!(from_str(r#"null"#).is_err());
 }
 
-
 #[test]
-fn test_from_str(){
+fn test_from_str() {
     let str = "6";
     let ans = <NaiveDateTime as std::str::FromStr>::from_str(str);
     assert_eq!(format!("{:?}", ans), "Err(ParseError(TooShort))");

@@ -883,28 +883,38 @@ mod tests {
 
         let tz_string = b"BBf3";
         let use_string_extensions = false;
-        assert_eq!(format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-                   "Ok(Fixed(LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"BBf\") }))");
+        assert_eq!(
+            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
+            "Ok(Fixed(LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"BBf\") }))"
+        );
 
         let tz_string = b"V-1,1/1:62[";
         let use_string_extensions = false;
-        assert_eq!(format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-                   "Err(InvalidTzString(\"invalid day time minute\"))");
+        assert_eq!(
+            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
+            "Err(InvalidTzString(\"invalid day time minute\"))"
+        );
 
         let tz_string = b"2,2212";
         let use_string_extensions = false;
-        assert_eq!(format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-                   "Err(TransitionRule(\"invalid rule day julian day\"))");
+        assert_eq!(
+            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
+            "Err(TransitionRule(\"invalid rule day julian day\"))"
+        );
 
         let tz_string = b"hhh5,5,1";
         let use_string_extensions = false;
-        assert_eq!(format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-                   "Err(LocalTimeType(\"time zone name must have between 3 and 7 characters\"))");
+        assert_eq!(
+            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
+            "Err(LocalTimeType(\"time zone name must have between 3 and 7 characters\"))"
+        );
 
         let tz_string = b"3,M7.4.8l";
         let use_string_extensions = true;
-        assert_eq!(format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-                   "Err(TransitionRule(\"invalid rule day week day\"))");
+        assert_eq!(
+            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
+            "Err(TransitionRule(\"invalid rule day week day\"))"
+        );
     }
 
     #[test]
@@ -1053,7 +1063,10 @@ mod tests {
 
         let unix_time = 0;
         let ans = crate::offset::local::tz_info::rule::UtcDateTime::from_timespec(unix_time);
-        assert_eq!(format!("{:?}", ans), "Ok(UtcDateTime { year: 1970, month: 1, month_day: 1, hour: 0, minute: 0, second: 0 })");
+        assert_eq!(
+            format!("{:?}", ans),
+            "Ok(UtcDateTime { year: 1970, month: 1, month_day: 1, hour: 0, minute: 0, second: 0 })"
+        );
     }
 
     #[test]

@@ -1453,7 +1453,7 @@ where
 }
 
 #[test]
-fn test_from_str(){
+fn test_from_str() {
     let str = "0:0:4.00000000000";
     let ans = <NaiveTime as std::str::FromStr>::from_str(str);
     assert_eq!(format!("{:?}", ans), "Ok(00:00:04)");

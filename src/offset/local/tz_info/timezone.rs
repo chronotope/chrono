@@ -752,7 +752,10 @@ mod tests {
 
         let bytes = b"\x54\x5a\x69\x66\x0a";
         let time_zone = TimeZone::from_tz_data(bytes);
-        assert_eq!(format!("{:?}", time_zone), "Err(UnsupportedTzFile(\"unsupported TZif version\"))");
+        assert_eq!(
+            format!("{:?}", time_zone),
+            "Err(UnsupportedTzFile(\"unsupported TZif version\"))"
+        );
         Ok(())
     }
 
@@ -858,7 +861,7 @@ mod tests {
         assert!(TimeZone::from_posix_tz("2,2/29").is_err());
         assert!(TimeZone::from_posix_tz("1,1,4$").is_err());
         //ok cases
-        if let Ok(tz) = TimeZone::from_posix_tz("aaa3aaa3,2,22"){
+        if let Ok(tz) = TimeZone::from_posix_tz("aaa3aaa3,2,22") {
             assert_eq!(format!("{:?}", tz), "TimeZone { \
                                                 transitions: [], \
                                                 local_time_types: [LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"aaa\") }, LocalTimeType { ut_offset: -10800, is_dst: true, name: Some(\"aaa\") }], \
@@ -866,7 +869,7 @@ mod tests {
                                                 extra_rule: Some(Alternate(AlternateTime { std: LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"aaa\") }, dst: LocalTimeType { ut_offset: -10800, is_dst: true, name: Some(\"aaa\") }, dst_start: Julian0WithLeap(2), dst_start_time: 7200, dst_end: Julian0WithLeap(22), dst_end_time: 7200 })) \
                                                 }");
         }
-        if let Ok(tz) = TimeZone::from_posix_tz("TTT8"){
+        if let Ok(tz) = TimeZone::from_posix_tz("TTT8") {
             assert_eq!(format!("{:?}", tz), "TimeZone { \
                                                 transitions: [], \
                                                 local_time_types: [LocalTimeType { ut_offset: -28800, is_dst: false, name: Some(\"TTT\") }], \
@@ -874,7 +877,6 @@ mod tests {
                                                 extra_rule: Some(Fixed(LocalTimeType { ut_offset: -28800, is_dst: false, name: Some(\"TTT\") })) \
                                                 }");
         }
-
 
         Ok(())
     }

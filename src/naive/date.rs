@@ -2997,9 +2997,8 @@ mod tests {
         }
     }
 
-
     #[test]
-    fn test_date_from_str2(){
+    fn test_date_from_str2() {
         let str = "-2-2-2";
         let ans = <crate::naive::NaiveDate as std::str::FromStr>::from_str(str);
         assert_eq!(format!("{:?}", ans), "Ok(-0002-02-02)");

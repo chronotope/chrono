@@ -464,7 +464,7 @@ mod tests {
     }
 
     #[test]
-    fn test_timezone_name_skip(){
+    fn test_timezone_name_skip() {
         let s = "\r";
         let ans = crate::format::scan::timezone_name_skip(s);
         assert!(ans.is_ok());
@@ -494,7 +494,7 @@ mod tests {
     }
 
     #[test]
-    fn test_short_or_long_month0(){
+    fn test_short_or_long_month0() {
         let s = "JUn";
         let ans = crate::format::scan::short_or_long_month0(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"\", 5))");
@@ -549,7 +549,7 @@ mod tests {
     }
 
     #[test]
-    fn test_nanosecond(){
+    fn test_nanosecond() {
         let s = "2Ù";
         let ans = crate::format::scan::nanosecond(s);
         assert_eq!(format!("{:?}", ans), "Ok((\"Ù\", 200000000))");
@@ -560,7 +560,7 @@ mod tests {
     }
 
     #[test]
-    fn test_equals(){
+    fn test_equals() {
         let s = b"\x5b";
         let pattern = "[";
         let ans = crate::format::scan::equals(s, pattern);
