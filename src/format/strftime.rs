@@ -742,4 +742,21 @@ mod tests {
         let mut buf = String::new();
         let _ = write!(buf, "{}", dt.format("%#z")).expect_err("parse-only formatter should fail");
     }
+
+    #[test]
+    #[cfg(not(feature = "unstable-locales"))]
+    fn test_type_sizes() {
+        use core::mem::size_of;
+        assert_eq!(size_of::<Item>(), 24);
+        assert_eq!(size_of::<StrftimeItems>(), 80);
+    }
+
+    #[test]
+    #[cfg(feature = "unstable-locales")]
+    fn test_type_sizes() {
+        use core::mem::size_of;
+        assert_eq!(size_of::<Item>(), 24);
+        assert_eq!(size_of::<StrftimeItems>(), 112);
+        assert_eq!(size_of::<Locale>(), 2);
+    }
 }
