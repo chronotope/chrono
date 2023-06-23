@@ -181,19 +181,8 @@ Notes:
 */
 
 #[cfg(feature = "unstable-locales")]
-extern crate alloc;
-
-#[cfg(feature = "unstable-locales")]
-use alloc::vec::Vec;
-
-#[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
-
-#[cfg(feature = "unstable-locales")]
-type Fmt<'a> = Vec<Item<'a>>;
-#[cfg(not(feature = "unstable-locales"))]
-type Fmt<'a> = &'static [Item<'static>];
 
 static D_FMT: &[Item<'static>] =
     &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
@@ -221,20 +210,25 @@ pub struct StrftimeItems<'a> {
     remainder: &'a str,
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
     /// `queue` stores a slice of `Item`s that have to be returned one by one.
-    queue: Fmt<'a>,
-    /// Date format
-    d_fmt: Fmt<'a>,
-    /// Date and time format
-    d_t_fmt: Fmt<'a>,
-    /// Time format
-    t_fmt: Fmt<'a>,
+    queue: &'static [Item<'static>],
+    #[cfg(feature = "unstable-locales")]
+    locale_str: &'a str,
+    #[cfg(feature = "unstable-locales")]
+    locale: Option<Locale>,
 }
 
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[must_use]
     pub fn new(s: &'a str) -> StrftimeItems<'a> {
-        Self::with_remainer(s)
+        #[cfg(not(feature = "unstable-locales"))]
+        {
+            StrftimeItems { remainder: s, queue: &[] }
+        }
+        #[cfg(feature = "unstable-locales")]
+        {
+            StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: None }
+        }
     }
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
@@ -242,35 +236,7 @@ impl<'a> StrftimeItems<'a> {
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
     pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
-        let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
-        let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
-        let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
-
-        StrftimeItems { remainder: s, queue: Vec::new(), d_fmt, d_t_fmt, t_fmt }
-    }
-
-    #[cfg(not(feature = "unstable-locales"))]
-    fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
-        static FMT_NONE: &[Item<'static>; 0] = &[];
-
-        StrftimeItems {
-            remainder: s,
-            queue: FMT_NONE,
-            d_fmt: D_FMT,
-            d_t_fmt: D_T_FMT,
-            t_fmt: T_FMT,
-        }
-    }
-
-    #[cfg(feature = "unstable-locales")]
-    fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
-        StrftimeItems {
-            remainder: s,
-            queue: Vec::new(),
-            d_fmt: D_FMT.to_vec(),
-            d_t_fmt: D_T_FMT.to_vec(),
-            t_fmt: T_FMT.to_vec(),
-        }
+        StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }
     }
 }
 
@@ -281,17 +247,16 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
     fn next(&mut self) -> Option<Item<'a>> {
         // We have items queued to return from a specifier composed of multiple formatting items.
-        if !self.queue.is_empty() {
-            let item;
-            #[cfg(feature = "unstable-locales")]
-            {
-                item = self.queue.remove(0);
-            }
-            #[cfg(not(feature = "unstable-locales"))]
-            {
-                item = self.queue[0].clone();
-                self.queue = &self.queue[1..];
-            }
+        if let Some((item, remainder)) = self.queue.split_first() {
+            self.queue = remainder;
+            return Some(item.clone());
+        }
+
+        // We are in the middle of parsing the localized formatting string of a specifier.
+        #[cfg(feature = "unstable-locales")]
+        if !self.locale_str.is_empty() {
+            let (remainder, item) = self.parse_next_item(self.locale_str)?;
+            self.locale_str = remainder;
             return Some(item);
         }
 
@@ -339,31 +304,15 @@ impl<'a> StrftimeItems<'a> {
 
                 macro_rules! queue {
                     [$head:expr, $($tail:expr),+ $(,)*] => ({
-                        #[cfg(feature = "unstable-locales")]
-                        {
-                            self.queue.clear();
-                            $(self.queue.push($tail);)+
-                        }
-                        #[cfg(not(feature = "unstable-locales"))]
-                        {
-                            const QUEUE: &'static [Item<'static>] = &[$($tail),+];
-                            self.queue = QUEUE;
-                        }
+                        const QUEUE: &'static [Item<'static>] = &[$($tail),+];
+                        self.queue = QUEUE;
                         $head
                     })
                 }
-
+                #[cfg(not(feature = "unstable-locales"))]
                 macro_rules! queue_from_slice {
                     ($slice:expr) => {{
-                        #[cfg(feature = "unstable-locales")]
-                        {
-                            self.queue.clear();
-                            self.queue.extend_from_slice(&$slice[1..]);
-                        }
-                        #[cfg(not(feature = "unstable-locales"))]
-                        {
-                            self.queue = &$slice[1..];
-                        }
+                        self.queue = &$slice[1..];
                         $slice[0].clone()
                     }};
                 }
@@ -387,12 +336,18 @@ impl<'a> StrftimeItems<'a> {
                     'U' => num0!(WeekFromSun),
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
-                    'X' => queue_from_slice!(self.t_fmt),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'X' => queue_from_slice!(T_FMT),
+                    #[cfg(feature = "unstable-locales")]
+                    'X' => self.switch_to_locale_str(locales::t_fmt, T_FMT),
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
-                    'c' => queue_from_slice!(self.d_t_fmt),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'c' => queue_from_slice!(D_T_FMT),
+                    #[cfg(feature = "unstable-locales")]
+                    'c' => self.switch_to_locale_str(locales::d_t_fmt, D_T_FMT),
                     'd' => num0!(Day),
                     'e' => nums!(Day),
                     'f' => num0!(Nanosecond),
@@ -419,7 +374,10 @@ impl<'a> StrftimeItems<'a> {
                         queue![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"), num0!(Year)]
                     }
                     'w' => num!(NumDaysFromSun),
-                    'x' => queue_from_slice!(self.d_fmt),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'x' => queue_from_slice!(D_FMT),
+                    #[cfg(feature = "unstable-locales")]
+                    'x' => self.switch_to_locale_str(locales::d_fmt, D_FMT),
                     'y' => num0!(YearMod100),
                     'z' => {
                         if is_alternate {
@@ -511,6 +469,23 @@ impl<'a> StrftimeItems<'a> {
                 remainder = &remainder[nextspec..];
                 Some((remainder, item))
             }
+        }
+    }
+
+    #[cfg(feature = "unstable-locales")]
+    fn switch_to_locale_str(
+        &mut self,
+        localized_fmt_str: impl Fn(Locale) -> &'static str,
+        fallback: &'static [Item<'static>],
+    ) -> Item<'a> {
+        if let Some(locale) = self.locale {
+            assert!(self.locale_str.is_empty());
+            let (fmt_str, item) = self.parse_next_item(localized_fmt_str(locale)).unwrap();
+            self.locale_str = fmt_str;
+            item
+        } else {
+            self.queue = &fallback[1..];
+            fallback[0].clone()
         }
     }
 }
@@ -755,7 +730,7 @@ mod tests {
     fn test_type_sizes() {
         use core::mem::size_of;
         assert_eq!(size_of::<Item>(), 24);
-        assert_eq!(size_of::<StrftimeItems>(), 80);
+        assert_eq!(size_of::<StrftimeItems>(), 32);
     }
 
     #[test]
@@ -763,7 +738,7 @@ mod tests {
     fn test_type_sizes() {
         use core::mem::size_of;
         assert_eq!(size_of::<Item>(), 24);
-        assert_eq!(size_of::<StrftimeItems>(), 112);
+        assert_eq!(size_of::<StrftimeItems>(), 56);
         assert_eq!(size_of::<Locale>(), 2);
     }
 }
