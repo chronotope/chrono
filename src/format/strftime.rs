@@ -220,7 +220,7 @@ pub struct StrftimeItems<'a> {
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[must_use]
-    pub fn new(s: &'a str) -> StrftimeItems<'a> {
+    pub const fn new(s: &'a str) -> StrftimeItems<'a> {
         #[cfg(not(feature = "unstable-locales"))]
         {
             StrftimeItems { remainder: s, queue: &[] }
@@ -235,7 +235,7 @@ impl<'a> StrftimeItems<'a> {
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
-    pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
+    pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }
     }
 }
