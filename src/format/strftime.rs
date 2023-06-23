@@ -220,9 +220,8 @@ pub struct StrftimeItems<'a> {
     /// Remaining portion of the string.
     remainder: &'a str,
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
-    /// parser refers to the statically reconstructed slice of them.
-    /// If `recons` is not empty they have to be returned earlier than the `remainder`.
-    recons: Fmt<'a>,
+    /// `queue` stores a slice of `Item`s that have to be returned one by one.
+    queue: Fmt<'a>,
     /// Date format
     d_fmt: Fmt<'a>,
     /// Date and time format
@@ -247,7 +246,7 @@ impl<'a> StrftimeItems<'a> {
         let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
         let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
 
-        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
+        StrftimeItems { remainder: s, queue: Vec::new(), d_fmt, d_t_fmt, t_fmt }
     }
 
     #[cfg(not(feature = "unstable-locales"))]
@@ -256,7 +255,7 @@ impl<'a> StrftimeItems<'a> {
 
         StrftimeItems {
             remainder: s,
-            recons: FMT_NONE,
+            queue: FMT_NONE,
             d_fmt: D_FMT,
             d_t_fmt: D_T_FMT,
             t_fmt: T_FMT,
@@ -267,7 +266,7 @@ impl<'a> StrftimeItems<'a> {
     fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
         StrftimeItems {
             remainder: s,
-            recons: Vec::new(),
+            queue: Vec::new(),
             d_fmt: D_FMT.to_vec(),
             d_t_fmt: D_T_FMT.to_vec(),
             t_fmt: T_FMT.to_vec(),
@@ -281,17 +280,17 @@ impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;
 
     fn next(&mut self) -> Option<Item<'a>> {
-        // we have some reconstructed items to return
-        if !self.recons.is_empty() {
+        // We have items queued to return from a specifier composed of multiple formatting items.
+        if !self.queue.is_empty() {
             let item;
             #[cfg(feature = "unstable-locales")]
             {
-                item = self.recons.remove(0);
+                item = self.queue.remove(0);
             }
             #[cfg(not(feature = "unstable-locales"))]
             {
-                item = self.recons[0].clone();
-                self.recons = &self.recons[1..];
+                item = self.queue[0].clone();
+                self.queue = &self.queue[1..];
             }
             return Some(item);
         }
@@ -329,32 +328,32 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     return Some(Item::Error);
                 }
 
-                macro_rules! recons {
+                macro_rules! queue {
                     [$head:expr, $($tail:expr),+ $(,)*] => ({
                         #[cfg(feature = "unstable-locales")]
                         {
-                            self.recons.clear();
-                            $(self.recons.push($tail);)+
+                            self.queue.clear();
+                            $(self.queue.push($tail);)+
                         }
                         #[cfg(not(feature = "unstable-locales"))]
                         {
-                            const RECONS: &'static [Item<'static>] = &[$($tail),+];
-                            self.recons = RECONS;
+                            const QUEUE: &'static [Item<'static>] = &[$($tail),+];
+                            self.queue = QUEUE;
                         }
                         $head
                     })
                 }
 
-                macro_rules! recons_from_slice {
+                macro_rules! queue_from_slice {
                     ($slice:expr) => {{
                         #[cfg(feature = "unstable-locales")]
                         {
-                            self.recons.clear();
-                            self.recons.extend_from_slice(&$slice[1..]);
+                            self.queue.clear();
+                            self.queue.extend_from_slice(&$slice[1..]);
                         }
                         #[cfg(not(feature = "unstable-locales"))]
                         {
-                            self.recons = &$slice[1..];
+                            self.queue = &$slice[1..];
                         }
                         $slice[0].clone()
                     }};
@@ -365,26 +364,26 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'B' => fix!(LongMonthName),
                     'C' => num0!(YearDiv100),
                     'D' => {
-                        recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)]
+                        queue![num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)]
                     }
-                    'F' => recons![num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)],
+                    'F' => queue![num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)],
                     'G' => num0!(IsoYear),
                     'H' => num0!(Hour),
                     'I' => num0!(Hour12),
                     'M' => num0!(Minute),
                     'P' => fix!(LowerAmPm),
-                    'R' => recons![num0!(Hour), lit!(":"), num0!(Minute)],
+                    'R' => queue![num0!(Hour), lit!(":"), num0!(Minute)],
                     'S' => num0!(Second),
-                    'T' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
+                    'T' => queue![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
                     'U' => num0!(WeekFromSun),
                     'V' => num0!(IsoWeek),
                     'W' => num0!(WeekFromMon),
-                    'X' => recons_from_slice!(self.t_fmt),
+                    'X' => queue_from_slice!(self.t_fmt),
                     'Y' => num0!(Year),
                     'Z' => fix!(TimezoneName),
                     'a' => fix!(ShortWeekdayName),
                     'b' | 'h' => fix!(ShortMonthName),
-                    'c' => recons_from_slice!(self.d_t_fmt),
+                    'c' => queue_from_slice!(self.d_t_fmt),
                     'd' => num0!(Day),
                     'e' => nums!(Day),
                     'f' => num0!(Nanosecond),
@@ -395,7 +394,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     'm' => num0!(Month),
                     'n' => sp!("\n"),
                     'p' => fix!(UpperAmPm),
-                    'r' => recons![
+                    'r' => queue![
                         num0!(Hour12),
                         lit!(":"),
                         num0!(Minute),
@@ -408,10 +407,10 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     't' => sp!("\t"),
                     'u' => num!(WeekdayFromMon),
                     'v' => {
-                        recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"), num0!(Year)]
+                        queue![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"), num0!(Year)]
                     }
                     'w' => num!(NumDaysFromSun),
-                    'x' => recons_from_slice!(self.d_fmt),
+                    'x' => queue_from_slice!(self.d_fmt),
                     'y' => num0!(YearMod100),
                     'z' => {
                         if is_alternate {
@@ -467,13 +466,15 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     _ => Item::Error, // no such specifier
                 };
 
-                // adjust `item` if we have any padding modifier
+                // Adjust `item` if we have any padding modifier.
+                // Not allowed on non-numeric items or on specifiers composed out of multiple
+                // formatting items.
                 if let Some(new_pad) = pad_override {
                     match item {
-                        Item::Numeric(ref kind, _pad) if self.recons.is_empty() => {
+                        Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
                             Some(Item::Numeric(kind.clone(), new_pad))
                         }
-                        _ => Some(Item::Error), // no reconstructed or non-numeric item allowed
+                        _ => Some(Item::Error),
                     }
                 } else {
                     Some(item)
