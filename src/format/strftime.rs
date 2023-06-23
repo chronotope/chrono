@@ -295,22 +295,31 @@ impl<'a> Iterator for StrftimeItems<'a> {
             return Some(item);
         }
 
-        match self.remainder.chars().next() {
+        // Normal: we are parsing the formatting string.
+        let (remainder, item) = self.parse_next_item(self.remainder)?;
+        self.remainder = remainder;
+        Some(item)
+    }
+}
+
+impl<'a> StrftimeItems<'a> {
+    fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
+        match remainder.chars().next() {
             // we are done
             None => None,
 
             // the next item is a specifier
             Some('%') => {
-                self.remainder = &self.remainder[1..];
+                remainder = &remainder[1..];
 
                 macro_rules! next {
                     () => {
-                        match self.remainder.chars().next() {
+                        match remainder.chars().next() {
                             Some(x) => {
-                                self.remainder = &self.remainder[x.len_utf8()..];
+                                remainder = &remainder[x.len_utf8()..];
                                 x
                             }
-                            None => return Some(Item::Error), // premature end of string
+                            None => return Some((remainder, Item::Error)), // premature end of string
                         }
                     };
                 }
@@ -325,7 +334,7 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let is_alternate = spec == '#';
                 let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
-                    return Some(Item::Error);
+                    return Some((remainder, Item::Error));
                 }
 
                 macro_rules! queue {
@@ -421,14 +430,14 @@ impl<'a> Iterator for StrftimeItems<'a> {
                     }
                     '+' => fix!(RFC3339),
                     ':' => {
-                        if self.remainder.starts_with("::z") {
-                            self.remainder = &self.remainder[3..];
+                        if remainder.starts_with("::z") {
+                            remainder = &remainder[3..];
                             fix!(TimezoneOffsetTripleColon)
-                        } else if self.remainder.starts_with(":z") {
-                            self.remainder = &self.remainder[2..];
+                        } else if remainder.starts_with(":z") {
+                            remainder = &remainder[2..];
                             fix!(TimezoneOffsetDoubleColon)
-                        } else if self.remainder.starts_with('z') {
-                            self.remainder = &self.remainder[1..];
+                        } else if remainder.starts_with('z') {
+                            remainder = &remainder[1..];
                             fix!(TimezoneOffsetColon)
                         } else {
                             Item::Error
@@ -472,38 +481,35 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 if let Some(new_pad) = pad_override {
                     match item {
                         Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
-                            Some(Item::Numeric(kind.clone(), new_pad))
+                            Some((remainder, Item::Numeric(kind.clone(), new_pad)))
                         }
-                        _ => Some(Item::Error),
+                        _ => Some((remainder, Item::Error)),
                     }
                 } else {
-                    Some(item)
+                    Some((remainder, item))
                 }
             }
 
             // the next item is space
             Some(c) if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
-                let nextspec = self
-                    .remainder
-                    .find(|c: char| !c.is_whitespace())
-                    .unwrap_or(self.remainder.len());
+                let nextspec =
+                    remainder.find(|c: char| !c.is_whitespace()).unwrap_or(remainder.len());
                 assert!(nextspec > 0);
-                let item = sp!(&self.remainder[..nextspec]);
-                self.remainder = &self.remainder[nextspec..];
-                Some(item)
+                let item = sp!(&remainder[..nextspec]);
+                remainder = &remainder[nextspec..];
+                Some((remainder, item))
             }
 
             // the next item is literal
             _ => {
-                let nextspec = self
-                    .remainder
+                let nextspec = remainder
                     .find(|c: char| c.is_whitespace() || c == '%')
-                    .unwrap_or(self.remainder.len());
+                    .unwrap_or(remainder.len());
                 assert!(nextspec > 0);
-                let item = lit!(&self.remainder[..nextspec]);
-                self.remainder = &self.remainder[nextspec..];
-                Some(item)
+                let item = lit!(&remainder[..nextspec]);
+                remainder = &remainder[nextspec..];
+                Some((remainder, item))
             }
         }
     }
