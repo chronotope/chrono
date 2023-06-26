@@ -146,6 +146,36 @@ fn bench_parse_strftime_localized(c: &mut Criterion) {
     });
 }
 
+fn bench_format(c: &mut Criterion) {
+    let dt = Local::now();
+    c.bench_function("bench_format", |b| b.iter(|| format!("{}", dt.format("%Y-%m-%d %H-%M-%S"))));
+}
+
+fn bench_format_with_items(c: &mut Criterion) {
+    let dt = Local::now();
+    let items: Vec<_> = StrftimeItems::new("%Y-%m-%d %H-%M-%S").collect();
+    c.bench_function("bench_format_with_items", |b| {
+        b.iter(|| format!("{}", dt.format_with_items(items.iter())))
+    });
+}
+
+fn bench_format_manual(c: &mut Criterion) {
+    let dt = Local::now();
+    c.bench_function("bench_format_manual", |b| {
+        b.iter(|| {
+            format!(
+                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                dt.year(),
+                dt.month(),
+                dt.day(),
+                dt.hour(),
+                dt.minute(),
+                dt.second()
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_datetime_parse_from_rfc2822,
@@ -157,6 +187,9 @@ criterion_group!(
     bench_num_days_from_ce,
     bench_get_local_time,
     bench_parse_strftime,
+    bench_format,
+    bench_format_with_items,
+    bench_format_manual,
 );
 
 #[cfg(feature = "unstable-locales")]
