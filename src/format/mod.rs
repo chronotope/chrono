@@ -42,6 +42,15 @@ use std::error::Error;
 
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 
+mod formatting;
+mod parsed;
+
+// due to the size of parsing routines, they are in separate modules.
+mod parse;
+pub(crate) mod scan;
+
+pub mod strftime;
+
 #[cfg(feature = "unstable-locales")]
 pub(crate) mod locales;
 
@@ -399,15 +408,6 @@ const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
 const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
-
-mod formatting;
-mod parsed;
-
-// due to the size of parsing routines, they are in separate modules.
-mod parse;
-pub(crate) mod scan;
-
-pub mod strftime;
 // this implementation is here only because we need some private code from `scan`
 
 /// Parsing a `str` into a `Weekday` uses the format [`%W`](./format/strftime/index.html).
