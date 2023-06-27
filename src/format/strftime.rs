@@ -184,25 +184,6 @@ Notes:
 use super::{locales, Locale};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
 
-static D_FMT: &[Item<'static>] =
-    &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-static D_T_FMT: &[Item<'static>] = &[
-    fix!(ShortWeekdayName),
-    sp!(" "),
-    fix!(ShortMonthName),
-    sp!(" "),
-    nums!(Day),
-    sp!(" "),
-    num0!(Hour),
-    lit!(":"),
-    num0!(Minute),
-    lit!(":"),
-    num0!(Second),
-    sp!(" "),
-    num0!(Year),
-];
-static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
-
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
 pub struct StrftimeItems<'a> {
@@ -269,6 +250,25 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
 impl<'a> StrftimeItems<'a> {
     fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
+        static D_FMT: &[Item<'static>] =
+            &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
+        static D_T_FMT: &[Item<'static>] = &[
+            fix!(ShortWeekdayName),
+            sp!(" "),
+            fix!(ShortMonthName),
+            sp!(" "),
+            nums!(Day),
+            sp!(" "),
+            num0!(Hour),
+            lit!(":"),
+            num0!(Minute),
+            lit!(":"),
+            num0!(Second),
+            sp!(" "),
+            num0!(Year),
+        ];
+        static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+
         match remainder.chars().next() {
             // we are done
             None => None,
