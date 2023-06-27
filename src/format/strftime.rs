@@ -156,10 +156,17 @@ Notes:
    China Daylight Time.
 */
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 use super::{fixed, internal_fixed, num, num0, nums};
 #[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalInternal, Item, Numeric, Pad};
+#[cfg(any(feature = "alloc", feature = "std"))]
+use super::{ParseError, BAD_FORMAT};
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 /// Parsing iterator for `strftime`-like format strings.
 ///
@@ -277,6 +284,59 @@ impl<'a> StrftimeItems<'a> {
     #[must_use]
     pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }
+    }
+
+    /// Parse format string into a `Vec` of formatting [`Item`]'s.
+    ///
+    /// If you need to format or parse multiple values with the same format string, it is more
+    /// efficient to convert it to a `Vec` of formatting [`Item`]'s than to re-parse the format
+    /// string on every use.
+    ///
+    /// The `format_with_items` methods on [`DateTime`], [`NaiveDateTime`], [`NaiveDate`] and
+    /// [`NaiveTime`] accept the result for formatting. [`format::parse()`] can make use of it for
+    /// parsing.
+    ///
+    /// [`DateTime`]: crate::DateTime::format_with_items
+    /// [`NaiveDateTime`]: crate::NaiveDateTime::format_with_items
+    /// [`NaiveDate`]: crate::NaiveDate::format_with_items
+    /// [`NaiveTime`]: crate::NaiveTime::format_with_items
+    /// [`format::parse()`]: crate::format::parse()
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string contains an invalid or unrecognized formatting
+    /// specifier.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::format::{parse, Parsed, StrftimeItems};
+    /// use chrono::NaiveDate;
+    ///
+    /// let fmt_items = StrftimeItems::new("%e %b %Y %k.%M").parse()?;
+    /// let datetime = NaiveDate::from_ymd_opt(2023, 7, 11).unwrap().and_hms_opt(9, 0, 0).unwrap();
+    ///
+    /// // Formatting
+    /// assert_eq!(
+    ///     datetime.format_with_items(fmt_items.as_slice().iter()).to_string(),
+    ///     "11 Jul 2023  9.00"
+    /// );
+    ///
+    /// // Parsing
+    /// let mut parsed = Parsed::new();
+    /// parse(&mut parsed, "11 Jul 2023  9.00", fmt_items.as_slice().iter())?;
+    /// let parsed_dt = parsed.to_naive_datetime_with_offset(0)?;
+    /// assert_eq!(parsed_dt, datetime);
+    /// # Ok::<(), chrono::ParseError>(())
+    /// ```
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    pub fn parse(self) -> Result<Vec<Item<'a>>, ParseError> {
+        self.into_iter()
+            .map(|item| match item == Item::Error {
+                false => Ok(item),
+                true => Err(BAD_FORMAT),
+            })
+            .collect()
     }
 }
 
@@ -1019,5 +1079,14 @@ mod tests {
         assert_eq!(size_of::<Item>(), 12);
         assert_eq!(size_of::<StrftimeItems>(), 28);
         assert_eq!(size_of::<Locale>(), 2);
+    }
+
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_strftime_parse() {
+        let fmt_str = StrftimeItems::new("%Y-%m-%dT%H:%M:%S%z");
+        let fmt_items = fmt_str.parse().unwrap();
+        let dt = Utc.with_ymd_and_hms(2014, 5, 7, 12, 34, 56).unwrap();
+        assert_eq!(&dt.format_with_items(fmt_items.iter()).to_string(), "2014-05-07T12:34:56+0000");
     }
 }
