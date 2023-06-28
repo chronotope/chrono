@@ -259,6 +259,7 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
 mod tests {
     use super::FixedOffset;
     use crate::offset::TimeZone;
+    use std::str::FromStr;
 
     #[test]
     fn test_date_extreme_offset() {
@@ -304,5 +305,15 @@ mod tests {
             ),
             "2012-03-04T05:06:07-23:59:59".to_string()
         );
+    }
+
+    #[test]
+    fn test_parse_offset() {
+        let offset = FixedOffset::from_str("-0500").unwrap();
+        assert_eq!(offset.local_minus_utc, -5 * 3600);
+        let offset = FixedOffset::from_str("-08:00").unwrap();
+        assert_eq!(offset.local_minus_utc, -8 * 3600);
+        let offset = FixedOffset::from_str("+06:30").unwrap();
+        assert_eq!(offset.local_minus_utc, (6 * 3600) + 1800);
     }
 }
