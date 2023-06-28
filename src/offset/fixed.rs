@@ -5,14 +5,18 @@
 
 use core::fmt;
 use core::ops::{Add, Sub};
+use core::str::FromStr;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
+use crate::format::scan;
+use crate::format::OUT_OF_RANGE;
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
 use crate::DateTime;
+use crate::ParseError;
 use crate::Timelike;
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
@@ -110,6 +114,15 @@ impl FixedOffset {
     #[inline]
     pub const fn utc_minus_local(&self) -> i32 {
         -self.local_minus_utc
+    }
+}
+
+/// Parsing a `str` into a `FixedOffset` uses the format [`%z`](crate::format::strftime).
+impl FromStr for FixedOffset {
+    type Err = ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (_, offset) = scan::timezone_offset(s, scan::colon_or_space)?;
+        Self::east_opt(offset).ok_or(OUT_OF_RANGE)
     }
 }
 
