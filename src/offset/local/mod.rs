@@ -13,11 +13,11 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Date;
 use crate::{DateTime, Utc};
 
-#[cfg(all(unix, not(target_os = "android")))]
+#[cfg(all(unix, any(not(target_os = "android"), feature = "android-unsupported-internal-tzdata")))]
 #[path = "unix.rs"]
 mod inner;
 
-#[cfg(target_os = "android")]
+#[cfg(all(target_os = "android", not(feature = "android-unsupported-internal-tzdata")))]
 #[path = "android.rs"]
 mod inner;
 
@@ -85,7 +85,7 @@ mod inner {
     }
 }
 
-#[cfg(all(unix, not(target_os = "android")))]
+#[cfg(all(unix, any(not(target_os = "android"), feature = "android-unsupported-internal-tzdata")))]
 mod tz_info;
 
 /// The local timescale. This is implemented via the standard `time` crate.

@@ -62,6 +62,11 @@ Optional features:
 * `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
 * `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
   The implementation and API may change or even be removed in a patch release. Feedback welcome.
+* `android-unsupported-internal-tzdata`: On Android, try to read the current timezone from a system
+  property and parse the tzdata files directly, rather than using the standard Bionic APIs. This
+  avoids an unlikely threadsafety issue on Android API levels before 35, but depends on unstable
+  internal implementation details so may result in your application breaking on Android OS or
+  timezone database updates.
 
 ## Rust version requirements
 
