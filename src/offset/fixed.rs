@@ -11,13 +11,10 @@ use core::str::FromStr;
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
-use crate::format::scan;
-use crate::format::OUT_OF_RANGE;
+use crate::format::{scan, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::oldtime::Duration as OldDuration;
-use crate::DateTime;
-use crate::ParseError;
-use crate::Timelike;
+use crate::{DateTime, ParseError, Timelike};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
