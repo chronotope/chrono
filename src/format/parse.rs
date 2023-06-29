@@ -213,7 +213,7 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
         parsed.set_nanosecond(nanosecond)?;
     }
 
-    let offset = try_consume!(scan::timezone_offset_zulu(s, |s| scan::char(s, b':')));
+    let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
     if offset <= -86_400 || offset >= 86_400 {
         return Err(OUT_OF_RANGE);
     }
@@ -456,15 +456,19 @@ where
                             s.trim_start(),
                             scan::colon_or_space,
                             false,
+                            false,
                             true,
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
-                        let offset = try_consume!(scan::timezone_offset_zulu(
+                        let offset = try_consume!(scan::timezone_offset(
                             s.trim_start(),
-                            scan::colon_or_space
+                            scan::colon_or_space,
+                            true,
+                            false,
+                            true,
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }

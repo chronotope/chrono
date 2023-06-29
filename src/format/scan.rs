@@ -202,12 +202,32 @@ pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
 pub(crate) fn timezone_offset<F>(
     mut s: &str,
     mut consume_colon: F,
+    allow_zulu: bool,
     allow_missing_minutes: bool,
     allow_tz_minus_sign: bool,
 ) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
+    if allow_zulu {
+        let bytes = s.as_bytes();
+        match bytes.first() {
+            Some(&b'z') | Some(&b'Z') => return Ok((&s[1..], 0)),
+            Some(&b'u') | Some(&b'U') => {
+                if bytes.len() >= 3 {
+                    let (b, c) = (bytes[1], bytes[2]);
+                    match (b | 32, c | 32) {
+                        (b't', b'c') => return Ok((&s[3..], 0)),
+                        _ => return Err(INVALID),
+                    }
+                } else {
+                    return Err(INVALID);
+                }
+            }
+            _ => {}
+        }
+    }
+
     const fn digits(s: &str) -> ParseResult<(u8, u8)> {
         let b = s.as_bytes();
         if b.len() < 2 {
@@ -275,39 +295,13 @@ where
     Ok((s, if negative { -seconds } else { seconds }))
 }
 
-/// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as `+00:00`.
-pub(super) fn timezone_offset_zulu<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
-where
-    F: FnMut(&str) -> ParseResult<&str>,
-{
-    let bytes = s.as_bytes();
-    match bytes.first() {
-        Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
-        Some(&b'u') | Some(&b'U') => {
-            if bytes.len() >= 3 {
-                let (b, c) = (bytes[1], bytes[2]);
-                match (b | 32, c | 32) {
-                    (b't', b'c') => Ok((&s[3..], 0)),
-                    _ => Err(INVALID),
-                }
-            } else {
-                Err(INVALID)
-            }
-        }
-        _ => timezone_offset(s, colon, false, true),
-    }
-}
-
 /// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as
 /// `+00:00`, and allows missing minutes entirely.
 pub(super) fn timezone_offset_permissive<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
 where
     F: FnMut(&str) -> ParseResult<&str>,
 {
-    match s.as_bytes().first() {
-        Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
-        _ => timezone_offset(s, colon, true, true),
-    }
+    timezone_offset(s, colon, true, true, true)
 }
 
 /// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
@@ -344,7 +338,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
             Ok((s, None))
         }
     } else {
-        let (s_, offset) = timezone_offset(s, |s| Ok(s), false, false)?;
+        let (s_, offset) = timezone_offset(s, |s| Ok(s), false, false, false)?;
         Ok((s_, Some(offset)))
     }
 }
