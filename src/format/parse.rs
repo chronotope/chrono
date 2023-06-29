@@ -445,7 +445,7 @@ where
                     }
 
                     &TimezoneName => {
-                        try_consume!(scan::timezone_name_skip(s));
+                        try_consume!(Ok((s.trim_start_matches(|c: char| !c.is_whitespace()), ())));
                     }
 
                     &TimezoneOffsetColon
