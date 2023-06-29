@@ -201,17 +201,6 @@ pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_start_matches(|c: char| c == ':' || c.is_whitespace()))
 }
 
-/// Tries to parse `[-+]\d\d` continued by `\d\d`. Return an offset in seconds if possible.
-///
-/// The additional `colon` may be used to parse a mandatory or optional `:`
-/// between hours and minutes, and should return either a new suffix or `Err` when parsing fails.
-pub(crate) fn timezone_offset<F>(s: &str, consume_colon: F) -> ParseResult<(&str, i32)>
-where
-    F: FnMut(&str) -> ParseResult<&str>,
-{
-    timezone_offset_internal(s, consume_colon, false, true)
-}
-
 /// Parse a timezone from `s` and return the offset in seconds.
 ///
 /// The `consume_colon` function is used to parse a mandatory or optional `:`
@@ -226,7 +215,7 @@ where
 /// This is part of [RFC 3339 & ISO 8601].
 ///
 /// [RFC 3339 & ISO 8601]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
-fn timezone_offset_internal<F>(
+pub(crate) fn timezone_offset<F>(
     mut s: &str,
     mut consume_colon: F,
     allow_missing_minutes: bool,
@@ -321,7 +310,7 @@ where
                 Err(INVALID)
             }
         }
-        _ => timezone_offset(s, colon),
+        _ => timezone_offset(s, colon, false, true),
     }
 }
 
@@ -333,7 +322,7 @@ where
 {
     match s.as_bytes().first() {
         Some(&b'z') | Some(&b'Z') => Ok((&s[1..], 0)),
-        _ => timezone_offset_internal(s, colon, true, true),
+        _ => timezone_offset(s, colon, true, true),
     }
 }
 
@@ -371,7 +360,7 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
             Ok((s, None))
         }
     } else {
-        let (s_, offset) = timezone_offset_internal(s, |s| Ok(s), false, false)?;
+        let (s_, offset) = timezone_offset(s, |s| Ok(s), false, false)?;
         Ok((s_, Some(offset)))
     }
 }

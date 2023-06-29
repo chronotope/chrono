@@ -454,7 +454,9 @@ where
                     | &TimezoneOffset => {
                         let offset = try_consume!(scan::timezone_offset(
                             s.trim_start(),
-                            scan::colon_or_space
+                            scan::colon_or_space,
+                            false,
+                            true,
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
