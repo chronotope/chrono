@@ -118,7 +118,7 @@ impl FixedOffset {
 impl FromStr for FixedOffset {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (_, offset) = scan::timezone_offset(s, scan::colon_or_space, false, true)?;
+        let (_, offset) = scan::timezone_offset(s, scan::colon_or_space, false, false, true)?;
         Self::east_opt(offset).ok_or(OUT_OF_RANGE)
     }
 }
