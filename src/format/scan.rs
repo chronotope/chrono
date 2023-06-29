@@ -8,24 +8,6 @@
 use super::{ParseResult, INVALID, OUT_OF_RANGE, TOO_SHORT};
 use crate::Weekday;
 
-/// Returns true when two slices are equal case-insensitively (in ASCII).
-/// Assumes that the `pattern` is already converted to lower case.
-fn equals(s: &[u8], pattern: &str) -> bool {
-    let mut xs = s.iter().map(|&c| match c {
-        b'A'..=b'Z' => c + 32,
-        _ => c,
-    });
-    let mut ys = pattern.as_bytes().iter().cloned();
-    loop {
-        match (xs.next(), ys.next()) {
-            (None, None) => return true,
-            (None, _) | (_, None) => return false,
-            (Some(x), Some(y)) if x != y => return false,
-            _ => (),
-        }
-    }
-}
-
 /// Tries to parse the non-negative number from `min` to `max` digits.
 ///
 /// The absence of digits at all is an unconditional error.
@@ -143,14 +125,16 @@ pub(super) fn short_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
 /// It prefers long month names to short month names when both are possible.
 pub(super) fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
     // lowercased month names, minus first three chars
-    static LONG_MONTH_SUFFIXES: [&str; 12] =
-        ["uary", "ruary", "ch", "il", "", "e", "y", "ust", "tember", "ober", "ember", "ember"];
+    static LONG_MONTH_SUFFIXES: [&[u8]; 12] = [
+        b"uary", b"ruary", b"ch", b"il", b"", b"e", b"y", b"ust", b"tember", b"ober", b"ember",
+        b"ember",
+    ];
 
     let (mut s, month0) = short_month0(s)?;
 
     // tries to consume the suffix if possible
     let suffix = LONG_MONTH_SUFFIXES[month0 as usize];
-    if s.len() >= suffix.len() && equals(&s.as_bytes()[..suffix.len()], suffix) {
+    if s.len() >= suffix.len() && s.as_bytes()[..suffix.len()].eq_ignore_ascii_case(suffix) {
         s = &s[suffix.len()..];
     }
 
@@ -161,14 +145,14 @@ pub(super) fn short_or_long_month0(s: &str) -> ParseResult<(&str, u8)> {
 /// It prefers long weekday names to short weekday names when both are possible.
 pub(super) fn short_or_long_weekday(s: &str) -> ParseResult<(&str, Weekday)> {
     // lowercased weekday names, minus first three chars
-    static LONG_WEEKDAY_SUFFIXES: [&str; 7] =
-        ["day", "sday", "nesday", "rsday", "day", "urday", "day"];
+    static LONG_WEEKDAY_SUFFIXES: [&[u8]; 7] =
+        [b"day", b"sday", b"nesday", b"rsday", b"day", b"urday", b"day"];
 
     let (mut s, weekday) = short_weekday(s)?;
 
     // tries to consume the suffix if possible
     let suffix = LONG_WEEKDAY_SUFFIXES[weekday.num_days_from_monday() as usize];
-    if s.len() >= suffix.len() && equals(&s.as_bytes()[..suffix.len()], suffix) {
+    if s.len() >= suffix.len() && s.as_bytes()[..suffix.len()].eq_ignore_ascii_case(suffix) {
         s = &s[suffix.len()..];
     }
 
@@ -338,17 +322,17 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
         let name = &s.as_bytes()[..upto];
         let s = &s[upto..];
         let offset_hours = |o| Ok((s, Some(o * 3600)));
-        if equals(name, "gmt") || equals(name, "ut") {
+        if name.eq_ignore_ascii_case(b"gmt") || name.eq_ignore_ascii_case(b"ut") {
             offset_hours(0)
-        } else if equals(name, "edt") {
+        } else if name.eq_ignore_ascii_case(b"edt") {
             offset_hours(-4)
-        } else if equals(name, "est") || equals(name, "cdt") {
+        } else if name.eq_ignore_ascii_case(b"est") || name.eq_ignore_ascii_case(b"cdt") {
             offset_hours(-5)
-        } else if equals(name, "cst") || equals(name, "mdt") {
+        } else if name.eq_ignore_ascii_case(b"cst") || name.eq_ignore_ascii_case(b"mdt") {
             offset_hours(-6)
-        } else if equals(name, "mst") || equals(name, "pdt") {
+        } else if name.eq_ignore_ascii_case(b"mst") || name.eq_ignore_ascii_case(b"pdt") {
             offset_hours(-7)
-        } else if equals(name, "pst") {
+        } else if name.eq_ignore_ascii_case(b"pst") {
             offset_hours(-8)
         } else if name.len() == 1 {
             match name[0] {
