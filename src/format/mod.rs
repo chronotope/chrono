@@ -420,7 +420,7 @@ impl Error for ParseError {
 }
 
 // to be used in this module and submodules
-const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
+pub(crate) const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
 const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
 const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
@@ -838,7 +838,7 @@ mod parsed;
 
 // due to the size of parsing routines, they are in separate modules.
 mod parse;
-mod scan;
+pub(crate) mod scan;
 
 pub mod strftime;
 
