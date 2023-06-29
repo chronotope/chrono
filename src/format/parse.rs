@@ -475,9 +475,12 @@ where
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
-                        let offset = try_consume!(scan::timezone_offset_permissive(
+                        let offset = try_consume!(scan::timezone_offset(
                             s.trim_start(),
-                            scan::colon_or_space
+                            scan::colon_or_space,
+                            true,
+                            true,
+                            true,
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
