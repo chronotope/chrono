@@ -295,15 +295,6 @@ where
     Ok((s, if negative { -seconds } else { seconds }))
 }
 
-/// Same as `timezone_offset` but also allows for `z`/`Z` which is the same as
-/// `+00:00`, and allows missing minutes entirely.
-pub(super) fn timezone_offset_permissive<F>(s: &str, colon: F) -> ParseResult<(&str, i32)>
-where
-    F: FnMut(&str) -> ParseResult<&str>,
-{
-    timezone_offset(s, colon, true, true, true)
-}
-
 /// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
 /// May return `None` which indicates an insufficient offset data (i.e. `-0000`).
 /// See [RFC 2822 Section 4.3].
