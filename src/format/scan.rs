@@ -365,12 +365,6 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
     }
 }
 
-/// Tries to consume everything until next whitespace-like symbol.
-/// Does not provide any offset information from the consumed data.
-pub(super) fn timezone_name_skip(s: &str) -> ParseResult<(&str, ())> {
-    Ok((s.trim_start_matches(|c: char| !c.is_whitespace()), ()))
-}
-
 /// Tries to consume an RFC2822 comment including preceding ` `.
 ///
 /// Returns the remaining string after the closing parenthesis.
