@@ -4,7 +4,7 @@
 //! ISO 8601 calendar date with time zone.
 #![allow(deprecated)]
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -15,7 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
@@ -333,7 +333,7 @@ where
     Tz::Offset: fmt::Display,
 {
     /// Formats the date with the specified formatting items.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
@@ -348,7 +348,7 @@ where
     /// Formats the date with the specified format string.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
