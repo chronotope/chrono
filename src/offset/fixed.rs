@@ -119,10 +119,10 @@ impl FromStr for FixedOffset {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let offset_format = OffsetFormat {
-            precision: OffsetPrecision::Minutes,
+            precision: OffsetPrecision::OptionalMinutesAndSeconds,
             colons: Colons::Maybe,
-            allow_zulu: false,
-            padding: Pad::Zero,
+            allow_zulu: true,
+            padding: Pad::None,
         };
         let (_, offset) = scan::utc_offset(s, offset_format)?;
         Self::east_opt(offset).ok_or(OUT_OF_RANGE)
