@@ -37,7 +37,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::fmt;
 use core::str::FromStr;
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 use std::error::Error;
 
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
@@ -390,7 +390,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Error for ParseError {
     #[allow(deprecated)]
