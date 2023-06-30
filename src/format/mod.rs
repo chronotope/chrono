@@ -295,40 +295,24 @@ pub enum Item<'a> {
     Error,
 }
 
-macro_rules! lit {
-    ($x:expr) => {
-        Item::Literal($x)
-    };
+const fn num(numeric: Numeric) -> Item<'static> {
+    Item::Numeric(numeric, Pad::None)
 }
-macro_rules! sp {
-    ($x:expr) => {
-        Item::Space($x)
-    };
+
+const fn num0(numeric: Numeric) -> Item<'static> {
+    Item::Numeric(numeric, Pad::Zero)
 }
-macro_rules! num {
-    ($x:ident) => {
-        Item::Numeric(Numeric::$x, Pad::None)
-    };
+
+const fn nums(numeric: Numeric) -> Item<'static> {
+    Item::Numeric(numeric, Pad::Space)
 }
-macro_rules! num0 {
-    ($x:ident) => {
-        Item::Numeric(Numeric::$x, Pad::Zero)
-    };
+
+const fn fixed(fixed: Fixed) -> Item<'static> {
+    Item::Fixed(fixed)
 }
-macro_rules! nums {
-    ($x:ident) => {
-        Item::Numeric(Numeric::$x, Pad::Space)
-    };
-}
-macro_rules! fix {
-    ($x:ident) => {
-        Item::Fixed(Fixed::$x)
-    };
-}
-macro_rules! internal_fix {
-    ($x:ident) => {
-        Item::Fixed(Fixed::Internal(InternalFixed { val: InternalInternal::$x }))
-    };
+
+const fn internal_fixed(val: InternalInternal) -> Item<'static> {
+    Item::Fixed(Fixed::Internal(InternalFixed { val }))
 }
 
 /// An error from the `parse` function.
