@@ -17,10 +17,11 @@ fn test_datetime_from_timestamp_millis() {
         (2034061609000, "2034-06-16 09:06:49.000000000"),
     ];
 
-    for (timestamp_millis, formatted) in valid_map.iter().copied() {
+    for (timestamp_millis, _formatted) in valid_map.iter().copied() {
         let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
         assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
-        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), formatted);
+        #[cfg(any(feature = "alloc", feature = "std"))]
+        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
     }
 
     let invalid = [i64::MAX, i64::MIN];
@@ -54,10 +55,11 @@ fn test_datetime_from_timestamp_micros() {
         (2034061609000000, "2034-06-16 09:06:49.000000000"),
     ];
 
-    for (timestamp_micros, formatted) in valid_map.iter().copied() {
+    for (timestamp_micros, _formatted) in valid_map.iter().copied() {
         let naive_datetime = NaiveDateTime::from_timestamp_micros(timestamp_micros);
         assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
-        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), formatted);
+        #[cfg(any(feature = "alloc", feature = "std"))]
+        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
     }
 
     let invalid = [i64::MAX, i64::MIN];
@@ -287,6 +289,7 @@ fn test_datetime_parse_from_str() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_format() {
     let dt = NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
     assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");

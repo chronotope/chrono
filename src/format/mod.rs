@@ -37,7 +37,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use core::fmt;
 use core::str::FromStr;
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 use std::error::Error;
 
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
@@ -55,11 +55,11 @@ pub mod strftime;
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub use formatting::{format, format_item, DelayedFormat};
 #[cfg(feature = "unstable-locales")]
 pub use formatting::{format_item_localized, format_localized};
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) use formatting::{write_rfc2822, write_rfc3339};
 pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
@@ -286,13 +286,13 @@ pub enum Item<'a> {
     /// A literally printed and parsed text.
     Literal(&'a str),
     /// Same as `Literal` but with the string owned by the item.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
     /// Same as `Space` but with the string owned by the item.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
@@ -390,7 +390,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Error for ParseError {
     #[allow(deprecated)]

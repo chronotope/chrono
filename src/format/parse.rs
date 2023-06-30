@@ -309,7 +309,7 @@ where
                 s = &s[prefix.len()..];
             }
 
-            #[cfg(any(feature = "alloc", feature = "std", test))]
+            #[cfg(any(feature = "alloc", feature = "std"))]
             Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() {
                     return Err((s, TOO_SHORT));
@@ -324,7 +324,7 @@ where
                 s = s.trim_start();
             }
 
-            #[cfg(any(feature = "alloc", feature = "std", test))]
+            #[cfg(any(feature = "alloc", feature = "std"))]
             Item::OwnedSpace(_) => {
                 s = s.trim_start();
             }
@@ -562,7 +562,7 @@ impl str::FromStr for DateTime<FixedOffset> {
 #[cfg(test)]
 mod tests {
     use crate::format::*;
-    use crate::{DateTime, FixedOffset, TimeZone, Utc};
+    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
     #[test]
     fn test_parse() {
@@ -1251,28 +1251,37 @@ mod tests {
 
     #[test]
     fn test_rfc2822() {
-        // Test data - (input, Ok(expected result after parse and format) or Err(error code))
+        let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
+            FixedOffset::east_opt(off * 60 * 60)
+                .unwrap()
+                .with_ymd_and_hms(y, m, d, h, n, s)
+                .unwrap()
+                .with_nanosecond(nano)
+                .unwrap()
+        };
+
+        // Test data - (input, Ok(expected result) or Err(error code))
         let testdates = [
-            ("Tue, 20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // normal case
-            ("Fri,  2 Jan 2015 17:35:20 -0800", Ok("Fri, 02 Jan 2015 17:35:20 -0800")), // folding whitespace
-            ("Fri, 02 Jan 2015 17:35:20 -0800", Ok("Fri, 02 Jan 2015 17:35:20 -0800")), // leading zero
-            ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // trailing comment
+            ("Tue, 20 Jan 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // normal case
+            ("Fri,  2 Jan 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 2, 17, 35, 20, 0, -8))), // folding whitespace
+            ("Fri, 02 Jan 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 2, 17, 35, 20, 0, -8))), // leading zero
+            ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC)", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // trailing comment
             (
                 r"Tue, 20 Jan 2015 17:35:20 -0800 ( (UTC ) (\( (a)\(( \t ) ) \\( \) ))",
-                Ok("Tue, 20 Jan 2015 17:35:20 -0800"),
+                Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
             ), // complex trailing comment
             (r"Tue, 20 Jan 2015 17:35:20 -0800 (UTC\)", Err(TOO_LONG)), // incorrect comment, not enough closing parentheses
             (
                 "Tue, 20 Jan 2015 17:35:20 -0800 (UTC)\t \r\n(Anothercomment)",
-                Ok("Tue, 20 Jan 2015 17:35:20 -0800"),
+                Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
             ), // multiple comments
             ("Tue, 20 Jan 2015 17:35:20 -0800 (UTC) ", Err(TOO_LONG)), // trailing whitespace after comment
-            ("20 Jan 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // no day of week
-            ("20 JAN 2015 17:35:20 -0800", Ok("Tue, 20 Jan 2015 17:35:20 -0800")), // upper case month
-            ("Tue, 20 Jan 2015 17:35 -0800", Ok("Tue, 20 Jan 2015 17:35:00 -0800")), // no second
-            ("11 Sep 2001 09:45:00 +0000", Ok("Tue, 11 Sep 2001 09:45:00 +0000")),
-            ("11 Sep 2001 09:45:00 EST", Ok("Tue, 11 Sep 2001 09:45:00 -0500")),
-            ("11 Sep 2001 09:45:00 GMT", Ok("Tue, 11 Sep 2001 09:45:00 +0000")),
+            ("20 Jan 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // no day of week
+            ("20 JAN 2015 17:35:20 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // upper case month
+            ("Tue, 20 Jan 2015 17:35 -0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 0, 0, -8))), // no second
+            ("11 Sep 2001 09:45:00 +0000", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, 0))),
+            ("11 Sep 2001 09:45:00 EST", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, -5))),
+            ("11 Sep 2001 09:45:00 GMT", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, 0))),
             ("30 Feb 2015 17:35:20 -0800", Err(OUT_OF_RANGE)), // bad day of month
             ("Tue, 20 Jan 2015", Err(TOO_SHORT)),              // omitted fields
             ("Tue, 20 Avr 2015 17:35:20 -0800", Err(INVALID)), // bad month name
@@ -1285,24 +1294,24 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named time zone
             // named timezones that have specific timezone offsets
             // see https://www.rfc-editor.org/rfc/rfc2822#section-4.3
-            ("Tue, 20 Jan 2015 17:35:20 GMT", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 UT", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 ut", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 EDT", Ok("Tue, 20 Jan 2015 17:35:20 -0400")),
-            ("Tue, 20 Jan 2015 17:35:20 EST", Ok("Tue, 20 Jan 2015 17:35:20 -0500")),
-            ("Tue, 20 Jan 2015 17:35:20 CDT", Ok("Tue, 20 Jan 2015 17:35:20 -0500")),
-            ("Tue, 20 Jan 2015 17:35:20 CST", Ok("Tue, 20 Jan 2015 17:35:20 -0600")),
-            ("Tue, 20 Jan 2015 17:35:20 MDT", Ok("Tue, 20 Jan 2015 17:35:20 -0600")),
-            ("Tue, 20 Jan 2015 17:35:20 MST", Ok("Tue, 20 Jan 2015 17:35:20 -0700")),
-            ("Tue, 20 Jan 2015 17:35:20 PDT", Ok("Tue, 20 Jan 2015 17:35:20 -0700")),
-            ("Tue, 20 Jan 2015 17:35:20 PST", Ok("Tue, 20 Jan 2015 17:35:20 -0800")),
-            ("Tue, 20 Jan 2015 17:35:20 pst", Ok("Tue, 20 Jan 2015 17:35:20 -0800")),
+            ("Tue, 20 Jan 2015 17:35:20 GMT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 UT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 ut", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 EDT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -4))),
+            ("Tue, 20 Jan 2015 17:35:20 EST", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -5))),
+            ("Tue, 20 Jan 2015 17:35:20 CDT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -5))),
+            ("Tue, 20 Jan 2015 17:35:20 CST", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -6))),
+            ("Tue, 20 Jan 2015 17:35:20 MDT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -6))),
+            ("Tue, 20 Jan 2015 17:35:20 MST", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -7))),
+            ("Tue, 20 Jan 2015 17:35:20 PDT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -7))),
+            ("Tue, 20 Jan 2015 17:35:20 PST", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))),
+            ("Tue, 20 Jan 2015 17:35:20 pst", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))),
             // named single-letter military timezones must fallback to +0000
-            ("Tue, 20 Jan 2015 17:35:20 Z", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 A", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 a", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 K", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
-            ("Tue, 20 Jan 2015 17:35:20 k", Ok("Tue, 20 Jan 2015 17:35:20 +0000")),
+            ("Tue, 20 Jan 2015 17:35:20 Z", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 A", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 a", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 K", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
+            ("Tue, 20 Jan 2015 17:35:20 k", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             // named single-letter timezone "J" is specifically not valid
             ("Tue, 20 Jan 2015 17:35:20 J", Err(NOT_ENOUGH)),
             ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset minutes
@@ -1321,21 +1330,12 @@ mod tests {
             parsed.to_datetime()
         }
 
-        fn fmt_rfc2822_datetime(dt: DateTime<FixedOffset>) -> String {
-            dt.format_with_items([Item::Fixed(Fixed::RFC2822)].iter()).to_string()
-        }
-
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
             eprintln!("Test input: {:?}", date);
             eprintln!("    Expect: {:?}", checkdate);
-            let d = rfc2822_to_datetime(date); // parse a date
-            let dt = match d {
-                // did we get a value?
-                Ok(dt) => Ok(fmt_rfc2822_datetime(dt)), // yes, go on
-                Err(e) => Err(e), // otherwise keep an error for the comparison
-            };
-            if dt != checkdate.map(|s| s.to_string()) {
+            let dt = rfc2822_to_datetime(date); // parse a date
+            if dt != checkdate {
                 // check for expected result
                 panic!(
                     "Date conversion failed for {}\nReceived: {:?}\nExpected: {:?}",
@@ -1349,11 +1349,11 @@ mod tests {
     fn parse_rfc850() {
         static RFC850_FMT: &str = "%A, %d-%b-%y %T GMT";
 
-        let dt_str = "Sunday, 06-Nov-94 08:49:37 GMT";
         let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
 
         // Check that the format is what we expect
-        assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
+        #[cfg(any(feature = "alloc", feature = "std"))]
+        assert_eq!(dt.format(RFC850_FMT).to_string(), "Sunday, 06-Nov-94 08:49:37 GMT");
 
         // Check that it parses correctly
         assert_eq!(Ok(dt), Utc.datetime_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT));
@@ -1411,26 +1411,36 @@ mod tests {
         }
     }
 
-    #[cfg(test)]
     #[test]
     fn test_rfc3339() {
-        use super::*;
-        use crate::offset::FixedOffset;
-        use crate::DateTime;
+        let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
+            FixedOffset::east_opt(off * 60 * 60)
+                .unwrap()
+                .with_ymd_and_hms(y, m, d, h, n, s)
+                .unwrap()
+                .with_nanosecond(nano)
+                .unwrap()
+        };
 
-        // Test data - (input, Ok(expected result after parse and format) or Err(error code))
+        // Test data - (input, Ok(expected result) or Err(error code))
         let testdates = [
-            ("2015-01-20T17:35:20-08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case
-            ("2015-01-20T17:35:20−08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case with MINUS SIGN (U+2212)
-            ("1944-06-06T04:04:00Z", Ok("1944-06-06T04:04:00+00:00")),      // D-day
-            ("2001-09-11T09:45:00-08:00", Ok("2001-09-11T09:45:00-08:00")),
-            ("2015-01-20T17:35:20.001-08:00", Ok("2015-01-20T17:35:20.001-08:00")),
-            ("2015-01-20T17:35:20.001−08:00", Ok("2015-01-20T17:35:20.001-08:00")), // with MINUS SIGN (U+2212)
-            ("2015-01-20T17:35:20.000031-08:00", Ok("2015-01-20T17:35:20.000031-08:00")),
-            ("2015-01-20T17:35:20.000000004-08:00", Ok("2015-01-20T17:35:20.000000004-08:00")),
-            ("2015-01-20T17:35:20.000000004−08:00", Ok("2015-01-20T17:35:20.000000004-08:00")), // with MINUS SIGN (U+2212)
-            ("2015-01-20T17:35:20.000000000452-08:00", Ok("2015-01-20T17:35:20-08:00")), // too small
-            ("2015-01-20T17:35:20.000000000452−08:00", Ok("2015-01-20T17:35:20-08:00")), // too small with MINUS SIGN (U+2212)
+            ("2015-01-20T17:35:20-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // normal case
+            ("2015-01-20T17:35:20−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // normal case with MINUS SIGN (U+2212)
+            ("1944-06-06T04:04:00Z", Ok(ymd_hmsn(1944, 6, 6, 4, 4, 0, 0, 0))),           // D-day
+            ("2001-09-11T09:45:00-08:00", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, -8))),
+            ("2015-01-20T17:35:20.001-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 1_000_000, -8))),
+            ("2015-01-20T17:35:20.001−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 1_000_000, -8))), // with MINUS SIGN (U+2212)
+            ("2015-01-20T17:35:20.000031-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 31_000, -8))),
+            ("2015-01-20T17:35:20.000000004-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 4, -8))),
+            ("2015-01-20T17:35:20.000000004−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 4, -8))), // with MINUS SIGN (U+2212)
+            (
+                "2015-01-20T17:35:20.000000000452-08:00",
+                Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
+            ), // too small
+            (
+                "2015-01-20T17:35:20.000000000452−08:00",
+                Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
+            ), // too small with MINUS SIGN (U+2212)
             ("2015-01-20 17:35:20.001-08:00", Err(INVALID)), // missing separator 'T'
             ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YMD
             ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HMS
@@ -1479,19 +1489,10 @@ mod tests {
             parsed.to_datetime()
         }
 
-        fn fmt_rfc3339_datetime(dt: DateTime<FixedOffset>) -> String {
-            dt.format_with_items([Item::Fixed(Fixed::RFC3339)].iter()).to_string()
-        }
-
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
-            let d = rfc3339_to_datetime(date); // parse a date
-            let dt = match d {
-                // did we get a value?
-                Ok(dt) => Ok(fmt_rfc3339_datetime(dt)), // yes, go on
-                Err(e) => Err(e), // otherwise keep an error for the comparison
-            };
-            if dt != checkdate.map(|s| s.to_string()) {
+            let dt = rfc3339_to_datetime(date); // parse a date
+            if dt != checkdate {
                 // check for expected result
                 panic!(
                     "Date conversion failed for {}\nReceived: {:?}\nExpected: {:?}",

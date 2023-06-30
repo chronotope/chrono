@@ -1,5 +1,3 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
@@ -358,6 +356,7 @@ fn test_datetime_with_timezone() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_rfc2822_and_rfc3339() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     assert_eq!(
@@ -451,6 +450,7 @@ fn test_datetime_rfc2822_and_rfc3339() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_rfc3339_opts() {
     use crate::SecondsFormat::*;
     let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
@@ -481,6 +481,7 @@ fn test_rfc3339_opts() {
 
 #[test]
 #[should_panic]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_rfc3339_opts_nonexhaustive() {
     use crate::SecondsFormat;
     let dt = Utc.with_ymd_and_hms(1999, 10, 9, 1, 2, 3).unwrap();
@@ -677,79 +678,9 @@ fn test_subsecond_part() {
 }
 
 #[test]
-#[cfg(not(target_os = "windows"))]
+#[cfg(feature = "std")]
 fn test_from_system_time() {
-    use std::time::Duration;
-
-    let epoch = Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap();
-    let nanos = 999_999_999;
-
-    // SystemTime -> DateTime<Utc>
-    assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
-    assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
-        Utc.from_local_datetime(
-            &NaiveDate::from_ymd_opt(2001, 9, 9)
-                .unwrap()
-                .and_hms_nano_opt(1, 46, 39, nanos)
-                .unwrap()
-        )
-        .unwrap()
-    );
-    assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
-        Utc.from_local_datetime(
-            &NaiveDate::from_ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1).unwrap()
-        )
-        .unwrap()
-    );
-
-    // DateTime<Utc> -> SystemTime
-    assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
-    assert_eq!(
-        SystemTime::from(
-            Utc.from_local_datetime(
-                &NaiveDate::from_ymd_opt(2001, 9, 9)
-                    .unwrap()
-                    .and_hms_nano_opt(1, 46, 39, nanos)
-                    .unwrap()
-            )
-            .unwrap()
-        ),
-        UNIX_EPOCH + Duration::new(999_999_999, nanos)
-    );
-    assert_eq!(
-        SystemTime::from(
-            Utc.from_local_datetime(
-                &NaiveDate::from_ymd_opt(1938, 4, 24)
-                    .unwrap()
-                    .and_hms_nano_opt(22, 13, 20, 1)
-                    .unwrap()
-            )
-            .unwrap()
-        ),
-        UNIX_EPOCH - Duration::new(999_999_999, 999_999_999)
-    );
-
-    // DateTime<any tz> -> SystemTime (via `with_timezone`)
-    #[cfg(feature = "clock")]
-    {
-        assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
-    }
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::east_opt(32400).unwrap())),
-        UNIX_EPOCH
-    );
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::west_opt(28800).unwrap())),
-        UNIX_EPOCH
-    );
-}
-
-#[test]
-#[cfg(target_os = "windows")]
-fn test_from_system_time() {
-    use std::time::Duration;
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     let nanos = 999_999_000;
 
@@ -821,6 +752,7 @@ fn test_from_system_time() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_format_alignment() {
     let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0).unwrap();
 
