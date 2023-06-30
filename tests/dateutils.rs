@@ -3,10 +3,10 @@ use chrono::offset::TimeZone;
 #[cfg(unix)]
 use chrono::Local;
 #[cfg(unix)]
-use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 
 #[cfg(unix)]
-use std::{path, process};
+use std::{path, process, thread};
 
 #[cfg(unix)]
 fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
@@ -90,31 +90,26 @@ fn try_verify_against_date_command() {
     }
     assert_run_date_version();
 
-    let mut date = NaiveDate::from_ymd_opt(1975, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
-
     eprintln!(
-        "Run command {:?} for every hour from {} to 2077, skipping some years...",
+        "Run command {:?} for every hour from 1975 to 2077, skipping some years...",
         DATE_PATH,
-        date.year()
     );
-    let mut count: u64 = 0;
-    let mut year_at = date.year();
-    while date.year() < 2078 {
-        if (1975..=1977).contains(&date.year())
-            || (2020..=2022).contains(&date.year())
-            || (2073..=2077).contains(&date.year())
-        {
-            if date.year() != year_at {
-                eprintln!("at year {}...", date.year());
-                year_at = date.year();
-            }
-            verify_against_date_command_local(DATE_PATH, date);
-            count += 1;
-        }
 
-        date += chrono::Duration::hours(1);
+    let mut children = vec![];
+    for year in [1975, 1976, 1977, 2020, 2021, 2022, 2073, 2074, 2075, 2076, 2077].iter() {
+        children.push(thread::spawn(|| {
+            let mut date = NaiveDate::from_ymd_opt(*year, 1, 1).unwrap().and_time(NaiveTime::MIN);
+            let end = NaiveDate::from_ymd_opt(*year + 1, 1, 1).unwrap().and_time(NaiveTime::MIN);
+            while date <= end {
+                verify_against_date_command_local(DATE_PATH, date);
+                date += chrono::Duration::hours(1);
+            }
+        }));
     }
-    eprintln!("Command {:?} was run {} times", DATE_PATH, count);
+    for child in children {
+        // Wait for the thread to finish. Returns a result.
+        let _ = child.join();
+    }
 }
 
 #[cfg(target_os = "linux")]
