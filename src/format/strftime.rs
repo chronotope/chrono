@@ -180,28 +180,10 @@ Notes:
    China Daylight Time.
 */
 
+use super::{fixed, internal_fixed, num, num0, nums};
 #[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
-use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
-
-static D_FMT: &[Item<'static>] =
-    &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-static D_T_FMT: &[Item<'static>] = &[
-    fix!(ShortWeekdayName),
-    sp!(" "),
-    fix!(ShortMonthName),
-    sp!(" "),
-    nums!(Day),
-    sp!(" "),
-    num0!(Hour),
-    lit!(":"),
-    num0!(Minute),
-    lit!(":"),
-    num0!(Second),
-    sp!(" "),
-    num0!(Year),
-];
-static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+use super::{Fixed, InternalInternal, Item, Numeric, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -269,6 +251,30 @@ impl<'a> Iterator for StrftimeItems<'a> {
 
 impl<'a> StrftimeItems<'a> {
     fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
+        use InternalInternal::*;
+        use Item::{Literal, Space};
+        use Numeric::*;
+
+        static D_FMT: &[Item<'static>] =
+            &[num0(Month), Literal("/"), num0(Day), Literal("/"), num0(YearMod100)];
+        static D_T_FMT: &[Item<'static>] = &[
+            fixed(Fixed::ShortWeekdayName),
+            Space(" "),
+            fixed(Fixed::ShortMonthName),
+            Space(" "),
+            nums(Day),
+            Space(" "),
+            num0(Hour),
+            Literal(":"),
+            num0(Minute),
+            Literal(":"),
+            num0(Second),
+            Space(" "),
+            num0(Year),
+        ];
+        static T_FMT: &[Item<'static>] =
+            &[num0(Hour), Literal(":"), num0(Minute), Literal(":"), num0(Second)];
+
         match remainder.chars().next() {
             // we are done
             None => None,
@@ -318,118 +324,126 @@ impl<'a> StrftimeItems<'a> {
                 }
 
                 let item = match spec {
-                    'A' => fix!(LongWeekdayName),
-                    'B' => fix!(LongMonthName),
-                    'C' => num0!(YearDiv100),
+                    'A' => fixed(Fixed::LongWeekdayName),
+                    'B' => fixed(Fixed::LongMonthName),
+                    'C' => num0(YearDiv100),
                     'D' => {
-                        queue![num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)]
+                        queue![num0(Month), Literal("/"), num0(Day), Literal("/"), num0(YearMod100)]
                     }
-                    'F' => queue![num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)],
-                    'G' => num0!(IsoYear),
-                    'H' => num0!(Hour),
-                    'I' => num0!(Hour12),
-                    'M' => num0!(Minute),
-                    'P' => fix!(LowerAmPm),
-                    'R' => queue![num0!(Hour), lit!(":"), num0!(Minute)],
-                    'S' => num0!(Second),
-                    'T' => queue![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
-                    'U' => num0!(WeekFromSun),
-                    'V' => num0!(IsoWeek),
-                    'W' => num0!(WeekFromMon),
+                    'F' => queue![num0(Year), Literal("-"), num0(Month), Literal("-"), num0(Day)],
+                    'G' => num0(IsoYear),
+                    'H' => num0(Hour),
+                    'I' => num0(Hour12),
+                    'M' => num0(Minute),
+                    'P' => fixed(Fixed::LowerAmPm),
+                    'R' => queue![num0(Hour), Literal(":"), num0(Minute)],
+                    'S' => num0(Second),
+                    'T' => {
+                        queue![num0(Hour), Literal(":"), num0(Minute), Literal(":"), num0(Second)]
+                    }
+                    'U' => num0(WeekFromSun),
+                    'V' => num0(IsoWeek),
+                    'W' => num0(WeekFromMon),
                     #[cfg(not(feature = "unstable-locales"))]
                     'X' => queue_from_slice!(T_FMT),
                     #[cfg(feature = "unstable-locales")]
                     'X' => self.switch_to_locale_str(locales::t_fmt, T_FMT),
-                    'Y' => num0!(Year),
-                    'Z' => fix!(TimezoneName),
-                    'a' => fix!(ShortWeekdayName),
-                    'b' | 'h' => fix!(ShortMonthName),
+                    'Y' => num0(Year),
+                    'Z' => fixed(Fixed::TimezoneName),
+                    'a' => fixed(Fixed::ShortWeekdayName),
+                    'b' | 'h' => fixed(Fixed::ShortMonthName),
                     #[cfg(not(feature = "unstable-locales"))]
                     'c' => queue_from_slice!(D_T_FMT),
                     #[cfg(feature = "unstable-locales")]
                     'c' => self.switch_to_locale_str(locales::d_t_fmt, D_T_FMT),
-                    'd' => num0!(Day),
-                    'e' => nums!(Day),
-                    'f' => num0!(Nanosecond),
-                    'g' => num0!(IsoYearMod100),
-                    'j' => num0!(Ordinal),
-                    'k' => nums!(Hour),
-                    'l' => nums!(Hour12),
-                    'm' => num0!(Month),
-                    'n' => sp!("\n"),
-                    'p' => fix!(UpperAmPm),
+                    'd' => num0(Day),
+                    'e' => nums(Day),
+                    'f' => num0(Nanosecond),
+                    'g' => num0(IsoYearMod100),
+                    'j' => num0(Ordinal),
+                    'k' => nums(Hour),
+                    'l' => nums(Hour12),
+                    'm' => num0(Month),
+                    'n' => Space("\n"),
+                    'p' => fixed(Fixed::UpperAmPm),
                     'r' => queue![
-                        num0!(Hour12),
-                        lit!(":"),
-                        num0!(Minute),
-                        lit!(":"),
-                        num0!(Second),
-                        sp!(" "),
-                        fix!(UpperAmPm)
+                        num0(Hour12),
+                        Literal(":"),
+                        num0(Minute),
+                        Literal(":"),
+                        num0(Second),
+                        Space(" "),
+                        fixed(Fixed::UpperAmPm)
                     ],
-                    's' => num!(Timestamp),
-                    't' => sp!("\t"),
-                    'u' => num!(WeekdayFromMon),
+                    's' => num(Timestamp),
+                    't' => Space("\t"),
+                    'u' => num(WeekdayFromMon),
                     'v' => {
-                        queue![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"), num0!(Year)]
+                        queue![
+                            nums(Day),
+                            Literal("-"),
+                            fixed(Fixed::ShortMonthName),
+                            Literal("-"),
+                            num0(Year)
+                        ]
                     }
-                    'w' => num!(NumDaysFromSun),
+                    'w' => num(NumDaysFromSun),
                     #[cfg(not(feature = "unstable-locales"))]
                     'x' => queue_from_slice!(D_FMT),
                     #[cfg(feature = "unstable-locales")]
                     'x' => self.switch_to_locale_str(locales::d_fmt, D_FMT),
-                    'y' => num0!(YearMod100),
+                    'y' => num0(YearMod100),
                     'z' => {
                         if is_alternate {
-                            internal_fix!(TimezoneOffsetPermissive)
+                            internal_fixed(TimezoneOffsetPermissive)
                         } else {
-                            fix!(TimezoneOffset)
+                            fixed(Fixed::TimezoneOffset)
                         }
                     }
-                    '+' => fix!(RFC3339),
+                    '+' => fixed(Fixed::RFC3339),
                     ':' => {
                         if remainder.starts_with("::z") {
                             remainder = &remainder[3..];
-                            fix!(TimezoneOffsetTripleColon)
+                            fixed(Fixed::TimezoneOffsetTripleColon)
                         } else if remainder.starts_with(":z") {
                             remainder = &remainder[2..];
-                            fix!(TimezoneOffsetDoubleColon)
+                            fixed(Fixed::TimezoneOffsetDoubleColon)
                         } else if remainder.starts_with('z') {
                             remainder = &remainder[1..];
-                            fix!(TimezoneOffsetColon)
+                            fixed(Fixed::TimezoneOffsetColon)
                         } else {
                             Item::Error
                         }
                     }
                     '.' => match next!() {
                         '3' => match next!() {
-                            'f' => fix!(Nanosecond3),
+                            'f' => fixed(Fixed::Nanosecond3),
                             _ => Item::Error,
                         },
                         '6' => match next!() {
-                            'f' => fix!(Nanosecond6),
+                            'f' => fixed(Fixed::Nanosecond6),
                             _ => Item::Error,
                         },
                         '9' => match next!() {
-                            'f' => fix!(Nanosecond9),
+                            'f' => fixed(Fixed::Nanosecond9),
                             _ => Item::Error,
                         },
-                        'f' => fix!(Nanosecond),
+                        'f' => fixed(Fixed::Nanosecond),
                         _ => Item::Error,
                     },
                     '3' => match next!() {
-                        'f' => internal_fix!(Nanosecond3NoDot),
+                        'f' => internal_fixed(Nanosecond3NoDot),
                         _ => Item::Error,
                     },
                     '6' => match next!() {
-                        'f' => internal_fix!(Nanosecond6NoDot),
+                        'f' => internal_fixed(Nanosecond6NoDot),
                         _ => Item::Error,
                     },
                     '9' => match next!() {
-                        'f' => internal_fix!(Nanosecond9NoDot),
+                        'f' => internal_fixed(Nanosecond9NoDot),
                         _ => Item::Error,
                     },
-                    '%' => lit!("%"),
+                    '%' => Literal("%"),
                     _ => Item::Error, // no such specifier
                 };
 
@@ -454,7 +468,7 @@ impl<'a> StrftimeItems<'a> {
                 let nextspec =
                     remainder.find(|c: char| !c.is_whitespace()).unwrap_or(remainder.len());
                 assert!(nextspec > 0);
-                let item = sp!(&remainder[..nextspec]);
+                let item = Space(&remainder[..nextspec]);
                 remainder = &remainder[nextspec..];
                 Some((remainder, item))
             }
@@ -465,7 +479,7 @@ impl<'a> StrftimeItems<'a> {
                     .find(|c: char| c.is_whitespace() || c == '%')
                     .unwrap_or(remainder.len());
                 assert!(nextspec > 0);
-                let item = lit!(&remainder[..nextspec]);
+                let item = Literal(&remainder[..nextspec]);
                 remainder = &remainder[nextspec..];
                 Some((remainder, item))
             }
@@ -492,9 +506,12 @@ impl<'a> StrftimeItems<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::StrftimeItems;
+    use crate::format::Item::{self, Literal, Space};
     #[cfg(feature = "unstable-locales")]
-    use super::Locale;
-    use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, StrftimeItems};
+    use crate::format::Locale;
+    use crate::format::{fixed, internal_fixed, num, num0, nums};
+    use crate::format::{Fixed, InternalInternal, Numeric::*};
     use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Timelike, Utc};
 
     #[test]
@@ -507,25 +524,28 @@ mod tests {
         }
 
         assert_eq!(parse_and_collect(""), []);
-        assert_eq!(parse_and_collect(" \t\n\r "), [sp!(" \t\n\r ")]);
-        assert_eq!(parse_and_collect("hello?"), [lit!("hello?")]);
+        assert_eq!(parse_and_collect(" \t\n\r "), [Space(" \t\n\r ")]);
+        assert_eq!(parse_and_collect("hello?"), [Literal("hello?")]);
         assert_eq!(
             parse_and_collect("a  b\t\nc"),
-            [lit!("a"), sp!("  "), lit!("b"), sp!("\t\n"), lit!("c")]
+            [Literal("a"), Space("  "), Literal("b"), Space("\t\n"), Literal("c")]
         );
-        assert_eq!(parse_and_collect("100%%"), [lit!("100"), lit!("%")]);
-        assert_eq!(parse_and_collect("100%% ok"), [lit!("100"), lit!("%"), sp!(" "), lit!("ok")]);
-        assert_eq!(parse_and_collect("%%PDF-1.0"), [lit!("%"), lit!("PDF-1.0")]);
+        assert_eq!(parse_and_collect("100%%"), [Literal("100"), Literal("%")]);
+        assert_eq!(
+            parse_and_collect("100%% ok"),
+            [Literal("100"), Literal("%"), Space(" "), Literal("ok")]
+        );
+        assert_eq!(parse_and_collect("%%PDF-1.0"), [Literal("%"), Literal("PDF-1.0")]);
         assert_eq!(
             parse_and_collect("%Y-%m-%d"),
-            [num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)]
+            [num0(Year), Literal("-"), num0(Month), Literal("-"), num0(Day)]
         );
         assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
-        assert_eq!(parse_and_collect("%m %d"), [num0!(Month), sp!(" "), num0!(Day)]);
+        assert_eq!(parse_and_collect("%m %d"), [num0(Month), Space(" "), num0(Day)]);
         assert_eq!(parse_and_collect("%"), [Item::Error]);
-        assert_eq!(parse_and_collect("%%"), [lit!("%")]);
+        assert_eq!(parse_and_collect("%%"), [Literal("%")]);
         assert_eq!(parse_and_collect("%%%"), [Item::Error]);
-        assert_eq!(parse_and_collect("%%%%"), [lit!("%"), lit!("%")]);
+        assert_eq!(parse_and_collect("%%%%"), [Literal("%"), Literal("%")]);
         assert_eq!(parse_and_collect("foo%?"), [Item::Error]);
         assert_eq!(parse_and_collect("bar%42"), [Item::Error]);
         assert_eq!(parse_and_collect("quux% +"), [Item::Error]);
@@ -536,16 +556,19 @@ mod tests {
         assert_eq!(parse_and_collect("%_Z"), [Item::Error]);
         assert_eq!(parse_and_collect("%.j"), [Item::Error]);
         assert_eq!(parse_and_collect("%:j"), [Item::Error]);
-        assert_eq!(parse_and_collect("%-j"), [num!(Ordinal)]);
-        assert_eq!(parse_and_collect("%0j"), [num0!(Ordinal)]);
-        assert_eq!(parse_and_collect("%_j"), [nums!(Ordinal)]);
+        assert_eq!(parse_and_collect("%-j"), [num(Ordinal)]);
+        assert_eq!(parse_and_collect("%0j"), [num0(Ordinal)]);
+        assert_eq!(parse_and_collect("%_j"), [nums(Ordinal)]);
         assert_eq!(parse_and_collect("%.e"), [Item::Error]);
         assert_eq!(parse_and_collect("%:e"), [Item::Error]);
-        assert_eq!(parse_and_collect("%-e"), [num!(Day)]);
-        assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
-        assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
-        assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
-        assert_eq!(parse_and_collect("%#z"), [internal_fix!(TimezoneOffsetPermissive)]);
+        assert_eq!(parse_and_collect("%-e"), [num(Day)]);
+        assert_eq!(parse_and_collect("%0e"), [num0(Day)]);
+        assert_eq!(parse_and_collect("%_e"), [nums(Day)]);
+        assert_eq!(parse_and_collect("%z"), [fixed(Fixed::TimezoneOffset)]);
+        assert_eq!(
+            parse_and_collect("%#z"),
+            [internal_fixed(InternalInternal::TimezoneOffsetPermissive)]
+        );
         assert_eq!(parse_and_collect("%#m"), [Item::Error]);
     }
 
