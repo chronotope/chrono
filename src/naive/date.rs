@@ -2290,15 +2290,6 @@ mod serde {
             formatter.write_str("a formatted date string")
         }
 
-        #[cfg(any(feature = "std", test))]
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            value.parse().map_err(E::custom)
-        }
-
-        #[cfg(not(any(feature = "std", test)))]
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
