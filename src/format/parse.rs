@@ -562,7 +562,7 @@ impl str::FromStr for DateTime<FixedOffset> {
 #[cfg(test)]
 mod tests {
     use crate::format::*;
-    use crate::{DateTime, FixedOffset, TimeZone, Utc};
+    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
     #[test]
     fn test_parse() {
@@ -1353,6 +1353,7 @@ mod tests {
         let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
 
         // Check that the format is what we expect
+        #[cfg(any(feature = "alloc", feature = "std"))]
         assert_eq!(dt.format(RFC850_FMT).to_string(), dt_str);
 
         // Check that it parses correctly

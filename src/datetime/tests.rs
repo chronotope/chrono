@@ -356,6 +356,7 @@ fn test_datetime_with_timezone() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_rfc2822_and_rfc3339() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     assert_eq!(
@@ -449,6 +450,7 @@ fn test_datetime_rfc2822_and_rfc3339() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_rfc3339_opts() {
     use crate::SecondsFormat::*;
     let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
@@ -479,6 +481,7 @@ fn test_rfc3339_opts() {
 
 #[test]
 #[should_panic]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_rfc3339_opts_nonexhaustive() {
     use crate::SecondsFormat;
     let dt = Utc.with_ymd_and_hms(1999, 10, 9, 1, 2, 3).unwrap();
@@ -749,6 +752,7 @@ fn test_from_system_time() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_format_alignment() {
     let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0).unwrap();
 
