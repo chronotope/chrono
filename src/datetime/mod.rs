@@ -1495,7 +1495,7 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     // we don't know the exact local offset but we can check that
     // the conversion didn't change the instant itself
     assert_eq!(
-        local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local shouuld parse"),
+        local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local should parse"),
         Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
     );
     assert_eq!(
