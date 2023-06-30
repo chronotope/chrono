@@ -15,7 +15,7 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::string::ToString;
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(any(feature = "alloc", feature = "std", test))]
@@ -1301,7 +1301,7 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<SystemTime> for DateTime<Utc> {
     fn from(t: SystemTime) -> DateTime<Utc> {
@@ -1330,7 +1330,7 @@ impl From<SystemTime> for DateTime<Local> {
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {

@@ -1,5 +1,3 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
@@ -679,7 +677,7 @@ fn test_subsecond_part() {
 #[test]
 #[cfg(feature = "std")]
 fn test_from_system_time() {
-    use std::time::Duration;
+    use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     let nanos = 999_999_000;
 
