@@ -280,6 +280,51 @@ enum InternalInternal {
     Nanosecond9NoDot,
 }
 
+/// Type for specifying the format of UTC offsets.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct OffsetFormat {
+    /// See `OffsetPrecision`.
+    pub precision: OffsetPrecision,
+    /// Separator between hours, minutes and seconds.
+    pub colons: Colons,
+    /// Represent `+00:00` as `Z`.
+    pub allow_zulu: bool,
+    /// Pad the hour value to two digits.
+    pub padding: Pad,
+}
+
+/// The precision of an offset from UTC formatting item.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum OffsetPrecision {
+    /// Format offset from UTC as only hours. Not recommended, it is not uncommon for timezones to
+    /// have an offset of 30 minutes, 15 minutes, etc.
+    /// Any minutes and seconds get truncated.
+    Hours,
+    /// Format offset from UTC as hours and minutes.
+    /// Any seconds will be rounded to the nearest minute.
+    Minutes,
+    /// Format offset from UTC as hours, minutes and seconds.
+    Seconds,
+    /// Format offset from UTC as hours, and optionally with minutes.
+    /// Any seconds will be rounded to the nearest minute.
+    OptionalMinutes,
+    /// Format offset from UTC as hours and minutes, and optionally seconds.
+    OptionalSeconds,
+    /// Format offset from UTC as hours and optionally minutes and seconds.
+    OptionalMinutesAndSeconds,
+}
+
+/// The separator between hours and minutes in an offset.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Colons {
+    /// No separator
+    None,
+    /// Colon (`:`) as separator
+    Colon,
+    /// No separator when formatting, colon allowed when parsing.
+    Maybe,
+}
+
 /// A single formatting item. This is used for both formatting and parsing.
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Item<'a> {

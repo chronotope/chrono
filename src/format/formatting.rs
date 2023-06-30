@@ -23,7 +23,10 @@ use crate::{Datelike, Timelike, Weekday};
 #[cfg(feature = "unstable-locales")]
 use super::locales;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use super::{Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, Pad};
+use super::{
+    Colons, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, OffsetFormat,
+    OffsetPrecision, Pad,
+};
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 struct Locales {
@@ -348,122 +351,142 @@ fn format_inner(
         Item::Fixed(ref spec) => {
             use self::Fixed::*;
 
-            let ret =
-                match *spec {
-                    ShortMonthName => date.map(|d| {
-                        result.push_str(locale.short_months[d.month0() as usize]);
+            let ret = match *spec {
+                ShortMonthName => date.map(|d| {
+                    result.push_str(locale.short_months[d.month0() as usize]);
+                    Ok(())
+                }),
+                LongMonthName => date.map(|d| {
+                    result.push_str(locale.long_months[d.month0() as usize]);
+                    Ok(())
+                }),
+                ShortWeekdayName => date.map(|d| {
+                    result.push_str(
+                        locale.short_weekdays[d.weekday().num_days_from_sunday() as usize],
+                    );
+                    Ok(())
+                }),
+                LongWeekdayName => date.map(|d| {
+                    result.push_str(
+                        locale.long_weekdays[d.weekday().num_days_from_sunday() as usize],
+                    );
+                    Ok(())
+                }),
+                LowerAmPm => time.map(|t| {
+                    let ampm = if t.hour12().0 { locale.am_pm[1] } else { locale.am_pm[0] };
+                    for char in ampm.chars() {
+                        result.extend(char.to_lowercase())
+                    }
+                    Ok(())
+                }),
+                UpperAmPm => time.map(|t| {
+                    result.push_str(if t.hour12().0 { locale.am_pm[1] } else { locale.am_pm[0] });
+                    Ok(())
+                }),
+                Nanosecond => time.map(|t| {
+                    let nano = t.nanosecond() % 1_000_000_000;
+                    if nano == 0 {
                         Ok(())
-                    }),
-                    LongMonthName => date.map(|d| {
-                        result.push_str(locale.long_months[d.month0() as usize]);
-                        Ok(())
-                    }),
-                    ShortWeekdayName => date.map(|d| {
-                        result.push_str(
-                            locale.short_weekdays[d.weekday().num_days_from_sunday() as usize],
-                        );
-                        Ok(())
-                    }),
-                    LongWeekdayName => date.map(|d| {
-                        result.push_str(
-                            locale.long_weekdays[d.weekday().num_days_from_sunday() as usize],
-                        );
-                        Ok(())
-                    }),
-                    LowerAmPm => time.map(|t| {
-                        let ampm = if t.hour12().0 { locale.am_pm[1] } else { locale.am_pm[0] };
-                        for char in ampm.chars() {
-                            result.extend(char.to_lowercase())
-                        }
-                        Ok(())
-                    }),
-                    UpperAmPm => time.map(|t| {
-                        result.push_str(if t.hour12().0 {
-                            locale.am_pm[1]
-                        } else {
-                            locale.am_pm[0]
-                        });
-                        Ok(())
-                    }),
-                    Nanosecond => time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
-                        if nano == 0 {
-                            Ok(())
-                        } else if nano % 1_000_000 == 0 {
-                            write!(result, ".{:03}", nano / 1_000_000)
-                        } else if nano % 1_000 == 0 {
-                            write!(result, ".{:06}", nano / 1_000)
-                        } else {
-                            write!(result, ".{:09}", nano)
-                        }
-                    }),
-                    Nanosecond3 => time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
+                    } else if nano % 1_000_000 == 0 {
                         write!(result, ".{:03}", nano / 1_000_000)
-                    }),
-                    Nanosecond6 => time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
+                    } else if nano % 1_000 == 0 {
                         write!(result, ".{:06}", nano / 1_000)
-                    }),
-                    Nanosecond9 => time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
+                    } else {
                         write!(result, ".{:09}", nano)
-                    }),
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => time
-                        .map(|t| {
-                            let nano = t.nanosecond() % 1_000_000_000;
-                            write!(result, "{:03}", nano / 1_000_000)
-                        }),
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => time
-                        .map(|t| {
-                            let nano = t.nanosecond() % 1_000_000_000;
-                            write!(result, "{:06}", nano / 1_000)
-                        }),
-                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => time
-                        .map(|t| {
-                            let nano = t.nanosecond() % 1_000_000_000;
-                            write!(result, "{:09}", nano)
-                        }),
-                    TimezoneName => off.map(|(name, _)| {
-                        result.push_str(name);
-                        Ok(())
-                    }),
-                    TimezoneOffsetColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Single)),
-                    TimezoneOffsetDoubleColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Double)),
-                    TimezoneOffsetTripleColon => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::Triple)),
-                    TimezoneOffsetColonZ => off
-                        .map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::Single)),
-                    TimezoneOffset => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, false, Colons::None))
                     }
-                    TimezoneOffsetZ => {
-                        off.map(|&(_, off)| write_local_minus_utc(result, off, true, Colons::None))
+                }),
+                Nanosecond3 => time.map(|t| {
+                    let nano = t.nanosecond() % 1_000_000_000;
+                    write!(result, ".{:03}", nano / 1_000_000)
+                }),
+                Nanosecond6 => time.map(|t| {
+                    let nano = t.nanosecond() % 1_000_000_000;
+                    write!(result, ".{:06}", nano / 1_000)
+                }),
+                Nanosecond9 => time.map(|t| {
+                    let nano = t.nanosecond() % 1_000_000_000;
+                    write!(result, ".{:09}", nano)
+                }),
+                Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
+                    time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        write!(result, "{:03}", nano / 1_000_000)
+                    })
+                }
+                Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
+                    time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        write!(result, "{:06}", nano / 1_000)
+                    })
+                }
+                Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
+                    time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        write!(result, "{:09}", nano)
+                    })
+                }
+                TimezoneName => off.map(|(name, _)| {
+                    result.push_str(name);
+                    Ok(())
+                }),
+                TimezoneOffset | TimezoneOffsetZ => off.map(|&(_, off)| {
+                    OffsetFormat {
+                        precision: OffsetPrecision::Minutes,
+                        colons: Colons::Maybe,
+                        allow_zulu: *spec == TimezoneOffsetZ,
+                        padding: Pad::Zero,
                     }
-                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
-                        return Err(fmt::Error);
+                    .format(result, off)
+                }),
+                TimezoneOffsetColon | TimezoneOffsetColonZ => off.map(|&(_, off)| {
+                    OffsetFormat {
+                        precision: OffsetPrecision::Minutes,
+                        colons: Colons::Colon,
+                        allow_zulu: *spec == TimezoneOffsetColonZ,
+                        padding: Pad::Zero,
                     }
-                    RFC2822 =>
-                    // same as `%a, %d %b %Y %H:%M:%S %z`
-                    {
-                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                            Some(write_rfc2822_inner(result, d, t, off, locale))
-                        } else {
-                            None
-                        }
+                    .format(result, off)
+                }),
+                TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
+                    OffsetFormat {
+                        precision: OffsetPrecision::Seconds,
+                        colons: Colons::Colon,
+                        allow_zulu: false,
+                        padding: Pad::Zero,
                     }
-                    RFC3339 =>
-                    // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
-                    {
-                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                            Some(write_rfc3339(result, crate::NaiveDateTime::new(*d, *t), off))
-                        } else {
-                            None
-                        }
+                    .format(result, off)
+                }),
+                TimezoneOffsetTripleColon => off.map(|&(_, off)| {
+                    OffsetFormat {
+                        precision: OffsetPrecision::Hours,
+                        colons: Colons::None,
+                        allow_zulu: false,
+                        padding: Pad::Zero,
                     }
-                };
+                    .format(result, off)
+                }),
+                Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
+                    return Err(fmt::Error);
+                }
+                RFC2822 =>
+                // same as `%a, %d %b %Y %H:%M:%S %z`
+                {
+                    if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                        Some(write_rfc2822_inner(result, d, t, off, locale))
+                    } else {
+                        None
+                    }
+                }
+                RFC3339 =>
+                // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
+                {
+                    if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                        Some(write_rfc3339(result, crate::NaiveDateTime::new(*d, *t), off))
+                    } else {
+                        None
+                    }
+                }
+            };
 
             match ret {
                 Some(ret) => ret?,
@@ -477,46 +500,82 @@ fn format_inner(
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum Colons {
-    None,
-    Single,
-    Double,
-    Triple,
-}
-
-/// Prints an offset from UTC in the format of `+HHMM` or `+HH:MM`.
-/// `Z` instead of `+00[:]00` is allowed when `allow_zulu` is true.
-#[cfg(any(feature = "alloc", feature = "std"))]
-fn write_local_minus_utc(
-    result: &mut String,
-    off: FixedOffset,
-    allow_zulu: bool,
-    colon_type: Colons,
-) -> fmt::Result {
-    let off = off.local_minus_utc();
-    if allow_zulu && off == 0 {
-        result.push('Z');
-        return Ok(());
-    }
-    let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
-    result.push(sign);
-
-    write_hundreds(result, (off / 3600) as u8)?;
-
-    match colon_type {
-        Colons::None => write_hundreds(result, (off / 60 % 60) as u8),
-        Colons::Single => {
-            result.push(':');
-            write_hundreds(result, (off / 60 % 60) as u8)
+impl OffsetFormat {
+    /// Writes an offset from UTC to `result` with the format defined by `self`.
+    fn format(&self, result: &mut String, off: FixedOffset) -> fmt::Result {
+        let off = off.local_minus_utc();
+        if self.allow_zulu && off == 0 {
+            result.push('Z');
+            return Ok(());
         }
-        Colons::Double => {
-            result.push(':');
-            write_hundreds(result, (off / 60 % 60) as u8)?;
-            result.push(':');
-            write_hundreds(result, (off % 60) as u8)
+        let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
+
+        let hours;
+        let mut mins = 0;
+        let mut secs = 0;
+        let precision = match self.precision {
+            OffsetPrecision::Hours => {
+                // Minutes and seconds are simply truncated
+                hours = (off / 3600) as u8;
+                OffsetPrecision::Hours
+            }
+            OffsetPrecision::Minutes | OffsetPrecision::OptionalMinutes => {
+                // Round seconds to the nearest minute.
+                let minutes = (off + 30) / 60;
+                mins = (minutes % 60) as u8;
+                hours = (minutes / 60) as u8;
+                if self.precision == OffsetPrecision::OptionalMinutes && mins == 0 {
+                    OffsetPrecision::Hours
+                } else {
+                    OffsetPrecision::Minutes
+                }
+            }
+            OffsetPrecision::Seconds
+            | OffsetPrecision::OptionalSeconds
+            | OffsetPrecision::OptionalMinutesAndSeconds => {
+                let minutes = off / 60;
+                secs = (off % 60) as u8;
+                mins = (minutes % 60) as u8;
+                hours = (minutes / 60) as u8;
+                if self.precision != OffsetPrecision::Seconds && secs == 0 {
+                    if self.precision == OffsetPrecision::OptionalMinutesAndSeconds && mins == 0 {
+                        OffsetPrecision::Hours
+                    } else {
+                        OffsetPrecision::Minutes
+                    }
+                } else {
+                    OffsetPrecision::Seconds
+                }
+            }
+        };
+        let colons = self.colons == Colons::Colon;
+
+        if hours < 10 {
+            if self.padding == Pad::Space {
+                result.push(' ');
+            }
+            result.push(sign);
+            if self.padding == Pad::Zero {
+                result.push('0');
+            }
+            result.push((b'0' + hours) as char);
+        } else {
+            result.push(sign);
+            write_hundreds(result, hours)?;
         }
-        Colons::Triple => Ok(()),
+        if let OffsetPrecision::Minutes | OffsetPrecision::Seconds = precision {
+            if colons {
+                result.push(':');
+            }
+            write_hundreds(result, mins)?;
+        }
+        if let OffsetPrecision::Seconds = precision {
+            if colons {
+                result.push(':');
+            }
+            write_hundreds(result, secs)?;
+        }
+        Ok(())
     }
 }
 
@@ -530,7 +589,13 @@ pub(crate) fn write_rfc3339(
     // reuse `Debug` impls which already print ISO 8601 format.
     // this is faster in this way.
     write!(result, "{:?}", dt)?;
-    write_local_minus_utc(result, off, false, Colons::Single)
+    OffsetFormat {
+        precision: OffsetPrecision::Minutes,
+        colons: Colons::Colon,
+        allow_zulu: false,
+        padding: Pad::Zero,
+    }
+    .format(result, off)
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -574,7 +639,13 @@ fn write_rfc2822_inner(
     let sec = t.second() + t.nanosecond() / 1_000_000_000;
     write_hundreds(result, sec as u8)?;
     result.push(' ');
-    write_local_minus_utc(result, off, false, Colons::None)
+    OffsetFormat {
+        precision: OffsetPrecision::Minutes,
+        colons: Colons::None,
+        allow_zulu: false,
+        padding: Pad::Zero,
+    }
+    .format(result, off)
 }
 
 /// Equivalent to `{:02}` formatting for n < 100.
@@ -587,4 +658,164 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
     let ones = b'0' + n % 10;
     w.write_char(tens as char)?;
     w.write_char(ones as char)
+}
+
+#[cfg(test)]
+#[cfg(any(feature = "alloc", feature = "std"))]
+mod tests {
+    use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
+    use crate::FixedOffset;
+
+    #[test]
+    fn test_offset_formatting() {
+        fn check_all(precision: OffsetPrecision, expected: [[&str; 7]; 12]) {
+            fn check(
+                precision: OffsetPrecision,
+                colons: Colons,
+                padding: Pad,
+                allow_zulu: bool,
+                offsets: [FixedOffset; 7],
+                expected: [&str; 7],
+            ) {
+                let offset_format = OffsetFormat { precision, colons, allow_zulu, padding };
+                for (offset, expected) in offsets.iter().zip(expected.iter()) {
+                    let mut output = String::new();
+                    offset_format.format(&mut output, *offset).unwrap();
+                    assert_eq!(&output, expected);
+                }
+            }
+            // +03:45, -03:30, +11:00, -11:00:22, +02:34:26, -12:34:30, +00:00
+            let offsets = [
+                FixedOffset::east_opt(13_500).unwrap(),
+                FixedOffset::east_opt(-12_600).unwrap(),
+                FixedOffset::east_opt(39_600).unwrap(),
+                FixedOffset::east_opt(-39_622).unwrap(),
+                FixedOffset::east_opt(9266).unwrap(),
+                FixedOffset::east_opt(-45270).unwrap(),
+                FixedOffset::east_opt(0).unwrap(),
+            ];
+            check(precision, Colons::Colon, Pad::Zero, false, offsets, expected[0]);
+            check(precision, Colons::Colon, Pad::Zero, true, offsets, expected[1]);
+            check(precision, Colons::Colon, Pad::Space, false, offsets, expected[2]);
+            check(precision, Colons::Colon, Pad::Space, true, offsets, expected[3]);
+            check(precision, Colons::Colon, Pad::None, false, offsets, expected[4]);
+            check(precision, Colons::Colon, Pad::None, true, offsets, expected[5]);
+            check(precision, Colons::None, Pad::Zero, false, offsets, expected[6]);
+            check(precision, Colons::None, Pad::Zero, true, offsets, expected[7]);
+            check(precision, Colons::None, Pad::Space, false, offsets, expected[8]);
+            check(precision, Colons::None, Pad::Space, true, offsets, expected[9]);
+            check(precision, Colons::None, Pad::None, false, offsets, expected[10]);
+            check(precision, Colons::None, Pad::None, true, offsets, expected[11]);
+            // `Colons::Maybe` should format the same as `Colons::None`
+            check(precision, Colons::Maybe, Pad::Zero, false, offsets, expected[6]);
+            check(precision, Colons::Maybe, Pad::Zero, true, offsets, expected[7]);
+            check(precision, Colons::Maybe, Pad::Space, false, offsets, expected[8]);
+            check(precision, Colons::Maybe, Pad::Space, true, offsets, expected[9]);
+            check(precision, Colons::Maybe, Pad::None, false, offsets, expected[10]);
+            check(precision, Colons::Maybe, Pad::None, true, offsets, expected[11]);
+        }
+        check_all(
+            OffsetPrecision::Hours,
+            [
+                ["+03", "-03", "+11", "-11", "+02", "-12", "+00"],
+                ["+03", "-03", "+11", "-11", "+02", "-12", "Z"],
+                [" +3", " -3", "+11", "-11", " +2", "-12", " +0"],
+                [" +3", " -3", "+11", "-11", " +2", "-12", "Z"],
+                ["+3", "-3", "+11", "-11", "+2", "-12", "+0"],
+                ["+3", "-3", "+11", "-11", "+2", "-12", "Z"],
+                ["+03", "-03", "+11", "-11", "+02", "-12", "+00"],
+                ["+03", "-03", "+11", "-11", "+02", "-12", "Z"],
+                [" +3", " -3", "+11", "-11", " +2", "-12", " +0"],
+                [" +3", " -3", "+11", "-11", " +2", "-12", "Z"],
+                ["+3", "-3", "+11", "-11", "+2", "-12", "+0"],
+                ["+3", "-3", "+11", "-11", "+2", "-12", "Z"],
+            ],
+        );
+        check_all(
+            OffsetPrecision::Minutes,
+            [
+                ["+03:45", "-03:30", "+11:00", "-11:00", "+02:34", "-12:35", "+00:00"],
+                ["+03:45", "-03:30", "+11:00", "-11:00", "+02:34", "-12:35", "Z"],
+                [" +3:45", " -3:30", "+11:00", "-11:00", " +2:34", "-12:35", " +0:00"],
+                [" +3:45", " -3:30", "+11:00", "-11:00", " +2:34", "-12:35", "Z"],
+                ["+3:45", "-3:30", "+11:00", "-11:00", "+2:34", "-12:35", "+0:00"],
+                ["+3:45", "-3:30", "+11:00", "-11:00", "+2:34", "-12:35", "Z"],
+                ["+0345", "-0330", "+1100", "-1100", "+0234", "-1235", "+0000"],
+                ["+0345", "-0330", "+1100", "-1100", "+0234", "-1235", "Z"],
+                [" +345", " -330", "+1100", "-1100", " +234", "-1235", " +000"],
+                [" +345", " -330", "+1100", "-1100", " +234", "-1235", "Z"],
+                ["+345", "-330", "+1100", "-1100", "+234", "-1235", "+000"],
+                ["+345", "-330", "+1100", "-1100", "+234", "-1235", "Z"],
+            ],
+        );
+        #[rustfmt::skip]
+        check_all(
+            OffsetPrecision::Seconds,
+            [
+                ["+03:45:00", "-03:30:00", "+11:00:00", "-11:00:22", "+02:34:26", "-12:34:30", "+00:00:00"],
+                ["+03:45:00", "-03:30:00", "+11:00:00", "-11:00:22", "+02:34:26", "-12:34:30", "Z"],
+                [" +3:45:00", " -3:30:00", "+11:00:00", "-11:00:22", " +2:34:26", "-12:34:30", " +0:00:00"],
+                [" +3:45:00", " -3:30:00", "+11:00:00", "-11:00:22", " +2:34:26", "-12:34:30", "Z"],
+                ["+3:45:00", "-3:30:00", "+11:00:00", "-11:00:22", "+2:34:26", "-12:34:30", "+0:00:00"],
+                ["+3:45:00", "-3:30:00", "+11:00:00", "-11:00:22", "+2:34:26", "-12:34:30", "Z"],
+                ["+034500", "-033000", "+110000", "-110022", "+023426", "-123430", "+000000"],
+                ["+034500", "-033000", "+110000", "-110022", "+023426", "-123430", "Z"],
+                [" +34500", " -33000", "+110000", "-110022", " +23426", "-123430", " +00000"],
+                [" +34500", " -33000", "+110000", "-110022", " +23426", "-123430", "Z"],
+                ["+34500", "-33000", "+110000", "-110022", "+23426", "-123430", "+00000"],
+                ["+34500", "-33000", "+110000", "-110022", "+23426", "-123430", "Z"],
+            ],
+        );
+        check_all(
+            OffsetPrecision::OptionalMinutes,
+            [
+                ["+03:45", "-03:30", "+11", "-11", "+02:34", "-12:35", "+00"],
+                ["+03:45", "-03:30", "+11", "-11", "+02:34", "-12:35", "Z"],
+                [" +3:45", " -3:30", "+11", "-11", " +2:34", "-12:35", " +0"],
+                [" +3:45", " -3:30", "+11", "-11", " +2:34", "-12:35", "Z"],
+                ["+3:45", "-3:30", "+11", "-11", "+2:34", "-12:35", "+0"],
+                ["+3:45", "-3:30", "+11", "-11", "+2:34", "-12:35", "Z"],
+                ["+0345", "-0330", "+11", "-11", "+0234", "-1235", "+00"],
+                ["+0345", "-0330", "+11", "-11", "+0234", "-1235", "Z"],
+                [" +345", " -330", "+11", "-11", " +234", "-1235", " +0"],
+                [" +345", " -330", "+11", "-11", " +234", "-1235", "Z"],
+                ["+345", "-330", "+11", "-11", "+234", "-1235", "+0"],
+                ["+345", "-330", "+11", "-11", "+234", "-1235", "Z"],
+            ],
+        );
+        check_all(
+            OffsetPrecision::OptionalSeconds,
+            [
+                ["+03:45", "-03:30", "+11:00", "-11:00:22", "+02:34:26", "-12:34:30", "+00:00"],
+                ["+03:45", "-03:30", "+11:00", "-11:00:22", "+02:34:26", "-12:34:30", "Z"],
+                [" +3:45", " -3:30", "+11:00", "-11:00:22", " +2:34:26", "-12:34:30", " +0:00"],
+                [" +3:45", " -3:30", "+11:00", "-11:00:22", " +2:34:26", "-12:34:30", "Z"],
+                ["+3:45", "-3:30", "+11:00", "-11:00:22", "+2:34:26", "-12:34:30", "+0:00"],
+                ["+3:45", "-3:30", "+11:00", "-11:00:22", "+2:34:26", "-12:34:30", "Z"],
+                ["+0345", "-0330", "+1100", "-110022", "+023426", "-123430", "+0000"],
+                ["+0345", "-0330", "+1100", "-110022", "+023426", "-123430", "Z"],
+                [" +345", " -330", "+1100", "-110022", " +23426", "-123430", " +000"],
+                [" +345", " -330", "+1100", "-110022", " +23426", "-123430", "Z"],
+                ["+345", "-330", "+1100", "-110022", "+23426", "-123430", "+000"],
+                ["+345", "-330", "+1100", "-110022", "+23426", "-123430", "Z"],
+            ],
+        );
+        check_all(
+            OffsetPrecision::OptionalMinutesAndSeconds,
+            [
+                ["+03:45", "-03:30", "+11", "-11:00:22", "+02:34:26", "-12:34:30", "+00"],
+                ["+03:45", "-03:30", "+11", "-11:00:22", "+02:34:26", "-12:34:30", "Z"],
+                [" +3:45", " -3:30", "+11", "-11:00:22", " +2:34:26", "-12:34:30", " +0"],
+                [" +3:45", " -3:30", "+11", "-11:00:22", " +2:34:26", "-12:34:30", "Z"],
+                ["+3:45", "-3:30", "+11", "-11:00:22", "+2:34:26", "-12:34:30", "+0"],
+                ["+3:45", "-3:30", "+11", "-11:00:22", "+2:34:26", "-12:34:30", "Z"],
+                ["+0345", "-0330", "+11", "-110022", "+023426", "-123430", "+00"],
+                ["+0345", "-0330", "+11", "-110022", "+023426", "-123430", "Z"],
+                [" +345", " -330", "+11", "-110022", " +23426", "-123430", " +0"],
+                [" +345", " -330", "+11", "-110022", " +23426", "-123430", "Z"],
+                ["+345", "-330", "+11", "-110022", "+23426", "-123430", "+0"],
+                ["+345", "-330", "+11", "-110022", "+23426", "-123430", "Z"],
+            ],
+        );
+    }
 }
