@@ -1411,26 +1411,36 @@ mod tests {
         }
     }
 
-    #[cfg(test)]
     #[test]
     fn test_rfc3339() {
-        use super::*;
-        use crate::offset::FixedOffset;
-        use crate::DateTime;
+        let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
+            FixedOffset::east_opt(off * 60 * 60)
+                .unwrap()
+                .with_ymd_and_hms(y, m, d, h, n, s)
+                .unwrap()
+                .with_nanosecond(nano)
+                .unwrap()
+        };
 
-        // Test data - (input, Ok(expected result after parse and format) or Err(error code))
+        // Test data - (input, Ok(expected result) or Err(error code))
         let testdates = [
-            ("2015-01-20T17:35:20-08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case
-            ("2015-01-20T17:35:20−08:00", Ok("2015-01-20T17:35:20-08:00")), // normal case with MINUS SIGN (U+2212)
-            ("1944-06-06T04:04:00Z", Ok("1944-06-06T04:04:00+00:00")),      // D-day
-            ("2001-09-11T09:45:00-08:00", Ok("2001-09-11T09:45:00-08:00")),
-            ("2015-01-20T17:35:20.001-08:00", Ok("2015-01-20T17:35:20.001-08:00")),
-            ("2015-01-20T17:35:20.001−08:00", Ok("2015-01-20T17:35:20.001-08:00")), // with MINUS SIGN (U+2212)
-            ("2015-01-20T17:35:20.000031-08:00", Ok("2015-01-20T17:35:20.000031-08:00")),
-            ("2015-01-20T17:35:20.000000004-08:00", Ok("2015-01-20T17:35:20.000000004-08:00")),
-            ("2015-01-20T17:35:20.000000004−08:00", Ok("2015-01-20T17:35:20.000000004-08:00")), // with MINUS SIGN (U+2212)
-            ("2015-01-20T17:35:20.000000000452-08:00", Ok("2015-01-20T17:35:20-08:00")), // too small
-            ("2015-01-20T17:35:20.000000000452−08:00", Ok("2015-01-20T17:35:20-08:00")), // too small with MINUS SIGN (U+2212)
+            ("2015-01-20T17:35:20-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // normal case
+            ("2015-01-20T17:35:20−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // normal case with MINUS SIGN (U+2212)
+            ("1944-06-06T04:04:00Z", Ok(ymd_hmsn(1944, 6, 6, 4, 4, 0, 0, 0))),           // D-day
+            ("2001-09-11T09:45:00-08:00", Ok(ymd_hmsn(2001, 9, 11, 9, 45, 0, 0, -8))),
+            ("2015-01-20T17:35:20.001-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 1_000_000, -8))),
+            ("2015-01-20T17:35:20.001−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 1_000_000, -8))), // with MINUS SIGN (U+2212)
+            ("2015-01-20T17:35:20.000031-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 31_000, -8))),
+            ("2015-01-20T17:35:20.000000004-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 4, -8))),
+            ("2015-01-20T17:35:20.000000004−08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 4, -8))), // with MINUS SIGN (U+2212)
+            (
+                "2015-01-20T17:35:20.000000000452-08:00",
+                Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
+            ), // too small
+            (
+                "2015-01-20T17:35:20.000000000452−08:00",
+                Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
+            ), // too small with MINUS SIGN (U+2212)
             ("2015-01-20 17:35:20.001-08:00", Err(INVALID)), // missing separator 'T'
             ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YMD
             ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HMS
@@ -1479,19 +1489,10 @@ mod tests {
             parsed.to_datetime()
         }
 
-        fn fmt_rfc3339_datetime(dt: DateTime<FixedOffset>) -> String {
-            dt.format_with_items([Item::Fixed(Fixed::RFC3339)].iter()).to_string()
-        }
-
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
-            let d = rfc3339_to_datetime(date); // parse a date
-            let dt = match d {
-                // did we get a value?
-                Ok(dt) => Ok(fmt_rfc3339_datetime(dt)), // yes, go on
-                Err(e) => Err(e), // otherwise keep an error for the comparison
-            };
-            if dt != checkdate.map(|s| s.to_string()) {
+            let dt = rfc3339_to_datetime(date); // parse a date
+            if dt != checkdate {
                 // check for expected result
                 panic!(
                     "Date conversion failed for {}\nReceived: {:?}\nExpected: {:?}",
