@@ -677,77 +677,7 @@ fn test_subsecond_part() {
 }
 
 #[test]
-#[cfg(not(target_os = "windows"))]
-fn test_from_system_time() {
-    use std::time::Duration;
-
-    let epoch = Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap();
-    let nanos = 999_999_999;
-
-    // SystemTime -> DateTime<Utc>
-    assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
-    assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
-        Utc.from_local_datetime(
-            &NaiveDate::from_ymd_opt(2001, 9, 9)
-                .unwrap()
-                .and_hms_nano_opt(1, 46, 39, nanos)
-                .unwrap()
-        )
-        .unwrap()
-    );
-    assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
-        Utc.from_local_datetime(
-            &NaiveDate::from_ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1).unwrap()
-        )
-        .unwrap()
-    );
-
-    // DateTime<Utc> -> SystemTime
-    assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
-    assert_eq!(
-        SystemTime::from(
-            Utc.from_local_datetime(
-                &NaiveDate::from_ymd_opt(2001, 9, 9)
-                    .unwrap()
-                    .and_hms_nano_opt(1, 46, 39, nanos)
-                    .unwrap()
-            )
-            .unwrap()
-        ),
-        UNIX_EPOCH + Duration::new(999_999_999, nanos)
-    );
-    assert_eq!(
-        SystemTime::from(
-            Utc.from_local_datetime(
-                &NaiveDate::from_ymd_opt(1938, 4, 24)
-                    .unwrap()
-                    .and_hms_nano_opt(22, 13, 20, 1)
-                    .unwrap()
-            )
-            .unwrap()
-        ),
-        UNIX_EPOCH - Duration::new(999_999_999, 999_999_999)
-    );
-
-    // DateTime<any tz> -> SystemTime (via `with_timezone`)
-    #[cfg(feature = "clock")]
-    {
-        assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
-    }
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::east_opt(32400).unwrap())),
-        UNIX_EPOCH
-    );
-    assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::west_opt(28800).unwrap())),
-        UNIX_EPOCH
-    );
-}
-
-#[test]
-#[cfg(target_os = "windows")]
+#[cfg(feature = "std")]
 fn test_from_system_time() {
     use std::time::Duration;
 
