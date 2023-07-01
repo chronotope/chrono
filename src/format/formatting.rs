@@ -579,20 +579,20 @@ impl OffsetFormat {
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) fn write_rfc3339(
-    result: &mut String,
+    w: &mut impl Write,
     dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
     // reuse `Debug` impls which already print ISO 8601 format.
     // this is faster in this way.
-    write!(result, "{:?}", dt)?;
+    write!(w, "{:?}", dt)?;
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::Colon,
         allow_zulu: false,
         padding: Pad::Zero,
     }
-    .format(result, off)
+    .format(w, off)
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
