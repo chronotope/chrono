@@ -258,7 +258,7 @@ fn format_inner(
                     match (date, time, off) {
                         (Some(d), Some(t), None) => Some(d.and_time(*t).timestamp()),
                         (Some(d), Some(t), Some(&(_, off))) => {
-                            Some((d.and_time(*t) - off).timestamp())
+                            Some(d.and_time(*t).timestamp() - i64::from(off.local_minus_utc()))
                         }
                         (_, _, _) => None,
                     },
