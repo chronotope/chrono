@@ -17,7 +17,6 @@ use crate::offset::{FixedOffset, Offset};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::{Datelike, Timelike, Weekday};
 
-#[cfg(feature = "unstable-locales")]
 use super::locales;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use super::{
@@ -25,48 +24,6 @@ use super::{
     OffsetPrecision, Pad,
 };
 use locales::*;
-
-#[cfg(not(feature = "unstable-locales"))]
-mod locales {
-    use crate::format::Locale;
-
-    pub(crate) const fn default_locale() -> Locale {
-        Locale
-    }
-
-    pub(crate) fn short_months(_locale: Locale) -> &'static [&'static str] {
-        &["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-    }
-
-    pub(crate) fn long_months(_locale: Locale) -> &'static [&'static str] {
-        &[
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
-        ]
-    }
-
-    pub(crate) fn short_weekdays(_locale: Locale) -> &'static [&'static str] {
-        &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    }
-
-    pub(crate) fn long_weekdays(_locale: Locale) -> &'static [&'static str] {
-        &["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    }
-
-    pub(crate) fn am_pm(_locale: Locale) -> &'static [&'static str] {
-        &["AM", "PM"]
-    }
-}
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
