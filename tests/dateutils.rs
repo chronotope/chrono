@@ -1,14 +1,8 @@
-#[cfg(unix)]
-use chrono::offset::TimeZone;
-#[cfg(unix)]
-use chrono::Local;
-#[cfg(unix)]
-use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+#![cfg(all(unix, feature = "clock", feature = "std"))]
 
-#[cfg(unix)]
+use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike};
 use std::{path, process, thread};
 
-#[cfg(unix)]
 fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     let output = process::Command::new(path)
         .arg("-d")
@@ -64,7 +58,6 @@ const DATE_PATH: &str = "/usr/bin/date";
 const DATE_PATH: &str = "/opt/freeware/bin/date";
 
 #[cfg(test)]
-#[cfg(unix)]
 /// test helper to sanity check the date command behaves as expected
 /// asserts the command succeeded
 fn assert_run_date_version() {
@@ -82,7 +75,6 @@ fn assert_run_date_version() {
 }
 
 #[test]
-#[cfg(unix)]
 fn try_verify_against_date_command() {
     if !path::Path::new(DATE_PATH).exists() {
         eprintln!("date command {:?} not found, skipping", DATE_PATH);
