@@ -1,5 +1,9 @@
 use pure_rust_locales::{locale_match, Locale};
 
+pub(crate) const fn default_locale() -> Locale {
+    Locale::POSIX
+}
+
 pub(crate) const fn short_months(locale: Locale) -> &'static [&'static str] {
     locale_match!(locale => LC_TIME::ABMON)
 }

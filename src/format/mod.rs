@@ -66,9 +66,8 @@ pub use pure_rust_locales::Locale;
 pub use strftime::StrftimeItems;
 
 #[cfg(not(feature = "unstable-locales"))]
-#[allow(dead_code)]
-#[derive(Debug)]
-struct Locale;
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct Locale;
 
 /// An uninhabited type used for `InternalNumeric` and `InternalFixed` below.
 #[derive(Clone, PartialEq, Eq, Hash)]
