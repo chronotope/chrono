@@ -7,8 +7,9 @@
 use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
-use core::fmt;
-use core::fmt::Write;
+#[cfg(any(feature = "alloc", feature = "std"))]
+use core::fmt::Display;
+use core::fmt::{self, Write};
 
 #[cfg(any(
     feature = "alloc",
@@ -87,7 +88,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         items: I,
     ) -> DelayedFormat<I>
     where
-        Off: Offset + fmt::Display,
+        Off: Offset + Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
         DelayedFormat {
@@ -123,7 +124,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         locale: Locale,
     ) -> DelayedFormat<I>
     where
-        Off: Offset + fmt::Display,
+        Off: Offset + Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
         DelayedFormat { date, time, off: Some(name_and_diff), items, locale: Some(locale) }
@@ -131,7 +132,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for DelayedFormat<I> {
+impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         #[cfg(feature = "unstable-locales")]
         {
