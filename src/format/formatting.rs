@@ -498,11 +498,11 @@ fn format_inner(
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl OffsetFormat {
-    /// Writes an offset from UTC to `result` with the format defined by `self`.
-    fn format(&self, result: &mut String, off: FixedOffset) -> fmt::Result {
+    /// Writes an offset from UTC with the format defined by `self`.
+    fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
         let off = off.local_minus_utc();
         if self.allow_zulu && off == 0 {
-            result.push('Z');
+            w.write_char('Z')?;
             return Ok(());
         }
         let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
@@ -549,28 +549,28 @@ impl OffsetFormat {
 
         if hours < 10 {
             if self.padding == Pad::Space {
-                result.push(' ');
+                w.write_char(' ')?;
             }
-            result.push(sign);
+            w.write_char(sign)?;
             if self.padding == Pad::Zero {
-                result.push('0');
+                w.write_char('0')?;
             }
-            result.push((b'0' + hours) as char);
+            w.write_char((b'0' + hours) as char)?;
         } else {
-            result.push(sign);
-            write_hundreds(result, hours)?;
+            w.write_char(sign)?;
+            write_hundreds(w, hours)?;
         }
         if let OffsetPrecision::Minutes | OffsetPrecision::Seconds = precision {
             if colons {
-                result.push(':');
+                w.write_char(':')?;
             }
-            write_hundreds(result, mins)?;
+            write_hundreds(w, mins)?;
         }
         if let OffsetPrecision::Seconds = precision {
             if colons {
-                result.push(':');
+                w.write_char(':')?;
             }
-            write_hundreds(result, secs)?;
+            write_hundreds(w, secs)?;
         }
         Ok(())
     }
