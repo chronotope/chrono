@@ -48,9 +48,6 @@ pub(crate) mod scan;
 
 pub mod strftime;
 
-#[allow(unused)]
-// TODO: remove '#[allow(unused)]' once we use this module for parsing or something else that does
-// not require `alloc`.
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
@@ -58,11 +55,15 @@ pub(crate) use formatting::write_hundreds;
 pub(crate) use formatting::write_rfc2822;
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 pub(crate) use formatting::write_rfc3339;
+pub use formatting::Formatter;
+#[allow(deprecated)]
 #[cfg(feature = "alloc")]
 #[allow(deprecated)]
-pub use formatting::{format, format_item, DelayedFormat, Formatter};
+pub use formatting::{format, format_item, DelayedFormat};
 #[cfg(feature = "unstable-locales")]
 pub use locales::Locale;
+#[cfg(not(feature = "unstable-locales"))]
+pub(crate) use locales::Locale;
 pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
