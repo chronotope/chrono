@@ -8,6 +8,7 @@
 #![cfg(all(
     target_arch = "wasm32",
     feature = "wasmbind",
+    feature = "clock",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
 
