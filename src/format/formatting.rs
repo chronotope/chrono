@@ -115,48 +115,88 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
         use self::Numeric::*;
 
-        let (width, v) = match (spec, self.date, self.time) {
-            (Year, Some(d), _) => (4, i64::from(d.year())),
-            (YearDiv100, Some(d), _) => (2, i64::from(d.year()).div_euclid(100)),
-            (YearMod100, Some(d), _) => (2, i64::from(d.year()).rem_euclid(100)),
-            (IsoYear, Some(d), _) => (4, i64::from(d.iso_week().year())),
-            (IsoYearDiv100, Some(d), _) => (2, i64::from(d.iso_week().year()).div_euclid(100)),
-            (IsoYearMod100, Some(d), _) => (2, i64::from(d.iso_week().year()).rem_euclid(100)),
-            (Month, Some(d), _) => (2, i64::from(d.month())),
-            (Day, Some(d), _) => (2, i64::from(d.day())),
-            (WeekFromSun, Some(d), _) => (2, i64::from(d.weeks_from(Weekday::Sun))),
-            (WeekFromMon, Some(d), _) => (2, i64::from(d.weeks_from(Weekday::Mon))),
-            (IsoWeek, Some(d), _) => (2, i64::from(d.iso_week().week())),
-            (NumDaysFromSun, Some(d), _) => (1, i64::from(d.weekday().num_days_from_sunday())),
-            (WeekdayFromMon, Some(d), _) => (1, i64::from(d.weekday().number_from_monday())),
-            (Ordinal, Some(d), _) => (3, i64::from(d.ordinal())),
-            (Hour, _, Some(t)) => (2, i64::from(t.hour())),
-            (Hour12, _, Some(t)) => (2, i64::from(t.hour12().1)),
-            (Minute, _, Some(t)) => (2, i64::from(t.minute())),
-            (Second, _, Some(t)) => (2, i64::from(t.second() + t.nanosecond() / 1_000_000_000)),
-            (Nanosecond, _, Some(t)) => (9, i64::from(t.nanosecond() % 1_000_000_000)),
+        fn write_one(w: &mut impl Write, v: u8) -> fmt::Result {
+            w.write_char((b'0' + v) as char)
+        }
+
+        fn write_two(w: &mut impl Write, v: u8, pad: Pad) -> fmt::Result {
+            let ones = b'0' + v % 10;
+            match (v / 10, pad) {
+                (0, Pad::None) => {}
+                (0, Pad::Space) => w.write_char(' ')?,
+                (tens, _) => w.write_char((b'0' + tens) as char)?,
+            }
+            w.write_char(ones as char)
+        }
+
+        #[inline]
+        fn write_year(w: &mut impl Write, year: i32, pad: Pad) -> fmt::Result {
+            if (1000..=9999).contains(&year) {
+                // fast path
+                write_hundreds(w, (year / 100) as u8)?;
+                write_hundreds(w, (year % 100) as u8)
+            } else {
+                write_n(w, 4, year as i64, pad, !(0..10_000).contains(&year))
+            }
+        }
+
+        fn write_n(
+            w: &mut impl Write,
+            n: usize,
+            v: i64,
+            pad: Pad,
+            always_sign: bool,
+        ) -> fmt::Result {
+            if always_sign {
+                match pad {
+                    Pad::None => write!(w, "{:+}", v),
+                    Pad::Zero => write!(w, "{:+01$}", v, n + 1),
+                    Pad::Space => write!(w, "{:+1$}", v, n + 1),
+                }
+            } else {
+                match pad {
+                    Pad::None => write!(w, "{}", v),
+                    Pad::Zero => write!(w, "{:01$}", v, n),
+                    Pad::Space => write!(w, "{:1$}", v, n),
+                }
+            }
+        }
+
+        match (spec, self.date, self.time) {
+            (Year, Some(d), _) => write_year(w, d.year(), pad),
+            (YearDiv100, Some(d), _) => write_two(w, d.year().div_euclid(100) as u8, pad),
+            (YearMod100, Some(d), _) => write_two(w, d.year().rem_euclid(100) as u8, pad),
+            (IsoYear, Some(d), _) => write_year(w, d.iso_week().year(), pad),
+            (IsoYearDiv100, Some(d), _) => {
+                write_two(w, d.iso_week().year().div_euclid(100) as u8, pad)
+            }
+            (IsoYearMod100, Some(d), _) => {
+                write_two(w, d.iso_week().year().rem_euclid(100) as u8, pad)
+            }
+            (Month, Some(d), _) => write_two(w, d.month() as u8, pad),
+            (Day, Some(d), _) => write_two(w, d.day() as u8, pad),
+            (WeekFromSun, Some(d), _) => write_two(w, d.weeks_from(Weekday::Sun) as u8, pad),
+            (WeekFromMon, Some(d), _) => write_two(w, d.weeks_from(Weekday::Mon) as u8, pad),
+            (IsoWeek, Some(d), _) => write_two(w, d.iso_week().week() as u8, pad),
+            (NumDaysFromSun, Some(d), _) => write_one(w, d.weekday().num_days_from_sunday() as u8),
+            (WeekdayFromMon, Some(d), _) => write_one(w, d.weekday().number_from_monday() as u8),
+            (Ordinal, Some(d), _) => write_n(w, 3, d.ordinal() as i64, pad, false),
+            (Hour, _, Some(t)) => write_two(w, t.hour() as u8, pad),
+            (Hour12, _, Some(t)) => write_two(w, t.hour12().1 as u8, pad),
+            (Minute, _, Some(t)) => write_two(w, t.minute() as u8, pad),
+            (Second, _, Some(t)) => {
+                write_two(w, (t.second() + t.nanosecond() / 1_000_000_000) as u8, pad)
+            }
+            (Nanosecond, _, Some(t)) => {
+                write_n(w, 9, (t.nanosecond() % 1_000_000_000) as i64, pad, false)
+            }
             (Timestamp, Some(d), Some(t)) => {
                 let offset = self.off.as_ref().map(|(_, o)| i64::from(o.local_minus_utc()));
                 let timestamp = d.and_time(t).and_utc().timestamp() - offset.unwrap_or(0);
-                (1, timestamp)
+                write_n(w, 9, timestamp, pad, false)
             }
-            (Internal(_), _, _) => return Ok(()), // for future expansion
-            _ => return Err(fmt::Error),          // insufficient arguments for given format
-        };
-
-        if (spec == &Year || spec == &IsoYear) && !(0..10_000).contains(&v) {
-            // non-four-digit years require an explicit sign as per ISO 8601
-            match pad {
-                Pad::None => write!(w, "{:+}", v),
-                Pad::Zero => write!(w, "{:+01$}", v, width + 1),
-                Pad::Space => write!(w, "{:+1$}", v, width + 1),
-            }
-        } else {
-            match pad {
-                Pad::None => write!(w, "{}", v),
-                Pad::Zero => write!(w, "{:01$}", v, width),
-                Pad::Space => write!(w, "{:1$}", v, width),
-            }
+            (Internal(_), _, _) => Ok(()), // for future expansion
+            _ => Err(fmt::Error),          // insufficient arguments for given format
         }
     }
 
@@ -206,21 +246,21 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             }
             (Nanosecond3, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
-                write!(w, "{:03}", t.nanosecond() % 1_000_000_000 / 1_000_000)
+                write!(w, "{:03}", t.nanosecond() / 1_000_000 % 1000)
             }
             (Nanosecond6, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
-                write!(w, "{:06}", t.nanosecond() % 1_000_000_000 / 1_000)
+                write!(w, "{:06}", t.nanosecond() / 1_000 % 1_000_000)
             }
             (Nanosecond9, _, Some(t), _) => {
                 w.write_str(decimal_point(self.locale))?;
                 write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
             }
             (Internal(InternalFixed { val: Nanosecond3NoDot }), _, Some(t), _) => {
-                write!(w, "{:03}", t.nanosecond() % 1_000_000_000 / 1_000_000)
+                write!(w, "{:03}", t.nanosecond() / 1_000_000 % 1_000)
             }
             (Internal(InternalFixed { val: Nanosecond6NoDot }), _, Some(t), _) => {
-                write!(w, "{:06}", t.nanosecond() % 1_000_000_000 / 1_000)
+                write!(w, "{:06}", t.nanosecond() / 1_000 % 1_000_000)
             }
             (Internal(InternalFixed { val: Nanosecond9NoDot }), _, Some(t), _) => {
                 write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
