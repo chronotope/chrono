@@ -469,7 +469,7 @@ fn format_inner(
                 // same as `%a, %d %b %Y %H:%M:%S %z`
                 {
                     if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc2822_inner(result, d, t, off, locale))
+                        Some(write_rfc2822_inner(result, *d, *t, off, locale))
                     } else {
                         None
                     }
@@ -598,19 +598,19 @@ pub(crate) fn write_rfc3339(
 #[cfg(any(feature = "alloc", feature = "std"))]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
-    result: &mut String,
+    w: &mut impl Write,
     dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
-    write_rfc2822_inner(result, &dt.date(), &dt.time(), off, Locales::new(None))
+    write_rfc2822_inner(w, dt.date(), dt.time(), off, Locales::new(None))
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 fn write_rfc2822_inner(
-    result: &mut String,
-    d: &NaiveDate,
-    t: &NaiveTime,
+    w: &mut impl Write,
+    d: NaiveDate,
+    t: NaiveTime,
     off: FixedOffset,
     locale: Locales,
 ) -> fmt::Result {
@@ -620,29 +620,29 @@ fn write_rfc2822_inner(
         return Err(fmt::Error);
     }
 
-    result.push_str(locale.short_weekdays[d.weekday().num_days_from_sunday() as usize]);
-    result.push_str(", ");
-    write_hundreds(result, d.day() as u8)?;
-    result.push(' ');
-    result.push_str(locale.short_months[d.month0() as usize]);
-    result.push(' ');
-    write_hundreds(result, (year / 100) as u8)?;
-    write_hundreds(result, (year % 100) as u8)?;
-    result.push(' ');
-    write_hundreds(result, t.hour() as u8)?;
-    result.push(':');
-    write_hundreds(result, t.minute() as u8)?;
-    result.push(':');
+    w.write_str(locale.short_weekdays[d.weekday().num_days_from_sunday() as usize])?;
+    w.write_str(", ")?;
+    write_hundreds(w, d.day() as u8)?;
+    w.write_char(' ')?;
+    w.write_str(locale.short_months[d.month0() as usize])?;
+    w.write_char(' ')?;
+    write_hundreds(w, (year / 100) as u8)?;
+    write_hundreds(w, (year % 100) as u8)?;
+    w.write_char(' ')?;
+    write_hundreds(w, t.hour() as u8)?;
+    w.write_char(':')?;
+    write_hundreds(w, t.minute() as u8)?;
+    w.write_char(':')?;
     let sec = t.second() + t.nanosecond() / 1_000_000_000;
-    write_hundreds(result, sec as u8)?;
-    result.push(' ');
+    write_hundreds(w, sec as u8)?;
+    w.write_char(' ')?;
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::None,
         allow_zulu: false,
         padding: Pad::Zero,
     }
-    .format(result, off)
+    .format(w, off)
 }
 
 /// Equivalent to `{:02}` formatting for n < 100.
