@@ -157,6 +157,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for Delayed
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(any(feature = "alloc", feature = "std"))]
+#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
 pub fn format<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -181,6 +182,7 @@ where
 
 /// Formats single formatting item
 #[cfg(any(feature = "alloc", feature = "std"))]
+#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
 pub fn format_item(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -202,6 +204,7 @@ pub fn format_item(
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(feature = "unstable-locales")]
+#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -226,6 +229,7 @@ where
 
 /// Formats single formatting item
 #[cfg(feature = "unstable-locales")]
+#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
 pub fn format_item_localized(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,

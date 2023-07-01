@@ -62,8 +62,10 @@ pub(crate) use formatting::write_rfc2822;
 ))]
 pub(crate) use formatting::write_rfc3339;
 #[cfg(any(feature = "alloc", feature = "std"))]
+#[allow(deprecated)]
 pub use formatting::{format, format_item, DelayedFormat};
 #[cfg(feature = "unstable-locales")]
+#[allow(deprecated)]
 pub use formatting::{format_item_localized, format_localized};
 #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 pub use locales::Locale;
