@@ -327,25 +327,31 @@ fn format_inner(
                     let nano = t.nanosecond() % 1_000_000_000;
                     if nano == 0 {
                         Ok(())
-                    } else if nano % 1_000_000 == 0 {
-                        write!(w, ".{:03}", nano / 1_000_000)
-                    } else if nano % 1_000 == 0 {
-                        write!(w, ".{:06}", nano / 1_000)
                     } else {
-                        write!(w, ".{:09}", nano)
+                        w.write_str(decimal_point(locale))?;
+                        if nano % 1_000_000 == 0 {
+                            write!(w, "{:03}", nano / 1_000_000)
+                        } else if nano % 1_000 == 0 {
+                            write!(w, "{:06}", nano / 1_000)
+                        } else {
+                            write!(w, "{:09}", nano)
+                        }
                     }
                 }),
                 Nanosecond3 => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
-                    write!(w, ".{:03}", nano / 1_000_000)
+                    w.write_str(decimal_point(locale))?;
+                    write!(w, "{:03}", nano / 1_000_000)
                 }),
                 Nanosecond6 => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
-                    write!(w, ".{:06}", nano / 1_000)
+                    w.write_str(decimal_point(locale))?;
+                    write!(w, "{:06}", nano / 1_000)
                 }),
                 Nanosecond9 => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
-                    write!(w, ".{:09}", nano)
+                    w.write_str(decimal_point(locale))?;
+                    write!(w, "{:09}", nano)
                 }),
                 Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                     time.map(|t| {

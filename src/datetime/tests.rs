@@ -1463,3 +1463,22 @@ fn test_test_deprecated_from_offset() {
     assert_eq!(DateTime::<Local>::from_local(naive, offset), now);
     assert_eq!(DateTime::<Local>::from_utc(utc, offset), now);
 }
+
+#[test]
+#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+fn locale_decimal_point() {
+    use crate::Locale::{ar_SY, nl_NL};
+    use crate::Timelike;
+    let dt =
+        Utc.with_ymd_and_hms(2018, 9, 5, 18, 58, 0).unwrap().with_nanosecond(123456780).unwrap();
+
+    assert_eq!(dt.format_localized("%T%.f", nl_NL).to_string(), "18:58:00,123456780");
+    assert_eq!(dt.format_localized("%T%.3f", nl_NL).to_string(), "18:58:00,123");
+    assert_eq!(dt.format_localized("%T%.6f", nl_NL).to_string(), "18:58:00,123456");
+    assert_eq!(dt.format_localized("%T%.9f", nl_NL).to_string(), "18:58:00,123456780");
+
+    assert_eq!(dt.format_localized("%T%.f", ar_SY).to_string(), "18:58:00.123456780");
+    assert_eq!(dt.format_localized("%T%.3f", ar_SY).to_string(), "18:58:00.123");
+    assert_eq!(dt.format_localized("%T%.6f", ar_SY).to_string(), "18:58:00.123456");
+    assert_eq!(dt.format_localized("%T%.9f", ar_SY).to_string(), "18:58:00.123456780");
+}
