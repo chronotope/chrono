@@ -26,6 +26,10 @@ mod localized {
         locale_match!(locale => LC_TIME::AM_PM)
     }
 
+    pub(crate) const fn decimal_point(locale: Locale) -> &'static str {
+        locale_match!(locale => LC_NUMERIC::DECIMAL_POINT)
+    }
+
     pub(crate) const fn d_fmt(locale: Locale) -> &'static str {
         locale_match!(locale => LC_TIME::D_FMT)
     }
@@ -88,6 +92,10 @@ mod unlocalized {
 
     pub(crate) const fn am_pm(_locale: Locale) -> &'static [&'static str] {
         &["AM", "PM"]
+    }
+
+    pub(crate) const fn decimal_point(_locale: Locale) -> &'static str {
+        "."
     }
 }
 
