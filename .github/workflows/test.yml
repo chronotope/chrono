@@ -93,8 +93,7 @@ jobs:
         # run using `bash` on all platforms for consistent
         # line-continuation marks
         shell: bash
-      - run: cargo test --lib --no-default-features
-      - run: cargo test --doc --no-default-features
+      - run: cargo test --no-default-features
 
   no_std:
     strategy:
