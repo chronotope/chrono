@@ -486,6 +486,11 @@ struct TimeZoneName {
 
 impl TimeZoneName {
     /// Construct a time zone name
+    ///
+    /// man tzfile(5):
+    /// Time zone designations should consist of at least three (3) and no more than six (6) ASCII
+    /// characters from the set of alphanumerics, “-”, and “+”. This is for compatibility with
+    /// POSIX requirements for time zone abbreviations.
     fn new(input: &[u8]) -> Result<Self, Error> {
         let len = input.len();
 
