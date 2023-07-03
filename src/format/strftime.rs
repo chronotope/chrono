@@ -65,7 +65,7 @@ The following specifiers are available both to formatting and parsing.
 | `%R`  | `00:34`       | Hour-minute format. Same as `%H:%M`.                                  |
 | `%T`  | `00:34:60`    | Hour-minute-second format. Same as `%H:%M:%S`.                        |
 | `%X`  | `00:34:60`    | Locale's time representation (e.g., 23:13:48).                        |
-| `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
+| `%r`  | `12:34:60 AM` | Locale's 12 hour clock time. (e.g., 11:11:04 PM). Falls back to `%X` if the locale does not have a 12 hour clock format. |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
 | `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. Identical to `%:z` when formatting. [^8] |
@@ -274,6 +274,15 @@ impl<'a> StrftimeItems<'a> {
         ];
         static T_FMT: &[Item<'static>] =
             &[num0(Hour), Literal(":"), num0(Minute), Literal(":"), num0(Second)];
+        static T_FMT_AMPM: &[Item<'static>] = &[
+            num0(Hour12),
+            Literal(":"),
+            num0(Minute),
+            Literal(":"),
+            num0(Second),
+            Space(" "),
+            fixed(Fixed::UpperAmPm),
+        ];
 
         match remainder.chars().next() {
             // we are done
@@ -366,15 +375,19 @@ impl<'a> StrftimeItems<'a> {
                     'm' => num0(Month),
                     'n' => Space("\n"),
                     'p' => fixed(Fixed::UpperAmPm),
-                    'r' => queue![
-                        num0(Hour12),
-                        Literal(":"),
-                        num0(Minute),
-                        Literal(":"),
-                        num0(Second),
-                        Space(" "),
-                        fixed(Fixed::UpperAmPm)
-                    ],
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'r' => queue_from_slice!(T_FMT_AMPM),
+                    #[cfg(feature = "unstable-locales")]
+                    'r' => {
+                        if self.locale.is_some()
+                            && locales::t_fmt_ampm(self.locale.unwrap()).is_empty()
+                        {
+                            // 12-hour clock not supported by this locale. Switch to 24-hour format.
+                            self.switch_to_locale_str(locales::t_fmt, T_FMT)
+                        } else {
+                            self.switch_to_locale_str(locales::t_fmt_ampm, T_FMT_AMPM)
+                        }
+                    }
                     's' => num(Timestamp),
                     't' => Space("\t"),
                     'u' => num(WeekdayFromMon),
@@ -704,7 +717,7 @@ mod tests {
         assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34");
         assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60");
         assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60");
-        assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 ");
+        assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "00:34:60");
 
         // date & time specifiers
         assert_eq!(
@@ -803,7 +816,10 @@ mod tests {
         assert_eq!(dt.format_localized("%r", Locale::ja_JP).to_string(), "午前12時34分60秒");
 
         // date & time specifiers
-        assert_eq!(dt.format_localized("%c", Locale::ja_JP).to_string(), "2001年07月08日 00時34分60秒");
+        assert_eq!(
+            dt.format_localized("%c", Locale::ja_JP).to_string(),
+            "2001年07月08日 00時34分60秒"
+        );
     }
 
     #[test]
