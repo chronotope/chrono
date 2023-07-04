@@ -748,18 +748,17 @@ mod tests {
     #[test]
     fn test_tz_ascii_str() -> Result<(), Error> {
         assert!(matches!(TimeZoneName::new(b""), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"1"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"12"), Err(Error::LocalTimeType(_))));
-        assert_eq!(TimeZoneName::new(b"123")?.as_bytes(), b"123");
-        assert_eq!(TimeZoneName::new(b"1234")?.as_bytes(), b"1234");
-        assert_eq!(TimeZoneName::new(b"12345")?.as_bytes(), b"12345");
-        assert_eq!(TimeZoneName::new(b"123456")?.as_bytes(), b"123456");
-        assert_eq!(TimeZoneName::new(b"1234567")?.as_bytes(), b"1234567");
+        assert!(matches!(TimeZoneName::new(b"A"), Err(Error::LocalTimeType(_))));
+        assert!(matches!(TimeZoneName::new(b"AB"), Err(Error::LocalTimeType(_))));
+        assert_eq!(TimeZoneName::new(b"CET")?.as_bytes(), b"CET");
+        assert_eq!(TimeZoneName::new(b"CHADT")?.as_bytes(), b"CHADT");
+        assert_eq!(TimeZoneName::new(b"abcdefg")?.as_bytes(), b"abcdefg");
+        assert_eq!(TimeZoneName::new(b"UTC+02")?.as_bytes(), b"UTC+02");
+        assert_eq!(TimeZoneName::new(b"-1230")?.as_bytes(), b"-1230");
+        assert!(matches!(TimeZoneName::new("−0330".as_bytes()), Err(Error::LocalTimeType(_)))); // MINUS SIGN (U+2212)
+        assert!(matches!(TimeZoneName::new(b"\x00123"), Err(Error::LocalTimeType(_))));
         assert!(matches!(TimeZoneName::new(b"12345678"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"123456789"), Err(Error::LocalTimeType(_))));
-        assert!(matches!(TimeZoneName::new(b"1234567890"), Err(Error::LocalTimeType(_))));
-
-        assert!(matches!(TimeZoneName::new(b"123\0\0\0"), Err(Error::LocalTimeType(_))));
+        assert!(matches!(TimeZoneName::new(b"GMT\0\0\0"), Err(Error::LocalTimeType(_))));
 
         Ok(())
     }
