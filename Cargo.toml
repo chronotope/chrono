@@ -33,7 +33,7 @@ time = { version = "0.1.43", optional = true }
 num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
-pure-rust-locales = { version = "0.5.2", optional = true }
+pure-rust-locales = { version = "0.6", optional = true }
 criterion = { version = "0.4.0", optional = true }
 rkyv = { version = "0.7", optional = true }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
