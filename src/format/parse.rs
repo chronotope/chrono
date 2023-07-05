@@ -564,28 +564,26 @@ mod tests {
     use crate::format::*;
     use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 
+    fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
+        let mut parsed = Parsed::new();
+        parse(&mut parsed, s, items.iter())?;
+        Ok(parsed)
+    }
+
+    macro_rules! check {
+        ($fmt:expr, $items:expr; $err:tt) => (
+            assert_eq!(parse_all($fmt, &$items), Err($err))
+        );
+        ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (#[allow(unused_mut)] {
+            let mut expected = Parsed::new();
+            $(expected.$k = Some($v);)*
+            assert_eq!(parse_all($fmt, &$items), Ok(expected))
+        });
+    }
+
     #[test]
-    fn test_parse() {
-        use crate::format::InternalInternal::*;
+    fn test_parse_whitespace_and_literal() {
         use crate::format::Item::{Literal, Space};
-        use crate::format::Numeric::*;
-
-        fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
-            let mut parsed = Parsed::new();
-            parse(&mut parsed, s, items.iter())?;
-            Ok(parsed)
-        }
-
-        macro_rules! check {
-            ($fmt:expr, $items:expr; $err:tt) => (
-                assert_eq!(parse_all($fmt, &$items), Err($err))
-            );
-            ($fmt:expr, $items:expr; $($k:ident: $v:expr),*) => (#[allow(unused_mut)] {
-                let mut expected = Parsed::new();
-                $(expected.$k = Some($v);)*
-                assert_eq!(parse_all($fmt, &$items), Ok(expected))
-            });
-        }
 
         // empty string
         check!("",  []; );
@@ -634,6 +632,12 @@ mod tests {
         check!("x y", [Literal("x"), Literal("y")]; INVALID);
         check!("xy",  [Literal("x"), Space(""), Literal("y")]; );
         check!("x y", [Literal("x"), Space(""), Literal("y")]; );
+    }
+
+    #[test]
+    fn test_parse_numeric() {
+        use crate::format::Item::{Literal, Space};
+        use crate::format::Numeric::*;
 
         // numeric
         check!("1987",        [num(Year)]; year: 1987);
@@ -712,6 +716,12 @@ mod tests {
                [num(Hour), num(Minute), num(Second), num(Nanosecond), num(Timestamp)];
                hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 78_901_234,
                timestamp: 567_890_123);
+    }
+
+    #[test]
+    fn test_parse_fixed() {
+        use crate::format::Fixed;
+        use crate::format::Item::Literal;
 
         // fixed: month and weekday names
         check!("apr",       [fixed(Fixed::ShortMonthName)]; month: 4);
@@ -762,6 +772,13 @@ mod tests {
         check!("x",   [fixed(Fixed::LowerAmPm)]; TOO_SHORT);
         check!("xx",  [fixed(Fixed::LowerAmPm)]; INVALID);
         check!("",    [fixed(Fixed::LowerAmPm)]; TOO_SHORT);
+    }
+
+    #[test]
+    fn test_parse_fixed_nanosecond() {
+        use crate::format::Fixed;
+        use crate::format::InternalInternal::*;
+        use crate::format::Numeric::*;
 
         // fixed: dot plus nanoseconds
         check!("",              [fixed(Fixed::Nanosecond)]; ); // no field set, but not an error
@@ -817,8 +834,14 @@ mod tests {
         check!("00000000x",    [internal_fixed(Nanosecond9NoDot)]; INVALID);
         check!("        4",    [internal_fixed(Nanosecond9NoDot)]; INVALID);
         check!(".42100000",    [internal_fixed(Nanosecond9NoDot)]; INVALID);
+    }
 
-        // fixed: timezone offsets
+    #[test]
+    fn test_parse_fixed_timezone_offset() {
+        use crate::format::Fixed;
+        use crate::format::InternalInternal::*;
+        use crate::format::Item::Literal;
+        use crate::format::Numeric::*;
 
         // TimezoneOffset
         check!("1",            [fixed(Fixed::TimezoneOffset)]; INVALID);
@@ -1200,6 +1223,13 @@ mod tests {
         check!("CEST ",        [fixed(Fixed::TimezoneName)]; TOO_LONG);
         check!(" CEST",        [fixed(Fixed::TimezoneName)]; TOO_LONG);
         check!("CE ST",        [fixed(Fixed::TimezoneName)]; TOO_LONG);
+    }
+
+    #[test]
+    fn test_parse_practical_examples() {
+        use crate::format::InternalInternal::*;
+        use crate::format::Item::{Literal, Space};
+        use crate::format::Numeric::*;
 
         // some practical examples
         check!("2015-02-04T14:37:05+09:00",
