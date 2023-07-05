@@ -589,15 +589,66 @@ mod tests {
         check!("",  []; );
         check!(" ", []; TOO_LONG);
         check!("a", []; TOO_LONG);
+        check!("abc", []; TOO_LONG);
+        check!("🤠", []; TOO_LONG);
 
         // whitespaces
         check!("",          [Space("")]; );
+        check!(" ",         [Space(" ")]; );
+        check!("  ",        [Space("  ")]; );
+        check!("   ",       [Space("   ")]; );
         check!(" ",         [Space("")]; );
+        check!("  ",        [Space(" ")]; );
+        check!("   ",       [Space("  ")]; );
+        check!("    ",      [Space("  ")]; );
+        check!("",          [Space(" ")]; );
+        check!(" ",         [Space("  ")]; );
+        check!("  ",        [Space("   ")]; );
+        check!("  ",        [Space("  "), Space("  ")]; );
+        check!("   ",       [Space("  "), Space("  ")]; );
+        check!("  ",        [Space(" "), Space(" ")]; );
+        check!("   ",       [Space("  "), Space(" ")]; );
+        check!("   ",       [Space(" "), Space("  ")]; );
+        check!("   ",       [Space(" "), Space(" "), Space(" ")]; );
         check!("\t",        [Space("")]; );
         check!(" \n\r  \n", [Space("")]; );
+        check!("\t",        [Space("\t")]; );
+        check!("\t",        [Space(" ")]; );
+        check!(" ",         [Space("\t")]; );
+        check!("\t\r",      [Space("\t\r")]; );
+        check!("\t\r ",     [Space("\t\r ")]; );
+        check!("\t \r",     [Space("\t \r")]; );
+        check!(" \t\r",     [Space(" \t\r")]; );
+        check!(" \n\r  \n", [Space(" \n\r  \n")]; );
+        check!(" \t\n",     [Space(" \t")]; );
+        check!(" \n\t",     [Space(" \t\n")]; );
+        check!("\u{2002}",  [Space("\u{2002}")]; );
+        // most unicode whitespace characters
+        check!(
+            "\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{3000}",
+            [Space("\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{3000}")];
+        );
+        // most unicode whitespace characters
+        check!(
+            "\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{3000}",
+            [
+                Space("\u{00A0}\u{1680}\u{2000}\u{2001}\u{2002}\u{2003}\u{2004}"),
+                Space("\u{2005}\u{2006}\u{2007}\u{2008}\u{2009}\u{3000}")
+            ];
+        );
         check!("a",         [Space("")]; TOO_LONG);
+        check!("a",         [Space(" ")]; TOO_LONG);
+        // a Space containing a literal can match a literal, but this should not be done
+        check!("a",         [Space("a")]; TOO_LONG);
+        check!("abc",       [Space("")]; TOO_LONG);
+        check!("abc",       [Space(" ")]; TOO_LONG);
+        check!(" abc",      [Space("")]; TOO_LONG);
+        check!(" abc",      [Space(" ")]; TOO_LONG);
+
+        // `\u{0363}` is combining diacritic mark "COMBINING LATIN SMALL LETTER A"
 
         // literal
+        check!("",    [Literal("")]; );
         check!("",    [Literal("a")]; TOO_SHORT);
         check!(" ",   [Literal("a")]; INVALID);
         check!("a",   [Literal("a")]; );
@@ -607,7 +658,14 @@ mod tests {
                                          // a Literal may contain whitespace and match whitespace, but this should not be done
         check!(" ",   [Literal(" ")]; );
         check!("aa",  [Literal("a")]; TOO_LONG);
+        check!("🤠",  [Literal("a")]; INVALID);
         check!("A",   [Literal("a")]; INVALID);
+        check!("a",   [Literal("z")]; INVALID);
+        check!("a",   [Literal("🤠")]; TOO_SHORT);
+        check!("a",   [Literal("\u{0363}a")]; TOO_SHORT);
+        check!("\u{0363}a", [Literal("a")]; INVALID);
+        check!("\u{0363}a", [Literal("\u{0363}a")]; );
+        check!("a",   [Literal("ab")]; TOO_SHORT);
         check!("xy",  [Literal("xy")]; );
         check!("xy",  [Literal("x"), Literal("y")]; );
         check!("1",   [Literal("1")]; );
@@ -632,6 +690,16 @@ mod tests {
         check!("x y", [Literal("x"), Literal("y")]; INVALID);
         check!("xy",  [Literal("x"), Space(""), Literal("y")]; );
         check!("x y", [Literal("x"), Space(""), Literal("y")]; );
+        check!("x y", [Literal("x"), Space(" "), Literal("y")]; );
+
+        // whitespaces + literals
+        check!("a\n",         [Literal("a"), Space("\n")]; );
+        check!("\tab\n",      [Space("\t"), Literal("ab"), Space("\n")]; );
+        check!("ab\tcd\ne",   [Literal("ab"), Space("\t"), Literal("cd"), Space("\n"), Literal("e")]; );
+        check!("+1ab\tcd\r\n+,.", [Literal("+1ab"), Space("\t"), Literal("cd"), Space("\r\n"), Literal("+,.")]; );
+        // whitespace and literals can be intermixed
+        check!("a\tb",        [Literal("a\tb")]; );
+        check!("a\tb",        [Literal("a"), Space("\t"), Literal("b")]; );
     }
 
     #[test]
@@ -644,10 +712,14 @@ mod tests {
         check!("1987 ",       [num(Year)]; TOO_LONG);
         check!("0x12",        [num(Year)]; TOO_LONG); // `0` is parsed
         check!("x123",        [num(Year)]; INVALID);
+        check!("o123",        [num(Year)]; INVALID);
         check!("2015",        [num(Year)]; year: 2015);
         check!("0000",        [num(Year)]; year:    0);
         check!("9999",        [num(Year)]; year: 9999);
         check!(" \t987",      [num(Year)]; year:  987);
+        check!(" \t987",      [Space(" \t"), num(Year)]; year:  987);
+        check!(" \t987🤠",    [Space(" \t"), num(Year), Literal("🤠")]; year:  987);
+        check!("987🤠",       [num(Year), Literal("🤠")]; year:  987);
         check!("5",           [num(Year)]; year:    5);
         check!("5\0",         [num(Year)]; TOO_LONG);
         check!("\x005",       [num(Year)]; INVALID);
@@ -657,11 +729,15 @@ mod tests {
         check!("12345",       [num0(Year), Literal("5")]; year: 1234);
         check!("12341234",    [num(Year), num(Year)]; year: 1234);
         check!("1234 1234",   [num(Year), num(Year)]; year: 1234);
+        check!("1234 1234",   [num(Year), Space(" "), num(Year)]; year: 1234);
         check!("1234 1235",   [num(Year), num(Year)]; IMPOSSIBLE);
         check!("1234 1234",   [num(Year), Literal("x"), num(Year)]; INVALID);
         check!("1234x1234",   [num(Year), Literal("x"), num(Year)]; year: 1234);
-        check!("1234xx1234",  [num(Year), Literal("x"), num(Year)]; INVALID);
         check!("1234 x 1234", [num(Year), Literal("x"), num(Year)]; INVALID);
+        check!("1234xx1234",  [num(Year), Literal("x"), num(Year)]; INVALID);
+        check!("1234xx1234",  [num(Year), Literal("xx"), num(Year)]; year: 1234);
+        check!("1234 x 1234", [num(Year), Space(" "), Literal("x"), Space(" "), num(Year)]; year: 1234);
+        check!("1234 x 1235", [num(Year), Space(" "), Literal("x"), Space(" "), Literal("1235")]; year: 1234);
 
         // signed numeric
         check!("-42",         [num(Year)]; year: -42);
@@ -672,7 +748,11 @@ mod tests {
         check!("−42195",      [num(Year)]; INVALID); // MINUS SIGN (U+2212)
         check!("+42195",      [num(Year)]; year: 42195);
         check!("  -42195",    [num(Year)]; year: -42195);
+        check!(" +42195",     [num(Year)]; year: 42195);
+        check!("  -42195",    [num(Year)]; year: -42195);
         check!("  +42195",    [num(Year)]; year: 42195);
+        check!("-42195 ",     [num(Year)]; TOO_LONG);
+        check!("+42195 ",     [num(Year)]; TOO_LONG);
         check!("  -   42",    [num(Year)]; INVALID);
         check!("  +   42",    [num(Year)]; INVALID);
         check!("  -42195",    [Space("  "), num(Year)]; year: -42195);
@@ -697,8 +777,12 @@ mod tests {
         check!("\u{0363}345", [num(Ordinal)]; INVALID);
         check!(" +345", [num(Ordinal)]; INVALID);
         check!(" -345", [num(Ordinal)]; INVALID);
+        check!("\t345", [Space("\t"), num(Ordinal)]; ordinal: 345);
+        check!(" +345", [Space(" "), num(Ordinal)]; INVALID);
+        check!(" -345", [Space(" "), num(Ordinal)]; INVALID);
 
         // various numeric fields
+        check!("1234 5678", [num(Year), num(IsoYear)]; year: 1234, isoyear: 5678);
         check!("1234 5678",
                [num(Year), num(IsoYear)];
                year: 1234, isoyear: 5678);
@@ -721,13 +805,14 @@ mod tests {
     #[test]
     fn test_parse_fixed() {
         use crate::format::Fixed::*;
-        use crate::format::Item::Literal;
+        use crate::format::Item::{Literal, Space};
 
         // fixed: month and weekday names
         check!("apr",       [fixed(ShortMonthName)]; month: 4);
         check!("Apr",       [fixed(ShortMonthName)]; month: 4);
         check!("APR",       [fixed(ShortMonthName)]; month: 4);
         check!("ApR",       [fixed(ShortMonthName)]; month: 4);
+        check!("\u{0363}APR", [fixed(ShortMonthName)]; INVALID);
         check!("April",     [fixed(ShortMonthName)]; TOO_LONG); // `Apr` is parsed
         check!("A",         [fixed(ShortMonthName)]; TOO_SHORT);
         check!("Sol",       [fixed(ShortMonthName)]; INVALID);
@@ -765,7 +850,15 @@ mod tests {
         check!("AM",  [fixed(UpperAmPm)]; hour_div_12: 0);
         check!("PM",  [fixed(UpperAmPm)]; hour_div_12: 1);
         check!("Am",  [fixed(LowerAmPm)]; hour_div_12: 0);
+        check!(" Am", [Space(" "), fixed(LowerAmPm)]; hour_div_12: 0);
+        check!("Am🤠", [fixed(LowerAmPm), Literal("🤠")]; hour_div_12: 0);
+        check!("🤠Am", [Literal("🤠"), fixed(LowerAmPm)]; hour_div_12: 0);
+        check!("\u{0363}am", [fixed(LowerAmPm)]; INVALID);
+        check!("\u{0360}am", [fixed(LowerAmPm)]; INVALID);
         check!(" Am", [fixed(LowerAmPm)]; INVALID);
+        check!("Am ", [fixed(LowerAmPm)]; TOO_LONG);
+        check!("a.m.", [fixed(LowerAmPm)]; INVALID);
+        check!("A.M.", [fixed(LowerAmPm)]; INVALID);
         check!("ame", [fixed(LowerAmPm)]; TOO_LONG); // `am` is parsed
         check!("a",   [fixed(LowerAmPm)]; TOO_SHORT);
         check!("p",   [fixed(LowerAmPm)]; TOO_SHORT);
@@ -778,6 +871,7 @@ mod tests {
     fn test_parse_fixed_nanosecond() {
         use crate::format::Fixed::Nanosecond;
         use crate::format::InternalInternal::*;
+        use crate::format::Item::Literal;
         use crate::format::Numeric::Second;
 
         // fixed: dot plus nanoseconds
@@ -790,11 +884,21 @@ mod tests {
         check!(".42",           [fixed(Nanosecond)]; nanosecond: 420_000_000);
         check!(".421",          [fixed(Nanosecond)]; nanosecond: 421_000_000);
         check!(".42195",        [fixed(Nanosecond)]; nanosecond: 421_950_000);
+        check!(".421951",       [fixed(Nanosecond)]; nanosecond: 421_951_000);
+        check!(".4219512",      [fixed(Nanosecond)]; nanosecond: 421_951_200);
+        check!(".42195123",     [fixed(Nanosecond)]; nanosecond: 421_951_230);
         check!(".421950803",    [fixed(Nanosecond)]; nanosecond: 421_950_803);
+        check!(".4219508035",   [fixed(Nanosecond)]; nanosecond: 421_950_803);
+        check!(".42195080354",  [fixed(Nanosecond)]; nanosecond: 421_950_803);
         check!(".421950803547", [fixed(Nanosecond)]; nanosecond: 421_950_803);
+        check!(".000000003",    [fixed(Nanosecond)]; nanosecond: 3);
+        check!(".0000000031",   [fixed(Nanosecond)]; nanosecond: 3);
+        check!(".0000000035",   [fixed(Nanosecond)]; nanosecond: 3);
         check!(".000000003547", [fixed(Nanosecond)]; nanosecond: 3);
+        check!(".0000000009",   [fixed(Nanosecond)]; nanosecond: 0);
         check!(".000000000547", [fixed(Nanosecond)]; nanosecond: 0);
-        check!(".",             [fixed(Nanosecond)]; TOO_SHORT);
+        check!(".0000000009999999999999999999999999", [fixed(Nanosecond)]; nanosecond: 0);
+        check!(".4🤠",          [fixed(Nanosecond), Literal("🤠")]; nanosecond: 400_000_000);
         check!(".4x",           [fixed(Nanosecond)]; TOO_LONG);
         check!(".  4",          [fixed(Nanosecond)]; INVALID);
         check!("  .4",          [fixed(Nanosecond)]; TOO_LONG); // no automatic trimming
@@ -806,8 +910,12 @@ mod tests {
         check!("4",            [internal_fixed(Nanosecond3NoDot)]; TOO_SHORT);
         check!("42",           [internal_fixed(Nanosecond3NoDot)]; TOO_SHORT);
         check!("421",          [internal_fixed(Nanosecond3NoDot)]; nanosecond: 421_000_000);
+        check!("4210",         [internal_fixed(Nanosecond3NoDot)]; TOO_LONG);
         check!("42143",        [internal_fixed(Nanosecond3NoDot), num(Second)]; nanosecond: 421_000_000, second: 43);
+        check!("421🤠",        [internal_fixed(Nanosecond3NoDot), Literal("🤠")]; nanosecond: 421_000_000);
+        check!("🤠421",        [Literal("🤠"), internal_fixed(Nanosecond3NoDot)]; nanosecond: 421_000_000);
         check!("42195",        [internal_fixed(Nanosecond3NoDot)]; TOO_LONG);
+        check!("123456789",    [internal_fixed(Nanosecond3NoDot)]; TOO_LONG);
         check!("4x",           [internal_fixed(Nanosecond3NoDot)]; TOO_SHORT);
         check!("  4",          [internal_fixed(Nanosecond3NoDot)]; INVALID);
         check!(".421",         [internal_fixed(Nanosecond3NoDot)]; INVALID);
@@ -815,10 +923,13 @@ mod tests {
         check!("",             [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
         check!(".",            [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
         check!("0",            [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
-        check!("42195",        [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
+        check!("1234",         [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
+        check!("12345",        [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
         check!("421950",       [internal_fixed(Nanosecond6NoDot)]; nanosecond: 421_950_000);
         check!("000003",       [internal_fixed(Nanosecond6NoDot)]; nanosecond: 3000);
         check!("000000",       [internal_fixed(Nanosecond6NoDot)]; nanosecond: 0);
+        check!("1234567",      [internal_fixed(Nanosecond6NoDot)]; TOO_LONG);
+        check!("123456789",    [internal_fixed(Nanosecond6NoDot)]; TOO_LONG);
         check!("4x",           [internal_fixed(Nanosecond6NoDot)]; TOO_SHORT);
         check!("     4",       [internal_fixed(Nanosecond6NoDot)]; INVALID);
         check!(".42100",       [internal_fixed(Nanosecond6NoDot)]; INVALID);
@@ -826,10 +937,11 @@ mod tests {
         check!("",             [internal_fixed(Nanosecond9NoDot)]; TOO_SHORT);
         check!(".",            [internal_fixed(Nanosecond9NoDot)]; TOO_SHORT);
         check!("42195",        [internal_fixed(Nanosecond9NoDot)]; TOO_SHORT);
+        check!("12345678",     [internal_fixed(Nanosecond9NoDot)]; TOO_SHORT);
         check!("421950803",    [internal_fixed(Nanosecond9NoDot)]; nanosecond: 421_950_803);
         check!("000000003",    [internal_fixed(Nanosecond9NoDot)]; nanosecond: 3);
         check!("42195080354",  [internal_fixed(Nanosecond9NoDot), num(Second)]; nanosecond: 421_950_803, second: 54); // don't skip digits that come after the 9
-        check!("421950803547", [internal_fixed(Nanosecond9NoDot)]; TOO_LONG);
+        check!("1234567890",   [internal_fixed(Nanosecond9NoDot)]; TOO_LONG);
         check!("000000000",    [internal_fixed(Nanosecond9NoDot)]; nanosecond: 0);
         check!("00000000x",    [internal_fixed(Nanosecond9NoDot)]; INVALID);
         check!("        4",    [internal_fixed(Nanosecond9NoDot)]; INVALID);
@@ -900,7 +1012,6 @@ mod tests {
         check!(" +12:34",      [fixed(TimezoneOffset)]; offset: 45_240);
         check!(" -12:34",      [fixed(TimezoneOffset)]; offset: -45_240);
         check!(" −12:34",      [fixed(TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("12:34 ",       [fixed(TimezoneOffset)]; INVALID);
         check!("  +12:34",     [fixed(TimezoneOffset)]; offset: 45_240);
         check!("  -12:34",     [fixed(TimezoneOffset)]; offset: -45_240);
         check!("\t -12:34",    [fixed(TimezoneOffset)]; offset: -45_240);
@@ -912,6 +1023,7 @@ mod tests {
         check!("-12:  34",     [fixed(TimezoneOffset)]; offset: -45_240);
         check!("-12  :34",     [fixed(TimezoneOffset)]; offset: -45_240);
         check!("-12  :  34",   [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("12:34 ",       [fixed(TimezoneOffset)]; INVALID);
         check!(" 12:34",       [fixed(TimezoneOffset)]; INVALID);
         check!("",             [fixed(TimezoneOffset)]; TOO_SHORT);
         check!("+",            [fixed(TimezoneOffset)]; TOO_SHORT);
@@ -1257,6 +1369,12 @@ mod tests {
                 num(Minute), Literal(":"), num(Second), Space(" "), Literal("GMT")];
                year: 2013, month: 6, day: 10, weekday: Weekday::Mon,
                hour_div_12: 0, hour_mod_12: 9, minute: 32, second: 37);
+        check!("🤠Mon, 10 Jun🤠2013 09:32:37  GMT🤠",
+               [Literal("🤠"), fixed(Fixed::ShortWeekdayName), Literal(","), Space(" "), num(Day), Space(" "),
+                fixed(Fixed::ShortMonthName), Literal("🤠"), num(Year), Space(" "), num(Hour), Literal(":"),
+                num(Minute), Literal(":"), num(Second), Space("  "), Literal("GMT"), Literal("🤠")];
+               year: 2013, month: 6, day: 10, weekday: Weekday::Mon,
+               hour_div_12: 0, hour_mod_12: 9, minute: 32, second: 37);
         check!("Sun Aug 02 13:39:15 CEST 2020",
                 [fixed(Fixed::ShortWeekdayName), Space(" "), fixed(Fixed::ShortMonthName), Space(" "),
                 num(Day), Space(" "), num(Hour), Literal(":"), num(Minute), Literal(":"),
@@ -1275,6 +1393,22 @@ mod tests {
         check!("12345678901234.56789",
                [num(Timestamp), fixed(Fixed::Nanosecond)];
                nanosecond: 567_890_000, timestamp: 12_345_678_901_234);
+
+        // docstring examples from `impl str::FromStr`
+        check!("2000-01-02T03:04:05Z",
+            [num(Year), Literal("-"), num(Month), Literal("-"), num(Day), Literal("T"),
+            num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
+            internal_fixed(TimezoneOffsetPermissive)];
+            year: 2000, month: 1, day: 2,
+            hour_div_12: 0, hour_mod_12: 3, minute: 4, second: 5,
+            offset: 0);
+        check!("2000-01-02 03:04:05Z",
+            [num(Year), Literal("-"), num(Month), Literal("-"), num(Day), Space(" "),
+            num(Hour), Literal(":"), num(Minute), Literal(":"), num(Second),
+            internal_fixed(TimezoneOffsetPermissive)];
+            year: 2000, month: 1, day: 2,
+            hour_div_12: 0, hour_mod_12: 3, minute: 4, second: 5,
+            offset: 0);
     }
 
     #[test]
