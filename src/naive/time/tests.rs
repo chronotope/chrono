@@ -346,6 +346,7 @@ fn test_time_parse_from_str() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_time_format() {
     let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
     assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");

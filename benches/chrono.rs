@@ -3,7 +3,10 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
+use chrono::format::StrftimeItems;
 use chrono::prelude::*;
+#[cfg(feature = "unstable-locales")]
+use chrono::Locale;
 use chrono::{DateTime, FixedOffset, Local, Utc, __BenchYearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
@@ -122,6 +125,57 @@ fn bench_num_days_from_ce(c: &mut Criterion) {
     }
 }
 
+fn bench_parse_strftime(c: &mut Criterion) {
+    c.bench_function("bench_parse_strftime", |b| {
+        b.iter(|| {
+            let str = black_box("%a, %d %b %Y %H:%M:%S GMT");
+            let items = StrftimeItems::new(str);
+            black_box(items.collect::<Vec<_>>());
+        })
+    });
+}
+
+#[cfg(feature = "unstable-locales")]
+fn bench_parse_strftime_localized(c: &mut Criterion) {
+    c.bench_function("bench_parse_strftime_localized", |b| {
+        b.iter(|| {
+            let str = black_box("%a, %d %b %Y %H:%M:%S GMT");
+            let items = StrftimeItems::new_with_locale(str, Locale::nl_NL);
+            black_box(items.collect::<Vec<_>>());
+        })
+    });
+}
+
+fn bench_format(c: &mut Criterion) {
+    let dt = Local::now();
+    c.bench_function("bench_format", |b| b.iter(|| format!("{}", dt.format("%Y-%m-%d %H-%M-%S"))));
+}
+
+fn bench_format_with_items(c: &mut Criterion) {
+    let dt = Local::now();
+    let items: Vec<_> = StrftimeItems::new("%Y-%m-%d %H-%M-%S").collect();
+    c.bench_function("bench_format_with_items", |b| {
+        b.iter(|| format!("{}", dt.format_with_items(items.iter())))
+    });
+}
+
+fn bench_format_manual(c: &mut Criterion) {
+    let dt = Local::now();
+    c.bench_function("bench_format_manual", |b| {
+        b.iter(|| {
+            format!(
+                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                dt.year(),
+                dt.month(),
+                dt.day(),
+                dt.hour(),
+                dt.minute(),
+                dt.second()
+            )
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_datetime_parse_from_rfc2822,
@@ -132,6 +186,16 @@ criterion_group!(
     bench_year_flags_from_year,
     bench_num_days_from_ce,
     bench_get_local_time,
+    bench_parse_strftime,
+    bench_format,
+    bench_format_with_items,
+    bench_format_manual,
 );
 
+#[cfg(feature = "unstable-locales")]
+criterion_group!(unstable_locales, bench_parse_strftime_localized,);
+
+#[cfg(not(feature = "unstable-locales"))]
 criterion_main!(benches);
+#[cfg(feature = "unstable-locales")]
+criterion_main!(benches, unstable_locales);

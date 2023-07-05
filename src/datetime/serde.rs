@@ -1122,7 +1122,9 @@ pub mod ts_seconds_option {
 
 #[cfg(test)]
 mod tests {
-    use crate::datetime::{test_decodable_json, test_encodable_json};
+    #[cfg(feature = "clock")]
+    use crate::datetime::test_decodable_json;
+    use crate::datetime::test_encodable_json;
     use crate::{DateTime, TimeZone, Utc};
 
     #[test]

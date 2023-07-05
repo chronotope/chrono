@@ -15,13 +15,10 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::string::ToString;
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(feature = "rkyv")]
-use rkyv::{Archive, Deserialize, Serialize};
-
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
@@ -34,6 +31,9 @@ use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 #[allow(deprecated)]
 use crate::Date;
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
+
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize, Serialize};
 
 /// documented at re-export site
 #[cfg(feature = "serde")]
@@ -480,6 +480,100 @@ impl<Tz: TimeZone> DateTime<Tz> {
         }
     }
 
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the date can not be represented in this format: the year may not be negative and
+    /// can not have more than 4 digits.
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[must_use]
+    pub fn to_rfc2822(&self) -> String {
+        let mut result = String::with_capacity(32);
+        crate::format::write_rfc2822(&mut result, self.naive_local(), self.offset.fix())
+            .expect("writing rfc2822 datetime to string should never fail");
+        result
+    }
+
+    /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[must_use]
+    pub fn to_rfc3339(&self) -> String {
+        let mut result = String::with_capacity(32);
+        crate::format::write_rfc3339(&mut result, self.naive_local(), self.offset.fix())
+            .expect("writing rfc3339 datetime to string should never fail");
+        result
+    }
+
+    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
+    /// formatted as per `SecondsFormat`.
+    ///
+    /// If `use_z` is true and the timezone is UTC (offset 0), uses `Z` as
+    /// per [`Fixed::TimezoneOffsetColonZ`]. If `use_z` is false, uses
+    /// [`Fixed::TimezoneOffsetColon`]
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(18, 30, 9, 453_829).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
+    ///            "2018-01-26T18:30:09.453+00:00");
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true),
+    ///            "2018-01-26T18:30:09.453Z");
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
+    ///            "2018-01-26T18:30:09Z");
+    ///
+    /// let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(10, 30, 9, 453_829).unwrap()).unwrap();
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
+    ///            "2018-01-26T10:30:09+08:00");
+    /// ```
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[must_use]
+    pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
+        use crate::format::Numeric::*;
+        use crate::format::Pad::Zero;
+        use crate::SecondsFormat::*;
+
+        const PREFIX: &[Item<'static>] = &[
+            Item::Numeric(Year, Zero),
+            Item::Literal("-"),
+            Item::Numeric(Month, Zero),
+            Item::Literal("-"),
+            Item::Numeric(Day, Zero),
+            Item::Literal("T"),
+            Item::Numeric(Hour, Zero),
+            Item::Literal(":"),
+            Item::Numeric(Minute, Zero),
+            Item::Literal(":"),
+            Item::Numeric(Second, Zero),
+        ];
+
+        let ssitem = match secform {
+            Secs => None,
+            Millis => Some(Item::Fixed(Fixed::Nanosecond3)),
+            Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
+            Nanos => Some(Item::Fixed(Fixed::Nanosecond9)),
+            AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
+        };
+
+        let tzitem = Item::Fixed(if use_z {
+            Fixed::TimezoneOffsetColonZ
+        } else {
+            Fixed::TimezoneOffsetColon
+        });
+
+        let dt = self.fixed_offset();
+        match ssitem {
+            None => dt.format_with_items(PREFIX.iter().chain([tzitem].iter())).to_string(),
+            Some(s) => dt.format_with_items(PREFIX.iter().chain([s, tzitem].iter())).to_string(),
+        }
+    }
+
     /// The minimum possible `DateTime<Utc>`.
     pub const MIN_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
     /// The maximum possible `DateTime<Utc>`.
@@ -757,101 +851,8 @@ impl<Tz: TimeZone> DateTime<Tz>
 where
     Tz::Offset: fmt::Display,
 {
-    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the date can not be represented in this format: the year may not be negative and
-    /// can not have more than 4 digits.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
-    #[must_use]
-    pub fn to_rfc2822(&self) -> String {
-        let mut result = String::with_capacity(32);
-        crate::format::write_rfc2822(&mut result, self.naive_local(), self.offset.fix())
-            .expect("writing rfc2822 datetime to string should never fail");
-        result
-    }
-
-    /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
-    #[must_use]
-    pub fn to_rfc3339(&self) -> String {
-        let mut result = String::with_capacity(32);
-        crate::format::write_rfc3339(&mut result, self.naive_local(), self.offset.fix())
-            .expect("writing rfc3339 datetime to string should never fail");
-        result
-    }
-
-    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
-    /// formatted as per `SecondsFormat`.
-    ///
-    /// If `use_z` is true and the timezone is UTC (offset 0), uses `Z` as
-    /// per [`Fixed::TimezoneOffsetColonZ`]. If `use_z` is false, uses
-    /// [`Fixed::TimezoneOffsetColon`]
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(18, 30, 9, 453_829).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
-    ///            "2018-01-26T18:30:09.453+00:00");
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true),
-    ///            "2018-01-26T18:30:09.453Z");
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
-    ///            "2018-01-26T18:30:09Z");
-    ///
-    /// let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(10, 30, 9, 453_829).unwrap()).unwrap();
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
-    ///            "2018-01-26T10:30:09+08:00");
-    /// ```
-    #[cfg(any(feature = "alloc", feature = "std", test))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
-    #[must_use]
-    pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
-        use crate::format::Numeric::*;
-        use crate::format::Pad::Zero;
-        use crate::SecondsFormat::*;
-
-        const PREFIX: &[Item<'static>] = &[
-            Item::Numeric(Year, Zero),
-            Item::Literal("-"),
-            Item::Numeric(Month, Zero),
-            Item::Literal("-"),
-            Item::Numeric(Day, Zero),
-            Item::Literal("T"),
-            Item::Numeric(Hour, Zero),
-            Item::Literal(":"),
-            Item::Numeric(Minute, Zero),
-            Item::Literal(":"),
-            Item::Numeric(Second, Zero),
-        ];
-
-        let ssitem = match secform {
-            Secs => None,
-            Millis => Some(Item::Fixed(Fixed::Nanosecond3)),
-            Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
-            Nanos => Some(Item::Fixed(Fixed::Nanosecond9)),
-            AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
-        };
-
-        let tzitem = Item::Fixed(if use_z {
-            Fixed::TimezoneOffsetColonZ
-        } else {
-            Fixed::TimezoneOffsetColon
-        });
-
-        match ssitem {
-            None => self.format_with_items(PREFIX.iter().chain([tzitem].iter())).to_string(),
-            Some(s) => self.format_with_items(PREFIX.iter().chain([s, tzitem].iter())).to_string(),
-        }
-    }
-
     /// Formats the combined date and time with the specified formatting items.
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
@@ -876,7 +877,7 @@ where
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
@@ -1354,7 +1355,7 @@ impl str::FromStr for DateTime<Local> {
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<SystemTime> for DateTime<Utc> {
     fn from(t: SystemTime) -> DateTime<Utc> {
@@ -1383,7 +1384,7 @@ impl From<SystemTime> for DateTime<Local> {
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
@@ -1548,7 +1549,7 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     // we don't know the exact local offset but we can check that
     // the conversion didn't change the instant itself
     assert_eq!(
-        local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local shouuld parse"),
+        local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local should parse"),
         Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
     );
     assert_eq!(
