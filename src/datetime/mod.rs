@@ -40,8 +40,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
 
-#[cfg(feature = "prost-types")]
-pub(super) mod prost_types;
+#[cfg(feature = "prost")]
+pub(super) mod prost;
 /// documented at re-export site
 #[cfg(feature = "serde")]
 pub(super) mod serde;
