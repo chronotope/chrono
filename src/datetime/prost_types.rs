@@ -18,3 +18,12 @@ impl From<DateTime<Utc>> for Timestamp {
         Timestamp { seconds: value.timestamp(), nanos: value.timestamp_subsec_nanos() as _ }
     }
 }
+
+#[test]
+fn conversion() {
+    let now = Utc::now();
+    let timestamp = Timestamp::from(now.clone());
+    let now_converted = DateTime::try_from(timestamp).expect("prost_types --> chrono");
+
+    assert_eq!(now, now_converted);
+}
