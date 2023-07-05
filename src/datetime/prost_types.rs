@@ -2,8 +2,9 @@ use std::time::SystemTime;
 
 use prost_types::{Timestamp, TimestampError};
 
-use crate::{DateTime, Utc};
+use crate::{DateTime, TimeZone, Utc};
 
+/// Tries to converts a `prost_types::Timestamp` to a `chrono::DateTime`.
 impl TryFrom<Timestamp> for DateTime<Utc> {
     type Error = TimestampError;
 
@@ -13,8 +14,9 @@ impl TryFrom<Timestamp> for DateTime<Utc> {
     }
 }
 
-impl From<DateTime<Utc>> for Timestamp {
-    fn from(value: DateTime<Utc>) -> Timestamp {
+/// Converts a `chrono::DateTime` to a `prost_types::Timestamp`.
+impl<Tz: TimeZone> From<DateTime<Tz>> for Timestamp {
+    fn from(value: DateTime<Tz>) -> Timestamp {
         Timestamp { seconds: value.timestamp(), nanos: value.timestamp_subsec_nanos() as _ }
     }
 }
