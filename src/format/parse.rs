@@ -720,84 +720,84 @@ mod tests {
 
     #[test]
     fn test_parse_fixed() {
-        use crate::format::Fixed;
+        use crate::format::Fixed::*;
         use crate::format::Item::Literal;
 
         // fixed: month and weekday names
-        check!("apr",       [fixed(Fixed::ShortMonthName)]; month: 4);
-        check!("Apr",       [fixed(Fixed::ShortMonthName)]; month: 4);
-        check!("APR",       [fixed(Fixed::ShortMonthName)]; month: 4);
-        check!("ApR",       [fixed(Fixed::ShortMonthName)]; month: 4);
-        check!("April",     [fixed(Fixed::ShortMonthName)]; TOO_LONG); // `Apr` is parsed
-        check!("A",         [fixed(Fixed::ShortMonthName)]; TOO_SHORT);
-        check!("Sol",       [fixed(Fixed::ShortMonthName)]; INVALID);
-        check!("Apr",       [fixed(Fixed::LongMonthName)]; month: 4);
-        check!("Apri",      [fixed(Fixed::LongMonthName)]; TOO_LONG); // `Apr` is parsed
-        check!("April",     [fixed(Fixed::LongMonthName)]; month: 4);
-        check!("Aprill",    [fixed(Fixed::LongMonthName)]; TOO_LONG);
-        check!("Aprill",    [fixed(Fixed::LongMonthName), Literal("l")]; month: 4);
-        check!("Aprl",      [fixed(Fixed::LongMonthName), Literal("l")]; month: 4);
-        check!("April",     [fixed(Fixed::LongMonthName), Literal("il")]; TOO_SHORT); // do not backtrack
-        check!("thu",       [fixed(Fixed::ShortWeekdayName)]; weekday: Weekday::Thu);
-        check!("Thu",       [fixed(Fixed::ShortWeekdayName)]; weekday: Weekday::Thu);
-        check!("THU",       [fixed(Fixed::ShortWeekdayName)]; weekday: Weekday::Thu);
-        check!("tHu",       [fixed(Fixed::ShortWeekdayName)]; weekday: Weekday::Thu);
-        check!("Thursday",  [fixed(Fixed::ShortWeekdayName)]; TOO_LONG); // `Thu` is parsed
-        check!("T",         [fixed(Fixed::ShortWeekdayName)]; TOO_SHORT);
-        check!("The",       [fixed(Fixed::ShortWeekdayName)]; INVALID);
-        check!("Nop",       [fixed(Fixed::ShortWeekdayName)]; INVALID);
-        check!("Thu",       [fixed(Fixed::LongWeekdayName)]; weekday: Weekday::Thu);
-        check!("Thur",      [fixed(Fixed::LongWeekdayName)]; TOO_LONG); // `Thu` is parsed
-        check!("Thurs",     [fixed(Fixed::LongWeekdayName)]; TOO_LONG); // ditto
-        check!("Thursday",  [fixed(Fixed::LongWeekdayName)]; weekday: Weekday::Thu);
-        check!("Thursdays", [fixed(Fixed::LongWeekdayName)]; TOO_LONG);
-        check!("Thursdays", [fixed(Fixed::LongWeekdayName), Literal("s")]; weekday: Weekday::Thu);
-        check!("Thus",      [fixed(Fixed::LongWeekdayName), Literal("s")]; weekday: Weekday::Thu);
-        check!("Thursday",  [fixed(Fixed::LongWeekdayName), Literal("rsday")]; TOO_SHORT); // do not backtrack
+        check!("apr",       [fixed(ShortMonthName)]; month: 4);
+        check!("Apr",       [fixed(ShortMonthName)]; month: 4);
+        check!("APR",       [fixed(ShortMonthName)]; month: 4);
+        check!("ApR",       [fixed(ShortMonthName)]; month: 4);
+        check!("April",     [fixed(ShortMonthName)]; TOO_LONG); // `Apr` is parsed
+        check!("A",         [fixed(ShortMonthName)]; TOO_SHORT);
+        check!("Sol",       [fixed(ShortMonthName)]; INVALID);
+        check!("Apr",       [fixed(LongMonthName)]; month: 4);
+        check!("Apri",      [fixed(LongMonthName)]; TOO_LONG); // `Apr` is parsed
+        check!("April",     [fixed(LongMonthName)]; month: 4);
+        check!("Aprill",    [fixed(LongMonthName)]; TOO_LONG);
+        check!("Aprill",    [fixed(LongMonthName), Literal("l")]; month: 4);
+        check!("Aprl",      [fixed(LongMonthName), Literal("l")]; month: 4);
+        check!("April",     [fixed(LongMonthName), Literal("il")]; TOO_SHORT); // do not backtrack
+        check!("thu",       [fixed(ShortWeekdayName)]; weekday: Weekday::Thu);
+        check!("Thu",       [fixed(ShortWeekdayName)]; weekday: Weekday::Thu);
+        check!("THU",       [fixed(ShortWeekdayName)]; weekday: Weekday::Thu);
+        check!("tHu",       [fixed(ShortWeekdayName)]; weekday: Weekday::Thu);
+        check!("Thursday",  [fixed(ShortWeekdayName)]; TOO_LONG); // `Thu` is parsed
+        check!("T",         [fixed(ShortWeekdayName)]; TOO_SHORT);
+        check!("The",       [fixed(ShortWeekdayName)]; INVALID);
+        check!("Nop",       [fixed(ShortWeekdayName)]; INVALID);
+        check!("Thu",       [fixed(LongWeekdayName)]; weekday: Weekday::Thu);
+        check!("Thur",      [fixed(LongWeekdayName)]; TOO_LONG); // `Thu` is parsed
+        check!("Thurs",     [fixed(LongWeekdayName)]; TOO_LONG); // ditto
+        check!("Thursday",  [fixed(LongWeekdayName)]; weekday: Weekday::Thu);
+        check!("Thursdays", [fixed(LongWeekdayName)]; TOO_LONG);
+        check!("Thursdays", [fixed(LongWeekdayName), Literal("s")]; weekday: Weekday::Thu);
+        check!("Thus",      [fixed(LongWeekdayName), Literal("s")]; weekday: Weekday::Thu);
+        check!("Thursday",  [fixed(LongWeekdayName), Literal("rsday")]; TOO_SHORT); // do not backtrack
 
         // fixed: am/pm
-        check!("am",  [fixed(Fixed::LowerAmPm)]; hour_div_12: 0);
-        check!("pm",  [fixed(Fixed::LowerAmPm)]; hour_div_12: 1);
-        check!("AM",  [fixed(Fixed::LowerAmPm)]; hour_div_12: 0);
-        check!("PM",  [fixed(Fixed::LowerAmPm)]; hour_div_12: 1);
-        check!("am",  [fixed(Fixed::UpperAmPm)]; hour_div_12: 0);
-        check!("pm",  [fixed(Fixed::UpperAmPm)]; hour_div_12: 1);
-        check!("AM",  [fixed(Fixed::UpperAmPm)]; hour_div_12: 0);
-        check!("PM",  [fixed(Fixed::UpperAmPm)]; hour_div_12: 1);
-        check!("Am",  [fixed(Fixed::LowerAmPm)]; hour_div_12: 0);
-        check!(" Am", [fixed(Fixed::LowerAmPm)]; INVALID);
-        check!("ame", [fixed(Fixed::LowerAmPm)]; TOO_LONG); // `am` is parsed
-        check!("a",   [fixed(Fixed::LowerAmPm)]; TOO_SHORT);
-        check!("p",   [fixed(Fixed::LowerAmPm)]; TOO_SHORT);
-        check!("x",   [fixed(Fixed::LowerAmPm)]; TOO_SHORT);
-        check!("xx",  [fixed(Fixed::LowerAmPm)]; INVALID);
-        check!("",    [fixed(Fixed::LowerAmPm)]; TOO_SHORT);
+        check!("am",  [fixed(LowerAmPm)]; hour_div_12: 0);
+        check!("pm",  [fixed(LowerAmPm)]; hour_div_12: 1);
+        check!("AM",  [fixed(LowerAmPm)]; hour_div_12: 0);
+        check!("PM",  [fixed(LowerAmPm)]; hour_div_12: 1);
+        check!("am",  [fixed(UpperAmPm)]; hour_div_12: 0);
+        check!("pm",  [fixed(UpperAmPm)]; hour_div_12: 1);
+        check!("AM",  [fixed(UpperAmPm)]; hour_div_12: 0);
+        check!("PM",  [fixed(UpperAmPm)]; hour_div_12: 1);
+        check!("Am",  [fixed(LowerAmPm)]; hour_div_12: 0);
+        check!(" Am", [fixed(LowerAmPm)]; INVALID);
+        check!("ame", [fixed(LowerAmPm)]; TOO_LONG); // `am` is parsed
+        check!("a",   [fixed(LowerAmPm)]; TOO_SHORT);
+        check!("p",   [fixed(LowerAmPm)]; TOO_SHORT);
+        check!("x",   [fixed(LowerAmPm)]; TOO_SHORT);
+        check!("xx",  [fixed(LowerAmPm)]; INVALID);
+        check!("",    [fixed(LowerAmPm)]; TOO_SHORT);
     }
 
     #[test]
     fn test_parse_fixed_nanosecond() {
-        use crate::format::Fixed;
+        use crate::format::Fixed::Nanosecond;
         use crate::format::InternalInternal::*;
-        use crate::format::Numeric::*;
+        use crate::format::Numeric::Second;
 
         // fixed: dot plus nanoseconds
-        check!("",              [fixed(Fixed::Nanosecond)]; ); // no field set, but not an error
-        check!(".",             [fixed(Fixed::Nanosecond)]; TOO_SHORT);
-        check!("4",             [fixed(Fixed::Nanosecond)]; TOO_LONG); // never consumes `4`
-        check!("4",             [fixed(Fixed::Nanosecond), num(Second)]; second: 4);
-        check!(".0",            [fixed(Fixed::Nanosecond)]; nanosecond: 0);
-        check!(".4",            [fixed(Fixed::Nanosecond)]; nanosecond: 400_000_000);
-        check!(".42",           [fixed(Fixed::Nanosecond)]; nanosecond: 420_000_000);
-        check!(".421",          [fixed(Fixed::Nanosecond)]; nanosecond: 421_000_000);
-        check!(".42195",        [fixed(Fixed::Nanosecond)]; nanosecond: 421_950_000);
-        check!(".421950803",    [fixed(Fixed::Nanosecond)]; nanosecond: 421_950_803);
-        check!(".421950803547", [fixed(Fixed::Nanosecond)]; nanosecond: 421_950_803);
-        check!(".000000003547", [fixed(Fixed::Nanosecond)]; nanosecond: 3);
-        check!(".000000000547", [fixed(Fixed::Nanosecond)]; nanosecond: 0);
-        check!(".",             [fixed(Fixed::Nanosecond)]; TOO_SHORT);
-        check!(".4x",           [fixed(Fixed::Nanosecond)]; TOO_LONG);
-        check!(".  4",          [fixed(Fixed::Nanosecond)]; INVALID);
-        check!("  .4",          [fixed(Fixed::Nanosecond)]; TOO_LONG); // no automatic trimming
+        check!("",              [fixed(Nanosecond)]; ); // no field set, but not an error
+        check!(".",             [fixed(Nanosecond)]; TOO_SHORT);
+        check!("4",             [fixed(Nanosecond)]; TOO_LONG); // never consumes `4`
+        check!("4",             [fixed(Nanosecond), num(Second)]; second: 4);
+        check!(".0",            [fixed(Nanosecond)]; nanosecond: 0);
+        check!(".4",            [fixed(Nanosecond)]; nanosecond: 400_000_000);
+        check!(".42",           [fixed(Nanosecond)]; nanosecond: 420_000_000);
+        check!(".421",          [fixed(Nanosecond)]; nanosecond: 421_000_000);
+        check!(".42195",        [fixed(Nanosecond)]; nanosecond: 421_950_000);
+        check!(".421950803",    [fixed(Nanosecond)]; nanosecond: 421_950_803);
+        check!(".421950803547", [fixed(Nanosecond)]; nanosecond: 421_950_803);
+        check!(".000000003547", [fixed(Nanosecond)]; nanosecond: 3);
+        check!(".000000000547", [fixed(Nanosecond)]; nanosecond: 0);
+        check!(".",             [fixed(Nanosecond)]; TOO_SHORT);
+        check!(".4x",           [fixed(Nanosecond)]; TOO_LONG);
+        check!(".  4",          [fixed(Nanosecond)]; INVALID);
+        check!("  .4",          [fixed(Nanosecond)]; TOO_LONG); // no automatic trimming
 
         // fixed: nanoseconds without the dot
         check!("",             [internal_fixed(Nanosecond3NoDot)]; TOO_SHORT);
@@ -838,287 +838,286 @@ mod tests {
 
     #[test]
     fn test_parse_fixed_timezone_offset() {
-        use crate::format::Fixed;
+        use crate::format::Fixed::*;
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
-        use crate::format::Numeric::*;
 
         // TimezoneOffset
-        check!("1",            [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("12",           [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("123",          [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("1234",         [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("12345",        [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("123456",       [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("1234567",      [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+1",           [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+12",          [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+123",         [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+1234",        [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12345",       [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+123456",      [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+1234567",     [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12345678",    [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12:",         [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+12:3",        [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+12:34",       [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("-12:34",       [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("−12:34",       [fixed(Fixed::TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12:34:",      [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12:34:5",     [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12:34:56",    [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12:34:56:",   [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12 34",       [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12  34",      [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("12:34",        [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("12:34:56",     [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+12::34",      [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12: :34",     [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12:::34",     [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12::::34",    [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12::34",      [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("+12:34:56",    [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12:3456",     [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+1234:56",     [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+1234:567",    [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+00:00",       [fixed(Fixed::TimezoneOffset)]; offset: 0);
-        check!("-00:00",       [fixed(Fixed::TimezoneOffset)]; offset: 0);
-        check!("−00:00",       [fixed(Fixed::TimezoneOffset)]; offset: 0); // MINUS SIGN (U+2212)
-        check!("+00:01",       [fixed(Fixed::TimezoneOffset)]; offset: 60);
-        check!("-00:01",       [fixed(Fixed::TimezoneOffset)]; offset: -60);
-        check!("+00:30",       [fixed(Fixed::TimezoneOffset)]; offset: 1_800);
-        check!("-00:30",       [fixed(Fixed::TimezoneOffset)]; offset: -1_800);
-        check!("+24:00",       [fixed(Fixed::TimezoneOffset)]; offset: 86_400);
-        check!("-24:00",       [fixed(Fixed::TimezoneOffset)]; offset: -86_400);
-        check!("−24:00",       [fixed(Fixed::TimezoneOffset)]; offset: -86_400); // MINUS SIGN (U+2212)
-        check!("+99:59",       [fixed(Fixed::TimezoneOffset)]; offset: 359_940);
-        check!("-99:59",       [fixed(Fixed::TimezoneOffset)]; offset: -359_940);
-        check!("+00:60",       [fixed(Fixed::TimezoneOffset)]; OUT_OF_RANGE);
-        check!("+00:99",       [fixed(Fixed::TimezoneOffset)]; OUT_OF_RANGE);
-        check!("#12:34",       [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+12:34 ",      [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12 34 ",      [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!(" +12:34",      [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!(" -12:34",      [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!(" −12:34",      [fixed(Fixed::TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("12:34 ",       [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("  +12:34",     [fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("  -12:34",     [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("\t -12:34",    [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12: 34",      [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12 :34",      [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12 : 34",     [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12 :  34",    [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12  : 34",    [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12:  34",     [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12  :34",     [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!("-12  :  34",   [fixed(Fixed::TimezoneOffset)]; offset: -45_240);
-        check!(" 12:34",       [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("",             [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+",            [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+12345",       [fixed(Fixed::TimezoneOffset), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:345",      [fixed(Fixed::TimezoneOffset), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:34:",      [fixed(Fixed::TimezoneOffset), Literal(":")]; offset: 45_240);
-        check!("Z12:34",       [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("X12:34",       [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("Z+12:34",      [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("X+12:34",      [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("X−12:34",      [fixed(Fixed::TimezoneOffset)]; INVALID); // MINUS SIGN (U+2212)
-        check!("🤠+12:34",     [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+12:34🤠",     [fixed(Fixed::TimezoneOffset)]; TOO_LONG);
-        check!("+12:🤠34",     [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+1234🤠",     [fixed(Fixed::TimezoneOffset), Literal("🤠")]; offset: 45_240);
-        check!("-1234🤠",     [fixed(Fixed::TimezoneOffset), Literal("🤠")]; offset: -45_240);
-        check!("−1234🤠",      [fixed(Fixed::TimezoneOffset), Literal("🤠")]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12:34🤠",     [fixed(Fixed::TimezoneOffset), Literal("🤠")]; offset: 45_240);
-        check!("-12:34🤠",     [fixed(Fixed::TimezoneOffset), Literal("🤠")]; offset: -45_240);
-        check!("−12:34🤠",     [fixed(Fixed::TimezoneOffset), Literal("🤠")]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("🤠+12:34",     [Literal("🤠"), fixed(Fixed::TimezoneOffset)]; offset: 45_240);
-        check!("Z",            [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("A",            [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("PST",          [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("#Z",           [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!(":Z",           [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+Z",           [fixed(Fixed::TimezoneOffset)]; TOO_SHORT);
-        check!("+:Z",          [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("+Z:",          [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!("z",            [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!(" :Z",          [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!(" Z",           [fixed(Fixed::TimezoneOffset)]; INVALID);
-        check!(" z",           [fixed(Fixed::TimezoneOffset)]; INVALID);
+        check!("1",            [fixed(TimezoneOffset)]; INVALID);
+        check!("12",           [fixed(TimezoneOffset)]; INVALID);
+        check!("123",          [fixed(TimezoneOffset)]; INVALID);
+        check!("1234",         [fixed(TimezoneOffset)]; INVALID);
+        check!("12345",        [fixed(TimezoneOffset)]; INVALID);
+        check!("123456",       [fixed(TimezoneOffset)]; INVALID);
+        check!("1234567",      [fixed(TimezoneOffset)]; INVALID);
+        check!("+1",           [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+12",          [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+123",         [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+1234",        [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12345",       [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+123456",      [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+1234567",     [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12345678",    [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12:",         [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+12:3",        [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+12:34",       [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("-12:34",       [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("−12:34",       [fixed(TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12:34:",      [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12:34:5",     [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12:34:56",    [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12:34:56:",   [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12 34",       [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12  34",      [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("12:34",        [fixed(TimezoneOffset)]; INVALID);
+        check!("12:34:56",     [fixed(TimezoneOffset)]; INVALID);
+        check!("+12::34",      [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12: :34",     [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12:::34",     [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12::::34",    [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12::34",      [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("+12:34:56",    [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12:3456",     [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+1234:56",     [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+1234:567",    [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+00:00",       [fixed(TimezoneOffset)]; offset: 0);
+        check!("-00:00",       [fixed(TimezoneOffset)]; offset: 0);
+        check!("−00:00",       [fixed(TimezoneOffset)]; offset: 0); // MINUS SIGN (U+2212)
+        check!("+00:01",       [fixed(TimezoneOffset)]; offset: 60);
+        check!("-00:01",       [fixed(TimezoneOffset)]; offset: -60);
+        check!("+00:30",       [fixed(TimezoneOffset)]; offset: 1_800);
+        check!("-00:30",       [fixed(TimezoneOffset)]; offset: -1_800);
+        check!("+24:00",       [fixed(TimezoneOffset)]; offset: 86_400);
+        check!("-24:00",       [fixed(TimezoneOffset)]; offset: -86_400);
+        check!("−24:00",       [fixed(TimezoneOffset)]; offset: -86_400); // MINUS SIGN (U+2212)
+        check!("+99:59",       [fixed(TimezoneOffset)]; offset: 359_940);
+        check!("-99:59",       [fixed(TimezoneOffset)]; offset: -359_940);
+        check!("+00:60",       [fixed(TimezoneOffset)]; OUT_OF_RANGE);
+        check!("+00:99",       [fixed(TimezoneOffset)]; OUT_OF_RANGE);
+        check!("#12:34",       [fixed(TimezoneOffset)]; INVALID);
+        check!("+12:34 ",      [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12 34 ",      [fixed(TimezoneOffset)]; TOO_LONG);
+        check!(" +12:34",      [fixed(TimezoneOffset)]; offset: 45_240);
+        check!(" -12:34",      [fixed(TimezoneOffset)]; offset: -45_240);
+        check!(" −12:34",      [fixed(TimezoneOffset)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("12:34 ",       [fixed(TimezoneOffset)]; INVALID);
+        check!("  +12:34",     [fixed(TimezoneOffset)]; offset: 45_240);
+        check!("  -12:34",     [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("\t -12:34",    [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12: 34",      [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12 :34",      [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12 : 34",     [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12 :  34",    [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12  : 34",    [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12:  34",     [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12  :34",     [fixed(TimezoneOffset)]; offset: -45_240);
+        check!("-12  :  34",   [fixed(TimezoneOffset)]; offset: -45_240);
+        check!(" 12:34",       [fixed(TimezoneOffset)]; INVALID);
+        check!("",             [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+",            [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+12345",       [fixed(TimezoneOffset), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:345",      [fixed(TimezoneOffset), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:34:",      [fixed(TimezoneOffset), Literal(":")]; offset: 45_240);
+        check!("Z12:34",       [fixed(TimezoneOffset)]; INVALID);
+        check!("X12:34",       [fixed(TimezoneOffset)]; INVALID);
+        check!("Z+12:34",      [fixed(TimezoneOffset)]; INVALID);
+        check!("X+12:34",      [fixed(TimezoneOffset)]; INVALID);
+        check!("X−12:34",      [fixed(TimezoneOffset)]; INVALID); // MINUS SIGN (U+2212)
+        check!("🤠+12:34",     [fixed(TimezoneOffset)]; INVALID);
+        check!("+12:34🤠",     [fixed(TimezoneOffset)]; TOO_LONG);
+        check!("+12:🤠34",     [fixed(TimezoneOffset)]; INVALID);
+        check!("+1234🤠",     [fixed(TimezoneOffset), Literal("🤠")]; offset: 45_240);
+        check!("-1234🤠",     [fixed(TimezoneOffset), Literal("🤠")]; offset: -45_240);
+        check!("−1234🤠",      [fixed(TimezoneOffset), Literal("🤠")]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12:34🤠",     [fixed(TimezoneOffset), Literal("🤠")]; offset: 45_240);
+        check!("-12:34🤠",     [fixed(TimezoneOffset), Literal("🤠")]; offset: -45_240);
+        check!("−12:34🤠",     [fixed(TimezoneOffset), Literal("🤠")]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("🤠+12:34",     [Literal("🤠"), fixed(TimezoneOffset)]; offset: 45_240);
+        check!("Z",            [fixed(TimezoneOffset)]; INVALID);
+        check!("A",            [fixed(TimezoneOffset)]; INVALID);
+        check!("PST",          [fixed(TimezoneOffset)]; INVALID);
+        check!("#Z",           [fixed(TimezoneOffset)]; INVALID);
+        check!(":Z",           [fixed(TimezoneOffset)]; INVALID);
+        check!("+Z",           [fixed(TimezoneOffset)]; TOO_SHORT);
+        check!("+:Z",          [fixed(TimezoneOffset)]; INVALID);
+        check!("+Z:",          [fixed(TimezoneOffset)]; INVALID);
+        check!("z",            [fixed(TimezoneOffset)]; INVALID);
+        check!(" :Z",          [fixed(TimezoneOffset)]; INVALID);
+        check!(" Z",           [fixed(TimezoneOffset)]; INVALID);
+        check!(" z",           [fixed(TimezoneOffset)]; INVALID);
 
         // TimezoneOffsetColon
-        check!("1",            [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12",           [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("123",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("1234",         [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12345",        [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("123456",       [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("1234567",      [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12345678",     [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+1",           [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+12",          [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+123",         [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+1234",        [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("-1234",        [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240);
-        check!("−1234",        [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12345",       [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+123456",      [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+1234567",     [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12345678",    [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("1:",           [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12:",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12:3",         [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12:34",        [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12:34:",       [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12:34:5",      [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("12:34:56",     [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+1:",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+12:",         [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+12:3",        [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+12:34",       [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("-12:34",       [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240);
-        check!("−12:34",       [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12:34:",      [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12:34:5",     [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12:34:56",    [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12:34:56:",   [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12:34:56:7",  [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12:34:56:78", [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+12:3456",     [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("+1234:56",     [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!("−12:34",       [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("−12 : 34",     [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12 :34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12: 34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12 34",       [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12: 34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12 :34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12 : 34",     [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("-12 : 34",     [fixed(Fixed::TimezoneOffsetColon)]; offset: -45_240);
-        check!("+12  : 34",    [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12 :  34",    [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12  :  34",   [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12::34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12: :34",     [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12:::34",     [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12::::34",    [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("+12::34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("#1234",        [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("#12:34",       [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+12:34 ",      [fixed(Fixed::TimezoneOffsetColon)]; TOO_LONG);
-        check!(" +12:34",      [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("\t+12:34",     [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("\t\t+12:34",   [fixed(Fixed::TimezoneOffsetColon)]; offset: 45_240);
-        check!("12:34 ",       [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!(" 12:34",       [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("",             [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+",            [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!(":",            [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+12345",       [fixed(Fixed::TimezoneOffsetColon), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:345",      [fixed(Fixed::TimezoneOffsetColon), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:34:",      [fixed(Fixed::TimezoneOffsetColon), Literal(":")]; offset: 45_240);
-        check!("Z",            [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("A",            [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("PST",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("#Z",           [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!(":Z",           [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+Z",           [fixed(Fixed::TimezoneOffsetColon)]; TOO_SHORT);
-        check!("+:Z",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("+Z:",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!("z",            [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!(" :Z",          [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!(" Z",           [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
-        check!(" z",           [fixed(Fixed::TimezoneOffsetColon)]; INVALID);
+        check!("1",            [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12",           [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("123",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("1234",         [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12345",        [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("123456",       [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("1234567",      [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12345678",     [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+1",           [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+12",          [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+123",         [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+1234",        [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("-1234",        [fixed(TimezoneOffsetColon)]; offset: -45_240);
+        check!("−1234",        [fixed(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12345",       [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+123456",      [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+1234567",     [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12345678",    [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("1:",           [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12:",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12:3",         [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12:34",        [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12:34:",       [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12:34:5",      [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("12:34:56",     [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+1:",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+12:",         [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+12:3",        [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+12:34",       [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("-12:34",       [fixed(TimezoneOffsetColon)]; offset: -45_240);
+        check!("−12:34",       [fixed(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12:34:",      [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12:34:5",     [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12:34:56",    [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12:34:56:",   [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12:34:56:7",  [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12:34:56:78", [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+12:3456",     [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("+1234:56",     [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!("−12:34",       [fixed(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("−12 : 34",     [fixed(TimezoneOffsetColon)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12 :34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12: 34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12 34",       [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12: 34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12 :34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12 : 34",     [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("-12 : 34",     [fixed(TimezoneOffsetColon)]; offset: -45_240);
+        check!("+12  : 34",    [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12 :  34",    [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12  :  34",   [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12::34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12: :34",     [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12:::34",     [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12::::34",    [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("+12::34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("#1234",        [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("#12:34",       [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+12:34 ",      [fixed(TimezoneOffsetColon)]; TOO_LONG);
+        check!(" +12:34",      [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("\t+12:34",     [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("\t\t+12:34",   [fixed(TimezoneOffsetColon)]; offset: 45_240);
+        check!("12:34 ",       [fixed(TimezoneOffsetColon)]; INVALID);
+        check!(" 12:34",       [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("",             [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+",            [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!(":",            [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+12345",       [fixed(TimezoneOffsetColon), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:345",      [fixed(TimezoneOffsetColon), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:34:",      [fixed(TimezoneOffsetColon), Literal(":")]; offset: 45_240);
+        check!("Z",            [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("A",            [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("PST",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("#Z",           [fixed(TimezoneOffsetColon)]; INVALID);
+        check!(":Z",           [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+Z",           [fixed(TimezoneOffsetColon)]; TOO_SHORT);
+        check!("+:Z",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("+Z:",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!("z",            [fixed(TimezoneOffsetColon)]; INVALID);
+        check!(" :Z",          [fixed(TimezoneOffsetColon)]; INVALID);
+        check!(" Z",           [fixed(TimezoneOffsetColon)]; INVALID);
+        check!(" z",           [fixed(TimezoneOffsetColon)]; INVALID);
         // testing `TimezoneOffsetColon` also tests same path as `TimezoneOffsetDoubleColon`
         // and `TimezoneOffsetTripleColon` for function `parse_internal`.
         // No need for separate tests for `TimezoneOffsetDoubleColon` and
         // `TimezoneOffsetTripleColon`.
 
         // TimezoneOffsetZ
-        check!("1",            [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12",           [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("123",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("1234",         [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12345",        [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("123456",       [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("1234567",      [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12345678",     [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("+1",           [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+12",          [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+123",         [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+1234",        [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("-1234",        [fixed(Fixed::TimezoneOffsetZ)]; offset: -45_240);
-        check!("−1234",        [fixed(Fixed::TimezoneOffsetZ)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12345",       [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+123456",      [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+1234567",     [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12345678",    [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("1:",           [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12:",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12:3",         [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12:34",        [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12:34:",       [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12:34:5",      [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("12:34:56",     [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("+1:",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("+12:",         [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+12:3",        [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+12:34",       [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("-12:34",       [fixed(Fixed::TimezoneOffsetZ)]; offset: -45_240);
-        check!("−12:34",       [fixed(Fixed::TimezoneOffsetZ)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12:34:",      [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12:34:5",     [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12:34:56",    [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12:34:56:",   [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12:34:56:7",  [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12:34:56:78", [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12::34",      [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12:3456",     [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+1234:56",     [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12 34",       [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12  34",      [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12: 34",      [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12 :34",      [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12 : 34",     [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12  : 34",    [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12 :  34",    [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12  :  34",   [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("12:34 ",       [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!(" 12:34",       [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("+12:34 ",      [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("+12 34 ",      [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!(" +12:34",      [fixed(Fixed::TimezoneOffsetZ)]; offset: 45_240);
-        check!("+12345",       [fixed(Fixed::TimezoneOffsetZ), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:345",      [fixed(Fixed::TimezoneOffsetZ), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:34:",      [fixed(Fixed::TimezoneOffsetZ), Literal(":")]; offset: 45_240);
-        check!("Z12:34",       [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("X12:34",       [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("Z",            [fixed(Fixed::TimezoneOffsetZ)]; offset: 0);
-        check!("z",            [fixed(Fixed::TimezoneOffsetZ)]; offset: 0);
-        check!(" Z",           [fixed(Fixed::TimezoneOffsetZ)]; offset: 0);
-        check!(" z",           [fixed(Fixed::TimezoneOffsetZ)]; offset: 0);
-        check!("\u{0363}Z",    [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("Z ",           [fixed(Fixed::TimezoneOffsetZ)]; TOO_LONG);
-        check!("A",            [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("PST",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("#Z",           [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!(":Z",           [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!(":z",           [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("+Z",           [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("-Z",           [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+A",           [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+🙃",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("+Z:",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!(" :Z",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!(" +Z",          [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!(" -Z",          [fixed(Fixed::TimezoneOffsetZ)]; TOO_SHORT);
-        check!("+:Z",          [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("Y",            [fixed(Fixed::TimezoneOffsetZ)]; INVALID);
-        check!("Zulu",         [fixed(Fixed::TimezoneOffsetZ), Literal("ulu")]; offset: 0);
-        check!("zulu",         [fixed(Fixed::TimezoneOffsetZ), Literal("ulu")]; offset: 0);
-        check!("+1234ulu",     [fixed(Fixed::TimezoneOffsetZ), Literal("ulu")]; offset: 45_240);
-        check!("+12:34ulu",    [fixed(Fixed::TimezoneOffsetZ), Literal("ulu")]; offset: 45_240);
+        check!("1",            [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12",           [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("123",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("1234",         [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12345",        [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("123456",       [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("1234567",      [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12345678",     [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("+1",           [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+12",          [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+123",         [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+1234",        [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("-1234",        [fixed(TimezoneOffsetZ)]; offset: -45_240);
+        check!("−1234",        [fixed(TimezoneOffsetZ)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12345",       [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+123456",      [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+1234567",     [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12345678",    [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("1:",           [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12:",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12:3",         [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12:34",        [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12:34:",       [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12:34:5",      [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("12:34:56",     [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("+1:",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("+12:",         [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+12:3",        [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+12:34",       [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("-12:34",       [fixed(TimezoneOffsetZ)]; offset: -45_240);
+        check!("−12:34",       [fixed(TimezoneOffsetZ)]; offset: -45_240); // MINUS SIGN (U+2212)
+        check!("+12:34:",      [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12:34:5",     [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12:34:56",    [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12:34:56:",   [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12:34:56:7",  [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12:34:56:78", [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12::34",      [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12:3456",     [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+1234:56",     [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12 34",       [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12  34",      [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12: 34",      [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12 :34",      [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12 : 34",     [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12  : 34",    [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12 :  34",    [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12  :  34",   [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("12:34 ",       [fixed(TimezoneOffsetZ)]; INVALID);
+        check!(" 12:34",       [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("+12:34 ",      [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("+12 34 ",      [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!(" +12:34",      [fixed(TimezoneOffsetZ)]; offset: 45_240);
+        check!("+12345",       [fixed(TimezoneOffsetZ), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:345",      [fixed(TimezoneOffsetZ), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:34:",      [fixed(TimezoneOffsetZ), Literal(":")]; offset: 45_240);
+        check!("Z12:34",       [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("X12:34",       [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("Z",            [fixed(TimezoneOffsetZ)]; offset: 0);
+        check!("z",            [fixed(TimezoneOffsetZ)]; offset: 0);
+        check!(" Z",           [fixed(TimezoneOffsetZ)]; offset: 0);
+        check!(" z",           [fixed(TimezoneOffsetZ)]; offset: 0);
+        check!("\u{0363}Z",    [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("Z ",           [fixed(TimezoneOffsetZ)]; TOO_LONG);
+        check!("A",            [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("PST",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("#Z",           [fixed(TimezoneOffsetZ)]; INVALID);
+        check!(":Z",           [fixed(TimezoneOffsetZ)]; INVALID);
+        check!(":z",           [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("+Z",           [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("-Z",           [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+A",           [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+🙃",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("+Z:",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!(" :Z",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!(" +Z",          [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!(" -Z",          [fixed(TimezoneOffsetZ)]; TOO_SHORT);
+        check!("+:Z",          [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("Y",            [fixed(TimezoneOffsetZ)]; INVALID);
+        check!("Zulu",         [fixed(TimezoneOffsetZ), Literal("ulu")]; offset: 0);
+        check!("zulu",         [fixed(TimezoneOffsetZ), Literal("ulu")]; offset: 0);
+        check!("+1234ulu",     [fixed(TimezoneOffsetZ), Literal("ulu")]; offset: 45_240);
+        check!("+12:34ulu",    [fixed(TimezoneOffsetZ), Literal("ulu")]; offset: 45_240);
         // Testing `TimezoneOffsetZ` also tests same path as `TimezoneOffsetColonZ`
         // in function `parse_internal`.
         // No need for separate tests for `TimezoneOffsetColonZ`.
@@ -1184,8 +1183,8 @@ mod tests {
         check!(" +12:34",      [internal_fixed(TimezoneOffsetPermissive)]; offset: 45_240);
         check!(" -12:34",      [internal_fixed(TimezoneOffsetPermissive)]; offset: -45_240);
         check!(" −12:34",      [internal_fixed(TimezoneOffsetPermissive)]; offset: -45_240); // MINUS SIGN (U+2212)
-        check!("+12345",       [internal_fixed(TimezoneOffsetPermissive), num(Day)]; offset: 45_240, day: 5);
-        check!("+12:345",      [internal_fixed(TimezoneOffsetPermissive), num(Day)]; offset: 45_240, day: 5);
+        check!("+12345",       [internal_fixed(TimezoneOffsetPermissive), num(Numeric::Day)]; offset: 45_240, day: 5);
+        check!("+12:345",      [internal_fixed(TimezoneOffsetPermissive), num(Numeric::Day)]; offset: 45_240, day: 5);
         check!("+12:34:",      [internal_fixed(TimezoneOffsetPermissive), Literal(":")]; offset: 45_240);
         check!("🤠+12:34",     [internal_fixed(TimezoneOffsetPermissive)]; INVALID);
         check!("+12:34🤠",     [internal_fixed(TimezoneOffsetPermissive)]; TOO_LONG);
@@ -1215,14 +1214,14 @@ mod tests {
         check!("Y",            [internal_fixed(TimezoneOffsetPermissive)]; INVALID);
 
         // TimezoneName
-        check!("CEST",         [fixed(Fixed::TimezoneName)]; );
-        check!("cest",         [fixed(Fixed::TimezoneName)]; ); // lowercase
-        check!("XXXXXXXX",     [fixed(Fixed::TimezoneName)]; ); // not a real timezone name
-        check!("!!!!",         [fixed(Fixed::TimezoneName)]; ); // not a real timezone name!
-        check!("CEST 5",       [fixed(Fixed::TimezoneName), Literal(" "), num(Day)]; day: 5);
-        check!("CEST ",        [fixed(Fixed::TimezoneName)]; TOO_LONG);
-        check!(" CEST",        [fixed(Fixed::TimezoneName)]; TOO_LONG);
-        check!("CE ST",        [fixed(Fixed::TimezoneName)]; TOO_LONG);
+        check!("CEST",         [fixed(TimezoneName)]; );
+        check!("cest",         [fixed(TimezoneName)]; ); // lowercase
+        check!("XXXXXXXX",     [fixed(TimezoneName)]; ); // not a real timezone name
+        check!("!!!!",         [fixed(TimezoneName)]; ); // not a real timezone name!
+        check!("CEST 5",       [fixed(TimezoneName), Literal(" "), num(Numeric::Day)]; day: 5);
+        check!("CEST ",        [fixed(TimezoneName)]; TOO_LONG);
+        check!(" CEST",        [fixed(TimezoneName)]; TOO_LONG);
+        check!("CE ST",        [fixed(TimezoneName)]; TOO_LONG);
     }
 
     #[test]
