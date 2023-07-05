@@ -570,7 +570,6 @@ mod tests {
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
 
-        // workaround for Rust issue #22255
         fn parse_all(s: &str, items: &[Item]) -> ParseResult<Parsed> {
             let mut parsed = Parsed::new();
             parse(&mut parsed, s, items.iter())?;
