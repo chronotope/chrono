@@ -94,19 +94,34 @@ pub const MIN_DATETIME: DateTime<Utc> = DateTime::<Utc>::MIN_UTC;
 pub const MAX_DATETIME: DateTime<Utc> = DateTime::<Utc>::MAX_UTC;
 
 impl<Tz: TimeZone> DateTime<Tz> {
-    /// Makes a new `DateTime` with given *UTC* datetime and offset.
-    /// The local datetime should be constructed via the `TimeZone` trait.
+    /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
+    ///
+    /// This is a low-level method, intended for use cases such as deserializing a `DateTime` or
+    /// passing it through FFI.
+    ///
+    /// For regular use you will probably want to use a method such as
+    /// [`TimeZone::from_local_datetime`] or [`NaiveDateTime::and_local_timezone`] instead.
     ///
     /// # Example
     ///
-    /// ```
-    /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
+    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
+    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// use chrono::{Local, DateTime};
     ///
-    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
-    /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
+    /// let dt = Local::now();
+    /// // Get components
+    /// let naive_utc = dt.naive_utc();
+    /// let offset = dt.offset().clone();
+    /// // Serialize, pass through FFI... and recreate the `DateTime`:
+    /// let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, offset);
+    /// assert_eq!(dt, dt_new);
     /// ```
     #[inline]
     #[must_use]
+    pub fn from_naive_utc_and_offset(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
+        DateTime { datetime, offset }
+    }
+
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         DateTime { datetime, offset }
     }
