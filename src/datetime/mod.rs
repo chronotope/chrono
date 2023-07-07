@@ -31,8 +31,7 @@ use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::oldtime::Duration as OldDuration;
 #[allow(deprecated)]
 use crate::Date;
-use crate::Months;
-use crate::{Datelike, Timelike, Weekday};
+use crate::{Datelike, Months, Timelike, Weekday};
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
