@@ -8,9 +8,7 @@ use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::oldtime::Duration as OldDuration;
-use crate::DateTime;
-use crate::Weekday;
-use crate::{Datelike, Timelike};
+use crate::{DateTime, Datelike, Timelike, Weekday};
 
 /// Parsed parts of date and time. There are two classes of methods:
 ///
