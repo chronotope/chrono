@@ -674,7 +674,7 @@ fn test_rfc3339_opts() {
     assert_eq!(dt.to_rfc3339_opts(Nanos, false), "2018-01-11T10:05:13.084660000+08:00");
     assert_eq!(dt.to_rfc3339_opts(AutoSi, false), "2018-01-11T10:05:13.084660+08:00");
 
-    let ut = DateTime::<Utc>::from_utc(dt.naive_utc(), Utc);
+    let ut = dt.naive_utc().and_utc();
     assert_eq!(ut.to_rfc3339_opts(Secs, false), "2018-01-11T02:05:13+00:00");
     assert_eq!(ut.to_rfc3339_opts(Secs, true), "2018-01-11T02:05:13Z");
     assert_eq!(ut.to_rfc3339_opts(Millis, false), "2018-01-11T02:05:13.084+00:00");
@@ -1276,6 +1276,7 @@ fn test_datetime_format_alignment() {
 }
 
 #[test]
+#[allow(deprecated)]
 fn test_datetime_from_local() {
     // 2000-01-12T02:00:00Z
     let naivedatetime_utc =
@@ -1321,7 +1322,7 @@ fn test_years_elapsed() {
 #[test]
 fn test_datetime_add_assign() {
     let naivedatetime = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
-    let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
+    let datetime = naivedatetime.and_utc();
     let mut datetime_add = datetime;
 
     datetime_add += Duration::seconds(60);
@@ -1358,7 +1359,7 @@ fn test_datetime_add_assign_local() {
 #[test]
 fn test_datetime_sub_assign() {
     let naivedatetime = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(12, 0, 0).unwrap();
-    let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
+    let datetime = naivedatetime.and_utc();
     let mut datetime_sub = datetime;
 
     datetime_sub -= Duration::minutes(90);
