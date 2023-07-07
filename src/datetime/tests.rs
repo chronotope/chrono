@@ -787,6 +787,7 @@ fn test_datetime_from_str() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_parse_datetime_utc() {
     // valid cases
     let valid = [

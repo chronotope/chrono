@@ -1,10 +1,12 @@
 use super::NaiveDateTime;
 use crate::oldtime::Duration;
+#[cfg(any(feature = "alloc", feature = "std"))]
 use crate::utils::assert_display_eq;
 use crate::NaiveDate;
 use crate::{Datelike, FixedOffset, Utc};
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))] // formatting requires allocations
 fn test_datetime_from_timestamp_millis() {
     let valid_map = [
         (1662921288000, "2022-09-11 18:34:48.000000000"),
@@ -42,6 +44,7 @@ fn test_datetime_from_timestamp_millis() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))] // formatting requires allocations
 fn test_datetime_from_timestamp_micros() {
     let valid_map = [
         (1662921288000000, "2022-09-11 18:34:48.000000000"),
@@ -194,6 +197,7 @@ fn test_datetime_timestamp() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_from_str() {
     // valid cases
     let valid = [

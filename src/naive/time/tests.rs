@@ -214,6 +214,7 @@ fn test_time_fmt() {
 }
 
 #[test]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn test_date_from_str() {
     // valid cases
     let valid = [
@@ -325,7 +326,7 @@ fn test_time_parse_from_str() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(any(feature = "alloc", feature = "std"))] // formatting requires allocations
 fn test_time_format() {
     let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
     assert_display_eq(t.format("%H,%k,%I,%l,%P,%p"), "03, 3,03, 3,am,AM");
