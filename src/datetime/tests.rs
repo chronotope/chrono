@@ -238,6 +238,100 @@ fn test_datetime_sub_months() {
     );
 }
 
+// local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
+fn ymdhms(
+    fixedoffset: &FixedOffset,
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    min: u32,
+    sec: u32,
+) -> DateTime<FixedOffset> {
+    fixedoffset.with_ymd_and_hms(year, month, day, hour, min, sec).unwrap()
+}
+
+// local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
+fn ymdhms_milli(
+    fixedoffset: &FixedOffset,
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    min: u32,
+    sec: u32,
+    milli: i64,
+) -> DateTime<FixedOffset> {
+    fixedoffset
+        .with_ymd_and_hms(year, month, day, hour, min, sec)
+        .unwrap()
+        .checked_add_signed(Duration::milliseconds(milli))
+        .unwrap()
+}
+
+// local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
+#[cfg(any(feature = "alloc", feature = "std"))]
+fn ymdhms_micro(
+    fixedoffset: &FixedOffset,
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    min: u32,
+    sec: u32,
+    micro: i64,
+) -> DateTime<FixedOffset> {
+    fixedoffset
+        .with_ymd_and_hms(year, month, day, hour, min, sec)
+        .unwrap()
+        .checked_add_signed(Duration::microseconds(micro))
+        .unwrap()
+}
+
+// local helper function to easily create a DateTime<FixedOffset>
+#[allow(clippy::too_many_arguments)]
+#[cfg(any(feature = "alloc", feature = "std"))]
+fn ymdhms_nano(
+    fixedoffset: &FixedOffset,
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    min: u32,
+    sec: u32,
+    nano: i64,
+) -> DateTime<FixedOffset> {
+    fixedoffset
+        .with_ymd_and_hms(year, month, day, hour, min, sec)
+        .unwrap()
+        .checked_add_signed(Duration::nanoseconds(nano))
+        .unwrap()
+}
+
+// local helper function to easily create a DateTime<Utc>
+fn ymdhms_utc(year: i32, month: u32, day: u32, hour: u32, min: u32, sec: u32) -> DateTime<Utc> {
+    Utc.with_ymd_and_hms(year, month, day, hour, min, sec).unwrap()
+}
+
+// local helper function to easily create a DateTime<Utc>
+fn ymdhms_milli_utc(
+    year: i32,
+    month: u32,
+    day: u32,
+    hour: u32,
+    min: u32,
+    sec: u32,
+    milli: i64,
+) -> DateTime<Utc> {
+    Utc.with_ymd_and_hms(year, month, day, hour, min, sec)
+        .unwrap()
+        .checked_add_signed(Duration::milliseconds(milli))
+        .unwrap()
+}
+
 #[test]
 fn test_datetime_offset() {
     let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
@@ -365,10 +459,6 @@ fn test_datetime_rfc2822() {
         Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0000"
     );
-    assert_eq!(
-        Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc3339(),
-        "2015-02-18T23:16:09+00:00"
-    );
     // timezone +05
     assert_eq!(
         edt.from_local_datetime(
@@ -380,17 +470,6 @@ fn test_datetime_rfc2822() {
         .unwrap()
         .to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0500"
-    );
-    assert_eq!(
-        edt.from_local_datetime(
-            &NaiveDate::from_ymd_opt(2015, 2, 18)
-                .unwrap()
-                .and_hms_milli_opt(23, 16, 9, 150)
-                .unwrap()
-        )
-        .unwrap()
-        .to_rfc3339(),
-        "2015-02-18T23:16:09.150+05:00"
     );
     // seconds 60
     assert_eq!(
@@ -404,17 +483,6 @@ fn test_datetime_rfc2822() {
         .to_rfc2822(),
         "Wed, 18 Feb 2015 23:59:60 +0500"
     );
-    assert_eq!(
-        edt.from_local_datetime(
-            &NaiveDate::from_ymd_opt(2015, 2, 18)
-                .unwrap()
-                .and_hms_micro_opt(23, 59, 59, 1_234_567)
-                .unwrap()
-        )
-        .unwrap()
-        .to_rfc3339(),
-        "2015-02-18T23:59:60.234567+05:00"
-    );
 
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000"),
@@ -425,136 +493,130 @@ fn test_datetime_rfc2822() {
         Ok(FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap())
     );
     assert_eq!(
-        edt.ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_micro_opt(23, 59, 59, 1_234_567)
-            .unwrap()
-            .to_rfc2822(),
-        "Wed, 18 Feb 2015 23:59:60 +0500"
+        ymdhms_milli(&edt, 2015, 2, 18, 23, 59, 58, 1_234_567).to_rfc2822(),
+        "Thu, 19 Feb 2015 00:20:32 +0500"
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
-        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap())
+        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:58 +0500"),
+        Ok(ymdhms(&edt, 2015, 2, 18, 23, 59, 58))
+    );
+    assert_ne!(
+        DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:58 +0500"),
+        Ok(ymdhms_milli(&edt, 2015, 2, 18, 23, 59, 58, 500))
     );
 
     // many varying whitespace intermixed
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc2822(
-            "\t\t\tWed,\n\t\t18 \r\n\t\tFeb \u{3000} 2015\r\n\t\t\t23:59:60    \t+0500"
+        DateTime::parse_from_rfc2822(
+            "\t\t\tWed,\n\t\t18 \r\n\t\tFeb \u{3000} 2015\r\n\t\t\t23:59:58    \t+0500"
         ),
-        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap())
+        Ok(ymdhms(&edt, 2015, 2, 18, 23, 59, 58))
     );
     // example from RFC 2822 Appendix A.5.
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc2822(
+        DateTime::parse_from_rfc2822(
             "Thu,\n\t13\n      Feb\n        1969\n    23:32\n             -0330 (Newfoundland Time)"
         ),
-        Ok(FixedOffset::east_opt(-3 * 60 * 60 - 30 * 60)
-            .unwrap()
-            .ymd_opt(1969, 2, 13)
-            .unwrap()
-            .and_hms_opt(23, 32, 0)
-            .unwrap()
+        Ok(
+            ymdhms(
+                &FixedOffset::east_opt(-3 * 60 * 60 - 30 * 60).unwrap(),
+                1969, 2, 13, 23, 32, 0,
+            )
         )
     );
     // example from RFC 2822 Appendix A.5. without trailing " (Newfoundland Time)"
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc2822(
+        DateTime::parse_from_rfc2822(
             "Thu,\n\t13\n      Feb\n        1969\n    23:32\n             -0330"
         ),
-        Ok(FixedOffset::east_opt(-3 * 60 * 60 - 30 * 60)
-            .unwrap()
-            .ymd_opt(1969, 2, 13)
-            .unwrap()
-            .and_hms_opt(23, 32, 0)
-            .unwrap())
+        Ok(
+            ymdhms(&FixedOffset::east_opt(-3 * 60 * 60 - 30 * 60).unwrap(), 1969, 2, 13, 23, 32, 0,)
+        )
     );
 
     // bad year
-    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
+    assert!(DateTime::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
     // wrong format
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +00:00").is_err()
-    );
+    assert!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +00:00").is_err());
     // full name day of week
-    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("Wednesday, 18 Feb 2015 23:16:09 +0000")
-        .is_err());
+    assert!(DateTime::parse_from_rfc2822("Wednesday, 18 Feb 2015 23:16:09 +0000").is_err());
     // full name day of week
-    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("Wednesday 18 Feb 2015 23:16:09 +0000")
-        .is_err());
+    assert!(DateTime::parse_from_rfc2822("Wednesday 18 Feb 2015 23:16:09 +0000").is_err());
     // wrong day of week separator '.'
-    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("Wed. 18 Feb 2015 23:16:09 +0000").is_err());
+    assert!(DateTime::parse_from_rfc2822("Wed. 18 Feb 2015 23:16:09 +0000").is_err());
     // *trailing* space causes failure
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000   ").is_err()
-    );
+    assert!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000   ").is_err());
 }
 
 #[test]
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_rfc3339() {
-    let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    let edt5 = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    let edt0 = FixedOffset::east_opt(0).unwrap();
+
+    // timezone 0
     assert_eq!(
-        Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap().to_rfc3339(),
+        Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc3339(),
         "2015-02-18T23:16:09+00:00"
     );
+    // timezone +05
     assert_eq!(
-        edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap().to_rfc3339(),
+        edt5.from_local_datetime(
+            &NaiveDate::from_ymd_opt(2015, 2, 18)
+                .unwrap()
+                .and_hms_milli_opt(23, 16, 9, 150)
+                .unwrap()
+        )
+        .unwrap()
+        .to_rfc3339(),
+        "2015-02-18T23:16:09.150+05:00"
+    );
+
+    assert_eq!(ymdhms_utc(2015, 2, 18, 23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
+    assert_eq!(
+        ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).to_rfc3339(),
         "2015-02-18T23:16:09.150+05:00"
     );
     assert_eq!(
-        edt.ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_micro_opt(23, 59, 59, 1_234_567)
-            .unwrap()
-            .to_rfc3339(),
-        "2015-02-18T23:59:60.234567+05:00"
+        ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
+        "2015-02-19T00:00:00.234567+05:00"
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:59.123+05:00"),
-        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_micro_opt(23, 59, 59, 123_000).unwrap())
+        DateTime::parse_from_rfc3339("2015-02-18T23:59:59.123+05:00"),
+        Ok(ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 123_000))
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:59.123456+05:00"),
-        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_micro_opt(23, 59, 59, 123_456).unwrap())
+        DateTime::parse_from_rfc3339("2015-02-18T23:59:59.123456+05:00"),
+        Ok(ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 123_456))
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:59.123456789+05:00"),
-        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_nano_opt(23, 59, 59, 123_456_789).unwrap())
+        DateTime::parse_from_rfc3339("2015-02-18T23:59:59.123456789+05:00"),
+        Ok(ymdhms_nano(&edt5, 2015, 2, 18, 23, 59, 59, 123_456_789))
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:16:09Z"),
-        Ok(FixedOffset::east_opt(0)
-            .unwrap()
-            .ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_opt(23, 16, 9)
-            .unwrap())
+        DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
+        Ok(ymdhms(&edt0, 2015, 2, 18, 23, 16, 9))
     );
 
     assert_eq!(
-        edt.ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_micro_opt(23, 59, 59, 1_234_567)
-            .unwrap()
-            .to_rfc3339(),
-        "2015-02-18T23:59:60.234567+05:00"
+        ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
+        "2015-02-19T00:00:00.234567+05:00"
     );
     assert_eq!(
-        edt.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap().to_rfc3339(),
+        ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).to_rfc3339(),
         "2015-02-18T23:16:09.150+05:00"
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
-        Ok(edt.ymd_opt(2015, 2, 18).unwrap().and_hms_micro_opt(23, 59, 59, 1_234_567).unwrap())
+        DateTime::parse_from_rfc3339("2015-02-18T00:00:00.234567+05:00"),
+        Ok(ymdhms_micro(&edt5, 2015, 2, 18, 0, 0, 0, 234_567))
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:16:09Z"),
-        Ok(FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap())
+        DateTime::parse_from_rfc3339("2015-02-18T23:16:09Z"),
+        Ok(ymdhms(&edt0, 2015, 2, 18, 23, 16, 9))
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
-        Ok(edt
+        Ok(edt5
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2015, 2, 18)
                     .unwrap()
@@ -566,7 +628,7 @@ fn test_datetime_rfc3339() {
     assert!(DateTime::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
     assert_eq!(
         DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
-        Ok(edt
+        Ok(edt5
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2015, 2, 18)
                     .unwrap()
@@ -575,44 +637,21 @@ fn test_datetime_rfc3339() {
             )
             .unwrap())
     );
-    assert_eq!(
-        Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_opt(23, 16, 9).unwrap().to_rfc3339(),
-        "2015-02-18T23:16:09+00:00"
-    );
+    assert_eq!(ymdhms_utc(2015, 2, 18, 23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
 
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567 +05:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:059:60.234567+05:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00PST").is_err()
-    );
-    assert!(DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+PST").is_err());
-    assert!(DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567PST").is_err());
-    assert!(DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+0500").is_err());
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567:+05:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00 ").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339(" 2015-02-18T23:59:60.234567+05:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015- 02-18T23:59:60.234567+05:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567A+05:00").is_err()
-    );
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567 +05:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:059:60.234567+05:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00PST").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+PST").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567PST").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+0500").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567:+05:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00 ").is_err());
+    assert!(DateTime::parse_from_rfc3339(" 2015-02-18T23:59:60.234567+05:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015- 02-18T23:59:60.234567+05:00").is_err());
+    assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567A+05:00").is_err());
 }
 
 #[test]
@@ -844,12 +883,12 @@ fn test_parse_datetime_utc() {
 
 #[test]
 fn test_utc_datetime_from_str() {
-    let ymdhms = |y, m, d, h, n, s, off| {
-        FixedOffset::east_opt(off).unwrap().with_ymd_and_hms(y, m, d, h, n, s).unwrap()
-    };
+    let edt = FixedOffset::east_opt(570 * 60).unwrap();
+    let edt0 = FixedOffset::east_opt(0).unwrap();
+    let wdt = FixedOffset::west_opt(10 * 3600).unwrap();
     assert_eq!(
         DateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
-        Ok(ymdhms(2014, 5, 7, 12, 34, 56, 570 * 60))
+        Ok(ymdhms(&edt, 2014, 5, 7, 12, 34, 56))
     ); // ignore offset
     assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
     assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
@@ -858,56 +897,45 @@ fn test_utc_datetime_from_str() {
         Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(Utc.with_ymd_and_hms(2013, 8, 9, 23, 54, 35).unwrap())
     );
+    assert_eq!(
+        DateTime::parse_from_str("0", "%s").unwrap(),
+        NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
+    );
 
     assert_eq!(
         "2015-02-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
-        Ok(FixedOffset::east_opt(0)
-            .unwrap()
-            .ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_milli_opt(23, 16, 9, 150)
-            .unwrap())
+        Ok(ymdhms_milli(&edt0, 2015, 2, 18, 23, 16, 9, 150))
     );
     assert_eq!(
         "2015-02-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
+        Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 9, 150)),
     );
     assert_eq!(
         "2015-02-18T23:16:9.15 UTC".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
+        Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 9, 150))
     );
     assert_eq!(
         "2015-02-18T23:16:9.15UTC".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
+        Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 9, 150))
     );
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
-        Ok(FixedOffset::east_opt(0)
-            .unwrap()
-            .ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_milli_opt(23, 16, 9, 150)
-            .unwrap())
+        Ok(ymdhms_milli(&edt0, 2015, 2, 18, 23, 16, 9, 150))
     );
     assert_eq!(
         "2015-2-18T13:16:9.15-10:00".parse::<DateTime<FixedOffset>>(),
-        Ok(FixedOffset::west_opt(10 * 3600)
-            .unwrap()
-            .ymd_opt(2015, 2, 18)
-            .unwrap()
-            .and_hms_milli_opt(13, 16, 9, 150)
-            .unwrap())
+        Ok(ymdhms_milli(&wdt, 2015, 2, 18, 13, 16, 9, 150))
     );
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<FixedOffset>>().is_err());
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
+        Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 9, 150))
     );
     assert_eq!(
         "2015-2-18T13:16:9.15-10:00".parse::<DateTime<Utc>>(),
-        Ok(Utc.ymd_opt(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap())
+        Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 9, 150))
     );
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<Utc>>().is_err());
 
@@ -916,7 +944,7 @@ fn test_utc_datetime_from_str() {
 
 #[test]
 fn test_utc_datetime_from_str_with_spaces() {
-    let dt = Utc.ymd_opt(2013, 8, 9).unwrap().and_hms_opt(23, 54, 35).unwrap();
+    let dt = ymdhms_utc(2013, 8, 9, 23, 54, 35);
     // with varying spaces - should succeed
     assert_eq!(Utc.datetime_from_str(" Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"), Ok(dt),);
     assert_eq!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S "), Ok(dt),);
@@ -952,12 +980,8 @@ fn test_utc_datetime_from_str_with_spaces() {
 
 #[test]
 fn test_datetime_parse_from_str() {
-    let dt = FixedOffset::east_opt(-9 * 60 * 60)
-        .unwrap()
-        .ymd_opt(2013, 8, 9)
-        .unwrap()
-        .and_hms_opt(23, 54, 35)
-        .unwrap();
+    let dt = ymdhms(&FixedOffset::east_opt(-9 * 60 * 60).unwrap(), 2013, 8, 9, 23, 54, 35);
+    let parse = DateTime::parse_from_str;
 
     // timezone variations
 
@@ -965,542 +989,136 @@ fn test_datetime_parse_from_str() {
     // %Z
     //
     // wrong timezone format
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -0900",
-        "%b %d %Y %H:%M:%S %Z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %Z").is_err());
     // bad timezone data?
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 PST",
-        "%b %d %Y %H:%M:%S %Z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 PST", "%b %d %Y %H:%M:%S %Z").is_err());
     // bad timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 XXXXX",
-        "%b %d %Y %H:%M:%S %Z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 XXXXX", "%b %d %Y %H:%M:%S %Z").is_err());
 
     //
     // %z
     //
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900",
-            "%b %d %Y %H:%M:%S %z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09 00",
-            "%b %d %Y %H:%M:%S %z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00",
-            "%b %d %Y %H:%M:%S %z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09 : 00",
-            "%b %d %Y %H:%M:%S %z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 --0900",
-            "%b %d %Y %H:%M:%S -%z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 +-0900",
-            "%b %d %Y %H:%M:%S +%z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00 ",
-            "%b %d %Y %H:%M:%S %z "
-        ),
-        Ok(dt),
-    );
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09 00", "%b %d %Y %H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00", "%b %d %Y %H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09 : 00", "%b %d %Y %H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 --0900", "%b %d %Y %H:%M:%S -%z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 +-0900", "%b %d %Y %H:%M:%S +%z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00 ", "%b %d %Y %H:%M:%S %z "), Ok(dt));
     // trailing newline after timezone
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00\n",
-        "%b %d %Y %H:%M:%S %z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00\n",
-            "%b %d %Y %H:%M:%S %z "
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09:00\n", "%b %d %Y %H:%M:%S %z").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00\n", "%b %d %Y %H:%M:%S %z "), Ok(dt));
     // trailing colon
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:",
-        "%b %d %Y %H:%M:%S %z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:", "%b %d %Y %H:%M:%S %z").is_err());
     // trailing colon with space
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00: ",
-        "%b %d %Y %H:%M:%S %z "
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00: ", "%b %d %Y %H:%M:%S %z ").is_err());
     // trailing colon, mismatch space
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:",
-        "%b %d %Y %H:%M:%S %z "
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:", "%b %d %Y %H:%M:%S %z ").is_err());
     // wrong timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09",
-        "%b %d %Y %H:%M:%S %z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09::00",
-            "%b %d %Y %H:%M:%S %z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900::",
-            "%b %d %Y %H:%M:%S %z::"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00:00",
-            "%b %d %Y %H:%M:%S %z:00"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00:00 ",
-            "%b %d %Y %H:%M:%S %z:00 "
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09", "%b %d %Y %H:%M:%S %z").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09::00", "%b %d %Y %H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900::", "%b %d %Y %H:%M:%S %z::"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00:00", "%b %d %Y %H:%M:%S %z:00"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00:00 ", "%b %d %Y %H:%M:%S %z:00 "), Ok(dt));
 
     //
     // %:z
     //
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35  -09:00",
-            "%b %d %Y %H:%M:%S  %:z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900",
-            "%b %d %Y %H:%M:%S %:z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09 00",
-            "%b %d %Y %H:%M:%S %:z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09 : 00",
-            "%b %d %Y %H:%M:%S %:z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09 : 00:",
-            "%b %d %Y %H:%M:%S %:z:"
-        ),
-        Ok(dt),
-    );
+    assert_eq!(parse("Aug 09 2013 23:54:35  -09:00", "%b %d %Y %H:%M:%S  %:z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %:z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09 00", "%b %d %Y %H:%M:%S %:z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09 : 00", "%b %d %Y %H:%M:%S %:z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09 : 00:", "%b %d %Y %H:%M:%S %:z:"), Ok(dt));
     // wrong timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09",
-        "%b %d %Y %H:%M:%S %:z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09::00",
-            "%b %d %Y %H:%M:%S %:z"
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09", "%b %d %Y %H:%M:%S %:z").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09::00", "%b %d %Y %H:%M:%S %:z"), Ok(dt));
     // timezone data hs too many colons
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:",
-        "%b %d %Y %H:%M:%S %:z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:", "%b %d %Y %H:%M:%S %:z").is_err());
     // timezone data hs too many colons
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00::",
-        "%b %d %Y %H:%M:%S %:z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00::",
-            "%b %d %Y %H:%M:%S %:z::"
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09:00::", "%b %d %Y %H:%M:%S %:z").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00::", "%b %d %Y %H:%M:%S %:z::"), Ok(dt));
 
     //
-    // %:::z
+    // %::z
     //
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900",
-            "%b %d %Y %H:%M:%S %::z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00",
-            "%b %d %Y %H:%M:%S %::z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09 : 00",
-            "%b %d %Y %H:%M:%S %::z"
-        ),
-        Ok(dt),
-    );
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %::z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00", "%b %d %Y %H:%M:%S %::z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09 : 00", "%b %d %Y %H:%M:%S %::z"), Ok(dt));
     // mismatching colon expectations
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:00",
-        "%b %d %Y %H:%M:%S %::z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09::00",
-            "%b %d %Y %H:%M:%S %::z"
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:00", "%b %d %Y %H:%M:%S %::z").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09::00", "%b %d %Y %H:%M:%S %::z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09::00", "%b %d %Y %H:%M:%S %:z"), Ok(dt));
     // wrong timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09",
-        "%b %d %Y %H:%M:%S %::z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09001234",
-            "%b %d %Y %H:%M:%S %::z1234"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:001234",
-            "%b %d %Y %H:%M:%S %::z1234"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900 ",
-            "%b %d %Y %H:%M:%S %::z "
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900\t\n",
-            "%b %d %Y %H:%M:%S %::z\t\n"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900:",
-            "%b %d %Y %H:%M:%S %::z:"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 :-0900:0",
-            "%b %d %Y %H:%M:%S :%::z:0"
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09", "%b %d %Y %H:%M:%S %::z").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09001234", "%b %d %Y %H:%M:%S %::z1234"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:001234", "%b %d %Y %H:%M:%S %::z1234"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900 ", "%b %d %Y %H:%M:%S %::z "), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900\t\n", "%b %d %Y %H:%M:%S %::z\t\n"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900:", "%b %d %Y %H:%M:%S %::z:"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 :-0900:0", "%b %d %Y %H:%M:%S :%::z:0"), Ok(dt));
     // mismatching colons and spaces
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 :-0900: ",
-        "%b %d %Y %H:%M:%S :%::z::"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 :-0900: ", "%b %d %Y %H:%M:%S :%::z::").is_err());
     // mismatching colons expectations
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:00",
-        "%b %d %Y %H:%M:%S %::z"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 -0900: 23:54:35",
-            "%b %d %Y %::z: %H:%M:%S"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 :-0900:0 23:54:35",
-            "%b %d %Y :%::z:0 %H:%M:%S"
-        ),
-        Ok(dt),
-    );
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:00", "%b %d %Y %H:%M:%S %::z").is_err());
+    assert_eq!(parse("Aug 09 2013 -0900: 23:54:35", "%b %d %Y %::z: %H:%M:%S"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 :-0900:0 23:54:35", "%b %d %Y :%::z:0 %H:%M:%S"), Ok(dt));
     // mismatching colons expectations mid-string
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 :-0900: 23:54:35",
-        "%b %d %Y :%::z  %H:%M:%S"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 :-0900: 23:54:35", "%b %d %Y :%::z  %H:%M:%S").is_err());
     // mismatching colons expectations, before end
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:00 ",
-        "%b %d %Y %H:%M:%S %::z "
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:00 ", "%b %d %Y %H:%M:%S %::z ").is_err());
 
     //
     // %:::z
     //
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00",
-            "%b %d %Y %H:%M:%S %:::z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900",
-            "%b %d %Y %H:%M:%S %:::z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900  ",
-            "%b %d %Y %H:%M:%S %:::z  "
-        ),
-        Ok(dt),
-    );
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00", "%b %d %Y %H:%M:%S %:::z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %:::z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900  ", "%b %d %Y %H:%M:%S %:::z  "), Ok(dt));
     // wrong timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09",
-        "%b %d %Y %H:%M:%S %:::z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09", "%b %d %Y %H:%M:%S %:::z").is_err());
 
     //
     // %::::z
     //
     // too many colons
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -0900",
-        "%b %d %Y %H:%M:%S %::::z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %::::z").is_err());
     // too many colons
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00",
-        "%b %d %Y %H:%M:%S %::::z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00", "%b %d %Y %H:%M:%S %::::z").is_err());
     // too many colons
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:",
-        "%b %d %Y %H:%M:%S %::::z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:", "%b %d %Y %H:%M:%S %::::z").is_err());
     // too many colons
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:00",
-        "%b %d %Y %H:%M:%S %::::z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:00", "%b %d %Y %H:%M:%S %::::z").is_err());
 
     //
     // %#z
     //
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:00",
-            "%b %d %Y %H:%M:%S %#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900",
-            "%b %d %Y %H:%M:%S %#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35  -09:00  ",
-            "%b %d %Y %H:%M:%S  %#z  "
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35  -0900  ",
-            "%b %d %Y %H:%M:%S  %#z  "
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09",
-            "%b %d %Y %H:%M:%S %#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -0900",
-            "%b %d %Y %H:%M:%S %#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09:",
-            "%b %d %Y %H:%M:%S %#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35 -09: ",
-            "%b %d %Y %H:%M:%S %#z "
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35+-09",
-            "%b %d %Y %H:%M:%S+%#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 23:54:35--09",
-            "%b %d %Y %H:%M:%S-%#z"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 -09:00 23:54:35",
-            "%b %d %Y %#z%H:%M:%S"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 -0900 23:54:35",
-            "%b %d %Y %#z%H:%M:%S"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 -090023:54:35",
-            "%b %d %Y %#z%H:%M:%S"
-        ),
-        Ok(dt),
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str(
-            "Aug 09 2013 -09:0023:54:35",
-            "%b %d %Y %#z%H:%M:%S"
-        ),
-        Ok(dt),
-    );
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00", "%b %d %Y %H:%M:%S %#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35  -09:00  ", "%b %d %Y %H:%M:%S  %#z  "), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35  -0900  ", "%b %d %Y %H:%M:%S  %#z  "), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09", "%b %d %Y %H:%M:%S %#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -0900", "%b %d %Y %H:%M:%S %#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:", "%b %d %Y %H:%M:%S %#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09: ", "%b %d %Y %H:%M:%S %#z "), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35+-09", "%b %d %Y %H:%M:%S+%#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 23:54:35--09", "%b %d %Y %H:%M:%S-%#z"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 -09:00 23:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 -0900 23:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 -090023:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 -09:0023:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
     // timezone with partial minutes adjacent hours
-    assert_ne!(
-        DateTime::<FixedOffset>::parse_from_str("Aug 09 2013 -09023:54:35", "%b %d %Y %#z%H:%M:%S"),
-        Ok(dt),
-    );
+    assert_ne!(parse("Aug 09 2013 -09023:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
     // bad timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -09:00:00",
-        "%b %d %Y %H:%M:%S %#z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -09:00:00", "%b %d %Y %H:%M:%S %#z").is_err());
     // bad timezone data (partial minutes)
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -090",
-        "%b %d %Y %H:%M:%S %#z"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -090", "%b %d %Y %H:%M:%S %#z").is_err());
     // bad timezone data (partial minutes) with trailing space
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 23:54:35 -090 ",
-        "%b %d %Y %H:%M:%S %#z "
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 23:54:35 -090 ", "%b %d %Y %H:%M:%S %#z ").is_err());
     // bad timezone data (partial minutes) mid-string
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 -090 23:54:35",
-        "%b %d %Y %#z %H:%M:%S"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 -090 23:54:35", "%b %d %Y %#z %H:%M:%S").is_err());
     // bad timezone data
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 -09:00:00 23:54:35",
-        "%b %d %Y %#z %H:%M:%S"
-    )
-    .is_err());
+    assert!(parse("Aug 09 2013 -09:00:00 23:54:35", "%b %d %Y %#z %H:%M:%S").is_err());
     // timezone data ambiguous with hours
-    assert!(DateTime::<FixedOffset>::parse_from_str(
-        "Aug 09 2013 -09:00:23:54:35",
-        "%b %d %Y %#z%H:%M:%S"
-    )
-    .is_err());
-    assert_eq!(
-        DateTime::parse_from_str("0", "%s").unwrap(),
-        NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
-    );
+    assert!(parse("Aug 09 2013 -09:00:23:54:35", "%b %d %Y %#z%H:%M:%S").is_err());
 }
 
 #[test]
