@@ -256,51 +256,28 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
 mod tests {
     use super::FixedOffset;
     use crate::offset::TimeZone;
+    use crate::utils::assert_debug_eq;
     use std::str::FromStr;
 
     #[test]
     fn test_date_extreme_offset() {
         // starting from 0.3 we don't have an offset exceeding one day.
         // this makes everything easier!
-        assert_eq!(
-            format!(
-                "{:?}",
-                FixedOffset::east_opt(86399)
-                    .unwrap()
-                    .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
-                    .unwrap()
-            ),
-            "2012-02-29T05:06:07+23:59:59".to_string()
+        assert_debug_eq(
+            FixedOffset::east_opt(86399).unwrap().with_ymd_and_hms(2012, 2, 29, 5, 6, 7).unwrap(),
+            "2012-02-29T05:06:07+23:59:59",
         );
-        assert_eq!(
-            format!(
-                "{:?}",
-                FixedOffset::east_opt(86399)
-                    .unwrap()
-                    .with_ymd_and_hms(2012, 2, 29, 5, 6, 7)
-                    .unwrap()
-            ),
-            "2012-02-29T05:06:07+23:59:59".to_string()
+        assert_debug_eq(
+            FixedOffset::east_opt(-86399).unwrap().with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap(),
+            "2012-03-04T05:06:07-23:59:59",
         );
-        assert_eq!(
-            format!(
-                "{:?}",
-                FixedOffset::west_opt(86399)
-                    .unwrap()
-                    .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
-                    .unwrap()
-            ),
-            "2012-03-04T05:06:07-23:59:59".to_string()
+        assert_debug_eq(
+            FixedOffset::west_opt(86399).unwrap().with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap(),
+            "2012-03-04T05:06:07-23:59:59",
         );
-        assert_eq!(
-            format!(
-                "{:?}",
-                FixedOffset::west_opt(86399)
-                    .unwrap()
-                    .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
-                    .unwrap()
-            ),
-            "2012-03-04T05:06:07-23:59:59".to_string()
+        assert_debug_eq(
+            FixedOffset::west_opt(-86399).unwrap().with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap(),
+            "2012-03-04T05:06:07+23:59:59",
         );
     }
 

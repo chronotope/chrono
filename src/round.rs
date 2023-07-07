@@ -312,6 +312,7 @@ impl std::error::Error for RoundingError {
 mod tests {
     use super::{Duration, DurationRound, RoundingError, SubsecRound};
     use crate::offset::{FixedOffset, TimeZone, Utc};
+    use crate::utils::assert_display_eq;
     use crate::Timelike;
     use crate::{NaiveDate, NaiveDateTime};
 
@@ -454,14 +455,14 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(
-            dt.duration_round(Duration::zero()).unwrap().to_string(),
-            "2016-12-31 23:59:59.175500 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::zero()).unwrap(),
+            "2016-12-31 23:59:59.175500 UTC",
         );
 
-        assert_eq!(
-            dt.duration_round(Duration::milliseconds(10)).unwrap().to_string(),
-            "2016-12-31 23:59:59.180 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::milliseconds(10)).unwrap(),
+            "2016-12-31 23:59:59.180 UTC",
         );
 
         // round up
@@ -473,9 +474,9 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
-        assert_eq!(
-            dt.duration_round(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:25:00 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::minutes(5)).unwrap(),
+            "2012-12-12 18:25:00 UTC",
         );
         // round down
         let dt = Utc
@@ -486,50 +487,47 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
-        assert_eq!(
-            dt.duration_round(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:20:00 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::minutes(5)).unwrap(),
+            "2012-12-12 18:20:00 UTC",
         );
 
-        assert_eq!(
-            dt.duration_round(Duration::minutes(10)).unwrap().to_string(),
-            "2012-12-12 18:20:00 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::minutes(10)).unwrap(),
+            "2012-12-12 18:20:00 UTC",
         );
-        assert_eq!(
-            dt.duration_round(Duration::minutes(30)).unwrap().to_string(),
-            "2012-12-12 18:30:00 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::minutes(30)).unwrap(),
+            "2012-12-12 18:30:00 UTC",
         );
-        assert_eq!(
-            dt.duration_round(Duration::hours(1)).unwrap().to_string(),
-            "2012-12-12 18:00:00 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::hours(1)).unwrap(),
+            "2012-12-12 18:00:00 UTC",
         );
-        assert_eq!(
-            dt.duration_round(Duration::days(1)).unwrap().to_string(),
-            "2012-12-13 00:00:00 UTC"
-        );
+        assert_display_eq(dt.duration_round(Duration::days(1)).unwrap(), "2012-12-13 00:00:00 UTC");
 
         // timezone east
         let dt =
             FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
-        assert_eq!(
-            dt.duration_round(Duration::days(1)).unwrap().to_string(),
-            "2020-10-28 00:00:00 +01:00"
+        assert_display_eq(
+            dt.duration_round(Duration::days(1)).unwrap(),
+            "2020-10-28 00:00:00 +01:00",
         );
-        assert_eq!(
-            dt.duration_round(Duration::weeks(1)).unwrap().to_string(),
-            "2020-10-29 00:00:00 +01:00"
+        assert_display_eq(
+            dt.duration_round(Duration::weeks(1)).unwrap(),
+            "2020-10-29 00:00:00 +01:00",
         );
 
         // timezone west
         let dt =
             FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
-        assert_eq!(
-            dt.duration_round(Duration::days(1)).unwrap().to_string(),
-            "2020-10-28 00:00:00 -01:00"
+        assert_display_eq(
+            dt.duration_round(Duration::days(1)).unwrap(),
+            "2020-10-28 00:00:00 -01:00",
         );
-        assert_eq!(
-            dt.duration_round(Duration::weeks(1)).unwrap().to_string(),
-            "2020-10-29 00:00:00 -01:00"
+        assert_display_eq(
+            dt.duration_round(Duration::weeks(1)).unwrap(),
+            "2020-10-29 00:00:00 -01:00",
         );
     }
 
@@ -545,14 +543,14 @@ mod tests {
             .unwrap()
             .naive_utc();
 
-        assert_eq!(
-            dt.duration_round(Duration::zero()).unwrap().to_string(),
-            "2016-12-31 23:59:59.175500"
+        assert_display_eq(
+            dt.duration_round(Duration::zero()).unwrap(),
+            "2016-12-31 23:59:59.175500",
         );
 
-        assert_eq!(
-            dt.duration_round(Duration::milliseconds(10)).unwrap().to_string(),
-            "2016-12-31 23:59:59.180"
+        assert_display_eq(
+            dt.duration_round(Duration::milliseconds(10)).unwrap(),
+            "2016-12-31 23:59:59.180",
         );
 
         // round up
@@ -565,10 +563,7 @@ mod tests {
             )
             .unwrap()
             .naive_utc();
-        assert_eq!(
-            dt.duration_round(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:25:00"
-        );
+        assert_display_eq(dt.duration_round(Duration::minutes(5)).unwrap(), "2012-12-12 18:25:00");
         // round down
         let dt = Utc
             .from_local_datetime(
@@ -579,35 +574,20 @@ mod tests {
             )
             .unwrap()
             .naive_utc();
-        assert_eq!(
-            dt.duration_round(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:20:00"
-        );
+        assert_display_eq(dt.duration_round(Duration::minutes(5)).unwrap(), "2012-12-12 18:20:00");
 
-        assert_eq!(
-            dt.duration_round(Duration::minutes(10)).unwrap().to_string(),
-            "2012-12-12 18:20:00"
-        );
-        assert_eq!(
-            dt.duration_round(Duration::minutes(30)).unwrap().to_string(),
-            "2012-12-12 18:30:00"
-        );
-        assert_eq!(
-            dt.duration_round(Duration::hours(1)).unwrap().to_string(),
-            "2012-12-12 18:00:00"
-        );
-        assert_eq!(
-            dt.duration_round(Duration::days(1)).unwrap().to_string(),
-            "2012-12-13 00:00:00"
-        );
+        assert_display_eq(dt.duration_round(Duration::minutes(10)).unwrap(), "2012-12-12 18:20:00");
+        assert_display_eq(dt.duration_round(Duration::minutes(30)).unwrap(), "2012-12-12 18:30:00");
+        assert_display_eq(dt.duration_round(Duration::hours(1)).unwrap(), "2012-12-12 18:00:00");
+        assert_display_eq(dt.duration_round(Duration::days(1)).unwrap(), "2012-12-13 00:00:00");
     }
 
     #[test]
     fn test_duration_round_pre_epoch() {
         let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
-        assert_eq!(
-            dt.duration_round(Duration::minutes(10)).unwrap().to_string(),
-            "1969-12-12 12:10:00 UTC"
+        assert_display_eq(
+            dt.duration_round(Duration::minutes(10)).unwrap(),
+            "1969-12-12 12:10:00 UTC",
         );
     }
 
@@ -622,9 +602,9 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(
-            dt.duration_trunc(Duration::milliseconds(10)).unwrap().to_string(),
-            "2016-12-31 23:59:59.170 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::milliseconds(10)).unwrap(),
+            "2016-12-31 23:59:59.170 UTC",
         );
 
         // would round up
@@ -636,9 +616,9 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:20:00 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::minutes(5)).unwrap(),
+            "2012-12-12 18:20:00 UTC",
         );
         // would round down
         let dt = Utc
@@ -649,49 +629,46 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:20:00 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::minutes(5)).unwrap(),
+            "2012-12-12 18:20:00 UTC",
         );
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(10)).unwrap().to_string(),
-            "2012-12-12 18:20:00 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::minutes(10)).unwrap(),
+            "2012-12-12 18:20:00 UTC",
         );
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(30)).unwrap().to_string(),
-            "2012-12-12 18:00:00 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::minutes(30)).unwrap(),
+            "2012-12-12 18:00:00 UTC",
         );
-        assert_eq!(
-            dt.duration_trunc(Duration::hours(1)).unwrap().to_string(),
-            "2012-12-12 18:00:00 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::hours(1)).unwrap(),
+            "2012-12-12 18:00:00 UTC",
         );
-        assert_eq!(
-            dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
-            "2012-12-12 00:00:00 UTC"
-        );
+        assert_display_eq(dt.duration_trunc(Duration::days(1)).unwrap(), "2012-12-12 00:00:00 UTC");
 
         // timezone east
         let dt =
             FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
-        assert_eq!(
-            dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
-            "2020-10-27 00:00:00 +01:00"
+        assert_display_eq(
+            dt.duration_trunc(Duration::days(1)).unwrap(),
+            "2020-10-27 00:00:00 +01:00",
         );
-        assert_eq!(
-            dt.duration_trunc(Duration::weeks(1)).unwrap().to_string(),
-            "2020-10-22 00:00:00 +01:00"
+        assert_display_eq(
+            dt.duration_trunc(Duration::weeks(1)).unwrap(),
+            "2020-10-22 00:00:00 +01:00",
         );
 
         // timezone west
         let dt =
             FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
-        assert_eq!(
-            dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
-            "2020-10-27 00:00:00 -01:00"
+        assert_display_eq(
+            dt.duration_trunc(Duration::days(1)).unwrap(),
+            "2020-10-27 00:00:00 -01:00",
         );
-        assert_eq!(
-            dt.duration_trunc(Duration::weeks(1)).unwrap().to_string(),
-            "2020-10-22 00:00:00 -01:00"
+        assert_display_eq(
+            dt.duration_trunc(Duration::weeks(1)).unwrap(),
+            "2020-10-22 00:00:00 -01:00",
         );
     }
 
@@ -707,9 +684,9 @@ mod tests {
             .unwrap()
             .naive_utc();
 
-        assert_eq!(
-            dt.duration_trunc(Duration::milliseconds(10)).unwrap().to_string(),
-            "2016-12-31 23:59:59.170"
+        assert_display_eq(
+            dt.duration_trunc(Duration::milliseconds(10)).unwrap(),
+            "2016-12-31 23:59:59.170",
         );
 
         // would round up
@@ -722,10 +699,7 @@ mod tests {
             )
             .unwrap()
             .naive_utc();
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:20:00"
-        );
+        assert_display_eq(dt.duration_trunc(Duration::minutes(5)).unwrap(), "2012-12-12 18:20:00");
         // would round down
         let dt = Utc
             .from_local_datetime(
@@ -736,34 +710,19 @@ mod tests {
             )
             .unwrap()
             .naive_utc();
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(5)).unwrap().to_string(),
-            "2012-12-12 18:20:00"
-        );
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(10)).unwrap().to_string(),
-            "2012-12-12 18:20:00"
-        );
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(30)).unwrap().to_string(),
-            "2012-12-12 18:00:00"
-        );
-        assert_eq!(
-            dt.duration_trunc(Duration::hours(1)).unwrap().to_string(),
-            "2012-12-12 18:00:00"
-        );
-        assert_eq!(
-            dt.duration_trunc(Duration::days(1)).unwrap().to_string(),
-            "2012-12-12 00:00:00"
-        );
+        assert_display_eq(dt.duration_trunc(Duration::minutes(5)).unwrap(), "2012-12-12 18:20:00");
+        assert_display_eq(dt.duration_trunc(Duration::minutes(10)).unwrap(), "2012-12-12 18:20:00");
+        assert_display_eq(dt.duration_trunc(Duration::minutes(30)).unwrap(), "2012-12-12 18:00:00");
+        assert_display_eq(dt.duration_trunc(Duration::hours(1)).unwrap(), "2012-12-12 18:00:00");
+        assert_display_eq(dt.duration_trunc(Duration::days(1)).unwrap(), "2012-12-12 00:00:00");
     }
 
     #[test]
     fn test_duration_trunc_pre_epoch() {
         let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
-        assert_eq!(
-            dt.duration_trunc(Duration::minutes(10)).unwrap().to_string(),
-            "1969-12-12 12:10:00 UTC"
+        assert_display_eq(
+            dt.duration_trunc(Duration::minutes(10)).unwrap(),
+            "1969-12-12 12:10:00 UTC",
         );
     }
 

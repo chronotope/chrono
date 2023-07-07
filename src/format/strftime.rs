@@ -638,70 +638,67 @@ mod tests {
             .unwrap();
 
         // date specifiers
-        assert_eq!(dt.format("%Y").to_string(), "2001");
-        assert_eq!(dt.format("%C").to_string(), "20");
-        assert_eq!(dt.format("%y").to_string(), "01");
-        assert_eq!(dt.format("%m").to_string(), "07");
-        assert_eq!(dt.format("%b").to_string(), "Jul");
-        assert_eq!(dt.format("%B").to_string(), "July");
-        assert_eq!(dt.format("%h").to_string(), "Jul");
-        assert_eq!(dt.format("%d").to_string(), "08");
-        assert_eq!(dt.format("%e").to_string(), " 8");
-        assert_eq!(dt.format("%e").to_string(), dt.format("%_d").to_string());
-        assert_eq!(dt.format("%a").to_string(), "Sun");
-        assert_eq!(dt.format("%A").to_string(), "Sunday");
-        assert_eq!(dt.format("%w").to_string(), "0");
-        assert_eq!(dt.format("%u").to_string(), "7");
-        assert_eq!(dt.format("%U").to_string(), "27");
-        assert_eq!(dt.format("%W").to_string(), "27");
-        assert_eq!(dt.format("%G").to_string(), "2001");
-        assert_eq!(dt.format("%g").to_string(), "01");
-        assert_eq!(dt.format("%V").to_string(), "27");
-        assert_eq!(dt.format("%j").to_string(), "189");
-        assert_eq!(dt.format("%D").to_string(), "07/08/01");
-        assert_eq!(dt.format("%x").to_string(), "07/08/01");
-        assert_eq!(dt.format("%F").to_string(), "2001-07-08");
-        assert_eq!(dt.format("%v").to_string(), " 8-Jul-2001");
+        assert_display_eq(dt.format("%Y"), "2001");
+        assert_display_eq(dt.format("%C"), "20");
+        assert_display_eq(dt.format("%y"), "01");
+        assert_display_eq(dt.format("%m"), "07");
+        assert_display_eq(dt.format("%b"), "Jul");
+        assert_display_eq(dt.format("%B"), "July");
+        assert_display_eq(dt.format("%h"), "Jul");
+        assert_display_eq(dt.format("%d"), "08");
+        assert_display_eq(dt.format("%e"), " 8");
+        assert_display_eq(dt.format("%a"), "Sun");
+        assert_display_eq(dt.format("%A"), "Sunday");
+        assert_display_eq(dt.format("%w"), "0");
+        assert_display_eq(dt.format("%u"), "7");
+        assert_display_eq(dt.format("%U"), "27");
+        assert_display_eq(dt.format("%W"), "27");
+        assert_display_eq(dt.format("%G"), "2001");
+        assert_display_eq(dt.format("%g"), "01");
+        assert_display_eq(dt.format("%V"), "27");
+        assert_display_eq(dt.format("%j"), "189");
+        assert_display_eq(dt.format("%D"), "07/08/01");
+        assert_display_eq(dt.format("%x"), "07/08/01");
+        assert_display_eq(dt.format("%F"), "2001-07-08");
+        assert_display_eq(dt.format("%v"), " 8-Jul-2001");
 
         // time specifiers
-        assert_eq!(dt.format("%H").to_string(), "00");
-        assert_eq!(dt.format("%k").to_string(), " 0");
-        assert_eq!(dt.format("%k").to_string(), dt.format("%_H").to_string());
-        assert_eq!(dt.format("%I").to_string(), "12");
-        assert_eq!(dt.format("%l").to_string(), "12");
-        assert_eq!(dt.format("%l").to_string(), dt.format("%_I").to_string());
-        assert_eq!(dt.format("%P").to_string(), "am");
-        assert_eq!(dt.format("%p").to_string(), "AM");
-        assert_eq!(dt.format("%M").to_string(), "34");
-        assert_eq!(dt.format("%S").to_string(), "60");
-        assert_eq!(dt.format("%f").to_string(), "026490708");
-        assert_eq!(dt.format("%.f").to_string(), ".026490708");
-        assert_eq!(dt.with_nanosecond(1_026_490_000).unwrap().format("%.f").to_string(), ".026490");
-        assert_eq!(dt.format("%.3f").to_string(), ".026");
-        assert_eq!(dt.format("%.6f").to_string(), ".026490");
-        assert_eq!(dt.format("%.9f").to_string(), ".026490708");
-        assert_eq!(dt.format("%3f").to_string(), "026");
-        assert_eq!(dt.format("%6f").to_string(), "026490");
-        assert_eq!(dt.format("%9f").to_string(), "026490708");
-        assert_eq!(dt.format("%R").to_string(), "00:34");
-        assert_eq!(dt.format("%T").to_string(), "00:34:60");
-        assert_eq!(dt.format("%X").to_string(), "00:34:60");
-        assert_eq!(dt.format("%r").to_string(), "12:34:60 AM");
+        assert_display_eq(dt.format("%H"), "00");
+        assert_display_eq(dt.format("%k"), " 0");
+        assert_display_eq(dt.format("%I"), "12");
+        assert_display_eq(dt.format("%l"), "12");
+        assert_display_eq(dt.format("%P"), "am");
+        assert_display_eq(dt.format("%p"), "AM");
+        assert_display_eq(dt.format("%M"), "34");
+        assert_display_eq(dt.format("%S"), "60");
+        assert_display_eq(dt.format("%f"), "026490708");
+        assert_display_eq(dt.format("%.f"), ".026490708");
+        assert_display_eq(dt.with_nanosecond(1_026_490_000).unwrap().format("%.f"), ".026490");
+        assert_display_eq(dt.format("%.3f"), ".026");
+        assert_display_eq(dt.format("%.6f"), ".026490");
+        assert_display_eq(dt.format("%.9f"), ".026490708");
+        assert_display_eq(dt.format("%3f"), "026");
+        assert_display_eq(dt.format("%6f"), "026490");
+        assert_display_eq(dt.format("%9f"), "026490708");
+        assert_display_eq(dt.format("%R"), "00:34");
+        assert_display_eq(dt.format("%T"), "00:34:60");
+        assert_display_eq(dt.format("%X"), "00:34:60");
+        assert_display_eq(dt.format("%r"), "12:34:60 AM");
 
         // time zone specifiers
-        //assert_eq!(dt.format("%Z").to_string(), "ACST");
-        assert_eq!(dt.format("%z").to_string(), "+0930");
-        assert_eq!(dt.format("%:z").to_string(), "+09:30");
-        assert_eq!(dt.format("%::z").to_string(), "+09:30:00");
-        assert_eq!(dt.format("%:::z").to_string(), "+09");
+        //assert_display_eq(dt.format("%Z"), "ACST");
+        assert_display_eq(dt.format("%z"), "+0930");
+        assert_display_eq(dt.format("%:z"), "+09:30");
+        assert_display_eq(dt.format("%::z"), "+09:30:00");
+        assert_display_eq(dt.format("%:::z"), "+09");
 
         // date & time specifiers
-        assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
-        assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
+        assert_display_eq(dt.format("%c"), "Sun Jul  8 00:34:60 2001");
+        assert_display_eq(dt.format("%+"), "2001-07-08T00:34:60.026490708+09:30");
 
-        assert_eq!(
-            dt.with_timezone(&Utc).format("%+").to_string(),
-            "2001-07-07T15:04:60.026490708+00:00"
+        assert_display_eq(
+            dt.with_timezone(&Utc).format("%+"),
+            "2001-07-07T15:04:60.026490708+00:00",
         );
         assert_eq!(
             dt.with_timezone(&Utc),
@@ -716,22 +713,27 @@ mod tests {
             DateTime::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
         );
 
-        assert_eq!(
-            dt.with_nanosecond(1_026_490_000).unwrap().format("%+").to_string(),
-            "2001-07-08T00:34:60.026490+09:30"
+        assert_display_eq(
+            dt.with_nanosecond(1_026_490_000).unwrap().format("%+"),
+            "2001-07-08T00:34:60.026490+09:30",
         );
-        assert_eq!(dt.format("%s").to_string(), "994518299");
+        assert_display_eq(dt.format("%s"), "994518299");
+
+        // shorthands
+        assert_eq!(dt.format("%e").to_string(), dt.format("%_d").to_string());
+        assert_eq!(dt.format("%k").to_string(), dt.format("%_H").to_string());
+        assert_eq!(dt.format("%l").to_string(), dt.format("%_I").to_string());
 
         // special specifiers
-        assert_eq!(dt.format("%t").to_string(), "\t");
-        assert_eq!(dt.format("%n").to_string(), "\n");
-        assert_eq!(dt.format("%%").to_string(), "%");
+        assert_display_eq(dt.format("%t"), "\t");
+        assert_display_eq(dt.format("%n"), "\n");
+        assert_display_eq(dt.format("%%"), "%");
 
         // complex format specifiers
-        assert_eq!(dt.format("  %Y%d%m%%%%%t%H%M%S\t").to_string(), "  20010807%%\t003460\t");
-        assert_eq!(
-            dt.format("  %Y%d%m%%%%%t%H:%P:%M%S%:::z\t").to_string(),
-            "  20010807%%\t00:am:3460+09\t"
+        assert_display_eq(dt.format("  %Y%d%m%%%%%t%H%M%S\t"), "  20010807%%\t003460\t");
+        assert_display_eq(
+            dt.format("  %Y%d%m%%%%%t%H:%P:%M%S%:::z\t"),
+            "  20010807%%\t00:am:3460+09\t",
         );
     }
 
@@ -745,43 +747,42 @@ mod tests {
             .with_nanosecond(1_026_490_708)
             .unwrap();
 
-        // date specifiers
-        assert_eq!(dt.format_localized("%b", Locale::fr_BE).to_string(), "jui");
-        assert_eq!(dt.format_localized("%B", Locale::fr_BE).to_string(), "juillet");
-        assert_eq!(dt.format_localized("%h", Locale::fr_BE).to_string(), "jui");
-        assert_eq!(dt.format_localized("%a", Locale::fr_BE).to_string(), "dim");
-        assert_eq!(dt.format_localized("%A", Locale::fr_BE).to_string(), "dimanche");
-        assert_eq!(dt.format_localized("%D", Locale::fr_BE).to_string(), "07/08/01");
-        assert_eq!(dt.format_localized("%x", Locale::fr_BE).to_string(), "08/07/01");
-        assert_eq!(dt.format_localized("%F", Locale::fr_BE).to_string(), "2001-07-08");
-        assert_eq!(dt.format_localized("%v", Locale::fr_BE).to_string(), " 8-jui-2001");
+        assert_display_eq(dt.format_localized("%b", Locale::fr_BE), "jui");
+        assert_display_eq(dt.format_localized("%B", Locale::fr_BE), "juillet");
+        assert_display_eq(dt.format_localized("%h", Locale::fr_BE), "jui");
+        assert_display_eq(dt.format_localized("%a", Locale::fr_BE), "dim");
+        assert_display_eq(dt.format_localized("%A", Locale::fr_BE), "dimanche");
+        assert_display_eq(dt.format_localized("%D", Locale::fr_BE), "07/08/01");
+        assert_display_eq(dt.format_localized("%x", Locale::fr_BE), "08/07/01");
+        assert_display_eq(dt.format_localized("%F", Locale::fr_BE), "2001-07-08");
+        assert_display_eq(dt.format_localized("%v", Locale::fr_BE), " 8-jui-2001");
 
         // time specifiers
-        assert_eq!(dt.format_localized("%P", Locale::fr_BE).to_string(), "");
-        assert_eq!(dt.format_localized("%p", Locale::fr_BE).to_string(), "");
-        assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34");
-        assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60");
-        assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60");
-        assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "00:34:60");
+        assert_display_eq(dt.format_localized("%P", Locale::fr_BE), "");
+        assert_display_eq(dt.format_localized("%p", Locale::fr_BE), "");
+        assert_display_eq(dt.format_localized("%R", Locale::fr_BE), "00:34");
+        assert_display_eq(dt.format_localized("%T", Locale::fr_BE), "00:34:60");
+        assert_display_eq(dt.format_localized("%X", Locale::fr_BE), "00:34:60");
+        assert_display_eq(dt.format_localized("%r", Locale::fr_BE), "00:34:60");
 
         // date & time specifiers
-        assert_eq!(
-            dt.format_localized("%c", Locale::fr_BE).to_string(),
-            "dim 08 jui 2001 00:34:60 +09:30"
+        assert_display_eq(
+            dt.format_localized("%c", Locale::fr_BE),
+            "dim 08 jui 2001 00:34:60 +09:30",
         );
 
         let nd = NaiveDate::from_ymd_opt(2001, 7, 8).unwrap();
 
         // date specifiers
-        assert_eq!(nd.format_localized("%b", Locale::de_DE).to_string(), "Jul");
-        assert_eq!(nd.format_localized("%B", Locale::de_DE).to_string(), "Juli");
-        assert_eq!(nd.format_localized("%h", Locale::de_DE).to_string(), "Jul");
-        assert_eq!(nd.format_localized("%a", Locale::de_DE).to_string(), "So");
-        assert_eq!(nd.format_localized("%A", Locale::de_DE).to_string(), "Sonntag");
-        assert_eq!(nd.format_localized("%D", Locale::de_DE).to_string(), "07/08/01");
-        assert_eq!(nd.format_localized("%x", Locale::de_DE).to_string(), "08.07.2001");
-        assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
-        assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
+        assert_display_eq(nd.format_localized("%b", Locale::de_DE), "Jul");
+        assert_display_eq(nd.format_localized("%B", Locale::de_DE), "Juli");
+        assert_display_eq(nd.format_localized("%h", Locale::de_DE), "Jul");
+        assert_display_eq(nd.format_localized("%a", Locale::de_DE), "So");
+        assert_display_eq(nd.format_localized("%A", Locale::de_DE), "Sonntag");
+        assert_display_eq(nd.format_localized("%D", Locale::de_DE), "07/08/01");
+        assert_display_eq(nd.format_localized("%x", Locale::de_DE), "08.07.2001");
+        assert_display_eq(nd.format_localized("%F", Locale::de_DE), "2001-07-08");
+        assert_display_eq(nd.format_localized("%v", Locale::de_DE), " 8-Jul-2001");
     }
 
     /// Ensure parsing a timestamp with the parse-only stftime formatter "%#z" does
@@ -820,25 +821,26 @@ mod tests {
             .unwrap();
 
         // date specifiers
-        assert_eq!(dt.format_localized("%b", Locale::ko_KR).to_string(), " 7월");
-        assert_eq!(dt.format_localized("%B", Locale::ko_KR).to_string(), "7월");
-        assert_eq!(dt.format_localized("%h", Locale::ko_KR).to_string(), " 7월");
-        assert_eq!(dt.format_localized("%a", Locale::ko_KR).to_string(), "일");
-        assert_eq!(dt.format_localized("%A", Locale::ko_KR).to_string(), "일요일");
-        assert_eq!(dt.format_localized("%D", Locale::ko_KR).to_string(), "07/08/01");
-        assert_eq!(dt.format_localized("%x", Locale::ko_KR).to_string(), "2001년 07월 08일");
-        assert_eq!(dt.format_localized("%F", Locale::ko_KR).to_string(), "2001-07-08");
-        assert_eq!(dt.format_localized("%v", Locale::ko_KR).to_string(), " 8- 7월-2001");
-        assert_eq!(dt.format_localized("%r", Locale::ko_KR).to_string(), "오전 12시 34분 60초");
+        assert_display_eq(dt.format_localized("%b", Locale::ko_KR), " 7월");
+        assert_display_eq(dt.format_localized("%B", Locale::ko_KR), "7월");
+        assert_display_eq(dt.format_localized("%h", Locale::ko_KR), " 7월");
+        assert_display_eq(dt.format_localized("%a", Locale::ko_KR), "일");
+        assert_display_eq(dt.format_localized("%A", Locale::ko_KR), "일요일");
+        assert_display_eq(dt.format_localized("%D", Locale::ko_KR), "07/08/01");
+        assert_display_eq(dt.format_localized("%x", Locale::ko_KR), "2001년 07월 08일");
+        assert_display_eq(dt.format_localized("%F", Locale::ko_KR), "2001-07-08");
+        assert_display_eq(dt.format_localized("%v", Locale::ko_KR), " 8- 7월-2001");
+        assert_display_eq(dt.format_localized("%r", Locale::ko_KR), "오전 12시 34분 60초");
 
         // date & time specifiers
-        assert_eq!(
-            dt.format_localized("%c", Locale::ko_KR).to_string(),
-            "2001년 07월 08일 (일) 오전 12시 34분 60초"
+        assert_display_eq(
+            dt.format_localized("%c", Locale::ko_KR),
+            "2001년 07월 08일 (일) 오전 12시 34분 60초",
         );
     }
 
     #[test]
+    // formatting requires allocations
     #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
     fn test_strftime_localized_japanese() {
         let dt = FixedOffset::east_opt(34200)
@@ -849,22 +851,19 @@ mod tests {
             .unwrap();
 
         // date specifiers
-        assert_eq!(dt.format_localized("%b", Locale::ja_JP).to_string(), " 7月");
-        assert_eq!(dt.format_localized("%B", Locale::ja_JP).to_string(), "7月");
-        assert_eq!(dt.format_localized("%h", Locale::ja_JP).to_string(), " 7月");
-        assert_eq!(dt.format_localized("%a", Locale::ja_JP).to_string(), "日");
-        assert_eq!(dt.format_localized("%A", Locale::ja_JP).to_string(), "日曜日");
-        assert_eq!(dt.format_localized("%D", Locale::ja_JP).to_string(), "07/08/01");
-        assert_eq!(dt.format_localized("%x", Locale::ja_JP).to_string(), "2001年07月08日");
-        assert_eq!(dt.format_localized("%F", Locale::ja_JP).to_string(), "2001-07-08");
-        assert_eq!(dt.format_localized("%v", Locale::ja_JP).to_string(), " 8- 7月-2001");
-        assert_eq!(dt.format_localized("%r", Locale::ja_JP).to_string(), "午前12時34分60秒");
+        assert_display_eq(dt.format_localized("%b", Locale::ja_JP), " 7月");
+        assert_display_eq(dt.format_localized("%B", Locale::ja_JP), "7月");
+        assert_display_eq(dt.format_localized("%h", Locale::ja_JP), " 7月");
+        assert_display_eq(dt.format_localized("%a", Locale::ja_JP), "日");
+        assert_display_eq(dt.format_localized("%A", Locale::ja_JP), "日曜日");
+        assert_display_eq(dt.format_localized("%D", Locale::ja_JP), "07/08/01");
+        assert_display_eq(dt.format_localized("%x", Locale::ja_JP), "2001年07月08日");
+        assert_display_eq(dt.format_localized("%F", Locale::ja_JP), "2001-07-08");
+        assert_display_eq(dt.format_localized("%v", Locale::ja_JP), " 8- 7月-2001");
+        assert_display_eq(dt.format_localized("%r", Locale::ja_JP), "午前12時34分60秒");
 
         // date & time specifiers
-        assert_eq!(
-            dt.format_localized("%c", Locale::ja_JP).to_string(),
-            "2001年07月08日 00時34分60秒"
-        );
+        assert_display_eq(dt.format_localized("%c", Locale::ja_JP), "2001年07月08日 00時34分60秒");
     }
 
     #[test]

@@ -491,8 +491,11 @@ mod tests {
     #[cfg(feature = "std")]
     use super::OutOfRangeError;
     use super::{Duration, MAX, MIN};
+    use crate::utils::{assert_display_eq, WriteCompare};
     #[cfg(feature = "std")]
     use std::time::Duration as StdDuration;
+
+    use core::fmt::Write;
 
     #[test]
     fn test_duration() {
@@ -697,22 +700,20 @@ mod tests {
 
     #[test]
     fn test_duration_fmt() {
-        assert_eq!(Duration::zero().to_string(), "PT0S");
-        assert_eq!(Duration::days(42).to_string(), "P42D");
-        assert_eq!(Duration::days(-42).to_string(), "-P42D");
-        assert_eq!(Duration::seconds(42).to_string(), "PT42S");
-        assert_eq!(Duration::milliseconds(42).to_string(), "PT0.042S");
-        assert_eq!(Duration::microseconds(42).to_string(), "PT0.000042S");
-        assert_eq!(Duration::nanoseconds(42).to_string(), "PT0.000000042S");
-        assert_eq!((Duration::days(7) + Duration::milliseconds(6543)).to_string(), "P7DT6.543S");
-        assert_eq!(Duration::seconds(-86401).to_string(), "-P1DT1S");
-        assert_eq!(Duration::nanoseconds(-1).to_string(), "-PT0.000000001S");
+        assert_display_eq(Duration::zero(), "PT0S");
+        assert_display_eq(Duration::days(42), "P42D");
+        assert_display_eq(Duration::days(-42), "-P42D");
+        assert_display_eq(Duration::seconds(42), "PT42S");
+        assert_display_eq(Duration::milliseconds(42), "PT0.042S");
+        assert_display_eq(Duration::microseconds(42), "PT0.000042S");
+        assert_display_eq(Duration::nanoseconds(42), "PT0.000000042S");
+        assert_display_eq(Duration::days(7) + Duration::milliseconds(6543), "P7DT6.543S");
+        assert_display_eq(Duration::seconds(-86401), "-P1DT1S");
+        assert_display_eq(Duration::nanoseconds(-1), "-PT0.000000001S");
 
         // the format specifier should have no effect on `Duration`
-        assert_eq!(
-            format!("{:30}", Duration::days(1) + Duration::milliseconds(2345)),
-            "P1DT2.345S"
-        );
+        let d = Duration::days(1) + Duration::milliseconds(2345);
+        write!(&mut WriteCompare::new("P1DT2.345S"), "{:30}", d).unwrap();
     }
 
     #[test]

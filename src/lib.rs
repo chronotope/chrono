@@ -483,6 +483,8 @@ pub use month::{Month, Months, ParseMonthError};
 mod traits;
 pub use traits::{Datelike, Timelike};
 
+mod utils;
+
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]
 pub use naive::__BenchYearFlags;

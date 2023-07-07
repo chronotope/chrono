@@ -1,5 +1,6 @@
 use super::NaiveDateTime;
 use crate::oldtime::Duration;
+use crate::utils::assert_display_eq;
 use crate::NaiveDate;
 use crate::{Datelike, FixedOffset, Utc};
 
@@ -19,8 +20,7 @@ fn test_datetime_from_timestamp_millis() {
     for (timestamp_millis, _formatted) in valid_map.iter().copied() {
         let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
         assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
-        #[cfg(any(feature = "alloc", feature = "std"))]
-        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
+        assert_display_eq(naive_datetime.unwrap().format("%F %T%.9f"), _formatted);
     }
 
     let invalid = [i64::MAX, i64::MIN];
@@ -57,8 +57,7 @@ fn test_datetime_from_timestamp_micros() {
     for (timestamp_micros, _formatted) in valid_map.iter().copied() {
         let naive_datetime = NaiveDateTime::from_timestamp_micros(timestamp_micros);
         assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
-        #[cfg(any(feature = "alloc", feature = "std"))]
-        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
+        assert_display_eq(naive_datetime.unwrap().format("%F %T%.9f"), _formatted);
     }
 
     let invalid = [i64::MAX, i64::MIN];
@@ -314,15 +313,15 @@ fn test_datetime_parse_from_str() {
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_format() {
     let dt = NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
-    assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
-    assert_eq!(dt.format("%s").to_string(), "1283929614");
-    assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+    assert_display_eq(dt.format("%c"), "Wed Sep  8 07:06:54 2010");
+    assert_display_eq(dt.format("%s"), "1283929614");
+    assert_display_eq(dt.format("%t%n%%%n%t"), "\t\n%\n\t");
 
     // a horror of leap second: coming near to you.
     let dt =
         NaiveDate::from_ymd_opt(2012, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
-    assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
-    assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
+    assert_display_eq(dt.format("%c"), "Sat Jun 30 23:59:60 2012");
+    assert_display_eq(dt.format("%s"), "1341100799"); // not 1341100800, it's intentional.
 }
 
 #[test]

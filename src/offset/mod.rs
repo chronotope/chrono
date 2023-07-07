@@ -503,25 +503,26 @@ pub trait TimeZone: Sized + Clone {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::assert_display_eq;
 
     #[test]
     fn test_negative_millis() {
         let dt = Utc.timestamp_millis_opt(-1000).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:59 UTC");
         let dt = Utc.timestamp_millis_opt(-7000).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:53 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:53 UTC");
         let dt = Utc.timestamp_millis_opt(-7001).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:52.999 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:52.999 UTC");
         let dt = Utc.timestamp_millis_opt(-7003).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:52.997 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:52.997 UTC");
         let dt = Utc.timestamp_millis_opt(-999).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:59.001 UTC");
         let dt = Utc.timestamp_millis_opt(-1).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:59.999 UTC");
         let dt = Utc.timestamp_millis_opt(-60000).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:00 UTC");
         let dt = Utc.timestamp_millis_opt(-3600000).unwrap();
-        assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
+        assert_display_eq(dt, "1969-12-31 23:00:00 UTC");
 
         for (millis, expected) in &[
             (-7000, "1969-12-31 23:59:53 UTC"),
@@ -530,7 +531,7 @@ mod tests {
         ] {
             match Utc.timestamp_millis_opt(*millis) {
                 LocalResult::Single(dt) => {
-                    assert_eq!(dt.to_string(), *expected);
+                    assert_display_eq(dt, expected);
                 }
                 e => panic!("Got {:?} instead of an okay answer", e),
             }
@@ -540,15 +541,15 @@ mod tests {
     #[test]
     fn test_negative_nanos() {
         let dt = Utc.timestamp_nanos(-1_000_000_000);
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:59 UTC");
         let dt = Utc.timestamp_nanos(-999_999_999);
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.000000001 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:59.000000001 UTC");
         let dt = Utc.timestamp_nanos(-1);
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999999999 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:59.999999999 UTC");
         let dt = Utc.timestamp_nanos(-60_000_000_000);
-        assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
+        assert_display_eq(dt, "1969-12-31 23:59:00 UTC");
         let dt = Utc.timestamp_nanos(-3_600_000_000_000);
-        assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
+        assert_display_eq(dt, "1969-12-31 23:00:00 UTC");
     }
 
     #[test]
