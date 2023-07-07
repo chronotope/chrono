@@ -400,7 +400,9 @@ extern crate time as oldtime;
 #[cfg(not(feature = "oldtime"))]
 mod oldtime;
 // this reexport is to aid the transition and should not be in the prelude!
-pub use oldtime::{Duration, OutOfRangeError};
+pub use oldtime::Duration;
+#[cfg(feature = "std")]
+pub use oldtime::OutOfRangeError;
 
 use core::fmt;
 
