@@ -474,7 +474,7 @@ pub trait TimeZone: Sized + Clone {
     #[allow(clippy::wrong_self_convention)]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
         self.offset_from_local_datetime(local)
-            .map(|offset| DateTime::from_utc(*local - offset.fix(), offset))
+            .map(|offset| DateTime::from_naive_utc_and_offset(*local - offset.fix(), offset))
     }
 
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
@@ -496,7 +496,7 @@ pub trait TimeZone: Sized + Clone {
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     #[allow(clippy::wrong_self_convention)]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
-        DateTime::from_utc(*utc, self.offset_from_utc_datetime(utc))
+        DateTime::from_naive_utc_and_offset(*utc, self.offset_from_utc_datetime(utc))
     }
 }
 
