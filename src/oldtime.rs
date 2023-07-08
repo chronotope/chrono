@@ -688,13 +688,9 @@ mod tests {
         let sum_2: Duration = duration_list_2.iter().sum();
         assert_eq!(sum_2, Duration::seconds(17));
 
-        let duration_vec = vec![
-            Duration::zero(),
-            Duration::seconds(1),
-            Duration::seconds(6),
-            Duration::seconds(10),
-        ];
-        let sum_3: Duration = duration_vec.into_iter().sum();
+        let duration_arr =
+            [Duration::zero(), Duration::seconds(1), Duration::seconds(6), Duration::seconds(10)];
+        let sum_3: Duration = duration_arr.into_iter().sum();
         assert_eq!(sum_3, Duration::seconds(17));
     }
 
