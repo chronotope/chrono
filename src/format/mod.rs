@@ -362,6 +362,68 @@ const fn internal_fixed(val: InternalInternal) -> Item<'static> {
 }
 
 impl<'a> Item<'a> {
+    /// Check if the `Item` can be used if type to be formatted has a `date`, `time` and/or
+    /// `offset` available.
+    ///
+    /// Returns either `Ok(())` or `Err(BAD_FORMAT)`.
+    pub(crate) const fn check_fields(
+        &self,
+        date: bool,
+        time: bool,
+        offset: bool,
+    ) -> Result<(), ParseError> {
+        use InternalInternal::*;
+        match (self, date, time, offset) {
+            (Item::Literal(_), _, _, _)
+            | (Item::Space(_), _, _, _)
+            | (Item::Numeric(Numeric::Year, _), true, _, _)
+            | (Item::Numeric(Numeric::YearDiv100, _), true, _, _)
+            | (Item::Numeric(Numeric::YearMod100, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoYear, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoYearDiv100, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoYearMod100, _), true, _, _)
+            | (Item::Numeric(Numeric::Month, _), true, _, _)
+            | (Item::Numeric(Numeric::Day, _), true, _, _)
+            | (Item::Numeric(Numeric::WeekFromSun, _), true, _, _)
+            | (Item::Numeric(Numeric::WeekFromMon, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoWeek, _), true, _, _)
+            | (Item::Numeric(Numeric::NumDaysFromSun, _), true, _, _)
+            | (Item::Numeric(Numeric::WeekdayFromMon, _), true, _, _)
+            | (Item::Numeric(Numeric::Ordinal, _), true, _, _)
+            | (Item::Numeric(Numeric::Hour, _), _, true, _)
+            | (Item::Numeric(Numeric::Hour12, _), _, true, _)
+            | (Item::Numeric(Numeric::Minute, _), _, true, _)
+            | (Item::Numeric(Numeric::Second, _), _, true, _)
+            | (Item::Numeric(Numeric::Nanosecond, _), _, true, _)
+            | (Item::Numeric(Numeric::Timestamp, _), true, true, _)
+            | (Item::Fixed(Fixed::ShortMonthName), true, _, _)
+            | (Item::Fixed(Fixed::LongMonthName), true, _, _)
+            | (Item::Fixed(Fixed::ShortWeekdayName), true, _, _)
+            | (Item::Fixed(Fixed::LongWeekdayName), true, _, _)
+            | (Item::Fixed(Fixed::LowerAmPm), true, _, _)
+            | (Item::Fixed(Fixed::UpperAmPm), true, _, _)
+            | (Item::Fixed(Fixed::Nanosecond), _, true, _)
+            | (Item::Fixed(Fixed::Nanosecond3), _, true, _)
+            | (Item::Fixed(Fixed::Nanosecond6), _, true, _)
+            | (Item::Fixed(Fixed::Nanosecond9), _, true, _)
+            | (Item::Fixed(Fixed::Internal(InternalFixed { val: Nanosecond3NoDot })), _, true, _)
+            | (Item::Fixed(Fixed::Internal(InternalFixed { val: Nanosecond6NoDot })), _, true, _)
+            | (Item::Fixed(Fixed::Internal(InternalFixed { val: Nanosecond9NoDot })), _, true, _)
+            | (Item::Fixed(Fixed::TimezoneName), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetColon), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetDoubleColon), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetTripleColon), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetColonZ), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffset), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetZ), _, _, true)
+            | (Item::Fixed(Fixed::RFC2822), true, true, true)
+            | (Item::Fixed(Fixed::RFC3339), true, true, true) => Ok(()),
+            #[cfg(any(feature = "alloc", feature = "std"))]
+            (Item::OwnedLiteral(_), _, _, _) | (Item::OwnedSpace(_), _, _, _) => Ok(()),
+            _ => Err(BAD_FORMAT),
+        }
+    }
+
     /// Convert items that contain a reference to the format string into an owned variant.
     #[cfg(any(feature = "alloc", feature = "std"))]
     pub fn to_owned(self) -> Item<'static> {
