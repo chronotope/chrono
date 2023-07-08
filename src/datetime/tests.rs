@@ -1148,26 +1148,10 @@ fn test_datetime_format_with_local() {
 }
 
 #[test]
-#[cfg(feature = "clock")]
-fn test_datetime_is_copy() {
-    // UTC is known to be `Copy`.
-    let a = Utc::now();
-    let b = a;
-    assert_eq!(a, b);
-}
-
-#[test]
-#[cfg(feature = "clock")]
-fn test_datetime_is_send() {
-    use std::thread;
-
-    // UTC is known to be `Send`.
-    let a = Utc::now();
-    thread::spawn(move || {
-        let _ = a;
-    })
-    .join()
-    .unwrap();
+fn test_datetime_is_send_and_copy() {
+    fn _assert_send_copy<T: Send + Copy>() {}
+    // UTC is known to be `Send + Copy`.
+    _assert_send_copy::<DateTime<Utc>>();
 }
 
 #[test]
