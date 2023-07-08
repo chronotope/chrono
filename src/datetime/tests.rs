@@ -814,7 +814,6 @@ fn test_parse_datetime_utc() {
         "+82701-05-6T15:9:60.898989898989Z",
     ];
     for &s in &valid {
-        eprintln!("test_parse_datetime_utc valid {:?}", s);
         let d = match s.parse::<DateTime<Utc>>() {
             Ok(d) => d,
             Err(e) => panic!("parsing `{}` has failed: {}", s, e),
@@ -829,8 +828,7 @@ fn test_parse_datetime_utc() {
         };
         assert!(
             d == d_,
-            "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match",
+            "`{}` is parsed into `{:?}`, but reparsed result `{:?}` does not match",
             s,
             d,
             d_
