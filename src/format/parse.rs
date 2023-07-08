@@ -1644,8 +1644,8 @@ mod tests {
 
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
-            eprintln!("Test input: {:?}", date);
-            eprintln!("    Expect: {:?}", checkdate);
+            #[cfg(feature = "std")]
+            eprintln!("Test input: {:?}\n    Expect: {:?}", date, checkdate);
             let dt = rfc2822_to_datetime(date); // parse a date
             if dt != checkdate {
                 // check for expected result

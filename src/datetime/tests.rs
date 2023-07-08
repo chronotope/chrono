@@ -837,8 +837,7 @@ fn test_parse_datetime_utc() {
         };
         assert!(
             d == d_,
-            "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match",
+            "`{}` is parsed into `{:?}`, but reparsed result `{:?}` does not match",
             s,
             d,
             d_
