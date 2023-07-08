@@ -257,7 +257,7 @@ mod tests {
     use super::FixedOffset;
     use crate::offset::TimeZone;
     use crate::utils::assert_debug_eq;
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     #[test]
     fn test_date_extreme_offset() {
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_offset() {
+    fn test_offset_from_str() {
         let offset = FixedOffset::from_str("-0500").unwrap();
         assert_eq!(offset.local_minus_utc, -5 * 3600);
         let offset = FixedOffset::from_str("-08:00").unwrap();
