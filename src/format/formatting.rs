@@ -93,6 +93,50 @@ where
         Ok(())
     }
 
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn format_with_parameters(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Justify/pad/truncate the formatted result by rendering it to a temporary `String`
+        // first.
+        let mut result = String::new();
+        self.format(&mut result)?;
+        f.pad(&result)
+    }
+
+    #[cfg(not(any(feature = "alloc", feature = "std")))]
+    fn format_with_parameters(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // We have to replicate the `fmt::Formatter:pad` method without allocating.
+        let mut counter = CountingSink::new();
+        self.format(&mut counter)?;
+        let chars_count = counter.chars_written();
+
+        if let Some(max_width) = f.precision() {
+            if chars_count > max_width {
+                let mut truncating_writer = TruncatingWriter::new(f, max_width);
+                return self.format(&mut truncating_writer);
+            }
+        }
+        if let Some(min_width) = f.width() {
+            if chars_count < min_width {
+                let padding = min_width - chars_count;
+                let (before, after) = match f.align().unwrap_or(fmt::Alignment::Left) {
+                    fmt::Alignment::Left => (0, padding),
+                    fmt::Alignment::Right => (padding, 0),
+                    fmt::Alignment::Center => (padding / 2, (padding + 1) / 2),
+                };
+                let fill = f.fill();
+                for _ in 0..before {
+                    f.write_char(fill)?;
+                }
+                self.format(f)?;
+                for _ in 0..after {
+                    f.write_char(fill)?;
+                }
+                return Ok(());
+            }
+        }
+        self.format(f)
+    }
+
     fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
         use self::Numeric::*;
 
@@ -304,17 +348,11 @@ where
     Off: Offset + Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        #[cfg(any(feature = "alloc", feature = "std"))]
         if f.width().is_some() || f.precision().is_some() {
-            // Justify/pad/truncate the formatted result by rendering it to a temporary `String`
-            // first.
-            // We skip this step if there are no 'external' formatting specifiers.
-            // This is the only formatting functionality that is missing without `alloc`.
-            let mut result = String::new();
-            self.format(&mut result)?;
-            return f.pad(&result);
+            self.format_with_parameters(f)
+        } else {
+            self.format(f)
         }
-        self.format(f)
     }
 }
 
@@ -650,6 +688,61 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
     let ones = b'0' + n % 10;
     w.write_char(tens as char)?;
     w.write_char(ones as char)
+}
+
+/// Sink that counts the number of bytes written to it.
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+struct CountingSink {
+    written: usize,
+}
+
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+impl CountingSink {
+    fn new() -> Self {
+        Self { written: 0 }
+    }
+
+    fn chars_written(&self) -> usize {
+        self.written
+    }
+}
+
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+impl Write for CountingSink {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.written = self.written.checked_add(s.chars().count()).ok_or(fmt::Error)?;
+        Ok(())
+    }
+}
+
+// `Write` adaptor that only emits up to `max` characters.
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+struct TruncatingWriter<'a, 'b> {
+    formatter: &'a mut fmt::Formatter<'b>,
+    chars_remaining: usize,
+}
+
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+impl<'a, 'b> TruncatingWriter<'a, 'b> {
+    fn new(formatter: &'a mut fmt::Formatter<'b>, max: usize) -> Self {
+        Self { formatter, chars_remaining: max }
+    }
+}
+
+#[cfg(not(any(feature = "alloc", feature = "std")))]
+impl<'a, 'b> Write for TruncatingWriter<'a, 'b> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let max = self.chars_remaining;
+        let char_count = s.chars().count();
+        let (s, count) = if char_count <= max {
+            (s, char_count)
+        } else {
+            let (i, _) = s.char_indices().nth(max).unwrap();
+            (&s[..i], max)
+        };
+        self.chars_remaining -= count;
+        self.formatter.write_str(s)
+    }
 }
 
 #[cfg(test)]
