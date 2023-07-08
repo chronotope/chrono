@@ -170,6 +170,22 @@ fn bench_parse_strftime_localized(c: &mut Criterion) {
     });
 }
 
+fn bench_format_to_string(c: &mut Criterion) {
+    let dt = Local::now();
+    c.bench_function("bench_format_to_string", |b| {
+        b.iter(|| black_box(dt).format_to_string("%Y-%m-%dT%H:%M:%S%.f%:z"))
+    });
+}
+
+fn bench_format_with(c: &mut Criterion) {
+    let dt = Local::now();
+    let fmt_items: Vec<_> = StrftimeItems::new("%Y-%m-%dT%H:%M:%S%.f%:z").collect();
+    let formatter = DateTime::formatter(&fmt_items).unwrap();
+    c.bench_function("bench_format_with", |b| {
+        b.iter(|| format!("{}", black_box(dt).format_with(&formatter)))
+    });
+}
+
 fn bench_format(c: &mut Criterion) {
     let dt = Local::now();
     c.bench_function("bench_format", |b| {
@@ -235,6 +251,8 @@ criterion_group!(
     bench_get_local_time,
     bench_parse_strftime,
     bench_format,
+    bench_format_to_string,
+    bench_format_with,
     bench_format_with_items,
     bench_format_manual,
     bench_naivedate_add_signed,
