@@ -5,6 +5,7 @@
 [![Chrono on crates.io][cratesio-image]][cratesio]
 [![Chrono on docs.rs][docsrs-image]][docsrs]
 [![Join the chat at https://gitter.im/chrono-rs/chrono][gitter-image]][gitter]
+[![codecov.io][codecov-img]][codecov-link]
 
 [gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg
 [gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
@@ -14,6 +15,8 @@
 [docsrs]: https://docs.rs/chrono
 [gitter-image]: https://badges.gitter.im/chrono-rs/chrono.svg
 [gitter]: https://gitter.im/chrono-rs/chrono
+[codecov-img]: https://img.shields.io/codecov/c/github/chronotope/chrono?logo=codecov
+[codecov-link]: https://codecov.io/gh/chronotope/chrono
 
 Chrono aims to provide all functionality needed to do correct operations on dates and times in the
 [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
