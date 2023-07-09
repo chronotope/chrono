@@ -1,0 +1,103 @@
+name: grcov
+on:
+  push:
+    branches: [main, 0.4.x]
+  pull_request:
+jobs:
+  # Run code coverage with rust "stable" then upload code coverage result to
+  # codecov.io
+  # Help from:
+  # - https://github.com/marketplace/actions/rust-grcov
+  # - https://eipi.xyz/blog/rust-code-coverage-with-github-workflows/
+  # - https://github.com/mozilla/grcov/blob/v0.8.18/README.md#example-how-to-generate-gcda-files-for-a-rust-project
+  # - https://github.com/mozilla/grcov/blob/v0.8.18/README.md#lcov-output
+  job_grcov:
+    name: grcov
+    runs-on: ubuntu-latest
+    steps:
+      - name: git checkout
+        uses: actions/checkout@v3
+      - name: get toolchain stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: cargo install
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: -- rustfilt grcov
+      - name: cargo build with special profiling
+        uses: actions-rs/cargo@v1
+        env:
+          CARGO_INCREMENTAL: 0
+          RUSTC_BOOTSTRAP: 1
+          RUSTDOCFLAGS: -Cpanic=abort
+          RUSTFLAGS: -Zprofile
+                     -Ccodegen-units=1
+                     -Copt-level=0
+                     -Clink-dead-code
+                     -Coverflow-checks=off
+                     -Zpanic_abort_tests
+                     -Cpanic=abort
+        with:
+          command: build
+      - name: cargo test with special profiling
+        uses: actions-rs/cargo@v1
+        env:
+          CARGO_INCREMENTAL: 0
+          RUSTC_BOOTSTRAP: 1
+          RUSTDOCFLAGS: -Cpanic=abort
+          RUSTFLAGS: -Zprofile
+                     -Ccodegen-units=1
+                     -Copt-level=0
+                     -Clink-dead-code
+                     -Coverflow-checks=off
+                     -Zpanic_abort_tests
+                     -Cpanic=abort
+        with:
+          command: test
+          args: --no-fail-fast --all-targets
+      - name: grcov
+        shell: bash
+        env:
+          CARGO_INCREMENTAL: 0
+          RUSTC_BOOTSTRAP: 1
+          RUSTDOCFLAGS: -Cpanic=abort
+          RUSTFLAGS: -Zprofile
+                     -Ccodegen-units=1
+                     -Copt-level=0
+                     -Clink-dead-code
+                     -Coverflow-checks=off
+                     -Zpanic_abort_tests
+                     -Cpanic=abort
+        run: |
+          set -eux
+          grcov --version
+          grcov \
+              . \
+              --source-dir ./src \
+              --log-level DEBUG \
+              --llvm \
+              --binary-path ./target/debug/ \
+              --branch \
+              --ignore-not-existing \
+              --output-type lcov \
+              --output-path lcov.info
+          # print output for manual sanity check of lcov.info file
+          ls -l
+          head lcov.info
+      # action from https://github.com/codecov/codecov-action
+      - name: upload codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: lcov.info
+          verbose: true
+          fail_ci_if_error: true
+          # public repository does not need secret section `with: token`
+          # see
+          # https://about.codecov.io/blog/javascript-code-coverage-using-github-actions-and-codecov/
+          #
+          # list of acceptable formats:
+          # https://docs.codecov.com/docs/supported-report-formats
