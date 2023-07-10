@@ -2186,7 +2186,9 @@ where
     assert_eq!(from_str(r#""2016-7-8""#).ok(), Some(NaiveDate::from_ymd_opt(2016, 7, 8).unwrap()));
     assert_eq!(from_str(r#""+002016-07-08""#).ok(), NaiveDate::from_ymd_opt(2016, 7, 8));
     assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()));
-    assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()));
+    assert_eq!(from_str(r#""+0-1-1""#).ok(), Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()));
+    assert_eq!(from_str(r#""-0-1-1""#).ok(), Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()));
+    assert_eq!(from_str(r#""0000-1-1""#).ok(), Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap()));
     assert_eq!(
         from_str(r#""-0001-12-31""#).ok(),
         Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap())
@@ -2927,8 +2929,11 @@ mod tests {
             "-12345-1-2",
             "-1234-12-31",
             "-7-6-5",
-            "350-2-28",
-            "360-02-29",
+            "+350-2-28",
+            "-350-2-28",
+            "0350-2-28",
+            "+360-02-29",
+            "-360-02-29",
             "0360-02-29",
             "2015-2-18",
             "2015-02-18",

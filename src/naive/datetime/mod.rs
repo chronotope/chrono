@@ -1925,7 +1925,15 @@ where
         Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap())
     );
     assert_eq!(
-        from_str(r#""0-1-1T0:0:60""#).ok(),
+        from_str(r#""+0-1-1T0:0:60""#).ok(),
+        Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap())
+    );
+    assert_eq!(
+        from_str(r#""-0-1-1T0:0:60""#).ok(),
+        Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap())
+    );
+    assert_eq!(
+        from_str(r#""0000-1-1T0:0:60""#).ok(),
         Some(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().and_hms_milli_opt(0, 0, 59, 1_000).unwrap())
     );
     assert_eq!(

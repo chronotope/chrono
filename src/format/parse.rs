@@ -361,47 +361,71 @@ where
 
             Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
-                type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
-                let (width, signed, set): (usize, bool, Setter) = match *spec {
-                    Year => (4, true, Parsed::set_year),
-                    YearDiv100 => (2, false, Parsed::set_year_div_100),
-                    YearMod100 => (2, false, Parsed::set_year_mod_100),
-                    IsoYear => (4, true, Parsed::set_isoyear),
-                    IsoYearDiv100 => (2, false, Parsed::set_isoyear_div_100),
-                    IsoYearMod100 => (2, false, Parsed::set_isoyear_mod_100),
-                    Month => (2, false, Parsed::set_month),
-                    Day => (2, false, Parsed::set_day),
-                    WeekFromSun => (2, false, Parsed::set_week_from_sun),
-                    WeekFromMon => (2, false, Parsed::set_week_from_mon),
-                    IsoWeek => (2, false, Parsed::set_isoweek),
-                    NumDaysFromSun => (1, false, set_weekday_with_num_days_from_sunday),
-                    WeekdayFromMon => (1, false, set_weekday_with_number_from_monday),
-                    Ordinal => (3, false, Parsed::set_ordinal),
-                    Hour => (2, false, Parsed::set_hour),
-                    Hour12 => (2, false, Parsed::set_hour12),
-                    Minute => (2, false, Parsed::set_minute),
-                    Second => (2, false, Parsed::set_second),
-                    Nanosecond => (9, false, Parsed::set_nanosecond),
-                    Timestamp => (usize::MAX, false, Parsed::set_timestamp),
+                let set: fn(&mut Parsed, i64) -> ParseResult<()> = match *spec {
+                    Year => Parsed::set_year,
+                    YearDiv100 => Parsed::set_year_div_100,
+                    YearMod100 => Parsed::set_year_mod_100,
+                    IsoYear => Parsed::set_isoyear,
+                    IsoYearDiv100 => Parsed::set_isoyear_div_100,
+                    IsoYearMod100 => Parsed::set_isoyear_mod_100,
+                    Month => Parsed::set_month,
+                    Day => Parsed::set_day,
+                    WeekFromSun => Parsed::set_week_from_sun,
+                    WeekFromMon => Parsed::set_week_from_mon,
+                    IsoWeek => Parsed::set_isoweek,
+                    NumDaysFromSun => set_weekday_with_num_days_from_sunday,
+                    WeekdayFromMon => set_weekday_with_number_from_monday,
+                    Ordinal => Parsed::set_ordinal,
+                    Hour => Parsed::set_hour,
+                    Hour12 => Parsed::set_hour12,
+                    Minute => Parsed::set_minute,
+                    Second => Parsed::set_second,
+                    Nanosecond => Parsed::set_nanosecond,
+                    Timestamp => Parsed::set_timestamp,
 
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
                 };
 
-                let v = if signed {
-                    if s.starts_with('-') {
-                        let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
-                        0i64.checked_sub(v).ok_or((s, OUT_OF_RANGE))?
-                    } else if s.starts_with('+') {
-                        try_consume!(scan::number(&s[1..], 1, usize::MAX))
-                    } else {
-                        // if there is no explicit sign, we respect the original `width`
-                        try_consume!(scan::number(s, 1, width))
-                    }
+                let signed = matches!(*spec, Year | IsoYear);
+
+                let v = if signed && s.starts_with('+') {
+                    try_consume!(scan::number(&s[1..], 1, usize::MAX))
+                } else if signed && s.starts_with('-') {
+                    let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
+                    0i64.checked_sub(v).ok_or((s, OUT_OF_RANGE))?
                 } else {
-                    try_consume!(scan::number(s, 1, width))
+                    // if there is no explicit sign, we respect the original `width`
+                    let (min_width, max_width) = match *spec {
+                        Year => (4, 4),
+                        YearDiv100 => (1, 2),
+                        YearMod100 => (1, 2),
+                        IsoYear => (1, 4),
+                        IsoYearDiv100 => (1, 2),
+                        IsoYearMod100 => (1, 2),
+                        Month => (1, 2),
+                        Day => (1, 2),
+                        WeekFromSun => (1, 2),
+                        WeekFromMon => (1, 2),
+                        IsoWeek => (1, 2),
+                        NumDaysFromSun => (1, 1),
+                        WeekdayFromMon => (1, 1),
+                        Ordinal => (1, 3),
+                        Hour => (1, 2),
+                        Hour12 => (1, 2),
+                        Minute => (1, 2),
+                        Second => (1, 2),
+                        Nanosecond => (1, 9),
+                        Timestamp => (1, usize::MAX),
+
+                        // for the future expansion
+                        Internal(ref int) => match int._dummy {},
+                    };
+
+                    try_consume!(scan::number(s, min_width, max_width))
                 };
+
                 set(parsed, v).map_err(|e| (s, e))?;
             }
 
@@ -712,19 +736,33 @@ fn test_parse() {
     // numeric
     check!("1987",        [num!(Year)]; year: 1987);
     check!("1987 ",       [num!(Year)]; TOO_LONG);
-    check!("0x12",        [num!(Year)]; TOO_LONG); // `0` is parsed
+    check!("+0x12",       [num!(Year)]; TOO_LONG); // `0` is parsed
+    check!("-0x12",       [num!(Year)]; TOO_LONG); // `0` is parsed
+    check!("0000x12",     [num!(Year)]; TOO_LONG); // `0` is parsed
     check!("x123",        [num!(Year)]; INVALID);
     check!("o123",        [num!(Year)]; INVALID);
     check!("2015",        [num!(Year)]; year: 2015);
     check!("0000",        [num!(Year)]; year:    0);
     check!("9999",        [num!(Year)]; year: 9999);
-    check!(" \t987",      [num!(Year)]; INVALID);
-    check!(" \t987",      [sp!(" \t"), num!(Year)]; year:  987);
-    check!(" \t987🤠",    [sp!(" \t"), num!(Year), lit!("🤠")]; year:  987);
-    check!("987🤠",       [num!(Year), lit!("🤠")]; year:  987);
-    check!("5",           [num!(Year)]; year:    5);
-    check!("5\0",         [num!(Year)]; TOO_LONG);
-    check!("\x005",       [num!(Year)]; INVALID);
+    check!(" \t+987",     [num!(Year)]; INVALID);
+    check!(" \t-987",     [num!(Year)]; INVALID);
+    check!(" \t0987",     [num!(Year)]; INVALID);
+    check!(" \t+987",     [sp!(" \t"), num!(Year)]; year:  987);
+    check!(" \t-987",     [sp!(" \t"), num!(Year)]; year: -987);
+    check!(" \t0987",     [sp!(" \t"), num!(Year)]; year:  987);
+    check!(" \t+987🤠",   [sp!(" \t"), num!(Year), lit!("🤠")]; year:  987);
+    check!(" \t-987🤠",   [sp!(" \t"), num!(Year), lit!("🤠")]; year: -987);
+    check!(" \t0987🤠",   [sp!(" \t"), num!(Year), lit!("🤠")]; year:  987);
+    check!("+987🤠",      [num!(Year), lit!("🤠")]; year:  987);
+    check!("-987🤠",      [num!(Year), lit!("🤠")]; year: -987);
+    check!("0987🤠",      [num!(Year), lit!("🤠")]; year:  987);
+    check!("+5",          [num!(Year)]; year:    5);
+    check!("-5",          [num!(Year)]; year:   -5);
+    check!("0005",        [num!(Year)]; year:    5);
+    check!("+5\0",        [num!(Year)]; TOO_LONG);
+    check!("-5\0",        [num!(Year)]; TOO_LONG);
+    check!("0005\0",      [num!(Year)]; TOO_LONG);
+    check!("\x00005",     [num!(Year)]; INVALID);
     check!("",            [num!(Year)]; TOO_SHORT);
     check!("12345",       [num!(Year), lit!("5")]; year: 1234);
     check!("12345",       [nums!(Year), lit!("5")]; year: 1234);
