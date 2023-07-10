@@ -225,7 +225,7 @@ fn test_time_fmt() {
 }
 
 #[test]
-fn test_date_from_str() {
+fn test_time_from_str() {
     // valid cases
     let valid = [
         "0:0:0",
@@ -233,6 +233,7 @@ fn test_date_from_str() {
         "0:0:0.0000003",
         " 4 : 3 : 2.1 ",
         " 09:08:07 ",
+        " 09:08 ",
         " 9:8:07 ",
         "01:02:03",
         "4:3:2.1",
@@ -293,9 +294,9 @@ fn test_date_from_str() {
         "",                  // empty
         "x",                 // invalid
         "15",                // missing data
-        "15:8",              // missing data
-        "15:8:x",            // missing data, invalid data
-        "15:8:9x",           // missing data, invalid data
+        "15:8:",             // trailing colon
+        "15:8:x",            // invalid data
+        "15:8:9x",           // invalid data
         "23:59:61",          // invalid second (out of bounds)
         "23:54:35 GMT",      // invalid (timezone non-sensical for NaiveTime)
         "23:54:35 +0000",    // invalid (timezone non-sensical for NaiveTime)
