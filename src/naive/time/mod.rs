@@ -1324,26 +1324,36 @@ impl fmt::Display for NaiveTime {
 /// let t = NaiveTime::from_hms_nano_opt(23, 59, 59, 1_234_567_890).unwrap(); // leap second
 /// assert_eq!("23:59:60.23456789".parse::<NaiveTime>(), Ok(t));
 ///
+/// // Seconds are optional
+/// let t = NaiveTime::from_hms_opt(23, 56, 0).unwrap();
+/// assert_eq!("23:56".parse::<NaiveTime>(), Ok(t));
+///
 /// assert!("foo".parse::<NaiveTime>().is_err());
 /// ```
 impl str::FromStr for NaiveTime {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveTime> {
-        const ITEMS: &[Item<'static>] = &[
+        const HOUR_AND_MINUTE: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
             Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Minute, Pad::Zero),
+        ];
+        const SECOND_AND_NANOS: &[Item<'static>] = &[
             Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond),
             Item::Space(""),
         ];
+        const TRAILING_WHITESPACE: [Item<'static>; 1] = [Item::Space("")];
 
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        let s = parse_and_remainder(&mut parsed, s, HOUR_AND_MINUTE.iter())?;
+        // Seconds are optional, don't fail if parsing them doesn't succeed.
+        let s = parse_and_remainder(&mut parsed, s, SECOND_AND_NANOS.iter()).unwrap_or(s);
+        parse(&mut parsed, s, TRAILING_WHITESPACE.iter())?;
         parsed.to_naive_time()
     }
 }
