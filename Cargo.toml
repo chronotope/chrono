@@ -15,6 +15,7 @@ rust-version = "1.56.0"
 
 [lib]
 name = "chrono"
+crate-type = ["staticlib"]
 
 [features]
 default = ["clock", "std", "oldtime", "wasmbind"]
@@ -67,6 +68,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.playground]
 features = ["serde"]
+
+[package.metadata.ios]
+# Required
+build_targets = ["aarch64-apple-ios"]
 
 [[bench]]
 name = "chrono"
