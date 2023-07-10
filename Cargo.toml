@@ -29,7 +29,7 @@ __doctest = []
 
 [dependencies]
 serde = { version = "1.0.99", default-features = false, optional = true }
-pure-rust-locales = { version = "0.5.2", optional = true }
+pure-rust-locales = { version = "0.6.0", optional = true }
 criterion = { version = "0.4.0", optional = true }
 rkyv = { version = "0.7", optional = true }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
