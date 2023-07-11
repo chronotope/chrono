@@ -3,9 +3,9 @@
 
 //! Formatting (and parsing) utilities for date and time.
 //!
-//! This module provides the common types and routines to implement,
-//! for example, [`DateTime::format`](../struct.DateTime.html#method.format) or
-//! [`DateTime::parse_from_str`](../struct.DateTime.html#method.parse_from_str) methods.
+//! This module provides the common types and routines to implement, for example,
+//! [`DateTime::format_with`](crate::DateTime::format_with) or
+//! [`DateTime::parse_from_str`](crate::DateTime::parse_from_str) methods.
 //! For most cases you should use these high-level interfaces.
 //!
 //! Internally the formatting and parsing shares the same abstract **formatting items**,
@@ -21,7 +21,7 @@
 //!
 //! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
 //!
-//! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
+//! let formatted = date_time.format_to_string("%Y-%m-%d %H:%M:%S").unwrap();
 //! assert_eq!(formatted, "2020-11-10 00:01:32");
 //!
 //! let parsed = NaiveDateTime::parse_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?.and_utc();

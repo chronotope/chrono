@@ -1064,7 +1064,8 @@ impl Timelike for NaiveTime {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.second(), 59);
-    /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
+    /// assert_eq!(leap.format_to_string("%H:%M:%S")?, "23:59:60");
+    /// # Ok::<(), chrono::ParseError>(())
     /// ```
     #[inline]
     fn second(&self) -> u32 {
@@ -1095,7 +1096,8 @@ impl Timelike for NaiveTime {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
-    /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
+    /// assert_eq!(leap.format_to_string("%H:%M:%S%.9f")?, "23:59:60.000000000");
+    /// # Ok::<(), chrono::ParseError>(())
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {
