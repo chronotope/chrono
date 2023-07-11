@@ -371,8 +371,10 @@ impl<'a> Item<'a> {
         date: bool,
         time: bool,
         offset: bool,
+        _locale: Locale,
     ) -> Result<(), ParseError> {
         use InternalInternal::*;
+
         match (self, date, time, offset) {
             (Item::Literal(_), _, _, _)
             | (Item::Space(_), _, _, _)
@@ -400,8 +402,6 @@ impl<'a> Item<'a> {
             | (Item::Fixed(Fixed::LongMonthName), true, _, _)
             | (Item::Fixed(Fixed::ShortWeekdayName), true, _, _)
             | (Item::Fixed(Fixed::LongWeekdayName), true, _, _)
-            | (Item::Fixed(Fixed::LowerAmPm), true, _, _)
-            | (Item::Fixed(Fixed::UpperAmPm), true, _, _)
             | (Item::Fixed(Fixed::Nanosecond), _, true, _)
             | (Item::Fixed(Fixed::Nanosecond3), _, true, _)
             | (Item::Fixed(Fixed::Nanosecond6), _, true, _)
@@ -418,6 +418,14 @@ impl<'a> Item<'a> {
             | (Item::Fixed(Fixed::TimezoneOffsetZ), _, _, true)
             | (Item::Fixed(Fixed::RFC2822), true, true, true)
             | (Item::Fixed(Fixed::RFC3339), true, true, true) => Ok(()),
+            (Item::Fixed(Fixed::LowerAmPm), true, _, _)
+            | (Item::Fixed(Fixed::UpperAmPm), true, _, _) => {
+                if locales::am_pm(_locale)[0].is_empty() {
+                    Err(BAD_FORMAT)
+                } else {
+                    Ok(())
+                }
+            }
             #[cfg(any(feature = "alloc", feature = "std"))]
             (Item::OwnedLiteral(_), _, _, _) | (Item::OwnedSpace(_), _, _, _) => Ok(()),
             _ => Err(BAD_FORMAT),

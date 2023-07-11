@@ -257,6 +257,9 @@ where
             }
             (LowerAmPm, _, Some(t), _) => {
                 let ampm = if t.hour12().0 { am_pm(self.locale)[1] } else { am_pm(self.locale)[0] };
+                if ampm.is_empty() {
+                    return Err(fmt::Error);
+                }
                 for c in ampm.chars().flat_map(|c| c.to_lowercase()) {
                     w.write_char(c)?
                 }
@@ -264,6 +267,9 @@ where
             }
             (UpperAmPm, _, Some(t), _) => {
                 let ampm = if t.hour12().0 { am_pm(self.locale)[1] } else { am_pm(self.locale)[0] };
+                if ampm.is_empty() {
+                    return Err(fmt::Error);
+                }
                 w.write_str(ampm)
             }
             (Nanosecond, _, Some(t), _) => {
