@@ -162,6 +162,22 @@ use super::{locales, Locale};
 use super::{Fixed, InternalInternal, Item, Numeric, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
+///
+/// See the [`format::strftime` module](crate::format::strftime) for supported formatting
+/// specifiers.
+///
+/// `StrftimeItems` is used in combination with more low-level methods such as [`format::parse()`]
+/// or [`format_with_items`].
+///
+/// If formatting or parsing date and time values is not performance-critical, the methods
+/// [`parse_from_str`] and [`format`] on types such as [`DateTime`](crate::DateTime) are easier to
+/// use.
+///
+/// [`format`]: crate::DateTime::format
+/// [`format_with_items`]: crate::DateTime::format
+/// [`parse_from_str`]: crate::DateTime::parse_from_str
+/// [`DateTime`]: crate::DateTime
+/// [`format::parse()`]: crate::format::parse()
 #[derive(Clone, Debug)]
 pub struct StrftimeItems<'a> {
     /// Remaining portion of the string.
@@ -176,7 +192,30 @@ pub struct StrftimeItems<'a> {
 }
 
 impl<'a> StrftimeItems<'a> {
-    /// Creates a new parsing iterator from the `strftime`-like format string.
+    /// Creates a new parsing iterator from a `strftime`-like format string.
+    ///
+    /// # Errors
+    ///
+    /// While iterating [`Item::Error`] will be returned if the format string contains an invalid
+    /// or unrecognized formatting specifier.
+    ///
+    /// # Example
+    ///
+    #[cfg_attr(not(any(feature = "alloc", feature = "std")), doc = "```ignore")]
+    #[cfg_attr(any(feature = "alloc", feature = "std"), doc = "```rust")]
+    /// use chrono::format::*;
+    ///
+    /// let strftime_parser = StrftimeItems::new("%F"); // %F: year-month-day (ISO 8601)
+    ///
+    /// const ISO8601_YMD_ITEMS: &[Item<'static>] = &[
+    ///     Item::Numeric(Numeric::Year, Pad::Zero),
+    ///     Item::Literal("-"),
+    ///     Item::Numeric(Numeric::Month, Pad::Zero),
+    ///     Item::Literal("-"),
+    ///     Item::Numeric(Numeric::Day, Pad::Zero),
+    /// ];
+    /// assert!(strftime_parser.eq(ISO8601_YMD_ITEMS.iter().cloned()));
+    /// ```
     #[must_use]
     pub const fn new(s: &'a str) -> StrftimeItems<'a> {
         #[cfg(not(feature = "unstable-locales"))]
