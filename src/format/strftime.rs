@@ -338,6 +338,49 @@ impl<'a> StrftimeItems<'a> {
             })
             .collect()
     }
+
+    /// Parse format string into a `Vec` of [`Item`]'s that contain no references to slices of the
+    /// format string.
+    ///
+    /// A `Vec` created with [`StrftimeItems::parse`] contains references to the format string,
+    /// binding the lifetime of the `Vec` to that string. [`StrftimeItems::parse_to_owned`] will
+    /// convert the references to owned types.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string contains an invalid or unrecognized formatting
+    /// specifier.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::format::{Item, ParseError, StrftimeItems};
+    /// use chrono::NaiveDate;
+    ///
+    /// fn format_items(date_fmt: &str, time_fmt: &str) -> Result<Vec<Item<'static>>, ParseError> {
+    ///     // `fmt_string` is dropped at the end of this function.
+    ///     let fmt_string = format!("{} {}", date_fmt, time_fmt);
+    ///     StrftimeItems::new(&fmt_string).parse_to_owned()
+    /// }
+    ///
+    /// let fmt_items = format_items("%e %b %Y", "%k.%M")?;
+    /// let datetime = NaiveDate::from_ymd_opt(2023, 7, 11).unwrap().and_hms_opt(9, 0, 0).unwrap();
+    ///
+    /// assert_eq!(
+    ///     datetime.format_with_items(fmt_items.as_slice().iter()).to_string(),
+    ///     "11 Jul 2023  9.00"
+    /// );
+    /// # Ok::<(), ParseError>(())
+    /// ```
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    pub fn parse_to_owned(self) -> Result<Vec<Item<'static>>, ParseError> {
+        self.into_iter()
+            .map(|item| match item == Item::Error {
+                false => Ok(item.to_owned()),
+                true => Err(BAD_FORMAT),
+            })
+            .collect()
+    }
 }
 
 const HAVE_ALTERNATES: &str = "z";
