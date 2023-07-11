@@ -228,7 +228,51 @@ impl<'a> StrftimeItems<'a> {
         }
     }
 
-    /// Creates a new parsing iterator from the `strftime`-like format string.
+    /// Creates a new parsing iterator from a `strftime`-like format string, with some formatting
+    /// specifiers adjusted to match [`Locale`].
+    ///
+    /// Note: `StrftimeItems::new_with_locale` only localizes the *format*. You usually want to
+    /// combine it with other locale-aware methods such as
+    /// [`DateTime::format_localized_with_items`] to get things like localized month or day names.
+    ///
+    /// The `%x` formatting specifier will use the local date format, `%X` the local time format,
+    ///  and `%c` the local format for date and time.
+    /// `%r` will use the local 12-hour clock format (e.g., 11:11:04 PM). Not all locales have such
+    /// a format, in which case we fall back to a 24-hour clock (`%X`).
+    ///
+    /// See the [`format::strftime` module](crate::format::strftime) for all supported formatting
+    /// specifiers.
+    ///
+    ///  [`DateTime::format_localized_with_items`]: crate::DateTime::format_localized_with_items
+    ///
+    /// # Errors
+    ///
+    /// While iterating [`Item::Error`] will be returned if the format string contains an invalid
+    /// or unrecognized formatting specifier.
+    ///
+    /// # Example
+    ///
+    #[cfg_attr(not(any(feature = "alloc", feature = "std")), doc = "```ignore")]
+    #[cfg_attr(any(feature = "alloc", feature = "std"), doc = "```rust")]
+    /// use chrono::format::{Locale, StrftimeItems};
+    /// use chrono::{FixedOffset, TimeZone};
+    ///
+    /// let dt = FixedOffset::east_opt(9 * 60 * 60)
+    ///     .unwrap()
+    ///     .with_ymd_and_hms(2023, 7, 11, 0, 34, 59)
+    ///     .unwrap();
+    ///
+    /// // Note: you usually want to combine `StrftimeItems::new_with_locale` with other
+    /// // locale-aware methods such as `DateTime::format_localized_with_items`.
+    /// // We use the regular `format_with_items` to show only how the formatting changes.
+    ///
+    /// let fmtr = dt.format_with_items(StrftimeItems::new_with_locale("%x", Locale::en_US));
+    /// assert_eq!(fmtr.to_string(), "07/11/2023");
+    /// let fmtr = dt.format_with_items(StrftimeItems::new_with_locale("%x", Locale::ko_KR));
+    /// assert_eq!(fmtr.to_string(), "2023년 07월 11일");
+    /// let fmtr = dt.format_with_items(StrftimeItems::new_with_locale("%x", Locale::ja_JP));
+    /// assert_eq!(fmtr.to_string(), "2023年07月11日");
+    /// ```
     #[cfg(feature = "unstable-locales")]
     #[must_use]
     pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
