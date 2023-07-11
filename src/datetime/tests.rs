@@ -4,6 +4,8 @@ use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
 use crate::oldtime::Duration;
+#[cfg(any(feature = "alloc", feature = "std"))]
+use crate::Timelike;
 use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
 
 #[derive(Clone)]
@@ -1247,19 +1249,20 @@ fn test_from_system_time() {
 #[test]
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn test_datetime_format_alignment() {
-    let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0).unwrap();
+    let datetime =
+        Utc.with_ymd_and_hms(2007, 1, 2, 12, 34, 56).unwrap().with_nanosecond(123456789).unwrap();
 
-    // Item::Literal
+    // Item::Literal, odd number of padding bytes.
     let percent = datetime.format("%%");
-    assert_eq!("  %", format!("{:>3}", percent));
-    assert_eq!("%  ", format!("{:<3}", percent));
-    assert_eq!(" % ", format!("{:^3}", percent));
+    assert_eq!("   %", format!("{:>4}", percent));
+    assert_eq!("%   ", format!("{:<4}", percent));
+    assert_eq!(" %  ", format!("{:^4}", percent));
 
-    // Item::Numeric
+    // Item::Numeric, custom non-ASCII padding character
     let year = datetime.format("%Y");
-    assert_eq!("  2007", format!("{:>6}", year));
-    assert_eq!("2007  ", format!("{:<6}", year));
-    assert_eq!(" 2007 ", format!("{:^6}", year));
+    assert_eq!("——2007", format!("{:—>6}", year));
+    assert_eq!("2007——", format!("{:—<6}", year));
+    assert_eq!("—2007—", format!("{:—^6}", year));
 
     // Item::Fixed
     let tz = datetime.format("%Z");
@@ -1269,10 +1272,13 @@ fn test_datetime_format_alignment() {
 
     // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
     let ymd = datetime.format("%Y %B %d");
-    let ymd_formatted = "2007 January 02";
-    assert_eq!(format!("  {}", ymd_formatted), format!("{:>17}", ymd));
-    assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
-    assert_eq!(format!(" {} ", ymd_formatted), format!("{:^17}", ymd));
+    assert_eq!("  2007 January 02", format!("{:>17}", ymd));
+    assert_eq!("2007 January 02  ", format!("{:<17}", ymd));
+    assert_eq!(" 2007 January 02 ", format!("{:^17}", ymd));
+
+    // Truncated
+    let time = datetime.format("%T%.6f");
+    assert_eq!("12:34:56.1234", format!("{:.13}", time));
 }
 
 #[test]
