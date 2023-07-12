@@ -4,22 +4,20 @@
 //! ISO 8601 date and time with time zone.
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
-use std::string::ToString;
-#[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(any(feature = "alloc", feature = "std"))]
-use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
 use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
+#[cfg(any(feature = "alloc", feature = "std"))]
+use crate::format::{write_rfc3339, DelayedFormat};
 use crate::format::{Fixed, Item};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -48,6 +46,7 @@ mod tests;
 ///
 /// See the `TimeZone::to_rfc3339_opts` function for usage.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[allow(clippy::manual_non_exhaustive)]
 pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.
     Secs,
@@ -508,8 +507,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc3339(&self) -> String {
+        // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
         let mut result = String::with_capacity(32);
-        crate::format::write_rfc3339(&mut result, self.naive_local(), self.offset.fix())
+        let naive = self.naive_local();
+        let offset = self.offset.fix();
+        write_rfc3339(&mut result, naive, offset, SecondsFormat::AutoSi, false)
             .expect("writing rfc3339 datetime to string should never fail");
         result
     }
@@ -542,46 +544,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
-        use crate::format::Numeric::*;
-        use crate::format::Pad::Zero;
-        use crate::SecondsFormat::*;
-
-        debug_assert!(secform != __NonExhaustive, "Do not use __NonExhaustive!");
-
-        const PREFIX: &[Item<'static>] = &[
-            Item::Numeric(Year, Zero),
-            Item::Literal("-"),
-            Item::Numeric(Month, Zero),
-            Item::Literal("-"),
-            Item::Numeric(Day, Zero),
-            Item::Literal("T"),
-            Item::Numeric(Hour, Zero),
-            Item::Literal(":"),
-            Item::Numeric(Minute, Zero),
-            Item::Literal(":"),
-            Item::Numeric(Second, Zero),
-        ];
-
-        let ssitem = match secform {
-            Secs => None,
-            Millis => Some(Item::Fixed(Fixed::Nanosecond3)),
-            Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
-            Nanos => Some(Item::Fixed(Fixed::Nanosecond9)),
-            AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
-            __NonExhaustive => unreachable!(),
-        };
-
-        let tzitem = Item::Fixed(if use_z {
-            Fixed::TimezoneOffsetColonZ
-        } else {
-            Fixed::TimezoneOffsetColon
-        });
-
-        let dt = self.fixed_offset();
-        match ssitem {
-            None => dt.format_with_items(PREFIX.iter().chain([tzitem].iter())).to_string(),
-            Some(s) => dt.format_with_items(PREFIX.iter().chain([s, tzitem].iter())).to_string(),
-        }
+        let mut result = String::with_capacity(38);
+        write_rfc3339(&mut result, self.naive_local(), self.offset.fix(), secform, use_z)
+            .expect("writing rfc3339 datetime to string should never fail");
+        result
     }
 
     /// The minimum possible `DateTime<Utc>`.
