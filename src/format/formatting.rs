@@ -531,6 +531,7 @@ pub(crate) fn write_rfc3339(
     // reuse `Debug` impls which already print ISO 8601 format.
     // this is faster in this way.
     write!(w, "{:?}", dt)?;
+
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::Colon,
@@ -574,11 +575,13 @@ fn write_rfc2822_inner(
     write_hundreds(w, (year / 100) as u8)?;
     write_hundreds(w, (year % 100) as u8)?;
     w.write_char(' ')?;
-    write_hundreds(w, t.hour() as u8)?;
+
+    let (hour, min, sec) = t.hms();
+    write_hundreds(w, hour as u8)?;
     w.write_char(':')?;
-    write_hundreds(w, t.minute() as u8)?;
+    write_hundreds(w, min as u8)?;
     w.write_char(':')?;
-    let sec = t.second() + t.nanosecond() / 1_000_000_000;
+    let sec = sec + t.nanosecond() / 1_000_000_000;
     write_hundreds(w, sec as u8)?;
     w.write_char(' ')?;
     OffsetFormat {
