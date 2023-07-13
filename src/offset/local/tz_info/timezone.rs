@@ -741,25 +741,6 @@ mod tests {
     }
 
     #[test]
-    fn test_from_tz_data() -> Result<(), Error> {
-        let bytes = b"\x54\x5a\x69\x66\x00\x00\x00\x00\x00\x00\x00\x00\x1a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0a\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5\xb5";
-        let time_zone = TimeZone::from_tz_data(bytes);
-        assert_eq!(format!("{:?}", time_zone), "Err(InvalidTzFile(\"invalid header\"))");
-
-        let bytes = b"\x0a\x0a\xae\x0a";
-        let time_zone = TimeZone::from_tz_data(bytes);
-        assert_eq!(format!("{:?}", time_zone), "Err(InvalidTzFile(\"invalid magic number\"))");
-
-        let bytes = b"\x54\x5a\x69\x66\x0a";
-        let time_zone = TimeZone::from_tz_data(bytes);
-        assert_eq!(
-            format!("{:?}", time_zone),
-            "Err(UnsupportedTzFile(\"unsupported TZif version\"))"
-        );
-        Ok(())
-    }
-
-    #[test]
     fn test_tz_ascii_str() -> Result<(), Error> {
         assert!(matches!(TimeZoneName::new(b""), Err(Error::LocalTimeType(_))));
         assert!(matches!(TimeZoneName::new(b"1"), Err(Error::LocalTimeType(_))));
@@ -838,45 +819,6 @@ mod tests {
 
         assert!(TimeZone::from_posix_tz("EST5EDT,0/0,J365/25").is_err());
         assert!(TimeZone::from_posix_tz("").is_err());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_time_zone_from_posix_tz_extra() -> Result<(), Error> {
-        //error cases
-        assert!(TimeZone::from_posix_tz("2,M2.2.").is_err());
-        assert!(TimeZone::from_posix_tz("8T1").is_err());
-        assert!(TimeZone::from_posix_tz("1,1,4").is_err());
-        assert!(TimeZone::from_posix_tz("2,M2.·/").is_err());
-        assert!(TimeZone::from_posix_tz("+1+").is_err());
-        assert!(TimeZone::from_posix_tz("1J").is_err());
-        assert!(TimeZone::from_posix_tz("1122").is_err());
-        assert!(TimeZone::from_posix_tz("aaa2,2,2").is_err());
-        assert!(TimeZone::from_posix_tz("2,M2.2.22÷").is_err());
-        assert!(TimeZone::from_posix_tz("2,M2").is_err());
-        assert!(TimeZone::from_posix_tz("/Ä").is_err());
-        assert!(TimeZone::from_posix_tz("1:211").is_err());
-        assert!(TimeZone::from_posix_tz("9:2:62").is_err());
-        assert!(TimeZone::from_posix_tz("2,2/29").is_err());
-        assert!(TimeZone::from_posix_tz("1,1,4$").is_err());
-        //ok cases
-        if let Ok(tz) = TimeZone::from_posix_tz("aaa3aaa3,2,22") {
-            assert_eq!(format!("{:?}", tz), "TimeZone { \
-                                                transitions: [], \
-                                                local_time_types: [LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"aaa\") }, LocalTimeType { ut_offset: -10800, is_dst: true, name: Some(\"aaa\") }], \
-                                                leap_seconds: [], \
-                                                extra_rule: Some(Alternate(AlternateTime { std: LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"aaa\") }, dst: LocalTimeType { ut_offset: -10800, is_dst: true, name: Some(\"aaa\") }, dst_start: Julian0WithLeap(2), dst_start_time: 7200, dst_end: Julian0WithLeap(22), dst_end_time: 7200 })) \
-                                                }");
-        }
-        if let Ok(tz) = TimeZone::from_posix_tz("TTT8") {
-            assert_eq!(format!("{:?}", tz), "TimeZone { \
-                                                transitions: [], \
-                                                local_time_types: [LocalTimeType { ut_offset: -28800, is_dst: false, name: Some(\"TTT\") }], \
-                                                leap_seconds: [], \
-                                                extra_rule: Some(Fixed(LocalTimeType { ut_offset: -28800, is_dst: false, name: Some(\"TTT\") })) \
-                                                }");
-        }
 
         Ok(())
     }

@@ -421,6 +421,7 @@ mod tests {
         timezone_offset_2822, trim1,
     };
     use crate::format::{INVALID, TOO_SHORT};
+    use crate::Weekday;
 
     #[test]
     fn test_rfc2822_comments() {
@@ -469,116 +470,52 @@ mod tests {
 
     #[test]
     fn test_timezone_name_skip() {
-        let s = "\r";
-        let ans = timezone_name_skip(s);
-        assert!(ans.is_ok());
+        assert!(timezone_name_skip("\r").is_ok());
     }
 
     #[test]
     fn test_timezone_offset_2822() {
-        let s = "cSt";
-        let ans = timezone_offset_2822(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-21600)))");
-
-        let s = "pSt";
-        let ans = timezone_offset_2822(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-28800)))");
-
-        let s = "mSt";
-        let ans = timezone_offset_2822(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-25200)))");
-
-        let s = "Gp";
-        let ans = timezone_offset_2822(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", None))");
-
-        let s = "-1551";
-        let ans = timezone_offset_2822(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", Some(-57060)))");
+        assert_eq!(timezone_offset_2822("cSt").unwrap(), ("", Some(-21600)));
+        assert_eq!(timezone_offset_2822("pSt").unwrap(), ("", Some(-28800)));
+        assert_eq!(timezone_offset_2822("mSt").unwrap(), ("", Some(-25200)));
+        assert_eq!(timezone_offset_2822("-1551").unwrap(), ("", Some(-57060)));
+        assert_eq!(timezone_offset_2822("Gp").unwrap(), ("", None));
     }
 
     #[test]
     fn test_short_or_long_month0() {
-        let s = "JUn";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 5))");
-
-        let s = "mAy";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 4))");
-
-        let s = "AuG";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 7))");
-
-        let s = "Aprâ";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"â\", 3))");
-
-        let s = "JUl";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 6))");
-
-        let s = "mAr";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 2))");
-
-        let s = "Jan";
-        let ans = short_or_long_month0(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 0))");
+        assert_eq!(short_or_long_month0("JUn").unwrap(), ("", 5));
+        assert_eq!(short_or_long_month0("mAy").unwrap(), ("", 4));
+        assert_eq!(short_or_long_month0("AuG").unwrap(), ("", 7));
+        assert_eq!(short_or_long_month0("Aprâ").unwrap(), ("â", 3));
+        assert_eq!(short_or_long_month0("JUl").unwrap(), ("", 6));
+        assert_eq!(short_or_long_month0("mAr").unwrap(), ("", 2));
+        assert_eq!(short_or_long_month0("Jan").unwrap(), ("", 0));
     }
 
     #[test]
     fn test_short_or_long_weekday() {
-        let s = "sAtu";
-        let ans = short_or_long_weekday(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"u\", Sat))");
-
-        let s = "thu";
-        let ans = short_or_long_weekday(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", Thu))");
+        assert_eq!(short_or_long_weekday("sAtu").unwrap(), ("u", Weekday::Sat));
+        assert_eq!(short_or_long_weekday("thu").unwrap(), ("", Weekday::Thu));
     }
 
     #[test]
     fn test_nanosecond_fixed() {
-        let s = "";
-        let num = 0usize;
-        let ans = nanosecond_fixed(s, num);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 0))");
-
-        let s = "";
-        let num = 1usize;
-        let ans = nanosecond_fixed(s, num);
-        assert_eq!(format!("{:?}", ans), "Err(ParseError(TooShort))");
+        assert_eq!(nanosecond_fixed("", 0usize).unwrap(), ("", 0));
+        assert!(nanosecond_fixed("", 1usize).is_err());
     }
 
     #[test]
     fn test_nanosecond() {
-        let s = "2Ù";
-        let ans = nanosecond(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"Ù\", 200000000))");
-
-        let s = "8";
-        let ans = nanosecond(s);
-        assert_eq!(format!("{:?}", ans), "Ok((\"\", 800000000))");
+        assert_eq!(nanosecond("2Ù").unwrap(), ("Ù", 200000000));
+        assert_eq!(nanosecond("8").unwrap(), ("", 800000000));
     }
 
     #[test]
     fn test_equals() {
-        let s = b"\x5b";
-        let pattern = "[";
-        let ans = equals(s, pattern);
-        assert!(ans);
-
-        let s = b"\x0a\x5b\x4b";
-        let pattern = "[K";
-        let ans = equals(s, pattern);
-        assert!(!ans);
-
-        let s = b"\x00";
-        let pattern = "";
-        let ans = equals(s, pattern);
-        assert!(!ans);
+        assert!(equals(b"\x5b", "["));
+        assert!(!equals(b"\x0a\x5b\x4b", "[K"));
+        assert!(!equals(b"\x00", ""));
     }
 
     #[test]

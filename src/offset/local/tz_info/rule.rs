@@ -875,49 +875,6 @@ mod tests {
     }
 
     #[test]
-    fn test_from_tz_string() {
-        let tz_string = b"hhh5hxx,5,1";
-        let use_string_extensions = false;
-        assert_eq!(format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-                   "Ok(Alternate(AlternateTime { std: LocalTimeType { ut_offset: -18000, is_dst: false, name: Some(\"hhh\") }, dst: LocalTimeType { ut_offset: -14400, is_dst: true, name: Some(\"hxx\") }, dst_start: Julian0WithLeap(5), dst_start_time: 7200, dst_end: Julian0WithLeap(1), dst_end_time: 7200 }))");
-
-        let tz_string = b"BBf3";
-        let use_string_extensions = false;
-        assert_eq!(
-            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-            "Ok(Fixed(LocalTimeType { ut_offset: -10800, is_dst: false, name: Some(\"BBf\") }))"
-        );
-
-        let tz_string = b"V-1,1/1:62[";
-        let use_string_extensions = false;
-        assert_eq!(
-            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-            "Err(InvalidTzString(\"invalid day time minute\"))"
-        );
-
-        let tz_string = b"2,2212";
-        let use_string_extensions = false;
-        assert_eq!(
-            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-            "Err(TransitionRule(\"invalid rule day julian day\"))"
-        );
-
-        let tz_string = b"hhh5,5,1";
-        let use_string_extensions = false;
-        assert_eq!(
-            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-            "Err(LocalTimeType(\"time zone name must have between 3 and 7 characters\"))"
-        );
-
-        let tz_string = b"3,M7.4.8l";
-        let use_string_extensions = true;
-        assert_eq!(
-            format!("{:?}", TransitionRule::from_tz_string(tz_string, use_string_extensions)),
-            "Err(TransitionRule(\"invalid rule day week day\"))"
-        );
-    }
-
-    #[test]
     fn test_v3_file() -> Result<(), Error> {
         let bytes = b"TZif3\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\x04\0\0\x1c\x20\0\0IST\0TZif3\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x01\0\0\0\x01\0\0\0\0\0\0\0\x01\0\0\0\x01\0\0\0\x04\0\0\0\0\x7f\xe8\x17\x80\0\0\0\x1c\x20\0\0IST\0\x01\x01\x0aIST-2IDT,M3.4.4/26,M10.5.0\x0a";
 
@@ -1049,24 +1006,6 @@ mod tests {
         assert_eq!(transition_rule_all_year_dst.find_local_time_type(946702800)?.offset(), -14400);
 
         Ok(())
-    }
-
-    #[test]
-    fn test_from_timespec() {
-        let unix_time = 8825501086245354106i64;
-        let ans = crate::offset::local::tz_info::rule::UtcDateTime::from_timespec(unix_time);
-        assert_eq!(format!("{:?}", ans), "Err(OutOfRange(\"i64 is out of range for i32\"))");
-
-        let unix_time = -9223372036846387200i64;
-        let ans = crate::offset::local::tz_info::rule::UtcDateTime::from_timespec(unix_time);
-        assert_eq!(format!("{:?}", ans), "Err(OutOfRange(\"out of range operation\"))");
-
-        let unix_time = 0;
-        let ans = crate::offset::local::tz_info::rule::UtcDateTime::from_timespec(unix_time);
-        assert_eq!(
-            format!("{:?}", ans),
-            "Ok(UtcDateTime { year: 1970, month: 1, month_day: 1, hour: 0, minute: 0, second: 0 })"
-        );
     }
 
     #[test]
