@@ -12,9 +12,13 @@ use core::{fmt, str};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(feature = "unstable-locales")]
+use crate::format::Locale;
+#[cfg(feature = "alloc")]
+use crate::format::BAD_FORMAT;
 use crate::format::{
-    parse, parse_and_remainder, DelayedFormat, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    parse, parse_and_remainder, DelayedFormat, Fixed, FormattingSpec, Item, Numeric, Pad,
+    ParseError, ParseResult, Parsed, StrftimeItems,
 };
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
@@ -821,6 +825,89 @@ impl NaiveDateTime {
                 .checked_add(&self.time.signed_duration_since(rhs.time)),
             "always in range",
         )
+    }
+
+    /// Create a new [`FormattingSpec`] that can be used to format multiple `NaiveDateTime`'s.
+    pub const fn formatter<'a>(
+        items: &'a [Item<'a>],
+    ) -> Result<FormattingSpec<Self, &'a [Item<'a>]>, ParseError> {
+        FormattingSpec::<Self, _>::from_slice(items)
+    }
+
+    /// Create a new [`FormattingSpec`] that can be used to format multiple `NaiveDateTime`'s,
+    /// localized for `locale`.
+    #[cfg(feature = "unstable-locales")]
+    pub const fn formatter_localized<'a>(
+        items: &'a [Item<'a>],
+        locale: Locale,
+    ) -> Result<FormattingSpec<Self, &'a [Item<'a>]>, ParseError> {
+        FormattingSpec::<Self, _>::from_slice_localized(items, locale)
+    }
+
+    /// Format using a [`FormattingSpec`] created with [`NaiveDateTime::formatter`].
+    pub fn format_with<'a, I, J, B>(&self, formatter: &FormattingSpec<Self, I>) -> DelayedFormat<J>
+    where
+        I: IntoIterator<Item = B, IntoIter = J> + Clone,
+        J: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        formatter.formatter(Some(self.date()), Some(self.time()), None)
+    }
+
+    /// Format the date and time with the specified format string to a `String`.
+    ///
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported formatting
+    /// specifiers.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
+    /// assert_eq!(dt.format_to_string("%Y-%m-%d %H:%M:%S"), Ok("2015-09-05 23:56:04".to_owned()));
+    /// assert_eq!(
+    ///     dt.format_to_string("around %l %p on %b %-d"),
+    ///     Ok("around 11 PM on Sep 5".to_owned())
+    /// );
+    /// ```
+    #[cfg(feature = "alloc")]
+    pub fn format_to_string(&self, fmt_str: &str) -> Result<String, ParseError> {
+        let formatter =
+            DelayedFormat::new(Some(self.date()), Some(self.time()), StrftimeItems::new(fmt_str));
+        let mut result = String::new();
+        write!(&mut result, "{}", &formatter).map_err(|_| BAD_FORMAT)?;
+        Ok(result)
+    }
+
+    /// Formats the combined date and time with the specified format string and
+    /// locale to a `String`.
+    ///
+    /// See the [`format::strftime` module](crate::format::strftime) for the supported formatting
+    /// specifiers.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the format string is invalid.
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    pub fn format_to_string_localized(
+        &self,
+        fmt_str: &str,
+        locale: Locale,
+    ) -> Result<String, ParseError> {
+        let formatter = DelayedFormat::new_with_locale(
+            Some(self.date()),
+            Some(self.time()),
+            StrftimeItems::new_with_locale(fmt_str, locale),
+            locale,
+        );
+        let mut result = String::new();
+        write!(&mut result, "{}", &formatter).map_err(|_| BAD_FORMAT)?;
+        Ok(result)
     }
 
     /// Formats the combined date and time with the specified formatting items.
