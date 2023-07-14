@@ -266,6 +266,80 @@ impl<'a, Tz: TimeZone> FormattingSpec<DateTime<Tz>, &'a [Item<'a>]> {
     }
 }
 
+macro_rules! formatting_spec_impls {
+    ($type:ty, $date:literal, $time:literal, $off:literal) => {
+        impl<'a, J> FormattingSpec<$type, J> {
+            /// Create a new `FormattingSpec` that can be used to format multiple [`DateTime`]'s.
+            #[doc = concat!("[`", stringify!($type), "`]'s.")]
+            pub fn from_items<I, B>(items: I) -> Result<Self, ParseError>
+            where
+                I: IntoIterator<Item = B, IntoIter = J>,
+                J: Iterator<Item = B> + Clone,
+                B: Borrow<Item<'a>>,
+            {
+                let items = items.into_iter();
+                let locale = locales::default_locale();
+                for item in items.clone() {
+                    item.borrow().check_fields($date, $time, $off, locale)?
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+
+            /// Create a new `FormattingSpec` that can be used to format multiple [`DateTime`]'s
+            /// localized for `locale`.
+            #[doc = concat!("[`", stringify!($type), "`]'s.")]
+            #[cfg(feature = "unstable-locales")]
+            pub fn from_items_localized<I, B>(items: I, locale: Locale) -> Result<Self, ParseError>
+            where
+                I: IntoIterator<Item = B, IntoIter = J>,
+                J: Iterator<Item = B> + Clone,
+                B: Borrow<Item<'a>>,
+            {
+                let items = items.into_iter();
+                for item in items.clone() {
+                    item.borrow().check_fields($date, $time, $off, locale)?
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+        }
+
+        impl<'a> FormattingSpec<$type, &'a [Item<'a>]> {
+            /// Creates a new `FormattingSpec` given a slice of [`Item`]'s.
+            pub const fn from_slice(items: &'a [Item<'a>]) -> Result<Self, ParseError> {
+                let locale = locales::default_locale();
+                let mut i = 0;
+                while i < items.len() {
+                    if let Err(e) = items[i].check_fields($date, $time, $off, locale) {
+                        return Err(e);
+                    }
+                    i += 1;
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+
+            /// Creates a new `FormattingSpec` given a slice of [`Item`]'s and a `locale`.
+            #[cfg(feature = "unstable-locales")]
+            pub const fn from_slice_localized(
+                items: &'a [Item<'a>],
+                locale: Locale,
+            ) -> Result<Self, ParseError> {
+                let mut i = 0;
+                while i < items.len() {
+                    if let Err(e) = items[i].check_fields(true, true, true, locale) {
+                        return Err(e);
+                    }
+                    i += 1;
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+        }
+    };
+}
+
+formatting_spec_impls!(NaiveDateTime, true, true, false);
+formatting_spec_impls!(NaiveDate, true, false, false);
+formatting_spec_impls!(NaiveTime, false, true, false);
+
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
 #[derive(Debug)]
