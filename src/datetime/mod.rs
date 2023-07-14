@@ -199,6 +199,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
+    /// Note that this does *not* account for the timezone!
     /// (aka "UNIX timestamp").
     #[inline]
     #[must_use]
