@@ -100,11 +100,11 @@ const fn span_for_digits(digits: u16) -> u32 {
 /// will also fail if the `Duration` is bigger than the timestamp.
 pub trait DurationRound: Sized {
     /// Error that can occur in rounding or truncating
-    #[cfg(any(feature = "std"))]
+    #[cfg(feature = "std")]
     type Err: std::error::Error;
 
     /// Error that can occur in rounding or truncating
-    #[cfg(not(any(feature = "std")))]
+    #[cfg(not(feature = "std"))]
     type Err: fmt::Debug + fmt::Display;
 
     /// Return a copy rounded by Duration.
@@ -299,7 +299,7 @@ impl fmt::Display for RoundingError {
     }
 }
 
-#[cfg(any(feature = "std"))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for RoundingError {
     #[allow(deprecated)]
