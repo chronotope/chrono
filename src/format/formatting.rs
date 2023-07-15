@@ -55,7 +55,7 @@ impl<'a, J, Tz: TimeZone> FormattingSpec<DateTime<Tz>, J> {
     /// Take a slice as argument for `from_items`. This is the most efficient way to use a
     /// `FormattingSpec`.
     ///
-    /// ```ignore
+    /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
     /// use chrono::format::{FormattingSpec, StrftimeItems};
     ///
@@ -84,7 +84,7 @@ impl<'a, J, Tz: TimeZone> FormattingSpec<DateTime<Tz>, J> {
     ///
     /// [`StrftimeItems`]: crate::format::StrftimeItems
     ///
-    /// ```ignore
+    /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
     /// use chrono::format::{FormattingSpec, StrftimeItems};
     ///
@@ -103,10 +103,10 @@ impl<'a, J, Tz: TimeZone> FormattingSpec<DateTime<Tz>, J> {
     ///
     /// Take a `Vec` as argument for `from_items`. This creates an owned `FormattingSpec`.
     ///
-    /// An owned `FormattingSpec` comes with a disadvantage: it will create owned [`Formatter`]'s
+    /// An owned `FormattingSpec` comes with a disadvantage: it will create owned [`DelayedFormat`]'s
     /// in turn, which involves cloning the `Vec` on every use.
     ///
-    /// ```ignore
+    /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
     /// use chrono::format::{FormattingSpec, StrftimeItems};
     ///
@@ -153,7 +153,7 @@ impl<'a, J, Tz: TimeZone> FormattingSpec<DateTime<Tz>, J> {
     ///
     /// Take a slice as argument. This is the most efficient way to use a `FormattingSpec`.
     ///
-    /// ```ignore
+    /// ```
     /// use chrono::{NaiveDate, TimeZone, Utc};
     /// use chrono::format::{FormattingSpec, Locale, StrftimeItems};
     ///
@@ -359,7 +359,8 @@ where
     J: Iterator<Item = B> + Clone,
     B: Borrow<Item<'a>>,
 {
-    /// Makes a new `Formatter` with this `FormattingSpec` and a local date, time and/or UTC offset.
+    /// Makes a new `DelayedFormat` with this `FormattingSpec` and a local date, time and/or
+    /// UTC offset.
     ///
     /// # Errors/panics
     ///
@@ -371,9 +372,9 @@ where
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         offset: Option<Off>,
-    ) -> Formatter<J, Off> {
+    ) -> DelayedFormat<J, Off> {
         let items = self.items.clone().into_iter();
-        Formatter { date, time, offset, items, locale: self.locale }
+        DelayedFormat { date, time, off: offset, items, locale: self.locale }
     }
 }
 macro_rules! formatting_spec_from_impls {
@@ -391,8 +392,8 @@ formatting_spec_from_impls!(NaiveTime, DateTime<Utc>);
 formatting_spec_from_impls!(NaiveDate, DateTime<Utc>);
 formatting_spec_from_impls!(NaiveDateTime, DateTime<Utc>);
 
-/// A *temporary* object which can be used as an argument to `format!` or others.
-/// This is normally constructed via `format` methods of each date and time type.
+/// A *temporary* object which can be used as an argument to [`format!`] or others.
+/// This is normally constructed via the `format_with` methods of each date and time type.
 #[derive(Debug)]
 pub struct DelayedFormat<I, Off = Utc> {
     /// The date view, if any.
@@ -1102,84 +1103,78 @@ impl<'a, 'b> Write for TruncatingWriter<'a, 'b> {
 #[cfg(test)]
 mod tests {
     use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
-    use crate::FixedOffset;
+    use crate::format::{FormattingSpec, ParseError, StrftimeItems};
+    use crate::{DateTime, FixedOffset};
     use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 
     #[test]
     fn test_date_format() {
-        let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
-        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
-        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
-        assert_eq!(d.format("%d,%e").to_string(), "04, 4");
-        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
-        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
-        assert_eq!(d.format("%j").to_string(), "064"); // since 2012 is a leap year
-        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12");
-        assert_eq!(d.format("%F").to_string(), "2012-03-04");
-        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
-        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+
+        let d = ymd(2012, 3, 4);
+        assert_eq!(d.format_to_string("%Y,%C,%y,%G,%g").unwrap(), "2012,20,12,2012,12");
+        assert_eq!(d.format_to_string("%m,%b,%h,%B").unwrap(), "03,Mar,Mar,March");
+        assert_eq!(d.format_to_string("%d,%e").unwrap(), "04, 4");
+        assert_eq!(d.format_to_string("%U,%W,%V").unwrap(), "10,09,09");
+        assert_eq!(d.format_to_string("%a,%A,%w,%u").unwrap(), "Sun,Sunday,0,7");
+        assert_eq!(d.format_to_string("%j").unwrap(), "064"); // since 2012 is a leap year
+        assert_eq!(d.format_to_string("%D,%x").unwrap(), "03/04/12,03/04/12");
+        assert_eq!(d.format_to_string("%F").unwrap(), "2012-03-04");
+        assert_eq!(d.format_to_string("%v").unwrap(), " 4-Mar-2012");
+        assert_eq!(d.format_to_string("%t%n%%%n%t").unwrap(), "\t\n%\n\t");
 
         // non-four-digit years
-        assert_eq!(
-            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").to_string(),
-            "+12345"
-        );
-        assert_eq!(NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
-        assert_eq!(NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
-        assert_eq!(NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
-        assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
-        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
-        assert_eq!(NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
-        assert_eq!(NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
-        assert_eq!(NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
-        assert_eq!(NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
-        assert_eq!(
-            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
-            "-12345"
-        );
+        assert_eq!(ymd(12345, 1, 1).format_to_string("%Y").unwrap(), "+12345");
+        assert_eq!(ymd(1234, 1, 1).format_to_string("%Y").unwrap(), "1234");
+        assert_eq!(ymd(123, 1, 1).format_to_string("%Y").unwrap(), "0123");
+        assert_eq!(ymd(12, 1, 1).format_to_string("%Y").unwrap(), "0012");
+        assert_eq!(ymd(1, 1, 1).format_to_string("%Y").unwrap(), "0001");
+        assert_eq!(ymd(0, 1, 1).format_to_string("%Y").unwrap(), "0000");
+        assert_eq!(ymd(-1, 1, 1).format_to_string("%Y").unwrap(), "-0001");
+        assert_eq!(ymd(-12, 1, 1).format_to_string("%Y").unwrap(), "-0012");
+        assert_eq!(ymd(-123, 1, 1).format_to_string("%Y").unwrap(), "-0123");
+        assert_eq!(ymd(-1234, 1, 1).format_to_string("%Y").unwrap(), "-1234");
+        assert_eq!(ymd(-12345, 1, 1).format_to_string("%Y").unwrap(), "-12345");
 
         // corner cases
-        assert_eq!(
-            NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2008,08,52,53,01"
-        );
-        assert_eq!(
-            NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2009,09,01,00,53"
-        );
+        assert_eq!(ymd(2007, 12, 31).format_to_string("%G,%U,%W,%V").unwrap(), "2008,52,53,01");
+        assert_eq!(ymd(2010, 1, 3).format_to_string("%G,%U,%W,%V").unwrap(), "2009,01,00,53");
     }
 
     #[test]
     fn test_time_format() {
         let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
-        assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
-        assert_eq!(t.format("%M").to_string(), "05");
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".098,.098765,.098765432");
-        assert_eq!(t.format("%R").to_string(), "03:05");
-        assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07");
-        assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
-        assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        assert_eq!(t.format_to_string("%H,%k,%I,%l,%P,%p").unwrap(), "03, 3,03, 3,am,AM");
+        assert_eq!(t.format_to_string("%M").unwrap(), "05");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,098765432,.098765432");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".098,.098765,.098765432");
+        assert_eq!(t.format_to_string("%R").unwrap(), "03:05");
+        assert_eq!(t.format_to_string("%T,%X").unwrap(), "03:05:07,03:05:07");
+        assert_eq!(t.format_to_string("%r").unwrap(), "03:05:07 AM");
+        assert_eq!(t.format_to_string("%t%n%%%n%t").unwrap(), "\t\n%\n\t");
 
         let t = NaiveTime::from_hms_micro_opt(3, 5, 7, 432100).unwrap();
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,432100000,.432100");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".432,.432100,.432100000");
 
         let t = NaiveTime::from_hms_milli_opt(3, 5, 7, 210).unwrap();
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,210000000,.210");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".210,.210000,.210000000");
 
         let t = NaiveTime::from_hms_opt(3, 5, 7).unwrap();
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,000000000,");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".000,.000000,.000000000");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,000000000,");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".000,.000000,.000000000");
 
         // corner cases
         assert_eq!(
-            NaiveTime::from_hms_opt(13, 57, 9).unwrap().format("%r").to_string(),
+            NaiveTime::from_hms_opt(13, 57, 9).unwrap().format_to_string("%r").unwrap(),
             "01:57:09 PM"
         );
         assert_eq!(
-            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
+            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000)
+                .unwrap()
+                .format_to_string("%X")
+                .unwrap(),
             "23:59:60"
         );
     }
@@ -1188,21 +1183,21 @@ mod tests {
     fn test_datetime_format() {
         let dt =
             NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
-        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
-        assert_eq!(dt.format("%s").to_string(), "1283929614");
-        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        assert_eq!(dt.format_to_string("%c").unwrap(), "Wed Sep  8 07:06:54 2010");
+        assert_eq!(dt.format_to_string("%s").unwrap(), "1283929614");
+        assert_eq!(dt.format_to_string("%t%n%%%n%t").unwrap(), "\t\n%\n\t");
 
         // a horror of leap second: coming near to you.
         let dt = NaiveDate::from_ymd_opt(2012, 6, 30)
             .unwrap()
             .and_hms_milli_opt(23, 59, 59, 1_000)
             .unwrap();
-        assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
-        assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
+        assert_eq!(dt.format_to_string("%c").unwrap(), "Sat Jun 30 23:59:60 2012");
+        assert_eq!(dt.format_to_string("%s").unwrap(), "1341100799"); // not 1341100800, it's intentional.
     }
 
     #[test]
-    fn test_datetime_format_alignment() {
+    fn test_datetime_format_alignment() -> Result<(), ParseError> {
         let datetime = Utc
             .with_ymd_and_hms(2007, 1, 2, 12, 34, 56)
             .unwrap()
@@ -1210,32 +1205,38 @@ mod tests {
             .unwrap();
 
         // Item::Literal, odd number of padding bytes.
-        let percent = datetime.format("%%");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%%"))?;
+        let percent = datetime.format_with(&fmtr);
         assert_eq!("   %", format!("{:>4}", percent));
         assert_eq!("%   ", format!("{:<4}", percent));
         assert_eq!(" %  ", format!("{:^4}", percent));
 
         // Item::Numeric, custom non-ASCII padding character
-        let year = datetime.format("%Y");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%Y"))?;
+        let year = datetime.format_with(&fmtr);
         assert_eq!("——2007", format!("{:—>6}", year));
         assert_eq!("2007——", format!("{:—<6}", year));
         assert_eq!("—2007—", format!("{:—^6}", year));
 
         // Item::Fixed
-        let tz = datetime.format("%Z");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%Z"))?;
+        let tz = datetime.format_with(&fmtr);
         assert_eq!("  UTC", format!("{:>5}", tz));
         assert_eq!("UTC  ", format!("{:<5}", tz));
         assert_eq!(" UTC ", format!("{:^5}", tz));
 
         // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
-        let ymd = datetime.format("%Y %B %d");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%Y %B %d"))?;
+        let ymd = datetime.format_with(&fmtr);
         assert_eq!("  2007 January 02", format!("{:>17}", ymd));
         assert_eq!("2007 January 02  ", format!("{:<17}", ymd));
         assert_eq!(" 2007 January 02 ", format!("{:^17}", ymd));
 
         // Truncated
-        let time = datetime.format("%T%.6f");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%T%.6f"))?;
+        let time = datetime.format_with(&fmtr);
         assert_eq!("12:34:56.1234", format!("{:.13}", time));
+        Ok(())
     }
 
     #[test]

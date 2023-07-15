@@ -530,7 +530,7 @@ const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
 const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 pub(crate) const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
-const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
+pub(crate) const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 // this implementation is here only because we need some private code from `scan`
 
