@@ -340,6 +340,21 @@ formatting_spec_impls!(NaiveDateTime, true, true, false);
 formatting_spec_impls!(NaiveDate, true, false, false);
 formatting_spec_impls!(NaiveTime, false, true, false);
 
+macro_rules! formatting_spec_from_impls {
+    ($src:ty, $dst:ty) => {
+        impl<I> From<FormattingSpec<$src, I>> for FormattingSpec<$dst, I> {
+            fn from(value: FormattingSpec<$src, I>) -> Self {
+                Self { items: value.items, date_time_type: PhantomData, locale: value.locale }
+            }
+        }
+    };
+}
+formatting_spec_from_impls!(NaiveTime, NaiveDateTime);
+formatting_spec_from_impls!(NaiveDate, NaiveDateTime);
+formatting_spec_from_impls!(NaiveTime, DateTime<Utc>);
+formatting_spec_from_impls!(NaiveDate, DateTime<Utc>);
+formatting_spec_from_impls!(NaiveDateTime, DateTime<Utc>);
+
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
 #[derive(Debug)]
