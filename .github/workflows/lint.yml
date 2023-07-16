@@ -34,6 +34,19 @@ jobs:
       - run: taplo lint
       - run: taplo fmt --check --diff
 
+  yamllint:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-slim
+    steps:
+      - name: install yamllint
+        run: |
+          set -eux
+          python -m pip install \
+            --no-warn-script-location --disable-pip-version-check yamllint
+      - uses: actions/checkout@v3
+      - run: yamllint -c yamllint.yml .
+
   cargo-deny:
     runs-on: ubuntu-latest
     steps:
