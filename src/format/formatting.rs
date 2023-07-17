@@ -340,6 +340,42 @@ formatting_spec_impls!(NaiveDateTime, true, true, false);
 formatting_spec_impls!(NaiveDate, true, false, false);
 formatting_spec_impls!(NaiveTime, false, true, false);
 
+impl<T, I> FormattingSpec<T, I> {
+    /// Unwraps this `FormattingSpec<T, I>`, returning the underlying iterator `I`.
+    pub fn into_inner(self) -> I {
+        self.items
+    }
+
+    /// Returns the locale of this `FormattingSpec`.
+    #[cfg(feature = "unstable-locales")]
+    pub fn locale(&self) -> Locale {
+        self.locale
+    }
+}
+
+impl<'a, T, I, J, B> FormattingSpec<T, I>
+where
+    I: IntoIterator<Item = B, IntoIter = J> + Clone,
+    J: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+{
+    /// Makes a new `Formatter` with this `FormattingSpec` and a local date, time and/or UTC offset.
+    ///
+    /// # Errors/panics
+    ///
+    /// If the iterator given for `items` returns [`Item::Error`], the `Display` implementation of
+    /// `Formatter` will return an error, which causes a panic when used in combination with
+    /// [`to_string`](ToString::to_string), [`println!`] and [`format!`].
+    pub(crate) fn formatter<Off>(
+        &self,
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        offset: Option<Off>,
+    ) -> Formatter<J, Off> {
+        let items = self.items.clone().into_iter();
+        Formatter { date, time, offset, items, locale: self.locale }
+    }
+}
 macro_rules! formatting_spec_from_impls {
     ($src:ty, $dst:ty) => {
         impl<I> From<FormattingSpec<$src, I>> for FormattingSpec<$dst, I> {
