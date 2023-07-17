@@ -53,14 +53,14 @@ The following specifiers are available both to formatting and parsing.
 |       |          |                                                                            |
 | `%M`  | `34`     | Minute number (00--59), zero-padded to 2 digits.                           |
 | `%S`  | `60`     | Second number (00--60), zero-padded to 2 digits. [^4]                      |
-| `%f`  | `026490000`   | The fractional seconds (in nanoseconds) since last whole second. [^7] |
-| `%.f` | `.026490`| Similar to `.%f` but left-aligned. These all consume the leading dot. [^7] |
-| `%.3f`| `.026`        | Similar to `.%f` but left-aligned but fixed to a length of 3. [^7]    |
-| `%.6f`| `.026490`     | Similar to `.%f` but left-aligned but fixed to a length of 6. [^7]    |
-| `%.9f`| `.026490000`  | Similar to `.%f` but left-aligned but fixed to a length of 9. [^7]    |
-| `%3f` | `026`         | Similar to `%.3f` but without the leading dot. [^7]                   |
-| `%6f` | `026490`      | Similar to `%.6f` but without the leading dot. [^7]                   |
-| `%9f` | `026490000`   | Similar to `%.9f` but without the leading dot. [^7]                   |
+| `%f`  | `26490000`    | Number of nanoseconds since last whole second. [^7]                   |
+| `%.f` | `.026490`| Decimal fraction of a second. Consumes the leading dot. [^7]               |
+| `%.3f`| `.026`        | Decimal fraction of a second with a fixed length of 3.                |
+| `%.6f`| `.026490`     | Decimal fraction of a second with a fixed length of 6.                |
+| `%.9f`| `.026490000`  | Decimal fraction of a second with a fixed length of 9.                |
+| `%3f` | `026`         | Decimal fraction of a second like `%.3f` but without the leading dot. |
+| `%6f` | `026490`      | Decimal fraction of a second like `%.6f` but without the leading dot. |
+| `%9f` | `026490000`   | Decimal fraction of a second like `%.9f` but without the leading dot. |
 |       |               |                                                                       |
 | `%R`  | `00:34`       | Hour-minute format. Same as `%H:%M`.                                  |
 | `%T`  | `00:34:60`    | Hour-minute-second format. Same as `%H:%M:%S`.                        |
@@ -132,36 +132,12 @@ Notes:
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
 
-[^7]: `%f`, `%.f`, `%.3f`, `%.6f`, `%.9f`, `%3f`, `%6f`, `%9f`:
+[^7]: `%f`, `%.f`:
    <br>
-   The default `%f` is right-aligned and always zero-padded to 9 digits
-   for the compatibility with glibc and others,
-   so it always counts the number of nanoseconds since the last whole second.
-   E.g. 7ms after the last second will print `007000000`,
-   and parsing `7000000` will yield the same.
-   <br>
-   <br>
-   The variant `%.f` is left-aligned and print 0, 3, 6 or 9 fractional digits
-   according to the precision.
-   E.g. 70ms after the last second under `%.f` will print `.070` (note: not `.07`),
-   and parsing `.07`, `.070000` etc. will yield the same.
-   Note that they can print or read nothing if the fractional part is zero or
-   the next character is not `.`.
-   <br>
-   <br>
-   The variant `%.3f`, `%.6f` and `%.9f` are left-aligned and print 3, 6 or 9 fractional digits
-   according to the number preceding `f`.
-   E.g. 70ms after the last second under `%.3f` will print `.070` (note: not `.07`),
-   and parsing `.07`, `.070000` etc. will yield the same.
-   Note that they can read nothing if the fractional part is zero or
-   the next character is not `.` however will print with the specified length.
-   <br>
-   <br>
-   The variant `%3f`, `%6f` and `%9f` are left-aligned and print 3, 6 or 9 fractional digits
-   according to the number preceding `f`, but without the leading dot.
-   E.g. 70ms after the last second under `%3f` will print `070` (note: not `07`),
-   and parsing `07`, `070000` etc. will yield the same.
-   Note that they can read nothing if the fractional part is zero.
+   `%f` and `%.f` are notably different formatting specifiers.<br>
+   `%f` counts the number of nanoseconds since the last whole second, while `%.f` is a fraction of a
+   second.<br>
+   Example: 7μs is formatted as `7000` with `%f`, and formatted as `.000007` with `%.f`.
 
 [^8]: `%Z`:
    Since `chrono` is not aware of timezones beyond their offsets, this specifier
@@ -580,12 +556,18 @@ mod tests {
         assert_eq!(parse_and_collect("😽😽 😽"), [Literal("😽😽"), Space(" "), Literal("😽")]);
         assert_eq!(parse_and_collect("😽😽a 😽"), [Literal("😽😽a"), Space(" "), Literal("😽")]);
         assert_eq!(parse_and_collect("😽😽a b😽"), [Literal("😽😽a"), Space(" "), Literal("b😽")]);
-        assert_eq!(parse_and_collect("😽😽a b😽c"), [Literal("😽😽a"), Space(" "), Literal("b😽c")]);
+        assert_eq!(
+            parse_and_collect("😽😽a b😽c"),
+            [Literal("😽😽a"), Space(" "), Literal("b😽c")]
+        );
         assert_eq!(parse_and_collect("😽😽   "), [Literal("😽😽"), Space("   ")]);
         assert_eq!(parse_and_collect("😽😽   😽"), [Literal("😽😽"), Space("   "), Literal("😽")]);
         assert_eq!(parse_and_collect("   😽"), [Space("   "), Literal("😽")]);
         assert_eq!(parse_and_collect("   😽 "), [Space("   "), Literal("😽"), Space(" ")]);
-        assert_eq!(parse_and_collect("   😽 😽"), [Space("   "), Literal("😽"), Space(" "), Literal("😽")]);
+        assert_eq!(
+            parse_and_collect("   😽 😽"),
+            [Space("   "), Literal("😽"), Space(" "), Literal("😽")]
+        );
         assert_eq!(
             parse_and_collect("   😽 😽 "),
             [Space("   "), Literal("😽"), Space(" "), Literal("😽"), Space(" ")]
@@ -600,8 +582,14 @@ mod tests {
         );
         assert_eq!(parse_and_collect("   😽😽"), [Space("   "), Literal("😽😽")]);
         assert_eq!(parse_and_collect("   😽😽 "), [Space("   "), Literal("😽😽"), Space(" ")]);
-        assert_eq!(parse_and_collect("   😽😽    "), [Space("   "), Literal("😽😽"), Space("    ")]);
-        assert_eq!(parse_and_collect("   😽😽    "), [Space("   "), Literal("😽😽"), Space("    ")]);
+        assert_eq!(
+            parse_and_collect("   😽😽    "),
+            [Space("   "), Literal("😽😽"), Space("    ")]
+        );
+        assert_eq!(
+            parse_and_collect("   😽😽    "),
+            [Space("   "), Literal("😽😽"), Space("    ")]
+        );
         assert_eq!(parse_and_collect(" 😽😽    "), [Space(" "), Literal("😽😽"), Space("    ")]);
         assert_eq!(
             parse_and_collect(" 😽 😽😽    "),
@@ -609,9 +597,19 @@ mod tests {
         );
         assert_eq!(
             parse_and_collect(" 😽 😽はい😽    ハンバーガー"),
-            [Space(" "), Literal("😽"), Space(" "), Literal("😽はい😽"), Space("    "), Literal("ハンバーガー")]
+            [
+                Space(" "),
+                Literal("😽"),
+                Space(" "),
+                Literal("😽はい😽"),
+                Space("    "),
+                Literal("ハンバーガー")
+            ]
         );
-        assert_eq!(parse_and_collect("%%😽%%😽"), [Literal("%"), Literal("😽"), Literal("%"), Literal("😽")]);
+        assert_eq!(
+            parse_and_collect("%%😽%%😽"),
+            [Literal("%"), Literal("😽"), Literal("%"), Literal("😽")]
+        );
         assert_eq!(parse_and_collect("%Y--%m"), [num0(Year), Literal("--"), num0(Month)]);
         assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
         assert_eq!(parse_and_collect("100%%😽"), [Literal("100"), Literal("%"), Literal("😽")]);
@@ -657,7 +655,10 @@ mod tests {
         assert_eq!(parse_and_collect("%Z"), [fixed(Fixed::TimezoneName)]);
         assert_eq!(parse_and_collect("%ZZZZ"), [fixed(Fixed::TimezoneName), Literal("ZZZ")]);
         assert_eq!(parse_and_collect("%Z😽"), [fixed(Fixed::TimezoneName), Literal("😽")]);
-        assert_eq!(parse_and_collect("%#z"), [internal_fixed(TimezoneOffsetPermissive)]);
+        assert_eq!(
+            parse_and_collect("%#z"),
+            [internal_fixed(InternalInternal::TimezoneOffsetPermissive)]
+        );
         assert_eq!(parse_and_collect("%#m"), [Item::Error]);
     }
 

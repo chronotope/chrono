@@ -272,6 +272,7 @@ fn ymdhms_milli(
 
 // local helper function to easily create a DateTime<FixedOffset>
 #[allow(clippy::too_many_arguments)]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn ymdhms_micro(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -291,6 +292,7 @@ fn ymdhms_micro(
 
 // local helper function to easily create a DateTime<FixedOffset>
 #[allow(clippy::too_many_arguments)]
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn ymdhms_nano(
     fixedoffset: &FixedOffset,
     year: i32,

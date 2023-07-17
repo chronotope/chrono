@@ -284,9 +284,14 @@ impl NaiveDate {
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
     #[must_use]
-    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
+    pub const fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_mdf(year, Mdf::new(month, day, flags)?)
+
+        if let Some(mdf) = Mdf::new(month, day, flags) {
+            NaiveDate::from_mdf(year, mdf)
+        } else {
+            None
+        }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
