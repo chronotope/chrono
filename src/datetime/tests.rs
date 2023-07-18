@@ -1,3 +1,6 @@
+#[cfg(feature = "alloc")]
+use alloc::{format, string::ToString};
+
 use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};

@@ -147,6 +147,8 @@ impl fmt::Debug for IsoWeek {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "alloc")]
+    use alloc::{format, string::ToString};
     use crate::naive::{internals, NaiveDate};
     use crate::Datelike;
 

@@ -1,3 +1,6 @@
+#[cfg(feature = "alloc")]
+use alloc::format;
+
 use super::NaiveTime;
 use crate::oldtime::Duration;
 use crate::utils::{assert_display_eq, WriteCompare};

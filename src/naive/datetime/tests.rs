@@ -1,3 +1,6 @@
+#[cfg(feature = "alloc")]
+use alloc::format;
+
 use super::NaiveDateTime;
 use crate::oldtime::Duration;
 #[cfg(any(feature = "alloc", feature = "std"))]

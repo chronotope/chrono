@@ -660,6 +660,8 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
 #[cfg(test)]
 #[cfg(any(feature = "alloc", feature = "std"))]
 mod tests {
+    #[cfg(feature = "alloc")]
+    use alloc::string::String;
     use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
     use crate::FixedOffset;
 

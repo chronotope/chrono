@@ -561,6 +561,9 @@ impl str::FromStr for DateTime<FixedOffset> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "alloc")]
+    use alloc::string::ToString;
+
     use crate::format::*;
     use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
 

@@ -495,6 +495,9 @@ impl<'a> StrftimeItems<'a> {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "alloc")]
+    use alloc::string::{String, ToString};
+
     use super::StrftimeItems;
     use crate::format::Item::{self, Literal, Space};
     #[cfg(feature = "unstable-locales")]
