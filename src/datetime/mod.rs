@@ -3,9 +3,6 @@
 
 //! ISO 8601 date and time with time zone.
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::string::{String, ToString};
 use core::borrow::Borrow;

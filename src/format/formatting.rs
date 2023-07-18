@@ -4,9 +4,6 @@
 //! Date and time formatting routines.
 
 #[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[cfg(feature = "alloc")]
 use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
