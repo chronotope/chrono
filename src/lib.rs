@@ -394,6 +394,9 @@
 #![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 #[cfg(feature = "oldtime")]
 #[cfg_attr(docsrs, doc(cfg(feature = "oldtime")))]
 extern crate time as oldtime;
