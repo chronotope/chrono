@@ -795,7 +795,7 @@ mod tests {
     fn test_parse_only_timezone_offset_permissive_no_panic() {
         use crate::NaiveDate;
         use crate::{FixedOffset, TimeZone};
-        use std::fmt::Write;
+        use core::fmt::Write;
 
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
