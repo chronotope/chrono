@@ -870,8 +870,7 @@ fn test_parse_datetime_utc() {
         "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   Z", // valid datetime, wrong format
     ];
     for &s in &invalid {
-        eprintln!("test_parse_datetime_utc invalid {:?}", s);
-        assert!(s.parse::<DateTime<Utc>>().is_err());
+        assert!(s.parse::<DateTime<Utc>>().is_err(), "test_parse_datetime_utc invalid {:?}", s);
     }
 }
 

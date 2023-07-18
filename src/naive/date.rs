@@ -2956,7 +2956,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "std")]
     fn test_date_from_str() {
         // valid cases
         let valid = [
