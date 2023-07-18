@@ -94,6 +94,9 @@ jobs:
         # line-continuation marks
         shell: bash
       - run: cargo test --no-default-features
+      - run: cargo test --no-default-features --features=alloc
+      - run: cargo test --no-default-features --features=unstable-locales
+      - run: cargo test --no-default-features --features=alloc,unstable-locales
 
   no_std:
     strategy:
