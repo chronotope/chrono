@@ -16,7 +16,7 @@
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use crate::Weekday;
-use core::{fmt, i32};
+use core::fmt;
 
 /// The internal date representation: `year << 13 | Of`
 pub(super) type DateImpl = i32;
@@ -504,8 +504,6 @@ const fn weekday_from_u32_mod7(n: u32) -> Weekday {
 
 #[cfg(test)]
 mod tests {
-    use std::u32;
-
     use super::weekday_from_u32_mod7;
     use super::{Mdf, Of};
     use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};

@@ -1,7 +1,6 @@
 use super::NaiveTime;
 use crate::oldtime::Duration;
 use crate::Timelike;
-use std::u32;
 
 #[test]
 fn test_time_from_hms_milli() {
