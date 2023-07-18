@@ -493,7 +493,6 @@ mod tests {
     use super::{Duration, MAX, MIN};
     #[cfg(feature = "std")]
     use std::time::Duration as StdDuration;
-    use std::{i32, i64};
 
     #[test]
     fn test_duration() {

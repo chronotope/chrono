@@ -2346,7 +2346,6 @@ mod tests {
     use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
     use crate::oldtime::Duration;
     use crate::{Datelike, Weekday};
-    use std::{i32, u32};
 
     // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
     // we use a separate run-time test.
