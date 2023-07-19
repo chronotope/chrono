@@ -4,8 +4,6 @@ use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
 use crate::oldtime::Duration;
-#[cfg(any(feature = "alloc", feature = "std"))]
-use crate::Timelike;
 use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
 
 #[derive(Clone)]
@@ -1244,41 +1242,6 @@ fn test_from_system_time() {
         SystemTime::from(epoch.with_timezone(&FixedOffset::west_opt(28800).unwrap())),
         UNIX_EPOCH
     );
-}
-
-#[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
-fn test_datetime_format_alignment() {
-    let datetime =
-        Utc.with_ymd_and_hms(2007, 1, 2, 12, 34, 56).unwrap().with_nanosecond(123456789).unwrap();
-
-    // Item::Literal, odd number of padding bytes.
-    let percent = datetime.format("%%");
-    assert_eq!("   %", format!("{:>4}", percent));
-    assert_eq!("%   ", format!("{:<4}", percent));
-    assert_eq!(" %  ", format!("{:^4}", percent));
-
-    // Item::Numeric, custom non-ASCII padding character
-    let year = datetime.format("%Y");
-    assert_eq!("——2007", format!("{:—>6}", year));
-    assert_eq!("2007——", format!("{:—<6}", year));
-    assert_eq!("—2007—", format!("{:—^6}", year));
-
-    // Item::Fixed
-    let tz = datetime.format("%Z");
-    assert_eq!("  UTC", format!("{:>5}", tz));
-    assert_eq!("UTC  ", format!("{:<5}", tz));
-    assert_eq!(" UTC ", format!("{:^5}", tz));
-
-    // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
-    let ymd = datetime.format("%Y %B %d");
-    assert_eq!("  2007 January 02", format!("{:>17}", ymd));
-    assert_eq!("2007 January 02  ", format!("{:<17}", ymd));
-    assert_eq!(" 2007 January 02 ", format!("{:^17}", ymd));
-
-    // Truncated
-    let time = datetime.format("%T%.6f");
-    assert_eq!("12:34:56.1234", format!("{:.13}", time));
 }
 
 #[test]

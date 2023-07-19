@@ -3054,51 +3054,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    fn test_date_format() {
-        let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
-        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
-        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
-        assert_eq!(d.format("%d,%e").to_string(), "04, 4");
-        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
-        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
-        assert_eq!(d.format("%j").to_string(), "064"); // since 2012 is a leap year
-        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12");
-        assert_eq!(d.format("%F").to_string(), "2012-03-04");
-        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
-        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
-
-        // non-four-digit years
-        assert_eq!(
-            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").to_string(),
-            "+12345"
-        );
-        assert_eq!(NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
-        assert_eq!(NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
-        assert_eq!(NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
-        assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
-        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
-        assert_eq!(NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
-        assert_eq!(NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
-        assert_eq!(NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
-        assert_eq!(NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
-        assert_eq!(
-            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
-            "-12345"
-        );
-
-        // corner cases
-        assert_eq!(
-            NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2008,08,52,53,01"
-        );
-        assert_eq!(
-            NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2009,09,01,00,53"
-        );
-    }
-
-    #[test]
     fn test_day_iterator_limit() {
         assert_eq!(NaiveDate::from_ymd_opt(262143, 12, 29).unwrap().iter_days().take(4).count(), 2);
         assert_eq!(
