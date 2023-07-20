@@ -59,7 +59,28 @@ impl Utc {
         Utc::now().date()
     }
 
-    /// Returns a `DateTime` which corresponds to the current date and time.
+    /// Returns a `DateTime<Utc>` which corresponds to the current date and time in UTC.
+    ///
+    /// See also the similar [`Local::now()`] which returns `DateTime<Local>`, i.e. the local date
+    /// and time including offset from UTC.
+    ///
+    /// [`Local::now()`]: crate::Local::now
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #![allow(unused_variables)]
+    /// # use chrono::{FixedOffset, Utc};
+    /// // Current time in UTC
+    /// let now_utc = Utc::now();
+    ///
+    /// // Current date in UTC
+    /// let today_utc = now_utc.date_naive();
+    ///
+    /// // Current time in some timezone (let's use +05:00)
+    /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    /// let now_with_offset = Utc::now().with_timezone(&offset);
+    /// ```
     #[cfg(not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
