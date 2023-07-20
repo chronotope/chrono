@@ -113,7 +113,33 @@ impl Local {
         Local::now().date()
     }
 
-    /// Returns a `DateTime` which corresponds to the current date and time.
+    /// Returns a `DateTime<Local>` which corresponds to the current date, time and offset from
+    /// UTC.
+    ///
+    /// See also the similar [`Utc::now()`] which returns `DateTime<Utc>`, i.e. without the local
+    /// offset.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # #![allow(unused_variables)]
+    /// # use chrono::{DateTime, FixedOffset, Local};
+    /// // Current local time
+    /// let now = Local::now();
+    ///
+    /// // Current local date
+    /// let today = now.date_naive();
+    ///
+    /// // Current local time, converted to `DateTime<FixedOffset>`
+    /// let now_fixed_offset = Local::now().fixed_offset();
+    /// // or
+    /// let now_fixed_offset: DateTime<FixedOffset> = Local::now().into();
+    ///
+    /// // Current time in some timezone (let's use +05:00)
+    /// // Note that it is usually more efficient to use `Utc::now` for this use case.
+    /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    /// let now_with_offset = Local::now().with_timezone(&offset);
+    /// ```
     pub fn now() -> DateTime<Local> {
         Utc::now().with_timezone(&Local)
     }
