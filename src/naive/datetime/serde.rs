@@ -157,8 +157,11 @@ pub mod ts_nanoseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value / 1_000_000_000, (value % 1_000_000_000) as u32)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp_opt(
+                value.div_euclid(1_000_000_000),
+                (value.rem_euclid(1_000_000_000)) as u32,
+            )
+            .ok_or_else(|| E::custom(ne_timestamp(value)))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -166,8 +169,8 @@ pub mod ts_nanoseconds {
             E: de::Error,
         {
             NaiveDateTime::from_timestamp_opt(
-                value as i64 / 1_000_000_000,
-                (value as i64 % 1_000_000_000) as u32,
+                (value / 1_000_000_000) as i64,
+                (value % 1_000_000_000) as u32,
             )
             .ok_or_else(|| E::custom(ne_timestamp(value)))
         }
@@ -405,11 +408,8 @@ pub mod ts_microseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
-                value / 1_000_000,
-                ((value % 1_000_000) * 1000) as u32,
-            )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp_micros(value)
+                .ok_or_else(|| E::custom(ne_timestamp(value)))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -656,7 +656,7 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value / 1000, ((value % 1000) * 1_000_000) as u32)
+            NaiveDateTime::from_timestamp_millis(value)
                 .ok_or_else(|| E::custom(ne_timestamp(value)))
         }
 

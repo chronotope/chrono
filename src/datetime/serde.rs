@@ -221,7 +221,10 @@ pub mod ts_nanoseconds {
             E: de::Error,
         {
             serde_from(
-                Utc.timestamp_opt(value / 1_000_000_000, (value % 1_000_000_000) as u32),
+                Utc.timestamp_opt(
+                    value.div_euclid(1_000_000_000),
+                    (value.rem_euclid(1_000_000_000)) as u32,
+                ),
                 &value,
             )
         }
@@ -474,7 +477,10 @@ pub mod ts_microseconds {
             E: de::Error,
         {
             serde_from(
-                Utc.timestamp_opt(value / 1_000_000, ((value % 1_000_000) * 1_000) as u32),
+                Utc.timestamp_opt(
+                    value.div_euclid(1_000_000),
+                    (value.rem_euclid(1_000_000) * 1_000) as u32,
+                ),
                 &value,
             )
         }
@@ -725,7 +731,7 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            serde_from(Utc.timestamp_opt(value / 1000, ((value % 1000) * 1_000_000) as u32), &value)
+            serde_from(Utc.timestamp_millis_opt(value), &value)
         }
 
         /// Deserialize a timestamp in milliseconds since the epoch
@@ -914,8 +920,7 @@ pub mod ts_seconds {
     use serde::{de, ser};
 
     use super::{serde_from, SecondsTimestampVisitor};
-    use crate::offset::TimeZone;
-    use crate::{DateTime, Utc};
+    use crate::{DateTime, LocalResult, TimeZone, Utc};
 
     /// Serialize a UTC datetime into an integer number of seconds since the epoch
     ///
@@ -994,7 +999,14 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            serde_from(Utc.timestamp_opt(value as i64, 0), &value)
+            serde_from(
+                if value > i64::MAX as u64 {
+                    LocalResult::None
+                } else {
+                    Utc.timestamp_opt(value as i64, 0)
+                },
+                &value,
+            )
         }
     }
 }
