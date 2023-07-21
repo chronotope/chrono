@@ -199,6 +199,9 @@ pub mod ts_nanoseconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355733).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(-1, 999_999_999).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
@@ -455,6 +458,9 @@ pub mod ts_microseconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918355000).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(-1, 999_999_000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
@@ -710,6 +716,9 @@ pub mod ts_milliseconds {
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
     /// assert_eq!(my_s, S { time: Utc.timestamp_opt(1526522699, 918000000).unwrap() });
+    ///
+    /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
+    /// assert_eq!(my_s, S { time: Utc.timestamp_opt(-1, 999_000_000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<DateTime<Utc>, D::Error>
