@@ -4,7 +4,7 @@ use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
 use crate::oldtime::Duration as OldDuration;
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
+use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, Timelike};
 
 #[derive(Clone)]
 struct DstTester;
@@ -262,12 +262,12 @@ fn ymdhms_milli(
     hour: u32,
     min: u32,
     sec: u32,
-    milli: i64,
+    milli: u32,
 ) -> DateTime<FixedOffset> {
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(OldDuration::milliseconds(milli))
+        .with_nanosecond(milli * 1_000_000)
         .unwrap()
 }
 
@@ -282,12 +282,12 @@ fn ymdhms_micro(
     hour: u32,
     min: u32,
     sec: u32,
-    micro: i64,
+    micro: u32,
 ) -> DateTime<FixedOffset> {
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(OldDuration::microseconds(micro))
+        .with_nanosecond(micro * 1000)
         .unwrap()
 }
 
@@ -302,12 +302,12 @@ fn ymdhms_nano(
     hour: u32,
     min: u32,
     sec: u32,
-    nano: i64,
+    nano: u32,
 ) -> DateTime<FixedOffset> {
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(OldDuration::nanoseconds(nano))
+        .with_nanosecond(nano)
         .unwrap()
 }
 
@@ -324,11 +324,11 @@ fn ymdhms_milli_utc(
     hour: u32,
     min: u32,
     sec: u32,
-    milli: i64,
+    milli: u32,
 ) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(OldDuration::milliseconds(milli))
+        .with_nanosecond(milli * 1_000_000)
         .unwrap()
 }
 
@@ -493,8 +493,8 @@ fn test_datetime_rfc2822() {
         Ok(FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap())
     );
     assert_eq!(
-        ymdhms_milli(&edt, 2015, 2, 18, 23, 59, 58, 1_234_567).to_rfc2822(),
-        "Thu, 19 Feb 2015 00:20:32 +0500"
+        ymdhms_micro(&edt, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc2822(),
+        "Wed, 18 Feb 2015 23:59:60 +0500"
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:58 +0500"),
@@ -579,7 +579,7 @@ fn test_datetime_rfc3339() {
     );
     assert_eq!(
         ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
-        "2015-02-19T00:00:00.234567+05:00"
+        "2015-02-18T23:59:60.234567+05:00"
     );
     assert_eq!(
         DateTime::parse_from_rfc3339("2015-02-18T23:59:59.123+05:00"),
@@ -600,7 +600,7 @@ fn test_datetime_rfc3339() {
 
     assert_eq!(
         ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
-        "2015-02-19T00:00:00.234567+05:00"
+        "2015-02-18T23:59:60.234567+05:00"
     );
     assert_eq!(
         ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).to_rfc3339(),
@@ -1489,7 +1489,6 @@ fn test_test_deprecated_from_offset() {
 #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 fn locale_decimal_point() {
     use crate::Locale::{ar_SY, nl_NL};
-    use crate::Timelike;
     let dt =
         Utc.with_ymd_and_hms(2018, 9, 5, 18, 58, 0).unwrap().with_nanosecond(123456780).unwrap();
 
