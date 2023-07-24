@@ -21,6 +21,10 @@ mod inner;
 #[path = "windows.rs"]
 mod inner;
 
+#[cfg(all(windows, feature = "clock"))]
+#[allow(unreachable_pub)]
+mod win_bindings;
+
 #[cfg(all(
     not(unix),
     not(windows),
