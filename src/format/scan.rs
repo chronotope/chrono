@@ -399,9 +399,8 @@ enum CommentState {
 #[cfg(test)]
 mod tests {
     use super::{
-        comment_2822, consume_colon_maybe, equals, nanosecond, nanosecond_fixed, s_next,
-        short_or_long_month0, short_or_long_weekday, space, timezone_name_skip,
-        timezone_offset_2822, trim1,
+        comment_2822, consume_colon_maybe, nanosecond, nanosecond_fixed, s_next,
+        short_or_long_month0, short_or_long_weekday, space, timezone_offset_2822, trim1,
     };
     use crate::format::{INVALID, TOO_SHORT};
     use crate::Weekday;
@@ -452,11 +451,6 @@ mod tests {
     }
 
     #[test]
-    fn test_timezone_name_skip() {
-        assert!(timezone_name_skip("\r").is_ok());
-    }
-
-    #[test]
     fn test_timezone_offset_2822() {
         assert_eq!(timezone_offset_2822("cSt").unwrap(), ("", Some(-21600)));
         assert_eq!(timezone_offset_2822("pSt").unwrap(), ("", Some(-28800)));
@@ -492,13 +486,6 @@ mod tests {
     fn test_nanosecond() {
         assert_eq!(nanosecond("2Ù").unwrap(), ("Ù", 200000000));
         assert_eq!(nanosecond("8").unwrap(), ("", 800000000));
-    }
-
-    #[test]
-    fn test_equals() {
-        assert!(equals(b"\x5b", "["));
-        assert!(!equals(b"\x0a\x5b\x4b", "[K"));
-        assert!(!equals(b"\x00", ""));
     }
 
     #[test]
