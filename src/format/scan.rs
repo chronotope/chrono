@@ -398,8 +398,13 @@ enum CommentState {
 
 #[cfg(test)]
 mod tests {
-    use super::{comment_2822, consume_colon_maybe, s_next, space, trim1};
+    use super::{
+        comment_2822, consume_colon_maybe, equals, nanosecond, nanosecond_fixed, s_next,
+        short_or_long_month0, short_or_long_weekday, space, timezone_name_skip,
+        timezone_offset_2822, trim1,
+    };
     use crate::format::{INVALID, TOO_SHORT};
+    use crate::Weekday;
 
     #[test]
     fn test_rfc2822_comments() {
@@ -444,6 +449,56 @@ mod tests {
         assert_eq!(space(" \ta "), Ok("a "));
         assert_eq!(space("a"), Err(INVALID));
         assert_eq!(space("a "), Err(INVALID));
+    }
+
+    #[test]
+    fn test_timezone_name_skip() {
+        assert!(timezone_name_skip("\r").is_ok());
+    }
+
+    #[test]
+    fn test_timezone_offset_2822() {
+        assert_eq!(timezone_offset_2822("cSt").unwrap(), ("", Some(-21600)));
+        assert_eq!(timezone_offset_2822("pSt").unwrap(), ("", Some(-28800)));
+        assert_eq!(timezone_offset_2822("mSt").unwrap(), ("", Some(-25200)));
+        assert_eq!(timezone_offset_2822("-1551").unwrap(), ("", Some(-57060)));
+        assert_eq!(timezone_offset_2822("Gp").unwrap(), ("", None));
+    }
+
+    #[test]
+    fn test_short_or_long_month0() {
+        assert_eq!(short_or_long_month0("JUn").unwrap(), ("", 5));
+        assert_eq!(short_or_long_month0("mAy").unwrap(), ("", 4));
+        assert_eq!(short_or_long_month0("AuG").unwrap(), ("", 7));
+        assert_eq!(short_or_long_month0("Aprâ").unwrap(), ("â", 3));
+        assert_eq!(short_or_long_month0("JUl").unwrap(), ("", 6));
+        assert_eq!(short_or_long_month0("mAr").unwrap(), ("", 2));
+        assert_eq!(short_or_long_month0("Jan").unwrap(), ("", 0));
+    }
+
+    #[test]
+    fn test_short_or_long_weekday() {
+        assert_eq!(short_or_long_weekday("sAtu").unwrap(), ("u", Weekday::Sat));
+        assert_eq!(short_or_long_weekday("thu").unwrap(), ("", Weekday::Thu));
+    }
+
+    #[test]
+    fn test_nanosecond_fixed() {
+        assert_eq!(nanosecond_fixed("", 0usize).unwrap(), ("", 0));
+        assert!(nanosecond_fixed("", 1usize).is_err());
+    }
+
+    #[test]
+    fn test_nanosecond() {
+        assert_eq!(nanosecond("2Ù").unwrap(), ("Ù", 200000000));
+        assert_eq!(nanosecond("8").unwrap(), ("", 800000000));
+    }
+
+    #[test]
+    fn test_equals() {
+        assert!(equals(b"\x5b", "["));
+        assert!(!equals(b"\x0a\x5b\x4b", "[K"));
+        assert!(!equals(b"\x00", ""));
     }
 
     #[test]
