@@ -640,6 +640,7 @@ fn test_datetime_with_timezone() {
 
 #[test]
 #[cfg(feature = "alloc")]
+#[allow(deprecated)]
 fn test_datetime_rfc2822() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
 
@@ -764,6 +765,31 @@ fn test_datetime_rfc2822() {
     assert!(DateTime::parse_from_rfc2822("Wed. 18 Feb 2015 23:16:09 +0000").is_err());
     // *trailing* space causes failure
     assert!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000   ").is_err());
+
+    const RFC_2822_YEAR_MAX: i32 = 9999;
+    const RFC_2822_YEAR_MIN: i32 = 0;
+
+    let dt = Utc.with_ymd_and_hms(RFC_2822_YEAR_MAX, 1, 2, 3, 4, 5).unwrap();
+    assert_eq!(dt.to_rfc2822(), "Sat, 2 Jan 9999 03:04:05 +0000");
+
+    let dt = Utc.with_ymd_and_hms(RFC_2822_YEAR_MIN, 1, 2, 3, 4, 5).unwrap();
+    assert_eq!(dt.to_rfc2822(), "Sun, 2 Jan 0000 03:04:05 +0000");
+}
+
+#[test]
+#[should_panic]
+#[cfg(feature = "alloc")]
+#[allow(deprecated)]
+fn test_rfc_2822_year_range_panic_high() {
+    let _ = Utc.with_ymd_and_hms(10000, 1, 2, 3, 4, 5).unwrap().to_rfc2822();
+}
+
+#[test]
+#[should_panic]
+#[cfg(feature = "alloc")]
+#[allow(deprecated)]
+fn test_rfc_2822_year_range_panic_low() {
+    let _ = Utc.with_ymd_and_hms(-1, 1, 2, 3, 4, 5).unwrap().to_rfc2822();
 }
 
 #[test]
