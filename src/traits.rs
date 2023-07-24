@@ -55,37 +55,101 @@ pub trait Datelike: Sized {
 
     /// Makes a new value with the year number changed, while keeping the same month and day.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (February 29 in a non-leap year).
+    /// - The year is out of range for [`NaiveDate`].
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    ///
+    /// [`NaiveDate`]: crate::NaiveDate
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_year(&self, year: i32) -> Option<Self>;
 
     /// Makes a new value with the month number (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    /// - The value for `month` is out of range.
+    ///
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_month(&self, month: u32) -> Option<Self>;
 
     /// Makes a new value with the month number (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    /// - The value for `month0` is out of range.
+    ///
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_month0(&self, month0: u32) -> Option<Self>;
 
     /// Makes a new value with the day of month (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (for example `day(31)` in April).
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    /// - The value for `day` is out of range.
+    ///
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_day(&self, day: u32) -> Option<Self>;
 
     /// Makes a new value with the day of month (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (for example `day0(30)` in April).
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    /// - The value for `day0` is out of range.
+    ///
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_day0(&self, day0: u32) -> Option<Self>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    /// - The value for `ordinal` is out of range.
+    ///
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_ordinal(&self, ordinal: u32) -> Option<Self>;
 
     /// Makes a new value with the day of year (starting from 0) changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// # Errors
+    ///
+    /// Returns `None` when:
+    ///
+    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
+    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
+    ///   transition such as from DST to standard time.
+    /// - The value for `ordinal0` is out of range.
+    ///
+    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self>;
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
