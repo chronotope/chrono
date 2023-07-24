@@ -53,19 +53,19 @@ The following specifiers are available both to formatting and parsing.
 |       |          |                                                                            |
 | `%M`  | `34`     | Minute number (00--59), zero-padded to 2 digits.                           |
 | `%S`  | `60`     | Second number (00--60), zero-padded to 2 digits. [^4]                      |
-| `%f`  | `026490000`   | The fractional seconds (in nanoseconds) since last whole second. [^7] |
-| `%.f` | `.026490`| Similar to `.%f` but left-aligned. These all consume the leading dot. [^7] |
-| `%.3f`| `.026`        | Similar to `.%f` but left-aligned but fixed to a length of 3. [^7]    |
-| `%.6f`| `.026490`     | Similar to `.%f` but left-aligned but fixed to a length of 6. [^7]    |
-| `%.9f`| `.026490000`  | Similar to `.%f` but left-aligned but fixed to a length of 9. [^7]    |
-| `%3f` | `026`         | Similar to `%.3f` but without the leading dot. [^7]                   |
-| `%6f` | `026490`      | Similar to `%.6f` but without the leading dot. [^7]                   |
-| `%9f` | `026490000`   | Similar to `%.9f` but without the leading dot. [^7]                   |
+| `%f`  | `26490000`    | Number of nanoseconds since last whole second. [^7]                   |
+| `%.f` | `.026490`| Decimal fraction of a second. Consumes the leading dot. [^7]               |
+| `%.3f`| `.026`        | Decimal fraction of a second with a fixed length of 3.                |
+| `%.6f`| `.026490`     | Decimal fraction of a second with a fixed length of 6.                |
+| `%.9f`| `.026490000`  | Decimal fraction of a second with a fixed length of 9.                |
+| `%3f` | `026`         | Decimal fraction of a second like `%.3f` but without the leading dot. |
+| `%6f` | `026490`      | Decimal fraction of a second like `%.6f` but without the leading dot. |
+| `%9f` | `026490000`   | Decimal fraction of a second like `%.9f` but without the leading dot. |
 |       |               |                                                                       |
 | `%R`  | `00:34`       | Hour-minute format. Same as `%H:%M`.                                  |
 | `%T`  | `00:34:60`    | Hour-minute-second format. Same as `%H:%M:%S`.                        |
 | `%X`  | `00:34:60`    | Locale's time representation (e.g., 23:13:48).                        |
-| `%r`  | `12:34:60 AM` | Hour-minute-second format in 12-hour clocks. Same as `%I:%M:%S %p`.   |
+| `%r`  | `12:34:60 AM` | Locale's 12 hour clock time. (e.g., 11:11:04 PM). Falls back to `%X` if the locale does not have a 12 hour clock format. |
 |       |          |                                                                            |
 |       |          | **TIME ZONE SPECIFIERS:**                                                  |
 | `%Z`  | `ACST`   | Local time zone name. Skips all non-whitespace characters during parsing. Identical to `%:z` when formatting. [^8] |
@@ -132,36 +132,12 @@ Notes:
    For the purpose of Chrono, it only accounts for non-leap seconds
    so it slightly differs from ISO C `strftime` behavior.
 
-[^7]: `%f`, `%.f`, `%.3f`, `%.6f`, `%.9f`, `%3f`, `%6f`, `%9f`:
+[^7]: `%f`, `%.f`:
    <br>
-   The default `%f` is right-aligned and always zero-padded to 9 digits
-   for the compatibility with glibc and others,
-   so it always counts the number of nanoseconds since the last whole second.
-   E.g. 7ms after the last second will print `007000000`,
-   and parsing `7000000` will yield the same.
-   <br>
-   <br>
-   The variant `%.f` is left-aligned and print 0, 3, 6 or 9 fractional digits
-   according to the precision.
-   E.g. 70ms after the last second under `%.f` will print `.070` (note: not `.07`),
-   and parsing `.07`, `.070000` etc. will yield the same.
-   Note that they can print or read nothing if the fractional part is zero or
-   the next character is not `.`.
-   <br>
-   <br>
-   The variant `%.3f`, `%.6f` and `%.9f` are left-aligned and print 3, 6 or 9 fractional digits
-   according to the number preceding `f`.
-   E.g. 70ms after the last second under `%.3f` will print `.070` (note: not `.07`),
-   and parsing `.07`, `.070000` etc. will yield the same.
-   Note that they can read nothing if the fractional part is zero or
-   the next character is not `.` however will print with the specified length.
-   <br>
-   <br>
-   The variant `%3f`, `%6f` and `%9f` are left-aligned and print 3, 6 or 9 fractional digits
-   according to the number preceding `f`, but without the leading dot.
-   E.g. 70ms after the last second under `%3f` will print `070` (note: not `07`),
-   and parsing `07`, `070000` etc. will yield the same.
-   Note that they can read nothing if the fractional part is zero.
+   `%f` and `%.f` are notably different formatting specifiers.<br>
+   `%f` counts the number of nanoseconds since the last whole second, while `%.f` is a fraction of a
+   second.<br>
+   Example: 7μs is formatted as `7000` with `%f`, and formatted as `.000007` with `%.f`.
 
 [^8]: `%Z`:
    Since `chrono` is not aware of timezones beyond their offsets, this specifier
@@ -180,39 +156,10 @@ Notes:
    China Daylight Time.
 */
 
-#[cfg(feature = "unstable-locales")]
-extern crate alloc;
-
-#[cfg(feature = "unstable-locales")]
-use alloc::vec::Vec;
-
+use super::{fixed, internal_fixed, num, num0, nums};
 #[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
-use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad};
-
-#[cfg(feature = "unstable-locales")]
-type Fmt<'a> = Vec<Item<'a>>;
-#[cfg(not(feature = "unstable-locales"))]
-type Fmt<'a> = &'static [Item<'static>];
-
-static D_FMT: &[Item<'static>] =
-    &[num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)];
-static D_T_FMT: &[Item<'static>] = &[
-    fix!(ShortWeekdayName),
-    sp!(" "),
-    fix!(ShortMonthName),
-    sp!(" "),
-    nums!(Day),
-    sp!(" "),
-    num0!(Hour),
-    lit!(":"),
-    num0!(Minute),
-    lit!(":"),
-    num0!(Second),
-    sp!(" "),
-    num0!(Year),
-];
-static T_FMT: &[Item<'static>] = &[num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)];
+use super::{Fixed, InternalInternal, Item, Numeric, Pad};
 
 /// Parsing iterator for `strftime`-like format strings.
 #[derive(Clone, Debug)]
@@ -220,58 +167,34 @@ pub struct StrftimeItems<'a> {
     /// Remaining portion of the string.
     remainder: &'a str,
     /// If the current specifier is composed of multiple formatting items (e.g. `%+`),
-    /// parser refers to the statically reconstructed slice of them.
-    /// If `recons` is not empty they have to be returned earlier than the `remainder`.
-    recons: Fmt<'a>,
-    /// Date format
-    d_fmt: Fmt<'a>,
-    /// Date and time format
-    d_t_fmt: Fmt<'a>,
-    /// Time format
-    t_fmt: Fmt<'a>,
+    /// `queue` stores a slice of `Item`s that have to be returned one by one.
+    queue: &'static [Item<'static>],
+    #[cfg(feature = "unstable-locales")]
+    locale_str: &'a str,
+    #[cfg(feature = "unstable-locales")]
+    locale: Option<Locale>,
 }
 
 impl<'a> StrftimeItems<'a> {
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[must_use]
-    pub fn new(s: &'a str) -> StrftimeItems<'a> {
-        Self::with_remainer(s)
+    pub const fn new(s: &'a str) -> StrftimeItems<'a> {
+        #[cfg(not(feature = "unstable-locales"))]
+        {
+            StrftimeItems { remainder: s, queue: &[] }
+        }
+        #[cfg(feature = "unstable-locales")]
+        {
+            StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: None }
+        }
     }
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[cfg(feature = "unstable-locales")]
     #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
-    pub fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
-        let d_fmt = StrftimeItems::new(locales::d_fmt(locale)).collect();
-        let d_t_fmt = StrftimeItems::new(locales::d_t_fmt(locale)).collect();
-        let t_fmt = StrftimeItems::new(locales::t_fmt(locale)).collect();
-
-        StrftimeItems { remainder: s, recons: Vec::new(), d_fmt, d_t_fmt, t_fmt }
-    }
-
-    #[cfg(not(feature = "unstable-locales"))]
-    fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
-        static FMT_NONE: &[Item<'static>; 0] = &[];
-
-        StrftimeItems {
-            remainder: s,
-            recons: FMT_NONE,
-            d_fmt: D_FMT,
-            d_t_fmt: D_T_FMT,
-            t_fmt: T_FMT,
-        }
-    }
-
-    #[cfg(feature = "unstable-locales")]
-    fn with_remainer(s: &'a str) -> StrftimeItems<'a> {
-        StrftimeItems {
-            remainder: s,
-            recons: Vec::new(),
-            d_fmt: D_FMT.to_vec(),
-            d_t_fmt: D_T_FMT.to_vec(),
-            t_fmt: T_FMT.to_vec(),
-        }
+    pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
+        StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }
     }
 }
 
@@ -281,37 +204,78 @@ impl<'a> Iterator for StrftimeItems<'a> {
     type Item = Item<'a>;
 
     fn next(&mut self) -> Option<Item<'a>> {
-        // we have some reconstructed items to return
-        if !self.recons.is_empty() {
-            let item;
-            #[cfg(feature = "unstable-locales")]
-            {
-                item = self.recons.remove(0);
-            }
-            #[cfg(not(feature = "unstable-locales"))]
-            {
-                item = self.recons[0].clone();
-                self.recons = &self.recons[1..];
-            }
+        // We have items queued to return from a specifier composed of multiple formatting items.
+        if let Some((item, remainder)) = self.queue.split_first() {
+            self.queue = remainder;
+            return Some(item.clone());
+        }
+
+        // We are in the middle of parsing the localized formatting string of a specifier.
+        #[cfg(feature = "unstable-locales")]
+        if !self.locale_str.is_empty() {
+            let (remainder, item) = self.parse_next_item(self.locale_str)?;
+            self.locale_str = remainder;
             return Some(item);
         }
 
-        match self.remainder.chars().next() {
+        // Normal: we are parsing the formatting string.
+        let (remainder, item) = self.parse_next_item(self.remainder)?;
+        self.remainder = remainder;
+        Some(item)
+    }
+}
+
+impl<'a> StrftimeItems<'a> {
+    fn parse_next_item(&mut self, mut remainder: &'a str) -> Option<(&'a str, Item<'a>)> {
+        use InternalInternal::*;
+        use Item::{Literal, Space};
+        use Numeric::*;
+
+        static D_FMT: &[Item<'static>] =
+            &[num0(Month), Literal("/"), num0(Day), Literal("/"), num0(YearMod100)];
+        static D_T_FMT: &[Item<'static>] = &[
+            fixed(Fixed::ShortWeekdayName),
+            Space(" "),
+            fixed(Fixed::ShortMonthName),
+            Space(" "),
+            nums(Day),
+            Space(" "),
+            num0(Hour),
+            Literal(":"),
+            num0(Minute),
+            Literal(":"),
+            num0(Second),
+            Space(" "),
+            num0(Year),
+        ];
+        static T_FMT: &[Item<'static>] =
+            &[num0(Hour), Literal(":"), num0(Minute), Literal(":"), num0(Second)];
+        static T_FMT_AMPM: &[Item<'static>] = &[
+            num0(Hour12),
+            Literal(":"),
+            num0(Minute),
+            Literal(":"),
+            num0(Second),
+            Space(" "),
+            fixed(Fixed::UpperAmPm),
+        ];
+
+        match remainder.chars().next() {
             // we are done
             None => None,
 
             // the next item is a specifier
             Some('%') => {
-                self.remainder = &self.remainder[1..];
+                remainder = &remainder[1..];
 
                 macro_rules! next {
                     () => {
-                        match self.remainder.chars().next() {
+                        match remainder.chars().next() {
                             Some(x) => {
-                                self.remainder = &self.remainder[x.len_utf8()..];
+                                remainder = &remainder[x.len_utf8()..];
                                 x
                             }
-                            None => return Some(Item::Error), // premature end of string
+                            None => return Some((remainder, Item::Error)), // premature end of string
                         }
                     };
                 }
@@ -326,193 +290,218 @@ impl<'a> Iterator for StrftimeItems<'a> {
                 let is_alternate = spec == '#';
                 let spec = if pad_override.is_some() || is_alternate { next!() } else { spec };
                 if is_alternate && !HAVE_ALTERNATES.contains(spec) {
-                    return Some(Item::Error);
+                    return Some((remainder, Item::Error));
                 }
 
-                macro_rules! recons {
+                macro_rules! queue {
                     [$head:expr, $($tail:expr),+ $(,)*] => ({
-                        #[cfg(feature = "unstable-locales")]
-                        {
-                            self.recons.clear();
-                            $(self.recons.push($tail);)+
-                        }
-                        #[cfg(not(feature = "unstable-locales"))]
-                        {
-                            const RECONS: &'static [Item<'static>] = &[$($tail),+];
-                            self.recons = RECONS;
-                        }
+                        const QUEUE: &'static [Item<'static>] = &[$($tail),+];
+                        self.queue = QUEUE;
                         $head
                     })
                 }
-
-                macro_rules! recons_from_slice {
+                #[cfg(not(feature = "unstable-locales"))]
+                macro_rules! queue_from_slice {
                     ($slice:expr) => {{
-                        #[cfg(feature = "unstable-locales")]
-                        {
-                            self.recons.clear();
-                            self.recons.extend_from_slice(&$slice[1..]);
-                        }
-                        #[cfg(not(feature = "unstable-locales"))]
-                        {
-                            self.recons = &$slice[1..];
-                        }
+                        self.queue = &$slice[1..];
                         $slice[0].clone()
                     }};
                 }
 
                 let item = match spec {
-                    'A' => fix!(LongWeekdayName),
-                    'B' => fix!(LongMonthName),
-                    'C' => num0!(YearDiv100),
+                    'A' => fixed(Fixed::LongWeekdayName),
+                    'B' => fixed(Fixed::LongMonthName),
+                    'C' => num0(YearDiv100),
                     'D' => {
-                        recons![num0!(Month), lit!("/"), num0!(Day), lit!("/"), num0!(YearMod100)]
+                        queue![num0(Month), Literal("/"), num0(Day), Literal("/"), num0(YearMod100)]
                     }
-                    'F' => recons![num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)],
-                    'G' => num0!(IsoYear),
-                    'H' => num0!(Hour),
-                    'I' => num0!(Hour12),
-                    'M' => num0!(Minute),
-                    'P' => fix!(LowerAmPm),
-                    'R' => recons![num0!(Hour), lit!(":"), num0!(Minute)],
-                    'S' => num0!(Second),
-                    'T' => recons![num0!(Hour), lit!(":"), num0!(Minute), lit!(":"), num0!(Second)],
-                    'U' => num0!(WeekFromSun),
-                    'V' => num0!(IsoWeek),
-                    'W' => num0!(WeekFromMon),
-                    'X' => recons_from_slice!(self.t_fmt),
-                    'Y' => num0!(Year),
-                    'Z' => fix!(TimezoneName),
-                    'a' => fix!(ShortWeekdayName),
-                    'b' | 'h' => fix!(ShortMonthName),
-                    'c' => recons_from_slice!(self.d_t_fmt),
-                    'd' => num0!(Day),
-                    'e' => nums!(Day),
-                    'f' => num0!(Nanosecond),
-                    'g' => num0!(IsoYearMod100),
-                    'j' => num0!(Ordinal),
-                    'k' => nums!(Hour),
-                    'l' => nums!(Hour12),
-                    'm' => num0!(Month),
-                    'n' => sp!("\n"),
-                    'p' => fix!(UpperAmPm),
-                    'r' => recons![
-                        num0!(Hour12),
-                        lit!(":"),
-                        num0!(Minute),
-                        lit!(":"),
-                        num0!(Second),
-                        sp!(" "),
-                        fix!(UpperAmPm)
-                    ],
-                    's' => num!(Timestamp),
-                    't' => sp!("\t"),
-                    'u' => num!(WeekdayFromMon),
-                    'v' => {
-                        recons![nums!(Day), lit!("-"), fix!(ShortMonthName), lit!("-"), num0!(Year)]
+                    'F' => queue![num0(Year), Literal("-"), num0(Month), Literal("-"), num0(Day)],
+                    'G' => num0(IsoYear),
+                    'H' => num0(Hour),
+                    'I' => num0(Hour12),
+                    'M' => num0(Minute),
+                    'P' => fixed(Fixed::LowerAmPm),
+                    'R' => queue![num0(Hour), Literal(":"), num0(Minute)],
+                    'S' => num0(Second),
+                    'T' => {
+                        queue![num0(Hour), Literal(":"), num0(Minute), Literal(":"), num0(Second)]
                     }
-                    'w' => num!(NumDaysFromSun),
-                    'x' => recons_from_slice!(self.d_fmt),
-                    'y' => num0!(YearMod100),
-                    'z' => {
-                        if is_alternate {
-                            internal_fix!(TimezoneOffsetPermissive)
+                    'U' => num0(WeekFromSun),
+                    'V' => num0(IsoWeek),
+                    'W' => num0(WeekFromMon),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'X' => queue_from_slice!(T_FMT),
+                    #[cfg(feature = "unstable-locales")]
+                    'X' => self.switch_to_locale_str(locales::t_fmt, T_FMT),
+                    'Y' => num0(Year),
+                    'Z' => fixed(Fixed::TimezoneName),
+                    'a' => fixed(Fixed::ShortWeekdayName),
+                    'b' | 'h' => fixed(Fixed::ShortMonthName),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'c' => queue_from_slice!(D_T_FMT),
+                    #[cfg(feature = "unstable-locales")]
+                    'c' => self.switch_to_locale_str(locales::d_t_fmt, D_T_FMT),
+                    'd' => num0(Day),
+                    'e' => nums(Day),
+                    'f' => num0(Nanosecond),
+                    'g' => num0(IsoYearMod100),
+                    'j' => num0(Ordinal),
+                    'k' => nums(Hour),
+                    'l' => nums(Hour12),
+                    'm' => num0(Month),
+                    'n' => Space("\n"),
+                    'p' => fixed(Fixed::UpperAmPm),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'r' => queue_from_slice!(T_FMT_AMPM),
+                    #[cfg(feature = "unstable-locales")]
+                    'r' => {
+                        if self.locale.is_some()
+                            && locales::t_fmt_ampm(self.locale.unwrap()).is_empty()
+                        {
+                            // 12-hour clock not supported by this locale. Switch to 24-hour format.
+                            self.switch_to_locale_str(locales::t_fmt, T_FMT)
                         } else {
-                            fix!(TimezoneOffset)
+                            self.switch_to_locale_str(locales::t_fmt_ampm, T_FMT_AMPM)
                         }
                     }
-                    '+' => fix!(RFC3339),
+                    's' => num(Timestamp),
+                    't' => Space("\t"),
+                    'u' => num(WeekdayFromMon),
+                    'v' => {
+                        queue![
+                            nums(Day),
+                            Literal("-"),
+                            fixed(Fixed::ShortMonthName),
+                            Literal("-"),
+                            num0(Year)
+                        ]
+                    }
+                    'w' => num(NumDaysFromSun),
+                    #[cfg(not(feature = "unstable-locales"))]
+                    'x' => queue_from_slice!(D_FMT),
+                    #[cfg(feature = "unstable-locales")]
+                    'x' => self.switch_to_locale_str(locales::d_fmt, D_FMT),
+                    'y' => num0(YearMod100),
+                    'z' => {
+                        if is_alternate {
+                            internal_fixed(TimezoneOffsetPermissive)
+                        } else {
+                            fixed(Fixed::TimezoneOffset)
+                        }
+                    }
+                    '+' => fixed(Fixed::RFC3339),
                     ':' => {
-                        if self.remainder.starts_with("::z") {
-                            self.remainder = &self.remainder[3..];
-                            fix!(TimezoneOffsetTripleColon)
-                        } else if self.remainder.starts_with(":z") {
-                            self.remainder = &self.remainder[2..];
-                            fix!(TimezoneOffsetDoubleColon)
-                        } else if self.remainder.starts_with('z') {
-                            self.remainder = &self.remainder[1..];
-                            fix!(TimezoneOffsetColon)
+                        if remainder.starts_with("::z") {
+                            remainder = &remainder[3..];
+                            fixed(Fixed::TimezoneOffsetTripleColon)
+                        } else if remainder.starts_with(":z") {
+                            remainder = &remainder[2..];
+                            fixed(Fixed::TimezoneOffsetDoubleColon)
+                        } else if remainder.starts_with('z') {
+                            remainder = &remainder[1..];
+                            fixed(Fixed::TimezoneOffsetColon)
                         } else {
                             Item::Error
                         }
                     }
                     '.' => match next!() {
                         '3' => match next!() {
-                            'f' => fix!(Nanosecond3),
+                            'f' => fixed(Fixed::Nanosecond3),
                             _ => Item::Error,
                         },
                         '6' => match next!() {
-                            'f' => fix!(Nanosecond6),
+                            'f' => fixed(Fixed::Nanosecond6),
                             _ => Item::Error,
                         },
                         '9' => match next!() {
-                            'f' => fix!(Nanosecond9),
+                            'f' => fixed(Fixed::Nanosecond9),
                             _ => Item::Error,
                         },
-                        'f' => fix!(Nanosecond),
+                        'f' => fixed(Fixed::Nanosecond),
                         _ => Item::Error,
                     },
                     '3' => match next!() {
-                        'f' => internal_fix!(Nanosecond3NoDot),
+                        'f' => internal_fixed(Nanosecond3NoDot),
                         _ => Item::Error,
                     },
                     '6' => match next!() {
-                        'f' => internal_fix!(Nanosecond6NoDot),
+                        'f' => internal_fixed(Nanosecond6NoDot),
                         _ => Item::Error,
                     },
                     '9' => match next!() {
-                        'f' => internal_fix!(Nanosecond9NoDot),
+                        'f' => internal_fixed(Nanosecond9NoDot),
                         _ => Item::Error,
                     },
-                    '%' => lit!("%"),
+                    '%' => Literal("%"),
                     _ => Item::Error, // no such specifier
                 };
 
-                // adjust `item` if we have any padding modifier
+                // Adjust `item` if we have any padding modifier.
+                // Not allowed on non-numeric items or on specifiers composed out of multiple
+                // formatting items.
                 if let Some(new_pad) = pad_override {
                     match item {
-                        Item::Numeric(ref kind, _pad) if self.recons.is_empty() => {
-                            Some(Item::Numeric(kind.clone(), new_pad))
+                        Item::Numeric(ref kind, _pad) if self.queue.is_empty() => {
+                            Some((remainder, Item::Numeric(kind.clone(), new_pad)))
                         }
-                        _ => Some(Item::Error), // no reconstructed or non-numeric item allowed
+                        _ => Some((remainder, Item::Error)),
                     }
                 } else {
-                    Some(item)
+                    Some((remainder, item))
                 }
             }
 
             // the next item is space
             Some(c) if c.is_whitespace() => {
                 // `%` is not a whitespace, so `c != '%'` is redundant
-                let nextspec = self
-                    .remainder
-                    .find(|c: char| !c.is_whitespace())
-                    .unwrap_or(self.remainder.len());
+                let nextspec =
+                    remainder.find(|c: char| !c.is_whitespace()).unwrap_or(remainder.len());
                 assert!(nextspec > 0);
-                let item = sp!(&self.remainder[..nextspec]);
-                self.remainder = &self.remainder[nextspec..];
-                Some(item)
+                let item = Space(&remainder[..nextspec]);
+                remainder = &remainder[nextspec..];
+                Some((remainder, item))
             }
 
             // the next item is literal
             _ => {
-                let nextspec = self
-                    .remainder
+                let nextspec = remainder
                     .find(|c: char| c.is_whitespace() || c == '%')
-                    .unwrap_or(self.remainder.len());
+                    .unwrap_or(remainder.len());
                 assert!(nextspec > 0);
-                let item = lit!(&self.remainder[..nextspec]);
-                self.remainder = &self.remainder[nextspec..];
-                Some(item)
+                let item = Literal(&remainder[..nextspec]);
+                remainder = &remainder[nextspec..];
+                Some((remainder, item))
             }
+        }
+    }
+
+    #[cfg(feature = "unstable-locales")]
+    fn switch_to_locale_str(
+        &mut self,
+        localized_fmt_str: impl Fn(Locale) -> &'static str,
+        fallback: &'static [Item<'static>],
+    ) -> Item<'a> {
+        if let Some(locale) = self.locale {
+            assert!(self.locale_str.is_empty());
+            let (fmt_str, item) = self.parse_next_item(localized_fmt_str(locale)).unwrap();
+            self.locale_str = fmt_str;
+            item
+        } else {
+            self.queue = &fallback[1..];
+            fallback[0].clone()
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::StrftimeItems;
+    use crate::format::Item::{self, Literal, Space};
     #[cfg(feature = "unstable-locales")]
-    use super::Locale;
-    use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, StrftimeItems};
+    use crate::format::Locale;
+    use crate::format::{fixed, internal_fixed, num, num0, nums};
+    use crate::format::{Fixed, InternalInternal, Numeric::*};
+    #[cfg(any(feature = "alloc", feature = "std"))]
     use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Timelike, Utc};
 
     #[test]
@@ -526,97 +515,122 @@ mod tests {
         }
 
         assert_eq!(parse_and_collect(""), []);
-        assert_eq!(parse_and_collect(" "), [sp!(" ")]);
-        assert_eq!(parse_and_collect("  "), [sp!("  ")]);
+        assert_eq!(parse_and_collect(" "), [Space(" ")]);
+        assert_eq!(parse_and_collect("  "), [Space("  ")]);
         // ne!
-        assert_ne!(parse_and_collect("  "), [sp!(" "), sp!(" ")]);
+        assert_ne!(parse_and_collect("  "), [Space(" "), Space(" ")]);
         // eq!
-        assert_eq!(parse_and_collect("  "), [sp!("  ")]);
-        assert_eq!(parse_and_collect("a"), [lit!("a")]);
-        assert_eq!(parse_and_collect("ab"), [lit!("ab")]);
-        assert_eq!(parse_and_collect("😽"), [lit!("😽")]);
-        assert_eq!(parse_and_collect("a😽"), [lit!("a😽")]);
-        assert_eq!(parse_and_collect("😽a"), [lit!("😽a")]);
-        assert_eq!(parse_and_collect(" 😽"), [sp!(" "), lit!("😽")]);
-        assert_eq!(parse_and_collect("😽 "), [lit!("😽"), sp!(" ")]);
+        assert_eq!(parse_and_collect("  "), [Space("  ")]);
+        assert_eq!(parse_and_collect("a"), [Literal("a")]);
+        assert_eq!(parse_and_collect("ab"), [Literal("ab")]);
+        assert_eq!(parse_and_collect("😽"), [Literal("😽")]);
+        assert_eq!(parse_and_collect("a😽"), [Literal("a😽")]);
+        assert_eq!(parse_and_collect("😽a"), [Literal("😽a")]);
+        assert_eq!(parse_and_collect(" 😽"), [Space(" "), Literal("😽")]);
+        assert_eq!(parse_and_collect("😽 "), [Literal("😽"), Space(" ")]);
         // ne!
-        assert_ne!(parse_and_collect("😽😽"), [lit!("😽")]);
-        assert_ne!(parse_and_collect("😽"), [lit!("😽😽")]);
-        assert_ne!(parse_and_collect("😽😽"), [lit!("😽😽"), lit!("😽")]);
+        assert_ne!(parse_and_collect("😽😽"), [Literal("😽")]);
+        assert_ne!(parse_and_collect("😽"), [Literal("😽😽")]);
+        assert_ne!(parse_and_collect("😽😽"), [Literal("😽😽"), Literal("😽")]);
         // eq!
-        assert_eq!(parse_and_collect("😽😽"), [lit!("😽😽")]);
-        assert_eq!(parse_and_collect(" \t\n\r "), [sp!(" \t\n\r ")]);
-        assert_eq!(parse_and_collect("hello?"), [lit!("hello?")]);
+        assert_eq!(parse_and_collect("😽😽"), [Literal("😽😽")]);
+        assert_eq!(parse_and_collect(" \t\n\r "), [Space(" \t\n\r ")]);
+        assert_eq!(parse_and_collect("hello?"), [Literal("hello?")]);
         assert_eq!(
             parse_and_collect("a  b\t\nc"),
-            [lit!("a"), sp!("  "), lit!("b"), sp!("\t\n"), lit!("c")]
+            [Literal("a"), Space("  "), Literal("b"), Space("\t\n"), Literal("c")]
         );
-        assert_eq!(parse_and_collect("100%%"), [lit!("100"), lit!("%")]);
-        assert_eq!(parse_and_collect("100%% ok"), [lit!("100"), lit!("%"), sp!(" "), lit!("ok")]);
-        assert_eq!(parse_and_collect("%%PDF-1.0"), [lit!("%"), lit!("PDF-1.0")]);
+        assert_eq!(parse_and_collect("100%%"), [Literal("100"), Literal("%")]);
+        assert_eq!(
+            parse_and_collect("100%% ok"),
+            [Literal("100"), Literal("%"), Space(" "), Literal("ok")]
+        );
+        assert_eq!(parse_and_collect("%%PDF-1.0"), [Literal("%"), Literal("PDF-1.0")]);
         assert_eq!(
             parse_and_collect("%Y-%m-%d"),
-            [num0!(Year), lit!("-"), num0!(Month), lit!("-"), num0!(Day)]
+            [num0(Year), Literal("-"), num0(Month), Literal("-"), num0(Day)]
         );
-        assert_eq!(parse_and_collect("😽   "), [lit!("😽"), sp!("   ")]);
-        assert_eq!(parse_and_collect("😽😽"), [lit!("😽😽")]);
-        assert_eq!(parse_and_collect("😽😽😽"), [lit!("😽😽😽")]);
-        assert_eq!(parse_and_collect("😽😽 😽"), [lit!("😽😽"), sp!(" "), lit!("😽")]);
-        assert_eq!(parse_and_collect("😽😽a 😽"), [lit!("😽😽a"), sp!(" "), lit!("😽")]);
-        assert_eq!(parse_and_collect("😽😽a b😽"), [lit!("😽😽a"), sp!(" "), lit!("b😽")]);
-        assert_eq!(parse_and_collect("😽😽a b😽c"), [lit!("😽😽a"), sp!(" "), lit!("b😽c")]);
-        assert_eq!(parse_and_collect("😽😽   "), [lit!("😽😽"), sp!("   ")]);
-        assert_eq!(parse_and_collect("😽😽   😽"), [lit!("😽😽"), sp!("   "), lit!("😽")]);
-        assert_eq!(parse_and_collect("   😽"), [sp!("   "), lit!("😽")]);
-        assert_eq!(parse_and_collect("   😽 "), [sp!("   "), lit!("😽"), sp!(" ")]);
-        assert_eq!(parse_and_collect("   😽 😽"), [sp!("   "), lit!("😽"), sp!(" "), lit!("😽")]);
+        assert_eq!(parse_and_collect("😽   "), [Literal("😽"), Space("   ")]);
+        assert_eq!(parse_and_collect("😽😽"), [Literal("😽😽")]);
+        assert_eq!(parse_and_collect("😽😽😽"), [Literal("😽😽😽")]);
+        assert_eq!(parse_and_collect("😽😽 😽"), [Literal("😽😽"), Space(" "), Literal("😽")]);
+        assert_eq!(parse_and_collect("😽😽a 😽"), [Literal("😽😽a"), Space(" "), Literal("😽")]);
+        assert_eq!(parse_and_collect("😽😽a b😽"), [Literal("😽😽a"), Space(" "), Literal("b😽")]);
+        assert_eq!(
+            parse_and_collect("😽😽a b😽c"),
+            [Literal("😽😽a"), Space(" "), Literal("b😽c")]
+        );
+        assert_eq!(parse_and_collect("😽😽   "), [Literal("😽😽"), Space("   ")]);
+        assert_eq!(parse_and_collect("😽😽   😽"), [Literal("😽😽"), Space("   "), Literal("😽")]);
+        assert_eq!(parse_and_collect("   😽"), [Space("   "), Literal("😽")]);
+        assert_eq!(parse_and_collect("   😽 "), [Space("   "), Literal("😽"), Space(" ")]);
+        assert_eq!(
+            parse_and_collect("   😽 😽"),
+            [Space("   "), Literal("😽"), Space(" "), Literal("😽")]
+        );
         assert_eq!(
             parse_and_collect("   😽 😽 "),
-            [sp!("   "), lit!("😽"), sp!(" "), lit!("😽"), sp!(" ")]
+            [Space("   "), Literal("😽"), Space(" "), Literal("😽"), Space(" ")]
         );
         assert_eq!(
             parse_and_collect("   😽  😽 "),
-            [sp!("   "), lit!("😽"), sp!("  "), lit!("😽"), sp!(" ")]
+            [Space("   "), Literal("😽"), Space("  "), Literal("😽"), Space(" ")]
         );
         assert_eq!(
             parse_and_collect("   😽  😽😽 "),
-            [sp!("   "), lit!("😽"), sp!("  "), lit!("😽😽"), sp!(" ")]
+            [Space("   "), Literal("😽"), Space("  "), Literal("😽😽"), Space(" ")]
         );
-        assert_eq!(parse_and_collect("   😽😽"), [sp!("   "), lit!("😽😽")]);
-        assert_eq!(parse_and_collect("   😽😽 "), [sp!("   "), lit!("😽😽"), sp!(" ")]);
-        assert_eq!(parse_and_collect("   😽😽    "), [sp!("   "), lit!("😽😽"), sp!("    ")]);
-        assert_eq!(parse_and_collect("   😽😽    "), [sp!("   "), lit!("😽😽"), sp!("    ")]);
-        assert_eq!(parse_and_collect(" 😽😽    "), [sp!(" "), lit!("😽😽"), sp!("    ")]);
+        assert_eq!(parse_and_collect("   😽😽"), [Space("   "), Literal("😽😽")]);
+        assert_eq!(parse_and_collect("   😽😽 "), [Space("   "), Literal("😽😽"), Space(" ")]);
+        assert_eq!(
+            parse_and_collect("   😽😽    "),
+            [Space("   "), Literal("😽😽"), Space("    ")]
+        );
+        assert_eq!(
+            parse_and_collect("   😽😽    "),
+            [Space("   "), Literal("😽😽"), Space("    ")]
+        );
+        assert_eq!(parse_and_collect(" 😽😽    "), [Space(" "), Literal("😽😽"), Space("    ")]);
         assert_eq!(
             parse_and_collect(" 😽 😽😽    "),
-            [sp!(" "), lit!("😽"), sp!(" "), lit!("😽😽"), sp!("    ")]
+            [Space(" "), Literal("😽"), Space(" "), Literal("😽😽"), Space("    ")]
         );
         assert_eq!(
             parse_and_collect(" 😽 😽はい😽    ハンバーガー"),
-            [sp!(" "), lit!("😽"), sp!(" "), lit!("😽はい😽"), sp!("    "), lit!("ハンバーガー")]
+            [
+                Space(" "),
+                Literal("😽"),
+                Space(" "),
+                Literal("😽はい😽"),
+                Space("    "),
+                Literal("ハンバーガー")
+            ]
         );
-        assert_eq!(parse_and_collect("%%😽%%😽"), [lit!("%"), lit!("😽"), lit!("%"), lit!("😽")]);
-        assert_eq!(parse_and_collect("%Y--%m"), [num0!(Year), lit!("--"), num0!(Month)]);
+        assert_eq!(
+            parse_and_collect("%%😽%%😽"),
+            [Literal("%"), Literal("😽"), Literal("%"), Literal("😽")]
+        );
+        assert_eq!(parse_and_collect("%Y--%m"), [num0(Year), Literal("--"), num0(Month)]);
         assert_eq!(parse_and_collect("[%F]"), parse_and_collect("[%Y-%m-%d]"));
-        assert_eq!(parse_and_collect("100%%😽"), [lit!("100"), lit!("%"), lit!("😽")]);
+        assert_eq!(parse_and_collect("100%%😽"), [Literal("100"), Literal("%"), Literal("😽")]);
         assert_eq!(
             parse_and_collect("100%%😽%%a"),
-            [lit!("100"), lit!("%"), lit!("😽"), lit!("%"), lit!("a")]
+            [Literal("100"), Literal("%"), Literal("😽"), Literal("%"), Literal("a")]
         );
-        assert_eq!(parse_and_collect("😽100%%"), [lit!("😽100"), lit!("%")]);
-        assert_eq!(parse_and_collect("%m %d"), [num0!(Month), sp!(" "), num0!(Day)]);
+        assert_eq!(parse_and_collect("😽100%%"), [Literal("😽100"), Literal("%")]);
+        assert_eq!(parse_and_collect("%m %d"), [num0(Month), Space(" "), num0(Day)]);
         assert_eq!(parse_and_collect("%"), [Item::Error]);
-        assert_eq!(parse_and_collect("%%"), [lit!("%")]);
+        assert_eq!(parse_and_collect("%%"), [Literal("%")]);
         assert_eq!(parse_and_collect("%%%"), [Item::Error]);
-        assert_eq!(parse_and_collect("%a"), [fix!(ShortWeekdayName)]);
-        assert_eq!(parse_and_collect("%aa"), [fix!(ShortWeekdayName), lit!("a")]);
+        assert_eq!(parse_and_collect("%a"), [fixed(Fixed::ShortWeekdayName)]);
+        assert_eq!(parse_and_collect("%aa"), [fixed(Fixed::ShortWeekdayName), Literal("a")]);
         assert_eq!(parse_and_collect("%%a%"), [Item::Error]);
         assert_eq!(parse_and_collect("%😽"), [Item::Error]);
         assert_eq!(parse_and_collect("%😽😽"), [Item::Error]);
-        assert_eq!(parse_and_collect("%%%%"), [lit!("%"), lit!("%")]);
+        assert_eq!(parse_and_collect("%%%%"), [Literal("%"), Literal("%")]);
         assert_eq!(
             parse_and_collect("%%%%ハンバーガー"),
-            [lit!("%"), lit!("%"), lit!("ハンバーガー")]
+            [Literal("%"), Literal("%"), Literal("ハンバーガー")]
         );
         assert_eq!(parse_and_collect("foo%?"), [Item::Error]);
         assert_eq!(parse_and_collect("bar%42"), [Item::Error]);
@@ -628,24 +642,28 @@ mod tests {
         assert_eq!(parse_and_collect("%_Z"), [Item::Error]);
         assert_eq!(parse_and_collect("%.j"), [Item::Error]);
         assert_eq!(parse_and_collect("%:j"), [Item::Error]);
-        assert_eq!(parse_and_collect("%-j"), [num!(Ordinal)]);
-        assert_eq!(parse_and_collect("%0j"), [num0!(Ordinal)]);
-        assert_eq!(parse_and_collect("%_j"), [nums!(Ordinal)]);
+        assert_eq!(parse_and_collect("%-j"), [num(Ordinal)]);
+        assert_eq!(parse_and_collect("%0j"), [num0(Ordinal)]);
+        assert_eq!(parse_and_collect("%_j"), [nums(Ordinal)]);
         assert_eq!(parse_and_collect("%.e"), [Item::Error]);
         assert_eq!(parse_and_collect("%:e"), [Item::Error]);
-        assert_eq!(parse_and_collect("%-e"), [num!(Day)]);
-        assert_eq!(parse_and_collect("%0e"), [num0!(Day)]);
-        assert_eq!(parse_and_collect("%_e"), [nums!(Day)]);
-        assert_eq!(parse_and_collect("%z"), [fix!(TimezoneOffset)]);
-        assert_eq!(parse_and_collect("%:z"), [fix!(TimezoneOffsetColon)]);
-        assert_eq!(parse_and_collect("%Z"), [fix!(TimezoneName)]);
-        assert_eq!(parse_and_collect("%ZZZZ"), [fix!(TimezoneName), lit!("ZZZ")]);
-        assert_eq!(parse_and_collect("%Z😽"), [fix!(TimezoneName), lit!("😽")]);
-        assert_eq!(parse_and_collect("%#z"), [internal_fix!(TimezoneOffsetPermissive)]);
+        assert_eq!(parse_and_collect("%-e"), [num(Day)]);
+        assert_eq!(parse_and_collect("%0e"), [num0(Day)]);
+        assert_eq!(parse_and_collect("%_e"), [nums(Day)]);
+        assert_eq!(parse_and_collect("%z"), [fixed(Fixed::TimezoneOffset)]);
+        assert_eq!(parse_and_collect("%:z"), [fixed(Fixed::TimezoneOffsetColon)]);
+        assert_eq!(parse_and_collect("%Z"), [fixed(Fixed::TimezoneName)]);
+        assert_eq!(parse_and_collect("%ZZZZ"), [fixed(Fixed::TimezoneName), Literal("ZZZ")]);
+        assert_eq!(parse_and_collect("%Z😽"), [fixed(Fixed::TimezoneName), Literal("😽")]);
+        assert_eq!(
+            parse_and_collect("%#z"),
+            [internal_fixed(InternalInternal::TimezoneOffsetPermissive)]
+        );
         assert_eq!(parse_and_collect("%#m"), [Item::Error]);
     }
 
     #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     fn test_strftime_docs() {
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
@@ -758,8 +776,8 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "unstable-locales")]
     #[test]
+    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
     fn test_strftime_docs_localized() {
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
@@ -785,7 +803,7 @@ mod tests {
         assert_eq!(dt.format_localized("%R", Locale::fr_BE).to_string(), "00:34");
         assert_eq!(dt.format_localized("%T", Locale::fr_BE).to_string(), "00:34:60");
         assert_eq!(dt.format_localized("%X", Locale::fr_BE).to_string(), "00:34:60");
-        assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "12:34:60 ");
+        assert_eq!(dt.format_localized("%r", Locale::fr_BE).to_string(), "00:34:60");
 
         // date & time specifiers
         assert_eq!(
@@ -805,5 +823,97 @@ mod tests {
         assert_eq!(nd.format_localized("%x", Locale::de_DE).to_string(), "08.07.2001");
         assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
         assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
+    }
+
+    /// Ensure parsing a timestamp with the parse-only stftime formatter "%#z" does
+    /// not cause a panic.
+    ///
+    /// See <https://github.com/chronotope/chrono/issues/1139>.
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_parse_only_timezone_offset_permissive_no_panic() {
+        use crate::NaiveDate;
+        use crate::{FixedOffset, TimeZone};
+        use std::fmt::Write;
+
+        let dt = FixedOffset::east_opt(34200)
+            .unwrap()
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2001, 7, 8)
+                    .unwrap()
+                    .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+                    .unwrap(),
+            )
+            .unwrap();
+
+        let mut buf = String::new();
+        let _ = write!(buf, "{}", dt.format("%#z")).expect_err("parse-only formatter should fail");
+    }
+
+    #[test]
+    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+    fn test_strftime_localized_korean() {
+        let dt = FixedOffset::east_opt(34200)
+            .unwrap()
+            .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
+            .unwrap()
+            .with_nanosecond(1_026_490_708)
+            .unwrap();
+
+        // date specifiers
+        assert_eq!(dt.format_localized("%b", Locale::ko_KR).to_string(), " 7월");
+        assert_eq!(dt.format_localized("%B", Locale::ko_KR).to_string(), "7월");
+        assert_eq!(dt.format_localized("%h", Locale::ko_KR).to_string(), " 7월");
+        assert_eq!(dt.format_localized("%a", Locale::ko_KR).to_string(), "일");
+        assert_eq!(dt.format_localized("%A", Locale::ko_KR).to_string(), "일요일");
+        assert_eq!(dt.format_localized("%D", Locale::ko_KR).to_string(), "07/08/01");
+        assert_eq!(dt.format_localized("%x", Locale::ko_KR).to_string(), "2001년 07월 08일");
+        assert_eq!(dt.format_localized("%F", Locale::ko_KR).to_string(), "2001-07-08");
+        assert_eq!(dt.format_localized("%v", Locale::ko_KR).to_string(), " 8- 7월-2001");
+        assert_eq!(dt.format_localized("%r", Locale::ko_KR).to_string(), "오전 12시 34분 60초");
+
+        // date & time specifiers
+        assert_eq!(
+            dt.format_localized("%c", Locale::ko_KR).to_string(),
+            "2001년 07월 08일 (일) 오전 12시 34분 60초"
+        );
+    }
+
+    #[test]
+    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+    fn test_strftime_localized_japanese() {
+        let dt = FixedOffset::east_opt(34200)
+            .unwrap()
+            .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
+            .unwrap()
+            .with_nanosecond(1_026_490_708)
+            .unwrap();
+
+        // date specifiers
+        assert_eq!(dt.format_localized("%b", Locale::ja_JP).to_string(), " 7月");
+        assert_eq!(dt.format_localized("%B", Locale::ja_JP).to_string(), "7月");
+        assert_eq!(dt.format_localized("%h", Locale::ja_JP).to_string(), " 7月");
+        assert_eq!(dt.format_localized("%a", Locale::ja_JP).to_string(), "日");
+        assert_eq!(dt.format_localized("%A", Locale::ja_JP).to_string(), "日曜日");
+        assert_eq!(dt.format_localized("%D", Locale::ja_JP).to_string(), "07/08/01");
+        assert_eq!(dt.format_localized("%x", Locale::ja_JP).to_string(), "2001年07月08日");
+        assert_eq!(dt.format_localized("%F", Locale::ja_JP).to_string(), "2001-07-08");
+        assert_eq!(dt.format_localized("%v", Locale::ja_JP).to_string(), " 8- 7月-2001");
+        assert_eq!(dt.format_localized("%r", Locale::ja_JP).to_string(), "午前12時34分60秒");
+
+        // date & time specifiers
+        assert_eq!(
+            dt.format_localized("%c", Locale::ja_JP).to_string(),
+            "2001年07月08日 00時34分60秒"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "unstable-locales")]
+    fn test_type_sizes() {
+        use core::mem::size_of;
+        assert_eq!(size_of::<Item>(), 24);
+        assert_eq!(size_of::<StrftimeItems>(), 56);
+        assert_eq!(size_of::<Locale>(), 2);
     }
 }

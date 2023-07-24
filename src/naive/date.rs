@@ -3,7 +3,7 @@
 
 //! ISO 8601 calendar date without timezone.
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
 use core::iter::FusedIterator;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
@@ -16,7 +16,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "unstable-locales")]
 use pure_rust_locales::Locale;
 
-#[cfg(any(feature = "alloc", feature = "std", test))]
+#[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
 use crate::format::{
     parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseError, ParseResult,
@@ -284,9 +284,14 @@ impl NaiveDate {
     /// assert!(from_ymd_opt(-400000, 1, 1).is_none());
     /// ```
     #[must_use]
-    pub fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
+    pub const fn from_ymd_opt(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
-        NaiveDate::from_mdf(year, Mdf::new(month, day, flags)?)
+
+        if let Some(mdf) = Mdf::new(month, day, flags) {
+            NaiveDate::from_mdf(year, mdf)
+        } else {
+            None
+        }
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -1245,7 +1250,7 @@ impl NaiveDate {
     /// # let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
     /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
@@ -1289,7 +1294,7 @@ impl NaiveDate {
     /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
     /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std", test))]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
@@ -2250,15 +2255,6 @@ mod serde {
             formatter.write_str("a formatted date string")
         }
 
-        #[cfg(any(feature = "std", test))]
-        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-        where
-            E: de::Error,
-        {
-            value.parse().map_err(E::custom)
-        }
-
-        #[cfg(not(any(feature = "std", test)))]
         fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -3028,6 +3024,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
     fn test_date_format() {
         let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
         assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");

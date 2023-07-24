@@ -31,3 +31,7 @@ pub(crate) const fn d_t_fmt(locale: Locale) -> &'static str {
 pub(crate) const fn t_fmt(locale: Locale) -> &'static str {
     locale_match!(locale => LC_TIME::T_FMT)
 }
+
+pub(crate) const fn t_fmt_ampm(locale: Locale) -> &'static str {
+    locale_match!(locale => LC_TIME::T_FMT_AMPM)
+}
