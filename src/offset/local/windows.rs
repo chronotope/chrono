@@ -13,10 +13,9 @@ use std::io::Error;
 use std::ptr;
 use std::result::Result;
 
-use winapi::shared::minwindef::FILETIME;
-use winapi::um::minwinbase::SYSTEMTIME;
-use winapi::um::timezoneapi::{
+use super::win_bindings::{
     SystemTimeToFileTime, SystemTimeToTzSpecificLocalTime, TzSpecificLocalTimeToSystemTime,
+    FILETIME, SYSTEMTIME,
 };
 
 use super::FixedOffset;
