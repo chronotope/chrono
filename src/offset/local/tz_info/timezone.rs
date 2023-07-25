@@ -756,6 +756,38 @@ mod tests {
     }
 
     #[test]
+    fn test_no_tz_string() -> Result<(), Error> {
+        // Guayaquil from macOS 10.11
+        let bytes = b"TZif\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x02\0\0\0\x02\0\0\0\0\0\0\0\x01\0\0\0\x02\0\0\0\x08\xb6\xa4B\x18\x01\xff\xff\xb6h\0\0\xff\xff\xb9\xb0\0\x04QMT\0ECT\0\0\0\0\0";
+
+        let time_zone = TimeZone::from_tz_data(bytes)?;
+        dbg!(&time_zone);
+
+        let time_zone_result = TimeZone::new(
+            vec![Transition::new(-1230749160, 1)],
+            vec![
+                LocalTimeType::new(-18840, false, Some(b"QMT"))?,
+                LocalTimeType::new(-18000, false, Some(b"ECT"))?,
+            ],
+            Vec::new(),
+            None,
+        )?;
+
+        assert_eq!(time_zone, time_zone_result);
+
+        assert_eq!(
+            *time_zone.find_local_time_type(-1500000000)?,
+            LocalTimeType::new(-18840, false, Some(b"QMT"))?
+        );
+        assert_eq!(
+            *time_zone.find_local_time_type(0)?,
+            LocalTimeType::new(-18000, false, Some(b"ECT"))?
+        );
+
+        Ok(())
+    }
+
+    #[test]
     fn test_tz_ascii_str() -> Result<(), Error> {
         assert!(matches!(TimeZoneName::new(b""), Err(Error::LocalTimeType(_))));
         assert!(matches!(TimeZoneName::new(b"A"), Err(Error::LocalTimeType(_))));
