@@ -177,9 +177,16 @@ impl<'a> TimeZoneRef<'a> {
                     match self.extra_rule {
                         Some(extra_rule) => extra_rule,
                         None => {
-                            return Err(Error::FindLocalTimeType(
-                                "no local time type is available for the specified timestamp",
-                            ))
+                            // RFC 8536 3.2:
+                            // "Local time for timestamps on or after the last transition is
+                            // specified by the TZ string in the footer (Section 3.3) if present
+                            // and nonempty; otherwise, it is unspecified."
+                            //
+                            // Older versions of macOS (1.12 and before?) have TZif file with a
+                            // missing TZ string, and use the offset given by the last transition.
+                            return Ok(
+                                &self.local_time_types[last_transition.local_time_type_index]
+                            );
                         }
                     }
                 } else {
@@ -224,7 +231,7 @@ impl<'a> TimeZoneRef<'a> {
 
         // if we have at least one transition,
         // we must check _all_ of them, incase of any Overlapping (LocalResult::Ambiguous) or Skipping (LocalResult::None) transitions
-        if !self.transitions.is_empty() {
+        let offset_after_last = if !self.transitions.is_empty() {
             let mut prev = self.local_time_types[0];
 
             for transition in self.transitions {
@@ -279,6 +286,10 @@ impl<'a> TimeZoneRef<'a> {
                 // try the next transition, we are fully after this one
                 prev = after_ltt;
             }
+
+            prev
+        } else {
+            self.local_time_types[0]
         };
 
         if let Some(extra_rule) = self.extra_rule {
@@ -288,7 +299,7 @@ impl<'a> TimeZoneRef<'a> {
                 err => err,
             }
         } else {
-            Ok(crate::LocalResult::Single(self.local_time_types[0]))
+            Ok(crate::LocalResult::Single(offset_after_last))
         }
     }
 
@@ -786,7 +797,7 @@ mod tests {
         assert_eq!(*time_zone_2.find_local_time_type(0)?, cet);
 
         assert_eq!(*time_zone_3.find_local_time_type(-1)?, utc);
-        assert!(matches!(time_zone_3.find_local_time_type(0), Err(Error::FindLocalTimeType(_))));
+        assert_eq!(*time_zone_3.find_local_time_type(0)?, utc);
 
         assert_eq!(*time_zone_4.find_local_time_type(-1)?, utc);
         assert_eq!(*time_zone_4.find_local_time_type(0)?, cet);
