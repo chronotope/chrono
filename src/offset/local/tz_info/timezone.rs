@@ -225,7 +225,7 @@ impl<'a> TimeZoneRef<'a> {
         // if we have at least one transition,
         // we must check _all_ of them, incase of any Overlapping (LocalResult::Ambiguous) or Skipping (LocalResult::None) transitions
         if !self.transitions.is_empty() {
-            let mut prev = Some(self.local_time_types[0]);
+            let mut prev = self.local_time_types[0];
 
             for transition in self.transitions {
                 let after_ltt = self.local_time_types[transition.local_time_type_index];
@@ -233,34 +233,33 @@ impl<'a> TimeZoneRef<'a> {
                 // the end and start here refers to where the time starts prior to the transition
                 // and where it ends up after. not the temporal relationship.
                 let transition_end = transition.unix_leap_time + i64::from(after_ltt.ut_offset);
-                let transition_start =
-                    transition.unix_leap_time + i64::from(prev.unwrap().ut_offset);
+                let transition_start = transition.unix_leap_time + i64::from(prev.ut_offset);
 
                 match transition_start.cmp(&transition_end) {
                     Ordering::Greater => {
                         // bakwards transition, eg from DST to regular
                         // this means a given local time could have one of two possible offsets
                         if local_leap_time < transition_end {
-                            return Ok(crate::LocalResult::Single(prev.unwrap()));
+                            return Ok(crate::LocalResult::Single(prev));
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
-                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
-                                return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            if prev.ut_offset < after_ltt.ut_offset {
+                                return Ok(crate::LocalResult::Ambiguous(prev, after_ltt));
                             } else {
-                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
+                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev));
                             }
                         }
                     }
                     Ordering::Equal => {
                         // should this ever happen? presumably we have to handle it anyway.
                         if local_leap_time < transition_start {
-                            return Ok(crate::LocalResult::Single(prev.unwrap()));
+                            return Ok(crate::LocalResult::Single(prev));
                         } else if local_leap_time == transition_end {
-                            if prev.unwrap().ut_offset < after_ltt.ut_offset {
-                                return Ok(crate::LocalResult::Ambiguous(prev.unwrap(), after_ltt));
+                            if prev.ut_offset < after_ltt.ut_offset {
+                                return Ok(crate::LocalResult::Ambiguous(prev, after_ltt));
                             } else {
-                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev.unwrap()));
+                                return Ok(crate::LocalResult::Ambiguous(after_ltt, prev));
                             }
                         }
                     }
@@ -268,7 +267,7 @@ impl<'a> TimeZoneRef<'a> {
                         // forwards transition, eg from regular to DST
                         // this means that times that are skipped are invalid local times
                         if local_leap_time <= transition_start {
-                            return Ok(crate::LocalResult::Single(prev.unwrap()));
+                            return Ok(crate::LocalResult::Single(prev));
                         } else if local_leap_time < transition_end {
                             return Ok(crate::LocalResult::None);
                         } else if local_leap_time == transition_end {
@@ -278,7 +277,7 @@ impl<'a> TimeZoneRef<'a> {
                 }
 
                 // try the next transition, we are fully after this one
-                prev = Some(after_ltt);
+                prev = after_ltt;
             }
         };
 
