@@ -10,19 +10,17 @@ use core::borrow::Borrow;
 use core::fmt;
 use core::fmt::Write;
 
+use crate::datetime::SecondsFormat;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::offset::Offset;
+use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
 #[cfg(any(feature = "alloc", feature = "std"))]
-use crate::offset::{FixedOffset, Offset};
-#[cfg(any(feature = "alloc", feature = "std"))]
-use crate::{Datelike, SecondsFormat, Timelike, Weekday};
+use crate::{NaiveDate, NaiveTime, Weekday};
 
 use super::locales;
+use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
 #[cfg(any(feature = "alloc", feature = "std"))]
-use super::{
-    Colons, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, OffsetFormat,
-    OffsetPrecision, Pad,
-};
+use super::{Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric};
 use locales::*;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
@@ -447,7 +445,6 @@ fn format_inner(
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
     fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
@@ -528,7 +525,6 @@ impl OffsetFormat {
 }
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
-#[cfg(any(feature = "alloc", feature = "std"))]
 #[inline]
 pub(crate) fn write_rfc3339(
     w: &mut impl Write,
