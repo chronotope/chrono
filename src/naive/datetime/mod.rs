@@ -460,6 +460,25 @@ impl NaiveDateTime {
     ///
     /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
     /// 2262-04-11T23:47:16.854775804.
+    #[inline]
+    #[must_use]
+    pub fn timestamp_nanos(&self) -> i64 {
+        self.timestamp_nanos_opt()
+            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    }
+
+    /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
+    ///
+    /// Note that this does *not* account for the timezone!
+    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
+    ///
+    /// # Errors
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
+    /// `None` on an out of range `NaiveDateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
     ///
     /// # Example
     ///
@@ -467,12 +486,12 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, NaiveDateTime};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap();
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap();
     ///
     /// const A_BILLION: i64 = 1_000_000_000;
-    /// let nanos = dt.timestamp_nanos();
+    /// let nanos = dt.timestamp_nanos_opt().unwrap();
     /// assert_eq!(nanos, 1_000_000_000_000_000_555);
     /// assert_eq!(
     ///     Some(dt),
@@ -481,11 +500,8 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.timestamp()
-            .checked_mul(1_000_000_000)
-            .and_then(|ns| ns.checked_add(i64::from(self.timestamp_subsec_nanos())))
-            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
+        self.timestamp().checked_mul(1_000_000_000)?.checked_add(self.time.nanosecond() as i64)
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
