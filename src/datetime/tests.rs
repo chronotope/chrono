@@ -699,7 +699,7 @@ fn test_rfc3339_opts() {
     assert_eq!(dt.to_rfc3339_opts(Nanos, false), "2018-01-11T10:05:13.084660000+08:00");
     assert_eq!(dt.to_rfc3339_opts(AutoSi, false), "2018-01-11T10:05:13.084660+08:00");
 
-    let ut = DateTime::<Utc>::from_utc(dt.naive_utc(), Utc);
+    let ut = dt.naive_utc().and_utc();
     assert_eq!(ut.to_rfc3339_opts(Secs, false), "2018-01-11T02:05:13+00:00");
     assert_eq!(ut.to_rfc3339_opts(Secs, true), "2018-01-11T02:05:13Z");
     assert_eq!(ut.to_rfc3339_opts(Millis, false), "2018-01-11T02:05:13.084+00:00");
@@ -841,8 +841,7 @@ fn test_parse_datetime_utc() {
         };
         assert!(
             d == d_,
-            "`{}` is parsed into `{:?}`, but reparsed result \
-                              `{:?}` does not match",
+            "`{}` is parsed into `{:?}`, but reparsed result `{:?}` does not match",
             s,
             d,
             d_
@@ -1185,26 +1184,10 @@ fn test_datetime_format_with_local() {
 }
 
 #[test]
-#[cfg(feature = "clock")]
-fn test_datetime_is_copy() {
-    // UTC is known to be `Copy`.
-    let a = Utc::now();
-    let b = a;
-    assert_eq!(a, b);
-}
-
-#[test]
-#[cfg(feature = "clock")]
-fn test_datetime_is_send() {
-    use std::thread;
-
-    // UTC is known to be `Send`.
-    let a = Utc::now();
-    thread::spawn(move || {
-        let _ = a;
-    })
-    .join()
-    .unwrap();
+fn test_datetime_is_send_and_copy() {
+    fn _assert_send_copy<T: Send + Copy>() {}
+    // UTC is known to be `Send + Copy`.
+    _assert_send_copy::<DateTime<Utc>>();
 }
 
 #[test]
@@ -1298,37 +1281,7 @@ fn test_from_system_time() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
-fn test_datetime_format_alignment() {
-    let datetime = Utc.with_ymd_and_hms(2007, 1, 2, 0, 0, 0).unwrap();
-
-    // Item::Literal
-    let percent = datetime.format("%%");
-    assert_eq!("  %", format!("{:>3}", percent));
-    assert_eq!("%  ", format!("{:<3}", percent));
-    assert_eq!(" % ", format!("{:^3}", percent));
-
-    // Item::Numeric
-    let year = datetime.format("%Y");
-    assert_eq!("  2007", format!("{:>6}", year));
-    assert_eq!("2007  ", format!("{:<6}", year));
-    assert_eq!(" 2007 ", format!("{:^6}", year));
-
-    // Item::Fixed
-    let tz = datetime.format("%Z");
-    assert_eq!("  UTC", format!("{:>5}", tz));
-    assert_eq!("UTC  ", format!("{:<5}", tz));
-    assert_eq!(" UTC ", format!("{:^5}", tz));
-
-    // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
-    let ymd = datetime.format("%Y %B %d");
-    let ymd_formatted = "2007 January 02";
-    assert_eq!(format!("  {}", ymd_formatted), format!("{:>17}", ymd));
-    assert_eq!(format!("{}  ", ymd_formatted), format!("{:<17}", ymd));
-    assert_eq!(format!(" {} ", ymd_formatted), format!("{:^17}", ymd));
-}
-
-#[test]
+#[allow(deprecated)]
 fn test_datetime_from_local() {
     // 2000-01-12T02:00:00Z
     let naivedatetime_utc =
@@ -1374,7 +1327,7 @@ fn test_years_elapsed() {
 #[test]
 fn test_datetime_add_assign() {
     let naivedatetime = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
-    let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
+    let datetime = naivedatetime.and_utc();
     let mut datetime_add = datetime;
 
     datetime_add += TimeDelta::seconds(60);
@@ -1411,7 +1364,7 @@ fn test_datetime_add_assign_local() {
 #[test]
 fn test_datetime_sub_assign() {
     let naivedatetime = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(12, 0, 0).unwrap();
-    let datetime = DateTime::<Utc>::from_utc(naivedatetime, Utc);
+    let datetime = naivedatetime.and_utc();
     let mut datetime_sub = datetime;
 
     datetime_sub -= TimeDelta::minutes(90);
@@ -1532,4 +1485,36 @@ fn test_auto_conversion() {
         .unwrap();
     let utc_dt2: DateTime<Utc> = cdt_dt.into();
     assert_eq!(utc_dt, utc_dt2);
+}
+
+#[test]
+#[cfg(feature = "clock")]
+#[allow(deprecated)]
+fn test_test_deprecated_from_offset() {
+    let now = Local::now();
+    let naive = now.naive_local();
+    let utc = now.naive_utc();
+    let offset: FixedOffset = *now.offset();
+
+    assert_eq!(DateTime::<Local>::from_local(naive, offset), now);
+    assert_eq!(DateTime::<Local>::from_utc(utc, offset), now);
+}
+
+#[test]
+#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+fn locale_decimal_point() {
+    use crate::Locale::{ar_SY, nl_NL};
+    use crate::Timelike;
+    let dt =
+        Utc.with_ymd_and_hms(2018, 9, 5, 18, 58, 0).unwrap().with_nanosecond(123456780).unwrap();
+
+    assert_eq!(dt.format_localized("%T%.f", nl_NL).to_string(), "18:58:00,123456780");
+    assert_eq!(dt.format_localized("%T%.3f", nl_NL).to_string(), "18:58:00,123");
+    assert_eq!(dt.format_localized("%T%.6f", nl_NL).to_string(), "18:58:00,123456");
+    assert_eq!(dt.format_localized("%T%.9f", nl_NL).to_string(), "18:58:00,123456780");
+
+    assert_eq!(dt.format_localized("%T%.f", ar_SY).to_string(), "18:58:00.123456780");
+    assert_eq!(dt.format_localized("%T%.3f", ar_SY).to_string(), "18:58:00.123");
+    assert_eq!(dt.format_localized("%T%.6f", ar_SY).to_string(), "18:58:00.123456");
+    assert_eq!(dt.format_localized("%T%.9f", ar_SY).to_string(), "18:58:00.123456780");
 }

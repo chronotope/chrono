@@ -3,9 +3,6 @@
 
 //! ISO 8601 date and time with time zone.
 
-#[cfg(feature = "alloc")]
-extern crate alloc;
-
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::string::{String, ToString};
 use core::borrow::Borrow;
@@ -90,25 +87,46 @@ pub const MIN_DATETIME: DateTime<Utc> = DateTime::<Utc>::MIN_UTC;
 pub const MAX_DATETIME: DateTime<Utc> = DateTime::<Utc>::MAX_UTC;
 
 impl<Tz: TimeZone> DateTime<Tz> {
-    /// Makes a new `DateTime` with given *UTC* datetime and offset.
-    /// The local datetime should be constructed via the `TimeZone` trait.
+    /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
+    ///
+    /// This is a low-level method, intended for use cases such as deserializing a `DateTime` or
+    /// passing it through FFI.
+    ///
+    /// For regular use you will probably want to use a method such as
+    /// [`TimeZone::from_local_datetime`] or [`NaiveDateTime::and_local_timezone`] instead.
     ///
     /// # Example
     ///
-    /// ```
-    /// use chrono::{DateTime, TimeZone, NaiveDateTime, Utc};
+    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
+    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// use chrono::{Local, DateTime};
     ///
-    /// let dt = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(61, 0).unwrap(), Utc);
-    /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
+    /// let dt = Local::now();
+    /// // Get components
+    /// let naive_utc = dt.naive_utc();
+    /// let offset = dt.offset().clone();
+    /// // Serialize, pass through FFI... and recreate the `DateTime`:
+    /// let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, offset);
+    /// assert_eq!(dt, dt_new);
     /// ```
     #[inline]
     #[must_use]
+    pub fn from_naive_utc_and_offset(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
+        DateTime { datetime, offset }
+    }
+
+    /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
+    #[inline]
+    #[must_use]
+    #[deprecated(
+        since = "0.4.27",
+        note = "Use TimeZone::from_utc_datetime() or DateTime::from_naive_utc_and_offset instead"
+    )]
     pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         DateTime { datetime, offset }
     }
 
-    /// Makes a new `DateTime` with given **local** datetime and offset that
-    /// presents local timezone.
+    /// Makes a new `DateTime` from a `NaiveDateTime` in *local* time and an `Offset`.
     ///
     /// # Panics
     ///
@@ -116,30 +134,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// This can happen if `datetime` is near the end of the representable range of `NaiveDateTime`,
     /// and the offset from UTC pushes it beyond that.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::DateTime;
-    /// use chrono::naive::NaiveDate;
-    /// use chrono::offset::{Utc, FixedOffset};
-    ///
-    /// let naivedatetime_utc = NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(2, 0, 0).unwrap();
-    /// let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
-    ///
-    /// let timezone_east = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    /// let naivedatetime_east = NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(10, 0, 0).unwrap();
-    /// let datetime_east = DateTime::<FixedOffset>::from_local(naivedatetime_east, timezone_east);
-    ///
-    /// let timezone_west = FixedOffset::west_opt(7 * 60 * 60).unwrap();
-    /// let naivedatetime_west = NaiveDate::from_ymd_opt(2000, 1, 11).unwrap().and_hms_opt(19, 0, 0).unwrap();
-    /// let datetime_west = DateTime::<FixedOffset>::from_local(naivedatetime_west, timezone_west);
-
-    /// assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
-    /// assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
-    /// ```
     #[inline]
     #[must_use]
+    #[deprecated(
+        since = "0.4.27",
+        note = "Use TimeZone::from_local_datetime() or NaiveDateTime::and_local_timezone instead"
+    )]
     pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
         let datetime_utc = datetime - offset.fix();
 
@@ -1473,7 +1473,7 @@ where
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<DateTime<Tz>> {
         let datetime = NaiveDateTime::arbitrary(u)?;
         let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
-        Ok(DateTime::from_utc(datetime, offset))
+        Ok(DateTime::from_naive_utc_and_offset(datetime, offset))
     }
 }
 

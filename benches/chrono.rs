@@ -148,14 +148,16 @@ fn bench_parse_strftime_localized(c: &mut Criterion) {
 
 fn bench_format(c: &mut Criterion) {
     let dt = Local::now();
-    c.bench_function("bench_format", |b| b.iter(|| format!("{}", dt.format("%Y-%m-%d %H-%M-%S"))));
+    c.bench_function("bench_format", |b| {
+        b.iter(|| format!("{}", black_box(dt).format("%Y-%m-%dT%H:%M:%S%.f%:z")))
+    });
 }
 
 fn bench_format_with_items(c: &mut Criterion) {
     let dt = Local::now();
-    let items: Vec<_> = StrftimeItems::new("%Y-%m-%d %H-%M-%S").collect();
+    let items: Vec<_> = StrftimeItems::new("%Y-%m-%dT%H:%M:%S%.f%:z").collect();
     c.bench_function("bench_format_with_items", |b| {
-        b.iter(|| format!("{}", dt.format_with_items(items.iter())))
+        b.iter(|| format!("{}", black_box(dt).format_with_items(items.iter())))
     });
 }
 
@@ -163,19 +165,22 @@ fn bench_format_manual(c: &mut Criterion) {
     let dt = Local::now();
     c.bench_function("bench_format_manual", |b| {
         b.iter(|| {
+            black_box(dt);
             format!(
-                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09}{:+02}:{:02}",
                 dt.year(),
                 dt.month(),
                 dt.day(),
                 dt.hour(),
                 dt.minute(),
-                dt.second()
+                dt.second(),
+                dt.nanosecond(),
+                dt.offset().fix().local_minus_utc() / 3600,
+                dt.offset().fix().local_minus_utc() / 60,
             )
         })
     });
 }
-
 criterion_group!(
     benches,
     bench_datetime_parse_from_rfc2822,

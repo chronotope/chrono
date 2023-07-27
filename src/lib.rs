@@ -377,6 +377,9 @@
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 use core::fmt;
 
 mod time_delta;
@@ -501,3 +504,25 @@ impl fmt::Debug for OutOfRange {
 
 #[cfg(feature = "std")]
 impl std::error::Error for OutOfRange {}
+
+/// Workaround because `?` is not (yet) available in const context.
+#[macro_export]
+macro_rules! try_opt {
+    ($e:expr) => {
+        match $e {
+            Some(v) => v,
+            None => return None,
+        }
+    };
+}
+
+/// Workaround because `.expect()` is not (yet) available in const context.
+#[macro_export]
+macro_rules! expect {
+    ($e:expr, $m:literal) => {
+        match $e {
+            Some(v) => v,
+            None => panic!($m),
+        }
+    };
+}

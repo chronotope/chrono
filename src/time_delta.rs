@@ -11,9 +11,10 @@
 //! Temporal quantification
 
 use core::ops::{Add, Div, Mul, Neg, Sub};
+#[cfg(feature = "std")]
 use core::time::Duration as StdDuration;
 use core::{fmt, i64};
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 use std::error::Error;
 
 #[cfg(feature = "rkyv")]
@@ -291,6 +292,7 @@ impl TimeDelta {
     ///
     /// This function errors when original duration is larger than the maximum
     /// value supported for this type.
+    #[cfg(feature = "std")]
     pub fn from_std(duration: StdDuration) -> Result<TimeDelta, OutOfRangeError> {
         // We need to check secs as u64 before coercing to i64
         if duration.as_secs() > MAX.secs as u64 {
@@ -308,6 +310,7 @@ impl TimeDelta {
     ///
     /// This function errors when duration is less than zero. As standard
     /// library implementation is limited to non-negative values.
+    #[cfg(feature = "std")]
     pub fn to_std(&self) -> Result<StdDuration, OutOfRangeError> {
         if self.secs < 0 {
             return Err(OutOfRangeError(()));
@@ -389,17 +392,13 @@ impl Div<i32> for TimeDelta {
     }
 }
 
-#[cfg(any(feature = "std", test))]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl<'a> std::iter::Sum<&'a TimeDelta> for TimeDelta {
+impl<'a> core::iter::Sum<&'a TimeDelta> for TimeDelta {
     fn sum<I: Iterator<Item = &'a TimeDelta>>(iter: I) -> TimeDelta {
         iter.fold(TimeDelta::zero(), |acc, x| acc + *x)
     }
 }
 
-#[cfg(any(feature = "std", test))]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
-impl std::iter::Sum<TimeDelta> for TimeDelta {
+impl core::iter::Sum<TimeDelta> for TimeDelta {
     fn sum<I: Iterator<Item = TimeDelta>>(iter: I) -> TimeDelta {
         iter.fold(TimeDelta::zero(), |acc, x| acc + x)
     }
@@ -445,16 +444,18 @@ impl fmt::Display for TimeDelta {
 /// The `std::time::Duration` supports a range from zero to `u64::MAX`
 /// *seconds*, while this module supports signed range of up to
 /// `i64::MAX` of *milliseconds*.
+#[cfg(feature = "std")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OutOfRangeError(());
 
+#[cfg(feature = "std")]
 impl fmt::Display for OutOfRangeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Source duration value is out of range for the target type")
     }
 }
 
-#[cfg(any(feature = "std", test))]
+#[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Error for OutOfRangeError {
     #[allow(deprecated)]
@@ -488,9 +489,11 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 
 #[cfg(test)]
 mod tests {
-    use super::{OutOfRangeError, TimeDelta, MAX, MIN};
+    #[cfg(feature = "std")]
+    use super::OutOfRangeError;
+    use super::{TimeDelta, MAX, MIN};
+    #[cfg(feature = "std")]
     use std::time::Duration as StdDuration;
-    use std::{i32, i64};
 
     #[test]
     fn test_duration() {
@@ -690,13 +693,13 @@ mod tests {
         let sum_2: TimeDelta = duration_list_2.iter().sum();
         assert_eq!(sum_2, TimeDelta::seconds(17));
 
-        let duration_vec = vec![
+        let duration_arr = [
             TimeDelta::zero(),
             TimeDelta::seconds(1),
             TimeDelta::seconds(6),
             TimeDelta::seconds(10),
         ];
-        let sum_3: TimeDelta = duration_vec.into_iter().sum();
+        let sum_3: TimeDelta = duration_arr.into_iter().sum();
         assert_eq!(sum_3, TimeDelta::seconds(17));
     }
 
@@ -721,6 +724,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_to_std() {
         assert_eq!(TimeDelta::seconds(1).to_std(), Ok(StdDuration::new(1, 0)));
         assert_eq!(TimeDelta::seconds(86401).to_std(), Ok(StdDuration::new(86401, 0)));
@@ -733,6 +737,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_from_std() {
         assert_eq!(Ok(TimeDelta::seconds(1)), TimeDelta::from_std(StdDuration::new(1, 0)));
         assert_eq!(Ok(TimeDelta::seconds(86401)), TimeDelta::from_std(StdDuration::new(86401, 0)));
