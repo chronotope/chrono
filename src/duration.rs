@@ -16,7 +16,7 @@ use core::{fmt, i64};
 #[cfg(feature = "std")]
 use std::error::Error;
 
-use crate::try_opt;
+use crate::{expect, try_opt};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -102,8 +102,8 @@ impl Duration {
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
-    pub fn weeks(weeks: i64) -> Duration {
-        Duration::try_weeks(weeks).expect("Duration::weeks out of bounds")
+    pub const fn weeks(weeks: i64) -> Duration {
+        expect!(Duration::try_weeks(weeks), "Duration::weeks out of bounds")
     }
 
     /// Makes a new `Duration` with the given number of weeks.
@@ -115,8 +115,8 @@ impl Duration {
     ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
-    pub fn try_weeks(weeks: i64) -> Option<Duration> {
-        weeks.checked_mul(SECS_PER_WEEK).and_then(Duration::try_seconds)
+    pub const fn try_weeks(weeks: i64) -> Option<Duration> {
+        Duration::try_seconds(try_opt!(weeks.checked_mul(SECS_PER_WEEK)))
     }
 
     /// Makes a new `Duration` with the given number of days.
@@ -129,8 +129,8 @@ impl Duration {
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
-    pub fn days(days: i64) -> Duration {
-        Duration::try_days(days).expect("Duration::days out of bounds")
+    pub const fn days(days: i64) -> Duration {
+        expect!(Duration::try_days(days), "Duration::days out of bounds")
     }
 
     /// Makes a new `Duration` with the given number of days.
@@ -142,8 +142,8 @@ impl Duration {
     ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
-    pub fn try_days(days: i64) -> Option<Duration> {
-        days.checked_mul(SECS_PER_DAY).and_then(Duration::try_seconds)
+    pub const fn try_days(days: i64) -> Option<Duration> {
+        Duration::try_seconds(try_opt!(days.checked_mul(SECS_PER_DAY)))
     }
 
     /// Makes a new `Duration` with the given number of hours.
@@ -155,8 +155,8 @@ impl Duration {
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
-    pub fn hours(hours: i64) -> Duration {
-        Duration::try_hours(hours).expect("Duration::hours out of bounds")
+    pub const fn hours(hours: i64) -> Duration {
+        expect!(Duration::try_hours(hours), "Duration::hours out of bounds")
     }
 
     /// Makes a new `Duration` with the given number of hours.
@@ -167,8 +167,8 @@ impl Duration {
     ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
-    pub fn try_hours(hours: i64) -> Option<Duration> {
-        hours.checked_mul(SECS_PER_HOUR).and_then(Duration::try_seconds)
+    pub const fn try_hours(hours: i64) -> Option<Duration> {
+        Duration::try_seconds(try_opt!(hours.checked_mul(SECS_PER_HOUR)))
     }
 
     /// Makes a new `Duration` with the given number of minutes.
@@ -180,8 +180,8 @@ impl Duration {
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
-    pub fn minutes(minutes: i64) -> Duration {
-        Duration::try_minutes(minutes).expect("Duration::minutes out of bounds")
+    pub const fn minutes(minutes: i64) -> Duration {
+        expect!(Duration::try_minutes(minutes), "Duration::minutes out of bounds")
     }
 
     /// Makes a new `Duration` with the given number of minutes.
@@ -192,8 +192,8 @@ impl Duration {
     ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
-    pub fn try_minutes(minutes: i64) -> Option<Duration> {
-        minutes.checked_mul(SECS_PER_MINUTE).and_then(Duration::try_seconds)
+    pub const fn try_minutes(minutes: i64) -> Option<Duration> {
+        Duration::try_seconds(try_opt!(minutes.checked_mul(SECS_PER_MINUTE)))
     }
 
     /// Makes a new `Duration` with the given number of seconds.
@@ -206,8 +206,8 @@ impl Duration {
     /// rounding).
     #[inline]
     #[must_use]
-    pub fn seconds(seconds: i64) -> Duration {
-        Duration::try_seconds(seconds).expect("Duration::seconds out of bounds")
+    pub const fn seconds(seconds: i64) -> Duration {
+        expect!(Duration::try_seconds(seconds), "Duration::seconds out of bounds")
     }
 
     /// Makes a new `Duration` with the given number of seconds.
@@ -218,12 +218,8 @@ impl Duration {
     /// or less than `-i64::MAX / 1_000` seconds (in this context, this is the
     /// same as `i64::MIN / 1_000` due to rounding).
     #[inline]
-    pub fn try_seconds(seconds: i64) -> Option<Duration> {
-        let d = Duration { secs: seconds, nanos: 0 };
-        if d < MIN || d > MAX {
-            return None;
-        }
-        Some(d)
+    pub const fn try_seconds(seconds: i64) -> Option<Duration> {
+        Duration::new(seconds, 0)
     }
 
     /// Makes a new `Duration` with the given number of milliseconds.
@@ -234,8 +230,8 @@ impl Duration {
     /// more than `i64::MAX` milliseconds or less than `-i64::MAX` milliseconds.
     /// Notably, this is not the same as `i64::MIN`.
     #[inline]
-    pub fn milliseconds(milliseconds: i64) -> Duration {
-        Duration::try_milliseconds(milliseconds).expect("Duration::milliseconds out of bounds")
+    pub const fn milliseconds(milliseconds: i64) -> Duration {
+        expect!(Duration::try_milliseconds(milliseconds), "Duration::milliseconds out of bounds")
     }
 
     /// Makes a new `Duration` with the given number of milliseconds.
@@ -246,14 +242,14 @@ impl Duration {
     /// less than `-i64::MAX` milliseconds. Notably, this is not the same as
     /// `i64::MIN`.
     #[inline]
-    pub fn try_milliseconds(milliseconds: i64) -> Option<Duration> {
-        let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
-        let d = Duration { secs, nanos: millis as i32 * NANOS_PER_MILLI };
+    pub const fn try_milliseconds(milliseconds: i64) -> Option<Duration> {
         // We don't need to compare against MAX, as this function accepts an
         // i64, and MAX is aligned to i64::MAX milliseconds.
-        if d < MIN {
+        if milliseconds < -i64::MAX {
             return None;
         }
+        let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
+        let d = Duration { secs, nanos: millis as i32 * NANOS_PER_MILLI };
         Some(d)
     }
 
@@ -354,40 +350,30 @@ impl Duration {
 
     /// Add two `Duration`s, returning `None` if overflow occurred.
     #[must_use]
-    pub fn checked_add(&self, rhs: &Duration) -> Option<Duration> {
-        let mut secs = try_opt!(self.secs.checked_add(rhs.secs));
+    pub const fn checked_add(&self, rhs: &Duration) -> Option<Duration> {
+        // No overflow checks here because we stay comfortably within the range of an `i64`.
+        // Range checks happen in `Duration::new`.
+        let mut secs = self.secs + rhs.secs;
         let mut nanos = self.nanos + rhs.nanos;
         if nanos >= NANOS_PER_SEC {
             nanos -= NANOS_PER_SEC;
-            secs = try_opt!(secs.checked_add(1));
+            secs += 1;
         }
-        let d = Duration { secs, nanos };
-        // Even if d is within the bounds of i64 seconds,
-        // it might still overflow i64 milliseconds.
-        if d < MIN || d > MAX {
-            None
-        } else {
-            Some(d)
-        }
+        Duration::new(secs, nanos as u32)
     }
 
     /// Subtract two `Duration`s, returning `None` if overflow occurred.
     #[must_use]
-    pub fn checked_sub(&self, rhs: &Duration) -> Option<Duration> {
-        let mut secs = try_opt!(self.secs.checked_sub(rhs.secs));
+    pub const fn checked_sub(&self, rhs: &Duration) -> Option<Duration> {
+        // No overflow checks here because we stay comfortably within the range of an `i64`.
+        // Range checks happen in `Duration::new`.
+        let mut secs = self.secs - rhs.secs;
         let mut nanos = self.nanos - rhs.nanos;
         if nanos < 0 {
             nanos += NANOS_PER_SEC;
-            secs = try_opt!(secs.checked_sub(1));
+            secs -= 1;
         }
-        let d = Duration { secs, nanos };
-        // Even if d is within the bounds of i64 seconds,
-        // it might still overflow i64 milliseconds.
-        if d < MIN || d > MAX {
-            None
-        } else {
-            Some(d)
-        }
+        Duration::new(secs, nanos as u32)
     }
 
     /// Returns the `Duration` as an absolute (non-negative) value.
@@ -428,23 +414,22 @@ impl Duration {
     ///
     /// This function errors when original duration is larger than the maximum
     /// value supported for this type.
-    pub fn from_std(duration: StdDuration) -> Result<Duration, OutOfRangeError> {
+    pub const fn from_std(duration: StdDuration) -> Result<Duration, OutOfRangeError> {
         // We need to check secs as u64 before coercing to i64
         if duration.as_secs() > MAX.secs as u64 {
             return Err(OutOfRangeError(()));
         }
-        let d = Duration { secs: duration.as_secs() as i64, nanos: duration.subsec_nanos() as i32 };
-        if d > MAX {
-            return Err(OutOfRangeError(()));
+        match Duration::new(duration.as_secs() as i64, duration.subsec_nanos()) {
+            Some(d) => Ok(d),
+            None => Err(OutOfRangeError(())),
         }
-        Ok(d)
     }
 
     /// Creates a `std::time::Duration` object from `time::Duration`
     ///
     /// This function errors when duration is less than zero. As standard
     /// library implementation is limited to non-negative values.
-    pub fn to_std(&self) -> Result<StdDuration, OutOfRangeError> {
+    pub const fn to_std(&self) -> Result<StdDuration, OutOfRangeError> {
         if self.secs < 0 {
             return Err(OutOfRangeError(()));
         }
