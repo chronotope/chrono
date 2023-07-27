@@ -4,9 +4,6 @@
 //! Date and time formatting routines.
 
 #[cfg(feature = "alloc")]
-extern crate alloc;
-
-#[cfg(feature = "alloc")]
 use alloc::string::{String, ToString};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
@@ -14,76 +11,19 @@ use core::fmt;
 use core::fmt::Write;
 
 #[cfg(any(feature = "alloc", feature = "std"))]
-use crate::naive::{NaiveDate, NaiveTime};
+use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::offset::{FixedOffset, Offset};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::{Datelike, Timelike, Weekday};
 
-#[cfg(feature = "unstable-locales")]
 use super::locales;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use super::{
     Colons, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, OffsetFormat,
     OffsetPrecision, Pad,
 };
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-struct Locales {
-    short_months: &'static [&'static str],
-    long_months: &'static [&'static str],
-    short_weekdays: &'static [&'static str],
-    long_weekdays: &'static [&'static str],
-    am_pm: &'static [&'static str],
-}
-
-#[cfg(any(feature = "alloc", feature = "std"))]
-impl Locales {
-    fn new(_locale: Option<Locale>) -> Self {
-        #[cfg(feature = "unstable-locales")]
-        {
-            let locale = _locale.unwrap_or(Locale::POSIX);
-            Self {
-                short_months: locales::short_months(locale),
-                long_months: locales::long_months(locale),
-                short_weekdays: locales::short_weekdays(locale),
-                long_weekdays: locales::long_weekdays(locale),
-                am_pm: locales::am_pm(locale),
-            }
-        }
-        #[cfg(not(feature = "unstable-locales"))]
-        Self {
-            short_months: &[
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-            ],
-            long_months: &[
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-            ],
-            short_weekdays: &["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-            long_weekdays: &[
-                "Sunday",
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-            ],
-            am_pm: &["AM", "PM"],
-        }
-    }
-}
+use locales::*;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
@@ -273,19 +213,19 @@ pub fn format_item_localized(
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 fn format_inner(
-    result: &mut String,
+    w: &mut impl Write,
     date: Option<&NaiveDate>,
     time: Option<&NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'_>,
     locale: Option<Locale>,
 ) -> fmt::Result {
-    let locale = Locales::new(locale);
+    let locale = locale.unwrap_or(default_locale());
 
     match *item {
-        Item::Literal(s) | Item::Space(s) => result.push_str(s),
+        Item::Literal(s) | Item::Space(s) => w.write_str(s),
         #[cfg(any(feature = "alloc", feature = "std"))]
-        Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => result.push_str(s),
+        Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
 
         Item::Numeric(ref spec, ref pad) => {
             use self::Numeric::*;
@@ -318,7 +258,7 @@ fn format_inner(
                     match (date, time, off) {
                         (Some(d), Some(t), None) => Some(d.and_time(*t).timestamp()),
                         (Some(d), Some(t), Some(&(_, off))) => {
-                            Some((d.and_time(*t) - off).timestamp())
+                            Some(d.and_time(*t).timestamp() - i64::from(off.local_minus_utc()))
                         }
                         (_, _, _) => None,
                     },
@@ -332,19 +272,19 @@ fn format_inner(
                 if (spec == &Year || spec == &IsoYear) && !(0..10_000).contains(&v) {
                     // non-four-digit years require an explicit sign as per ISO 8601
                     match *pad {
-                        Pad::None => write!(result, "{:+}", v),
-                        Pad::Zero => write!(result, "{:+01$}", v, width + 1),
-                        Pad::Space => write!(result, "{:+1$}", v, width + 1),
+                        Pad::None => write!(w, "{:+}", v),
+                        Pad::Zero => write!(w, "{:+01$}", v, width + 1),
+                        Pad::Space => write!(w, "{:+1$}", v, width + 1),
                     }
                 } else {
                     match *pad {
-                        Pad::None => write!(result, "{}", v),
-                        Pad::Zero => write!(result, "{:01$}", v, width),
-                        Pad::Space => write!(result, "{:1$}", v, width),
+                        Pad::None => write!(w, "{}", v),
+                        Pad::Zero => write!(w, "{:01$}", v, width),
+                        Pad::Space => write!(w, "{:1$}", v, width),
                     }
-                }?
+                }
             } else {
-                return Err(fmt::Error); // insufficient arguments for given format
+                Err(fmt::Error) // insufficient arguments for given format
             }
         }
 
@@ -353,80 +293,86 @@ fn format_inner(
 
             let ret = match *spec {
                 ShortMonthName => date.map(|d| {
-                    result.push_str(locale.short_months[d.month0() as usize]);
+                    w.write_str(short_months(locale)[d.month0() as usize])?;
                     Ok(())
                 }),
                 LongMonthName => date.map(|d| {
-                    result.push_str(locale.long_months[d.month0() as usize]);
+                    w.write_str(long_months(locale)[d.month0() as usize])?;
                     Ok(())
                 }),
                 ShortWeekdayName => date.map(|d| {
-                    result.push_str(
-                        locale.short_weekdays[d.weekday().num_days_from_sunday() as usize],
-                    );
+                    w.write_str(
+                        short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize],
+                    )?;
                     Ok(())
                 }),
                 LongWeekdayName => date.map(|d| {
-                    result.push_str(
-                        locale.long_weekdays[d.weekday().num_days_from_sunday() as usize],
-                    );
+                    w.write_str(
+                        long_weekdays(locale)[d.weekday().num_days_from_sunday() as usize],
+                    )?;
                     Ok(())
                 }),
                 LowerAmPm => time.map(|t| {
-                    let ampm = if t.hour12().0 { locale.am_pm[1] } else { locale.am_pm[0] };
-                    for char in ampm.chars() {
-                        result.extend(char.to_lowercase())
+                    let ampm = if t.hour12().0 { am_pm(locale)[1] } else { am_pm(locale)[0] };
+                    for c in ampm.chars().flat_map(|c| c.to_lowercase()) {
+                        w.write_char(c)?
                     }
                     Ok(())
                 }),
                 UpperAmPm => time.map(|t| {
-                    result.push_str(if t.hour12().0 { locale.am_pm[1] } else { locale.am_pm[0] });
+                    w.write_str(if t.hour12().0 { am_pm(locale)[1] } else { am_pm(locale)[0] })?;
                     Ok(())
                 }),
                 Nanosecond => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
                     if nano == 0 {
                         Ok(())
-                    } else if nano % 1_000_000 == 0 {
-                        write!(result, ".{:03}", nano / 1_000_000)
-                    } else if nano % 1_000 == 0 {
-                        write!(result, ".{:06}", nano / 1_000)
                     } else {
-                        write!(result, ".{:09}", nano)
+                        w.write_str(decimal_point(locale))?;
+                        if nano % 1_000_000 == 0 {
+                            write!(w, "{:03}", nano / 1_000_000)
+                        } else if nano % 1_000 == 0 {
+                            write!(w, "{:06}", nano / 1_000)
+                        } else {
+                            write!(w, "{:09}", nano)
+                        }
                     }
                 }),
                 Nanosecond3 => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
-                    write!(result, ".{:03}", nano / 1_000_000)
+                    w.write_str(decimal_point(locale))?;
+                    write!(w, "{:03}", nano / 1_000_000)
                 }),
                 Nanosecond6 => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
-                    write!(result, ".{:06}", nano / 1_000)
+                    w.write_str(decimal_point(locale))?;
+                    write!(w, "{:06}", nano / 1_000)
                 }),
                 Nanosecond9 => time.map(|t| {
                     let nano = t.nanosecond() % 1_000_000_000;
-                    write!(result, ".{:09}", nano)
+                    w.write_str(decimal_point(locale))?;
+                    write!(w, "{:09}", nano)
                 }),
                 Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                     time.map(|t| {
                         let nano = t.nanosecond() % 1_000_000_000;
-                        write!(result, "{:03}", nano / 1_000_000)
+                        write!(w, "{:03}", nano / 1_000_000)
                     })
                 }
                 Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
                     time.map(|t| {
                         let nano = t.nanosecond() % 1_000_000_000;
-                        write!(result, "{:06}", nano / 1_000)
+                        write!(w, "{:06}", nano / 1_000)
                     })
                 }
                 Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
                     time.map(|t| {
                         let nano = t.nanosecond() % 1_000_000_000;
-                        write!(result, "{:09}", nano)
+                        write!(w, "{:09}", nano)
                     })
                 }
                 TimezoneName => off.map(|(name, _)| {
-                    result.push_str(name);
+                    w.write_str(name)?;
                     Ok(())
                 }),
                 TimezoneOffset | TimezoneOffsetZ => off.map(|&(_, off)| {
@@ -436,7 +382,7 @@ fn format_inner(
                         allow_zulu: *spec == TimezoneOffsetZ,
                         padding: Pad::Zero,
                     }
-                    .format(result, off)
+                    .format(w, off)
                 }),
                 TimezoneOffsetColon | TimezoneOffsetColonZ => off.map(|&(_, off)| {
                     OffsetFormat {
@@ -445,7 +391,7 @@ fn format_inner(
                         allow_zulu: *spec == TimezoneOffsetColonZ,
                         padding: Pad::Zero,
                     }
-                    .format(result, off)
+                    .format(w, off)
                 }),
                 TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
                     OffsetFormat {
@@ -454,7 +400,7 @@ fn format_inner(
                         allow_zulu: false,
                         padding: Pad::Zero,
                     }
-                    .format(result, off)
+                    .format(w, off)
                 }),
                 TimezoneOffsetTripleColon => off.map(|&(_, off)| {
                     OffsetFormat {
@@ -463,7 +409,7 @@ fn format_inner(
                         allow_zulu: false,
                         padding: Pad::Zero,
                     }
-                    .format(result, off)
+                    .format(w, off)
                 }),
                 Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                     return Err(fmt::Error);
@@ -472,7 +418,7 @@ fn format_inner(
                 // same as `%a, %d %b %Y %H:%M:%S %z`
                 {
                     if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc2822_inner(result, d, t, off, locale))
+                        Some(write_rfc2822_inner(w, *d, *t, off, locale))
                     } else {
                         None
                     }
@@ -481,31 +427,27 @@ fn format_inner(
                 // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
                 {
                     if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc3339(result, crate::NaiveDateTime::new(*d, *t), off))
+                        Some(write_rfc3339(w, NaiveDateTime::new(*d, *t), off))
                     } else {
                         None
                     }
                 }
             };
 
-            match ret {
-                Some(ret) => ret?,
-                None => return Err(fmt::Error), // insufficient arguments for given format
-            }
+            ret.unwrap_or(Err(fmt::Error)) // insufficient arguments for given format
         }
 
-        Item::Error => return Err(fmt::Error),
+        Item::Error => Err(fmt::Error),
     }
-    Ok(())
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl OffsetFormat {
-    /// Writes an offset from UTC to `result` with the format defined by `self`.
-    fn format(&self, result: &mut String, off: FixedOffset) -> fmt::Result {
+    /// Writes an offset from UTC with the format defined by `self`.
+    fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
         let off = off.local_minus_utc();
         if self.allow_zulu && off == 0 {
-            result.push('Z');
+            w.write_char('Z')?;
             return Ok(());
         }
         let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
@@ -552,28 +494,28 @@ impl OffsetFormat {
 
         if hours < 10 {
             if self.padding == Pad::Space {
-                result.push(' ');
+                w.write_char(' ')?;
             }
-            result.push(sign);
+            w.write_char(sign)?;
             if self.padding == Pad::Zero {
-                result.push('0');
+                w.write_char('0')?;
             }
-            result.push((b'0' + hours) as char);
+            w.write_char((b'0' + hours) as char)?;
         } else {
-            result.push(sign);
-            write_hundreds(result, hours)?;
+            w.write_char(sign)?;
+            write_hundreds(w, hours)?;
         }
         if let OffsetPrecision::Minutes | OffsetPrecision::Seconds = precision {
             if colons {
-                result.push(':');
+                w.write_char(':')?;
             }
-            write_hundreds(result, mins)?;
+            write_hundreds(w, mins)?;
         }
         if let OffsetPrecision::Seconds = precision {
             if colons {
-                result.push(':');
+                w.write_char(':')?;
             }
-            write_hundreds(result, secs)?;
+            write_hundreds(w, secs)?;
         }
         Ok(())
     }
@@ -582,40 +524,40 @@ impl OffsetFormat {
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) fn write_rfc3339(
-    result: &mut String,
-    dt: crate::NaiveDateTime,
+    w: &mut impl Write,
+    dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
     // reuse `Debug` impls which already print ISO 8601 format.
     // this is faster in this way.
-    write!(result, "{:?}", dt)?;
+    write!(w, "{:?}", dt)?;
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::Colon,
         allow_zulu: false,
         padding: Pad::Zero,
     }
-    .format(result, off)
+    .format(w, off)
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
-    result: &mut String,
-    dt: crate::NaiveDateTime,
+    w: &mut impl Write,
+    dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
-    write_rfc2822_inner(result, &dt.date(), &dt.time(), off, Locales::new(None))
+    write_rfc2822_inner(w, dt.date(), dt.time(), off, default_locale())
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 fn write_rfc2822_inner(
-    result: &mut String,
-    d: &NaiveDate,
-    t: &NaiveTime,
+    w: &mut impl Write,
+    d: NaiveDate,
+    t: NaiveTime,
     off: FixedOffset,
-    locale: Locales,
+    locale: Locale,
 ) -> fmt::Result {
     let year = d.year();
     // RFC2822 is only defined on years 0 through 9999
@@ -623,29 +565,29 @@ fn write_rfc2822_inner(
         return Err(fmt::Error);
     }
 
-    result.push_str(locale.short_weekdays[d.weekday().num_days_from_sunday() as usize]);
-    result.push_str(", ");
-    write_hundreds(result, d.day() as u8)?;
-    result.push(' ');
-    result.push_str(locale.short_months[d.month0() as usize]);
-    result.push(' ');
-    write_hundreds(result, (year / 100) as u8)?;
-    write_hundreds(result, (year % 100) as u8)?;
-    result.push(' ');
-    write_hundreds(result, t.hour() as u8)?;
-    result.push(':');
-    write_hundreds(result, t.minute() as u8)?;
-    result.push(':');
+    w.write_str(short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize])?;
+    w.write_str(", ")?;
+    write_hundreds(w, d.day() as u8)?;
+    w.write_char(' ')?;
+    w.write_str(short_months(locale)[d.month0() as usize])?;
+    w.write_char(' ')?;
+    write_hundreds(w, (year / 100) as u8)?;
+    write_hundreds(w, (year % 100) as u8)?;
+    w.write_char(' ')?;
+    write_hundreds(w, t.hour() as u8)?;
+    w.write_char(':')?;
+    write_hundreds(w, t.minute() as u8)?;
+    w.write_char(':')?;
     let sec = t.second() + t.nanosecond() / 1_000_000_000;
-    write_hundreds(result, sec as u8)?;
-    result.push(' ');
+    write_hundreds(w, sec as u8)?;
+    w.write_char(' ')?;
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::None,
         allow_zulu: false,
         padding: Pad::Zero,
     }
-    .format(result, off)
+    .format(w, off)
 }
 
 /// Equivalent to `{:02}` formatting for n < 100.
@@ -665,6 +607,145 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
 mod tests {
     use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
     use crate::FixedOffset;
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
+
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_date_format() {
+        let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
+        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
+        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
+        assert_eq!(d.format("%d,%e").to_string(), "04, 4");
+        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
+        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
+        assert_eq!(d.format("%j").to_string(), "064"); // since 2012 is a leap year
+        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12");
+        assert_eq!(d.format("%F").to_string(), "2012-03-04");
+        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
+        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+
+        // non-four-digit years
+        assert_eq!(
+            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").to_string(),
+            "+12345"
+        );
+        assert_eq!(NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
+        assert_eq!(NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
+        assert_eq!(NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
+        assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
+        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
+        assert_eq!(NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
+        assert_eq!(NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
+        assert_eq!(NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
+        assert_eq!(NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
+        assert_eq!(
+            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
+            "-12345"
+        );
+
+        // corner cases
+        assert_eq!(
+            NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
+            "2008,08,52,53,01"
+        );
+        assert_eq!(
+            NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
+            "2009,09,01,00,53"
+        );
+    }
+
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_time_format() {
+        let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
+        assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
+        assert_eq!(t.format("%M").to_string(), "05");
+        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");
+        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".098,.098765,.098765432");
+        assert_eq!(t.format("%R").to_string(), "03:05");
+        assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07");
+        assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
+        assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+
+        let t = NaiveTime::from_hms_micro_opt(3, 5, 7, 432100).unwrap();
+        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
+        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
+
+        let t = NaiveTime::from_hms_milli_opt(3, 5, 7, 210).unwrap();
+        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
+        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
+
+        let t = NaiveTime::from_hms_opt(3, 5, 7).unwrap();
+        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,000000000,");
+        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".000,.000000,.000000000");
+
+        // corner cases
+        assert_eq!(
+            NaiveTime::from_hms_opt(13, 57, 9).unwrap().format("%r").to_string(),
+            "01:57:09 PM"
+        );
+        assert_eq!(
+            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
+            "23:59:60"
+        );
+    }
+
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_datetime_format() {
+        let dt =
+            NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
+        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
+        assert_eq!(dt.format("%s").to_string(), "1283929614");
+        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+
+        // a horror of leap second: coming near to you.
+        let dt = NaiveDate::from_ymd_opt(2012, 6, 30)
+            .unwrap()
+            .and_hms_milli_opt(23, 59, 59, 1_000)
+            .unwrap();
+        assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
+        assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
+    }
+
+    #[test]
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    fn test_datetime_format_alignment() {
+        let datetime = Utc
+            .with_ymd_and_hms(2007, 1, 2, 12, 34, 56)
+            .unwrap()
+            .with_nanosecond(123456789)
+            .unwrap();
+
+        // Item::Literal, odd number of padding bytes.
+        let percent = datetime.format("%%");
+        assert_eq!("   %", format!("{:>4}", percent));
+        assert_eq!("%   ", format!("{:<4}", percent));
+        assert_eq!(" %  ", format!("{:^4}", percent));
+
+        // Item::Numeric, custom non-ASCII padding character
+        let year = datetime.format("%Y");
+        assert_eq!("——2007", format!("{:—>6}", year));
+        assert_eq!("2007——", format!("{:—<6}", year));
+        assert_eq!("—2007—", format!("{:—^6}", year));
+
+        // Item::Fixed
+        let tz = datetime.format("%Z");
+        assert_eq!("  UTC", format!("{:>5}", tz));
+        assert_eq!("UTC  ", format!("{:<5}", tz));
+        assert_eq!(" UTC ", format!("{:^5}", tz));
+
+        // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
+        let ymd = datetime.format("%Y %B %d");
+        assert_eq!("  2007 January 02", format!("{:>17}", ymd));
+        assert_eq!("2007 January 02  ", format!("{:<17}", ymd));
+        assert_eq!(" 2007 January 02 ", format!("{:^17}", ymd));
+
+        // Truncated
+        let time = datetime.format("%T%.6f");
+        assert_eq!("12:34:56.1234", format!("{:.13}", time));
+    }
 
     #[test]
     fn test_offset_formatting() {

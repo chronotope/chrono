@@ -197,6 +197,16 @@ pub struct ParseMonthError {
     pub(crate) _dummy: (),
 }
 
+#[cfg(feature = "std")]
+#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+impl std::error::Error for ParseMonthError {}
+
+impl fmt::Display for ParseMonthError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ParseMonthError {{ .. }}")
+    }
+}
+
 impl fmt::Debug for ParseMonthError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "ParseMonthError {{ .. }}")

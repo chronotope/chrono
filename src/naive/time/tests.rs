@@ -1,5 +1,3 @@
-use std::u32;
-
 use super::NaiveTime;
 use crate::{TimeDelta, Timelike};
 
@@ -343,37 +341,4 @@ fn test_time_parse_from_str() {
     assert!(NaiveTime::parse_from_str("\t\t12:59 PM\t", "\t\t%H:%M\t%P\t").is_err());
     assert!(NaiveTime::parse_from_str("12:59  PM", "%H:%M %P").is_err());
     assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
-}
-
-#[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
-fn test_time_format() {
-    let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
-    assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
-    assert_eq!(t.format("%M").to_string(), "05");
-    assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");
-    assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".098,.098765,.098765432");
-    assert_eq!(t.format("%R").to_string(), "03:05");
-    assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07");
-    assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
-    assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
-
-    let t = NaiveTime::from_hms_micro_opt(3, 5, 7, 432100).unwrap();
-    assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
-    assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
-
-    let t = NaiveTime::from_hms_milli_opt(3, 5, 7, 210).unwrap();
-    assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
-    assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
-
-    let t = NaiveTime::from_hms_opt(3, 5, 7).unwrap();
-    assert_eq!(t.format("%S,%f,%.f").to_string(), "07,000000000,");
-    assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".000,.000000,.000000000");
-
-    // corner cases
-    assert_eq!(NaiveTime::from_hms_opt(13, 57, 9).unwrap().format("%r").to_string(), "01:57:09 PM");
-    assert_eq!(
-        NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
-        "23:59:60"
-    );
 }
