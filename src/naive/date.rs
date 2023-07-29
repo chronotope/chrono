@@ -782,9 +782,15 @@ impl NaiveDate {
 
     /// Add a duration of `i32` days to the date.
     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
-        if days == 0 {
-            return Some(self);
+        // fast path if the result is within the same year
+        const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
+        if let Some(ordinal) = ((self.ymdf & ORDINAL_MASK) >> 4).checked_add(days) {
+            if ordinal > 0 && ordinal <= 365 {
+                let year_and_flags = self.ymdf & !ORDINAL_MASK;
+                return Some(NaiveDate { ymdf: year_and_flags | (ordinal << 4) });
+            }
         }
+        // do the full check
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
