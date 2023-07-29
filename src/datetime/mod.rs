@@ -1312,7 +1312,7 @@ where
 }
 
 /// Accepts a relaxed form of RFC3339.
-/// A space or a 'T' are acepted as the separator between the date and time
+/// A space or a 'T' are accepted as the separator between the date and time
 /// parts.
 ///
 /// All of these examples are equivalent:
@@ -1333,7 +1333,7 @@ impl str::FromStr for DateTime<Utc> {
 }
 
 /// Accepts a relaxed form of RFC3339.
-/// A space or a 'T' are acepted as the separator between the date and time
+/// A space or a 'T' are accepted as the separator between the date and time
 /// parts.
 ///
 /// All of these examples are equivalent:
