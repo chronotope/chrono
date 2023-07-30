@@ -267,6 +267,7 @@ pub(super) struct Of(u32);
 
 impl Of {
     #[inline]
+    #[cfg(test)]
     pub(super) const fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
         let of = Of((ordinal << 4) | flags as u32);
         of.validate()
@@ -308,11 +309,6 @@ impl Of {
             true => Some(self),
             false => None,
         }
-    }
-
-    #[inline]
-    pub(super) const fn ordinal(&self) -> u32 {
-        self.0 >> 4
     }
 
     #[inline]
@@ -644,17 +640,6 @@ mod tests {
             check(false, flags, u32::MAX, 0, u32::MAX, 1024);
             check(false, flags, 0, u32::MAX, 16, u32::MAX);
             check(false, flags, u32::MAX, u32::MAX, u32::MAX, u32::MAX);
-        }
-    }
-
-    #[test]
-    fn test_of_fields() {
-        for &flags in FLAGS.iter() {
-            for ordinal in 1u32..=366 {
-                if let Some(of) = Of::new(ordinal, flags) {
-                    assert_eq!(of.ordinal(), ordinal);
-                }
-            }
         }
     }
 
