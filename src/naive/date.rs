@@ -2,6 +2,16 @@
 // See README.md and LICENSE.txt for details.
 
 //! ISO 8601 calendar date without timezone.
+//!
+//! The implementation is optimized for determining year, month, day and day of week.
+//!
+//! Format of `NaiveDate`:
+//! `YYYY_YYYY_YYYY_YYYY_YYYO_OOOO_OOOO_LWWW`
+//! `Y`: Year
+//! `O`: Ordinal
+//! `L`: leap year flag (1 = common year, 0 is leap year)
+//! `W`: weekday before the first day of the year
+//! `LWWW`: will also be referred to as the year flags (`F`)
 
 #[cfg(feature = "alloc")]
 use core::borrow::Borrow;
