@@ -1045,13 +1045,7 @@ impl NaiveDate {
     /// Returns the packed month-day-flags.
     #[inline]
     const fn mdf(&self) -> Mdf {
-        self.of().to_mdf()
-    }
-
-    /// Returns the packed ordinal-flags.
-    #[inline]
-    const fn of(&self) -> Of {
-        Of::from_date_impl(self.yof)
+        Mdf::from_ol((self.yof & OL_MASK) >> 3, self.year_flags())
     }
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
