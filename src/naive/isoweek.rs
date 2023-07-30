@@ -155,7 +155,7 @@ impl fmt::Debug for IsoWeek {
 mod tests {
     #[cfg(feature = "rkyv-validation")]
     use super::IsoWeek;
-    use crate::naive::{internals, NaiveDate};
+    use crate::naive::date::{self, NaiveDate};
     use crate::Datelike;
 
     #[test]
@@ -163,13 +163,13 @@ mod tests {
         let minweek = NaiveDate::MIN.iso_week();
         let maxweek = NaiveDate::MAX.iso_week();
 
-        assert_eq!(minweek.year(), internals::MIN_YEAR);
+        assert_eq!(minweek.year(), date::MIN_YEAR);
         assert_eq!(minweek.week(), 1);
         assert_eq!(minweek.week0(), 0);
         #[cfg(feature = "alloc")]
         assert_eq!(format!("{:?}", minweek), NaiveDate::MIN.format("%G-W%V").to_string());
 
-        assert_eq!(maxweek.year(), internals::MAX_YEAR + 1);
+        assert_eq!(maxweek.year(), date::MAX_YEAR + 1);
         assert_eq!(maxweek.week(), 1);
         assert_eq!(maxweek.week0(), 0);
         #[cfg(feature = "alloc")]
