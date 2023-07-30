@@ -265,11 +265,6 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 pub(super) struct Of(u32);
 
 impl Of {
-    pub(super) const fn from_date_impl(date_impl: i32) -> Of {
-        // We assume the value in `date_impl` is valid.
-        Of((date_impl & 0b1_1111_1111_1111) as u32)
-    }
-
     #[inline]
     pub(super) const fn from_mdf(Mdf(mdf): Mdf) -> Option<Of> {
         let mdl = mdf >> 3;
@@ -306,7 +301,7 @@ impl Of {
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
     pub(super) const fn to_mdf(&self) -> Mdf {
-        Mdf::from_of(*self)
+        Mdf::from_ol(self.0 as i32 >> 3, YearFlags((self.0 & 0b1111) as u8))
     }
 }
 
@@ -345,15 +340,10 @@ impl Mdf {
     }
 
     #[inline]
-    pub(super) const fn from_of(Of(of): Of) -> Mdf {
-        let ol = of >> 3;
-        if ol <= MAX_OL {
-            // Array is indexed from `[1..=MAX_OL]`, with a `0` index having a meaningless value.
-            Mdf(of + ((OL_TO_MDL[ol as usize] as u32) << 3))
-        } else {
-            // Panicking here would be reasonable, but we are just going on with a safe value.
-            Mdf(0)
-        }
+    pub(super) const fn from_ol(ol: i32, YearFlags(flags): YearFlags) -> Mdf {
+        debug_assert!(ol > 1 && ol <= MAX_OL as i32);
+        // Array is indexed from `[2..=MAX_OL]`, with a `0` index having a meaningless value.
+        Mdf(((ol as u32 + OL_TO_MDL[ol as usize] as u32) << 3) | flags as u32)
     }
 
     #[cfg(test)]
