@@ -311,11 +311,6 @@ impl Of {
     }
 
     #[inline]
-    pub(super) const fn ordinal(&self) -> u32 {
-        self.0 >> 4
-    }
-
-    #[inline]
     pub(super) const fn flags(&self) -> YearFlags {
         YearFlags((self.0 & 0b1111) as u8)
     }
@@ -644,17 +639,6 @@ mod tests {
             check(false, flags, u32::MAX, 0, u32::MAX, 1024);
             check(false, flags, 0, u32::MAX, 16, u32::MAX);
             check(false, flags, u32::MAX, u32::MAX, u32::MAX, u32::MAX);
-        }
-    }
-
-    #[test]
-    fn test_of_fields() {
-        for &flags in FLAGS.iter() {
-            for ordinal in 1u32..=366 {
-                if let Some(of) = Of::new(ordinal, flags) {
-                    assert_eq!(of.ordinal(), ordinal);
-                }
-            }
         }
     }
 
