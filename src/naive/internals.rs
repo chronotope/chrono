@@ -15,7 +15,6 @@
 
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
-use crate::Weekday;
 use core::fmt;
 
 /// The year flags (aka the dominical letter).
@@ -316,12 +315,6 @@ impl Of {
         YearFlags((self.0 & 0b1111) as u8)
     }
 
-    #[inline]
-    pub(super) const fn weekday(&self) -> Weekday {
-        let Of(of) = *self;
-        weekday_from_u32_mod7((of >> 4) + (of & 0b111))
-    }
-
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
     pub(super) const fn to_mdf(&self) -> Mdf {
@@ -447,27 +440,10 @@ impl fmt::Debug for Mdf {
     }
 }
 
-/// Create a `Weekday` from an `u32`, with Monday = 0.
-/// Infallible, takes any `n` and applies `% 7`.
-#[inline]
-const fn weekday_from_u32_mod7(n: u32) -> Weekday {
-    match n % 7 {
-        0 => Weekday::Mon,
-        1 => Weekday::Tue,
-        2 => Weekday::Wed,
-        3 => Weekday::Thu,
-        4 => Weekday::Fri,
-        5 => Weekday::Sat,
-        _ => Weekday::Sun,
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::weekday_from_u32_mod7;
     use super::{Mdf, Of};
     use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
-    use crate::Weekday;
 
     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
     const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];
@@ -636,34 +612,6 @@ mod tests {
     }
 
     #[test]
-    fn test_of_weekday() {
-        assert_eq!(Of::new(1, A).unwrap().weekday(), Weekday::Sun);
-        assert_eq!(Of::new(1, B).unwrap().weekday(), Weekday::Sat);
-        assert_eq!(Of::new(1, C).unwrap().weekday(), Weekday::Fri);
-        assert_eq!(Of::new(1, D).unwrap().weekday(), Weekday::Thu);
-        assert_eq!(Of::new(1, E).unwrap().weekday(), Weekday::Wed);
-        assert_eq!(Of::new(1, F).unwrap().weekday(), Weekday::Tue);
-        assert_eq!(Of::new(1, G).unwrap().weekday(), Weekday::Mon);
-        assert_eq!(Of::new(1, AG).unwrap().weekday(), Weekday::Sun);
-        assert_eq!(Of::new(1, BA).unwrap().weekday(), Weekday::Sat);
-        assert_eq!(Of::new(1, CB).unwrap().weekday(), Weekday::Fri);
-        assert_eq!(Of::new(1, DC).unwrap().weekday(), Weekday::Thu);
-        assert_eq!(Of::new(1, ED).unwrap().weekday(), Weekday::Wed);
-        assert_eq!(Of::new(1, FE).unwrap().weekday(), Weekday::Tue);
-        assert_eq!(Of::new(1, GF).unwrap().weekday(), Weekday::Mon);
-
-        for &flags in FLAGS.iter() {
-            let mut prev = Of::new(1, flags).unwrap().weekday();
-            for ordinal in 2u32..=flags.ndays() {
-                let of = Of::new(ordinal, flags).unwrap();
-                let expected = prev.succ();
-                assert_eq!(of.weekday(), expected);
-                prev = expected;
-            }
-        }
-    }
-
-    #[test]
     fn test_mdf_fields() {
         for &flags in FLAGS.iter() {
             for month in 1u32..=12 {
@@ -788,13 +736,5 @@ mod tests {
         assert!(Of::from_mdf(Mdf::new(2, 29, regular_year).unwrap()).is_none());
         assert!(Of::from_mdf(Mdf::new(2, 29, leap_year).unwrap()).is_some());
         assert!(Of::from_mdf(Mdf::new(2, 28, regular_year).unwrap()).is_some());
-    }
-
-    #[test]
-    fn test_weekday_from_u32_mod7() {
-        for i in 0..=1000 {
-            assert_eq!(weekday_from_u32_mod7(i), Weekday::try_from((i % 7) as u8).unwrap());
-        }
-        assert_eq!(weekday_from_u32_mod7(u32::MAX), Weekday::Thu);
     }
 }
