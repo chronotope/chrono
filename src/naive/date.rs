@@ -238,10 +238,14 @@ impl NaiveDate {
         if year < MIN_YEAR || year > MAX_YEAR {
             return None; // Out-of-range
         }
+        if ordinal == 0 || ordinal > 366 {
+            return None; // Invalid
+        }
         debug_assert!(YearFlags::from_year(year).0 == flags.0);
-        match Of::new(ordinal, flags) {
-            Some(of) => Some(NaiveDate { yof: (year << 13) | (of.inner() as i32) }),
-            None => None, // Invalid: Ordinal outside of the nr of days in a year with those flags.
+        let yof = (year << 13) | (ordinal << 4) as i32 | flags.0 as i32;
+        match yof & OL_MASK <= MAX_OL {
+            true => Some(NaiveDate { yof }),
+            false => None, // Does not exist: Ordinal 366 in a common year.
         }
     }
 
@@ -803,7 +807,7 @@ impl NaiveDate {
         // do the full check
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
+        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.ordinal());
         let cycle = try_opt!((cycle as i32).checked_add(days));
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
@@ -1228,8 +1232,8 @@ impl NaiveDate {
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.of().ordinal()) as i64;
-        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.of().ordinal()) as i64;
+        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i64;
+        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i64;
         TimeDelta::days((year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2))
     }
 
@@ -1455,7 +1459,7 @@ impl NaiveDate {
     // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
     #[inline]
     const fn ordinal(&self) -> u32 {
-        self.of().ordinal()
+        ((self.yof & ORDINAL_MASK) >> 4) as u32
     }
 
     // This duplicates `Datelike::month()`, because trait methods can't be const yet.
@@ -1648,7 +1652,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal(&self) -> u32 {
-        self.of().ordinal()
+        ((self.yof & ORDINAL_MASK) >> 4) as u32
     }
 
     /// Returns the day of year starting from 0.
@@ -1665,7 +1669,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal0(&self) -> u32 {
-        self.of().ordinal() - 1
+        self.ordinal() - 1
     }
 
     /// Returns the day of week.
@@ -2531,7 +2535,7 @@ mod tests {
             NaiveDate::MAX == calculated_max,
             "`NaiveDate::MAX` should have year flag {:?} and ordinal {}",
             calculated_max.of().flags(),
-            calculated_max.of().ordinal()
+            calculated_max.ordinal()
         );
 
         // let's also check that the entire range do not exceed 2^44 seconds
@@ -2695,6 +2699,7 @@ mod tests {
         assert_eq!(yo_opt(2012, 300), Some(ymd(2012, 10, 26)));
         assert_eq!(yo_opt(2012, 366), Some(ymd(2012, 12, 31)));
         assert_eq!(yo_opt(2012, 367), None);
+        assert_eq!(yo_opt(2012, 1 << 28 | 60), None);
 
         assert_eq!(yo_opt(2014, 0), None);
         assert_eq!(yo_opt(2014, 1), Some(ymd(2014, 1, 1)));
