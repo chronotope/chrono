@@ -5,7 +5,7 @@
 
 use core::fmt;
 
-use super::internals::{Of, YearFlags};
+use super::internals::YearFlags;
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -38,14 +38,14 @@ impl IsoWeek {
     // because the year range for the week date and the calendar date do not match and
     // it is confusing to have a date that is out of range in one and not in another.
     // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-    pub(super) fn from_yof(year: i32, of: Of) -> Self {
-        let (rawweek, _) = of.isoweekdate_raw();
+    pub(super) fn from_yof(year: i32, ordinal: u32, year_flags: YearFlags) -> Self {
+        let rawweek = (ordinal + year_flags.isoweek_delta()) / 7;
         let (year, week) = if rawweek < 1 {
             // previous year
             let prevlastweek = YearFlags::from_year(year - 1).nisoweeks();
             (year - 1, prevlastweek)
         } else {
-            let lastweek = of.flags().nisoweeks();
+            let lastweek = year_flags.nisoweeks();
             if rawweek > lastweek {
                 // next year
                 (year + 1, 1)
