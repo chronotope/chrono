@@ -196,7 +196,7 @@ impl Days {
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveDate {
-    ymdf: i32, // (year << 13) | of
+    yof: i32, // (year << 13) | of
 }
 
 /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
@@ -233,7 +233,7 @@ impl NaiveDate {
         }
         debug_assert!(YearFlags::from_year(year).0 == flags.0);
         match Of::new(ordinal, flags) {
-            Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as i32) }),
+            Some(of) => Some(NaiveDate { yof: (year << 13) | (of.inner() as i32) }),
             None => None, // Invalid: Ordinal outside of the nr of days in a year with those flags.
         }
     }
@@ -245,7 +245,7 @@ impl NaiveDate {
             return None; // Out-of-range
         }
         match mdf.to_of() {
-            Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as i32) }),
+            Some(of) => Some(NaiveDate { yof: (year << 13) | (of.inner() as i32) }),
             None => None, // Non-existing date
         }
     }
@@ -787,10 +787,10 @@ impl NaiveDate {
     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
         // fast path if the result is within the same year
         const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
-        if let Some(ordinal) = ((self.ymdf & ORDINAL_MASK) >> 4).checked_add(days) {
+        if let Some(ordinal) = ((self.yof & ORDINAL_MASK) >> 4).checked_add(days) {
             if ordinal > 0 && ordinal <= 365 {
-                let year_and_flags = self.ymdf & !ORDINAL_MASK;
-                return Some(NaiveDate { ymdf: year_and_flags | (ordinal << 4) });
+                let year_and_flags = self.yof & !ORDINAL_MASK;
+                return Some(NaiveDate { yof: year_and_flags | (ordinal << 4) });
             }
         }
         // do the full check
@@ -1041,7 +1041,7 @@ impl NaiveDate {
     /// Returns the packed ordinal-flags.
     #[inline]
     const fn of(&self) -> Of {
-        Of::from_date_impl(self.ymdf)
+        Of::from_date_impl(self.yof)
     }
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
@@ -1058,7 +1058,7 @@ impl NaiveDate {
     /// Does not check if the year flags match the year.
     #[inline]
     const fn with_of(&self, of: Of) -> NaiveDate {
-        NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of.inner() as i32 }
+        NaiveDate { yof: (self.yof & !0b1_1111_1111_1111) | of.inner() as i32 }
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
@@ -1433,13 +1433,13 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd_opt(2100, 1, 1).unwrap().leap_year(), false);
     /// ```
     pub const fn leap_year(&self) -> bool {
-        self.ymdf & (0b1000) == 0
+        self.yof & (0b1000) == 0
     }
 
     // This duplicates `Datelike::year()`, because trait methods can't be const yet.
     #[inline]
     const fn year(&self) -> i32 {
-        self.ymdf >> 13
+        self.yof >> 13
     }
 
     /// Returns the day of year starting from 1.
@@ -1484,16 +1484,16 @@ impl NaiveDate {
     }
 
     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
-    pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/ };
+    pub const MIN: NaiveDate = NaiveDate { yof: (MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/ };
     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
-    pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/ };
+    pub const MAX: NaiveDate = NaiveDate { yof: (MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/ };
 
     /// One day before the minimum possible `NaiveDate` (December 31, 262145 BCE).
     pub(crate) const BEFORE_MIN: NaiveDate =
-        NaiveDate { ymdf: ((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /*FE*/ };
+        NaiveDate { yof: ((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /*FE*/ };
     /// One day after the maximum possible `NaiveDate` (January 1, 262143 CE).
     pub(crate) const AFTER_MAX: NaiveDate =
-        NaiveDate { ymdf: ((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /*F*/ };
+        NaiveDate { yof: ((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /*F*/ };
 }
 
 impl Datelike for NaiveDate {
