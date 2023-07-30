@@ -480,10 +480,11 @@ where
                     | &TimezoneOffsetTripleColon
                     | &TimezoneOffset => {
                         s = scan::trim1(s);
+                        let allow_zulu = spec == &TimezoneOffset;
                         let offset = try_consume!(scan::timezone_offset(
                             s,
                             scan::consume_colon_maybe,
-                            false,
+                            allow_zulu,
                             false,
                             true,
                         ));
@@ -1085,9 +1086,9 @@ mod tests {
             parsed!(offset: 45_240, day: 5),
         );
         check("+12:34:", &[fixed(TimezoneOffset), Literal(":")], parsed!(offset: 45_240));
-        check("Z12:34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("Z12:34", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("X12:34", &[fixed(TimezoneOffset)], Err(INVALID));
-        check("Z+12:34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("Z+12:34", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("X+12:34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("X−12:34", &[fixed(TimezoneOffset)], Err(INVALID)); // MINUS SIGN (U+2212)
         check("🤠+12:34", &[fixed(TimezoneOffset)], Err(INVALID));
@@ -1100,7 +1101,7 @@ mod tests {
         check("-12:34🤠", &[fixed(TimezoneOffset), Literal("🤠")], parsed!(offset: -45_240));
         check("−12:34🤠", &[fixed(TimezoneOffset), Literal("🤠")], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
         check("🤠+12:34", &[Literal("🤠"), fixed(TimezoneOffset)], parsed!(offset: 45_240));
-        check("Z", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("Z", &[fixed(TimezoneOffset)], parsed!(offset: 0));
         check("A", &[fixed(TimezoneOffset)], Err(INVALID));
         check("PST", &[fixed(TimezoneOffset)], Err(INVALID));
         check("#Z", &[fixed(TimezoneOffset)], Err(INVALID));
@@ -1108,10 +1109,10 @@ mod tests {
         check("+Z", &[fixed(TimezoneOffset)], Err(TOO_SHORT));
         check("+:Z", &[fixed(TimezoneOffset)], Err(INVALID));
         check("+Z:", &[fixed(TimezoneOffset)], Err(INVALID));
-        check("z", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("z", &[fixed(TimezoneOffset)], parsed!(offset: 0));
         check(" :Z", &[fixed(TimezoneOffset)], Err(INVALID));
-        check(" Z", &[fixed(TimezoneOffset)], Err(INVALID));
-        check(" z", &[fixed(TimezoneOffset)], Err(INVALID));
+        check(" Z", &[fixed(TimezoneOffset)], parsed!(offset: 0));
+        check(" z", &[fixed(TimezoneOffset)], parsed!(offset: 0));
 
         // TimezoneOffsetColon
         check("1", &[fixed(TimezoneOffsetColon)], Err(INVALID));

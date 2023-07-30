@@ -942,6 +942,10 @@ fn test_utc_datetime_from_str() {
         "2015-02-18T23:16:9.15UTC".parse::<DateTime<Utc>>(),
         Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 9, 150))
     );
+    assert_eq!(
+        DateTime::<Utc>::parse_from_str("2015-02-18T23:16Z", "%Y-%m-%dT%H:%M%#z"),
+        Ok(ymdhms_milli_utc(2015, 2, 18, 23, 16, 0, 0))
+    );
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
@@ -1055,6 +1059,10 @@ fn test_datetime_parse_from_str() {
     assert_eq!(parse("Aug 09 2013 23:54:35 -0900::", "%b %d %Y %H:%M:%S %z::"), Ok(dt));
     assert_eq!(parse("Aug 09 2013 23:54:35 -09:00:00", "%b %d %Y %H:%M:%S %z:00"), Ok(dt));
     assert_eq!(parse("Aug 09 2013 23:54:35 -09:00:00 ", "%b %d %Y %H:%M:%S %z:00 "), Ok(dt));
+    assert_eq!(
+        parse("2013-08-09T23:54:35Z", "%Y-%m-%dT%H:%M:%S%z"),
+        Ok(ymdhms(&FixedOffset::east_opt(0).unwrap(), 2013, 8, 9, 23, 54, 35))
+    );
 
     //
     // %:z
@@ -1154,6 +1162,10 @@ fn test_datetime_parse_from_str() {
     assert!(parse("Aug 09 2013 -09:00:00 23:54:35", "%b %d %Y %#z %H:%M:%S").is_err());
     // timezone data ambiguous with hours
     assert!(parse("Aug 09 2013 -09:00:23:54:35", "%b %d %Y %#z%H:%M:%S").is_err());
+    assert_eq!(
+        parse("2013-08-09T23:54:35Z", "%Y-%m-%dT%H:%M:%S%#z"),
+        Ok(ymdhms(&FixedOffset::east_opt(0).unwrap(), 2013, 8, 9, 23, 54, 35))
+    );
 }
 
 #[test]
