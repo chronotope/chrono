@@ -1473,10 +1473,19 @@ impl NaiveDate {
         self.mdf().day()
     }
 
+    /// Returns the day of week.
     // This duplicates `Datelike::weekday()`, because trait methods can't be const yet.
     #[inline]
     const fn weekday(&self) -> Weekday {
-        self.of().weekday()
+        match (((self.yof & ORDINAL_MASK) >> 4) + (self.yof & WEEKDAY_FLAGS_MASK)) % 7 {
+            0 => Weekday::Mon,
+            1 => Weekday::Tue,
+            2 => Weekday::Wed,
+            3 => Weekday::Thu,
+            4 => Weekday::Fri,
+            5 => Weekday::Sat,
+            _ => Weekday::Sun,
+        }
     }
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
@@ -2331,6 +2340,10 @@ const LEAP_YEAR_MASK: i32 = 0b1000;
 // This allows for efficiently checking the ordinal exists depending on whether this is a leap year.
 const OL_MASK: i32 = ORDINAL_MASK | LEAP_YEAR_MASK;
 const MAX_OL: i32 = 366 << 4;
+
+// Weekday of the last day in the preceding year.
+// Allows for quick day of week calculation from the 1-based ordinal.
+const WEEKDAY_FLAGS_MASK: i32 = 0b111;
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
@@ -3372,6 +3385,24 @@ mod tests {
             let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
             assert_eq!(date.leap_year(), is_leap);
             assert_eq!(date.leap_year(), date.with_ordinal(366).is_some());
+        }
+    }
+
+    #[test]
+    fn test_weekday_with_yearflags() {
+        for (year, year_flags, first_weekday) in YEAR_FLAGS {
+            let first_day_of_year = NaiveDate::from_yo_opt(year, 1).unwrap();
+            dbg!(year);
+            assert_eq!(first_day_of_year.of().flags(), year_flags);
+            assert_eq!(first_day_of_year.weekday(), first_weekday);
+
+            let mut prev = first_day_of_year.weekday();
+            for ordinal in 2u32..=year_flags.ndays() {
+                let date = NaiveDate::from_yo_opt(year, ordinal).unwrap();
+                let expected = prev.succ();
+                assert_eq!(date.weekday(), expected);
+                prev = expected;
+            }
         }
     }
 
