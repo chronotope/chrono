@@ -1688,7 +1688,7 @@ impl Datelike for NaiveDate {
 
     #[inline]
     fn iso_week(&self) -> IsoWeek {
-        IsoWeek::from_yof(self.year(), self.of())
+        IsoWeek::from_yof(self.year(), self.ordinal(), self.of().flags())
     }
 
     /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
@@ -2516,7 +2516,7 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
-    use crate::naive::internals::YearFlags;
+    use crate::naive::internals::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
     use crate::{Datelike, TimeDelta, Weekday};
 
     // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
@@ -3374,6 +3374,36 @@ mod tests {
             assert_eq!(date.leap_year(), date.with_ordinal(366).is_some());
         }
     }
+
+    #[test]
+    fn test_isoweekdate_with_yearflags() {
+        for (year, year_flags, _) in YEAR_FLAGS {
+            // January 4 should be in the first week
+            let jan4 = NaiveDate::from_ymd_opt(year, 1, 4).unwrap();
+            let iso_week = jan4.iso_week();
+            assert_eq!(jan4.of().flags(), year_flags);
+            assert_eq!(iso_week.week(), 1);
+        }
+    }
+
+    // Used for testing some methods with all combinations of `YearFlags`.
+    // (year, flags, first weekday of year)
+    const YEAR_FLAGS: [(i32, YearFlags, Weekday); 14] = [
+        (2006, A, Weekday::Sun),
+        (2005, B, Weekday::Sat),
+        (2010, C, Weekday::Fri),
+        (2009, D, Weekday::Thu),
+        (2003, E, Weekday::Wed),
+        (2002, F, Weekday::Tue),
+        (2001, G, Weekday::Mon),
+        (2012, AG, Weekday::Sun),
+        (2000, BA, Weekday::Sat),
+        (2016, CB, Weekday::Fri),
+        (2004, DC, Weekday::Thu),
+        (2020, ED, Weekday::Wed),
+        (2008, FE, Weekday::Tue),
+        (2024, GF, Weekday::Mon),
+    ];
 
     #[test]
     #[cfg(feature = "rkyv-validation")]
