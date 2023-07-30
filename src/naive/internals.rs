@@ -322,14 +322,6 @@ impl Of {
         weekday_from_u32_mod7((of >> 4) + (of & 0b111))
     }
 
-    #[inline]
-    pub(super) fn isoweekdate_raw(&self) -> (u32, Weekday) {
-        // week ordinal = ordinal + delta
-        let Of(of) = *self;
-        let weekord = (of >> 4).wrapping_add(self.flags().isoweek_delta());
-        (weekord / 7, weekday_from_u32_mod7(weekord))
-    }
-
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
     pub(super) const fn to_mdf(&self) -> Mdf {
@@ -737,15 +729,6 @@ mod tests {
             check(flags, 2, 29);
             check(flags, 2, 30);
             check(flags, 12, 31);
-        }
-    }
-
-    #[test]
-    fn test_of_isoweekdate_raw() {
-        for &flags in FLAGS.iter() {
-            // January 4 should be in the first week
-            let (week, _) = Of::new(4 /* January 4 */, flags).unwrap().isoweekdate_raw();
-            assert_eq!(week, 1);
         }
     }
 
