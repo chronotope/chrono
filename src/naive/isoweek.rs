@@ -25,8 +25,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct IsoWeek {
-    // note that this allows for larger year range than `NaiveDate`.
-    // this is crucial because we have an edge case for the first and last week supported,
+    // Note that this allows for larger year range than `NaiveDate`.
+    // This is crucial because we have an edge case for the first and last week supported,
     // which year number might not match the calendar year number.
     ywf: i32, // (year << 10) | (week << 4) | flag
 }
@@ -34,10 +34,10 @@ pub struct IsoWeek {
 impl IsoWeek {
     /// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
     //
-    // internal use only. we don't expose the public constructor for `IsoWeek` for now,
-    // because the year range for the week date and the calendar date do not match and
+    // Internal use only. We don't expose the public constructor for `IsoWeek` for now
+    // because the year range for the week date and the calendar date do not match, and
     // it is confusing to have a date that is out of range in one and not in another.
-    // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
+    // Currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
     pub(super) fn from_yof(year: i32, ordinal: u32, year_flags: YearFlags) -> Self {
         let rawweek = (ordinal + year_flags.isoweek_delta()) / 7;
         let (year, week) = if rawweek < 1 {
