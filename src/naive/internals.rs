@@ -345,15 +345,6 @@ impl Of {
     pub(super) const fn to_mdf(&self) -> Mdf {
         Mdf::from_of(*self)
     }
-
-    /// Returns an `Of` with the previous day, or `None` if this is the first day of the year.
-    #[inline]
-    pub(super) const fn pred(&self) -> Option<Of> {
-        match self.ordinal() {
-            1 => None,
-            _ => Some(Of(self.0 - (1 << 4))),
-        }
-    }
 }
 
 impl fmt::Debug for Of {
@@ -859,9 +850,6 @@ mod tests {
         assert!(Of::from_mdf(Mdf::new(2, 29, regular_year).unwrap()).is_none());
         assert!(Of::from_mdf(Mdf::new(2, 29, leap_year).unwrap()).is_some());
         assert!(Of::from_mdf(Mdf::new(2, 28, regular_year).unwrap()).is_some());
-
-        assert!(Of::new(1, regular_year).unwrap().pred().is_none());
-        assert!(Of::new(1, leap_year).unwrap().pred().is_none());
     }
 
     #[test]
