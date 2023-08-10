@@ -1098,9 +1098,10 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn succ_opt(&self) -> Option<NaiveDate> {
-        match self.of().succ() {
-            Some(of) => Some(self.with_of(of)),
-            None => NaiveDate::from_ymd_opt(self.year() + 1, 1, 1),
+        let new_ol = (self.yof & OL_MASK) + (1 << 4);
+        match new_ol <= MAX_OL {
+            true => Some(NaiveDate { yof: self.yof & !OL_MASK | new_ol }),
+            false => NaiveDate::from_yo_opt(self.year() + 1, 1),
         }
     }
 
@@ -2308,6 +2309,17 @@ pub(super) const MAX_YEAR: i32 = (i32::MAX >> 13) - 1;
 /// use the headroom, notably to handle cases where the offset of a `DateTime` constructed with
 /// `NaiveDate::MIN` pushes it beyond the valid, representable range.
 pub(super) const MIN_YEAR: i32 = (i32::MIN >> 13) + 1;
+
+const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
+
+const LEAP_YEAR_MASK: i32 = 0b1000;
+
+// OL: ordinal and leap year flag.
+// With only these parts of the date an ordinal 366 in a common year would be encoded as
+// `((366 << 1) | 1) << 3`, and in a leap year as `((366 << 1) | 0) << 3`, which is less.
+// This allows for efficiently checking the ordinal exists depending on whether this is a leap year.
+const OL_MASK: i32 = ORDINAL_MASK | LEAP_YEAR_MASK;
+const MAX_OL: i32 = 366 << 4;
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
