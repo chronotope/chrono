@@ -316,12 +316,6 @@ impl Of {
     }
 
     #[inline]
-    pub(super) const fn with_ordinal(&self, ordinal: u32) -> Option<Of> {
-        let of = Of((ordinal << 4) | (self.0 & 0b1111));
-        of.validate()
-    }
-
-    #[inline]
     pub(super) const fn flags(&self) -> YearFlags {
         YearFlags((self.0 & 0b1111) as u8)
     }
@@ -661,30 +655,6 @@ mod tests {
                     assert_eq!(of.ordinal(), ordinal);
                 }
             }
-        }
-    }
-
-    #[test]
-    fn test_of_with_fields() {
-        fn check(flags: YearFlags, ordinal: u32) {
-            let of = Of::new(ordinal, flags).unwrap();
-
-            for ordinal in 0u32..=1024 {
-                let of = of.with_ordinal(ordinal);
-                assert_eq!(of, Of::new(ordinal, flags));
-                if let Some(of) = of {
-                    assert_eq!(of.ordinal(), ordinal);
-                }
-            }
-        }
-
-        for &flags in NONLEAP_FLAGS.iter() {
-            check(flags, 1);
-            check(flags, 365);
-        }
-        for &flags in LEAP_FLAGS.iter() {
-            check(flags, 1);
-            check(flags, 366);
         }
     }
 
