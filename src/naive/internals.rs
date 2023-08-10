@@ -346,13 +346,6 @@ impl Of {
         Mdf::from_of(*self)
     }
 
-    /// Returns an `Of` with the next day, or `None` if this is the last day of the year.
-    #[inline]
-    pub(super) const fn succ(&self) -> Option<Of> {
-        let of = Of(self.0 + (1 << 4));
-        of.validate()
-    }
-
     /// Returns an `Of` with the previous day, or `None` if this is the first day of the year.
     #[inline]
     pub(super) const fn pred(&self) -> Option<Of> {
@@ -866,10 +859,6 @@ mod tests {
         assert!(Of::from_mdf(Mdf::new(2, 29, regular_year).unwrap()).is_none());
         assert!(Of::from_mdf(Mdf::new(2, 29, leap_year).unwrap()).is_some());
         assert!(Of::from_mdf(Mdf::new(2, 28, regular_year).unwrap()).is_some());
-
-        assert!(Of::new(365, regular_year).unwrap().succ().is_none());
-        assert!(Of::new(365, leap_year).unwrap().succ().is_some());
-        assert!(Of::new(366, leap_year).unwrap().succ().is_none());
 
         assert!(Of::new(1, regular_year).unwrap().pred().is_none());
         assert!(Of::new(1, leap_year).unwrap().pred().is_none());
