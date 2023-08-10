@@ -1836,7 +1836,14 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
-        self.of().with_ordinal(ordinal).map(|of| self.with_of(of))
+        if ordinal == 0 || ordinal > 366 {
+            return None;
+        }
+        let yof = (self.yof & !ORDINAL_MASK) | (ordinal << 4) as i32;
+        match yof & OL_MASK <= MAX_OL {
+            true => Some(NaiveDate { yof }),
+            false => None, // Does not exist: Ordinal 366 in a common year.
+        }
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
@@ -2946,7 +2953,10 @@ mod tests {
         assert_eq!(d.with_day(29), Some(NaiveDate::from_ymd_opt(2000, 2, 29).unwrap()));
         assert_eq!(d.with_day(30), None);
         assert_eq!(d.with_day(u32::MAX), None);
+    }
 
+    #[test]
+    fn test_date_with_ordinal() {
         let d = NaiveDate::from_ymd_opt(2000, 5, 5).unwrap();
         assert_eq!(d.with_ordinal(0), None);
         assert_eq!(d.with_ordinal(1), Some(NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()));
@@ -2954,6 +2964,9 @@ mod tests {
         assert_eq!(d.with_ordinal(61), Some(NaiveDate::from_ymd_opt(2000, 3, 1).unwrap()));
         assert_eq!(d.with_ordinal(366), Some(NaiveDate::from_ymd_opt(2000, 12, 31).unwrap()));
         assert_eq!(d.with_ordinal(367), None);
+        assert_eq!(d.with_ordinal(1 << 28 | 60), None);
+        let d = NaiveDate::from_ymd_opt(1999, 5, 5).unwrap();
+        assert_eq!(d.with_ordinal(366), None);
         assert_eq!(d.with_ordinal(u32::MAX), None);
     }
 
