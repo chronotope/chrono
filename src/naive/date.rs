@@ -1135,9 +1135,10 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn pred_opt(&self) -> Option<NaiveDate> {
-        match self.of().pred() {
-            Some(of) => Some(self.with_of(of)),
-            None => NaiveDate::from_ymd_opt(self.year() - 1, 12, 31),
+        let new_shifted_ordinal = (self.yof & ORDINAL_MASK) - (1 << 4);
+        match new_shifted_ordinal > 0 {
+            true => Some(NaiveDate { yof: self.yof & !ORDINAL_MASK | new_shifted_ordinal }),
+            false => NaiveDate::from_ymd_opt(self.year() - 1, 12, 31),
         }
     }
 
