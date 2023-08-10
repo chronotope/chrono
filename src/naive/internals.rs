@@ -303,11 +303,6 @@ impl Of {
         }
     }
 
-    #[inline]
-    pub(super) const fn flags(&self) -> YearFlags {
-        YearFlags((self.0 & 0b1111) as u8)
-    }
-
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::wrong_self_convention))]
     #[inline]
     pub(super) const fn to_mdf(&self) -> Mdf {

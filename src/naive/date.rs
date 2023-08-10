@@ -1488,6 +1488,11 @@ impl NaiveDate {
         }
     }
 
+    #[inline]
+    const fn year_flags(&self) -> YearFlags {
+        YearFlags((self.yof & YEAR_FLAGS_MASK) as u8)
+    }
+
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
     // This duplicates `Datelike::num_days_from_ce()`, because trait methods can't be const yet.
     pub(crate) const fn num_days_from_ce(&self) -> i32 {
@@ -1697,7 +1702,7 @@ impl Datelike for NaiveDate {
 
     #[inline]
     fn iso_week(&self) -> IsoWeek {
-        IsoWeek::from_yof(self.year(), self.ordinal(), self.of().flags())
+        IsoWeek::from_yof(self.year(), self.ordinal(), self.year_flags())
     }
 
     /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
@@ -2345,6 +2350,8 @@ const MAX_OL: i32 = 366 << 4;
 // Allows for quick day of week calculation from the 1-based ordinal.
 const WEEKDAY_FLAGS_MASK: i32 = 0b111;
 
+const YEAR_FLAGS_MASK: i32 = LEAP_YEAR_MASK | WEEKDAY_FLAGS_MASK;
+
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
 where
@@ -2541,12 +2548,12 @@ mod tests {
         assert!(
             NaiveDate::MIN == calculated_min,
             "`NaiveDate::MIN` should have year flag {:?}",
-            calculated_min.of().flags()
+            calculated_min.year_flags()
         );
         assert!(
             NaiveDate::MAX == calculated_max,
             "`NaiveDate::MAX` should have year flag {:?} and ordinal {}",
-            calculated_max.of().flags(),
+            calculated_max.year_flags(),
             calculated_max.ordinal()
         );
 
@@ -2561,11 +2568,11 @@ mod tests {
         );
 
         const BEFORE_MIN: NaiveDate = NaiveDate::BEFORE_MIN;
-        assert_eq!(BEFORE_MIN.of().flags(), YearFlags::from_year(BEFORE_MIN.year()));
+        assert_eq!(BEFORE_MIN.year_flags(), YearFlags::from_year(BEFORE_MIN.year()));
         assert_eq!((BEFORE_MIN.month(), BEFORE_MIN.day()), (12, 31));
 
         const AFTER_MAX: NaiveDate = NaiveDate::AFTER_MAX;
-        assert_eq!(AFTER_MAX.of().flags(), YearFlags::from_year(AFTER_MAX.year()));
+        assert_eq!(AFTER_MAX.year_flags(), YearFlags::from_year(AFTER_MAX.year()));
         assert_eq!((AFTER_MAX.month(), AFTER_MAX.day()), (1, 1));
     }
 
@@ -3389,11 +3396,18 @@ mod tests {
     }
 
     #[test]
+    fn test_date_yearflags() {
+        for (year, year_flags, _) in YEAR_FLAGS {
+            assert_eq!(NaiveDate::from_yo_opt(year, 1).unwrap().year_flags(), year_flags);
+        }
+    }
+
+    #[test]
     fn test_weekday_with_yearflags() {
         for (year, year_flags, first_weekday) in YEAR_FLAGS {
             let first_day_of_year = NaiveDate::from_yo_opt(year, 1).unwrap();
             dbg!(year);
-            assert_eq!(first_day_of_year.of().flags(), year_flags);
+            assert_eq!(first_day_of_year.year_flags(), year_flags);
             assert_eq!(first_day_of_year.weekday(), first_weekday);
 
             let mut prev = first_day_of_year.weekday();
@@ -3412,7 +3426,7 @@ mod tests {
             // January 4 should be in the first week
             let jan4 = NaiveDate::from_ymd_opt(year, 1, 4).unwrap();
             let iso_week = jan4.iso_week();
-            assert_eq!(jan4.of().flags(), year_flags);
+            assert_eq!(jan4.year_flags(), year_flags);
             assert_eq!(iso_week.week(), 1);
         }
     }
