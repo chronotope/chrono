@@ -88,7 +88,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: |
           cargo hack check --feature-powerset --optional-deps serde,rkyv \
-            --skip __internal_bench,__doctest,iana-time-zone,pure-rust-locales,libc
+            --skip __internal_bench,__doctest,iana-time-zone,pure-rust-locales,libc \
+            --all-targets
         # run using `bash` on all platforms for consistent
         # line-continuation marks
         shell: bash
