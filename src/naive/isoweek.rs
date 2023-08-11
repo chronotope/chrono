@@ -31,32 +31,32 @@ pub struct IsoWeek {
     ywf: i32, // (year << 10) | (week << 4) | flag
 }
 
-/// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
-//
-// internal use only. we don't expose the public constructor for `IsoWeek` for now,
-// because the year range for the week date and the calendar date do not match and
-// it is confusing to have a date that is out of range in one and not in another.
-// currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
-pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
-    let (rawweek, _) = of.isoweekdate_raw();
-    let (year, week) = if rawweek < 1 {
-        // previous year
-        let prevlastweek = YearFlags::from_year(year - 1).nisoweeks();
-        (year - 1, prevlastweek)
-    } else {
-        let lastweek = of.flags().nisoweeks();
-        if rawweek > lastweek {
-            // next year
-            (year + 1, 1)
-        } else {
-            (year, rawweek)
-        }
-    };
-    let flags = YearFlags::from_year(year);
-    IsoWeek { ywf: (year << 10) | (week << 4) as i32 | i32::from(flags.0) }
-}
-
 impl IsoWeek {
+    /// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
+    //
+    // internal use only. we don't expose the public constructor for `IsoWeek` for now,
+    // because the year range for the week date and the calendar date do not match and
+    // it is confusing to have a date that is out of range in one and not in another.
+    // currently we sidestep this issue by making `IsoWeek` fully dependent of `Datelike`.
+    pub(super) fn from_yof(year: i32, of: Of) -> Self {
+        let (rawweek, _) = of.isoweekdate_raw();
+        let (year, week) = if rawweek < 1 {
+            // previous year
+            let prevlastweek = YearFlags::from_year(year - 1).nisoweeks();
+            (year - 1, prevlastweek)
+        } else {
+            let lastweek = of.flags().nisoweeks();
+            if rawweek > lastweek {
+                // next year
+                (year + 1, 1)
+            } else {
+                (year, rawweek)
+            }
+        };
+        let flags = YearFlags::from_year(year);
+        IsoWeek { ywf: (year << 10) | (week << 4) as i32 | i32::from(flags.0) }
+    }
+
     /// Returns the year number for this ISO week.
     ///
     /// # Example
