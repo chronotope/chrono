@@ -251,11 +251,8 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
     const fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
-        if year < MIN_YEAR || year > MAX_YEAR {
-            return None; // Out-of-range
-        }
-        match mdf.to_of() {
-            Some(of) => Some(NaiveDate { yof: (year << 13) | (of.inner() as i32) }),
+        match mdf.ordinal() {
+            Some(ordinal) => NaiveDate::from_ordinal_and_flags(year, ordinal, mdf.year_flags()),
             None => None, // Non-existing date
         }
     }
@@ -3419,6 +3416,16 @@ mod tests {
             let iso_week = jan4.iso_week();
             assert_eq!(jan4.year_flags(), year_flags);
             assert_eq!(iso_week.week(), 1);
+        }
+    }
+
+    #[test]
+    fn test_date_to_mdf_to_date() {
+        for (year, year_flags, _) in YEAR_FLAGS {
+            for ordinal in 1..=year_flags.ndays() {
+                let date = NaiveDate::from_yo_opt(year, ordinal).unwrap();
+                assert_eq!(date, NaiveDate::from_mdf(date.year(), date.mdf()).unwrap());
+            }
         }
     }
 
