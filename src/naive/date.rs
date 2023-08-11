@@ -37,7 +37,7 @@ use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
-use super::internals::{self, Mdf, Of, YearFlags};
+use super::internals::{self, Mdf, YearFlags};
 
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.
@@ -1053,16 +1053,13 @@ impl NaiveDate {
     /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
     const fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
-        Some(self.with_of(try_opt!(mdf.to_of())))
-    }
-
-    /// Makes a new `NaiveDate` with the packed ordinal-flags changed.
-    ///
-    /// Returns `None` when the resulting `NaiveDate` would be invalid.
-    /// Does not check if the year flags match the year.
-    #[inline]
-    const fn with_of(&self, of: Of) -> NaiveDate {
-        NaiveDate { yof: (self.yof & !0b1_1111_1111_1111) | of.inner() as i32 }
+        debug_assert!(self.year_flags().0 == mdf.year_flags().0);
+        match mdf.ordinal() {
+            Some(ordinal) => {
+                Some(NaiveDate { yof: (self.yof & !ORDINAL_MASK) | (ordinal << 4) as i32 })
+            }
+            None => None, // Non-existing date
+        }
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
