@@ -83,7 +83,7 @@ where
         for item in self.items.clone() {
             match *item.borrow() {
                 Item::Literal(s) | Item::Space(s) => w.write_str(s),
-                #[cfg(any(feature = "alloc", feature = "std"))]
+                #[cfg(feature = "alloc")]
                 Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
                 Item::Numeric(ref spec, pad) => self.format_numeric(w, spec, pad),
                 Item::Fixed(ref spec) => self.format_fixed(w, spec),
@@ -93,7 +93,7 @@ where
         Ok(())
     }
 
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     fn format_with_parameters(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Justify/pad/truncate the formatted result by rendering it to a temporary `String`
         // first.
@@ -102,7 +102,7 @@ where
         f.pad(&result)
     }
 
-    #[cfg(not(any(feature = "alloc", feature = "std")))]
+    #[cfg(not(feature = "alloc"))]
     fn format_with_parameters(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // We have to replicate the `fmt::Formatter:pad` method without allocating.
         let mut counter = CountingSink::new();
@@ -691,12 +691,12 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
 }
 
 /// Sink that counts the number of bytes written to it.
-#[cfg(not(any(feature = "alloc", feature = "std")))]
+#[cfg(not(feature = "alloc"))]
 struct CountingSink {
     written: usize,
 }
 
-#[cfg(not(any(feature = "alloc", feature = "std")))]
+#[cfg(not(feature = "alloc"))]
 impl CountingSink {
     fn new() -> Self {
         Self { written: 0 }
@@ -707,7 +707,7 @@ impl CountingSink {
     }
 }
 
-#[cfg(not(any(feature = "alloc", feature = "std")))]
+#[cfg(not(feature = "alloc"))]
 impl Write for CountingSink {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.written = self.written.checked_add(s.chars().count()).ok_or(fmt::Error)?;
@@ -716,20 +716,20 @@ impl Write for CountingSink {
 }
 
 // `Write` adaptor that only emits up to `max` characters.
-#[cfg(not(any(feature = "alloc", feature = "std")))]
+#[cfg(not(feature = "alloc"))]
 struct TruncatingWriter<'a, 'b> {
     formatter: &'a mut fmt::Formatter<'b>,
     chars_remaining: usize,
 }
 
-#[cfg(not(any(feature = "alloc", feature = "std")))]
+#[cfg(not(feature = "alloc"))]
 impl<'a, 'b> TruncatingWriter<'a, 'b> {
     fn new(formatter: &'a mut fmt::Formatter<'b>, max: usize) -> Self {
         Self { formatter, chars_remaining: max }
     }
 }
 
-#[cfg(not(any(feature = "alloc", feature = "std")))]
+#[cfg(not(feature = "alloc"))]
 impl<'a, 'b> Write for TruncatingWriter<'a, 'b> {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         let max = self.chars_remaining;
