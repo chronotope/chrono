@@ -10,17 +10,37 @@ use core::borrow::Borrow;
 use core::fmt;
 use core::fmt::Write;
 
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
 use crate::datetime::SecondsFormat;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::offset::Offset;
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
 use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::{NaiveDate, NaiveTime, Weekday};
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 use super::locales;
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
 use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use super::{Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric};
+#[cfg(any(feature = "alloc", feature = "std"))]
 use locales::*;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
@@ -445,6 +465,7 @@ fn format_inner(
     }
 }
 
+#[cfg(any(feature = "alloc", feature = "std", feature = "serde", feature = "rustc-serialize"))]
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
     fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
@@ -526,6 +547,7 @@ impl OffsetFormat {
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
 #[inline]
+#[cfg(any(feature = "alloc", feature = "std", feature = "serde", feature = "rustc-serialize"))]
 pub(crate) fn write_rfc3339(
     w: &mut impl Write,
     dt: NaiveDateTime,

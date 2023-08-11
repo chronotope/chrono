@@ -48,19 +48,26 @@ pub(crate) mod scan;
 
 pub mod strftime;
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) use formatting::write_rfc2822;
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
 pub(crate) use formatting::write_rfc3339;
 #[cfg(any(feature = "alloc", feature = "std"))]
 pub use formatting::{format, format_item, DelayedFormat};
 #[cfg(feature = "unstable-locales")]
 pub use formatting::{format_item_localized, format_localized};
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 pub use locales::Locale;
-#[cfg(not(feature = "unstable-locales"))]
+#[cfg(all(not(feature = "unstable-locales"), any(feature = "alloc", feature = "std")))]
 pub(crate) use locales::Locale;
 pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
