@@ -18,18 +18,15 @@
 use crate::Weekday;
 use core::fmt;
 
-/// The internal date representation: `year << 13 | Of`
-pub(super) type DateImpl = i32;
-
 /// MAX_YEAR is one year less than the type is capable of representing. Internally we may sometimes
 /// use the headroom, notably to handle cases where the offset of a `DateTime` constructed with
 /// `NaiveDate::MAX` pushes it beyond the valid, representable range.
-pub(super) const MAX_YEAR: DateImpl = (i32::MAX >> 13) - 1;
+pub(super) const MAX_YEAR: i32 = (i32::MAX >> 13) - 1;
 
 /// MIN_YEAR is one year more than the type is capable of representing. Internally we may sometimes
 /// use the headroom, notably to handle cases where the offset of a `DateTime` constructed with
 /// `NaiveDate::MIN` pushes it beyond the valid, representable range.
-pub(super) const MIN_YEAR: DateImpl = (i32::MIN >> 13) + 1;
+pub(super) const MIN_YEAR: i32 = (i32::MIN >> 13) + 1;
 
 /// The year flags (aka the dominical letter).
 ///
@@ -285,8 +282,8 @@ impl Of {
         of.validate()
     }
 
-    pub(super) const fn from_date_impl(date_impl: DateImpl) -> Of {
-        // We assume the value in the `DateImpl` is valid.
+    pub(super) const fn from_date_impl(date_impl: i32) -> Of {
+        // We assume the value in `date_impl` is valid.
         Of((date_impl & 0b1_1111_1111_1111) as u32)
     }
 

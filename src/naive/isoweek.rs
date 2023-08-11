@@ -5,7 +5,7 @@
 
 use core::fmt;
 
-use super::internals::{DateImpl, Of, YearFlags};
+use super::internals::{Of, YearFlags};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -28,7 +28,7 @@ pub struct IsoWeek {
     // note that this allows for larger year range than `NaiveDate`.
     // this is crucial because we have an edge case for the first and last week supported,
     // which year number might not match the calendar year number.
-    ywf: DateImpl, // (year << 10) | (week << 4) | flag
+    ywf: i32, // (year << 10) | (week << 4) | flag
 }
 
 /// Returns the corresponding `IsoWeek` from the year and the `Of` internal value.
@@ -53,7 +53,7 @@ pub(super) fn iso_week_from_yof(year: i32, of: Of) -> IsoWeek {
         }
     };
     let flags = YearFlags::from_year(year);
-    IsoWeek { ywf: (year << 10) | (week << 4) as DateImpl | DateImpl::from(flags.0) }
+    IsoWeek { ywf: (year << 10) | (week << 4) as i32 | i32::from(flags.0) }
 }
 
 impl IsoWeek {
