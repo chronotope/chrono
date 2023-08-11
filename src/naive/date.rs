@@ -38,7 +38,6 @@ use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
 use super::internals::{self, Mdf, Of, YearFlags};
-use super::isoweek;
 
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.
@@ -1689,7 +1688,7 @@ impl Datelike for NaiveDate {
 
     #[inline]
     fn iso_week(&self) -> IsoWeek {
-        isoweek::iso_week_from_yof(self.year(), self.of())
+        IsoWeek::from_yof(self.year(), self.of())
     }
 
     /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
