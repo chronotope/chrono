@@ -27,7 +27,7 @@ use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
-use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
+use super::internals::{self, Mdf, Of, YearFlags};
 use super::isoweek;
 
 const MAX_YEAR: i32 = internals::MAX_YEAR;
@@ -196,7 +196,7 @@ impl Days {
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveDate {
-    ymdf: DateImpl, // (year << 13) | of
+    ymdf: i32, // (year << 13) | of
 }
 
 /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
@@ -233,7 +233,7 @@ impl NaiveDate {
         }
         debug_assert!(YearFlags::from_year(year).0 == flags.0);
         match Of::new(ordinal, flags) {
-            Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as DateImpl) }),
+            Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as i32) }),
             None => None, // Invalid: Ordinal outside of the nr of days in a year with those flags.
         }
     }
@@ -245,7 +245,7 @@ impl NaiveDate {
             return None; // Out-of-range
         }
         match mdf.to_of() {
-            Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as DateImpl) }),
+            Some(of) => Some(NaiveDate { ymdf: (year << 13) | (of.inner() as i32) }),
             None => None, // Non-existing date
         }
     }
@@ -1058,7 +1058,7 @@ impl NaiveDate {
     /// Does not check if the year flags match the year.
     #[inline]
     const fn with_of(&self, of: Of) -> NaiveDate {
-        NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of.inner() as DateImpl }
+        NaiveDate { ymdf: (self.ymdf & !0b1_1111_1111_1111) | of.inner() as i32 }
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
