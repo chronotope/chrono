@@ -402,6 +402,20 @@ impl Mdf {
     pub(super) const fn to_of(&self) -> Option<Of> {
         Of::from_mdf(*self)
     }
+
+    #[inline]
+    pub(super) const fn ordinal(&self) -> Option<u32> {
+        let mdl = self.0 >> 3;
+        match MDL_TO_OL[mdl as usize] {
+            XX => None,
+            v => Some((mdl - v as i32 as u32) >> 1),
+        }
+    }
+
+    #[inline]
+    pub(super) const fn year_flags(&self) -> YearFlags {
+        YearFlags((self.0 & 0b1111) as u8)
+    }
 }
 
 impl fmt::Debug for Mdf {
