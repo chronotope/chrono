@@ -93,6 +93,8 @@ jobs:
         # run using `bash` on all platforms for consistent
         # line-continuation marks
         shell: bash
+        env:
+          RUSTFLAGS: "-D warnings"
       - run: cargo test --no-default-features
       - run: cargo test --no-default-features --features=alloc
       - run: cargo test --no-default-features --features=unstable-locales
