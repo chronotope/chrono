@@ -523,7 +523,10 @@ impl str::FromStr for DateTime<FixedOffset> {
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        parse_rfc3339_relaxed(&mut parsed, s)?;
+        let (s, _) = parse_rfc3339_relaxed(&mut parsed, s)?;
+        if !s.trim_start().is_empty() {
+            return Err(TOO_LONG);
+        }
         parsed.to_datetime()
     }
 }
@@ -536,7 +539,7 @@ impl str::FromStr for DateTime<FixedOffset> {
 /// - `UTC` is accepted as a valid timezone name/offset.
 /// - There can be spaces between any of the components.
 /// - The colon in the offset may be missing.
-fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, s: &'a str) -> ParseResult<(&'a str, ())> {
+fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     const DATE_ITEMS: &[Item<'static>] = &[
         Item::Numeric(Numeric::Year, Pad::Zero),
         Item::Space(""),
@@ -557,19 +560,20 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, s: &'a str) -> ParseResult<(&'
         Item::Fixed(Fixed::Nanosecond),
         Item::Space(""),
         Item::Fixed(Fixed::TimezoneOffsetZ),
-        Item::Space(""),
     ];
 
-    match parse_internal(parsed, s, DATE_ITEMS.iter()) {
-        Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => {
-            if remainder.starts_with('T') || remainder.starts_with(' ') {
-                parse(parsed, &remainder[1..], TIME_ITEMS.iter()).map(|_| (s, ()))
-            } else {
-                Err(INVALID)
-            }
-        }
+    s = match parse_internal(parsed, s, DATE_ITEMS.iter()) {
+        Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => remainder,
+        Err((_s, e)) => return Err(e),
+        Ok(_) => return Err(NOT_ENOUGH),
+    };
+    if !(s.starts_with('T') || s.starts_with(' ')) {
+        return Err(INVALID);
+    }
+    match parse_internal(parsed, &s[1..], TIME_ITEMS.iter()) {
+        Err((s, e)) if e.0 == ParseErrorKind::TooLong => Ok((s, ())),
         Err((_s, e)) => Err(e),
-        Ok(_) => Err(NOT_ENOUGH),
+        Ok(s) => Ok((s, ())),
     }
 }
 
