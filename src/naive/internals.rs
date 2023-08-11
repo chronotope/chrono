@@ -265,13 +265,6 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 pub(super) struct Of(u32);
 
 impl Of {
-    #[inline]
-    #[cfg(test)]
-    pub(super) const fn new(ordinal: u32, YearFlags(flags): YearFlags) -> Option<Of> {
-        let of = Of((ordinal << 4) | flags as u32);
-        of.validate()
-    }
-
     pub(super) const fn from_date_impl(date_impl: i32) -> Of {
         // We assume the value in `date_impl` is valid.
         Of((date_impl & 0b1_1111_1111_1111) as u32)
@@ -485,42 +478,6 @@ mod tests {
     }
 
     #[test]
-    fn test_of() {
-        fn check(expected: bool, flags: YearFlags, ordinal1: u32, ordinal2: u32) {
-            for ordinal in ordinal1..=ordinal2 {
-                let of = match Of::new(ordinal, flags) {
-                    Some(of) => of,
-                    None if !expected => continue,
-                    None => panic!("Of::new({}, {:?}) returned None", ordinal, flags),
-                };
-
-                assert!(
-                    of.validate().is_some() == expected,
-                    "ordinal {} = {:?} should be {} for dominical year {:?}",
-                    ordinal,
-                    of,
-                    if expected { "valid" } else { "invalid" },
-                    flags
-                );
-            }
-        }
-
-        for &flags in NONLEAP_FLAGS.iter() {
-            check(false, flags, 0, 0);
-            check(true, flags, 1, 365);
-            check(false, flags, 366, 1024);
-            check(false, flags, u32::MAX, u32::MAX);
-        }
-
-        for &flags in LEAP_FLAGS.iter() {
-            check(false, flags, 0, 0);
-            check(true, flags, 1, 366);
-            check(false, flags, 367, 1024);
-            check(false, flags, u32::MAX, u32::MAX);
-        }
-    }
-
-    #[test]
     fn test_mdf_valid() {
         fn check(expected: bool, flags: YearFlags, month1: u32, day1: u32, month2: u32, day2: u32) {
             for month in month1..=month2 {
@@ -720,11 +677,6 @@ mod tests {
     fn test_invalid_returns_none() {
         let regular_year = YearFlags::from_year(2023);
         let leap_year = YearFlags::from_year(2024);
-        assert!(Of::new(0, regular_year).is_none());
-        assert!(Of::new(366, regular_year).is_none());
-        assert!(Of::new(366, leap_year).is_some());
-        assert!(Of::new(367, regular_year).is_none());
-
         assert!(Mdf::new(0, 1, regular_year).is_none());
         assert!(Mdf::new(13, 1, regular_year).is_none());
         assert!(Mdf::new(1, 0, regular_year).is_none());
