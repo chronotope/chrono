@@ -58,60 +58,60 @@ pub struct TimeDelta {
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
 }
 
-/// The minimum possible `Duration`: `i64::MIN` milliseconds.
+/// The minimum possible `TimeDelta`: `i64::MIN` milliseconds.
 pub(crate) const MIN: TimeDelta = TimeDelta {
     secs: i64::MIN / MILLIS_PER_SEC - 1,
     nanos: NANOS_PER_SEC + (i64::MIN % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
 };
 
-/// The maximum possible `Duration`: `i64::MAX` milliseconds.
+/// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
 pub(crate) const MAX: TimeDelta = TimeDelta {
     secs: i64::MAX / MILLIS_PER_SEC,
     nanos: (i64::MAX % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
 };
 
 impl TimeDelta {
-    /// Makes a new `Duration` with given number of weeks.
-    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
+    /// Makes a new `TimeDelta` with given number of weeks.
+    /// Equivalent to `TimeDelta::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
     pub fn weeks(weeks: i64) -> TimeDelta {
-        let secs = weeks.checked_mul(SECS_PER_WEEK).expect("Duration::weeks out of bounds");
+        let secs = weeks.checked_mul(SECS_PER_WEEK).expect("TimeDelta::weeks out of bounds");
         TimeDelta::seconds(secs)
     }
 
-    /// Makes a new `Duration` with given number of days.
-    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
+    /// Makes a new `TimeDelta` with given number of days.
+    /// Equivalent to `TimeDelta::seconds(days * 24 * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
     pub fn days(days: i64) -> TimeDelta {
-        let secs = days.checked_mul(SECS_PER_DAY).expect("Duration::days out of bounds");
+        let secs = days.checked_mul(SECS_PER_DAY).expect("TimeDelta::days out of bounds");
         TimeDelta::seconds(secs)
     }
 
-    /// Makes a new `Duration` with given number of hours.
-    /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
+    /// Makes a new `TimeDelta` with given number of hours.
+    /// Equivalent to `TimeDelta::seconds(hours * 60 * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
     pub fn hours(hours: i64) -> TimeDelta {
-        let secs = hours.checked_mul(SECS_PER_HOUR).expect("Duration::hours ouf of bounds");
+        let secs = hours.checked_mul(SECS_PER_HOUR).expect("TimeDelta::hours ouf of bounds");
         TimeDelta::seconds(secs)
     }
 
-    /// Makes a new `Duration` with given number of minutes.
-    /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
+    /// Makes a new `TimeDelta` with given number of minutes.
+    /// Equivalent to `TimeDelta::seconds(minutes * 60)` with overflow checks.
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
     pub fn minutes(minutes: i64) -> TimeDelta {
-        let secs = minutes.checked_mul(SECS_PER_MINUTE).expect("Duration::minutes out of bounds");
+        let secs = minutes.checked_mul(SECS_PER_MINUTE).expect("TimeDelta::minutes out of bounds");
         TimeDelta::seconds(secs)
     }
 
-    /// Makes a new `Duration` with given number of seconds.
+    /// Makes a new `TimeDelta` with given number of seconds.
     /// Panics when the duration is more than `i64::MAX` milliseconds
     /// or less than `i64::MIN` milliseconds.
     #[inline]
@@ -119,7 +119,7 @@ impl TimeDelta {
     pub fn seconds(seconds: i64) -> TimeDelta {
         let d = TimeDelta { secs: seconds, nanos: 0 };
         if d < MIN || d > MAX {
-            panic!("Duration::seconds out of bounds");
+            panic!("TimeDelta::seconds out of bounds");
         }
         d
     }
@@ -193,7 +193,7 @@ impl TimeDelta {
 
     /// Returns the total number of whole milliseconds in the duration,
     pub const fn num_milliseconds(&self) -> i64 {
-        // A proper Duration will not overflow, because MIN and MAX are defined
+        // A proper TimeDelta will not overflow, because MIN and MAX are defined
         // such that the range is exactly i64 milliseconds.
         let secs_part = self.num_seconds() * MILLIS_PER_SEC;
         let nanos_part = self.nanos_mod_sec() / NANOS_PER_MILLI;
@@ -264,13 +264,13 @@ impl TimeDelta {
         }
     }
 
-    /// The minimum possible `Duration`: `i64::MIN` milliseconds.
+    /// The minimum possible `TimeDelta`: `i64::MIN` milliseconds.
     #[inline]
     pub const fn min_value() -> TimeDelta {
         MIN
     }
 
-    /// The maximum possible `Duration`: `i64::MAX` milliseconds.
+    /// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
     #[inline]
     pub const fn max_value() -> TimeDelta {
         MAX
@@ -282,13 +282,13 @@ impl TimeDelta {
         TimeDelta { secs: 0, nanos: 0 }
     }
 
-    /// Returns `true` if the duration equals `Duration::zero()`.
+    /// Returns `true` if the duration equals `TimeDelta::zero()`.
     #[inline]
     pub const fn is_zero(&self) -> bool {
         self.secs == 0 && self.nanos == 0
     }
 
-    /// Creates a `time::Duration` object from `std::time::Duration`
+    /// Creates a `TimeDelta` object from `std::time::Duration`
     ///
     /// This function errors when original duration is larger than the maximum
     /// value supported for this type.
@@ -306,7 +306,7 @@ impl TimeDelta {
         Ok(d)
     }
 
-    /// Creates a `std::time::Duration` object from `time::Duration`
+    /// Creates a `std::time::Duration` object from `TimeDelta`
     ///
     /// This function errors when duration is less than zero. As standard
     /// library implementation is limited to non-negative values.
@@ -438,7 +438,7 @@ impl fmt::Display for TimeDelta {
     }
 }
 
-/// Represents error when converting `Duration` to/from a standard library
+/// Represents error when converting `TimeDelta` to/from a standard library
 /// implementation
 ///
 /// The `std::time::Duration` supports a range from zero to `u64::MAX`
@@ -716,7 +716,7 @@ mod tests {
         assert_eq!(TimeDelta::seconds(-86401).to_string(), "-P1DT1S");
         assert_eq!(TimeDelta::nanoseconds(-1).to_string(), "-PT0.000000001S");
 
-        // the format specifier should have no effect on `Duration`
+        // the format specifier should have no effect on `TimeDelta`
         assert_eq!(
             format!("{:30}", TimeDelta::days(1) + TimeDelta::milliseconds(2345)),
             "P1DT2.345S"
