@@ -112,8 +112,8 @@ impl Duration {
     }
 
     /// Makes a new `Duration` with given number of seconds.
-    /// Panics when the duration is more than `i64::MAX` seconds
-    /// or less than `i64::MIN` seconds.
+    /// Panics when the duration is more than `i64::MAX` milliseconds
+    /// or less than `i64::MIN` milliseconds.
     #[inline]
     #[must_use]
     pub fn seconds(seconds: i64) -> Duration {
