@@ -21,7 +21,7 @@ default = ["clock", "std", "oldtime", "wasmbind"]
 alloc = []
 libc = []
 std = []
-clock = ["std", "winapi", "iana-time-zone"]
+clock = ["std", "winapi", "iana-time-zone", "android-tzdata"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
@@ -50,7 +50,7 @@ winapi = { version = "0.3.0", features = ["std", "minwinbase", "minwindef", "tim
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
-android-tzdata = "0.1.1"
+android-tzdata = { version = "0.1.1", optional = true }
 
 [dev-dependencies]
 serde_json = { version = "1" }
