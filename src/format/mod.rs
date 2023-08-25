@@ -455,7 +455,7 @@ const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 // this implementation is here only because we need some private code from `scan`
 
-/// Parsing a `str` into a `Weekday` uses the format [`%W`](./format/strftime/index.html).
+/// Parsing a `str` into a `Weekday` uses the format [`%A`](./format/strftime/index.html).
 ///
 /// # Example
 ///
@@ -491,7 +491,7 @@ impl FromStr for Weekday {
     }
 }
 
-/// Parsing a `str` into a `Month` uses the format [`%W`](./format/strftime/index.html).
+/// Parsing a `str` into a `Month` uses the format [`%B`](./format/strftime/index.html).
 ///
 /// # Example
 ///
