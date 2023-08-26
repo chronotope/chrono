@@ -1,5 +1,9 @@
 #[cfg(feature = "unstable-locales")]
 mod localized {
+    use alloc::{
+        format,
+        string::{String, ToString},
+    };
     use icu_calendar::types::MonthCode;
     use icu_datetime::provider::calendar::{GregorianDateSymbolsV1Marker, TimeSymbolsV1Marker};
     use icu_decimal::provider::DecimalSymbolsV1Marker;
@@ -66,7 +70,15 @@ mod localized {
                 "Dec".to_string(),
             ],
             |payload| {
-                let format_abbreviated = &payload.get().months.format.abbreviated;
+                //Prefer stand_alone, but fall back to format
+                let format_abbreviated = payload
+                    .get()
+                    .clone()
+                    .months
+                    .stand_alone
+                    .and_then(|x| x.abbreviated)
+                    .unwrap_or_else(|| payload.get().months.format.abbreviated.clone());
+
                 [
                     format_abbreviated
                         .get(MonthCode("M01".parse().unwrap()))
@@ -126,7 +138,15 @@ mod localized {
                 "December".to_string(),
             ],
             |payload| {
-                let format_wide = &payload.get().months.format.wide;
+                //Prefer stand_alone, but fall back to format
+                let format_wide = payload
+                    .get()
+                    .clone()
+                    .months
+                    .stand_alone
+                    .and_then(|x| x.wide)
+                    .unwrap_or_else(|| payload.get().months.format.wide.clone());
+
                 [
                     format_wide
                         .get(MonthCode("M01".parse().unwrap()))
@@ -181,7 +201,16 @@ mod localized {
                 "Sat".to_string(),
             ],
             |payload| {
-                let format_abbreviated = &payload.get().weekdays.format.abbreviated.0;
+                //Prefer stand_alone, but fall back to format
+                let format_abbreviated = payload
+                    .get()
+                    .clone()
+                    .weekdays
+                    .stand_alone
+                    .and_then(|x| x.abbreviated)
+                    .unwrap_or_else(|| payload.get().weekdays.format.abbreviated.clone())
+                    .0;
+
                 [
                     format_abbreviated[0].to_string(),
                     format_abbreviated[1].to_string(),
@@ -207,7 +236,16 @@ mod localized {
                 "Saturday".to_string(),
             ],
             |payload| {
-                let format_wide = &payload.get().weekdays.format.wide.0;
+                //Prefer stand_alone, but fall back to format
+                let format_wide = payload
+                    .get()
+                    .clone()
+                    .weekdays
+                    .stand_alone
+                    .and_then(|x| x.wide)
+                    .unwrap_or_else(|| payload.get().weekdays.format.wide.clone())
+                    .0;
+
                 [
                     format_wide[0].to_string(),
                     format_wide[1].to_string(),

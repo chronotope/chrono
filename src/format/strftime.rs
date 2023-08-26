@@ -811,15 +811,15 @@ mod tests {
         let nd = NaiveDate::from_ymd_opt(2001, 7, 8).unwrap();
 
         // date specifiers
-        assert_eq!(nd.format_localized("%b", Locale::de_DE).to_string(), "Juli");
+        assert_eq!(nd.format_localized("%b", Locale::de_DE).to_string(), "Jul");
         assert_eq!(nd.format_localized("%B", Locale::de_DE).to_string(), "Juli");
-        assert_eq!(nd.format_localized("%h", Locale::de_DE).to_string(), "Juli");
-        assert_eq!(nd.format_localized("%a", Locale::de_DE).to_string(), "So.");
+        assert_eq!(nd.format_localized("%h", Locale::de_DE).to_string(), "Jul");
+        assert_eq!(nd.format_localized("%a", Locale::de_DE).to_string(), "So");
         assert_eq!(nd.format_localized("%A", Locale::de_DE).to_string(), "Sonntag");
         assert_eq!(nd.format_localized("%D", Locale::de_DE).to_string(), "07/08/01");
         assert_eq!(nd.format_localized("%x", Locale::de_DE).to_string(), "08.07.2001");
         assert_eq!(nd.format_localized("%F", Locale::de_DE).to_string(), "2001-07-08");
-        assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Juli-2001");
+        assert_eq!(nd.format_localized("%v", Locale::de_DE).to_string(), " 8-Jul-2001");
     }
 
     /// Ensure parsing a timestamp with the parse-only stftime formatter "%#z" does
