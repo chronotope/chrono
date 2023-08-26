@@ -24,7 +24,18 @@ std = []
 clock = ["std", "winapi", "iana-time-zone", "android-tzdata"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
-unstable-locales = ["pure-rust-locales", "alloc"]
+unstable-locales = [
+    "alloc",
+    "icu_calendar",
+    "icu_datagen",
+    "icu_datetime",
+    "icu_decimal",
+    "icu_locid_transform",
+    "icu_locid",
+    "icu_provider",
+    "pure-rust-locales",
+    "zerovec",
+]
 __internal_bench = ["criterion"]
 __doctest = []
 
@@ -33,7 +44,14 @@ time = { version = "0.1.43", optional = true }
 num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
+icu_calendar = {version = "1.2.0", optional = true}
+icu_datetime = { version = "1.2.0", optional = true }
+icu_decimal = { version = "1.2.0", optional = true }
+icu_locid = { version = "1.2.0", optional = true }
+icu_locid_transform = { version = "1.2.0", optional = true }
+icu_provider = { version = "1.2.0", optional = true }
 pure-rust-locales = { version = "0.6", optional = true }
+zerovec = { version = "0.9", optional = true }
 criterion = { version = "0.4.0", optional = true }
 rkyv = { version = "0.7", optional = true }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
@@ -60,6 +78,15 @@ doc-comment = { version = "0.3" }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dev-dependencies]
 wasm-bindgen-test = "0.3"
+
+[build-dependencies]
+icu_calendar = {version = "1.2.0", optional = true}
+icu_datetime = { version = "1.2.0", optional = true }
+icu_decimal = { version = "1.2.0", optional = true }
+icu_locid = { version = "1.2.0", optional = true }
+icu_locid_transform = { version = "1.2.0", optional = true }
+icu_provider = { version = "1.2.0", optional = true }
+icu_datagen = { version = "1.2.0", optional = true }
 
 [package.metadata.docs.rs]
 features = ["serde"]

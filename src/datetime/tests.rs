@@ -1477,8 +1477,8 @@ fn locale_decimal_point() {
     assert_eq!(dt.format_localized("%T%.6f", nl_NL).to_string(), "18:58:00,123456");
     assert_eq!(dt.format_localized("%T%.9f", nl_NL).to_string(), "18:58:00,123456780");
 
-    assert_eq!(dt.format_localized("%T%.f", ar_SY).to_string(), "18:58:00.123456780");
-    assert_eq!(dt.format_localized("%T%.3f", ar_SY).to_string(), "18:58:00.123");
-    assert_eq!(dt.format_localized("%T%.6f", ar_SY).to_string(), "18:58:00.123456");
-    assert_eq!(dt.format_localized("%T%.9f", ar_SY).to_string(), "18:58:00.123456780");
+    assert_eq!(dt.format_localized("%T%.f", ar_SY).to_string(), "18:58:00٫123456780");
+    assert_eq!(dt.format_localized("%T%.3f", ar_SY).to_string(), "18:58:00٫123");
+    assert_eq!(dt.format_localized("%T%.6f", ar_SY).to_string(), "18:58:00٫123456");
+    assert_eq!(dt.format_localized("%T%.9f", ar_SY).to_string(), "18:58:00٫123456780");
 }
