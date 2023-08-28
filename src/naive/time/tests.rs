@@ -195,6 +195,21 @@ fn test_time_sub() {
 }
 
 #[test]
+fn test_core_duration_ops() {
+    use core::time::Duration;
+
+    let mut t = NaiveTime::from_hms_opt(11, 34, 23).unwrap();
+    let same = t + Duration::ZERO;
+    assert_eq!(t, same);
+
+    t += Duration::new(3600, 0);
+    assert_eq!(t, NaiveTime::from_hms_opt(12, 34, 23).unwrap());
+
+    t -= Duration::new(7200, 0);
+    assert_eq!(t, NaiveTime::from_hms_opt(10, 34, 23).unwrap());
+}
+
+#[test]
 fn test_time_fmt() {
     assert_eq!(
         format!("{}", NaiveTime::from_hms_milli_opt(23, 59, 59, 999).unwrap()),

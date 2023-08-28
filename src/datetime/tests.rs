@@ -1363,6 +1363,27 @@ fn test_datetime_sub_assign_local() {
 }
 
 #[test]
+fn test_core_duration_ops() {
+    use core::time::Duration;
+
+    let mut utc_dt = Utc.with_ymd_and_hms(2023, 8, 29, 11, 34, 12).unwrap();
+    let same = utc_dt + Duration::ZERO;
+    assert_eq!(utc_dt, same);
+
+    utc_dt += Duration::new(3600, 0);
+    assert_eq!(utc_dt, Utc.with_ymd_and_hms(2023, 8, 29, 12, 34, 12).unwrap());
+}
+
+#[test]
+#[should_panic]
+fn test_core_duration_max() {
+    use core::time::Duration;
+
+    let mut utc_dt = Utc.with_ymd_and_hms(2023, 8, 29, 11, 34, 12).unwrap();
+    utc_dt += Duration::MAX;
+}
+
+#[test]
 #[cfg(all(target_os = "windows", feature = "clock"))]
 fn test_from_naive_date_time_windows() {
     let min_year = NaiveDate::from_ymd_opt(1601, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();

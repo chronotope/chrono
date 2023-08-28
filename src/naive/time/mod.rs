@@ -6,6 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 #[cfg(feature = "rkyv")]
@@ -1112,6 +1113,26 @@ impl AddAssign<OldDuration> for NaiveTime {
     }
 }
 
+impl Add<Duration> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> NaiveTime {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.overflowing_add_signed(rhs).0
+    }
+}
+
+impl AddAssign<Duration> for NaiveTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self += rhs;
+    }
+}
+
 /// A subtraction of `Duration` from `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 /// It is the same as the addition with a negated `Duration`.
@@ -1171,6 +1192,26 @@ impl SubAssign<OldDuration> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
         *self = self.sub(rhs);
+    }
+}
+
+impl Sub<Duration> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> NaiveTime {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.overflowing_sub_signed(rhs).0
+    }
+}
+
+impl SubAssign<Duration> for NaiveTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self -= rhs;
     }
 }
 
