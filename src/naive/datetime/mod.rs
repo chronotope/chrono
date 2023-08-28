@@ -7,6 +7,7 @@
 use core::borrow::Borrow;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 #[cfg(feature = "rkyv")]
@@ -1516,9 +1517,27 @@ impl Add<OldDuration> for NaiveDateTime {
     }
 }
 
+impl Add<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> NaiveDateTime {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_add_signed(rhs).expect("`NaiveDateTime + Duration` overflowed")
+    }
+}
+
 impl AddAssign<OldDuration> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
+        *self = self.add(rhs);
+    }
+}
+
+impl AddAssign<Duration> for NaiveDateTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
         *self = self.add(rhs);
     }
 }
@@ -1625,9 +1644,27 @@ impl Sub<OldDuration> for NaiveDateTime {
     }
 }
 
+impl Sub<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> NaiveDateTime {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_sub_signed(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    }
+}
+
 impl SubAssign<OldDuration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
+        *self = self.sub(rhs);
+    }
+}
+
+impl SubAssign<Duration> for NaiveDateTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
         *self = self.sub(rhs);
     }
 }

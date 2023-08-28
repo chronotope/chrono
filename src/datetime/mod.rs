@@ -9,6 +9,7 @@ use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -1131,6 +1132,17 @@ impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> DateTime<Tz> {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+    }
+}
+
 impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
@@ -1138,6 +1150,15 @@ impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
             self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime);
+    }
+}
+
+impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self += rhs;
     }
 }
 
@@ -1158,6 +1179,17 @@ impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> DateTime<Tz> {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+    }
+}
+
 impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
@@ -1165,6 +1197,15 @@ impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        let rhs = OldDuration::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self -= rhs;
     }
 }
 
@@ -1305,8 +1346,6 @@ impl From<SystemTime> for DateTime<Local> {
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
-        use std::time::Duration;
-
         let sec = dt.timestamp();
         let nsec = dt.timestamp_subsec_nanos();
         if sec < 0 {

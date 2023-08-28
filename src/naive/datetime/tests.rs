@@ -190,6 +190,27 @@ fn test_datetime_subassignment() {
 }
 
 #[test]
+fn test_core_duration_ops() {
+    use core::time::Duration;
+
+    let mut dt = NaiveDate::from_ymd_opt(2023, 8, 29).unwrap().and_hms_opt(11, 34, 12).unwrap();
+    let same = dt + Duration::ZERO;
+    assert_eq!(dt, same);
+
+    dt += Duration::new(3600, 0);
+    assert_eq!(dt, NaiveDate::from_ymd_opt(2023, 8, 29).unwrap().and_hms_opt(12, 34, 12).unwrap());
+}
+
+#[test]
+#[should_panic]
+fn test_core_duration_max() {
+    use core::time::Duration;
+
+    let mut utc_dt = NaiveDate::from_ymd_opt(2023, 8, 29).unwrap().and_hms_opt(11, 34, 12).unwrap();
+    utc_dt += Duration::MAX;
+}
+
+#[test]
 fn test_datetime_timestamp() {
     let to_timestamp = |y, m, d, h, n, s| {
         NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap().timestamp()
