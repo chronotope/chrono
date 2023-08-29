@@ -3,7 +3,7 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::oldtime::Duration;
+use crate::oldtime::Duration as OldDuration;
 use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime};
 
 #[derive(Clone)]
@@ -54,7 +54,7 @@ impl TimeZone for DstTester {
             DstTester::TO_WINTER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() - Duration::hours(1));
+        .and_time(DstTester::transition_start_local() - OldDuration::hours(1));
 
         let local_to_summer_transition_start = NaiveDate::from_ymd_opt(
             local.year(),
@@ -70,7 +70,7 @@ impl TimeZone for DstTester {
             DstTester::TO_SUMMER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() + Duration::hours(1));
+        .and_time(DstTester::transition_start_local() + OldDuration::hours(1));
 
         if *local < local_to_winter_transition_end || *local >= local_to_summer_transition_end {
             LocalResult::Single(DstTester::summer_offset())
@@ -267,7 +267,7 @@ fn ymdhms_milli(
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(Duration::milliseconds(milli))
+        .checked_add_signed(OldDuration::milliseconds(milli))
         .unwrap()
 }
 
@@ -287,7 +287,7 @@ fn ymdhms_micro(
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(Duration::microseconds(micro))
+        .checked_add_signed(OldDuration::microseconds(micro))
         .unwrap()
 }
 
@@ -307,7 +307,7 @@ fn ymdhms_nano(
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(Duration::nanoseconds(nano))
+        .checked_add_signed(OldDuration::nanoseconds(nano))
         .unwrap()
 }
 
@@ -328,7 +328,7 @@ fn ymdhms_milli_utc(
 ) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(Duration::milliseconds(milli))
+        .checked_add_signed(OldDuration::milliseconds(milli))
         .unwrap()
 }
 
@@ -392,12 +392,12 @@ fn test_datetime_offset() {
     let dt = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     assert_eq!(dt, edt.with_ymd_and_hms(2014, 5, 6, 3, 8, 9).unwrap());
     assert_eq!(
-        dt + Duration::seconds(3600 + 60 + 1),
+        dt + OldDuration::seconds(3600 + 60 + 1),
         Utc.with_ymd_and_hms(2014, 5, 6, 8, 9, 10).unwrap()
     );
     assert_eq!(
         dt.signed_duration_since(edt.with_ymd_and_hms(2014, 5, 6, 10, 11, 12).unwrap()),
-        Duration::seconds(-7 * 3600 - 3 * 60 - 3)
+        OldDuration::seconds(-7 * 3600 - 3 * 60 - 3)
     );
 
     assert_eq!(*Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap().offset(), Utc);
@@ -1275,16 +1275,16 @@ fn test_years_elapsed() {
 
     // This is always at least one year because 1 year = 52.1775 weeks.
     let one_year_ago =
-        Utc::now().date_naive() - Duration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
+        Utc::now().date_naive() - OldDuration::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
     // A bit more than 2 years.
     let two_year_ago =
-        Utc::now().date_naive() - Duration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+        Utc::now().date_naive() - OldDuration::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
 
     assert_eq!(Utc::now().date_naive().years_since(one_year_ago), Some(1));
     assert_eq!(Utc::now().date_naive().years_since(two_year_ago), Some(2));
 
     // If the given DateTime is later than now, the function will always return 0.
-    let future = Utc::now().date_naive() + Duration::weeks(12);
+    let future = Utc::now().date_naive() + OldDuration::weeks(12);
     assert_eq!(Utc::now().date_naive().years_since(future), None);
 }
 
@@ -1294,20 +1294,20 @@ fn test_datetime_add_assign() {
     let datetime = naivedatetime.and_utc();
     let mut datetime_add = datetime;
 
-    datetime_add += Duration::seconds(60);
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    datetime_add += OldDuration::seconds(60);
+    assert_eq!(datetime_add, datetime + OldDuration::seconds(60));
 
     let timezone = FixedOffset::east_opt(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    assert_eq!(datetime_add, datetime + OldDuration::seconds(60));
 
     let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + Duration::seconds(60));
+    assert_eq!(datetime_add, datetime + OldDuration::seconds(60));
 }
 
 #[test]
@@ -1320,8 +1320,8 @@ fn test_datetime_add_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_add += Duration::days(1);
-        assert_eq!(datetime_add, datetime + Duration::days(i))
+        datetime_add += OldDuration::days(1);
+        assert_eq!(datetime_add, datetime + OldDuration::days(i))
     }
 }
 
@@ -1331,20 +1331,20 @@ fn test_datetime_sub_assign() {
     let datetime = naivedatetime.and_utc();
     let mut datetime_sub = datetime;
 
-    datetime_sub -= Duration::minutes(90);
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    datetime_sub -= OldDuration::minutes(90);
+    assert_eq!(datetime_sub, datetime - OldDuration::minutes(90));
 
     let timezone = FixedOffset::east_opt(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    assert_eq!(datetime_sub, datetime - OldDuration::minutes(90));
 
     let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - Duration::minutes(90));
+    assert_eq!(datetime_sub, datetime - OldDuration::minutes(90));
 }
 
 #[test]
@@ -1357,8 +1357,8 @@ fn test_datetime_sub_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_sub -= Duration::days(1);
-        assert_eq!(datetime_sub, datetime - Duration::days(i))
+        datetime_sub -= OldDuration::days(1);
+        assert_eq!(datetime_sub, datetime - OldDuration::days(i))
     }
 }
 
