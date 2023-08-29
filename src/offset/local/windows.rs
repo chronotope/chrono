@@ -13,11 +13,10 @@ use std::io::Error;
 use std::ptr;
 use std::result::Result;
 
-use windows_sys::Win32::Foundation::FILETIME;
-use windows_sys::Win32::Foundation::SYSTEMTIME;
-use windows_sys::Win32::System::Time::SystemTimeToFileTime;
-use windows_sys::Win32::System::Time::SystemTimeToTzSpecificLocalTime;
-use windows_sys::Win32::System::Time::TzSpecificLocalTimeToSystemTime;
+use super::win_bindings::{
+    SystemTimeToFileTime, SystemTimeToTzSpecificLocalTime, TzSpecificLocalTimeToSystemTime,
+    FILETIME, SYSTEMTIME,
+};
 
 use super::FixedOffset;
 use crate::{Datelike, LocalResult, NaiveDateTime, Timelike};

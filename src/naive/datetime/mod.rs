@@ -7,6 +7,7 @@
 use core::borrow::Borrow;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 #[cfg(feature = "rkyv")]
@@ -951,7 +952,7 @@ impl NaiveDateTime {
 impl Datelike for NaiveDateTime {
     /// Returns the year number in the [calendar date](./struct.NaiveDate.html#calendar-date).
     ///
-    /// See also the [`NaiveDate::year`] method.
+    /// See also the [`NaiveDate::year`](./struct.NaiveDate.html#method.year) method.
     ///
     /// # Example
     ///
@@ -1512,9 +1513,27 @@ impl Add<TimeDelta> for NaiveDateTime {
     }
 }
 
+impl Add<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> NaiveDateTime {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_add_signed(rhs).expect("`NaiveDateTime + Duration` overflowed")
+    }
+}
+
 impl AddAssign<TimeDelta> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: TimeDelta) {
+        *self = self.add(rhs);
+    }
+}
+
+impl AddAssign<Duration> for NaiveDateTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
         *self = self.add(rhs);
     }
 }
@@ -1621,9 +1640,27 @@ impl Sub<TimeDelta> for NaiveDateTime {
     }
 }
 
+impl Sub<Duration> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> NaiveDateTime {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_sub_signed(rhs).expect("`NaiveDateTime - Duration` overflowed")
+    }
+}
+
 impl SubAssign<TimeDelta> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: TimeDelta) {
+        *self = self.sub(rhs);
+    }
+}
+
+impl SubAssign<Duration> for NaiveDateTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
         *self = self.sub(rhs);
     }
 }

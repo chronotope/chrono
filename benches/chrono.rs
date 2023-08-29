@@ -63,6 +63,21 @@ fn bench_datetime_to_rfc3339(c: &mut Criterion) {
     c.bench_function("bench_datetime_to_rfc3339", |b| b.iter(|| black_box(dt).to_rfc3339()));
 }
 
+fn bench_datetime_to_rfc3339_opts(c: &mut Criterion) {
+    let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+    let dt = pst
+        .from_local_datetime(
+            &NaiveDate::from_ymd_opt(2018, 1, 11)
+                .unwrap()
+                .and_hms_nano_opt(10, 5, 13, 84_660_000)
+                .unwrap(),
+        )
+        .unwrap();
+    c.bench_function("bench_datetime_to_rfc3339_opts", |b| {
+        b.iter(|| black_box(dt).to_rfc3339_opts(SecondsFormat::Nanos, true))
+    });
+}
+
 fn bench_year_flags_from_year(c: &mut Criterion) {
     c.bench_function("bench_year_flags_from_year", |b| {
         b.iter(|| {
@@ -188,6 +203,7 @@ criterion_group!(
     bench_datetime_from_str,
     bench_datetime_to_rfc2822,
     bench_datetime_to_rfc3339,
+    bench_datetime_to_rfc3339_opts,
     bench_year_flags_from_year,
     bench_num_days_from_ce,
     bench_get_local_time,

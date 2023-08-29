@@ -10,19 +10,37 @@ use core::borrow::Borrow;
 use core::fmt;
 use core::fmt::Write;
 
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
+use crate::datetime::SecondsFormat;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+use crate::offset::Offset;
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
+use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
 #[cfg(any(feature = "alloc", feature = "std"))]
-use crate::offset::{FixedOffset, Offset};
-#[cfg(any(feature = "alloc", feature = "std"))]
-use crate::{Datelike, Timelike, Weekday};
+use crate::{NaiveDate, NaiveTime, Weekday};
 
-use super::locales;
 #[cfg(any(feature = "alloc", feature = "std"))]
-use super::{
-    Colons, Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric, OffsetFormat,
-    OffsetPrecision, Pad,
-};
+use super::locales;
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
+use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
+#[cfg(any(feature = "alloc", feature = "std"))]
+use super::{Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric};
+#[cfg(any(feature = "alloc", feature = "std"))]
 use locales::*;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
@@ -427,7 +445,13 @@ fn format_inner(
                 // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
                 {
                     if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc3339(w, NaiveDateTime::new(*d, *t), off))
+                        Some(write_rfc3339(
+                            w,
+                            crate::NaiveDateTime::new(*d, *t),
+                            off.fix(),
+                            SecondsFormat::AutoSi,
+                            false,
+                        ))
                     } else {
                         None
                     }
@@ -441,7 +465,7 @@ fn format_inner(
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(any(feature = "alloc", feature = "std", feature = "serde", feature = "rustc-serialize"))]
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
     fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
@@ -522,19 +546,64 @@ impl OffsetFormat {
 }
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[inline]
+#[cfg(any(feature = "alloc", feature = "std", feature = "serde", feature = "rustc-serialize"))]
 pub(crate) fn write_rfc3339(
     w: &mut impl Write,
     dt: NaiveDateTime,
     off: FixedOffset,
+    secform: SecondsFormat,
+    use_z: bool,
 ) -> fmt::Result {
-    // reuse `Debug` impls which already print ISO 8601 format.
-    // this is faster in this way.
-    write!(w, "{:?}", dt)?;
+    let year = dt.date().year();
+    if (0..=9999).contains(&year) {
+        write_hundreds(w, (year / 100) as u8)?;
+        write_hundreds(w, (year % 100) as u8)?;
+    } else {
+        // ISO 8601 requires the explicit sign for out-of-range years
+        write!(w, "{:+05}", year)?;
+    }
+    w.write_char('-')?;
+    write_hundreds(w, dt.date().month() as u8)?;
+    w.write_char('-')?;
+    write_hundreds(w, dt.date().day() as u8)?;
+
+    w.write_char('T')?;
+
+    let (hour, min, mut sec) = dt.time().hms();
+    let mut nano = dt.nanosecond();
+    if nano >= 1_000_000_000 {
+        sec += 1;
+        nano -= 1_000_000_000;
+    }
+    write_hundreds(w, hour as u8)?;
+    w.write_char(':')?;
+    write_hundreds(w, min as u8)?;
+    w.write_char(':')?;
+    let sec = sec;
+    write_hundreds(w, sec as u8)?;
+
+    match secform {
+        SecondsFormat::Secs => {}
+        SecondsFormat::Millis => write!(w, ".{:03}", nano / 1_000_000)?,
+        SecondsFormat::Micros => write!(w, ".{:06}", nano / 1000)?,
+        SecondsFormat::Nanos => write!(w, ".{:09}", nano)?,
+        SecondsFormat::AutoSi => {
+            if nano == 0 {
+            } else if nano % 1_000_000 == 0 {
+                write!(w, ".{:03}", nano / 1_000_000)?
+            } else if nano % 1_000 == 0 {
+                write!(w, ".{:06}", nano / 1_000)?
+            } else {
+                write!(w, ".{:09}", nano)?
+            }
+        }
+    };
+
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
         colons: Colons::Colon,
-        allow_zulu: false,
+        allow_zulu: use_z,
         padding: Pad::Zero,
     }
     .format(w, off)
@@ -574,11 +643,13 @@ fn write_rfc2822_inner(
     write_hundreds(w, (year / 100) as u8)?;
     write_hundreds(w, (year % 100) as u8)?;
     w.write_char(' ')?;
-    write_hundreds(w, t.hour() as u8)?;
+
+    let (hour, min, sec) = t.hms();
+    write_hundreds(w, hour as u8)?;
     w.write_char(':')?;
-    write_hundreds(w, t.minute() as u8)?;
+    write_hundreds(w, min as u8)?;
     w.write_char(':')?;
-    let sec = t.second() + t.nanosecond() / 1_000_000_000;
+    let sec = sec + t.nanosecond() / 1_000_000_000;
     write_hundreds(w, sec as u8)?;
     w.write_char(' ')?;
     OffsetFormat {

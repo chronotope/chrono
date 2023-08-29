@@ -4,23 +4,24 @@
 //! ISO 8601 date and time with time zone.
 
 #[cfg(all(not(feature = "std"), feature = "alloc"))]
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, hash, str};
-#[cfg(feature = "std")]
-use std::string::ToString;
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(any(feature = "alloc", feature = "std"))]
-use crate::format::DelayedFormat;
 #[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
-use crate::format::{Fixed, Item};
+use crate::format::{
+    parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
+    StrftimeItems, TOO_LONG,
+};
+#[cfg(any(feature = "alloc", feature = "std"))]
+use crate::format::{write_rfc3339, DelayedFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -45,6 +46,7 @@ mod tests;
 /// See the `TimeZone::to_rfc3339_opts` function for usage.
 #[non_exhaustive]
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[allow(clippy::manual_non_exhaustive)]
 pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.
     Secs,
@@ -501,8 +503,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc3339(&self) -> String {
+        // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
         let mut result = String::with_capacity(32);
-        crate::format::write_rfc3339(&mut result, self.naive_local(), self.offset.fix())
+        let naive = self.naive_local();
+        let offset = self.offset.fix();
+        write_rfc3339(&mut result, naive, offset, SecondsFormat::AutoSi, false)
             .expect("writing rfc3339 datetime to string should never fail");
         result
     }
@@ -535,43 +540,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
-        use crate::format::Numeric::*;
-        use crate::format::Pad::Zero;
-        use crate::SecondsFormat::*;
-
-        const PREFIX: &[Item<'static>] = &[
-            Item::Numeric(Year, Zero),
-            Item::Literal("-"),
-            Item::Numeric(Month, Zero),
-            Item::Literal("-"),
-            Item::Numeric(Day, Zero),
-            Item::Literal("T"),
-            Item::Numeric(Hour, Zero),
-            Item::Literal(":"),
-            Item::Numeric(Minute, Zero),
-            Item::Literal(":"),
-            Item::Numeric(Second, Zero),
-        ];
-
-        let ssitem = match secform {
-            Secs => None,
-            Millis => Some(Item::Fixed(Fixed::Nanosecond3)),
-            Micros => Some(Item::Fixed(Fixed::Nanosecond6)),
-            Nanos => Some(Item::Fixed(Fixed::Nanosecond9)),
-            AutoSi => Some(Item::Fixed(Fixed::Nanosecond)),
-        };
-
-        let tzitem = Item::Fixed(if use_z {
-            Fixed::TimezoneOffsetColonZ
-        } else {
-            Fixed::TimezoneOffsetColon
-        });
-
-        let dt = self.fixed_offset();
-        match ssitem {
-            None => dt.format_with_items(PREFIX.iter().chain([tzitem].iter())).to_string(),
-            Some(s) => dt.format_with_items(PREFIX.iter().chain([s, tzitem].iter())).to_string(),
-        }
+        let mut result = String::with_capacity(38);
+        write_rfc3339(&mut result, self.naive_local(), self.offset.fix(), secform, use_z)
+            .expect("writing rfc3339 datetime to string should never fail");
+        result
     }
 
     /// The minimum possible `DateTime<Utc>`.
@@ -724,9 +696,11 @@ impl DateTime<FixedOffset> {
     /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
     /// values (or the other way around).
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC3339)];
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        let (s, _) = parse_rfc3339(&mut parsed, s)?;
+        if !s.is_empty() {
+            return Err(TOO_LONG);
+        }
         parsed.to_datetime()
     }
 
@@ -1214,6 +1188,17 @@ impl<Tz: TimeZone> Add<TimeDelta> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> DateTime<Tz> {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+    }
+}
+
 impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: TimeDelta) {
@@ -1221,6 +1206,15 @@ impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
             self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime);
+    }
+}
+
+impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self += rhs;
     }
 }
 
@@ -1241,6 +1235,17 @@ impl<Tz: TimeZone> Sub<TimeDelta> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> DateTime<Tz> {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+    }
+}
+
 impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: TimeDelta) {
@@ -1248,6 +1253,15 @@ impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
+    }
+}
+
+impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self -= rhs;
     }
 }
 
@@ -1388,8 +1402,6 @@ impl From<SystemTime> for DateTime<Local> {
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
-        use std::time::Duration;
-
         let sec = dt.timestamp();
         let nsec = dt.timestamp_subsec_nanos();
         if sec < 0 {
@@ -1501,7 +1513,9 @@ where
             &FixedOffset::east_opt(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
         )
         .ok(),
-        Some(r#""2014-07-24T12:34:06+01:00:50""#.into())
+        // An offset with seconds is not allowed by RFC 3339, so we round it to the nearest minute.
+        // In this case `+01:00:50` becomes `+01:01`
+        Some(r#""2014-07-24T12:34:06+01:01""#.into())
     );
 }
 

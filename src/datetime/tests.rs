@@ -3,7 +3,7 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta};
+use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike};
 
 #[derive(Clone)]
 struct DstTester;
@@ -261,12 +261,12 @@ fn ymdhms_milli(
     hour: u32,
     min: u32,
     sec: u32,
-    milli: i64,
+    milli: u32,
 ) -> DateTime<FixedOffset> {
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(TimeDelta::milliseconds(milli))
+        .with_nanosecond(milli * 1_000_000)
         .unwrap()
 }
 
@@ -281,12 +281,12 @@ fn ymdhms_micro(
     hour: u32,
     min: u32,
     sec: u32,
-    micro: i64,
+    micro: u32,
 ) -> DateTime<FixedOffset> {
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(TimeDelta::microseconds(micro))
+        .with_nanosecond(micro * 1000)
         .unwrap()
 }
 
@@ -301,12 +301,12 @@ fn ymdhms_nano(
     hour: u32,
     min: u32,
     sec: u32,
-    nano: i64,
+    nano: u32,
 ) -> DateTime<FixedOffset> {
     fixedoffset
         .with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(TimeDelta::nanoseconds(nano))
+        .with_nanosecond(nano)
         .unwrap()
 }
 
@@ -323,11 +323,11 @@ fn ymdhms_milli_utc(
     hour: u32,
     min: u32,
     sec: u32,
-    milli: i64,
+    milli: u32,
 ) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(year, month, day, hour, min, sec)
         .unwrap()
-        .checked_add_signed(TimeDelta::milliseconds(milli))
+        .with_nanosecond(milli * 1_000_000)
         .unwrap()
 }
 
@@ -470,6 +470,29 @@ fn test_datetime_rfc2822() {
         .to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0500"
     );
+    assert_eq!(
+        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
+        Ok(edt
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2015, 2, 18)
+                    .unwrap()
+                    .and_hms_milli_opt(23, 59, 59, 1_000)
+                    .unwrap()
+            )
+            .unwrap())
+    );
+    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
+    assert_eq!(
+        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
+        Ok(edt
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2015, 2, 18)
+                    .unwrap()
+                    .and_hms_micro_opt(23, 59, 59, 1_234_567)
+                    .unwrap()
+            )
+            .unwrap())
+    );
     // seconds 60
     assert_eq!(
         edt.from_local_datetime(
@@ -492,8 +515,8 @@ fn test_datetime_rfc2822() {
         Ok(FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap())
     );
     assert_eq!(
-        ymdhms_milli(&edt, 2015, 2, 18, 23, 59, 58, 1_234_567).to_rfc2822(),
-        "Thu, 19 Feb 2015 00:20:32 +0500"
+        ymdhms_micro(&edt, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc2822(),
+        "Wed, 18 Feb 2015 23:59:60 +0500"
     );
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:58 +0500"),
@@ -584,7 +607,7 @@ fn test_datetime_rfc3339() {
     );
     assert_eq!(
         ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
-        "2015-02-19T00:00:00.234567+05:00"
+        "2015-02-18T23:59:60.234567+05:00"
     );
     assert_eq!(
         DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:59.123+05:00"),
@@ -605,7 +628,7 @@ fn test_datetime_rfc3339() {
 
     assert_eq!(
         ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
-        "2015-02-19T00:00:00.234567+05:00"
+        "2015-02-18T23:59:60.234567+05:00"
     );
     assert_eq!(
         ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).to_rfc3339(),
@@ -620,27 +643,8 @@ fn test_datetime_rfc3339() {
         Ok(ymdhms(&edt0, 2015, 2, 18, 23, 16, 9))
     );
     assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
-        Ok(edt5
-            .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 59, 59, 1_000)
-                    .unwrap()
-            )
-            .unwrap())
-    );
-    assert!(DateTime::<FixedOffset>::parse_from_rfc2822("31 DEC 262143 23:59 -2359").is_err());
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00"),
-        Ok(edt5
-            .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_micro_opt(23, 59, 59, 1_234_567)
-                    .unwrap()
-            )
-            .unwrap())
+        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00"),
+        Ok(ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567))
     );
     assert_eq!(ymdhms_utc(2015, 2, 18, 23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
 
@@ -658,9 +662,6 @@ fn test_datetime_rfc3339() {
     assert!(DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+0500").is_err());
     assert!(
         DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567+05:00:00").is_err()
-    );
-    assert!(
-        DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00").is_err()
     );
     assert!(
         DateTime::<FixedOffset>::parse_from_rfc3339("2015-02-18T23:59:60.234567:+05:00").is_err()
@@ -756,6 +757,17 @@ fn test_datetime_from_str() {
             )
             .unwrap())
     );
+    assert_eq!(
+        "2015-02-18T23:16:9.15Utc".parse::<DateTime<Utc>>(),
+        Ok(Utc
+            .from_local_datetime(
+                &NaiveDate::from_ymd_opt(2015, 2, 18)
+                    .unwrap()
+                    .and_hms_milli_opt(23, 16, 9, 150)
+                    .unwrap()
+            )
+            .unwrap())
+    );
 
     assert_eq!(
         "2015-2-18T23:16:9.15Z".parse::<DateTime<FixedOffset>>(),
@@ -818,6 +830,8 @@ fn test_parse_datetime_utc() {
         "2001-02-03T04:05:06+0000",
         "2001-02-03T04:05:06-00:00",
         "2001-02-03T04:05:06-01:00",
+        "2012-12-12 12:12:12Z",
+        "2012-12-12t12:12:12Z",
         "2012-12-12T12:12:12Z",
         "2015-02-18T23:16:09.153Z",
         "2015-2-18T23:16:09.153Z",
@@ -872,7 +886,6 @@ fn test_parse_datetime_utc() {
         "2012-12-12T12:61:12Z",       // invalid minute
         "2012-12-12T12:12:62Z",       // invalid second
         "2012-12-12 T12:12:12Z",      // space after date
-        "2012-12-12t12:12:12Z",       // wrong divider 't'
         "2012-12-12T12:12:12ZZ",      // trailing literal 'Z'
         "+802701-12-12T12:12:12Z",    // invalid year (out of bounds)
         "+ 2012-12-12T12:12:12Z",     // invalid space before year
@@ -886,7 +899,6 @@ fn test_parse_datetime_utc() {
         "2012-12-12T12: 12:12Z",      // space before minute
         "2012-12-12T12:  12:12Z",     // multi space before minute
         "2012-12-12T12 : 12:12Z",     // space space before and after hour-minute divider
-        "2012-12-12T12:12:12Z ",      // trailing space
         " 2012-12-12T12:12:12Z",      // leading space
         "2001-02-03T04:05:06-00 00",  // invalid timezone spacing
         "2001-02-03T04:05:06-01: 00", // invalid timezone spacing
@@ -1399,6 +1411,27 @@ fn test_datetime_sub_assign_local() {
 }
 
 #[test]
+fn test_core_duration_ops() {
+    use core::time::Duration;
+
+    let mut utc_dt = Utc.with_ymd_and_hms(2023, 8, 29, 11, 34, 12).unwrap();
+    let same = utc_dt + Duration::ZERO;
+    assert_eq!(utc_dt, same);
+
+    utc_dt += Duration::new(3600, 0);
+    assert_eq!(utc_dt, Utc.with_ymd_and_hms(2023, 8, 29, 12, 34, 12).unwrap());
+}
+
+#[test]
+#[should_panic]
+fn test_core_duration_max() {
+    use core::time::Duration;
+
+    let mut utc_dt = Utc.with_ymd_and_hms(2023, 8, 29, 11, 34, 12).unwrap();
+    utc_dt += Duration::MAX;
+}
+
+#[test]
 #[cfg(all(target_os = "windows", feature = "clock"))]
 fn test_from_naive_date_time_windows() {
     let min_year = NaiveDate::from_ymd_opt(1601, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
@@ -1504,7 +1537,6 @@ fn test_test_deprecated_from_offset() {
 #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 fn locale_decimal_point() {
     use crate::Locale::{ar_SY, nl_NL};
-    use crate::Timelike;
     let dt =
         Utc.with_ymd_and_hms(2018, 9, 5, 18, 58, 0).unwrap().with_nanosecond(123456780).unwrap();
 

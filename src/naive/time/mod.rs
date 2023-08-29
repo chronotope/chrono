@@ -6,6 +6,7 @@
 #[cfg(any(feature = "alloc", feature = "std"))]
 use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
 use core::{fmt, str};
 
 #[cfg(feature = "rkyv")]
@@ -808,7 +809,7 @@ impl NaiveTime {
     }
 
     /// Returns a triple of the hour, minute and second numbers.
-    fn hms(&self) -> (u32, u32, u32) {
+    pub(crate) fn hms(&self) -> (u32, u32, u32) {
         let sec = self.secs % 60;
         let mins = self.secs / 60;
         let min = mins % 60;
@@ -1108,6 +1109,26 @@ impl AddAssign<TimeDelta> for NaiveTime {
     }
 }
 
+impl Add<Duration> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn add(self, rhs: Duration) -> NaiveTime {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.overflowing_add_signed(rhs).0
+    }
+}
+
+impl AddAssign<Duration> for NaiveTime {
+    #[inline]
+    fn add_assign(&mut self, rhs: Duration) {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self += rhs;
+    }
+}
+
 /// A subtraction of `TimeDelta` from `NaiveTime` wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 /// It is the same as the addition with a negated `TimeDelta`.
@@ -1167,6 +1188,26 @@ impl SubAssign<TimeDelta> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: TimeDelta) {
         *self = self.sub(rhs);
+    }
+}
+
+impl Sub<Duration> for NaiveTime {
+    type Output = NaiveTime;
+
+    #[inline]
+    fn sub(self, rhs: Duration) -> NaiveTime {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        self.overflowing_sub_signed(rhs).0
+    }
+}
+
+impl SubAssign<Duration> for NaiveTime {
+    #[inline]
+    fn sub_assign(&mut self, rhs: Duration) {
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        *self -= rhs;
     }
 }
 
@@ -1331,23 +1372,36 @@ impl fmt::Display for NaiveTime {
 /// let t = NaiveTime::from_hms_nano_opt(23, 59, 59, 1_234_567_890).unwrap(); // leap second
 /// assert_eq!("23:59:60.23456789".parse::<NaiveTime>(), Ok(t));
 ///
+/// // Seconds are optional
+/// let t = NaiveTime::from_hms_opt(23, 56, 0).unwrap();
+/// assert_eq!("23:56".parse::<NaiveTime>(), Ok(t));
+///
 /// assert!("foo".parse::<NaiveTime>().is_err());
 /// ```
 impl str::FromStr for NaiveTime {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<NaiveTime> {
-        const ITEMS: &[Item<'static>] = &[
+        const HOUR_AND_MINUTE: &[Item<'static>] = &[
             Item::Numeric(Numeric::Hour, Pad::Zero),
+            Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Minute, Pad::Zero),
+        ];
+        const SECOND_AND_NANOS: &[Item<'static>] = &[
+            Item::Space(""),
             Item::Literal(":"),
             Item::Numeric(Numeric::Second, Pad::Zero),
             Item::Fixed(Fixed::Nanosecond),
+            Item::Space(""),
         ];
+        const TRAILING_WHITESPACE: [Item<'static>; 1] = [Item::Space("")];
 
         let mut parsed = Parsed::new();
-        parse(&mut parsed, s, ITEMS.iter())?;
+        let s = parse_and_remainder(&mut parsed, s, HOUR_AND_MINUTE.iter())?;
+        // Seconds are optional, don't fail if parsing them doesn't succeed.
+        let s = parse_and_remainder(&mut parsed, s, SECOND_AND_NANOS.iter()).unwrap_or(s);
+        parse(&mut parsed, s, TRAILING_WHITESPACE.iter())?;
         parsed.to_naive_time()
     }
 }
