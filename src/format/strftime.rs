@@ -906,11 +906,20 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "unstable-locales")]
+    #[cfg(all(feature = "unstable-locales", target_pointer_width = "64"))]
     fn test_type_sizes() {
         use core::mem::size_of;
         assert_eq!(size_of::<Item>(), 24);
         assert_eq!(size_of::<StrftimeItems>(), 56);
+        assert_eq!(size_of::<Locale>(), 2);
+    }
+
+    #[test]
+    #[cfg(all(feature = "unstable-locales", target_pointer_width = "32"))]
+    fn test_type_sizes() {
+        use core::mem::size_of;
+        assert_eq!(size_of::<Item>(), 12);
+        assert_eq!(size_of::<StrftimeItems>(), 28);
         assert_eq!(size_of::<Locale>(), 2);
     }
 }
