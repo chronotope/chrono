@@ -159,7 +159,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     Ok((s, ()))
 }
 
-fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
+pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     macro_rules! try_consume {
         ($e:expr) => {{
             let (s_, v) = $e?;
@@ -194,6 +194,8 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     // - unlike RFC 2822, the valid offset ranges from -23:59 to +23:59.
     //   note that this restriction is unique to RFC 3339 and not ISO 8601.
     //   since this is not a typical Chrono behavior, we check it earlier.
+    //
+    // - For readability a full-date and a full-time may be separated by a space character.
 
     parsed.set_year(try_consume!(scan::number(s, 4, 4)))?;
     s = scan::char(s, b'-')?;
@@ -202,7 +204,7 @@ fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     parsed.set_day(try_consume!(scan::number(s, 2, 2)))?;
 
     s = match s.as_bytes().first() {
-        Some(&b't') | Some(&b'T') => &s[1..],
+        Some(&b't' | &b'T' | &b' ') => &s[1..],
         Some(_) => return Err(INVALID),
         None => return Err(TOO_SHORT),
     };
@@ -516,7 +518,13 @@ where
                     }
 
                     &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
-                    &RFC3339 => try_consume!(parse_rfc3339(parsed, s)),
+                    &RFC3339 => {
+                        // Used for the `%+` specifier, which has the description:
+                        // "Same as `%Y-%m-%dT%H:%M:%S%.f%:z` (...)
+                        // This format also supports having a `Z` or `UTC` in place of `%:z`."
+                        // Use the relaxed parser to match this description.
+                        try_consume!(parse_rfc3339_relaxed(parsed, s))
+                    }
                 }
             }
 
@@ -548,37 +556,71 @@ impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        const DATE_ITEMS: &[Item<'static>] = &[
-            Item::Numeric(Numeric::Year, Pad::Zero),
-            Item::Literal("-"),
-            Item::Numeric(Numeric::Month, Pad::Zero),
-            Item::Literal("-"),
-            Item::Numeric(Numeric::Day, Pad::Zero),
-        ];
-        const TIME_ITEMS: &[Item<'static>] = &[
-            Item::Numeric(Numeric::Hour, Pad::Zero),
-            Item::Literal(":"),
-            Item::Numeric(Numeric::Minute, Pad::Zero),
-            Item::Literal(":"),
-            Item::Numeric(Numeric::Second, Pad::Zero),
-            Item::Fixed(Fixed::Nanosecond),
-            Item::Fixed(Fixed::TimezoneOffsetZ),
-        ];
-
         let mut parsed = Parsed::new();
-        match parse_internal(&mut parsed, s, DATE_ITEMS.iter()) {
-            Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => {
-                if remainder.starts_with('T') || remainder.starts_with(' ') {
-                    parse(&mut parsed, &remainder[1..], TIME_ITEMS.iter())?;
-                } else {
-                    return Err(INVALID);
-                }
-            }
-            Err((_s, e)) => return Err(e),
-            Ok(_) => return Err(NOT_ENOUGH),
-        };
+        let (s, _) = parse_rfc3339_relaxed(&mut parsed, s)?;
+        if !s.trim_start().is_empty() {
+            return Err(TOO_LONG);
+        }
         parsed.to_datetime()
     }
+}
+
+/// Accepts a relaxed form of RFC3339.
+///
+/// Differences with RFC3339:
+/// - Values don't require padding to two digits.
+/// - Years outside the range 0...=9999 are accepted, but they must include a sign.
+/// - `UTC` is accepted as a valid timezone name/offset (for compatibility with the debug format of
+///   `DateTime<Utc>`.
+/// - There can be spaces between any of the components.
+/// - The colon in the offset may be missing.
+fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
+    const DATE_ITEMS: &[Item<'static>] = &[
+        Item::Numeric(Numeric::Year, Pad::Zero),
+        Item::Space(""),
+        Item::Literal("-"),
+        Item::Numeric(Numeric::Month, Pad::Zero),
+        Item::Space(""),
+        Item::Literal("-"),
+        Item::Numeric(Numeric::Day, Pad::Zero),
+    ];
+    const TIME_ITEMS: &[Item<'static>] = &[
+        Item::Numeric(Numeric::Hour, Pad::Zero),
+        Item::Space(""),
+        Item::Literal(":"),
+        Item::Numeric(Numeric::Minute, Pad::Zero),
+        Item::Space(""),
+        Item::Literal(":"),
+        Item::Numeric(Numeric::Second, Pad::Zero),
+        Item::Fixed(Fixed::Nanosecond),
+        Item::Space(""),
+    ];
+
+    s = match parse_internal(parsed, s, DATE_ITEMS.iter()) {
+        Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => remainder,
+        Err((_s, e)) => return Err(e),
+        Ok(_) => return Err(NOT_ENOUGH),
+    };
+
+    s = match s.as_bytes().first() {
+        Some(&b't' | &b'T' | &b' ') => &s[1..],
+        Some(_) => return Err(INVALID),
+        None => return Err(TOO_SHORT),
+    };
+
+    s = match parse_internal(parsed, s, TIME_ITEMS.iter()) {
+        Err((s, e)) if e.0 == ParseErrorKind::TooLong => s,
+        Err((_s, e)) => return Err(e),
+        Ok(_) => return Err(NOT_ENOUGH),
+    };
+    s = s.trim_start();
+    let (s, offset) = if s.len() >= 3 && "UTC".eq_ignore_ascii_case(&s[..3]) {
+        (&s[3..], 0)
+    } else {
+        scan::timezone_offset(s, scan::consume_colon_maybe, true, false, true)?
+    };
+    parsed.set_offset(i64::from(offset))?;
+    Ok((s, ()))
 }
 
 #[cfg(test)]
@@ -1776,7 +1818,7 @@ mod tests {
                 "2015-01-20T17:35:20.000000000452−08:00",
                 Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8)),
             ), // too small with MINUS SIGN (U+2212)
-            ("2015-01-20 17:35:20.001-08:00", Err(INVALID)), // missing separator 'T'
+            ("2015-01-20 17:35:20-08:00", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // without 'T'
             ("2015/01/20T17:35:20.001-08:00", Err(INVALID)), // wrong separator char YMD
             ("2015-01-20T17-35-20.001-08:00", Err(INVALID)), // wrong separator char HMS
             ("-01-20T17:35:20-08:00", Err(INVALID)),         // missing year
@@ -1818,15 +1860,9 @@ mod tests {
             ("2015-01-20T00:00:1-08:00", Err(INVALID)),  // missing complete S
         ];
 
-        fn rfc3339_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
-            let mut parsed = Parsed::new();
-            parse(&mut parsed, date, [Item::Fixed(Fixed::RFC3339)].iter())?;
-            parsed.to_datetime()
-        }
-
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
-            let dt = rfc3339_to_datetime(date); // parse a date
+            let dt = DateTime::<FixedOffset>::parse_from_rfc3339(date);
             if dt != checkdate {
                 // check for expected result
                 panic!(

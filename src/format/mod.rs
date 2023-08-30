@@ -48,19 +48,28 @@ pub(crate) mod scan;
 
 pub mod strftime;
 
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
 #[cfg(any(feature = "alloc", feature = "std"))]
+pub(crate) use formatting::write_rfc2822;
+#[cfg(any(
+    feature = "alloc",
+    feature = "std",
+    feature = "serde",
+    feature = "rustc-serialize"
+))]
+pub(crate) use formatting::write_rfc3339;
+#[cfg(any(feature = "alloc", feature = "std"))]
 pub use formatting::{format, format_item, DelayedFormat};
 #[cfg(feature = "unstable-locales")]
 pub use formatting::{format_item_localized, format_localized};
-#[cfg(any(feature = "alloc", feature = "std"))]
-pub(crate) use formatting::{write_rfc2822, write_rfc3339};
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 pub use locales::Locale;
-#[cfg(not(feature = "unstable-locales"))]
+#[cfg(all(not(feature = "unstable-locales"), any(feature = "alloc", feature = "std")))]
 pub(crate) use locales::Locale;
+pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
 pub use strftime::StrftimeItems;
@@ -437,7 +446,7 @@ const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
 const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
 const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
-const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
+pub(crate) const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
 const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 // this implementation is here only because we need some private code from `scan`
