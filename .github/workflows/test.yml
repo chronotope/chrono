@@ -6,22 +6,10 @@ on:
   pull_request:
 
 jobs:
-  timezones_linux:
+  timezones:
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --all-features --color=always -- --color=always
-
-  timezones_other:
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
     runs-on: ${{ matrix.os }}
     steps:
