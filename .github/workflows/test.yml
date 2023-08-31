@@ -155,6 +155,20 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cross check --target ${{ matrix.target }}
 
+  cross-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - run: cargo install cross
+      - uses: Swatinem/rust-cache@v2
+      - run: cross test --lib --all-features --target i686-unknown-linux-gnu --color=always
+      - run: cross test --doc --all-features --target i686-unknown-linux-gnu --color=always
+      - run: cross test --lib --all-features --target i686-unknown-linux-musl --color=always
+      - run: cross test --doc --all-features --target i686-unknown-linux-musl --color=always
+
   check-docs:
     runs-on: ubuntu-latest
     steps:
