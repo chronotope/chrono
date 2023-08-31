@@ -1185,8 +1185,11 @@ fn test_subsecond_part() {
     assert_eq!(1234567, datetime.timestamp_subsec_nanos());
 }
 
+// Some targets, such as `wasm32-wasi`, have a problematic definition of `SystemTime`, such as an
+// `i32` (year 2035 problem), or an `u64` (no values before `UNIX-EPOCH`).
+// See https://github.com/rust-lang/rust/issues/44394.
 #[test]
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", not(all(target_arch = "wasm32", target_os = "wasi"))))]
 fn test_from_system_time() {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
