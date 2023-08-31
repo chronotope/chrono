@@ -135,7 +135,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v3
       - uses: jetli/wasm-pack-action@v0.4.0
