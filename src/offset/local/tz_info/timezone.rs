@@ -859,8 +859,12 @@ mod tests {
                 assert_eq!(time_zone_local, time_zone_local_1);
             }
 
-            let time_zone_utc = TimeZone::from_posix_tz("UTC")?;
-            assert_eq!(time_zone_utc.find_local_time_type(0)?.offset(), 0);
+            // `TimeZone::from_posix_tz("UTC")` will return `Error` if the environment does not have
+            // a time zone database, like for example some docker containers.
+            // In that case skip the test.
+            if let Ok(time_zone_utc) = TimeZone::from_posix_tz("UTC") {
+                assert_eq!(time_zone_utc.find_local_time_type(0)?.offset(), 0);
+            }
         }
 
         assert!(TimeZone::from_posix_tz("EST5EDT,0/0,J365/25").is_err());
