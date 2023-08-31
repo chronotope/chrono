@@ -109,7 +109,6 @@ jobs:
         os: [ubuntu-latest]
         target:
           [
-            wasm32-wasi,
             wasm32-unknown-emscripten,
             aarch64-apple-ios,
             aarch64-linux-android,
@@ -141,6 +140,27 @@ jobs:
       # The `TZ` and `NOW` variables are used to compare the results inside the WASM environment
       # with the host system.
       - run: TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind
+
+  test_wasi:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        target:
+          - wasm32-wasi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasi
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-wasi
+      - uses: mwilliamson/setup-wasmtime-action@v2
+        with:
+          wasmtime-version: "12.0.1"
+      # We can't use `--all-features` because `rustc-serialize` doesn't support
+      # `wasm32-wasi`.
+      - run: cargo wasi test --features=serde,unstable-locales --color=always -- --color=always
 
   cross-targets:
     strategy:
