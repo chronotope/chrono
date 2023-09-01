@@ -181,4 +181,40 @@ mod tests {
         Local::override_now(None);
         assert_ne!(Utc::now(), now);
     }
+
+    #[cfg(all(feature = "clock", feature = "test-override"))]
+    #[test]
+    fn test_override_multiple_threads() {
+        use std::sync::{Arc, Barrier};
+        use std::thread::spawn;
+
+        let barrier = Arc::new(Barrier::new(3));
+
+        let barrier_1 = barrier.clone();
+        let thread_1 = spawn(move || {
+            Local::override_now(Some(Utc.with_ymd_and_hms(2020, 2, 29, 12, 0, 0).unwrap().into()));
+            barrier_1.wait();
+
+            assert_eq!(Utc::now(), Utc.with_ymd_and_hms(2020, 2, 29, 12, 0, 0).unwrap());
+        });
+
+        let barrier_2 = barrier.clone();
+        let thread_2 = spawn(move || {
+            Local::override_now(Some(Utc.with_ymd_and_hms(2016, 2, 29, 12, 0, 0).unwrap().into()));
+            barrier_2.wait();
+
+            assert_eq!(Utc::now(), Utc.with_ymd_and_hms(2016, 2, 29, 12, 0, 0).unwrap());
+        });
+
+        let barrier_3 = barrier;
+        let thread_3 = spawn(move || {
+            barrier_3.wait();
+
+            assert!(Utc::now() > Utc.with_ymd_and_hms(2021, 8, 7, 13, 0, 0).unwrap());
+        });
+
+        thread_1.join().expect("Thread 1 should succeed");
+        thread_2.join().expect("Thread 2 should succeed");
+        thread_3.join().expect("Thread 3 should succeed");
+    }
 }

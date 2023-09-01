@@ -171,7 +171,6 @@ impl Local {
     /// use chrono::{Local, FixedOffset, TimeZone, Datelike};
     /// fn is_today_leap_day() -> bool {
     ///     let today = Local::now().date_naive();
-    /// dbg!(today);
     ///     today.month() == 2 && today.day() == 29
     /// }
     ///
