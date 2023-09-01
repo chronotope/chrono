@@ -57,7 +57,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --benches
+      - run: cargo check --manifest-path bench/Cargo.toml --benches
       - run: cargo check --manifest-path fuzz/Cargo.toml --all-targets
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere

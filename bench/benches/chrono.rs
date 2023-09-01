@@ -1,5 +1,4 @@
 //! Benchmarks for chrono that just depend on std
-#![cfg(feature = "__internal_bench")]
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
