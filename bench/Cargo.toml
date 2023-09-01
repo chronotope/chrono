@@ -1,0 +1,26 @@
+[package]
+name = "benches"
+version = "0.1.0"
+edition = "2021"
+
+# Even as a `dev-dependency` Criterion and its dependencies can affect the MSRV of chrono.
+# But not when it lives in a separate crate :-).
+# See https://github.com/chronotope/chrono/pull/1104.
+
+[lib]
+name = "benches"
+
+[dependencies]
+chrono = { path = "..", features = ["__internal_bench", "serde"] }
+
+[[bench]]
+name = "chrono"
+harness = false
+
+[[bench]]
+name = "serde"
+harness = false
+
+[dev-dependencies]
+criterion = "0.5.0"
+serde_json = "1"

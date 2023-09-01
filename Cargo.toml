@@ -26,7 +26,7 @@ clock = ["std", "winapi", "iana-time-zone", "android-tzdata"]
 oldtime = ["time"]
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales", "alloc"]
-__internal_bench = ["criterion"]
+__internal_bench = []
 __doctest = []
 
 [dependencies]
@@ -35,7 +35,6 @@ num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.6", optional = true }
-criterion = { version = "0.4.0", optional = true }
 rkyv = { version = "0.7", optional = true }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 
@@ -71,13 +70,3 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.playground]
 features = ["serde"]
-
-[[bench]]
-name = "chrono"
-required-features = ["__internal_bench"]
-harness = false
-
-[[bench]]
-name = "serde"
-required-features = ["__internal_bench", "serde"]
-harness = false
