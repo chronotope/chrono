@@ -3,6 +3,8 @@
 
 //! The UTC (Coordinated Universal Time) time zone.
 
+#[cfg(all(feature = "clock", feature = "test-override"))]
+use core::cell::RefCell;
 use core::fmt;
 #[cfg(all(
     feature = "now",
@@ -22,6 +24,12 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg(feature = "now")]
 #[allow(deprecated)]
 use crate::{Date, DateTime};
+
+// Value to use for `Utc::now()` and `Local::now()`, when set with `Local::override_now`.
+#[cfg(all(feature = "clock", feature = "test-override"))]
+thread_local!(
+    pub(super) static OVERRIDE_NOW: RefCell<Option<DateTime<FixedOffset>>> = RefCell::new(None)
+);
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -93,6 +101,10 @@ impl Utc {
     )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
+        #[cfg(all(feature = "test-override", test))]
+        if let Some(t) = OVERRIDE_NOW.with(|o| *o.borrow()) {
+            return t.into();
+        }
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
         let naive =
@@ -150,5 +162,23 @@ impl fmt::Debug for Utc {
 impl fmt::Display for Utc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "UTC")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(all(feature = "clock", feature = "test-override"))]
+    use crate::{FixedOffset, Local, TimeZone, Utc};
+
+    #[cfg(all(feature = "clock", feature = "test-override"))]
+    #[test]
+    fn test_override() {
+        let now =
+            FixedOffset::east_opt(10800).unwrap().with_ymd_and_hms(2020, 2, 29, 12, 0, 0).unwrap();
+        Local::override_now(Some(now));
+        assert_eq!(Utc::now(), now);
+
+        Local::override_now(None);
+        assert_ne!(Utc::now(), now);
     }
 }

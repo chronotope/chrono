@@ -34,6 +34,7 @@ rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
 rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
 rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
 rkyv-validation = ["rkyv?/validation"]
+test-override = []
 # Features for internal use only:
 __internal_bench = []
 
@@ -71,7 +72,7 @@ bincode = { version = "1.3.0" }
 wasm-bindgen-test = "0.3"
 
 [package.metadata.docs.rs]
-features = ["arbitrary", "rkyv", "serde", "unstable-locales"]
+features = ["arbitrary", "rkyv", "serde", "test-override", "unstable-locales"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [package.metadata.playground]

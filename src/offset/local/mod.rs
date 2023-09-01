@@ -9,6 +9,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 use super::fixed::FixedOffset;
 use super::{LocalResult, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
+#[cfg(feature = "test-override")]
+use crate::offset::utc::OVERRIDE_NOW;
 #[allow(deprecated)]
 use crate::Date;
 use crate::{DateTime, Utc};
@@ -151,7 +153,38 @@ impl Local {
     /// let now_with_offset = Local::now().with_timezone(&offset);
     /// ```
     pub fn now() -> DateTime<Local> {
+        #[cfg(all(feature = "test-override", test))]
+        if let Some(t) = OVERRIDE_NOW.with(|o| *o.borrow()) {
+            return t.into();
+        }
         Utc::now().with_timezone(&Local)
+    }
+
+    /// Override the value that will be returned by `Local::now()` and `Utc::now()`, for use in
+    /// tests.
+    ///
+    /// This method is only available behind the `test-override` feature, only works within the
+    /// current thread, and only in `cfg(test)`.
+    ///
+    /// ```no_run
+    /// # // Doctests don't have `cfg(test)`
+    /// use chrono::{Local, FixedOffset, TimeZone, Datelike};
+    /// fn is_today_leap_day() -> bool {
+    ///     let today = Local::now().date_naive();
+    /// dbg!(today);
+    ///     today.month() == 2 && today.day() == 29
+    /// }
+    ///
+    /// let now =
+    ///     FixedOffset::east_opt(3 * 60 * 60).unwrap().with_ymd_and_hms(2020, 2, 29, 0, 0, 0).unwrap();
+    /// Local::override_now(Some(now));
+    /// assert!(is_today_leap_day());
+    /// Local::override_now(None);
+    /// ```
+    #[cfg(feature = "test-override")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "test-override")))]
+    pub fn override_now(datetime: Option<DateTime<FixedOffset>>) {
+        OVERRIDE_NOW.with(|o| *o.borrow_mut() = datetime);
     }
 }
 
@@ -187,6 +220,8 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
+    #[cfg(feature = "test-override")]
+    use crate::FixedOffset;
     use crate::{Datelike, Duration, Utc};
 
     #[test]
@@ -275,5 +310,17 @@ mod tests {
         // but is deserialized to an archived variant without a
         // wrapping object
         assert_eq!(rkyv::from_bytes::<Local>(&bytes).unwrap(), super::ArchivedLocal);
+    }
+
+    #[cfg(all(feature = "clock", feature = "test-override"))]
+    #[test]
+    fn test_override() {
+        let now =
+            FixedOffset::east_opt(10800).unwrap().with_ymd_and_hms(2020, 2, 29, 12, 0, 0).unwrap();
+        Local::override_now(Some(now));
+        assert_eq!(Local::now(), now);
+
+        Local::override_now(None);
+        assert_ne!(Local::now(), now);
     }
 }
