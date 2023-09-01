@@ -17,7 +17,7 @@ rust-version = "1.57.0"
 name = "chrono"
 
 [features]
-default = ["clock", "std", "oldtime", "wasmbind"]
+default = ["clock", "std", "wasmbind"]
 alloc = []
 libc = []
 winapi = ["windows-targets"]

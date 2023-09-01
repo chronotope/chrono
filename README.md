@@ -61,7 +61,7 @@ Optional features:
 * `serde`: Enable serialization/deserialization via serde.
 * `rkyv`: Enable serialization/deserialization via rkyv.
 * `rustc-serialize`: Enable serialization/deserialization via rustc-serialize (deprecated).
-* `old_time`: compatability with the `Duration` type of the `time` 0.1 crate (deprecated).
+* `oldtime`: compatability with the `Duration` type of the `time` 0.1 crate (deprecated).
 * `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
 * `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
   The implementation and API may change or even be removed in a patch release. Feedback welcome.
