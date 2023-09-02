@@ -1,48 +1,333 @@
 #[cfg(feature = "unstable-locales")]
 mod localized {
-    use pure_rust_locales::{locale_match, Locale};
+    use alloc::{
+        format,
+        string::{String, ToString},
+    };
+    use icu_calendar::types::MonthCode;
+    use icu_datetime::provider::calendar::{GregorianDateSymbolsV1Marker, TimeSymbolsV1Marker};
+    use icu_decimal::provider::DecimalSymbolsV1Marker;
+    use icu_locid_transform::LocaleExpander;
+    use icu_provider::{
+        DataError, DataLocale, DataPayload, DataProvider, DataRequest, DataResponse,
+        KeyedDataMarker,
+    };
+    use pure_rust_locales::locale_match;
 
-    pub(crate) const fn default_locale() -> Locale {
-        Locale::POSIX
+    struct BakedProvider;
+    #[allow(unreachable_pub)]
+    mod baked {
+        include!(concat!(env!("OUT_DIR"), "/baked_data/mod.rs"));
+        impl_data_provider!(super::BakedProvider);
     }
 
-    pub(crate) const fn short_months(locale: Locale) -> &'static [&'static str] {
-        locale_match!(locale => LC_TIME::ABMON)
+    pub(crate) fn default_locale() -> pure_rust_locales::Locale {
+        pure_rust_locales::Locale::POSIX
     }
 
-    pub(crate) const fn long_months(locale: Locale) -> &'static [&'static str] {
-        locale_match!(locale => LC_TIME::MON)
+    fn get_payload<M>(locale: pure_rust_locales::Locale) -> Result<DataPayload<M>, DataError>
+    where
+        M: KeyedDataMarker,
+        BakedProvider: icu_provider::DataProvider<M>,
+    {
+        // Convert pure_rust_locales::Locale -> String
+        // POSIX doesn't exist in icu4, falling back to English
+        let locale_string = match locale {
+            pure_rust_locales::Locale::POSIX => "en".to_string(),
+            _ => format!("{:?}", locale),
+        };
+
+        // Continue converting the locale_string in to a icu_locid::Locale
+        let mut locale = icu_locid::Locale::try_from_bytes(locale_string.as_bytes())
+            .expect("Could not create Locale");
+
+        // Minimize icu_locid::Locale to make the locale as generic as it can be without losing anything
+        // Ex. en-US -> en, but en-CA stays en-CA
+        let lc = LocaleExpander::try_new_unstable(&BakedProvider)
+            .expect("Failed to create LocaleExpander");
+        lc.minimize(&mut locale);
+
+        BakedProvider
+            .load(DataRequest { locale: &DataLocale::from(locale), metadata: Default::default() })
+            .or_else(|_| BakedProvider.load(DataRequest::default()))
+            .and_then(|response: DataResponse<M>| response.take_payload())
     }
 
-    pub(crate) const fn short_weekdays(locale: Locale) -> &'static [&'static str] {
-        locale_match!(locale => LC_TIME::ABDAY)
+    pub(crate) fn short_months(locale: pure_rust_locales::Locale) -> [String; 12] {
+        get_payload::<GregorianDateSymbolsV1Marker>(locale).map_or_else(
+            |_| {
+                let months = locale_match!(locale => LC_TIME::ABMON);
+                [
+                    months[0].to_string(),
+                    months[1].to_string(),
+                    months[2].to_string(),
+                    months[3].to_string(),
+                    months[4].to_string(),
+                    months[5].to_string(),
+                    months[6].to_string(),
+                    months[7].to_string(),
+                    months[8].to_string(),
+                    months[9].to_string(),
+                    months[10].to_string(),
+                    months[11].to_string(),
+                ]
+            },
+            |payload| {
+                //Prefer stand_alone, but fall back to format
+                let format_abbreviated = payload
+                    .get()
+                    .clone()
+                    .months
+                    .stand_alone
+                    .and_then(|x| x.abbreviated)
+                    .unwrap_or_else(|| payload.get().months.format.abbreviated.clone());
+
+                [
+                    format_abbreviated.get(MonthCode("M01".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[0].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M02".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[1].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M03".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[2].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M04".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[3].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M05".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[4].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M06".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[5].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M07".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[6].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M08".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[7].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M09".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[8].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M10".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[9].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M11".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[10].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_abbreviated.get(MonthCode("M12".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::ABMON)[11].to_string(),
+                        ToString::to_string,
+                    ),
+                ]
+            },
+        )
     }
 
-    pub(crate) const fn long_weekdays(locale: Locale) -> &'static [&'static str] {
-        locale_match!(locale => LC_TIME::DAY)
+    pub(crate) fn long_months(locale: pure_rust_locales::Locale) -> [String; 12] {
+        get_payload::<GregorianDateSymbolsV1Marker>(locale).map_or_else(
+            |_| {
+                let months = locale_match!(locale => LC_TIME::MON);
+                [
+                    months[0].to_string(),
+                    months[1].to_string(),
+                    months[2].to_string(),
+                    months[3].to_string(),
+                    months[4].to_string(),
+                    months[5].to_string(),
+                    months[6].to_string(),
+                    months[7].to_string(),
+                    months[8].to_string(),
+                    months[9].to_string(),
+                    months[10].to_string(),
+                    months[11].to_string(),
+                ]
+            },
+            |payload| {
+                //Prefer stand_alone, but fall back to format
+                let format_wide = payload
+                    .get()
+                    .clone()
+                    .months
+                    .stand_alone
+                    .and_then(|x| x.wide)
+                    .unwrap_or_else(|| payload.get().months.format.wide.clone());
+
+                [
+                    format_wide.get(MonthCode("M01".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[0].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M02".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[1].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M03".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[2].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M04".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[3].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M05".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[4].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M06".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[5].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M07".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[6].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M08".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[7].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M09".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[8].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M10".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[9].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M11".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[10].to_string(),
+                        ToString::to_string,
+                    ),
+                    format_wide.get(MonthCode("M12".parse().unwrap())).map_or_else(
+                        || locale_match!(locale => LC_TIME::MON)[11].to_string(),
+                        ToString::to_string,
+                    ),
+                ]
+            },
+        )
     }
 
-    pub(crate) const fn am_pm(locale: Locale) -> &'static [&'static str] {
-        locale_match!(locale => LC_TIME::AM_PM)
+    pub(crate) fn short_weekdays(locale: pure_rust_locales::Locale) -> [String; 7] {
+        get_payload::<GregorianDateSymbolsV1Marker>(locale).map_or_else(
+            |_| {
+                let weekdays = locale_match!(locale => LC_TIME::ABDAY);
+                [
+                    weekdays[0].to_string(),
+                    weekdays[1].to_string(),
+                    weekdays[2].to_string(),
+                    weekdays[3].to_string(),
+                    weekdays[4].to_string(),
+                    weekdays[5].to_string(),
+                    weekdays[6].to_string(),
+                ]
+            },
+            |payload| {
+                //Prefer stand_alone, but fall back to format
+                let format_abbreviated = payload
+                    .get()
+                    .clone()
+                    .weekdays
+                    .stand_alone
+                    .and_then(|x| x.abbreviated)
+                    .unwrap_or_else(|| payload.get().weekdays.format.abbreviated.clone())
+                    .0;
+
+                [
+                    format_abbreviated[0].to_string(),
+                    format_abbreviated[1].to_string(),
+                    format_abbreviated[2].to_string(),
+                    format_abbreviated[3].to_string(),
+                    format_abbreviated[4].to_string(),
+                    format_abbreviated[5].to_string(),
+                    format_abbreviated[6].to_string(),
+                ]
+            },
+        )
     }
 
-    pub(crate) const fn decimal_point(locale: Locale) -> &'static str {
-        locale_match!(locale => LC_NUMERIC::DECIMAL_POINT)
+    pub(crate) fn long_weekdays(locale: pure_rust_locales::Locale) -> [String; 7] {
+        get_payload::<GregorianDateSymbolsV1Marker>(locale).map_or_else(
+            |_| {
+                let weekdays = locale_match!(locale => LC_TIME::DAY);
+                [
+                    weekdays[0].to_string(),
+                    weekdays[1].to_string(),
+                    weekdays[2].to_string(),
+                    weekdays[3].to_string(),
+                    weekdays[4].to_string(),
+                    weekdays[5].to_string(),
+                    weekdays[6].to_string(),
+                ]
+            },
+            |payload| {
+                //Prefer stand_alone, but fall back to format
+                let format_wide = payload
+                    .get()
+                    .clone()
+                    .weekdays
+                    .stand_alone
+                    .and_then(|x| x.wide)
+                    .unwrap_or_else(|| payload.get().weekdays.format.wide.clone())
+                    .0;
+
+                [
+                    format_wide[0].to_string(),
+                    format_wide[1].to_string(),
+                    format_wide[2].to_string(),
+                    format_wide[3].to_string(),
+                    format_wide[4].to_string(),
+                    format_wide[5].to_string(),
+                    format_wide[6].to_string(),
+                ]
+            },
+        )
     }
 
-    pub(crate) const fn d_fmt(locale: Locale) -> &'static str {
+    pub(crate) fn am_pm(locale: pure_rust_locales::Locale) -> [String; 2] {
+        get_payload::<TimeSymbolsV1Marker>(locale).map_or_else(
+            |_| {
+                let am_pm = locale_match!(locale => LC_TIME::AM_PM);
+                [am_pm[0].to_string(), am_pm[1].to_string()]
+            },
+            |payload| {
+                let format_wide = &payload.get().day_periods.format.wide;
+                [format_wide.am.to_string(), format_wide.pm.to_string()]
+            },
+        )
+    }
+
+    pub(crate) fn decimal_point(locale: pure_rust_locales::Locale) -> String {
+        get_payload::<DecimalSymbolsV1Marker>(locale).map_or_else(
+            |_| locale_match!(locale => LC_NUMERIC::DECIMAL_POINT).to_string(),
+            |payload| payload.get().decimal_separator.to_string(),
+        )
+    }
+
+    pub(crate) fn d_fmt(locale: pure_rust_locales::Locale) -> &'static str {
         locale_match!(locale => LC_TIME::D_FMT)
     }
 
-    pub(crate) const fn d_t_fmt(locale: Locale) -> &'static str {
+    pub(crate) fn d_t_fmt(locale: pure_rust_locales::Locale) -> &'static str {
         locale_match!(locale => LC_TIME::D_T_FMT)
     }
 
-    pub(crate) const fn t_fmt(locale: Locale) -> &'static str {
+    pub(crate) fn t_fmt(locale: pure_rust_locales::Locale) -> &'static str {
         locale_match!(locale => LC_TIME::T_FMT)
     }
 
-    pub(crate) const fn t_fmt_ampm(locale: Locale) -> &'static str {
+    pub(crate) fn t_fmt_ampm(locale: pure_rust_locales::Locale) -> &'static str {
         locale_match!(locale => LC_TIME::T_FMT_AMPM)
     }
 }

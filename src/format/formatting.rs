@@ -309,154 +309,155 @@ fn format_inner(
         Item::Fixed(ref spec) => {
             use self::Fixed::*;
 
-            let ret = match *spec {
-                ShortMonthName => date.map(|d| {
-                    w.write_str(short_months(locale)[d.month0() as usize])?;
-                    Ok(())
-                }),
-                LongMonthName => date.map(|d| {
-                    w.write_str(long_months(locale)[d.month0() as usize])?;
-                    Ok(())
-                }),
-                ShortWeekdayName => date.map(|d| {
-                    w.write_str(
-                        short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize],
-                    )?;
-                    Ok(())
-                }),
-                LongWeekdayName => date.map(|d| {
-                    w.write_str(
-                        long_weekdays(locale)[d.weekday().num_days_from_sunday() as usize],
-                    )?;
-                    Ok(())
-                }),
-                LowerAmPm => time.map(|t| {
-                    let ampm = if t.hour12().0 { am_pm(locale)[1] } else { am_pm(locale)[0] };
-                    for c in ampm.chars().flat_map(|c| c.to_lowercase()) {
-                        w.write_char(c)?
-                    }
-                    Ok(())
-                }),
-                UpperAmPm => time.map(|t| {
-                    w.write_str(if t.hour12().0 { am_pm(locale)[1] } else { am_pm(locale)[0] })?;
-                    Ok(())
-                }),
-                Nanosecond => time.map(|t| {
-                    let nano = t.nanosecond() % 1_000_000_000;
-                    if nano == 0 {
+            let ret =
+                match *spec {
+                    ShortMonthName => date.map(|d| {
+                        w.write_str(short_months(locale)[d.month0() as usize].as_ref())?;
                         Ok(())
-                    } else {
-                        w.write_str(decimal_point(locale))?;
-                        if nano % 1_000_000 == 0 {
-                            write!(w, "{:03}", nano / 1_000_000)
-                        } else if nano % 1_000 == 0 {
-                            write!(w, "{:06}", nano / 1_000)
+                    }),
+                    LongMonthName => date.map(|d| {
+                        w.write_str(long_months(locale)[d.month0() as usize].as_ref())?;
+                        Ok(())
+                    }),
+                    ShortWeekdayName => date.map(|d| {
+                        w.write_str(
+                            short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize]
+                                .as_ref(),
+                        )?;
+                        Ok(())
+                    }),
+                    LongWeekdayName => date.map(|d| {
+                        w.write_str(
+                            long_weekdays(locale)[d.weekday().num_days_from_sunday() as usize]
+                                .as_ref(),
+                        )?;
+                        Ok(())
+                    }),
+                    LowerAmPm => time.map(|t| {
+                        let ampm = am_pm(locale);
+                        let cur_ampm = &ampm[if t.hour12().0 { 1 } else { 0 }];
+                        w.write_str(&cur_ampm.to_lowercase())?;
+                        Ok(())
+                    }),
+                    UpperAmPm => time.map(|t| {
+                        let ampm = am_pm(locale);
+                        let cur_ampm = &ampm[if t.hour12().0 { 1 } else { 0 }];
+                        w.write_str(cur_ampm)?;
+                        Ok(())
+                    }),
+                    Nanosecond => time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        if nano == 0 {
+                            Ok(())
                         } else {
+                            w.write_str(decimal_point(locale).as_ref())?;
+                            if nano % 1_000_000 == 0 {
+                                write!(w, "{:03}", nano / 1_000_000)
+                            } else if nano % 1_000 == 0 {
+                                write!(w, "{:06}", nano / 1_000)
+                            } else {
+                                write!(w, "{:09}", nano)
+                            }
+                        }
+                    }),
+                    Nanosecond3 => time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        w.write_str(decimal_point(locale).as_ref())?;
+                        write!(w, "{:03}", nano / 1_000_000)
+                    }),
+                    Nanosecond6 => time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        w.write_str(decimal_point(locale).as_ref())?;
+                        write!(w, "{:06}", nano / 1_000)
+                    }),
+                    Nanosecond9 => time.map(|t| {
+                        let nano = t.nanosecond() % 1_000_000_000;
+                        w.write_str(decimal_point(locale).as_ref())?;
+                        write!(w, "{:09}", nano)
+                    }),
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => time
+                        .map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:03}", nano / 1_000_000)
+                        }),
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => time
+                        .map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
+                            write!(w, "{:06}", nano / 1_000)
+                        }),
+                    Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => time
+                        .map(|t| {
+                            let nano = t.nanosecond() % 1_000_000_000;
                             write!(w, "{:09}", nano)
+                        }),
+                    TimezoneName => off.map(|(name, _)| {
+                        w.write_str(name)?;
+                        Ok(())
+                    }),
+                    TimezoneOffset | TimezoneOffsetZ => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Maybe,
+                            allow_zulu: *spec == TimezoneOffsetZ,
+                            padding: Pad::Zero,
+                        }
+                        .format(w, off)
+                    }),
+                    TimezoneOffsetColon | TimezoneOffsetColonZ => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Colon,
+                            allow_zulu: *spec == TimezoneOffsetColonZ,
+                            padding: Pad::Zero,
+                        }
+                        .format(w, off)
+                    }),
+                    TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Seconds,
+                            colons: Colons::Colon,
+                            allow_zulu: false,
+                            padding: Pad::Zero,
+                        }
+                        .format(w, off)
+                    }),
+                    TimezoneOffsetTripleColon => off.map(|&(_, off)| {
+                        OffsetFormat {
+                            precision: OffsetPrecision::Hours,
+                            colons: Colons::None,
+                            allow_zulu: false,
+                            padding: Pad::Zero,
+                        }
+                        .format(w, off)
+                    }),
+                    Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
+                        return Err(fmt::Error);
+                    }
+                    RFC2822 =>
+                    // same as `%a, %d %b %Y %H:%M:%S %z`
+                    {
+                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                            Some(write_rfc2822_inner(w, *d, *t, off, locale))
+                        } else {
+                            None
                         }
                     }
-                }),
-                Nanosecond3 => time.map(|t| {
-                    let nano = t.nanosecond() % 1_000_000_000;
-                    w.write_str(decimal_point(locale))?;
-                    write!(w, "{:03}", nano / 1_000_000)
-                }),
-                Nanosecond6 => time.map(|t| {
-                    let nano = t.nanosecond() % 1_000_000_000;
-                    w.write_str(decimal_point(locale))?;
-                    write!(w, "{:06}", nano / 1_000)
-                }),
-                Nanosecond9 => time.map(|t| {
-                    let nano = t.nanosecond() % 1_000_000_000;
-                    w.write_str(decimal_point(locale))?;
-                    write!(w, "{:09}", nano)
-                }),
-                Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
-                    time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
-                        write!(w, "{:03}", nano / 1_000_000)
-                    })
-                }
-                Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
-                    time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
-                        write!(w, "{:06}", nano / 1_000)
-                    })
-                }
-                Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
-                    time.map(|t| {
-                        let nano = t.nanosecond() % 1_000_000_000;
-                        write!(w, "{:09}", nano)
-                    })
-                }
-                TimezoneName => off.map(|(name, _)| {
-                    w.write_str(name)?;
-                    Ok(())
-                }),
-                TimezoneOffset | TimezoneOffsetZ => off.map(|&(_, off)| {
-                    OffsetFormat {
-                        precision: OffsetPrecision::Minutes,
-                        colons: Colons::Maybe,
-                        allow_zulu: *spec == TimezoneOffsetZ,
-                        padding: Pad::Zero,
+                    RFC3339 =>
+                    // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
+                    {
+                        if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
+                            Some(write_rfc3339(
+                                w,
+                                crate::NaiveDateTime::new(*d, *t),
+                                off.fix(),
+                                SecondsFormat::AutoSi,
+                                false,
+                            ))
+                        } else {
+                            None
+                        }
                     }
-                    .format(w, off)
-                }),
-                TimezoneOffsetColon | TimezoneOffsetColonZ => off.map(|&(_, off)| {
-                    OffsetFormat {
-                        precision: OffsetPrecision::Minutes,
-                        colons: Colons::Colon,
-                        allow_zulu: *spec == TimezoneOffsetColonZ,
-                        padding: Pad::Zero,
-                    }
-                    .format(w, off)
-                }),
-                TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
-                    OffsetFormat {
-                        precision: OffsetPrecision::Seconds,
-                        colons: Colons::Colon,
-                        allow_zulu: false,
-                        padding: Pad::Zero,
-                    }
-                    .format(w, off)
-                }),
-                TimezoneOffsetTripleColon => off.map(|&(_, off)| {
-                    OffsetFormat {
-                        precision: OffsetPrecision::Hours,
-                        colons: Colons::None,
-                        allow_zulu: false,
-                        padding: Pad::Zero,
-                    }
-                    .format(w, off)
-                }),
-                Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
-                    return Err(fmt::Error);
-                }
-                RFC2822 =>
-                // same as `%a, %d %b %Y %H:%M:%S %z`
-                {
-                    if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc2822_inner(w, *d, *t, off, locale))
-                    } else {
-                        None
-                    }
-                }
-                RFC3339 =>
-                // same as `%Y-%m-%dT%H:%M:%S%.f%:z`
-                {
-                    if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc3339(
-                            w,
-                            crate::NaiveDateTime::new(*d, *t),
-                            off.fix(),
-                            SecondsFormat::AutoSi,
-                            false,
-                        ))
-                    } else {
-                        None
-                    }
-                }
-            };
+                };
 
             ret.unwrap_or(Err(fmt::Error)) // insufficient arguments for given format
         }
@@ -635,11 +636,11 @@ fn write_rfc2822_inner(
         return Err(fmt::Error);
     }
 
-    w.write_str(short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize])?;
+    w.write_str(short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize].as_ref())?;
     w.write_str(", ")?;
     write_hundreds(w, d.day() as u8)?;
     w.write_char(' ')?;
-    w.write_str(short_months(locale)[d.month0() as usize])?;
+    w.write_str(short_months(locale)[d.month0() as usize].as_ref())?;
     w.write_char(' ')?;
     write_hundreds(w, (year / 100) as u8)?;
     write_hundreds(w, (year % 100) as u8)?;
