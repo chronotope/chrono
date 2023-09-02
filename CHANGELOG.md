@@ -443,6 +443,8 @@ This is the last version officially supports Rust 1.12.0 or older.
 (0.2.24 was accidentally uploaded without a proper check for warnings in the default state,
 and replaced by 0.2.25 very shortly. Duh.)
 
+## [0.2.24] - 2016-08-03
+
 ### Added
 
 - Serde 0.8 is now supported. 0.7 also remains supported. (#86)
@@ -520,6 +522,8 @@ and replaced by 0.2.25 very shortly. Duh.)
   up to 3, 6 or 9 decimal digits. This is a natural extension to the existing `%f`.
   Note that this is (not yet) generic, no other value of precision is supported. (#45)
 
+- Tons of supporting examples for the documentation have been added. More to come.
+
 ### Changed
 
 - Forbade unsized types from implementing `Datelike` and `Timelike`.
@@ -560,6 +564,11 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 ## [0.2.13] - 2015-04-29
 
+This version is finally beta-compatible.
+
+This introduces a slight incompatibility, namely, due to the rewired reexport for `chrono::Duration`
+(which now comes from crates.io `time` crate).
+
 ### Added
 
 - The optional dependency on `rustc_serialize` and
@@ -570,6 +579,69 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - `chrono::Duration` reexport is changed to that of crates.io `time` crate.
   This enables Rust 1.0 beta compatibility.
+
+## [0.2.12] - 2015-04-24
+
+Language changes.
+
+- Many `std::num` traits are removed and replaced with
+  the external `num` crate. For time being, thus, Chrono will
+  require the dependency on `num`. This is expected to be temporary
+  however.
+
+## [0.2.11] - 2015-04-16
+
+Language changes.
+
+- Replaced `thread::scoped` with `thread::spawn` to cope with
+  a rare de-stabilization event.
+
+- `#[deprecated]` is (ironically) deprecated with user crates.
+  All uses of them have been replaced by doc comments.
+
+## [0.2.10] - 2015-04-04
+
+Language changes.
+
+- `Copy` requires `Clone`.
+
+## [0.2.9] - 2015-04-03
+
+Language changes.
+
+- `std::num::Int` is deprecated.
+
+- Removed one feature flag (`str_char`).
+
+## [0.2.8] - 2015-03-30
+
+Language changes.
+
+- Slice patterns are now feature gated.
+
+- Reformatted the `chrono::format::strftime` documentation
+  with a proper table (closes #31).
+
+## [0.2.7] - 2015-03-27
+
+Language changes.
+
+- Feature flags are now required on the doctests.
+
+- New lints for trivial casts. We are now not going to change
+  the internal implementation type for `NaiveDate`, so that's fine.
+
+## [0.2.6] - 2015-03-21
+
+Language changes and dependency updates.
+
+- `range` is now deprecated.
+
+- `str_char` feature gate is split out from `collections`.
+
+## [0.2.5] - 2015-03-05
+
+Language changes, mostly overflow changes.
 
 ## [0.2.4] - 2015-03-03
 
@@ -589,7 +661,15 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - `Local::from_utc_datetime` didn't set a correct offset. (#26)
 
+## [0.2.2] - 2015-02-26
+
+Language & docs changes.
+
+- `missing_docs` lint now checks for associated types.
+
 ## [0.2.1] - 2015-02-21
+
+- Language changes: `std::hash` has been renewed.
 
 ### Changed
 
@@ -667,13 +747,39 @@ and replaced by 0.2.25 very shortly. Duh.)
 - `with_offset` method has been removed. Use `with_timezone` method instead.
   (This is not deprecated since it is an integral part of offset reform.)
 
+## [0.1.18] - 2015-02-06
+
+Language changes.
+
+- Replaced remaining occurrences of `Show` with `Debug`.
+- Dependency upgrades.
+
+## [0.1.17] - 2015-01-29
+
+Language changes.
+
+- Many unstable stdlib parts require `#[feature]` flags as per Rust RFC #507.
+
+## [0.1.16] - 2015-01-29
+
+Dependency fixes due to language changes.
+
+## [0.1.15] - 2015-01-24
+
+Language changes.
+
+- `std::fmt::Show` is now `std::fmt::Debug`.
+- `std::fmt::String` is now `std::fmt::Display`.
+
 ## [0.1.14] - 2015-01-10
 
 ### Added
 
-- Added a missing `std::fmt::String` impl for `Local`.
+- Added a missing `std::fmt::String` impl for `Local` (thanks @daboross).
 
 ## [0.1.13] - 2015-01-10
+
+Language changes and `fmt::String` supports.
 
 ### Changed
 
@@ -686,12 +792,75 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 ## [0.1.12] - 2015-01-08
 
+Language changes.
+
+- Feature flags used are all accepted.
+- Orphan check workaround is no longer required.
+
 ### Removed
 
 - `Duration + T` no longer works due to the updated impl reachability rules.
   Use `T + Duration` as a workaround.
 
+## [0.1.11] - 2025-01-06
+
+Language changes.
+
+- Boxed closures are gone; some unboxed closures require an explicit
+  annotation for kinds (`&:` in most cases).
+
+## [0.1.10] - 2025-01-06
+
+Language changes.
+
+- `std::str::SendStr` is now `std::string::CowString<'static>`.
+
+## [0.1.9] - 2025-01-05
+
+Language changes.
+
+- `Add` and `Sub` switches to associated types.
+
+## [0.1.8] - 2015-01-04
+
+Language changes.
+
+- `#[deriving]` is now `#[derive]`.
+- prelude no longer imports many items by default.
+- `[T, ..n]` is no longer valid.
+- a temporary fix for `#[derive(Hash)]` failing out.
+- the formatting error uses a dedicated type instead of `IoError`.
+
+## [0.1.7] - 2015-01-02
+
+Language changes.
+
+- `Eq` no longer accepts the reflexive type parameter.
+  (this doesn't change the actual interface, as `Eq` is simply
+   a marker for total ordering. `PartialEq` retains it.)
+
+## [0.1.6] - 2014-12-25
+
+Fixed tests per language changes and `.travis.yml`.
+
+This also switches to the crates.io dependency unconditionally.
+
+## [0.1.5] - 2014-12-17
+
+Language changes.
+
+- `Add` and `Sub` requires a value instead of a reference.
+- Tuple indexing is now ungated.
+
 ## [0.1.4] - 2014-12-13
+
+Language changes.
+
+- `Copy` is now opt-in. Every `Copy`able type is made to implement `Copy`. While unlikely, I haven't deeply thought about `Copy`ability so it might change in 0.2.
+
+### Added
+
+- Added a BIG (friendly) limitation section to the README.
 
 ### Fixed
 
@@ -725,6 +894,15 @@ and replaced by 0.2.25 very shortly. Duh.)
 ### Changed
 
 - Chrono no longer needs `num` dependency.
+- Removed unused `unsafe` checks.
+
+## [0.1.1] - 2014-11-21
+
+Language changes, updated documentations.
+
+- `std::fmt::WriteError` is now `std::fmt::Error`.
+- abandoned rust-ci for documentations (sorry, but it didn't work
+  nowdays ;_;), we are now publishing directly to Github pages.
 
 ## [0.1.0] - 2014-11-20
 
@@ -753,6 +931,7 @@ The initial version that was available to `crates.io`.
 [0.3.1]: https://github.com/chronotope/chrono/releases/tag/v0.3.1
 [0.3.0]: https://github.com/chronotope/chrono/releases/tag/v0.3.0
 [0.2.25]: https://github.com/chronotope/chrono/releases/tag/v0.2.25
+[0.2.24]: https://github.com/chronotope/chrono/releases/tag/v0.2.24
 [0.2.23]: https://github.com/chronotope/chrono/releases/tag/v0.2.23
 [0.2.22]: https://github.com/chronotope/chrono/releases/tag/v0.2.22
 [0.2.21]: https://github.com/chronotope/chrono/releases/tag/v0.2.21
@@ -764,14 +943,35 @@ The initial version that was available to `crates.io`.
 [0.2.15]: https://github.com/chronotope/chrono/releases/tag/v0.2.15
 [0.2.14]: https://github.com/chronotope/chrono/releases/tag/v0.2.14
 [0.2.13]: https://github.com/chronotope/chrono/releases/tag/v0.2.13
+[0.2.12]: https://github.com/chronotope/chrono/releases/tag/v0.2.12
+[0.2.11]: https://github.com/chronotope/chrono/releases/tag/v0.2.11
+[0.2.10]: https://github.com/chronotope/chrono/releases/tag/v0.2.10
+[0.2.9]: https://github.com/chronotope/chrono/releases/tag/v0.2.9
+[0.2.8]: https://github.com/chronotope/chrono/releases/tag/v0.2.8
+[0.2.7]: https://github.com/chronotope/chrono/releases/tag/v0.2.7
+[0.2.6]: https://github.com/chronotope/chrono/releases/tag/v0.2.6
+[0.2.5]: https://github.com/chronotope/chrono/releases/tag/v0.2.5
 [0.2.4]: https://github.com/chronotope/chrono/releases/tag/v0.2.4
 [0.2.3]: https://github.com/chronotope/chrono/releases/tag/v0.2.3
+[0.2.2]: https://github.com/chronotope/chrono/releases/tag/v0.2.2
 [0.2.1]: https://github.com/chronotope/chrono/releases/tag/v0.2.1
 [0.2.0]: https://github.com/chronotope/chrono/releases/tag/v0.2.0
+[0.1.18]: https://github.com/chronotope/chrono/releases/tag/v0.1.18
+[0.1.17]: https://github.com/chronotope/chrono/releases/tag/v0.1.17
+[0.1.16]: https://github.com/chronotope/chrono/releases/tag/v0.1.16
+[0.1.15]: https://github.com/chronotope/chrono/releases/tag/v0.1.15
 [0.1.14]: https://github.com/chronotope/chrono/releases/tag/v0.1.14
 [0.1.13]: https://github.com/chronotope/chrono/releases/tag/v0.1.13
 [0.1.12]: https://github.com/chronotope/chrono/releases/tag/v0.1.12
+[0.1.11]: https://github.com/chronotope/chrono/releases/tag/v0.1.11
+[0.1.10]: https://github.com/chronotope/chrono/releases/tag/v0.1.10
+[0.1.9]: https://github.com/chronotope/chrono/releases/tag/v0.1.9
+[0.1.8]: https://github.com/chronotope/chrono/releases/tag/v0.1.8
+[0.1.7]: https://github.com/chronotope/chrono/releases/tag/v0.1.7
+[0.1.6]: https://github.com/chronotope/chrono/releases/tag/v0.1.6
+[0.1.5]: https://github.com/chronotope/chrono/releases/tag/v0.1.5
 [0.1.4]: https://github.com/chronotope/chrono/releases/tag/v0.1.4
 [0.1.3]: https://github.com/chronotope/chrono/releases/tag/v0.1.3
 [0.1.2]: https://github.com/chronotope/chrono/releases/tag/v0.1.2
+[0.1.1]: https://github.com/chronotope/chrono/releases/tag/v0.1.1
 [0.1.0]: https://github.com/chronotope/chrono/releases/tag/v0.1.0
