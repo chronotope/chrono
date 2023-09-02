@@ -5,20 +5,20 @@ This documents notable changes to [Chrono](https://github.com/chronotope/chrono)
 up to and including version 0.4.19. For later releases, please review the
 release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
-## 0.4.19
+## [0.4.19] - 2020-09-30
 
 * Correct build on solaris/illumos
 
-## 0.4.18
+## [0.4.18] - 2020-09-26
 
 * Restore support for x86_64-fortanix-unknown-sgx
 
-## 0.4.17
+## [0.4.17] - 2020-09-26
 
 * Fix a name resolution error in wasm-bindgen code introduced by removing the dependency on time
   v0.1
 
-## 0.4.16
+## [0.4.16] - 2020-09-25
 
 ### Features
 
@@ -31,13 +31,13 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
   `time::Duration` should be switched to import `chrono::Duration` instead to
   avoid breakage.
 
-## 0.4.15
+## [0.4.15] - 2020-08-14
 
 ### Fixes
 
 * Correct usage of vec in specific feature combinations (@quodlibetor)
 
-## 0.4.14 **YANKED**
+## [0.4.14] - 2020-08-07 **YANKED**
 
 ### Features
 
@@ -51,7 +51,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 * Added MIN and MAX values for `NaiveTime`, `NaiveDateTime` and `DateTime<Utc>`.
 
-## 0.4.13
+## [0.4.13] - 2020-07-06
 
 ### Features
 
@@ -61,7 +61,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 * Code improvements to impl `From` for `js_sys` in wasm to reuse code (@schrieveslaach)
 
-## 0.4.12
+## [0.4.12] - 2020-08-02
 
 ### New Methods and impls
 
@@ -84,7 +84,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Migrate to github actions from travis-ci, make the overall CI experience more comprehensible,
   significantly faster and more correct (#439 @quodlibetor)
 
-## 0.4.11
+## [0.4.11] - 2020-03-07
 
 ### Improvements
 
@@ -106,7 +106,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 * Use Criterion for benchmarks (@quodlibetor)
 
-## 0.4.10
+## [0.4.10] - 2019-11-24
 
 ### Compatibility notes
 
@@ -139,7 +139,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
   deprecation warnings and has been stable since rustc 1.13.0
 * Deny dead code
 
-## 0.4.9
+## [0.4.9] - 2019-09-04
 
 ### Fixes
 
@@ -148,7 +148,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Put wasm-bindgen related code and dependencies behind a `wasmbind` feature
   gate. (@quodlibetor #335)
 
-## 0.4.8
+## [0.4.8] - 2019-08-31
 
 ### Fixes
 
@@ -161,7 +161,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
   emscripten/`wasm-unknown-emscripten`). (finished by @evq in #331, initial
   work by @jjpe #287)
 
-## 0.4.7
+## [0.4.7] - 2019-06-25
 
 ### Fixes
 
@@ -176,7 +176,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Add `timestamp_nanos` methods (@jean-airoldie #308)
 * Documentation improvements
 
-## 0.4.6
+## [0.4.6] - 2018-08-25
 
 ### Maintenance
 
@@ -189,7 +189,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 * Added `NaiveDate::from_weekday_of_month{,_opt}` for getting eg. the 2nd Friday of March 2017.
 
-## 0.4.5
+## [0.4.5] - 2018-07-28
 
 ### Features
 
@@ -198,13 +198,13 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Derive `Hash` on `FixedOffset` (@LuoZijun #254)
 * Improved docs (@storyfeet #261, @quodlibetor #252)
 
-## 0.4.4
+## [0.4.4] - 2018-06-23
 
 ### Features
 
 * Added support for parsing nanoseconds without the leading dot (@emschwartz #251)
 
-## 0.4.3
+## [0.4.3] - 2018-06-11
 
 ### Features
 
@@ -214,7 +214,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Added "Permissive" timezone parsing which allows a numeric timezone to
   be specified without minutes. (@quodlibetor #242)
 
-## 0.4.2
+## [0.4.2] - 2018-04-07
 
 ### Deprecations
 
@@ -229,7 +229,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Implement subtraction of two `Date`s, `Time`s, or `DateTime`s, returning a
   `Duration` (@tobz1000 #237)
 
-## 0.4.1
+## [0.4.1] - 2018-03-28
 
 ### Bug Fixes
 
@@ -251,7 +251,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 * Docs! (@alatiera @kosta @quodlibetor @kennytm)
 * Run clippy and various fixes (@quodlibetor)
 
-## 0.4.0 (2017-06-22)
+## [0.4.0] - 2017-06-22
 
 This was originally planned as a minor release but was pushed to a major
 release due to the compatibility concern raised.
@@ -334,7 +334,7 @@ release due to the compatibility concern raised.
 
 - Various documentation fixes and goodies. (#92, #131, #136)
 
-## 0.3.1 (2017-05-02)
+## [0.3.1] - 2017-05-02
 
 ### Added
 
@@ -356,7 +356,7 @@ release due to the compatibility concern raised.
 - Fixed a bug that the leap second can be mapped wrongly in the local time zone.
   Only occurs when the local time zone is behind UTC. (#130)
 
-## 0.3.0 (2017-02-07)
+## [0.3.0] - 2017-02-07
 
 The project has moved to the [Chronotope](https://github.com/chronotope/) organization.
 
@@ -436,7 +436,7 @@ The project has moved to the [Chronotope](https://github.com/chronotope/) organi
 - `chrono::offset::add_with_leapsecond` has been removed.
   Use a direct addition with `FixedOffset` instead.
 
-## 0.2.25 (2016-08-04)
+## [0.2.25] - 2016-08-04
 
 This is the last version officially supports Rust 1.12.0 or older.
 
@@ -452,7 +452,7 @@ and replaced by 0.2.25 very shortly. Duh.)
 - The deserialization implementation for rustc-serialize now properly verifies the input.
   All serialization codes are also now thoroughly tested. (#42)
 
-## 0.2.23 (2016-08-03)
+## [0.2.23] - 2016-08-03
 
 ### Added
 
@@ -470,26 +470,26 @@ and replaced by 0.2.25 very shortly. Duh.)
   due to the long-standing libtime bug (dates back to mid-2015).
   Workaround has been implemented. (#85)
 
-## 0.2.22 (2016-04-22)
+## [0.2.22] - 2016-04-22
 
 ### Fixed
 
 - `%.6f` and `%.9f` used to print only three digits when the nanosecond part is zero. (#71)
 - The documentation for `%+` has been updated to reflect the current status. (#71)
 
-## 0.2.21 (2016-03-29)
+## [0.2.21] - 2016-03-29
 
 ### Fixed
 
 - `Fixed::LongWeekdayName` was unable to recognize `"sunday"` (whoops). (#66)
 
-## 0.2.20 (2016-03-06)
+## [0.2.20] - 2016-03-06
 
 ### Changed
 
 - `serde` dependency has been updated to 0.7. (#63, #64)
 
-## 0.2.19 (2016-02-05)
+## [0.2.19] - 2016-02-05
 
 ### Added
 
@@ -499,20 +499,20 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - `DateTime::date` had been wrong when the local date and the UTC date is in disagreement. (#61)
 
-## 0.2.18 (2016-01-23)
+## [0.2.18] - 2016-01-23
 
 ### Fixed
 
 - Chrono no longer pulls a superfluous `rand` dependency. (#57)
 
-## 0.2.17 (2015-11-22)
+## [0.2.17] - 2015-11-22
 
 ### Added
 
 - Naive date and time types and `DateTime` now have a `serde` support.
   They serialize as an ISO 8601 / RFC 3339 string just like `Debug`. (#51)
 
-## 0.2.16 (2015-09-06)
+## [0.2.16] - 2015-09-06
 
 ### Added
 
@@ -530,7 +530,7 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - Fixed a broken link in the `README.md`. (#41)
 
-## 0.2.15 (2015-07-05)
+## [0.2.15] - 2015-07-05
 
 ### Added
 
@@ -549,7 +549,7 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - Improved the documentation and associated tests for `strftime`.
 
-## 0.2.14 (2015-05-15)
+## [0.2.14] - 2015-05-15
 
 ### Fixed
 
@@ -558,7 +558,7 @@ and replaced by 0.2.25 very shortly. Duh.)
   This was caused by an underflow in the conversion from `Duration` to the parts;
   the lack of tests for this case allowed a bug. (#37)
 
-## 0.2.13 (2015-04-29)
+## [0.2.13] - 2015-04-29
 
 ### Added
 
@@ -571,14 +571,14 @@ and replaced by 0.2.25 very shortly. Duh.)
 - `chrono::Duration` reexport is changed to that of crates.io `time` crate.
   This enables Rust 1.0 beta compatibility.
 
-## 0.2.4 (2015-03-03)
+## [0.2.4] - 2015-03-03
 
 ### Fixed
 
 - Clarified the meaning of `Date<Tz>` and fixed unwanted conversion problem
   that only occurs with positive UTC offsets. (#27)
 
-## 0.2.3 (2015-02-27)
+## [0.2.3] - 2015-02-27
 
 ### Added
 
@@ -589,13 +589,13 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - `Local::from_utc_datetime` didn't set a correct offset. (#26)
 
-## 0.2.1 (2015-02-21)
+## [0.2.1] - 2015-02-21
 
 ### Changed
 
 - `DelayedFormat` no longer conveys a redundant lifetime.
 
-## 0.2.0 (2015-02-19)
+## [0.2.0] - 2015-02-19
 
 ### Added
 
@@ -667,13 +667,13 @@ and replaced by 0.2.25 very shortly. Duh.)
 - `with_offset` method has been removed. Use `with_timezone` method instead.
   (This is not deprecated since it is an integral part of offset reform.)
 
-## 0.1.14 (2015-01-10)
+## [0.1.14] - 2015-01-10
 
 ### Added
 
 - Added a missing `std::fmt::String` impl for `Local`.
 
-## 0.1.13 (2015-01-10)
+## [0.1.13] - 2015-01-10
 
 ### Changed
 
@@ -684,21 +684,21 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - `Offset::name` has been replaced by a `std::fmt::String` implementation to `Offset`.
 
-## 0.1.12 (2015-01-08)
+## [0.1.12] - 2015-01-08
 
 ### Removed
 
 - `Duration + T` no longer works due to the updated impl reachability rules.
   Use `T + Duration` as a workaround.
 
-## 0.1.4 (2014-12-13)
+## [0.1.4] - 2014-12-13
 
 ### Fixed
 
 - Fixed a bug that `Date::and_*` methods with an offset that can change the date are
   off by one day.
 
-## 0.1.3 (2014-11-28)
+## [0.1.3] - 2014-11-28
 
 ### Added
 
@@ -716,7 +716,7 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - `{Date,Time} - Duration` overloadings are now allowed.
 
-## 0.1.2 (2014-11-24)
+## [0.1.2] - 2014-11-24
 
 ### Added
 
@@ -726,6 +726,52 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 - Chrono no longer needs `num` dependency.
 
-## 0.1.0 (2014-11-20)
+## [0.1.0] - 2014-11-20
 
 The initial version that was available to `crates.io`.
+
+[0.4.19]: https://github.com/chronotope/chrono/releases/tag/v0.4.19
+[0.4.18]: https://github.com/chronotope/chrono/releases/tag/v0.4.18
+[0.4.17]: https://github.com/chronotope/chrono/releases/tag/v0.4.17
+[0.4.16]: https://github.com/chronotope/chrono/releases/tag/v0.4.16
+[0.4.15]: https://github.com/chronotope/chrono/releases/tag/v0.4.15
+[0.4.14]: https://github.com/chronotope/chrono/releases/tag/v0.4.14
+[0.4.13]: https://github.com/chronotope/chrono/releases/tag/v0.4.13
+[0.4.12]: https://github.com/chronotope/chrono/releases/tag/v0.4.12
+[0.4.11]: https://github.com/chronotope/chrono/releases/tag/v0.4.11
+[0.4.10]: https://github.com/chronotope/chrono/releases/tag/v0.4.10
+[0.4.9]: https://github.com/chronotope/chrono/releases/tag/v0.4.9
+[0.4.8]: https://github.com/chronotope/chrono/releases/tag/v0.4.8
+[0.4.7]: https://github.com/chronotope/chrono/releases/tag/v0.4.7
+[0.4.6]: https://github.com/chronotope/chrono/releases/tag/v0.4.6
+[0.4.5]: https://github.com/chronotope/chrono/releases/tag/v0.4.5
+[0.4.4]: https://github.com/chronotope/chrono/releases/tag/v0.4.4
+[0.4.3]: https://github.com/chronotope/chrono/releases/tag/v0.4.3
+[0.4.2]: https://github.com/chronotope/chrono/releases/tag/v0.4.2
+[0.4.1]: https://github.com/chronotope/chrono/releases/tag/v0.4.1
+[0.4.0]: https://github.com/chronotope/chrono/releases/tag/v0.4.0
+[0.3.1]: https://github.com/chronotope/chrono/releases/tag/v0.3.1
+[0.3.0]: https://github.com/chronotope/chrono/releases/tag/v0.3.0
+[0.2.25]: https://github.com/chronotope/chrono/releases/tag/v0.2.25
+[0.2.23]: https://github.com/chronotope/chrono/releases/tag/v0.2.23
+[0.2.22]: https://github.com/chronotope/chrono/releases/tag/v0.2.22
+[0.2.21]: https://github.com/chronotope/chrono/releases/tag/v0.2.21
+[0.2.20]: https://github.com/chronotope/chrono/releases/tag/v0.2.20
+[0.2.19]: https://github.com/chronotope/chrono/releases/tag/v0.2.19
+[0.2.18]: https://github.com/chronotope/chrono/releases/tag/v0.2.18
+[0.2.17]: https://github.com/chronotope/chrono/releases/tag/v0.2.17
+[0.2.16]: https://github.com/chronotope/chrono/releases/tag/v0.2.16
+[0.2.15]: https://github.com/chronotope/chrono/releases/tag/v0.2.15
+[0.2.14]: https://github.com/chronotope/chrono/releases/tag/v0.2.14
+[0.2.13]: https://github.com/chronotope/chrono/releases/tag/v0.2.13
+[0.2.4]: https://github.com/chronotope/chrono/releases/tag/v0.2.4
+[0.2.3]: https://github.com/chronotope/chrono/releases/tag/v0.2.3
+[0.2.1]: https://github.com/chronotope/chrono/releases/tag/v0.2.1
+[0.2.0]: https://github.com/chronotope/chrono/releases/tag/v0.2.0
+[0.1.14]: https://github.com/chronotope/chrono/releases/tag/v0.1.14
+[0.1.13]: https://github.com/chronotope/chrono/releases/tag/v0.1.13
+[0.1.12]: https://github.com/chronotope/chrono/releases/tag/v0.1.12
+[0.1.4]: https://github.com/chronotope/chrono/releases/tag/v0.1.4
+[0.1.3]: https://github.com/chronotope/chrono/releases/tag/v0.1.3
+[0.1.2]: https://github.com/chronotope/chrono/releases/tag/v0.1.2
+[0.1.0]: https://github.com/chronotope/chrono/releases/tag/v0.1.0
