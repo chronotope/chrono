@@ -898,7 +898,7 @@ fn test_parse_datetime_utc() {
 }
 
 #[test]
-fn test_utc_datetime_from_str() {
+fn test_parse_from_str() {
     let edt = FixedOffset::east_opt(570 * 60).unwrap();
     let edt0 = FixedOffset::east_opt(0).unwrap();
     let wdt = FixedOffset::west_opt(10 * 3600).unwrap();
@@ -909,10 +909,6 @@ fn test_utc_datetime_from_str() {
     assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
     assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
         .is_err());
-    assert_eq!(
-        Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
-        Ok(Utc.with_ymd_and_hms(2013, 8, 9, 23, 54, 35).unwrap())
-    );
     assert_eq!(
         DateTime::parse_from_str("0", "%s").unwrap(),
         NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
