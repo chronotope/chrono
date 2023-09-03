@@ -906,6 +906,107 @@ Language changes, updated documentations.
 
 The initial version that was available to `crates.io`.
 
+## Pre-crates.io
+
+Before `crates.io` was launched in november 2014 dependencies were specified as
+just git repositories. Chrono did not keep versions until then.
+
+### 2014-10-10
+
+Use a Cargoified version of libnum.
+
+### 2014-08-31
+
+Switches to `std::time::duration::Duration`.
+
+### 2014-08-29
+
+Added missing `.offset()` methods; UTC/FixedOffset now implement `Eq`.
+
+### 2014-08-19
+
+- language changes: an array size now needs to be uint.
+
+### 2014-07-31
+
+- added constructors from timestamp; added `UTC::{today,now}`.
+- added the `Local` offset implementation.
+- made `Time::fmt` to use the same decimal separator as `Duration::fmt`.
+- added `chrono::format` module and `format` methods.
+  this is a saner replacement for `time::strftime`; it does not allocate
+  the additional memory.
+
+### 2014-07-29
+
+- changed the internal representation of `TimeZ`.
+- made every type `Clone`able; added `and_*` constructors to `DateZ`.
+  it allows for, say, `DateZ::from_ymd(2014,1,2).and_hms(3,4,5)`.
+- fixed a bug on `DateTimeZ::add` with the negative fractional `Duration`.
+- initial `Offset` implementations.
+- mass renaming from `BlahBlahZ` to `NaiveBlahBlah`.
+
+### 2014-07-25
+
+- fixed erratic `fmt` behaviors with format specifiers. (rust-lang/rust#15934)
+
+- added docs to `Duration`; added `Duration::new_opt`; removed `{MIN,MAX}_{DAYS,YEAR}`.
+  the minimum and maximum for `DateZ` and `Duration` is now provided via
+  dedicated constants `{date,duration}::{MIN,MAX}`, much like built-in
+  `std::int` and others. they also now implements `std::num::Bounded`.
+  cf. rust-lang/rust#15934
+
+- changed the decimal point from `,` to `.`. (cf. rust-lang/rust#15934)
+  ISO 8601 allows for both but prefers `,`, which was a main reason
+  for its use in rust-chrono. but this is too alien given other usages of
+  decimal points in Rust, so I guess it is better to switch to `.`.
+
+- renamed `chrono::date::{MIN,MAX}` to `chrono::date::{MINZ,MAXZ}`.
+  this is because we are going to add `MIN` and `MAX` for timezone-aware `Date`s later.
+
+- renamed `n<foo>s` to `num_<foo>s` and changed their semantics.
+  `Duration` now has a `to_tuple` method which corresponds to
+  the original `(dur.ndays(), dur.nseconds(), dur.nnanoseconds())`.
+  new `num_*s()` methods in `Duration` always return the integral
+  number of specified units in the duration.
+
+- relicensed from MIT to dual MIT/APL2. closes #2.
+
+### 2014-07-19
+
+Major API surgeries.
+
+- added a new example.
+- reexported all public APIs in the crate root.
+- made all constructors fail on the invalid arguments by default;
+  `*_opt()` variants have been added for the original behavior.
+- same for `DateZ::{succ,pred}`.
+- fixed a missing overflow check from `TimeZ::from_hms_{milli,micro}`.
+- the public API now uses `i32`/`u32` instead of `int`/`uint` for integers.
+
+### 2014-07-12
+
+- added Cargo support and updated `.travis.yml`
+- language changes: `ToStr` -> `ToString.`
+
+### 2014-05-31
+
+- fixed an unintentionally overflowing `Duration` constructors; made tests valid on 32-bit platform.
+- language changes: `{,Total}{Eq,Ord}` -> `{Partial,}{Eq,Ord}`.
+- language changes: `to_owned()` on `&str` is being deprecated.
+- language changes: `std::fmt` is moved to core and now independent of std I/O.
+- language changes: `~"str"` -> `"str".to_owned()`.
+- language changes: `BenchHarness` -> `Bencher`.
+
+### 2014-04-06
+
+- added (not yet well-tested) mult/div ops for `Duration`.
+- language changes: priv tuple-like fields are now default as well.
+- `Duration::days` is now `i32` (not `int`), related methods apply the new limits for days.
+
+### 2014-04-03
+
+Initial version.
+
 [0.4.19]: https://github.com/chronotope/chrono/releases/tag/v0.4.19
 [0.4.18]: https://github.com/chronotope/chrono/releases/tag/v0.4.18
 [0.4.17]: https://github.com/chronotope/chrono/releases/tag/v0.4.17
