@@ -804,6 +804,7 @@ fn test_datetime_from_str() {
             .unwrap())
     );
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<Utc>>().is_err());
+    assert!("2015-02-18T23:16:9.15øøø".parse::<DateTime<Utc>>().is_err());
 
     // no test for `DateTime<Local>`, we cannot verify that much.
 }
