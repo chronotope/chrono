@@ -363,6 +363,103 @@
 //!
 //! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
 //! lightly.
+//!
+//! Chrono inherently does not support an inaccurate or partial date and time representation.
+//! Any operation that can be ambiguous will return `None` in such cases.
+//! For example, "a month later" of 2014-01-30 is not well-defined
+//! and consequently `Utc.ymd_opt(2014, 1, 30).unwrap().with_month(2)` returns `None`.
+//!
+//! Non ISO week handling is not yet supported.
+//! For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
+//! crate ([sources](https://github.com/bcourtine/chrono-ext/)).
+//!
+//! Advanced time zone handling is not yet supported.
+//! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
+//!
+//! ## Relation between chrono and time 0.1
+//!
+//! Since Rust 0.7 the standard library had a `time` module. It moved to `libextra`, and then to a
+//! `libtime` library shipped alongside the standard library. In 2014 the work on chrono started in
+//! order to provide a full-featured date and time library in Rust. Some improvements from chrono
+//! made it into the standard library, notably the `chrono::Duration` type was moved to
+//! `std::time::Duration` ([rust#15934]).
+//!
+//! In preparation of Rust 1.0 at the end of 2014 `libtime` was moved out of the Rust distro and
+//! into the `time` crate to eventually be redesigned ([rust#18832], [rust#18858]), just like the
+//! `num` and `rand` crates. Naturally chrono gained `time` as a dependency. `time` also started
+//! re-exporting `std::time::Duration`. Later the standard library was changed to have a more
+//! limited unsigned `Duration` type ([rust#24920], [RFC 1040]), while the `time` crate kept the
+//! full functionality with `time::Duration`. And `time::Duration` was part of the public API of
+//! chrono.
+//!
+//! By 2016 `time` 0.1 lived under the `rust-lang-deprecated` organisation and was not actively
+//! maintained ([time#136]). Chrono absorbed the platform functionality and `Duration` type of the
+//! time crate in [chrono#478] (the work started in [chrono#286]). But because of the
+//! `time::Duration` type and to not make this a breaking change `time` would still remain as a
+//! dependency. Crates could opt to use chrono without the `old-time` feature to drop the
+//! dependency. During this time @jhpratt would take over `time` and release what amounts to a new
+//! crate under time 0.2.
+//!
+//! [rust#15934]: https://github.com/rust-lang/rust/pull/15934
+//! [rust#18832]: https://github.com/rust-lang/rust/pull/18832#issuecomment-62448221
+//! [rust#18858]: https://github.com/rust-lang/rust/pull/18858
+//! [rust#24920]: https://github.com/rust-lang/rust/pull/24920
+//! [RFC 1040]: https://rust-lang.github.io/rfcs/1040-duration-reform.html
+//! [time#136]: https://github.com/time-rs/time/issues/136
+//! [chrono#286]: https://github.com/chronotope/chrono/pull/286
+//! [chrono#478]: https://github.com/chronotope/chrono/pull/478
+//!
+//! #### Security advisories
+//!
+//! In november 2020 [CVE-2020-26235] and [RUSTSEC-2020-0071] were opened against the time crate,
+//! and the start of quite some frustration for the rust ecosystem. @quininer found that calls to
+//! `localtime_r` may be unsound ([chrono#499]). Eventually, almost a year later, this was also made
+//! into a security advisory against chrono as [RUSTSEC-2020-0159], which had platform code similar
+//! to `time`.
+//!
+//! The issue: on Unix-like systems a process is given a time zone id or description via the `TZ`
+//! environment variable. We need this time zone data to calculate the current local time from a
+//! value that is in UTC, such as the time from the system clock. `time` 0.1 and chrono used the
+//! POSIX function `localtime_r` to do the conversion to local time, which reads the `TZ` variable.
+//!
+//! Rust assumes the environment to be writable and uses locks to access it from multiple threads.
+//! So do some other programming languages and libraries, but there is no shared locking mechanism.
+//! More importantly POSIX declares modifying the environment in a multi-threaded process as unsafe,
+//! and `getenv` in libc can't be changed to just take a lock because it returns a pointer to the
+//! data (see [rust#27970] for more discussion).
+//!
+//! Since version 4.20 chrono no longer uses `localtime_r` but uses rust code to query the time zone
+//! (from the `TZ` variable or via `iana-time-zone` as a fallback) and work with data from the
+//! system time zone database directly. This involves the logic for POSIX TZ Strings, and parsing
+//! TZif files and working with their transition tables. The code mostly comes from the work by
+//! @x-hgg-x on the [tz-rs crate].
+//!
+//! So when reading the `TZ` environment variable chrono now respects the Rust locks. However in
+//! general it is probably best to avoid modifying the environment.
+//!
+//! The good thing to come from this is that we can improve beyond what the platform offers.
+//!
+//! [CVE-2020-26235]: https://nvd.nist.gov/vuln/detail/CVE-2020-26235
+//! [RUSTSEC-2020-0071]: https://rustsec.org/advisories/RUSTSEC-2020-0071
+//! [chrono#499]: https://github.com/chronotope/chrono/pull/499
+//! [RUSTSEC-2020-0159]: https://rustsec.org/advisories/RUSTSEC-2020-0159.html
+//! [rust#27970]: https://github.com/rust-lang/rust/issues/27970
+//! [chrono#677]: https://github.com/chronotope/chrono/pull/677
+//! [tz-rs crate]: https://crates.io/crates/tz-rs
+//!
+//! #### Removing time 0.1
+//!
+//! Still users of chrono would get a security advisory because of the time 0.1 dependency, which
+//! was never fixed. We were careful not to break backwards compatibility with the `time::Duration`
+//! type. But how many crates actually depend on this compatibility with time 0.1? Remember it was
+//! unmaintained for multiple years, and now had much improved new releases. After a primitive
+//! crater-like run it turned out only a tiny number of crates would break ([chrono#1095]), which we
+//! reached out to if still maintained.
+//!
+//! With 0.4.30 chrono finally drops the time 0.1 dependency, making an end to the *many* security
+//! advisory warnings against crates depending on chrono.
+//!
+//! [chrono#1095]: https://github.com/chronotope/chrono/pull/1095
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
