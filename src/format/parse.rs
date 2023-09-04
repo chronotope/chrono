@@ -586,7 +586,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Ok(_) => return Err(NOT_ENOUGH),
     };
     s = s.trim_start();
-    let (s, offset) = if s.len() >= 3 && "UTC".eq_ignore_ascii_case(&s[..3]) {
+    let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
     } else {
         scan::timezone_offset(s, scan::colon_or_space, true, false, true)?
