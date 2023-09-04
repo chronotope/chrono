@@ -316,6 +316,11 @@ pub trait Timelike: Sized {
     fn with_nanosecond(&self, nano: u32) -> Option<Self>;
 
     /// Returns the number of non-leap seconds past the last midnight.
+    ///
+    /// Every value in 00:00:00-23:59:59 maps to an integer in 0-86399.
+    ///
+    /// This method is not intended to provide the real number of seconds since midnight on a given
+    /// day. It does not take things like DST transitions into account.
     #[inline]
     fn num_seconds_from_midnight(&self) -> u32 {
         self.hour() * 3600 + self.minute() * 60 + self.second()
