@@ -5,7 +5,8 @@
  * Various scanning routines for the parser.
  */
 
-use super::{ParseResult, INVALID, OUT_OF_RANGE, TOO_SHORT};
+use super::{Colons, OffsetFormat, OffsetPrecision, Pad, ParseResult};
+use super::{INVALID, OUT_OF_RANGE, TOO_SHORT};
 use crate::Weekday;
 
 /// Tries to parse the non-negative number from `min` to `max` digits.
@@ -180,106 +181,129 @@ pub(super) fn space(s: &str) -> ParseResult<&str> {
     }
 }
 
-/// Consumes any number (including zero) of colon or spaces.
-pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
-    Ok(s.trim_start_matches(|c: char| c == ':' || c.is_whitespace()))
-}
-
-/// Parse a timezone from `s` and return the offset in seconds.
-///
-/// The `consume_colon` function is used to parse a mandatory or optional `:`
-/// separator between hours offset and minutes offset.
-///
-/// The `allow_missing_minutes` flag allows the timezone minutes offset to be
-/// missing from `s`.
-///
-/// The `allow_tz_minus_sign` flag allows the timezone offset negative character
-/// to also be `−` MINUS SIGN (U+2212) in addition to the typical
-/// ASCII-compatible `-` HYPHEN-MINUS (U+2D).
-/// This is part of [RFC 3339 & ISO 8601].
-///
-/// [RFC 3339 & ISO 8601]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
-pub(crate) fn timezone_offset<F>(
-    mut s: &str,
-    mut consume_colon: F,
-    allow_zulu: bool,
-    allow_missing_minutes: bool,
-    allow_tz_minus_sign: bool,
-) -> ParseResult<(&str, i32)>
-where
-    F: FnMut(&str) -> ParseResult<&str>,
-{
-    if allow_zulu {
-        if let Some(&b'Z' | &b'z') = s.as_bytes().first() {
-            return Ok((&s[1..], 0));
-        }
+/// Tries to parse an utc offset as specified with `OffsetFormat`. Return an offset in seconds
+/// if possible.
+pub(crate) fn utc_offset(s: &str, fmt: OffsetFormat) -> ParseResult<(&str, i32)> {
+    if fmt.allow_zulu && (s.starts_with('Z') || s.starts_with('z')) {
+        return Ok((&s[1..], 0));
     }
 
-    const fn digits(s: &str) -> ParseResult<(u8, u8)> {
-        let b = s.as_bytes();
-        if b.len() < 2 {
-            Err(TOO_SHORT)
-        } else {
-            Ok((b[0], b[1]))
-        }
-    }
-    let negative = match s.chars().next() {
-        Some('+') => {
-            // PLUS SIGN (U+2B)
-            s = &s['+'.len_utf8()..];
-
-            false
-        }
-        Some('-') => {
-            // HYPHEN-MINUS (U+2D)
-            s = &s['-'.len_utf8()..];
-
-            true
-        }
-        Some('−') => {
-            // MINUS SIGN (U+2212)
-            if !allow_tz_minus_sign {
-                return Err(INVALID);
-            }
-            s = &s['−'.len_utf8()..];
-
-            true
-        }
+    let (sign, mut s) = match s.chars().next() {
+        Some('+') => (1, &s[1..]),
+        Some('-') => (-1, &s[1..]),              // HYPHEN-MINUS (U+2D)
+        Some('−') => (-1, &s['−'.len_utf8()..]), // MINUS SIGN (U+2212)
         Some(_) => return Err(INVALID),
         None => return Err(TOO_SHORT),
     };
 
-    // hours (00--99)
-    let hours = match digits(s)? {
-        (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
-        _ => return Err(INVALID),
+    macro_rules! try_consume {
+        ($e:expr) => {{
+            let (s_, v) = $e?;
+            s = s_;
+            v
+        }};
+    }
+
+    let hours = if fmt.padding == Pad::Zero {
+        try_consume!(number(s, 2, 2))
+    } else {
+        let digits = match fmt.precision {
+            OffsetPrecision::Hours => 2,
+            OffsetPrecision::Minutes | OffsetPrecision::OptionalMinutes => 4,
+            OffsetPrecision::Seconds
+            | OffsetPrecision::OptionalSeconds
+            | OffsetPrecision::OptionalMinutesAndSeconds => 6,
+        };
+        if s.as_bytes().iter().take_while(|c| c.is_ascii_digit()).take(digits).count() % 2 == 0 {
+            if fmt.padding == Pad::Space && s.as_bytes()[0] == b'0' {
+                return Err(INVALID);
+            }
+            try_consume!(number(s, 2, 2))
+        } else {
+            try_consume!(number(s, 1, 1))
+        }
     };
-    s = &s[2..];
+    let mut offset = 3600 * hours as i32;
 
-    // colons (and possibly other separators)
-    s = consume_colon(s)?;
+    if fmt.precision == OffsetPrecision::Hours {
+        return Ok((s, offset * sign));
+    }
 
-    // minutes (00--59)
-    // if the next two items are digits then we have to add minutes
-    let minutes = if let Ok(ds) = digits(s) {
-        match ds {
+    let minutes_optional = matches!(
+        fmt.precision,
+        OffsetPrecision::OptionalMinutes | OffsetPrecision::OptionalMinutesAndSeconds
+    );
+    let (s_new, minutes) = parse_offset_minute(s, fmt.colons, minutes_optional)?;
+    match minutes {
+        Some(m) => offset += m * 60,
+        None => return Ok((s, offset * sign)),
+    }
+    let mut colons = fmt.colons;
+    if colons == Colons::Maybe {
+        colons = match s.starts_with(':') {
+            true => Colons::Colon,
+            false => Colons::None,
+        };
+    }
+    s = s_new;
+
+    if fmt.precision == OffsetPrecision::Minutes
+        || fmt.precision == OffsetPrecision::OptionalMinutes
+    {
+        return Ok((s, offset * sign));
+    }
+
+    let seconds_optional = matches!(
+        fmt.precision,
+        OffsetPrecision::OptionalSeconds | OffsetPrecision::OptionalMinutesAndSeconds
+    );
+    let (s_new, seconds) = parse_offset_minute(s, colons, seconds_optional)?;
+    if let Some(s) = seconds {
+        offset += s;
+    }
+    s = s_new;
+
+    Ok((s, offset * sign))
+}
+
+fn parse_offset_minute(
+    mut s: &str,
+    colon: Colons,
+    optional: bool,
+) -> ParseResult<(&str, Option<i32>)> {
+    fn minutes(s: &str) -> ParseResult<(&str, Option<i32>)> {
+        let b = s.as_bytes();
+        if b.len() < 2 {
+            return Err(TOO_SHORT);
+        }
+        let num = match (b[0], b[1]) {
             (m1 @ b'0'..=b'5', m2 @ b'0'..=b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
             (b'6'..=b'9', b'0'..=b'9') => return Err(OUT_OF_RANGE),
             _ => return Err(INVALID),
-        }
-    } else if allow_missing_minutes {
-        0
-    } else {
-        return Err(TOO_SHORT);
-    };
-    s = match s.len() {
-        len if len >= 2 => &s[2..],
-        len if len == 0 => s,
-        _ => return Err(TOO_SHORT),
-    };
+        };
+        Ok((&s[2..], Some(num)))
+    }
 
-    let seconds = hours * 3600 + minutes * 60;
-    Ok((s, if negative { -seconds } else { seconds }))
+    if (colon != Colons::None) && s.starts_with(':') {
+        s = &s[1..];
+        let result = minutes(s);
+        if optional && (result == Err(TOO_SHORT) || result == Err(INVALID)) {
+            Ok((s, None))
+        } else {
+            result
+        }
+    } else if colon != Colons::Colon {
+        let result = minutes(s);
+        if optional && (result == Err(TOO_SHORT) || result == Err(INVALID)) {
+            Ok((s, None))
+        } else {
+            result
+        }
+    } else if optional {
+        Ok((s, None))
+    } else {
+        Err(if s.is_empty() { TOO_SHORT } else { INVALID })
+    }
 }
 
 /// Same as `timezone_offset` but also allows for RFC 2822 legacy timezones.
@@ -316,7 +340,13 @@ pub(super) fn timezone_offset_2822(s: &str) -> ParseResult<(&str, Option<i32>)> 
             Ok((s, None))
         }
     } else {
-        let (s_, offset) = timezone_offset(s, |s| Ok(s), false, false, false)?;
+        let offset_format = OffsetFormat {
+            precision: OffsetPrecision::Minutes,
+            colons: Colons::None,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        let (s_, offset) = utc_offset(s, offset_format)?;
         Ok((s_, Some(offset)))
     }
 }
@@ -355,8 +385,9 @@ enum CommentState {
 mod tests {
     use super::{
         comment_2822, nanosecond, nanosecond_fixed, short_or_long_month0, short_or_long_weekday,
-        timezone_offset_2822,
+        timezone_offset_2822, utc_offset,
     };
+    use crate::format::{Colons, OffsetFormat, OffsetPrecision, Pad};
     use crate::format::{INVALID, TOO_SHORT};
     use crate::Weekday;
 
@@ -430,5 +461,212 @@ mod tests {
     fn test_nanosecond() {
         assert_eq!(nanosecond("2Ù").unwrap(), ("Ù", 200000000));
         assert_eq!(nanosecond("8").unwrap(), ("", 800000000));
+    }
+
+    #[test]
+    fn test_offset_colons() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::Seconds,
+            colons: Colons::Maybe,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+12 : 34 : 56", offset_format).is_err());
+        assert!(utc_offset("+12.34.56", offset_format).is_err());
+        assert!(utc_offset("+12 34 56", offset_format).is_err());
+        assert!(utc_offset("+12😼34😼56", offset_format).is_err());
+        // colons are optional, but they must match
+        assert!(utc_offset("+12:3456", offset_format).is_err());
+        assert!(utc_offset("+1234:56", offset_format).is_err());
+
+        offset_format.colons = Colons::None;
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+12:34:56", offset_format).is_err());
+        assert!(utc_offset("+12 : 34 : 56", offset_format).is_err());
+        assert!(utc_offset("+12.34.56", offset_format).is_err());
+        assert!(utc_offset("+12 34 56", offset_format).is_err());
+        assert!(utc_offset("+12😼34😼56", offset_format).is_err());
+        assert!(utc_offset("+12:3456", offset_format).is_err());
+        assert!(utc_offset("+1234:56", offset_format).is_err());
+
+        offset_format.colons = Colons::Colon;
+        assert!(utc_offset("+123456", offset_format).is_err());
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+12 : 34 : 56", offset_format).is_err());
+        assert!(utc_offset("+12.34.56", offset_format).is_err());
+        assert!(utc_offset("+12 34 56", offset_format).is_err());
+        assert!(utc_offset("+12😼34😼56", offset_format).is_err());
+        assert!(utc_offset("+12:3456", offset_format).is_err());
+        assert!(utc_offset("+1234:56", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_padding_with_colons() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::OptionalSeconds,
+            colons: Colons::Colon,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+01:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+01:23", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+1:23:45", offset_format).is_err());
+        assert!(utc_offset("+1:23", offset_format).is_err());
+        assert!(utc_offset("+ 1:23:45", offset_format).is_err());
+        assert!(utc_offset(" +1:23:45", offset_format).is_err());
+        assert!(utc_offset("+012:34:56", offset_format).is_err());
+        assert!(utc_offset("+001:23:45", offset_format).is_err());
+
+        offset_format.padding = Pad::None;
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+01:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+01:23", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("+1:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+1:23", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 1:23:45", offset_format).is_err());
+        assert!(utc_offset(" +1:23:45", offset_format).is_err());
+        assert!(utc_offset("+012:34:56", offset_format).is_err());
+        assert!(utc_offset("+001:23:45", offset_format).is_err());
+
+        offset_format.padding = Pad::Space;
+        assert_eq!(utc_offset("+12:34:56", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+01:23:45", offset_format).is_err());
+        assert!(utc_offset("+01:23", offset_format).is_err());
+        assert_eq!(utc_offset("+1:23:45", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+1:23", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 1:23:45", offset_format).is_err());
+        assert!(utc_offset(" +1:23:45", offset_format).is_err());
+        assert!(utc_offset("+012:34:56", offset_format).is_err());
+        assert!(utc_offset("+001:23:45", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_padding_with_no_colons() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::OptionalSeconds,
+            colons: Colons::None,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+012345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+0123", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("+12345", offset_format).unwrap().1, 45_240); // parsed as +12:34
+        assert!(utc_offset("+123", offset_format).is_err());
+        assert!(utc_offset("+ 12345", offset_format).is_err());
+        assert!(utc_offset(" +12345", offset_format).is_err());
+
+        offset_format.padding = Pad::None;
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert_eq!(utc_offset("+012345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+0123", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("+12345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+123", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 12345", offset_format).is_err());
+        assert!(utc_offset(" +12345", offset_format).is_err());
+
+        offset_format.padding = Pad::Space;
+        assert_eq!(utc_offset("+123456", offset_format).unwrap().1, 45_296);
+        assert!(utc_offset("+012345", offset_format).is_err());
+        assert!(utc_offset("+0123", offset_format).is_err());
+        assert_eq!(utc_offset("+12345", offset_format).unwrap().1, 5025);
+        assert_eq!(utc_offset("+123", offset_format).unwrap().1, 4980);
+        assert!(utc_offset("+ 12345", offset_format).is_err());
+        assert!(utc_offset(" +12345", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_zulu() {
+        let offset_format = OffsetFormat {
+            precision: OffsetPrecision::Minutes,
+            colons: Colons::Colon,
+            allow_zulu: true,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("Z", offset_format).unwrap().1, 0);
+        assert_eq!(utc_offset("z", offset_format).unwrap().1, 0);
+        assert_eq!(utc_offset("+00:00", offset_format).unwrap().1, 0);
+        assert_eq!(utc_offset("+01:23", offset_format).unwrap().1, 4980);
+        assert_eq!(utc_offset("-00:00", offset_format).unwrap().1, 0);
+        assert!(utc_offset("+Z", offset_format).is_err());
+        assert!(utc_offset("-Z", offset_format).is_err());
+        assert!(utc_offset(" Z", offset_format).is_err());
+    }
+
+    #[test]
+    fn test_offset_precision() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::Hours,
+            colons: Colons::Colon,
+            allow_zulu: false,
+            padding: Pad::Zero,
+        };
+        assert_eq!(utc_offset("+03", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), (":30", 10_800));
+
+        offset_format.precision = OffsetPrecision::Minutes;
+        assert!(utc_offset("+03", offset_format).is_err());
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), (":00", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutes;
+        assert_eq!(utc_offset("+03", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), (":00", 12_600));
+
+        offset_format.precision = OffsetPrecision::Seconds;
+        assert!(utc_offset("+03", offset_format).is_err());
+        assert!(utc_offset("+03:30", offset_format).is_err());
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalSeconds;
+        assert!(utc_offset("+03", offset_format).is_err());
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutesAndSeconds;
+        assert_eq!(utc_offset("+03", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+03:30", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+03:30:00", offset_format).unwrap(), ("", 12_600));
+    }
+
+    #[test]
+    fn test_offset_precision_no_padding() {
+        let mut offset_format = OffsetFormat {
+            precision: OffsetPrecision::Hours,
+            colons: Colons::None,
+            allow_zulu: false,
+            padding: Pad::None,
+        };
+        assert_eq!(utc_offset("+3", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("0", 33 * 60 * 60));
+
+        offset_format.precision = OffsetPrecision::Minutes;
+        assert!(utc_offset("+3", offset_format).is_err());
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("0", 33 * 60 * 60));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutes;
+        assert_eq!(utc_offset("+3", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("0", 33 * 60 * 60));
+
+        offset_format.precision = OffsetPrecision::Seconds;
+        assert!(utc_offset("+3", offset_format).is_err());
+        assert!(utc_offset("+330", offset_format).is_err());
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalSeconds;
+        assert!(utc_offset("+3", offset_format).is_err());
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("", 12_600));
+
+        offset_format.precision = OffsetPrecision::OptionalMinutesAndSeconds;
+        assert_eq!(utc_offset("+3", offset_format).unwrap(), ("", 10_800));
+        assert_eq!(utc_offset("+330", offset_format).unwrap(), ("", 12_600));
+        assert_eq!(utc_offset("+33000", offset_format).unwrap(), ("", 12_600));
     }
 }

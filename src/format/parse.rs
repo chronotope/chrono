@@ -9,6 +9,7 @@ use core::str;
 use core::usize;
 
 use super::scan;
+use super::{Colons, OffsetFormat, OffsetPrecision};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseErrorKind, ParseResult};
 use super::{BAD_FORMAT, INVALID, NOT_ENOUGH, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
@@ -215,7 +216,13 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
         parsed.set_nanosecond(nanosecond)?;
     }
 
-    let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
+    let offset_format = OffsetFormat {
+        precision: OffsetPrecision::Minutes,
+        colons: Colons::Colon,
+        allow_zulu: true,
+        padding: Pad::Zero,
+    };
+    let offset = try_consume!(scan::utc_offset(s, offset_format));
     if offset <= -86_400 || offset >= 86_400 {
         return Err(OUT_OF_RANGE);
     }
@@ -450,40 +457,60 @@ where
                         try_consume!(Ok((s.trim_start_matches(|c: char| !c.is_whitespace()), ())));
                     }
 
-                    &TimezoneOffsetColon
-                    | &TimezoneOffsetDoubleColon
-                    | &TimezoneOffsetTripleColon
-                    | &TimezoneOffset => {
-                        let offset = try_consume!(scan::timezone_offset(
-                            s.trim_start(),
-                            scan::colon_or_space,
-                            false,
-                            false,
-                            true,
-                        ));
+                    &TimezoneOffset | &TimezoneOffsetZ => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Maybe,
+                            allow_zulu: spec == &TimezoneOffsetZ,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
-                    &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
-                        let offset = try_consume!(scan::timezone_offset(
-                            s.trim_start(),
-                            scan::colon_or_space,
-                            true,
-                            false,
-                            true,
-                        ));
+                    &TimezoneOffsetColon | &TimezoneOffsetColonZ => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Minutes,
+                            colons: Colons::Colon,
+                            allow_zulu: spec == &TimezoneOffsetColonZ,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
+
+                    &TimezoneOffsetDoubleColon => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Seconds,
+                            colons: Colons::Colon,
+                            allow_zulu: false,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
+                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                    }
+
+                    &TimezoneOffsetTripleColon => {
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::Hours,
+                            colons: Colons::None,
+                            allow_zulu: false,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
+                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                    }
+
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
-                        let offset = try_consume!(scan::timezone_offset(
-                            s.trim_start(),
-                            scan::colon_or_space,
-                            true,
-                            true,
-                            true,
-                        ));
+                        let offset_format = OffsetFormat {
+                            precision: OffsetPrecision::OptionalMinutes,
+                            colons: Colons::Maybe,
+                            allow_zulu: true,
+                            padding: Pad::Zero,
+                        };
+                        let offset = try_consume!(scan::utc_offset(s.trim_start(), offset_format));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
 
@@ -516,7 +543,14 @@ where
 /// A space or a 'T' are acepted as the separator between the date and time
 /// parts. Additional spaces are allowed between each component.
 ///
-/// All of these examples are equivalent:
+/// Differences with RFC3339:
+/// - A space or a 'T' are accepted as the separator between the date and time parts.
+/// - Values don't require padding to two digits.
+/// - `UTC` and `Z` are accepted as a valid timezone offset.
+/// - There can be a space between time and offset.
+/// - The colon in the offset may be missing.
+/// - The offset may optionally have seconds (compatible with the `Debug` format of `DateTime`).
+///
 /// ```
 /// # use chrono::{DateTime, offset::FixedOffset};
 /// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>()?;
@@ -546,6 +580,7 @@ impl str::FromStr for DateTime<FixedOffset> {
 ///   `DateTime<Utc>`.
 /// - There can be spaces between any of the components.
 /// - The colon in the offset may be missing.
+/// - The offset may optionally have seconds (compatible with the `Debug` format of `DateTime`).
 fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a str, ())> {
     const DATE_ITEMS: &[Item<'static>] = &[
         Item::Numeric(Numeric::Year, Pad::Zero),
@@ -567,6 +602,12 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Item::Fixed(Fixed::Nanosecond),
         Item::Space(""),
     ];
+    const OFFSET_FORMAT: OffsetFormat = OffsetFormat {
+        precision: OffsetPrecision::OptionalSeconds,
+        colons: Colons::Maybe,
+        allow_zulu: true,
+        padding: Pad::Zero,
+    };
 
     s = match parse_internal(parsed, s, DATE_ITEMS.iter()) {
         Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => remainder,
@@ -589,7 +630,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
     } else {
-        scan::timezone_offset(s, scan::colon_or_space, true, false, true)?
+        scan::utc_offset(s, OFFSET_FORMAT)?
     };
     parsed.set_offset(i64::from(offset))?;
     Ok((s, ()))
@@ -1039,15 +1080,15 @@ mod tests {
         check("+12:34:5", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("+12:34:56", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("+12:34:56:", &[fixed(TimezoneOffset)], Err(TOO_LONG));
-        check("+12 34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
-        check("+12  34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
+        check("+12 34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("+12  34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("12:34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("12:34:56", &[fixed(TimezoneOffset)], Err(INVALID));
-        check("+12::34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
-        check("+12: :34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
-        check("+12:::34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
-        check("+12::::34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
-        check("+12::34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
+        check("+12::34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("+12: :34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("+12:::34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("+12::::34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("+12::34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("+12:34:56", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("+12:3456", &[fixed(TimezoneOffset)], Err(TOO_LONG));
         check("+1234:56", &[fixed(TimezoneOffset)], Err(TOO_LONG));
@@ -1068,21 +1109,21 @@ mod tests {
         check("+00:99", &[fixed(TimezoneOffset)], Err(OUT_OF_RANGE));
         check("#12:34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("+12:34 ", &[fixed(TimezoneOffset)], Err(TOO_LONG));
-        check("+12 34 ", &[fixed(TimezoneOffset)], Err(TOO_LONG));
+        check("+12 34 ", &[fixed(TimezoneOffset)], Err(INVALID));
         check(" +12:34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
         check(" -12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
         check(" −12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
         check("  +12:34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
         check("  -12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
         check("\t -12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12: 34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12 :34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12 : 34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12 :  34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12  : 34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12:  34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12  :34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
-        check("-12  :  34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
+        check("-12: 34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12 :34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12 : 34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12 :  34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12  : 34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12:  34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12  :34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("-12  :  34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("12:34 ", &[fixed(TimezoneOffset)], Err(INVALID));
         check(" 12:34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("", &[fixed(TimezoneOffset)], Err(TOO_SHORT));
@@ -1137,14 +1178,14 @@ mod tests {
         check("12345678", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("+1", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
         check("+12", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
-        check("+123", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
-        check("+1234", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("-1234", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240));
-        check("−1234", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
-        check("+12345", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+123456", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+1234567", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+12345678", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
+        check("+123", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+1234", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("-1234", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("−1234", &[fixed(TimezoneOffsetColon)], Err(INVALID)); // MINUS SIGN (U+2212)
+        check("+12345", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+123456", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+1234567", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12345678", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("1:", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("12:", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("12:3", &[fixed(TimezoneOffsetColon)], Err(INVALID));
@@ -1165,24 +1206,24 @@ mod tests {
         check("+12:34:56:7", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
         check("+12:34:56:78", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
         check("+12:3456", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
-        check("+1234:56", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
+        check("+1234:56", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("−12:34", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
-        check("−12 : 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
-        check("+12 :34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12: 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12: 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12 :34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12 : 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("-12 : 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: -45_240));
-        check("+12  : 34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12 :  34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12  :  34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12::34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12: :34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12:::34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12::::34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("+12::34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
+        check("−12 : 34", &[fixed(TimezoneOffsetColon)], Err(INVALID)); // MINUS SIGN (U+2212)
+        check("+12 :34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12: 34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12 34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12: 34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12 :34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12 : 34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("-12 : 34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12  : 34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12 :  34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12  :  34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12::34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12: :34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12:::34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12::::34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("+12::34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("#1234", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("#12:34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("+12:34 ", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
@@ -1194,11 +1235,7 @@ mod tests {
         check("", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
         check("+", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));
         check(":", &[fixed(TimezoneOffsetColon)], Err(INVALID));
-        check(
-            "+12345",
-            &[fixed(TimezoneOffsetColon), num(Numeric::Day)],
-            parsed!(offset: 45_240, day: 5),
-        );
+        check("+12345", &[fixed(TimezoneOffsetColon), num(Numeric::Day)], Err(INVALID));
         check(
             "+12:345",
             &[fixed(TimezoneOffsetColon), num(Numeric::Day)],
@@ -1260,21 +1297,21 @@ mod tests {
         check("+12:34:56:", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
         check("+12:34:56:7", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
         check("+12:34:56:78", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
-        check("+12::34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
+        check("+12::34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
         check("+12:3456", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
         check("+1234:56", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
-        check("+12 34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12  34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12: 34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12 :34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12 : 34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12  : 34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12 :  34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
-        check("+12  :  34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
+        check("+12 34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12  34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12: 34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12 :34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12 : 34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12  : 34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12 :  34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
+        check("+12  :  34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
         check("12:34 ", &[fixed(TimezoneOffsetZ)], Err(INVALID));
         check(" 12:34", &[fixed(TimezoneOffsetZ)], Err(INVALID));
         check("+12:34 ", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
-        check("+12 34 ", &[fixed(TimezoneOffsetZ)], Err(TOO_LONG));
+        check("+12 34 ", &[fixed(TimezoneOffsetZ)], Err(INVALID));
         check(" +12:34", &[fixed(TimezoneOffsetZ)], parsed!(offset: 45_240));
         check(
             "+12345",
@@ -1314,9 +1351,6 @@ mod tests {
         check("zulu", &[fixed(TimezoneOffsetZ), Literal("ulu")], parsed!(offset: 0));
         check("+1234ulu", &[fixed(TimezoneOffsetZ), Literal("ulu")], parsed!(offset: 45_240));
         check("+12:34ulu", &[fixed(TimezoneOffsetZ), Literal("ulu")], parsed!(offset: 45_240));
-        // Testing `TimezoneOffsetZ` also tests same path as `TimezoneOffsetColonZ`
-        // in function `parse_internal`.
-        // No need for separate tests for `TimezoneOffsetColonZ`.
 
         // TimezoneOffsetPermissive
         check("1", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
@@ -1329,7 +1363,7 @@ mod tests {
         check("12345678", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+1", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
         check("+12", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 43_200));
-        check("+123", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
+        check("+123", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("+1234", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
         check("-1234", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240));
         check("−1234", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
@@ -1345,8 +1379,8 @@ mod tests {
         check("12:34:5", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("12:34:56", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+1:", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
-        check("+12:", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 43_200));
-        check("+12:3", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
+        check("+12:", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12:3", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("+12:34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
         check("-12:34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240));
         check("−12:34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
@@ -1356,23 +1390,23 @@ mod tests {
         check("+12:34:56:", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("+12:34:56:7", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("+12:34:56:78", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
-        check("+12 34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12  34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12 :34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12: 34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12 : 34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12  :34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12:  34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12  :  34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12::34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12 ::34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12: :34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12:: 34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12  ::34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12:  :34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12::  34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12:::34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
-        check("+12::::34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
+        check("+12 34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12  34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12 :34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12: 34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12 : 34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12  :34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12:  34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12  :  34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12::34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12 ::34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12: :34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12:: 34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12  ::34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12:  :34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12::  34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12:::34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
+        check("+12::::34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("12:34 ", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check(" 12:34", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+12:34 ", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
@@ -1396,7 +1430,7 @@ mod tests {
         );
         check("🤠+12:34", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+12:34🤠", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
-        check("+12:🤠34", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
+        check("+12:🤠34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check(
             "+12:34🤠",
             &[internal_fixed(TimezoneOffsetPermissive), Literal("🤠")],
@@ -1666,8 +1700,8 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:20Z", Err(INVALID)),           // bad offset: zulu not allowed
             ("Tue, 20 Jan 2015 17:35:20 Zulu", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
             ("Tue, 20 Jan 2015 17:35:20 ZULU", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
-            ("Tue, 20 Jan 2015 17:35:20 −0800", Err(INVALID)), // bad offset: timezone offset using MINUS SIGN (U+2212), not specified for RFC 2822
-            ("Tue, 20 Jan 2015 17:35:20 0800", Err(INVALID)),  // missing offset sign
+            ("Tue, 20 Jan 2015 17:35:20 −0800", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, -8))), // timezone offset using MINUS SIGN (U+2212)
+            ("Tue, 20 Jan 2015 17:35:20 0800", Err(INVALID)), // missing offset sign
             ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named timezone
             ("Tue, 20 Jan 2015😈17:35:20 -0800", Err(INVALID)), // bad character!
         ];
