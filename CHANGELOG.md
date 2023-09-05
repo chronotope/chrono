@@ -1,5 +1,5 @@
-ChangeLog for Chrono
-====================
+Changelog
+=========
 
 This documents notable changes to [Chrono](https://github.com/chronotope/chrono)
 up to and including version 0.4.19. For later releases, please review the
@@ -11,18 +11,18 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 ## [0.4.18] - 2020-09-26
 
-* Restore support for x86_64-fortanix-unknown-sgx
+* Restore support for `x86_64-fortanix-unknown-sgx`
 
 ## [0.4.17] - 2020-09-26
 
-* Fix a name resolution error in wasm-bindgen code introduced by removing the dependency on time
+* Fix a name resolution error in `wasm-bindgen` code introduced by removing the dependency on time
   v0.1
 
 ## [0.4.16] - 2020-09-25
 
 ### Features
 
-* Add %Z specifier to the `FromStr`, similar to the glibc strptime
+* Add %Z specifier to the `FromStr`, similar to the glibc `strptime`
   (does not set the offset from the timezone name)
 
 * Drop the dependency on time v0.1, which is deprecated, unless the `oldtime`
@@ -145,7 +145,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 * Make Datetime arithmatic adjust their offsets after discovering their new
   timestamps (@quodlibetor #337)
-* Put wasm-bindgen related code and dependencies behind a `wasmbind` feature
+* Put `wasm-bindgen` related code and dependencies behind a `wasmbind` feature
   gate. (@quodlibetor #335)
 
 ## [0.4.8] - 2019-08-31
