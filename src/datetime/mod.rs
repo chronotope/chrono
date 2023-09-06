@@ -1366,14 +1366,6 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<js_sys::Date> for DateTime<Utc> {
     fn from(date: js_sys::Date) -> DateTime<Utc> {
         DateTime::<Utc>::from(&date)
@@ -1385,14 +1377,6 @@ impl From<js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
         Utc.timestamp_millis_opt(date.get_time() as i64).unwrap()
@@ -1404,14 +1388,6 @@ impl From<&js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl<Tz: TimeZone> From<DateTime<Tz>> for js_sys::Date {
     fn from(date: DateTime<Tz>) -> js_sys::Date {
         let js_millis = wasm_bindgen::JsValue::from_f64(date.timestamp_millis() as f64);
