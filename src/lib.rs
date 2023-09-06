@@ -1,20 +1,21 @@
 //! # Chrono: Date and Time for Rust
 //!
-//! It aims to be a feature-complete superset of
-//! the [time](https://github.com/rust-lang-deprecated/time) library.
-//! In particular,
+
+//! Chrono aims to provide all functionality needed to do correct operations on dates and times in the
+//! [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
 //!
-//! * Chrono strictly adheres to ISO 8601.
-//! * Chrono is timezone-aware by default, with separate timezone-naive types.
-//! * Chrono is space-optimal and (while not being the primary goal) reasonably efficient.
+//! * The [`DateTime`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) type is timezone-aware
+//!   by default, with separate timezone-naive types.
+//! * Operations that may produce an invalid or ambiguous date and time return `Option` or
+//!   [`LocalResult`](https://docs.rs/chrono/latest/chrono/offset/enum.LocalResult.html).
+//! * Configurable parsing and formatting with a `strftime` inspired date and time formatting syntax.
+//! * The [`Local`](https://docs.rs/chrono/latest/chrono/offset/struct.Local.html) timezone works with
+//!   the current timezone of the OS.
+//! * Types and operations are implemented to be reasonably efficient.
 //!
-//! There were several previous attempts to bring a good date and time library to Rust,
-//! which Chrono builds upon and should acknowledge:
-//!
-//! * [Initial research on
-//!    the wiki](https://github.com/rust-lang/rust-wiki-backup/blob/master/Lib-datetime.md)
-//! * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
-//! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
+//! Timezone data is not shipped with chrono by default to limit binary sizes. Use the companion crate
+//! [Chrono-TZ](https://crates.io/crates/chrono-tz) or [`tzfile`](https://crates.io/crates/tzfile) for
+//! full timezone support.
 //!
 //! ### Features
 //!
@@ -29,10 +30,13 @@
 //!   and traits.
 //! - `clock`: Enables reading the system time (`now`) that depends on the standard library for
 //! UNIX-like operating systems and the Windows API (`winapi`) for Windows.
+//! - `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 //!
 //! Optional features:
 //!
 //! - [`serde`][]: Enable serialization/deserialization via serde.
+//! - `rkyv`: Enable serialization/deserialization via rkyv.
+//! - `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
 //! - `unstable-locales`: Enable localization. This adds various methods with a
 //!   `_localized` suffix. The implementation and API may change or even be
 //!   removed in a patch release. Feedback welcome.
@@ -353,30 +357,18 @@
 //!
 //! ## Limitations
 //!
-//! Only proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
-//! Be very careful if you really have to deal with pre-20C dates, they can be in Julian or others.
+//! Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
+//! Date types are limited to about +/- 262,000 years from the common epoch.
+//! Time types are limited to nanosecond accuracy.
+//! Leap seconds can be represented, but Chrono does not fully support them.
+//! See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
 //!
-//! Date types are limited in about +/- 262,000 years from the common epoch.
-//! Time types are limited in the nanosecond accuracy.
+//! ## Rust version requirements
 //!
-//! [Leap seconds are supported in the representation but
-//! Chrono doesn't try to make use of them](./naive/struct.NaiveTime.html#leap-second-handling).
-//! (The main reason is that leap seconds are not really predictable.)
-//! Almost *every* operation over the possible leap seconds will ignore them.
-//! Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
-//! if you want.
+//! The Minimum Supported Rust Version (MSRV) is currently **Rust 1.57.0**.
 //!
-//! Chrono inherently does not support an inaccurate or partial date and time representation.
-//! Any operation that can be ambiguous will return `None` in such cases.
-//! For example, "a month later" of 2014-01-30 is not well-defined
-//! and consequently `Utc.ymd_opt(2014, 1, 30).unwrap().with_month(2)` returns `None`.
-//!
-//! Non ISO week handling is not yet supported.
-//! For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
-//! crate ([sources](https://github.com/bcourtine/chrono-ext/)).
-//!
-//! Advanced time zone handling is not yet supported.
-//! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
+//! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
+//! lightly.
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
