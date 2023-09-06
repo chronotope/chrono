@@ -1388,6 +1388,32 @@ impl From<&js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
+impl From<js_sys::Date> for DateTime<Local> {
+    fn from(date: js_sys::Date) -> DateTime<Local> {
+        DateTime::<Local>::from(&date)
+    }
+}
+
+#[cfg(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi"))
+))]
+impl From<&js_sys::Date> for DateTime<Local> {
+    fn from(date: &js_sys::Date) -> DateTime<Local> {
+        FixedOffset::west_opt((date.get_timezone_offset() as i32) * 60)
+            .unwrap()
+            .timestamp_millis_opt(date.get_time() as i64)
+            .unwrap()
+            .into()
+    }
+}
+
+#[cfg(all(
+    target_arch = "wasm32",
+    feature = "wasmbind",
+    not(any(target_os = "emscripten", target_os = "wasi"))
+))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for js_sys::Date {
     fn from(date: DateTime<Tz>) -> js_sys::Date {
         let js_millis = wasm_bindgen::JsValue::from_f64(date.timestamp_millis() as f64);
