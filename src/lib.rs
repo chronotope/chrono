@@ -369,6 +369,29 @@
 //!
 //! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
 //! lightly.
+//!
+//! ## `TZ` environment variable and soundness
+//!
+//! All versions of chrono before 0.4.20 are affected by [RUSTSEC-2020-0159], like [time] was by
+//! [CVE-2020-26235] and [RUSTSEC-2020-0071]. We used the POSIX method `localtime_r` to get the
+//! local time, which may segfault if the `TZ` environment variable gets modified in a
+//! multi-threaded process.
+//!
+//! Rust assumes the environment to be writable and uses locks to access it from multiple threads.
+//! So do some other programming languages and libraries, but there is no shared locking mechanism.
+//! More importantly POSIX declares modifying the environment in a multi-threaded process as unsafe
+//! (see [rust#27970] for more discussion).
+//!
+//! Since version 4.20 chrono no longer uses `localtime_r` but uses rust code to query the time zone
+//! (from the `TZ` string or via `iana-time-zone` as a fallback) and work with data from the system
+//! time zone database directly. So when reading the `TZ` environment variable chrono now respects
+//! the Rust locks. However in general it is probably best to avoid modifying the environment.
+//!
+//! [CVE-2020-26235]: https://nvd.nist.gov/vuln/detail/CVE-2020-26235
+//! [RUSTSEC-2020-0071]: https://rustsec.org/advisories/RUSTSEC-2020-0071
+//! [RUSTSEC-2020-0159]: https://rustsec.org/advisories/RUSTSEC-2020-0159.html
+//! [rust#27970]: https://github.com/rust-lang/rust/issues/27970
+//! [chrono#677]: https://github.com/chronotope/chrono/pull/677
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
