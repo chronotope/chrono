@@ -88,7 +88,7 @@ mod inner {
 #[cfg(unix)]
 mod tz_info;
 
-/// The local timescale. This is implemented via the standard `time` crate.
+/// The local timescale.
 ///
 /// Using the [`TimeZone`](./trait.TimeZone.html) methods
 /// on the Local struct is the preferred way to construct `DateTime<Local>`
