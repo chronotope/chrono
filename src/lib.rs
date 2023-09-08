@@ -489,6 +489,8 @@ pub use duration::Duration;
 #[doc(no_inline)]
 pub use duration::OutOfRangeError;
 
+mod macros;
+
 use core::fmt;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
