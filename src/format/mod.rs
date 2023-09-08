@@ -58,6 +58,7 @@ pub(crate) use formatting::write_hundreds;
 pub(crate) use formatting::write_rfc2822;
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 pub(crate) use formatting::write_rfc3339;
+pub use formatting::SecondsFormat;
 #[cfg(feature = "alloc")]
 #[allow(deprecated)]
 pub use formatting::{format, format_item, DelayedFormat};

@@ -1,8 +1,8 @@
 use core::fmt;
 use serde::{de, ser};
 
-use super::{DateTime, SecondsFormat};
-use crate::format::write_rfc3339;
+use super::DateTime;
+use crate::format::{write_rfc3339, SecondsFormat};
 use crate::naive::datetime::serde::serde_from;
 #[cfg(feature = "clock")]
 use crate::offset::Local;

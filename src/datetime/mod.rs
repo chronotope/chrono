@@ -22,7 +22,7 @@ use crate::format::{
     StrftimeItems, TOO_LONG,
 };
 #[cfg(feature = "alloc")]
-use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat};
+use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat, SecondsFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -43,38 +43,6 @@ pub(super) mod serde;
 
 #[cfg(test)]
 mod tests;
-
-/// Specific formatting options for seconds. This may be extended in the
-/// future, so exhaustive matching in external code is not recommended.
-///
-/// See the `TimeZone::to_rfc3339_opts` function for usage.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-#[allow(clippy::manual_non_exhaustive)]
-pub enum SecondsFormat {
-    /// Format whole seconds only, with no decimal point nor subseconds.
-    Secs,
-
-    /// Use fixed 3 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond3](format/enum.Fixed.html#variant.Nanosecond3).
-    Millis,
-
-    /// Use fixed 6 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond6](format/enum.Fixed.html#variant.Nanosecond6).
-    Micros,
-
-    /// Use fixed 9 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond9](format/enum.Fixed.html#variant.Nanosecond9).
-    Nanos,
-
-    /// Automatically select one of `Secs`, `Millis`, `Micros`, or `Nanos` to
-    /// display all available non-zero sub-second digits.  This corresponds to
-    /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond).
-    AutoSi,
-
-    // Do not match against this.
-    #[doc(hidden)]
-    __NonExhaustive,
-}
 
 /// ISO 8601 combined date and time with time zone.
 ///
