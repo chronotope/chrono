@@ -126,9 +126,9 @@ impl NaiveDateTime {
     #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
+    pub const fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
-        datetime.expect("invalid or out-of-range datetime")
+        expect!(datetime, "invalid or out-of-range datetime")
     }
 
     /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
@@ -157,7 +157,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
         let secs = millis.div_euclid(1000);
         let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
@@ -189,7 +189,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
         let secs = micros.div_euclid(1_000_000);
         let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
@@ -227,13 +227,14 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let days = secs.div_euclid(86_400);
         let secs = secs.rem_euclid(86_400);
-        let date = i32::try_from(days)
-            .ok()
-            .and_then(|days| days.checked_add(719_163))
-            .and_then(NaiveDate::from_num_days_from_ce_opt);
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        let date =
+            NaiveDate::from_num_days_from_ce_opt(try_opt!((days as i32).checked_add(719_163)));
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
             (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
@@ -397,10 +398,10 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp(&self) -> i64 {
+    pub const fn timestamp(&self) -> i64 {
         const UNIX_EPOCH_DAY: i64 = 719_163;
-        let gregorian_day = i64::from(self.date.num_days_from_ce());
-        let seconds_from_midnight = i64::from(self.time.num_seconds_from_midnight());
+        let gregorian_day = self.date.num_days_from_ce() as i64;
+        let seconds_from_midnight = self.time.num_seconds_from_midnight() as i64;
         (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 
@@ -425,9 +426,9 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_millis(&self) -> i64 {
+    pub const fn timestamp_millis(&self) -> i64 {
         let as_ms = self.timestamp() * 1000;
-        as_ms + i64::from(self.timestamp_subsec_millis())
+        as_ms + self.timestamp_subsec_millis() as i64
     }
 
     /// Returns the number of non-leap *microseconds* since midnight on January 1, 1970.
@@ -448,9 +449,9 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_micros(&self) -> i64 {
+    pub const fn timestamp_micros(&self) -> i64 {
         let as_us = self.timestamp() * 1_000_000;
-        as_us + i64::from(self.timestamp_subsec_micros())
+        as_us + self.timestamp_subsec_micros() as i64
     }
 
     /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
@@ -547,7 +548,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_millis(&self) -> u32 {
+    pub const fn timestamp_subsec_millis(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000_000
     }
 
@@ -569,7 +570,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_micros(&self) -> u32 {
+    pub const fn timestamp_subsec_micros(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000
     }
 
@@ -591,7 +592,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_nanos(&self) -> u32 {
+    pub const fn timestamp_subsec_nanos(&self) -> u32 {
         self.time.nanosecond()
     }
 
@@ -671,7 +672,7 @@ impl NaiveDateTime {
             return None;
         }
 
-        let date = self.date.checked_add_signed(OldDuration::seconds(rhs))?;
+        let date = try_opt!(self.date.checked_add_signed(OldDuration::seconds(rhs)));
         Some(NaiveDateTime { date, time })
     }
 
@@ -701,8 +702,8 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[must_use]
-    pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    pub const fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        Some(Self { date: try_opt!(self.date.checked_add_months(rhs)), time: self.time })
     }
 
     /// Adds given `FixedOffset` to the current datetime.
@@ -854,24 +855,24 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[must_use]
-    pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
+    pub const fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        Some(Self { date: try_opt!(self.date.checked_sub_months(rhs)), time: self.time })
     }
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
     #[must_use]
-    pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: self.date.checked_add_days(days)?, ..self })
+    pub const fn checked_add_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: try_opt!(self.date.checked_add_days(days)), ..self })
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
     #[must_use]
-    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: self.date.checked_sub_days(days)?, ..self })
+    pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: try_opt!(self.date.checked_sub_days(days)), ..self })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -1430,7 +1431,7 @@ impl Timelike for NaiveDateTime {
     /// The range from 1,000,000,000 to 1,999,999,999 represents
     /// the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
-    /// See also the [`NaiveTime::nanosecond`] method.
+    /// See also the [`NaiveTime#method.nanosecond`] method.
     ///
     /// # Example
     ///
