@@ -100,8 +100,7 @@ impl NaiveWeek {
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
-    /// [first_day](./struct.NaiveWeek.html#method.first_day) and
-    /// [last_day](./struct.NaiveWeek.html#method.last_day) functions.
+    /// [first_day](NaiveWeek::first_day) and [last_day](NaiveWeek::last_day) functions.
     ///
     /// # Panics
     ///
@@ -160,12 +159,12 @@ impl Days {
 ///
 /// * ISO 8601 calendars has the year 0, which is 1 BCE (a year before 1 CE).
 ///   If you need a typical BCE/BC and CE/AD notation for year numbers,
-///   use the [`Datelike::year_ce`](../trait.Datelike.html#method.year_ce) method.
+///   use the [`Datelike::year_ce`] method.
 ///
 /// # Week Date
 ///
 /// The ISO 8601 **week date** is a triple of year number, week number
-/// and [day of the week](../enum.Weekday.html) with the following rules:
+/// and [day of the week](Weekday) with the following rules:
 ///
 /// * A week consists of Monday through Sunday, and is always numbered within some year.
 ///   The week number ranges from 1 to 52 or 53 depending on the year.
@@ -176,10 +175,9 @@ impl Days {
 /// * The year number in the week date may *not* correspond to the actual Gregorian year.
 ///   For example, January 3, 2016 (Sunday) was on the last (53rd) week of 2015.
 ///
-/// Chrono's date types default to the ISO 8601 [calendar date](#calendar-date),
-/// but [`Datelike::iso_week`](../trait.Datelike.html#tymethod.iso_week) and
-/// [`Datelike::weekday`](../trait.Datelike.html#tymethod.weekday) methods
-/// can be used to get the corresponding week date.
+/// Chrono's date types default to the ISO 8601 [calendar date](#calendar-date), but
+/// [`Datelike::iso_week`] and [`Datelike::weekday`] methods can be used to get the corresponding
+/// week date.
 ///
 /// # Ordinal Date
 ///
@@ -542,7 +540,7 @@ impl NaiveDate {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -591,7 +589,7 @@ impl NaiveDate {
 
     /// Parses a string from a user-specified format into a new `NaiveDate` value, and a slice with
     /// the remaining portion of the string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// Similar to [`parse_from_str`](#method.parse_from_str).
@@ -1280,7 +1278,7 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -2139,7 +2137,7 @@ impl DoubleEndedIterator for NaiveDateWeeksIterator {
 impl FusedIterator for NaiveDateWeeksIterator {}
 
 /// The `Debug` output of the naive date `d` is the same as
-/// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
+/// [`d.format("%Y-%m-%d")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -2182,7 +2180,7 @@ impl fmt::Debug for NaiveDate {
 }
 
 /// The `Display` output of the naive date `d` is the same as
-/// [`d.format("%Y-%m-%d")`](../format/strftime/index.html).
+/// [`d.format("%Y-%m-%d")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -2210,7 +2208,7 @@ impl fmt::Display for NaiveDate {
 }
 
 /// Parsing a `str` into a `NaiveDate` uses the same format,
-/// [`%Y-%m-%d`](../format/strftime/index.html), as in `Debug` and `Display`.
+/// [`%Y-%m-%d`](crate::format::strftime), as in `Debug` and `Display`.
 ///
 /// # Example
 ///

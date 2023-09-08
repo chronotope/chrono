@@ -211,8 +211,7 @@ pub trait Offset: Sized + Clone + fmt::Debug {
 
 /// The time zone.
 ///
-/// The methods here are the primarily constructors for [`Date`](../struct.Date.html) and
-/// [`DateTime`](../struct.DateTime.html) types.
+/// The methods here are the primary constructors for [`Date`] and [`DateTime`] types.
 pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
