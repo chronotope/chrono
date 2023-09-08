@@ -460,6 +460,10 @@ fn test_datetime_rfc2822() {
         Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0000"
     );
+    assert_eq!(
+        Utc.with_ymd_and_hms(2015, 2, 1, 23, 16, 9).unwrap().to_rfc2822(),
+        "Sun, 1 Feb 2015 23:16:09 +0000"
+    );
     // timezone +05
     assert_eq!(
         edt.from_local_datetime(
