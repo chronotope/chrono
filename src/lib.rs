@@ -477,6 +477,7 @@ extern crate alloc;
 mod duration;
 pub use duration::Duration;
 #[cfg(feature = "std")]
+#[doc(no_inline)]
 pub use duration::OutOfRangeError;
 
 use core::fmt;
@@ -508,13 +509,18 @@ pub mod prelude {
 
 mod date;
 #[allow(deprecated)]
-pub use date::{Date, MAX_DATE, MIN_DATE};
+pub use date::Date;
+#[doc(no_inline)]
+#[allow(deprecated)]
+pub use date::{MAX_DATE, MIN_DATE};
 
 mod datetime;
 #[cfg(feature = "rustc-serialize")]
 pub use datetime::rustc_serialize::TsSeconds;
+pub use datetime::DateTime;
 #[allow(deprecated)]
-pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+#[doc(no_inline)]
+pub use datetime::{SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 
 pub mod format;
 /// L10n locales.
@@ -523,24 +529,30 @@ pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 
 pub mod naive;
-#[doc(no_inline)]
-pub use naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
+#[doc(inline)]
+pub use naive::{Days, NaiveDate, NaiveDateTime, NaiveTime};
+pub use naive::{IsoWeek, NaiveWeek};
 
 pub mod offset;
 #[cfg(feature = "clock")]
-#[doc(no_inline)]
+#[doc(inline)]
 pub use offset::Local;
-#[doc(no_inline)]
-pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+pub use offset::LocalResult;
+#[doc(inline)]
+pub use offset::{FixedOffset, Offset, TimeZone, Utc};
 
 mod round;
 pub use round::{DurationRound, RoundingError, SubsecRound};
 
 mod weekday;
-pub use weekday::{ParseWeekdayError, Weekday};
+#[doc(no_inline)]
+pub use weekday::ParseWeekdayError;
+pub use weekday::Weekday;
 
 mod month;
-pub use month::{Month, Months, ParseMonthError};
+#[doc(no_inline)]
+pub use month::ParseMonthError;
+pub use month::{Month, Months};
 
 mod traits;
 pub use traits::{Datelike, Timelike};
