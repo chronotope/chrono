@@ -460,6 +460,7 @@ impl NaiveDateTime {
     ///
     /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
     /// 2262-04-11T23:47:16.854775804.
+    #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
     pub fn timestamp_nanos(&self) -> i64 {
