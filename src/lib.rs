@@ -521,6 +521,8 @@ pub use time_delta::TimeDelta;
 /// Alias of [`TimeDelta`].
 pub type Duration = TimeDelta;
 
+mod macros;
+
 use core::fmt;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
