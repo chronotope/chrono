@@ -386,7 +386,7 @@ fn test_nanosecond_range() {
     const A_BILLION: i64 = 1_000_000_000;
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
-    let nanos = parsed.timestamp_nanos();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
     assert_eq!(
         parsed,
         NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
@@ -394,29 +394,23 @@ fn test_nanosecond_range() {
 
     let minimum = "1677-09-21T00:12:44.000000000";
     let parsed: NaiveDateTime = minimum.parse().unwrap();
-    let nanos = parsed.timestamp_nanos();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
     assert_eq!(
         parsed,
         NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
     );
-}
 
-#[test]
-#[should_panic]
-fn test_nanosecond_just_beyond_range() {
+    // Just beyond range
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
     let beyond_max = parsed + OldDuration::milliseconds(300);
-    let _ = beyond_max.timestamp_nanos();
-}
+    assert!(beyond_max.timestamp_nanos_opt().is_none());
 
-#[test]
-#[should_panic]
-fn test_nanosecond_far_beyond_range() {
+    // Far beyond range
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
     let beyond_max = parsed + OldDuration::days(365);
-    let _ = beyond_max.timestamp_nanos();
+    assert!(beyond_max.timestamp_nanos_opt().is_none());
 }
 
 #[test]
