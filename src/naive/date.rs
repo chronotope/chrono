@@ -1437,6 +1437,13 @@ impl NaiveDate {
         self.ymdf >> 13
     }
 
+    /// Returns the day of year starting from 1.
+    // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
+    #[inline]
+    const fn ordinal(&self) -> u32 {
+        self.of().ordinal()
+    }
+
     // This duplicates `Datelike::month()`, because trait methods can't be const yet.
     #[inline]
     const fn month(&self) -> u32 {
@@ -1453,6 +1460,22 @@ impl NaiveDate {
     #[inline]
     const fn weekday(&self) -> Weekday {
         self.of().weekday()
+    }
+
+    /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
+    // This duplicates `Datelike::num_days_from_ce()`, because trait methods can't be const yet.
+    pub(crate) const fn num_days_from_ce(&self) -> i32 {
+        // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
+        let mut year = self.year() - 1;
+        let mut ndays = 0;
+        if year < 0 {
+            let excess = 1 + (-year) / 400;
+            year += excess * 400;
+            ndays -= excess * 146_097;
+        }
+        let div_100 = year / 100;
+        ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
+        ndays + self.ordinal() as i32
     }
 
     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).

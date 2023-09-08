@@ -868,6 +868,21 @@ impl NaiveTime {
         (hour, min, sec)
     }
 
+    /// Returns the number of non-leap seconds past the last midnight.
+    // This duplicates `Timelike::num_seconds_from_midnight()`, because trait methods can't be const
+    // yet.
+    #[inline]
+    pub(crate) const fn num_seconds_from_midnight(&self) -> u32 {
+        self.secs
+    }
+
+    /// Returns the number of nanoseconds since the whole non-leap second.
+    // This duplicates `Timelike::nanosecond()`, because trait methods can't be const yet.
+    #[inline]
+    pub(crate) const fn nanosecond(&self) -> u32 {
+        self.frac
+    }
+
     /// The earliest possible `NaiveTime`
     pub const MIN: Self = Self { secs: 0, frac: 0 };
     pub(super) const MAX: Self = Self { secs: 23 * 3600 + 59 * 60 + 59, frac: 999_999_999 };
