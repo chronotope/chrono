@@ -511,13 +511,13 @@ pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::DateTime;
 #[allow(deprecated)]
 #[doc(no_inline)]
-pub use datetime::{SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+pub use datetime::{MAX_DATETIME, MIN_DATETIME};
 
 pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
 pub use format::Locale;
-pub use format::{ParseError, ParseResult};
+pub use format::{ParseError, ParseResult, SecondsFormat};
 
 pub mod naive;
 #[doc(inline)]

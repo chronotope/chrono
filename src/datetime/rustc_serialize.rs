@@ -1,4 +1,5 @@
-use super::{DateTime, SecondsFormat};
+use super::DateTime;
+use crate::format::SecondsFormat;
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, LocalResult, TimeZone, Utc};

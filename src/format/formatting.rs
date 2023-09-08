@@ -11,8 +11,6 @@ use core::borrow::Borrow;
 use core::fmt::Display;
 use core::fmt::{self, Write};
 
-#[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
-use crate::datetime::SecondsFormat;
 #[cfg(feature = "alloc")]
 use crate::offset::Offset;
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
@@ -502,6 +500,38 @@ impl OffsetFormat {
         }
         Ok(())
     }
+}
+
+/// Specific formatting options for seconds. This may be extended in the
+/// future, so exhaustive matching in external code is not recommended.
+///
+/// See the `TimeZone::to_rfc3339_opts` function for usage.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[allow(clippy::manual_non_exhaustive)]
+pub enum SecondsFormat {
+    /// Format whole seconds only, with no decimal point nor subseconds.
+    Secs,
+
+    /// Use fixed 3 subsecond digits. This corresponds to
+    /// [Fixed::Nanosecond3](format/enum.Fixed.html#variant.Nanosecond3).
+    Millis,
+
+    /// Use fixed 6 subsecond digits. This corresponds to
+    /// [Fixed::Nanosecond6](format/enum.Fixed.html#variant.Nanosecond6).
+    Micros,
+
+    /// Use fixed 9 subsecond digits. This corresponds to
+    /// [Fixed::Nanosecond9](format/enum.Fixed.html#variant.Nanosecond9).
+    Nanos,
+
+    /// Automatically select one of `Secs`, `Millis`, `Micros`, or `Nanos` to
+    /// display all available non-zero sub-second digits.  This corresponds to
+    /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond).
+    AutoSi,
+
+    // Do not match against this.
+    #[doc(hidden)]
+    __NonExhaustive,
 }
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
