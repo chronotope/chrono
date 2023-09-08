@@ -142,9 +142,6 @@ pub trait DurationRound: Sized {
     fn duration_trunc(self, duration: Duration) -> Result<Self, Self::Err>;
 }
 
-/// The maximum number of seconds a DateTime can be to be represented as nanoseconds
-const MAX_SECONDS_TIMESTAMP_FOR_NANOS: i64 = 9_223_372_036;
-
 impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
     type Err = RoundingError;
 
@@ -181,10 +178,7 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
+        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
@@ -223,10 +217,7 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
+        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
