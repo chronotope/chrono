@@ -157,6 +157,14 @@ pub mod ts_nanoseconds {
     ///
     /// Intended for use with `serde`s `serialize_with` attribute.
     ///
+    /// # Errors
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns an
+    /// error on an out of range `DateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
+    ///
     /// # Example:
     ///
     /// ```rust
@@ -180,7 +188,9 @@ pub mod ts_nanoseconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.timestamp_nanos())
+        serializer.serialize_i64(dt.timestamp_nanos_opt().ok_or(ser::Error::custom(
+            "value out of range for a timestamp with nanosecond precision",
+        ))?)
     }
 
     /// Deserialize a [`DateTime`] from a nanosecond timestamp
@@ -286,6 +296,14 @@ pub mod ts_nanoseconds_option {
     ///
     /// Intended for use with `serde`s `serialize_with` attribute.
     ///
+    /// # Errors
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns an
+    /// error on an out of range `DateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
+    ///
     /// # Example:
     ///
     /// ```rust
@@ -310,7 +328,9 @@ pub mod ts_nanoseconds_option {
         S: ser::Serializer,
     {
         match *opt {
-            Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos()),
+            Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos_opt().ok_or(
+                ser::Error::custom("value out of range for a timestamp with nanosecond precision"),
+            )?),
             None => serializer.serialize_none(),
         }
     }
