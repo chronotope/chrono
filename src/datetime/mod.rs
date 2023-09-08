@@ -274,6 +274,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
     /// 2262-04-11T23:47:16.854775804.
+    #[inline]
+    #[must_use]
+    pub fn timestamp_nanos(&self) -> i64 {
+        self.timestamp_nanos_opt()
+            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    }
+
+    /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
+    ///
+    /// # Panics
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
+    /// an out of range `DateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
+    /// 2262-04-11T23:47:16.854775804.
     ///
     /// # Example
     ///
@@ -281,15 +297,15 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_000_000_000_555));
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.datetime.timestamp_nanos()
+    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
+        self.datetime.timestamp_nanos_opt()
     }
 
     /// Returns the number of milliseconds since the last second boundary.
