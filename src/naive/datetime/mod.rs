@@ -53,7 +53,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 ///
 /// # Example
 ///
-/// `NaiveDateTime` is commonly created from [`NaiveDate`](./struct.NaiveDate.html).
+/// `NaiveDateTime` is commonly created from [`NaiveDate`].
 ///
 /// ```
 /// use chrono::{NaiveDate, NaiveDateTime};
@@ -62,8 +62,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// # let _ = dt;
 /// ```
 ///
-/// You can use typical [date-like](../trait.Datelike.html) and
-/// [time-like](../trait.Timelike.html) methods,
+/// You can use typical [date-like](Datelike) and [time-like](Timelike) methods,
 /// provided that relevant traits are in the scope.
 ///
 /// ```
@@ -113,8 +112,7 @@ impl NaiveDateTime {
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// For a non-naive version of this function see
-    /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
+    /// For a non-naive version of this function see [`TimeZone::timestamp`].
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
     /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
@@ -244,7 +242,7 @@ impl NaiveDateTime {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -322,7 +320,7 @@ impl NaiveDateTime {
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`, and a
     /// slice with the remaining portion of the string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// Similar to [`parse_from_str`](#method.parse_from_str).
@@ -958,7 +956,7 @@ impl NaiveDateTime {
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -1087,7 +1085,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// The return value ranges from 0 to 11.
     ///
-    /// See also the [`NaiveDate::month0`](./struct.NaiveDate.html#method.month0) method.
+    /// See also the [`NaiveDate::month0`] method.
     ///
     /// # Example
     ///
@@ -1125,7 +1123,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// The return value ranges from 0 to 30. (The last day of month differs by months.)
     ///
-    /// See also the [`NaiveDate::day0`](./struct.NaiveDate.html#method.day0) method.
+    /// See also the [`NaiveDate::day0`] method.
     ///
     /// # Example
     ///
@@ -1163,7 +1161,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// The return value ranges from 0 to 365. (The last day of year differs by years.)
     ///
-    /// See also the [`NaiveDate::ordinal0`](./struct.NaiveDate.html#method.ordinal0) method.
+    /// See also the [`NaiveDate::ordinal0`] method.
     ///
     /// # Example
     ///

@@ -474,7 +474,7 @@ impl NaiveTime {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -542,7 +542,7 @@ impl NaiveTime {
 
     /// Parses a string from a user-specified format into a new `NaiveTime` value, and a slice with
     /// the remaining portion of the string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// Similar to [`parse_from_str`](#method.parse_from_str).
@@ -819,7 +819,7 @@ impl NaiveTime {
     }
 
     /// Formats the time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -1373,7 +1373,7 @@ impl Sub<NaiveTime> for NaiveTime {
 }
 
 /// The `Debug` output of the naive time `t` is the same as
-/// [`t.format("%H:%M:%S%.f")`](../format/strftime/index.html).
+/// [`t.format("%H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1429,7 +1429,7 @@ impl fmt::Debug for NaiveTime {
 }
 
 /// The `Display` output of the naive time `t` is the same as
-/// [`t.format("%H:%M:%S%.f")`](../format/strftime/index.html).
+/// [`t.format("%H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1463,7 +1463,7 @@ impl fmt::Display for NaiveTime {
 }
 
 /// Parsing a `str` into a `NaiveTime` uses the same format,
-/// [`%H:%M:%S%.f`](../format/strftime/index.html), as in `Debug` and `Display`.
+/// [`%H:%M:%S%.f`](crate::format::strftime), as in `Debug` and `Display`.
 ///
 /// # Example
 ///

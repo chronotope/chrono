@@ -512,21 +512,17 @@ pub enum SecondsFormat {
     /// Format whole seconds only, with no decimal point nor subseconds.
     Secs,
 
-    /// Use fixed 3 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond3](format/enum.Fixed.html#variant.Nanosecond3).
+    /// Use fixed 3 subsecond digits. This corresponds to [Fixed::Nanosecond3].
     Millis,
 
-    /// Use fixed 6 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond6](format/enum.Fixed.html#variant.Nanosecond6).
+    /// Use fixed 6 subsecond digits. This corresponds to [Fixed::Nanosecond6].
     Micros,
 
-    /// Use fixed 9 subsecond digits. This corresponds to
-    /// [Fixed::Nanosecond9](format/enum.Fixed.html#variant.Nanosecond9).
+    /// Use fixed 9 subsecond digits. This corresponds to [Fixed::Nanosecond9].
     Nanos,
 
-    /// Automatically select one of `Secs`, `Millis`, `Micros`, or `Nanos` to
-    /// display all available non-zero sub-second digits.  This corresponds to
-    /// [Fixed::Nanosecond](format/enum.Fixed.html#variant.Nanosecond).
+    /// Automatically select one of `Secs`, `Millis`, `Micros`, or `Nanos` to display all available
+    /// non-zero sub-second digits.  This corresponds to [Fixed::Nanosecond].
     AutoSi,
 
     // Do not match against this.
