@@ -209,6 +209,18 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
     /// (aka "UNIX timestamp").
+    ///
+    /// The reverse operation of creating a [`DateTime`] from a timestamp can be performed
+    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp_opt`].
+    ///
+    /// ```
+    /// use chrono::{DateTime, TimeZone, Utc};
+    ///
+    /// let dt: DateTime<Utc> = Utc.with_ymd_and_hms(2015, 5, 15, 0, 0, 0).unwrap();
+    /// assert_eq!(dt.timestamp(), 1431648000);
+    ///
+    /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
+    /// ```
     #[inline]
     #[must_use]
     pub fn timestamp(&self) -> i64 {
@@ -557,6 +569,37 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub const MIN_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
     /// The maximum possible `DateTime<Utc>`.
     pub const MAX_UTC: DateTime<Utc> = DateTime { datetime: NaiveDateTime::MAX, offset: Utc };
+}
+
+impl DateTime<Utc> {
+    /// Makes a new [`DateTime<Utc>`] from the number of non-leap seconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
+    ///
+    /// This is guaranteed to round-trip with regard to [`timestamp`](DateTime::timestamp) and
+    /// [`timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos).
+    ///
+    /// Returns `None` on out-of-range number of seconds and/or
+    /// invalid nanosecond, otherwise returns `Some(DateTime {...})`.
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_opt`] or [`DateTime::with_timezone`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{DateTime, Utc};
+    ///
+    /// let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp(1431648000, 0).expect("invalid timestamp");
+    ///
+    /// assert_eq!(dt.to_string(), "2015-05-15 00:00:00 UTC");
+    /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
+        NaiveDateTime::from_timestamp_opt(secs, nsecs).as_ref().map(NaiveDateTime::and_utc)
+    }
 }
 
 impl Default for DateTime<Utc> {
