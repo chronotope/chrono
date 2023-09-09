@@ -301,7 +301,7 @@
 //!
 //! ### Conversion from and to EPOCH timestamps
 //!
-//! Use [`Utc.timestamp(seconds, nanoseconds)`](./offset/trait.TimeZone.html#method.timestamp)
+//! Use [`DateTime::from_timestamp_opt(seconds, nanoseconds)`](./struct.DateTime.html#method.from_timestamp_opt)
 //! to construct a [`DateTime<Utc>`](./struct.DateTime.html) from a UNIX timestamp
 //! (seconds, nanoseconds that passed since January 1st 1970).
 //!
@@ -313,10 +313,10 @@
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 #![cfg_attr(feature = "std", doc = "```rust")]
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::{DateTime, FixedOffset, TimeZone, Utc};
+//! use chrono::{DateTime, FixedOffset, Utc};
 //!
 //! // Construct a datetime from epoch:
-//! let dt = Utc.timestamp_opt(1_500_000_000, 0).unwrap();
+//! let dt: DateTime<Utc> = DateTime::from_timestamp_opt(1_500_000_000, 0).unwrap();
 //! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
 //!
 //! // Get epoch value from a datetime:
