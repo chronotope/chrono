@@ -637,7 +637,12 @@ fn write_rfc2822_inner(
 
     w.write_str(short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize])?;
     w.write_str(", ")?;
-    write_hundreds(w, d.day() as u8)?;
+    let day = d.day();
+    if day < 10 {
+        w.write_char((b'0' + day as u8) as char)?;
+    } else {
+        write_hundreds(w, day as u8)?;
+    }
     w.write_char(' ')?;
     w.write_str(short_months(locale)[d.month0() as usize])?;
     w.write_char(' ')?;
