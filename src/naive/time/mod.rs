@@ -171,22 +171,29 @@ mod tests;
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ```
 ///
-/// There are hypothetical leap seconds not on the minute boundary
-/// nevertheless supported by Chrono.
-/// They are allowed for the sake of completeness and consistency;
-/// there were several "exotic" time zone offsets with fractional minutes prior to UTC after all.
-/// For such cases the human-readable representation is ambiguous
-/// and would be read back to the next non-leap second.
+/// There are hypothetical leap seconds not on the minute boundary nevertheless supported by Chrono.
+/// They are allowed for the sake of completeness and consistency; there were several "exotic" time
+/// zone offsets with fractional minutes prior to UTC after all.
+/// For such cases the human-readable representation is ambiguous and would be read back to the next
+/// non-leap second.
 ///
 /// ```
-/// use chrono::{DateTime, Utc, TimeZone, NaiveDate};
+/// use chrono::{FixedOffset, NaiveDate, TimeZone};
 ///
-/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 56, 4, 1_000).unwrap().and_local_timezone(Utc).unwrap();
-/// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
+/// let paramaribo_pre1945 = FixedOffset::east_opt(-13236).unwrap(); // -03:40:36
+/// let leap_sec_2015 =
+///     NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+/// let dt1 = paramaribo_pre1945.from_utc_datetime(&leap_sec_2015);
+/// assert_eq!(format!("{:?}", dt1), "2015-06-30T20:19:24-03:40:36");
+/// assert_eq!(format!("{:?}", dt1.time()), "20:19:24");
 ///
-/// let dt = Utc.with_ymd_and_hms(2015, 6, 30, 23, 56, 5).unwrap();
-/// assert_eq!(format!("{:?}", dt), "2015-06-30T23:56:05Z");
-/// assert_eq!(DateTime::parse_from_rfc3339("2015-06-30T23:56:05Z").unwrap(), dt);
+/// let next_sec = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+/// let dt2 = paramaribo_pre1945.from_utc_datetime(&next_sec);
+/// assert_eq!(format!("{:?}", dt2), "2015-06-30T20:19:24-03:40:36");
+/// assert_eq!(format!("{:?}", dt2.time()), "20:19:24");
+///
+/// assert!(dt1.time() != dt2.time());
+/// assert!(dt1.time().to_string() == dt2.time().to_string());
 /// ```
 ///
 /// Since Chrono alone cannot determine any existence of leap seconds,
