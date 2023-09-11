@@ -1409,6 +1409,21 @@ impl NaiveDate {
         NaiveWeek { date: *self, start }
     }
 
+    /// Returns `true` if this is a leap year.
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    /// assert_eq!(NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().leap_year(), true);
+    /// assert_eq!(NaiveDate::from_ymd_opt(2001, 1, 1).unwrap().leap_year(), false);
+    /// assert_eq!(NaiveDate::from_ymd_opt(2002, 1, 1).unwrap().leap_year(), false);
+    /// assert_eq!(NaiveDate::from_ymd_opt(2003, 1, 1).unwrap().leap_year(), false);
+    /// assert_eq!(NaiveDate::from_ymd_opt(2004, 1, 1).unwrap().leap_year(), true);
+    /// assert_eq!(NaiveDate::from_ymd_opt(2100, 1, 1).unwrap().leap_year(), false);
+    /// ```
+    pub const fn leap_year(&self) -> bool {
+        self.ymdf & (0b1000) == 0
+    }
+
     // This duplicates `Datelike::year()`, because trait methods can't be const yet.
     #[inline]
     const fn year(&self) -> i32 {
@@ -3170,6 +3185,16 @@ mod tests {
         assert!(dt.with_month0(4294967295).is_none());
         assert!(dt.with_day0(4294967295).is_none());
         assert!(dt.with_ordinal0(4294967295).is_none());
+    }
+
+    #[test]
+    fn test_leap_year() {
+        for year in 0..=MAX_YEAR {
+            let date = NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+            let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+            assert_eq!(date.leap_year(), is_leap);
+            assert_eq!(date.leap_year(), date.with_ordinal(366).is_some());
+        }
     }
 
     //   MAX_YEAR-12-31 minus 0000-01-01

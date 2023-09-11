@@ -257,12 +257,4 @@ mod tests {
             );
         }
     }
-
-    /// Test Issue #866
-    #[test]
-    fn test_issue_866() {
-        #[allow(deprecated)]
-        let local_20221106 = Local.ymd(2022, 11, 6);
-        let _dt_20221106 = local_20221106.and_hms_milli_opt(1, 2, 59, 1000).unwrap();
-    }
 }

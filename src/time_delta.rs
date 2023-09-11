@@ -34,9 +34,9 @@ const SECS_PER_MINUTE: i64 = 60;
 /// The number of seconds in an hour.
 const SECS_PER_HOUR: i64 = 3600;
 /// The number of (non-leap) seconds in days.
-const SECS_PER_DAY: i64 = 86400;
+const SECS_PER_DAY: i64 = 86_400;
 /// The number of (non-leap) seconds in a week.
-const SECS_PER_WEEK: i64 = 604800;
+const SECS_PER_WEEK: i64 = 604_800;
 
 macro_rules! try_opt {
     ($e:expr) => {
@@ -492,19 +492,22 @@ mod tests {
         assert!(TimeDelta::seconds(1) != TimeDelta::zero());
         assert_eq!(TimeDelta::seconds(1) + TimeDelta::seconds(2), TimeDelta::seconds(3));
         assert_eq!(
-            TimeDelta::seconds(86399) + TimeDelta::seconds(4),
+            TimeDelta::seconds(86_399) + TimeDelta::seconds(4),
             TimeDelta::days(1) + TimeDelta::seconds(3)
         );
-        assert_eq!(TimeDelta::days(10) - TimeDelta::seconds(1000), TimeDelta::seconds(863000));
-        assert_eq!(TimeDelta::days(10) - TimeDelta::seconds(1000000), TimeDelta::seconds(-136000));
+        assert_eq!(TimeDelta::days(10) - TimeDelta::seconds(1000), TimeDelta::seconds(863_000));
         assert_eq!(
-            TimeDelta::days(2) + TimeDelta::seconds(86399) + TimeDelta::nanoseconds(1234567890),
-            TimeDelta::days(3) + TimeDelta::nanoseconds(234567890)
+            TimeDelta::days(10) - TimeDelta::seconds(1_000_000),
+            TimeDelta::seconds(-136_000)
+        );
+        assert_eq!(
+            TimeDelta::days(2) + TimeDelta::seconds(86_399) + TimeDelta::nanoseconds(1_234_567_890),
+            TimeDelta::days(3) + TimeDelta::nanoseconds(234_567_890)
         );
         assert_eq!(-TimeDelta::days(3), TimeDelta::days(-3));
         assert_eq!(
             -(TimeDelta::days(3) + TimeDelta::seconds(70)),
-            TimeDelta::days(-4) + TimeDelta::seconds(86400 - 70)
+            TimeDelta::days(-4) + TimeDelta::seconds(86_400 - 70)
         );
     }
 
@@ -513,10 +516,10 @@ mod tests {
         assert_eq!(TimeDelta::zero().num_days(), 0);
         assert_eq!(TimeDelta::days(1).num_days(), 1);
         assert_eq!(TimeDelta::days(-1).num_days(), -1);
-        assert_eq!(TimeDelta::seconds(86399).num_days(), 0);
-        assert_eq!(TimeDelta::seconds(86401).num_days(), 1);
-        assert_eq!(TimeDelta::seconds(-86399).num_days(), 0);
-        assert_eq!(TimeDelta::seconds(-86401).num_days(), -1);
+        assert_eq!(TimeDelta::seconds(86_399).num_days(), 0);
+        assert_eq!(TimeDelta::seconds(86_401).num_days(), 1);
+        assert_eq!(TimeDelta::seconds(-86_399).num_days(), 0);
+        assert_eq!(TimeDelta::seconds(-86_401).num_days(), -1);
         assert_eq!(TimeDelta::days(i32::MAX as i64).num_days(), i32::MAX as i64);
         assert_eq!(TimeDelta::days(i32::MIN as i64).num_days(), i32::MIN as i64);
     }
@@ -705,7 +708,7 @@ mod tests {
         assert_eq!(TimeDelta::microseconds(42).to_string(), "PT0.000042S");
         assert_eq!(TimeDelta::nanoseconds(42).to_string(), "PT0.000000042S");
         assert_eq!((TimeDelta::days(7) + TimeDelta::milliseconds(6543)).to_string(), "P7DT6.543S");
-        assert_eq!(TimeDelta::seconds(-86401).to_string(), "-P1DT1S");
+        assert_eq!(TimeDelta::seconds(-86_401).to_string(), "-P1DT1S");
         assert_eq!(TimeDelta::nanoseconds(-1).to_string(), "-PT0.000000001S");
 
         // the format specifier should have no effect on `TimeDelta`
@@ -718,11 +721,14 @@ mod tests {
     #[test]
     fn test_to_std() {
         assert_eq!(TimeDelta::seconds(1).to_std(), Ok(StdDuration::new(1, 0)));
-        assert_eq!(TimeDelta::seconds(86401).to_std(), Ok(StdDuration::new(86401, 0)));
-        assert_eq!(TimeDelta::milliseconds(123).to_std(), Ok(StdDuration::new(0, 123000000)));
-        assert_eq!(TimeDelta::milliseconds(123765).to_std(), Ok(StdDuration::new(123, 765000000)));
+        assert_eq!(TimeDelta::seconds(86_401).to_std(), Ok(StdDuration::new(86_401, 0)));
+        assert_eq!(TimeDelta::milliseconds(123).to_std(), Ok(StdDuration::new(0, 123_000_000)));
+        assert_eq!(
+            TimeDelta::milliseconds(123_765).to_std(),
+            Ok(StdDuration::new(123, 765_000_000))
+        );
         assert_eq!(TimeDelta::nanoseconds(777).to_std(), Ok(StdDuration::new(0, 777)));
-        assert_eq!(MAX.to_std(), Ok(StdDuration::new(9223372036854775, 807000000)));
+        assert_eq!(MAX.to_std(), Ok(StdDuration::new(9_223_372_036_854_775, 807_000_000)));
         assert_eq!(TimeDelta::seconds(-1).to_std(), Err(OutOfRangeError(())));
         assert_eq!(TimeDelta::milliseconds(-1).to_std(), Err(OutOfRangeError(())));
     }
@@ -730,23 +736,26 @@ mod tests {
     #[test]
     fn test_from_std() {
         assert_eq!(Ok(TimeDelta::seconds(1)), TimeDelta::from_std(StdDuration::new(1, 0)));
-        assert_eq!(Ok(TimeDelta::seconds(86401)), TimeDelta::from_std(StdDuration::new(86401, 0)));
+        assert_eq!(Ok(TimeDelta::seconds(86401)), TimeDelta::from_std(StdDuration::new(86_401, 0)));
         assert_eq!(
             Ok(TimeDelta::milliseconds(123)),
-            TimeDelta::from_std(StdDuration::new(0, 123000000))
+            TimeDelta::from_std(StdDuration::new(0, 123_000_000))
         );
         assert_eq!(
-            Ok(TimeDelta::milliseconds(123765)),
-            TimeDelta::from_std(StdDuration::new(123, 765000000))
+            Ok(TimeDelta::milliseconds(123_765)),
+            TimeDelta::from_std(StdDuration::new(123, 765_000_000))
         );
         assert_eq!(Ok(TimeDelta::nanoseconds(777)), TimeDelta::from_std(StdDuration::new(0, 777)));
-        assert_eq!(Ok(MAX), TimeDelta::from_std(StdDuration::new(9223372036854775, 807000000)));
         assert_eq!(
-            TimeDelta::from_std(StdDuration::new(9223372036854776, 0)),
+            Ok(MAX),
+            TimeDelta::from_std(StdDuration::new(9_223_372_036_854_775, 807_000_000))
+        );
+        assert_eq!(
+            TimeDelta::from_std(StdDuration::new(9_223_372_036_854_776, 0)),
             Err(OutOfRangeError(()))
         );
         assert_eq!(
-            TimeDelta::from_std(StdDuration::new(9223372036854775, 807000001)),
+            TimeDelta::from_std(StdDuration::new(9_223_372_036_854_775, 807_000_001)),
             Err(OutOfRangeError(()))
         );
     }

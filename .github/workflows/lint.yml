@@ -17,11 +17,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check -- --color=always
       - run: cargo fmt --check --manifest-path fuzz/Cargo.toml
+      - run: cargo fmt --check --manifest-path bench/Cargo.toml
       - run: |
           cargo clippy --all-features --all-targets --color=always \
             -- -D warnings
       - run: |
           cargo clippy --manifest-path fuzz/Cargo.toml --color=always \
+            -- -D warnings
+      - run: |
+          cargo clippy --manifest-path bench/Cargo.toml --color=always \
             -- -D warnings
         env:
           RUSTFLAGS: "-Dwarnings"

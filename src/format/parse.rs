@@ -614,7 +614,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Ok(_) => return Err(NOT_ENOUGH),
     };
     s = s.trim_start();
-    let (s, offset) = if s.len() >= 3 && "UTC".eq_ignore_ascii_case(&s[..3]) {
+    let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
     } else {
         scan::timezone_offset(s, scan::consume_colon_maybe, true, false, true)?
@@ -626,7 +626,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
 #[cfg(test)]
 mod tests {
     use crate::format::*;
-    use crate::{DateTime, FixedOffset, TimeZone, Timelike, Utc};
+    use crate::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Timelike, Utc};
 
     macro_rules! parsed {
         ($($k:ident: $v:expr),*) => (#[allow(unused_mut)] {
@@ -1733,7 +1733,10 @@ mod tests {
         assert_eq!(dt.format(RFC850_FMT).to_string(), "Sunday, 06-Nov-94 08:49:37 GMT");
 
         // Check that it parses correctly
-        assert_eq!(Ok(dt), Utc.datetime_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT));
+        assert_eq!(
+            NaiveDateTime::parse_from_str("Sunday, 06-Nov-94 08:49:37 GMT", RFC850_FMT),
+            Ok(dt.naive_utc())
+        );
 
         // Check that the rest of the weekdays parse correctly (this test originally failed because
         // Sunday parsed incorrectly).
@@ -1765,7 +1768,7 @@ mod tests {
         ];
 
         for val in &testdates {
-            assert_eq!(Ok(val.0), Utc.datetime_from_str(val.1, RFC850_FMT));
+            assert_eq!(NaiveDateTime::parse_from_str(val.1, RFC850_FMT), Ok(val.0.naive_utc()));
         }
 
         let test_dates_fail = [
@@ -1784,7 +1787,7 @@ mod tests {
         ];
 
         for val in &test_dates_fail {
-            assert!(Utc.datetime_from_str(val, RFC850_FMT).is_err());
+            assert!(NaiveDateTime::parse_from_str(val, RFC850_FMT).is_err());
         }
     }
 
