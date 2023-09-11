@@ -349,6 +349,51 @@ fn test_datetime_parse_from_str() {
 }
 
 #[test]
+fn test_datetime_parse_from_str_with_spaces() {
+    let parse_from_str = NaiveDateTime::parse_from_str;
+    let dt = NaiveDate::from_ymd_opt(2013, 8, 9).unwrap().and_hms_opt(23, 54, 35).unwrap();
+    // with varying spaces - should succeed
+    assert_eq!(parse_from_str(" Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S "), Ok(dt));
+    assert_eq!(parse_from_str(" Aug 09 2013  23:54:35 ", " %b %d %Y  %H:%M:%S "), Ok(dt));
+    assert_eq!(parse_from_str("  Aug 09 2013 23:54:35", "  %b %d %Y %H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("   Aug 09 2013 23:54:35", "   %b %d %Y %H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("\n\tAug 09 2013 23:54:35  ", "\n\t%b %d %Y %H:%M:%S  "), Ok(dt),);
+    assert_eq!(parse_from_str("\tAug 09 2013 23:54:35\t", "\t%b %d %Y %H:%M:%S\t"), Ok(dt));
+    assert_eq!(parse_from_str("Aug  09 2013 23:54:35", "%b  %d %Y %H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug    09 2013 23:54:35", "%b    %d %Y %H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug  09 2013\t23:54:35", "%b  %d %Y\t%H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug  09 2013\t\t23:54:35", "%b  %d %Y\t\t%H:%M:%S"), Ok(dt));
+    // with varying spaces - should fail
+    // leading whitespace in format
+    assert!(parse_from_str("Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S").is_err());
+    // trailing whitespace in format
+    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
+    // extra mid-string whitespace in format
+    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y  %H:%M:%S").is_err());
+    // mismatched leading whitespace
+    assert!(parse_from_str("\tAug 09 2013 23:54:35", "\n%b %d %Y %H:%M:%S").is_err());
+    // mismatched trailing whitespace
+    assert!(parse_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S\n").is_err());
+    // mismatched mid-string whitespace
+    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y\t%H:%M:%S").is_err());
+    // trailing whitespace in format
+    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
+    // trailing whitespace (newline) in format
+    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
+    // leading space in data
+    assert!(parse_from_str(" Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S").is_err());
+    // trailing space in data
+    assert!(parse_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S").is_err());
+    // trailing tab in data
+    assert!(parse_from_str("Aug 09 2013 23:54:35\t", "%b %d %Y %H:%M:%S").is_err());
+    // mismatched newlines
+    assert!(parse_from_str("\nAug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
+    // trailing literal in data
+    assert!(parse_from_str("Aug 09 2013 23:54:35 !!!", "%b %d %Y %H:%M:%S ").is_err());
+}
+
+#[test]
 fn test_datetime_add_sub_invariant() {
     // issue #37
     let base = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();

@@ -6,22 +6,10 @@ on:
   pull_request:
 
 jobs:
-  timezones_linux:
+  timezones:
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo test --all-features --color=always -- --color=always
-
-  timezones_other:
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         tz: ["ACST-9:30", "EST4", "UTC0", "Asia/Katmandu"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -67,7 +55,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust_version }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo check --benches
+      - run: cargo check --manifest-path bench/Cargo.toml --benches
       - run: cargo check --manifest-path fuzz/Cargo.toml --all-targets
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere
@@ -119,7 +107,6 @@ jobs:
         os: [ubuntu-latest]
         target:
           [
-            wasm32-wasi,
             wasm32-unknown-emscripten,
             aarch64-apple-ios,
             aarch64-linux-android,
@@ -145,13 +132,33 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v3
       - uses: jetli/wasm-pack-action@v0.4.0
       # The `TZ` and `NOW` variables are used to compare the results inside the WASM environment
       # with the host system.
       - run: TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind
+
+  test_wasi:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        target:
+          - wasm32-wasi
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasi
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install cargo-wasi
+      - uses: mwilliamson/setup-wasmtime-action@v2
+        with:
+          wasmtime-version: "12.0.1"
+      # We can't use `--all-features` because `rustc-serialize` doesn't support
+      # `wasm32-wasi`.
+      - run: cargo wasi test --features=serde,unstable-locales --color=always -- --color=always
 
   cross-targets:
     strategy:
@@ -164,6 +171,20 @@ jobs:
       - run: cargo install cross
       - uses: Swatinem/rust-cache@v2
       - run: cross check --target ${{ matrix.target }}
+
+  cross-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo install cross
+      - uses: Swatinem/rust-cache@v2
+      - run: cross test --lib --all-features --target i686-unknown-linux-gnu --color=always
+      - run: cross test --doc --all-features --target i686-unknown-linux-gnu --color=always
+      - run: cross test --lib --all-features --target i686-unknown-linux-musl --color=always
+      - run: cross test --doc --all-features --target i686-unknown-linux-musl --color=always
 
   check-docs:
     runs-on: ubuntu-latest

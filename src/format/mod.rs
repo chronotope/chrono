@@ -18,14 +18,14 @@
 //! # Example
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 #![cfg_attr(feature = "std", doc = "```rust")]
-//! use chrono::{TimeZone, Utc};
+//! use chrono::{NaiveDateTime, TimeZone, Utc};
 //!
 //! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
 //!
 //! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
 //! assert_eq!(formatted, "2020-11-10 00:01:32");
 //!
-//! let parsed = Utc.datetime_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?;
+//! let parsed = NaiveDateTime::parse_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?.and_utc();
 //! assert_eq!(parsed, date_time);
 //! # Ok::<(), chrono::ParseError>(())
 //! ```
@@ -451,7 +451,7 @@ const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 // this implementation is here only because we need some private code from `scan`
 
-/// Parsing a `str` into a `Weekday` uses the format [`%W`](./format/strftime/index.html).
+/// Parsing a `str` into a `Weekday` uses the format [`%A`](./format/strftime/index.html).
 ///
 /// # Example
 ///
@@ -487,7 +487,7 @@ impl FromStr for Weekday {
     }
 }
 
-/// Parsing a `str` into a `Month` uses the format [`%W`](./format/strftime/index.html).
+/// Parsing a `str` into a `Month` uses the format [`%B`](./format/strftime/index.html).
 ///
 /// # Example
 ///

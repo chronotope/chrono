@@ -311,6 +311,7 @@ fn ymdhms_nano(
 }
 
 // local helper function to easily create a DateTime<Utc>
+#[cfg(any(feature = "alloc", feature = "std"))]
 fn ymdhms_utc(year: i32, month: u32, day: u32, hour: u32, min: u32, sec: u32) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(year, month, day, hour, min, sec).unwrap()
 }
@@ -818,6 +819,7 @@ fn test_datetime_from_str() {
             .unwrap())
     );
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<Utc>>().is_err());
+    assert!("2015-02-18T23:16:9.15øøø".parse::<DateTime<Utc>>().is_err());
 
     // no test for `DateTime<Local>`, we cannot verify that much.
 }
@@ -915,7 +917,7 @@ fn test_parse_datetime_utc() {
 }
 
 #[test]
-fn test_utc_datetime_from_str() {
+fn test_parse_from_str() {
     let edt = FixedOffset::east_opt(570 * 60).unwrap();
     let edt0 = FixedOffset::east_opt(0).unwrap();
     let wdt = FixedOffset::west_opt(10 * 3600).unwrap();
@@ -930,11 +932,7 @@ fn test_utc_datetime_from_str() {
     )
     .is_err());
     assert_eq!(
-        Utc.datetime_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
-        Ok(Utc.with_ymd_and_hms(2013, 8, 9, 23, 54, 35).unwrap())
-    );
-    assert_eq!(
-        DateTime::<FixedOffset>::parse_from_str("0", "%s").unwrap(),
+        DateTime::<Utc>::parse_from_str("0", "%s").unwrap(),
         NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
     );
 
@@ -976,53 +974,6 @@ fn test_utc_datetime_from_str() {
     assert!("2015-2-18T23:16:9.15".parse::<DateTime<Utc>>().is_err());
 
     // no test for `DateTime<Local>`, we cannot verify that much.
-}
-
-#[test]
-fn test_utc_datetime_from_str_with_spaces() {
-    let dt = ymdhms_utc(2013, 8, 9, 23, 54, 35);
-    // with varying spaces - should succeed
-    assert_eq!(Utc.datetime_from_str(" Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S "), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str(" Aug 09 2013  23:54:35 ", " %b %d %Y  %H:%M:%S "), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("  Aug 09 2013 23:54:35", "  %b %d %Y %H:%M:%S"), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("   Aug 09 2013 23:54:35", "   %b %d %Y %H:%M:%S"), Ok(dt),);
-    assert_eq!(
-        Utc.datetime_from_str("\n\tAug 09 2013 23:54:35  ", "\n\t%b %d %Y %H:%M:%S  "),
-        Ok(dt),
-    );
-    assert_eq!(Utc.datetime_from_str("\tAug 09 2013 23:54:35\t", "\t%b %d %Y %H:%M:%S\t"), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("Aug  09 2013 23:54:35", "%b  %d %Y %H:%M:%S"), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("Aug    09 2013 23:54:35", "%b    %d %Y %H:%M:%S"), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("Aug  09 2013\t23:54:35", "%b  %d %Y\t%H:%M:%S"), Ok(dt),);
-    assert_eq!(Utc.datetime_from_str("Aug  09 2013\t\t23:54:35", "%b  %d %Y\t\t%H:%M:%S"), Ok(dt),);
-    // with varying spaces - should fail
-    // leading whitespace in format
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S").is_err());
-    // trailing whitespace in format
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
-    // extra mid-string whitespace in format
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y  %H:%M:%S").is_err());
-    // mismatched leading whitespace
-    assert!(Utc.datetime_from_str("\tAug 09 2013 23:54:35", "\n%b %d %Y %H:%M:%S").is_err());
-    // mismatched trailing whitespace
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S\n").is_err());
-    // mismatched mid-string whitespace
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y\t%H:%M:%S").is_err());
-    // trailing whitespace in format
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
-    // trailing whitespace (newline) in format
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
-    // leading space in data
-    assert!(Utc.datetime_from_str(" Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S").is_err());
-    // trailing space in data
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S").is_err());
-    // trailing tab in data
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35\t", "%b %d %Y %H:%M:%S").is_err());
-    // mismatched newlines
-    assert!(Utc.datetime_from_str("\nAug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
-    // trailing literal in data
-    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 !!!", "%b %d %Y %H:%M:%S ").is_err());
 }
 
 #[test]
@@ -1218,8 +1169,11 @@ fn test_subsecond_part() {
     assert_eq!(1234567, datetime.timestamp_subsec_nanos());
 }
 
+// Some targets, such as `wasm32-wasi`, have a problematic definition of `SystemTime`, such as an
+// `i32` (year 2035 problem), or an `u64` (no values before `UNIX-EPOCH`).
+// See https://github.com/rust-lang/rust/issues/44394.
 #[test]
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", not(all(target_arch = "wasm32", target_os = "wasi"))))]
 fn test_from_system_time() {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 

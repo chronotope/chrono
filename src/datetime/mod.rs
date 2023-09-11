@@ -660,10 +660,24 @@ impl DateTime<FixedOffset> {
     /// and returns a new [`DateTime`] instance with the parsed timezone as the [`FixedOffset`].
     ///
     /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
-    /// and email headers.
+    /// and email headers. It is the 2001 revision of RFC 822, and is itself revised as RFC 5322 in
+    /// 2008.
     ///
-    /// The RFC 2822 standard allows arbitrary intermixed whitespace.
-    /// See [RFC 2822 Appendix A.5]
+    /// # Support for the obsolete date format
+    ///
+    /// - A 2-digit year is interpreted to be a year in 1950-2049.
+    /// - The standard allows comments and whitespace between many of the tokens. See [4.3] and
+    ///   [Appendix A.5]
+    /// - Single letter 'military' time zone names are parsed as a `-0000` offset.
+    ///   They were defined with the wrong sign in RFC 822 and corrected in RFC 2822. But because
+    ///   the meaning is now ambiguous, the standard says they should be be considered as `-0000`
+    ///   unless there is out-of-band information confirming their meaning.
+    ///   The exception is `Z`, which remains identical to `+0000`.
+    ///
+    /// [4.3]: https://www.rfc-editor.org/rfc/rfc2822#section-4.3
+    /// [Appendix A.5]: https://www.rfc-editor.org/rfc/rfc2822#appendix-A.5
+    ///
+    /// # Example
     ///
     /// ```
     /// # use chrono::{DateTime, FixedOffset, TimeZone};
@@ -672,8 +686,6 @@ impl DateTime<FixedOffset> {
     ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// ```
-    ///
-    /// [RFC 2822 Appendix A.5]: https://www.rfc-editor.org/rfc/rfc2822#appendix-A.5
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
         let mut parsed = Parsed::new();

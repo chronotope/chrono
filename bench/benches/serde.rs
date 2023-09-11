@@ -1,5 +1,3 @@
-#![cfg(feature = "__internal_bench")]
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use chrono::NaiveDateTime;

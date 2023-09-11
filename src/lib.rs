@@ -1,20 +1,21 @@
 //! # Chrono: Date and Time for Rust
 //!
-//! It aims to be a feature-complete superset of
-//! the [time](https://github.com/rust-lang-deprecated/time) library.
-//! In particular,
+
+//! Chrono aims to provide all functionality needed to do correct operations on dates and times in the
+//! [proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
 //!
-//! * Chrono strictly adheres to ISO 8601.
-//! * Chrono is timezone-aware by default, with separate timezone-naive types.
-//! * Chrono is space-optimal and (while not being the primary goal) reasonably efficient.
+//! * The [`DateTime`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) type is timezone-aware
+//!   by default, with separate timezone-naive types.
+//! * Operations that may produce an invalid or ambiguous date and time return `Option` or
+//!   [`LocalResult`](https://docs.rs/chrono/latest/chrono/offset/enum.LocalResult.html).
+//! * Configurable parsing and formatting with a `strftime` inspired date and time formatting syntax.
+//! * The [`Local`](https://docs.rs/chrono/latest/chrono/offset/struct.Local.html) timezone works with
+//!   the current timezone of the OS.
+//! * Types and operations are implemented to be reasonably efficient.
 //!
-//! There were several previous attempts to bring a good date and time library to Rust,
-//! which Chrono builds upon and should acknowledge:
-//!
-//! * [Initial research on
-//!    the wiki](https://github.com/rust-lang/rust-wiki-backup/blob/master/Lib-datetime.md)
-//! * Dietrich Epp's [datetime-rs](https://github.com/depp/datetime-rs)
-//! * Luis de Bethencourt's [rust-datetime](https://github.com/luisbg/rust-datetime)
+//! Timezone data is not shipped with chrono by default to limit binary sizes. Use the companion crate
+//! [Chrono-TZ](https://crates.io/crates/chrono-tz) or [`tzfile`](https://crates.io/crates/tzfile) for
+//! full timezone support.
 //!
 //! ### Features
 //!
@@ -29,10 +30,13 @@
 //!   and traits.
 //! - `clock`: Enables reading the system time (`now`) that depends on the standard library for
 //! UNIX-like operating systems and the Windows API (`winapi`) for Windows.
+//! - `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 //!
 //! Optional features:
 //!
 //! - [`serde`][]: Enable serialization/deserialization via serde.
+//! - `rkyv`: Enable serialization/deserialization via rkyv.
+//! - `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
 //! - `unstable-locales`: Enable localization. This adds various methods with a
 //!   `_localized` suffix. The implementation and API may change or even be
 //!   removed in a patch release. Feedback welcome.
@@ -284,16 +288,12 @@
 //!            Ok(fixed_dt.clone()));
 //! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
 //!
-//! // method 3
-//! assert_eq!(Utc.datetime_from_str("2014-11-28 12:00:09", "%Y-%m-%d %H:%M:%S"), Ok(dt.clone()));
-//! assert_eq!(Utc.datetime_from_str("Fri Nov 28 12:00:09 2014", "%a %b %e %T %Y"), Ok(dt.clone()));
-//!
 //! // oops, the year is missing!
-//! assert!(Utc.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
+//! assert!(DateTime::<FixedOffset>::parse_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
 //! // oops, the format string does not include the year at all!
-//! assert!(Utc.datetime_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
+//! assert!(DateTime::<FixedOffset>::parse_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
 //! // oops, the weekday is incorrect!
-//! assert!(Utc.datetime_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
+//! assert!(DateTime::<FixedOffset>::parse_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 //! ```
 //!
 //! Again : See [`format::strftime`](./format/strftime/index.html#specifiers)
@@ -343,18 +343,18 @@
 //!
 //! ## Limitations
 //!
-//! Only proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
-//! Be very careful if you really have to deal with pre-20C dates, they can be in Julian or others.
+//! Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
+//! Date types are limited to about +/- 262,000 years from the common epoch.
+//! Time types are limited to nanosecond accuracy.
+//! Leap seconds can be represented, but Chrono does not fully support them.
+//! See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
 //!
-//! Date types are limited in about +/- 262,000 years from the common epoch.
-//! Time types are limited in the nanosecond accuracy.
+//! ## Rust version requirements
 //!
-//! [Leap seconds are supported in the representation but
-//! Chrono doesn't try to make use of them](./naive/struct.NaiveTime.html#leap-second-handling).
-//! (The main reason is that leap seconds are not really predictable.)
-//! Almost *every* operation over the possible leap seconds will ignore them.
-//! Consider using `NaiveDateTime` with the implicit TAI (International Atomic Time) scale
-//! if you want.
+//! The Minimum Supported Rust Version (MSRV) is currently **Rust 1.57.0**.
+//!
+//! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
+//! lightly.
 //!
 //! Chrono inherently does not support an inaccurate or partial date and time representation.
 //! Any operation that can be ambiguous will return `None` in such cases.
@@ -367,6 +367,89 @@
 //!
 //! Advanced time zone handling is not yet supported.
 //! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
+//!
+//! ## Relation between chrono and time 0.1
+//!
+//! Rust first had a `time` module added to `std` in its 0.7 release. It later moved to
+//! `libextra`, and then to a `libtime` library shipped alongside the standard library. In 2014
+//! work on chrono started in order to provide a full-featured date and time library in Rust.
+//! Some improvements from chrono made it into the standard library; notably, `chrono::Duration`
+//! was included as `std::time::Duration` ([rust#15934]) in 2014.
+//!
+//! In preparation of Rust 1.0 at the end of 2014 `libtime` was moved out of the Rust distro and
+//! into the `time` crate to eventually be redesigned ([rust#18832], [rust#18858]), like the
+//! `num` and `rand` crates. Of course chrono kept its dependency on this `time` crate. `time`
+//! started re-exporting `std::time::Duration` during this period. Later, the standard library was
+//! changed to have a more limited unsigned `Duration` type ([rust#24920], [RFC 1040]), while the
+//! `time` crate kept the full functionality with `time::Duration`. `time::Duration` had been a
+//! part of chrono's public API.
+//!
+//! By 2016 `time` 0.1 lived under the `rust-lang-deprecated` organisation and was not actively
+//! maintained ([time#136]). chrono absorbed the platform functionality and `Duration` type of the
+//! `time` crate in [chrono#478] (the work started in [chrono#286]). In order to preserve
+//! compatibility with downstream crates depending on `time` and `chrono` sharing a `Duration`
+//! type, chrono kept depending on time 0.1. chrono offered the option to opt out of the `time`
+//! dependency by disabling the `oldtime` feature (swapping it out for an effectively similar
+//! chrono type). In 2019, @jhpratt took over maintenance on the `time` crate and released what
+//! amounts to a new crate as `time` 0.2.
+//!
+//! [rust#15934]: https://github.com/rust-lang/rust/pull/15934
+//! [rust#18832]: https://github.com/rust-lang/rust/pull/18832#issuecomment-62448221
+//! [rust#18858]: https://github.com/rust-lang/rust/pull/18858
+//! [rust#24920]: https://github.com/rust-lang/rust/pull/24920
+//! [RFC 1040]: https://rust-lang.github.io/rfcs/1040-duration-reform.html
+//! [time#136]: https://github.com/time-rs/time/issues/136
+//! [chrono#286]: https://github.com/chronotope/chrono/pull/286
+//! [chrono#478]: https://github.com/chronotope/chrono/pull/478
+//!
+//! ## Security advisories
+//!
+//! In November of 2020 [CVE-2020-26235] and [RUSTSEC-2020-0071] were opened against the `time` crate.
+//! @quininer had found that calls to `localtime_r` may be unsound ([chrono#499]). Eventually, almost
+//! a year later, this was also made into a security advisory against chrono as [RUSTSEC-2020-0159],
+//! which had platform code similar to `time`.
+//!
+//! On Unix-like systems a process is given a timezone id or description via the `TZ` environment
+//! variable. We need this timezone data to calculate the current local time from a value that is
+//! in UTC, such as the time from the system clock. `time` 0.1 and chrono used the POSIX function
+//! `localtime_r` to do the conversion to local time, which reads the `TZ` variable.
+//!
+//! Rust assumes the environment to be writable and uses locks to access it from multiple threads.
+//! Some other programming languages and libraries use similar locking strategies, but these are
+//! typically not shared across languages. More importantly, POSIX declares modifying the
+//! environment in a multi-threaded process as unsafe, and `getenv` in libc can't be changed to
+//! take a lock because it returns a pointer to the data (see [rust#27970] for more discussion).
+//!
+//! Since version 4.20 chrono no longer uses `localtime_r`, instead using Rust code to query the
+//! timezone (from the `TZ` variable or via `iana-time-zone` as a fallback) and work with data
+//! from the system timezone database directly. The code for this was forked from the [tz-rs crate]
+//! by @x-hgg-x. As such, chrono now respects the Rust lock when reading the `TZ` environment
+//! variable. In general, code should avoid modifying the environment.
+//!
+//! [CVE-2020-26235]: https://nvd.nist.gov/vuln/detail/CVE-2020-26235
+//! [RUSTSEC-2020-0071]: https://rustsec.org/advisories/RUSTSEC-2020-0071
+//! [chrono#499]: https://github.com/chronotope/chrono/pull/499
+//! [RUSTSEC-2020-0159]: https://rustsec.org/advisories/RUSTSEC-2020-0159.html
+//! [rust#27970]: https://github.com/rust-lang/rust/issues/27970
+//! [chrono#677]: https://github.com/chronotope/chrono/pull/677
+//! [tz-rs crate]: https://crates.io/crates/tz-rs
+//!
+//! ## Removing time 0.1
+//!
+//! Because time 0.1 has been unmaintained for years, however, the security advisory mentioned
+//! above has not been addressed. While chrono maintainers were careful not to break backwards
+//! compatibility with the `time::Duration` type, there has been a long stream of issues from
+//! users inquiring about the time 0.1 dependency with the vulnerability. We investigated the
+//! potential breakage of removing the time 0.1 dependency in [chrono#1095] using a crater-like
+//! experiment and determined that the potential for breaking (public) dependencies is very low.
+//! We reached out to those few crates that did still depend on compatibility with time 0.1.
+//!
+//! As such, for chrono 0.4.30 we have decided to swap out the time 0.1 `Duration` implementation
+//! for a local one that will offer a strict superset of the existing API going forward. This
+//! will prevent most downstream users from being affected by the security vulnerability in time
+//! 0.1 while minimizing the ecosystem impact of semver-incompatible version churn.
+//!
+//! [chrono#1095]: https://github.com/chronotope/chrono/pull/1095
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
 #![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
@@ -384,14 +467,6 @@ use core::fmt;
 
 mod time_delta;
 pub use time_delta::TimeDelta;
-
-#[cfg(feature = "__doctest")]
-#[cfg_attr(feature = "__doctest", cfg(doctest))]
-use doc_comment::doctest;
-
-#[cfg(feature = "__doctest")]
-#[cfg_attr(feature = "__doctest", cfg(doctest))]
-doctest!("../README.md");
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
