@@ -579,11 +579,17 @@ impl DateTime<Utc> {
     /// This is guaranteed to round-trip with regard to [`timestamp`](DateTime::timestamp) and
     /// [`timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos).
     ///
-    /// Returns `None` on out-of-range number of seconds and/or
-    /// invalid nanosecond, otherwise returns `Some(DateTime {...})`.
-    ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
     /// [`TimeZone::timestamp_opt`] or [`DateTime::with_timezone`].
+    ///
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on out-of-range number of seconds and/or
+    /// invalid nanosecond, otherwise returns `Some(DateTime {...})`.
     ///
     /// # Example
     ///
