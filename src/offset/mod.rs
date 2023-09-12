@@ -443,6 +443,22 @@ pub trait TimeZone: Sized + Clone {
         self.timestamp_opt(secs, nanos as u32).unwrap()
     }
 
+    /// Makes a new `DateTime` from the number of non-leap microseconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
+    ///
+    /// #Example
+    /// ```
+    /// use chrono::{Utc, TimeZone};
+    ///
+    /// assert_eq!(Utc.timestamp_micros(1431648000000).unwrap().timestamp(), 1431648);
+    /// ```
+    fn timestamp_micros(&self, micros: i64) -> LocalResult<DateTime<Self>> {
+        match NaiveDateTime::from_timestamp_micros(micros) {
+            Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
+            None => LocalResult::None,
+        }
+    }
+
     /// Parses a string with the specified format string and returns a
     /// `DateTime` with the current offset.
     ///
@@ -567,5 +583,19 @@ mod tests {
         Utc.timestamp_nanos(i64::max_value());
         Utc.timestamp_nanos(i64::default());
         Utc.timestamp_nanos(i64::min_value());
+    }
+
+    #[test]
+    fn test_negative_micros() {
+        let dt = Utc.timestamp_micros(-1_000_000).unwrap();
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
+        let dt = Utc.timestamp_micros(-999_999).unwrap();
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.000001 UTC");
+        let dt = Utc.timestamp_micros(-1).unwrap();
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999999 UTC");
+        let dt = Utc.timestamp_micros(-60_000_000).unwrap();
+        assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
+        let dt = Utc.timestamp_micros(-3_600_000_000).unwrap();
+        assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
     }
 }
