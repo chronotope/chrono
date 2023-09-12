@@ -347,6 +347,12 @@ pub trait TimeZone: Sized + Clone {
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
+    /// # Panics
+    ///
     /// Panics on the out-of-range number of seconds and/or invalid nanosecond,
     /// for a non-panicking version see [`timestamp_opt`](#method.timestamp_opt).
     #[deprecated(since = "0.4.23", note = "use `timestamp_opt()` instead")]
@@ -357,6 +363,12 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap seconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
+    ///
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
+    /// # Errors
     ///
     /// Returns `LocalResult::None` on out-of-range number of seconds and/or
     /// invalid nanosecond, otherwise always returns `LocalResult::Single`.

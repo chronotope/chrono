@@ -110,9 +110,9 @@ impl NaiveDateTime {
     /// For a non-naive version of this function see
     /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
     ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the
-    /// [leap second](./struct.NaiveTime.html#leap-second-handling). (The true "UNIX
-    /// timestamp" cannot represent a leap second unambiguously.)
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Panics
     ///
@@ -196,8 +196,8 @@ impl NaiveDateTime {
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Errors
@@ -216,8 +216,9 @@ impl NaiveDateTime {
     ///
     /// assert!(from_timestamp_opt(0, 0).is_some());
     /// assert!(from_timestamp_opt(0, 999_999_999).is_some());
-    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_some()); // leap second
-    /// assert!(from_timestamp_opt(0, 2_000_000_000).is_none());
+    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_none()); // invalid leap second
+    /// assert!(from_timestamp_opt(59, 1_500_000_000).is_some()); // leap second
+    /// assert!(from_timestamp_opt(59, 2_000_000_000).is_none());
     /// assert!(from_timestamp_opt(i64::MAX, 0).is_none());
     /// ```
     #[inline]

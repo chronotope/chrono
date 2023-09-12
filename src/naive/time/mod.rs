@@ -425,8 +425,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `secs % 60 == 59`.
     ///
     /// # Panics
     ///
@@ -440,8 +440,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `secs % 60 == 59`.
     ///
     /// # Errors
     ///
@@ -463,7 +463,7 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
-        if secs >= 86_400 || nano >= 2_000_000_000 {
+        if secs >= 86_400 || nano >= 2_000_000_000 || (nano >= 1_000_000_000 && secs % 60 != 59) {
             return None;
         }
         Some(NaiveTime { secs, frac: nano })
