@@ -1705,7 +1705,7 @@ where
     fn arbitrary(u: &mut arbitrary::Unstructured<'a>) -> arbitrary::Result<DateTime<Tz>> {
         let datetime = NaiveDateTime::arbitrary(u)?;
         let offset = <Tz as TimeZone>::Offset::arbitrary(u)?;
-        Ok(DateTime::from_utc(datetime, offset))
+        Ok(DateTime::from_naive_utc_and_offset(datetime, offset))
     }
 }
 
