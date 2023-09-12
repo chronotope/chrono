@@ -415,12 +415,10 @@ pub trait TimeZone: Sized + Clone {
     /// };
     /// ```
     fn timestamp_millis_opt(&self, millis: i64) -> LocalResult<DateTime<Self>> {
-        let (mut secs, mut millis) = (millis / 1000, millis % 1000);
-        if millis < 0 {
-            secs -= 1;
-            millis += 1000;
+        match NaiveDateTime::from_timestamp_millis(millis) {
+            Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
+            None => LocalResult::None,
         }
-        self.timestamp_opt(secs, millis as u32 * 1_000_000)
     }
 
     /// Makes a new `DateTime` from the number of non-leap nanoseconds
