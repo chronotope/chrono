@@ -760,16 +760,16 @@ mod tests {
 
     #[test]
     fn issue1010() {
-        let dt = NaiveDateTime::from_timestamp_opt(-4227854320, 1678774288).unwrap();
-        let span = Duration::microseconds(-7019067213869040);
+        let dt = NaiveDateTime::from_timestamp_opt(-4_227_854_320, 678_774_288).unwrap();
+        let span = Duration::microseconds(-7_019_067_213_869_040);
         assert_eq!(dt.duration_trunc(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(320041586, 1920103021).unwrap();
-        let span = Duration::nanoseconds(-8923838508697114584);
+        let dt = NaiveDateTime::from_timestamp_opt(320_041_586, 920_103_021).unwrap();
+        let span = Duration::nanoseconds(-8_923_838_508_697_114_584);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(-2621440, 0).unwrap();
-        let span = Duration::nanoseconds(-9223372036854771421);
+        let dt = NaiveDateTime::from_timestamp_opt(-2_621_440, 0).unwrap();
+        let span = Duration::nanoseconds(-9_223_372_036_854_771_421);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
     }
 }
