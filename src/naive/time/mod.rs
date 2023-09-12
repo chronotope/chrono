@@ -1022,9 +1022,9 @@ impl Timelike for NaiveTime {
     ///
     /// ```
     /// # use chrono::{NaiveTime, Timelike};
-    /// # let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(dt.with_nanosecond(1_333_333_333),
-    ///            Some(NaiveTime::from_hms_nano_opt(23, 56, 4, 1_333_333_333).unwrap()));
+    /// let dt = NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap();
+    /// let strange_leap_second = dt.with_nanosecond(1_333_333_333).unwrap();
+    /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
     /// ```
     #[inline]
     fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
