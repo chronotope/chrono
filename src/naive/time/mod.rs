@@ -177,6 +177,10 @@ mod tests;
 /// For such cases the human-readable representation is ambiguous and would be read back to the next
 /// non-leap second.
 ///
+/// A `NaiveTime` with a leap second that is not on a minute boundary can only be created from a
+/// [`DateTime`](crate::DateTime) with fractional minutes as offset, or using
+/// [`Timelike::with_nanosecond()`].
+///
 /// ```
 /// use chrono::{FixedOffset, NaiveDate, TimeZone};
 ///
@@ -239,8 +243,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
-    /// No [leap second](#leap-second-handling) is allowed here;
-    /// use `NaiveTime::from_hms_*_opt` methods with a subsecond parameter instead.
+    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -282,8 +286,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
     ///
-    /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -318,8 +322,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
     ///
-    /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The microsecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Panics
     ///
@@ -333,8 +337,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
     ///
-    /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The microsecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -369,8 +373,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Panics
     ///
@@ -384,8 +388,8 @@ impl NaiveTime {
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](#leap-second-handling).
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a
+    /// [leap second](#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -409,7 +413,10 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_hms_nano_opt(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
-        if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
+        if (hour >= 24 || min >= 60 || sec >= 60)
+            || (nano >= 1_000_000_000 && sec != 59)
+            || nano >= 2_000_000_000
+        {
             return None;
         }
         let secs = hour * 3600 + min * 60 + sec;
