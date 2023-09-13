@@ -1030,8 +1030,9 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timezone(), Utc);
     /// ```
     #[must_use]
-    pub fn and_utc(&self) -> DateTime<Utc> {
-        Utc.from_utc_datetime(self)
+    pub const fn and_utc(&self) -> DateTime<Utc> {
+        // FIXME: use `DateTime::from_naive_utc_and_offset` when our MSRV is 1.61+.
+        DateTime::from_naive_utc(*self)
     }
 
     /// The minimum possible `NaiveDateTime`.
