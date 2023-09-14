@@ -1,3 +1,4 @@
+use core::fmt;
 use core::num::NonZeroU64;
 
 use crate::{expect, try_opt};
@@ -63,6 +64,29 @@ pub struct CalendarDuration {
 impl Default for CalendarDuration {
     fn default() -> Self {
         CalendarDuration::new()
+    }
+}
+
+impl fmt::Debug for CalendarDuration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let (mins, secs) = self.mins_and_secs();
+        let mut builder = f.debug_struct("CalendarDuration");
+        if self.months != 0 {
+            builder.field("months", &self.months);
+        }
+        if self.days != 0 {
+            builder.field("days", &self.days);
+        }
+        if mins != 0 {
+            builder.field("minutes", &mins);
+        }
+        if secs != 0 {
+            builder.field("seconds", &secs);
+        }
+        if self.nanos != 0 {
+            builder.field("nanos", &self.nanos);
+        }
+        builder.finish()
     }
 }
 
