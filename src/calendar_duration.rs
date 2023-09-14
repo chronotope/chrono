@@ -90,6 +90,66 @@ impl fmt::Debug for CalendarDuration {
     }
 }
 
+impl fmt::Display for CalendarDuration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str("P")?;
+        // Plenty of ways to encode an empty string. `P0D` is short and not too strange.
+        if self.is_zero() {
+            return f.write_str("0D");
+        }
+
+        // Nominal components
+        let years = self.months / 12;
+        let months = self.months % 12;
+        if years > 0 {
+            f.write_fmt(format_args!("{}Y", years))?;
+        }
+        if months > 0 {
+            f.write_fmt(format_args!("{}M", months))?;
+        }
+        if self.days > 0 {
+            f.write_fmt(format_args!("{}D", self.days))?;
+        }
+
+        // Accurate components
+        let (mins, secs) = self.mins_and_secs();
+        if mins == 0 && secs == 0 && self.nanos() == 0 {
+            return Ok(());
+        }
+        f.write_str("T")?;
+        let hours = mins / 60;
+        let mins = mins % 60;
+        if hours > 0 {
+            f.write_fmt(format_args!("{}H", hours))?;
+        }
+        if mins > 0 {
+            f.write_fmt(format_args!("{}M", mins))?;
+        }
+
+        if secs == 0 && self.nanos == 0 {
+            return Ok(());
+        }
+        f.write_fmt(format_args!("{}", secs))?;
+        if self.nanos > 0 {
+            // Count the number of significant digits, while removing all trailing zero's.
+            let mut figures = 9usize;
+            let mut fraction_digits = self.nanos;
+            loop {
+                let div = fraction_digits / 10;
+                let last_digit = fraction_digits % 10;
+                if last_digit != 0 {
+                    break;
+                }
+                fraction_digits = div;
+                figures -= 1;
+            }
+            f.write_fmt(format_args!(".{:01$}", fraction_digits, figures))?;
+        }
+        f.write_str("S")?;
+        Ok(())
+    }
+}
+
 impl CalendarDuration {
     /// Create a new duration initialized to `0`.
     ///
@@ -310,5 +370,29 @@ mod tests {
         assert_eq!(new().with_hms(0, 0, 1), new().with_seconds(1));
         assert_eq!(new().with_hms(0, 0, 60), new().with_seconds(60));
         assert_ne!(new().with_hms(0, 1, 0), new().with_seconds(60));
+    }
+
+    #[test]
+    fn test_display_format() {
+        let new = CalendarDuration::new;
+
+        assert_eq!(
+            new().with_months(45).with_days(5).with_hms(6, 5, 43).unwrap().to_string(),
+            "P3Y9M5DT6H5M43S"
+        );
+        assert_eq!(new().to_string(), "P0D");
+        assert_eq!(new().with_months(24).to_string(), "P2Y");
+        assert_eq!(new().with_months(3).to_string(), "P3M");
+        assert_eq!(new().with_days(25).to_string(), "P25D");
+        assert_eq!(new().with_hms(2, 0, 0).unwrap().to_string(), "PT2H");
+        assert_eq!(new().with_hms(0, 3, 0).unwrap().to_string(), "PT3M");
+        assert_eq!(new().with_hms(0, 0, 15).unwrap().to_string(), "PT15S");
+        assert_eq!(
+            new().with_hms(2, 3, 45).unwrap().with_nanos(678_000_000).unwrap().to_string(),
+            "PT2H3M45.678S"
+        );
+        assert_eq!(new().with_seconds(123_456).unwrap().to_string(), "PT123456S");
+        assert_eq!(new().with_nanos(123_456).unwrap().to_string(), "PT0.000123456S");
+        assert_eq!(new().with_days(5).with_nanos(123_000_000).unwrap().to_string(), "P5DT0.123S");
     }
 }
