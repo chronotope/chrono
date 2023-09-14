@@ -1,7 +1,8 @@
 use core::fmt;
 use core::num::NonZeroU64;
+use core::time::Duration;
 
-use crate::{expect, try_opt};
+use crate::{expect, try_opt, OutOfRange};
 
 /// Duration type capable of expressing a duration as a combination of multiple units.
 ///
@@ -264,6 +265,18 @@ impl CalendarDuration {
     }
 }
 
+impl TryFrom<Duration> for CalendarDuration {
+    type Error = OutOfRange;
+
+    fn try_from(value: Duration) -> Result<Self, Self::Error> {
+        Ok(Self::new()
+            .with_seconds(value.as_secs())
+            .ok_or(OutOfRange::new())?
+            .with_nanos(value.subsec_nanos())
+            .unwrap())
+    }
+}
+
 /// Type to encode either seconds, or minutes and up to 60 seconds.
 ///
 /// We don't allow having both an `u64` with minutes and an `u64` with seconds.
@@ -308,6 +321,7 @@ impl MinutesAndSeconds {
 #[cfg(test)]
 mod tests {
     use super::CalendarDuration;
+    use core::time::Duration;
 
     #[test]
     fn test_basic_functionality() {
@@ -370,6 +384,19 @@ mod tests {
         assert_eq!(new().with_hms(0, 0, 1), new().with_seconds(1));
         assert_eq!(new().with_hms(0, 0, 60), new().with_seconds(60));
         assert_ne!(new().with_hms(0, 1, 0), new().with_seconds(60));
+    }
+
+    #[test]
+    fn test_from_std_duration() {
+        assert_eq!(
+            CalendarDuration::new().with_seconds(7).unwrap().with_nanos(8).unwrap(),
+            Duration::new(7, 8).try_into().unwrap()
+        );
+    }
+
+    #[test]
+    fn test_try_from_extreme_duration() {
+        assert!(CalendarDuration::try_from(Duration::new(1 << 62, 0)).is_err());
     }
 
     #[test]
