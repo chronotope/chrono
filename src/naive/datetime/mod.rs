@@ -20,7 +20,7 @@ use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed,
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
-use crate::{DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
+use crate::{expect, DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
 
 #[cfg(feature = "rustc-serialize")]
 pub(super) mod rustc_serialize;
@@ -967,8 +967,13 @@ impl NaiveDateTime {
 
     /// The minimum possible `NaiveDateTime`.
     pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
+
     /// The maximum possible `NaiveDateTime`.
     pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
+
+    /// The Unix Epoch, 1970-01-01 00:00:00.
+    pub const UNIX_EPOCH: Self =
+        expect!(NaiveDate::from_ymd_opt(1970, 1, 1), "").and_time(NaiveTime::MIN);
 }
 
 impl Datelike for NaiveDateTime {
