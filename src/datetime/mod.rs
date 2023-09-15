@@ -623,6 +623,9 @@ impl DateTime<Utc> {
     pub fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
         NaiveDateTime::from_timestamp_opt(secs, nsecs).as_ref().map(NaiveDateTime::and_utc)
     }
+
+    /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
+    pub const UNIX_EPOCH: Self = Self { datetime: NaiveDateTime::UNIX_EPOCH, offset: Utc };
 }
 
 impl Default for DateTime<Utc> {
