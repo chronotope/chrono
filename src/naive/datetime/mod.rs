@@ -503,7 +503,26 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub fn timestamp_nanos_opt(&self) -> Option<i64> {
-        self.timestamp().checked_mul(1_000_000_000)?.checked_add(self.time.nanosecond() as i64)
+        let mut timestamp = self.timestamp();
+        let mut timestamp_subsec_nanos = i64::from(self.timestamp_subsec_nanos());
+
+        // subsec nanos are always non-negative, however the timestamp itself (both in seconds and in nanos) can be
+        // negative. Now i64::MIN is NOT dividable by 1_000_000_000, so
+        //
+        //   (timestamp * 1_000_000_000) + nanos
+        //
+        // may underflow (even when in theory we COULD represent the datetime as i64) because we add the non-negative
+        // nanos AFTER the multiplication. This is fixed by converting the negative case to
+        //
+        //   ((timestamp + 1) * 1_000_000_000) + (ns - 1_000_000_000)
+        //
+        // Also see <https://github.com/chronotope/chrono/issues/1289>.
+        if timestamp < 0 && timestamp_subsec_nanos > 0 {
+            timestamp_subsec_nanos -= 1_000_000_000;
+            timestamp += 1;
+        }
+
+        timestamp.checked_mul(1_000_000_000).and_then(|ns| ns.checked_add(timestamp_subsec_nanos))
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
