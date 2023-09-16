@@ -16,8 +16,8 @@ use crate::duration::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
 use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    parse, parse_and_remainder, parse_iso8601_time, write_hundreds, Fixed, Item, Numeric, Pad,
+    ParseError, ParseResult, Parsed, StrftimeItems,
 };
 use crate::Timelike;
 use crate::{expect, try_opt};
@@ -555,6 +555,46 @@ impl NaiveTime {
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveTime, &'a str)> {
         let mut parsed = Parsed::new();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
+        parsed.to_naive_time().map(|t| (t, remainder))
+    }
+
+    /// Parses an ISO 8601 time string into a `NaiveTime` value.
+    ///
+    /// ISO 8601 allows representing values in a wide range of formats. See below for some examples.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::NaiveTime;
+    /// // complete representation, basic format
+    /// assert_eq!(
+    ///     NaiveTime::parse_from_iso8601("101530").unwrap(),
+    ///     (NaiveTime::from_hms_opt(10, 15, 30).unwrap(), "")
+    /// );
+    /// // reduced representation, extended format
+    /// assert_eq!(
+    ///     NaiveTime::parse_from_iso8601("10:15").unwrap(),
+    ///     (NaiveTime::from_hms_opt(10, 15, 0).unwrap(), "")
+    /// );
+    /// // time with fraction of a second, extended format, `,` as decimal sign
+    /// assert_eq!(
+    ///     NaiveTime::parse_from_iso8601("10:15:30,25").unwrap(),
+    ///     (NaiveTime::from_hms_milli_opt(10, 15, 30, 250).unwrap(), "")
+    /// );
+    /// // week date, time with fraction of an hour, `.` as decimal sign
+    /// assert_eq!(
+    ///     NaiveTime::parse_from_iso8601("10.25").unwrap(),
+    ///     (NaiveTime::from_hms_opt(10, 15, 0).unwrap(), "")
+    /// );
+    /// // `24:00`, midnight at the end of the day, parses as `00:00`.
+    /// assert_eq!(
+    ///     NaiveTime::parse_from_iso8601("24:00:00").unwrap(),
+    ///     (NaiveTime::from_hms_opt(0, 0, 0).unwrap(), "")
+    /// );
+    /// ```
+    pub fn parse_from_iso8601(s: &str) -> ParseResult<(NaiveTime, &str)> {
+        let mut parsed = Parsed::new();
+        let (remainder, _, _) = parse_iso8601_time(&mut parsed, s)?;
         parsed.to_naive_time().map(|t| (t, remainder))
     }
 

@@ -1,6 +1,6 @@
 use super::parse::set_weekday_with_number_from_monday;
 use super::scan;
-use super::{ParseResult, Parsed, TOO_SHORT};
+use super::{ParseResult, Parsed, INVALID, TOO_SHORT};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Iso8601Format {
@@ -97,6 +97,144 @@ fn parse_iso8601_year(mut s: &str) -> ParseResult<(&str, i64)> {
         Some(_) => scan::number(s, 4, 4),
         None => Err(TOO_SHORT),
     }
+}
+
+/// The ISO 8601 time format has a basic and an extended format, representations with reduced
+/// accuracy, and representations with a decimal fraction:
+///
+/// |                                   | basic format | extended format |
+/// |-----------------------------------|--------------|-----------------|
+/// | complete representation           | hhmmss       | hh:mm:ss        |
+/// | reduced accuracy: hour and minute | hhmm         | hh:mm           |
+/// | reduced accuracy: hour            | hh           |                 |
+/// | decimal fraction of the second    | hhmmss,ss̲    | hh:mm:ss,ss̲     |
+/// | decimal fraction of the minute    | hhmm,mm̲      | hh:mm,mm̲        |
+/// | decimal fraction of the hour      | hh,hh̲        | hh,hh̲           |
+///
+/// A decimal sign is either `,` or `.`; a `,` is preferred.  A decimal fraction must have at least
+/// one digit. The standard puts no limit on the number of digits.
+///
+/// Midnight can be represented with both `00:00` (at the start of the day) and `24:00` (at the end
+/// of the calendar day).
+///
+/// Returns `(remainder, Iso8601Format, hour24)`.
+/// - The ISO 8601 format of the time is return so the calling function can check it matches the
+///   format of a date component (basic or extended format). If there a representation with the
+///   accuracy reduced to hours, the format is `Unknown`.
+/// - `24:00` can't be encoded in `Parsed`, so we encode it as `00:00` and return a `bool` to
+///   indicate the date should wrap to the next day.
+pub(crate) fn parse_iso8601_time<'a>(
+    parsed: &mut Parsed,
+    mut s: &'a str,
+) -> ParseResult<(&'a str, Iso8601Format, bool)> {
+    use Iso8601Format::*;
+
+    macro_rules! try_consume {
+        ($e:expr) => {{
+            let (s_, v) = $e?;
+            s = s_;
+            v
+        }};
+    }
+
+    let mut format = Unknown;
+    let mut hour;
+    let mut minute = 0;
+    let mut second = 0;
+    let mut nanosecond = 0;
+    fn set_time_fields(
+        parsed: &mut Parsed,
+        hour: i64,
+        minute: i64,
+        second: i64,
+        nanosecond: i64,
+    ) -> ParseResult<bool> {
+        match hour < 24 {
+            true => parsed.set_hour(hour)?,
+            false => {
+                if !(hour == 24 && minute == 0 && second == 0 && nanosecond == 0) {
+                    return Err(INVALID);
+                }
+                parsed.set_hour(0)?;
+            }
+        }
+        parsed.set_minute(minute)?;
+        parsed.set_second(second)?;
+        parsed.set_nanosecond(nanosecond)?;
+        Ok(hour == 24)
+    }
+
+    hour = try_consume!(scan::number(s, 2, 2));
+
+    if let Some((s_, fraction)) = Fraction::parse(s) {
+        s = s_;
+        // Minute, second and nanosecond are expressed as a fraction of an hour.
+        let (sec, nanos) = fraction.mul_with_nanos(3600);
+        minute = sec / 60;
+        second = sec % 60;
+        nanosecond = nanos;
+        return Ok((s, format, set_time_fields(parsed, hour, minute, second, nanosecond)?));
+    }
+
+    let c = s.as_bytes().first().unwrap_or(&b'a');
+    if !(c.is_ascii_digit() || c == &b':') {
+        // Allow reduced accuracy
+        return Ok((s, format, set_time_fields(parsed, hour, minute, second, nanosecond)?));
+    }
+
+    format = if s.as_bytes().first() == Some(&b':') { Extended } else { Basic };
+    if format == Extended {
+        s = &s[1..];
+    }
+    minute = try_consume!(scan::number(s, 2, 2));
+
+    if let Some((s_, fraction)) = Fraction::parse(s) {
+        s = s_;
+        // Second and nanosecond are expressed as a fraction of a minute.
+        let (sec, nanos) = fraction.mul_with_nanos(60);
+        second = sec;
+        nanosecond = nanos;
+        if sec == 60 {
+            second = 0;
+            minute += 1;
+            if minute == 60 {
+                minute = 0;
+                hour += 1;
+            }
+        }
+        return Ok((s, format, set_time_fields(parsed, hour, minute, second, nanosecond)?));
+    }
+
+    let c = s.as_bytes().first().unwrap_or(&b'a');
+    if !(c.is_ascii_digit() || (format == Extended && c == &b':')) {
+        // Allow reduced accuracy
+        return Ok((s, format, set_time_fields(parsed, hour, minute, second, nanosecond)?));
+    }
+
+    if format == Extended {
+        s = scan::char(s, b':')?;
+    }
+    second = try_consume!(scan::number(s, 2, 2));
+
+    if let Some((s_, fraction)) = Fraction::parse(s) {
+        s = s_;
+        // Nanosecond are expressed as a fraction of a minute.
+        let (sec_from_rounding, nanos) = fraction.mul_with_nanos(1);
+        nanosecond = nanos;
+        if sec_from_rounding != 0 {
+            if second < 59 {
+                second += 1;
+            } else {
+                second = 0;
+                minute += 1;
+                if minute == 60 {
+                    minute = 0;
+                    hour += 1;
+                }
+            }
+        }
+    }
+    Ok((s, format, set_time_fields(parsed, hour, minute, second, nanosecond)?))
 }
 
 /// Helper type for parsing fractional numbers.
@@ -249,6 +387,63 @@ mod tests {
         assert_eq!(parse("23-W23-5 "), Err(INVALID));
         // Year is interpreted as `iso_year`
         assert_eq!(parse("2022-W52-7 "), Ok((NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(), " ")));
+    }
+
+    #[test]
+    fn test_parse_iso8601_time() {
+        fn parse(s: &str) -> ParseResult<(&str, u32, u32, u32, u32, bool)> {
+            let mut parsed = Parsed::new();
+            let (s, _, hour24) = parse_iso8601_time(&mut parsed, s)?;
+            Ok((
+                s,
+                12 * parsed.hour_div_12.unwrap() + parsed.hour_mod_12.unwrap(),
+                parsed.minute.unwrap(),
+                parsed.second.unwrap_or(0),
+                parsed.nanosecond.unwrap_or(0),
+                hour24,
+            ))
+        }
+
+        // basic format, complete representation
+        assert_eq!(parse("152830 "), Ok((" ", 15, 28, 30, 0, false)));
+        // extended format, complete representation
+        assert_eq!(parse("15:28:30 "), Ok((" ", 15, 28, 30, 0, false)));
+        // basic format, fractional second
+        assert_eq!(parse("152830,6 "), Ok((" ", 15, 28, 30, 600_000_000, false)));
+        assert_eq!(parse("152830.60 "), Ok((" ", 15, 28, 30, 600_000_000, false)));
+        assert_eq!(parse("152830.999999999 "), Ok((" ", 15, 28, 30, 999_999_999, false)));
+        assert_eq!(parse("152830.9999999999 "), Ok((" ", 15, 28, 31, 0, false)));
+        // extended format, fractional second
+        assert_eq!(parse("15:28:30,6 "), Ok((" ", 15, 28, 30, 600_000_000, false)));
+        assert_eq!(parse("15:28:30.60 "), Ok((" ", 15, 28, 30, 600_000_000, false)));
+        // basic format, fractional minute
+        assert_eq!(parse("1528,5 "), Ok((" ", 15, 28, 30, 0, false)));
+        assert_eq!(parse("1528.51 "), Ok((" ", 15, 28, 30, 600_000_000, false)));
+        // extended format, fractional minute
+        assert_eq!(parse("15:28,5 "), Ok((" ", 15, 28, 30, 0, false)));
+        assert_eq!(parse("15:28.51 "), Ok((" ", 15, 28, 30, 600_000_000, false)));
+        assert_eq!(parse("15:59.999999999999 "), Ok((" ", 16, 0, 0, 0, false)));
+        // extended format, fractional hour
+        assert_eq!(parse("15,45 "), Ok((" ", 15, 27, 0, 0, false)));
+        assert_eq!(parse("15.12345 "), Ok((" ", 15, 7, 24, 420_000_000, false)));
+        assert_eq!(parse("15,999999999999 "), Ok((" ", 15, 59, 59, 999_999_996, false)));
+        assert_eq!(parse("15,9999999999999 "), Ok((" ", 15, 60, 0, 0, false)));
+
+        // 24:00:00 is allowed
+        assert_eq!(parse("240000 "), Ok((" ", 0, 0, 0, 0, true)));
+        assert_eq!(parse("24:00:00 "), Ok((" ", 0, 0, 0, 0, true)));
+        assert_eq!(parse("24:00:00,0 "), Ok((" ", 0, 0, 0, 0, true)));
+        // But no times beyond that
+        assert_eq!(parse("24:30:00 "), Err(INVALID));
+        assert_eq!(parse("24:00:30 "), Err(INVALID));
+        assert_eq!(parse("24:00:00,5 "), Err(INVALID));
+        assert_eq!(parse("24.99 "), Err(INVALID));
+        assert_eq!(parse("24,9999999999999 "), Err(INVALID)); // rounds to 25:00:00
+
+        // Reduced accuracy
+        assert_eq!(parse("1528 "), Ok((" ", 15, 28, 0, 0, false)));
+        assert_eq!(parse("15:28 "), Ok((" ", 15, 28, 0, 0, false)));
+        assert_eq!(parse("15 "), Ok((" ", 15, 0, 0, 0, false)));
     }
 
     #[test]
