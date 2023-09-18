@@ -272,8 +272,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
     /// an out of range `DateTime`.
     ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
     #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
@@ -284,13 +284,13 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
-    /// an out of range `DateTime`.
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
+    /// `None` on an out of range `DateTime`.
     ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
     ///
     /// # Example
     ///
@@ -302,6 +302,18 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_000_000_000_555));
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_192).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(-9_223_372_036_854_775_808));
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_807).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(9_223_372_036_854_775_807));
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_191).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), None);
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_808).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), None);
     /// ```
     #[inline]
     #[must_use]
