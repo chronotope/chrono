@@ -459,8 +459,8 @@ impl NaiveDateTime {
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
     /// an out of range `NaiveDateTime`.
     ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
     #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
@@ -479,8 +479,8 @@ impl NaiveDateTime {
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
     /// `None` on an out of range `NaiveDateTime`.
     ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
     ///
     /// # Example
     ///
