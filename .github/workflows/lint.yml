@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-deadlinks
-      - run: RUSTFLAGS="--cfg docsrs" cargo deadlinks -- --features=serde
+      - run: cargo deadlinks -- --all-features
       - run: cargo doc --all-features --no-deps
         env:
           RUSTDOCFLAGS: -Dwarnings
