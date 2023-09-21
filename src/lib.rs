@@ -569,6 +569,26 @@ pub mod serde {
     pub use super::datetime::serde::*;
 }
 
+/// Zero-copy serialization/deserialization with rkyv.
+///
+/// This module re-exports the `Archived*` versions of chrono's types.
+#[cfg(feature = "rkyv")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rkyv")))]
+pub mod rkyv {
+    pub use crate::datetime::ArchivedDateTime;
+    pub use crate::duration::ArchivedDuration;
+    pub use crate::month::ArchivedMonth;
+    pub use crate::naive::date::ArchivedNaiveDate;
+    pub use crate::naive::datetime::ArchivedNaiveDateTime;
+    pub use crate::naive::isoweek::ArchivedIsoWeek;
+    pub use crate::naive::time::ArchivedNaiveTime;
+    pub use crate::offset::fixed::ArchivedFixedOffset;
+    #[cfg(feature = "clock")]
+    pub use crate::offset::local::ArchivedLocal;
+    pub use crate::offset::utc::ArchivedUtc;
+    pub use crate::weekday::ArchivedWeekday;
+}
+
 /// Out of range error type used in various converting APIs
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct OutOfRange {
