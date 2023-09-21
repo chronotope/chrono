@@ -46,7 +46,6 @@ use locales::*;
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
 #[cfg(any(feature = "alloc", feature = "std"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 #[derive(Debug)]
 pub struct DelayedFormat<I> {
     /// The date view, if any.
@@ -103,7 +102,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
     pub fn new_with_locale(
         date: Option<NaiveDate>,
@@ -116,7 +114,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
     pub fn new_with_offset_and_locale<Off>(
         date: Option<NaiveDate>,
@@ -157,7 +154,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> fmt::Display for De
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(any(feature = "alloc", feature = "std"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 pub fn format<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -177,7 +173,6 @@ where
 }
 /// Formats single formatting item
 #[cfg(any(feature = "alloc", feature = "std"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
 pub fn format_item(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -193,7 +188,6 @@ pub fn format_item(
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
 #[cfg(feature = "unstable-locales")]
-#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,
@@ -215,7 +209,6 @@ where
 
 /// Formats single formatting item
 #[cfg(feature = "unstable-locales")]
-#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub fn format_item_localized(
     w: &mut fmt::Formatter,
     date: Option<&NaiveDate>,

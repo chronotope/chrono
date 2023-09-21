@@ -333,13 +333,11 @@ pub enum Item<'a> {
     Literal(&'a str),
     /// Same as `Literal` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
     /// Same as `Space` but with the string owned by the item.
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
     /// the parser simply ignores any padded whitespace and zeroes.
@@ -437,7 +435,6 @@ impl fmt::Display for ParseError {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl Error for ParseError {
     #[allow(deprecated)]
     fn description(&self) -> &str {

@@ -1,5 +1,3 @@
-#![cfg_attr(docsrs, doc(cfg(feature = "serde")))]
-
 use super::NaiveTime;
 use core::fmt;
 use serde::{de, ser};

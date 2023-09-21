@@ -191,7 +191,6 @@ impl<'a> StrftimeItems<'a> {
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
     pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }

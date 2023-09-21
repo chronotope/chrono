@@ -34,7 +34,6 @@ pub use self::internals::YearFlags as __BenchYearFlags;
 /// [1]: https://serde.rs/attributes.html#field-attributes
 /// [2]: https://tools.ietf.org/html/rfc3339
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
     pub use super::datetime::serde::*;
 }

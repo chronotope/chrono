@@ -778,7 +778,6 @@ impl NaiveTime {
     /// assert_eq!(format!("{}", t.format_with_items(fmt)), "23:56:04");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -824,7 +823,6 @@ impl NaiveTime {
     /// assert_eq!(format!("{}", t.format("%-I:%M %p")), "11:56 PM");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
