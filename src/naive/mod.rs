@@ -4,11 +4,11 @@
 //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
 //! but can be also used for the simpler date and time handling.
 
-mod date;
+pub(crate) mod date;
 pub(crate) mod datetime;
 mod internals;
-mod isoweek;
-mod time;
+pub(crate) mod isoweek;
+pub(crate) mod time;
 
 pub use self::date::{Days, NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator, NaiveWeek};
 #[allow(deprecated)]

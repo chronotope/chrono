@@ -26,15 +26,15 @@ use crate::Weekday;
 #[allow(deprecated)]
 use crate::{Date, DateTime};
 
-mod fixed;
+pub(crate) mod fixed;
 pub use self::fixed::FixedOffset;
 
 #[cfg(feature = "clock")]
-mod local;
+pub(crate) mod local;
 #[cfg(feature = "clock")]
 pub use self::local::Local;
 
-mod utc;
+pub(crate) mod utc;
 pub use self::utc::Utc;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
