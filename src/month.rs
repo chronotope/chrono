@@ -236,7 +236,6 @@ pub struct ParseMonthError {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for ParseMonthError {}
 
 impl fmt::Display for ParseMonthError {
@@ -252,7 +251,6 @@ impl fmt::Debug for ParseMonthError {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 mod month_serde {
     use super::Month;
     use serde::{de, ser};

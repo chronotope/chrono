@@ -537,7 +537,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Panics if the date can not be represented in this format: the year may not be negative and
     /// can not have more than 4 digits.
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc2822(&self) -> String {
         let mut result = String::with_capacity(32);
@@ -548,7 +547,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc3339(&self) -> String {
         // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
@@ -585,7 +583,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///            "2018-01-26T10:30:09+08:00");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[must_use]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         let mut result = String::with_capacity(38);
@@ -647,7 +644,6 @@ impl Default for DateTime<Utc> {
 }
 
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Default for DateTime<Local> {
     fn default() -> Self {
         Local.from_utc_datetime(&NaiveDateTime::default())
@@ -673,7 +669,6 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
 
 /// Convert a `DateTime<Utc>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Utc>> for DateTime<Local> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
@@ -696,7 +691,6 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
 
 /// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<FixedOffset>> for DateTime<Local> {
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
@@ -709,7 +703,6 @@ impl From<DateTime<FixedOffset>> for DateTime<Local> {
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<Utc>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Local>> for DateTime<Utc> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<Utc>` instance.
     ///
@@ -722,7 +715,6 @@ impl From<DateTime<Local>> for DateTime<Utc> {
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
     ///
@@ -868,7 +860,6 @@ where
 {
     /// Formats the combined date and time with the specified formatting items.
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -893,7 +884,6 @@ where
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
     #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -902,7 +892,6 @@ where
 
     /// Formats the combined date and time with the specified formatting items and locale.
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -930,7 +919,6 @@ where
     /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(
@@ -1401,7 +1389,6 @@ impl str::FromStr for DateTime<Utc> {
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl str::FromStr for DateTime<Local> {
     type Err = ParseError;
 
@@ -1411,7 +1398,6 @@ impl str::FromStr for DateTime<Local> {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<SystemTime> for DateTime<Utc> {
     fn from(t: SystemTime) -> DateTime<Utc> {
         let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
@@ -1432,7 +1418,6 @@ impl From<SystemTime> for DateTime<Utc> {
 }
 
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
         DateTime::<Utc>::from(t).with_timezone(&Local)
@@ -1440,7 +1425,6 @@ impl From<SystemTime> for DateTime<Local> {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
         let sec = dt.timestamp();
@@ -1459,14 +1443,6 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<js_sys::Date> for DateTime<Utc> {
     fn from(date: js_sys::Date) -> DateTime<Utc> {
         DateTime::<Utc>::from(&date)
@@ -1478,14 +1454,6 @@ impl From<js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
         Utc.timestamp_millis_opt(date.get_time() as i64).unwrap()
@@ -1497,14 +1465,6 @@ impl From<&js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<DateTime<Utc>> for js_sys::Date {
     /// Converts a `DateTime<Utc>` to a JS `Date`. The resulting value may be lossy,
     /// any values that have a millisecond timestamp value greater/less than ±8,640,000,000,000,000

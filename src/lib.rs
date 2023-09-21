@@ -469,7 +469,7 @@
 // can remove this if/when rustc-serialize support is removed
 // keeps clippy happy in the meantime
 #![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -487,11 +487,9 @@ pub mod prelude {
     #[allow(deprecated)]
     pub use crate::Date;
     #[cfg(feature = "clock")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
     #[doc(no_inline)]
     pub use crate::Local;
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[doc(no_inline)]
     pub use crate::Locale;
     #[doc(no_inline)]
@@ -514,7 +512,6 @@ pub use date::{Date, MAX_DATE, MIN_DATE};
 
 mod datetime;
 #[cfg(feature = "rustc-serialize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rustc-serialize")))]
 pub use datetime::rustc_serialize::TsSeconds;
 #[allow(deprecated)]
 pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
@@ -522,7 +519,6 @@ pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
-#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 
@@ -532,7 +528,6 @@ pub use naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
 
 pub mod offset;
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 #[doc(no_inline)]
 pub use offset::Local;
 #[doc(no_inline)]
@@ -564,7 +559,6 @@ pub use naive::__BenchYearFlags;
 /// [1]: https://tools.ietf.org/html/rfc3339
 /// [2]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
     pub use super::datetime::serde::*;
 }
@@ -573,7 +567,6 @@ pub mod serde {
 ///
 /// This module re-exports the `Archived*` versions of chrono's types.
 #[cfg(feature = "rkyv")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rkyv")))]
 pub mod rkyv {
     pub use crate::datetime::ArchivedDateTime;
     pub use crate::duration::ArchivedDuration;
