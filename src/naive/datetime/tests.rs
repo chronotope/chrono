@@ -20,7 +20,7 @@ fn test_datetime_from_timestamp_millis() {
         let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
         assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
         #[cfg(any(feature = "alloc", feature = "std"))]
-        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
+        assert_eq!(naive_datetime.unwrap().format_to_string("%F %T%.9f").unwrap(), _formatted);
     }
 
     let invalid = [i64::MAX, i64::MIN];
@@ -58,7 +58,7 @@ fn test_datetime_from_timestamp_micros() {
         let naive_datetime = NaiveDateTime::from_timestamp_micros(timestamp_micros);
         assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
         #[cfg(any(feature = "alloc", feature = "std"))]
-        assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
+        assert_eq!(naive_datetime.unwrap().format_to_string("%F %T%.9f").unwrap(), _formatted);
     }
 
     let invalid = [i64::MAX, i64::MIN];

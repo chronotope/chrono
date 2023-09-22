@@ -25,7 +25,7 @@ std = []
 clock = ["std", "winapi", "iana-time-zone", "android-tzdata"]
 oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
-unstable-locales = ["pure-rust-locales", "alloc"]
+unstable-locales = ["pure-rust-locales"]
 __internal_bench = []
 
 [dependencies]

@@ -14,7 +14,7 @@ use core::{fmt, hash};
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::duration::Duration as OldDuration;
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 use crate::format::Locale;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::{DelayedFormat, Item, StrftimeItems};
@@ -357,8 +357,7 @@ where
     }
 
     /// Formats the date with the specified formatting items and locale.
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -382,8 +381,7 @@ where
     /// Formats the date with the specified format string and locale.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(

@@ -202,7 +202,7 @@
 //!
 //! ### Formatting and Parsing
 //!
-//! Formatting is done via the [`format`](./struct.DateTime.html#method.format) method,
+//! Formatting is done via the [`format_to_string`](DateTime::format_to_string) method,
 //! which format is equivalent to the familiar `strftime` format.
 //!
 //! See [`format::strftime`](./format/strftime/index.html#specifiers)
@@ -227,14 +227,14 @@
 //! # #[allow(unused_imports)]
 //! use chrono::prelude::*;
 //!
-//! # #[cfg(feature = "unstable-locales")]
+//! # #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
 //! # fn test() {
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
-//! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
-//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
+//! assert_eq!(dt.format_to_string("%Y-%m-%d %H:%M:%S").unwrap(), "2014-11-28 12:00:09");
+//! assert_eq!(dt.format_to_string("%a %b %e %T %Y").unwrap(), "Fri Nov 28 12:00:09 2014");
+//! assert_eq!(dt.format_to_string_localized("%A %e %B %Y, %T", Locale::fr_BE).unwrap(), "vendredi 28 novembre 2014, 12:00:09");
 //!
-//! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
+//! assert_eq!(dt.format_to_string("%a %b %e %T %Y").unwrap(), dt.format_to_string("%c").unwrap());
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
 //! assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
 //! assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
@@ -244,9 +244,9 @@
 //! let dt_nano = NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(12, 0, 9, 1).unwrap().and_local_timezone(Utc).unwrap();
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # }
-//! # #[cfg(not(feature = "unstable-locales"))]
+//! # #[cfg(not(all(feature = "unstable-locales", any(feature = "alloc", feature = "std"))))]
 //! # fn test() {}
-//! # if cfg!(feature = "unstable-locales") {
+//! # if cfg!(all(feature = "unstable-locales", any(feature = "alloc", feature = "std"))) {
 //! #    test();
 //! # }
 //! ```
@@ -490,8 +490,7 @@ pub mod prelude {
     #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
     #[doc(no_inline)]
     pub use crate::Local;
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
     #[doc(no_inline)]
     pub use crate::Locale;
     #[doc(no_inline)]
@@ -522,7 +521,6 @@ pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
-#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 

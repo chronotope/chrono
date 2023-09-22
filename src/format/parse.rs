@@ -1701,7 +1701,7 @@ mod tests {
 
         // Check that the format is what we expect
         #[cfg(any(feature = "alloc", feature = "std"))]
-        assert_eq!(dt.format(RFC850_FMT).to_string(), "Sunday, 06-Nov-94 08:49:37 GMT");
+        assert_eq!(dt.format_to_string(RFC850_FMT).unwrap(), "Sunday, 06-Nov-94 08:49:37 GMT");
 
         // Check that it parses correctly
         assert_eq!(
