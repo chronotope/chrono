@@ -1461,6 +1461,13 @@ impl NaiveDate {
     pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/ };
     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
     pub const MAX: NaiveDate = NaiveDate { ymdf: (MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/ };
+
+    /// One day before the minimum possible `NaiveDate` (December 31, 262145 BCE).
+    pub(crate) const BEFORE_MIN: NaiveDate =
+        NaiveDate { ymdf: ((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /*FE*/ };
+    /// One day after the maximum possible `NaiveDate` (January 1, 262143 CE).
+    pub(crate) const AFTER_MAX: NaiveDate =
+        NaiveDate { ymdf: ((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /*F*/ };
 }
 
 impl Datelike for NaiveDate {
@@ -2444,6 +2451,7 @@ mod serde {
 mod tests {
     use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
     use crate::duration::Duration;
+    use crate::naive::internals::YearFlags;
     use crate::{Datelike, Weekday};
 
     // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
@@ -2473,6 +2481,14 @@ mod tests {
             "The entire `NaiveDate` range somehow exceeds 2^{} seconds",
             MAX_BITS
         );
+
+        const BEFORE_MIN: NaiveDate = NaiveDate::BEFORE_MIN;
+        assert_eq!(BEFORE_MIN.of().flags(), YearFlags::from_year(BEFORE_MIN.year()));
+        assert_eq!((BEFORE_MIN.month(), BEFORE_MIN.day()), (12, 31));
+
+        const AFTER_MAX: NaiveDate = NaiveDate::AFTER_MAX;
+        assert_eq!(AFTER_MAX.of().flags(), YearFlags::from_year(AFTER_MAX.year()));
+        assert_eq!((AFTER_MAX.month(), AFTER_MAX.day()), (1, 1));
     }
 
     #[test]
