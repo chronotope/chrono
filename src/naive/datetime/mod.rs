@@ -16,8 +16,10 @@ use rkyv::{Archive, Deserialize, Serialize};
 use crate::duration::Duration as OldDuration;
 #[cfg(any(feature = "alloc", feature = "std"))]
 use crate::format::DelayedFormat;
-use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
-use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::format::{
+    parse, parse_and_remainder, parse_iso8601_datetime, Fixed, Item, Numeric, Pad, ParseError,
+    ParseResult, Parsed, StrftimeItems,
+};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::{expect, DateTime, Datelike, LocalResult, Months, TimeZone, Timelike, Weekday};
@@ -341,6 +343,50 @@ impl NaiveDateTime {
         let mut parsed = Parsed::new();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
+    }
+
+    /// Parses an ISO 8601 date and time string into a `NaiveDateTime` value.
+    ///
+    /// ISO 8601 allows representing values in a wide range of formats. See below for some examples.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use chrono::{NaiveDate, NaiveDateTime, Weekday};
+    /// // calendar date, regular time, basic format
+    /// assert_eq!(
+    ///     NaiveDateTime::parse_from_iso8601("20230609T101530").unwrap(),
+    ///     (NaiveDate::from_ymd_opt(2023, 6, 9).unwrap().and_hms_opt(10, 15, 30).unwrap(), "")
+    /// );
+    /// // calendar date, regular time, extended format
+    /// assert_eq!(
+    ///     NaiveDateTime::parse_from_iso8601("2023-06-09T10:15:30").unwrap(),
+    ///     (NaiveDate::from_ymd_opt(2023, 6, 9).unwrap().and_hms_opt(10, 15, 30).unwrap(), "")
+    /// );
+    /// // ordinal date, time with fraction of a second, extended format, `,` as decimal sign
+    /// assert_eq!(
+    ///     NaiveDateTime::parse_from_iso8601("2023-160T10:15:30,25").unwrap(),
+    ///     (NaiveDate::from_yo_opt(2023, 160)
+    ///         .unwrap()
+    ///         .and_hms_milli_opt(10, 15, 30, 250)
+    ///         .unwrap(), "")
+    /// );
+    /// // week date, time with fraction of an hour, basic format, `.` as decimal sign
+    /// assert_eq!(
+    ///     NaiveDateTime::parse_from_iso8601("2023W235T10.25").unwrap(),
+    ///     (NaiveDate::from_isoywd_opt(2023, 23, Weekday::Fri)
+    ///         .unwrap()
+    ///         .and_hms_opt(10, 15, 0)
+    ///         .unwrap(), "")
+    /// );
+    /// // calendar date, regular time, extended format, expanded representation
+    /// assert_eq!(
+    ///     NaiveDateTime::parse_from_iso8601("+12023-06-09T10:15:30").unwrap(),
+    ///     (NaiveDate::from_ymd_opt(12023, 6, 9).unwrap().and_hms_opt(10, 15, 30).unwrap(), "")
+    /// );
+    /// ```
+    pub fn parse_from_iso8601(s: &str) -> ParseResult<(NaiveDateTime, &str)> {
+        parse_iso8601_datetime(s).map(|(dt, remainder, _)| (dt, remainder))
     }
 
     /// Retrieves a date component.

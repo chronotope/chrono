@@ -44,6 +44,7 @@ mod parsed;
 
 // due to the size of parsing routines, they are in separate modules.
 mod parse;
+pub(crate) mod parse_iso8601;
 pub(crate) mod scan;
 
 pub mod strftime;
@@ -73,6 +74,9 @@ pub use locales::Locale;
 pub(crate) use locales::Locale;
 pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
+pub(crate) use parse_iso8601::{
+    parse_iso8601, parse_iso8601_date, parse_iso8601_datetime, parse_iso8601_time,
+};
 pub use parsed::Parsed;
 pub use strftime::StrftimeItems;
 
