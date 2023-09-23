@@ -21,7 +21,7 @@ use crate::format::{
     parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
     StrftimeItems, TOO_LONG,
 };
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 use crate::format::{write_rfc3339, DelayedFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -536,7 +536,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Panics if the date can not be represented in this format: the year may not be negative and
     /// can not have more than 4 digits.
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc2822(&self) -> String {
         let mut result = String::with_capacity(32);
@@ -546,7 +546,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc3339(&self) -> String {
         // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
@@ -582,7 +582,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         let mut result = String::with_capacity(38);
@@ -859,7 +859,7 @@ where
     Tz::Offset: fmt::Display,
 {
     /// Formats the combined date and time with the specified formatting items.
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -883,7 +883,7 @@ where
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
