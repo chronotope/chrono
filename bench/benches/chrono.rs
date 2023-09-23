@@ -204,6 +204,13 @@ fn bench_naivedate_add_signed(c: &mut Criterion) {
     });
 }
 
+fn bench_datetime_with(c: &mut Criterion) {
+    let dt = FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2023, 9, 23, 7, 36, 0).unwrap();
+    c.bench_function("bench_datetime_with", |b| {
+        b.iter(|| black_box(black_box(dt).with_hour(12)).unwrap())
+    });
+}
+
 criterion_group!(
     benches,
     bench_datetime_parse_from_rfc2822,
@@ -220,6 +227,7 @@ criterion_group!(
     bench_format_with_items,
     bench_format_manual,
     bench_naivedate_add_signed,
+    bench_datetime_with,
 );
 
 #[cfg(feature = "unstable-locales")]
