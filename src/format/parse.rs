@@ -311,7 +311,7 @@ where
                 s = &s[prefix.len()..];
             }
 
-            #[cfg(any(feature = "alloc", feature = "std"))]
+            #[cfg(feature = "alloc")]
             Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() {
                     return Err((s, TOO_SHORT));
@@ -326,7 +326,7 @@ where
                 s = s.trim_start();
             }
 
-            #[cfg(any(feature = "alloc", feature = "std"))]
+            #[cfg(feature = "alloc")]
             Item::OwnedSpace(_) => {
                 s = s.trim_start();
             }
@@ -1700,7 +1700,7 @@ mod tests {
         let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
 
         // Check that the format is what we expect
-        #[cfg(any(feature = "alloc", feature = "std"))]
+        #[cfg(feature = "alloc")]
         assert_eq!(dt.format(RFC850_FMT).to_string(), "Sunday, 06-Nov-94 08:49:37 GMT");
 
         // Check that it parses correctly

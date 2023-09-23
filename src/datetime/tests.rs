@@ -273,7 +273,7 @@ fn ymdhms_milli(
 
 // local helper function to easily create a DateTime<FixedOffset>
 #[allow(clippy::too_many_arguments)]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn ymdhms_micro(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -293,7 +293,7 @@ fn ymdhms_micro(
 
 // local helper function to easily create a DateTime<FixedOffset>
 #[allow(clippy::too_many_arguments)]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn ymdhms_nano(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -312,7 +312,7 @@ fn ymdhms_nano(
 }
 
 // local helper function to easily create a DateTime<Utc>
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn ymdhms_utc(year: i32, month: u32, day: u32, hour: u32, min: u32, sec: u32) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(year, month, day, hour, min, sec).unwrap()
 }
@@ -451,7 +451,7 @@ fn test_datetime_with_timezone() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_datetime_rfc2822() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
 
@@ -577,7 +577,7 @@ fn test_datetime_rfc2822() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_datetime_rfc3339() {
     let edt5 = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     let edt0 = FixedOffset::east_opt(0).unwrap();
@@ -663,7 +663,7 @@ fn test_datetime_rfc3339() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_rfc3339_opts() {
     use crate::SecondsFormat::*;
     let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
@@ -694,7 +694,7 @@ fn test_rfc3339_opts() {
 
 #[test]
 #[should_panic]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_rfc3339_opts_nonexhaustive() {
     use crate::SecondsFormat;
     let dt = Utc.with_ymd_and_hms(1999, 10, 9, 1, 2, 3).unwrap();
@@ -1470,7 +1470,7 @@ fn test_test_deprecated_from_offset() {
 }
 
 #[test]
-#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 fn locale_decimal_point() {
     use crate::Locale::{ar_SY, nl_NL};
     let dt =

@@ -30,7 +30,7 @@
 //! # Ok::<(), chrono::ParseError>(())
 //! ```
 
-#[cfg(feature = "alloc")]
+#[cfg(all(not(feature = "std"), feature = "alloc"))]
 use alloc::boxed::Box;
 use core::fmt;
 use core::str::FromStr;
@@ -48,28 +48,23 @@ pub(crate) mod scan;
 
 pub mod strftime;
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 pub(crate) use formatting::write_rfc2822;
-#[cfg(any(
-    feature = "alloc",
-    feature = "std",
-    feature = "serde",
-    feature = "rustc-serialize"
-))]
+#[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 pub(crate) use formatting::write_rfc3339;
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 #[allow(deprecated)]
 pub use formatting::{format, format_item, DelayedFormat};
 #[cfg(feature = "unstable-locales")]
 #[allow(deprecated)]
 pub use formatting::{format_item_localized, format_localized};
-#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 pub use locales::Locale;
-#[cfg(all(not(feature = "unstable-locales"), any(feature = "alloc", feature = "std")))]
+#[cfg(all(not(feature = "unstable-locales"), feature = "alloc"))]
 pub(crate) use locales::Locale;
 pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
@@ -334,12 +329,12 @@ pub enum Item<'a> {
     /// A literally printed and parsed text.
     Literal(&'a str),
     /// Same as `Literal` but with the string owned by the item.
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     OwnedLiteral(Box<str>),
     /// Whitespace. Prints literally but reads zero or more whitespace.
     Space(&'a str),
     /// Same as `Space` but with the string owned by the item.
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     OwnedSpace(Box<str>),
     /// Numeric item. Can be optionally padded to the maximal length (if any) when formatting;
     /// the parser simply ignores any padded whitespace and zeroes.
