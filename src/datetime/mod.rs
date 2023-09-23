@@ -974,7 +974,9 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_year(year))
+        map_local(self, |dt| {
+            dt.date().overflowing_with_year(year).map(|d| NaiveDateTime::new(d, dt.time()))
+        })
     }
 
     /// Makes a new `DateTime` with the month number (starting from 1) changed.

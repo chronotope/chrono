@@ -1458,6 +1458,19 @@ impl NaiveDate {
         self.of().weekday()
     }
 
+    // Similar to `Datelike::with_year()`, but allows creating a `NaiveDate` beyond `MIN` or `MAX`.
+    // Only used by `DateTime::with_year`.
+    pub(crate) fn overflowing_with_year(&self, year: i32) -> Option<NaiveDate> {
+        // we need to operate with `mdf` since we should keep the month and day number as is
+        let mdf = self.mdf();
+
+        // adjust the flags as needed
+        let flags = YearFlags::from_year(year);
+        let mdf = mdf.with_flags(flags);
+
+        mdf.to_of().map(|of| NaiveDate { ymdf: (year << 13) | (of.inner() as DateImpl) })
+    }
+
     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
     pub const MIN: NaiveDate = NaiveDate { ymdf: (MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/ };
     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
