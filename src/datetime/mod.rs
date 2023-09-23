@@ -15,7 +15,7 @@ use core::{fmt, hash, str};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::duration::Duration as OldDuration;
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use crate::format::Locale;
 use crate::format::{
     parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
@@ -891,7 +891,7 @@ where
     }
 
     /// Formats the combined date and time with the specified formatting items and locale.
-    #[cfg(feature = "unstable-locales")]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -918,7 +918,7 @@ where
     ///
     /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
-    #[cfg(feature = "unstable-locales")]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(
