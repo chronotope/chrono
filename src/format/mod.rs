@@ -48,7 +48,9 @@ pub(crate) mod scan;
 
 pub mod strftime;
 
-#[cfg(feature = "alloc")]
+#[allow(unused)]
+// TODO: remove '#[allow(unused)]' once we use this module for parsing or something else that does
+// not require `alloc`.
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
@@ -59,13 +61,11 @@ pub(crate) use formatting::write_rfc3339;
 #[cfg(feature = "alloc")]
 #[allow(deprecated)]
 pub use formatting::{format, format_item, DelayedFormat};
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 #[allow(deprecated)]
 pub use formatting::{format_item_localized, format_localized};
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+#[cfg(feature = "unstable-locales")]
 pub use locales::Locale;
-#[cfg(all(not(feature = "unstable-locales"), feature = "alloc"))]
-pub(crate) use locales::Locale;
 pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;

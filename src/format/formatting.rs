@@ -22,10 +22,12 @@ use crate::{NaiveDate, NaiveTime, Weekday};
 
 #[cfg(feature = "alloc")]
 use super::locales;
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+use super::Locale;
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
 #[cfg(feature = "alloc")]
-use super::{Fixed, InternalFixed, InternalInternal, Item, Locale, Numeric};
+use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric};
 #[cfg(feature = "alloc")]
 use locales::*;
 
@@ -188,7 +190,7 @@ pub fn format_item(
 
 /// Tries to format given arguments with given formatting items.
 /// Internally used by `DelayedFormat`.
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 #[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
 pub fn format_localized<'a, I, B>(
     w: &mut fmt::Formatter,
@@ -213,7 +215,7 @@ where
 }
 
 /// Formats single formatting item
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 #[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
 pub fn format_item_localized(
     w: &mut fmt::Formatter,
