@@ -83,19 +83,84 @@ macro_rules! time {
     }};
 }
 
-/// Create a [`NaiveDateTime`](crate::naive::NaiveDateTime) with a statically known value.
+/// Create a [`NaiveDateTime`] or [`DateTime<FixedOffset>`] with a statically known value.
 ///
 /// The input is checked at compile time.
+///
+/// [`NaiveDateTime`]: crate::naive::NaiveDateTime
+/// [`DateTime<FixedOffset>`]: crate::DateTime
 ///
 /// # Examples
 /// ```
 /// use chrono::datetime;
 ///
+/// // NaiveDateTime
 /// let _ = datetime!(2023-09-08 7:03);
 /// let _ = datetime!(2023-09-08 7:03:25);
+/// // DateTime<FixedOffset>
+/// let _ = datetime!(2023-09-08 7:03:25+02:00);
+/// let _ = datetime!(2023-09-08 7:03:25-02:00);
 /// ```
 #[macro_export]
 macro_rules! datetime {
+    ($y:literal-$m:literal-$d:literal $h:literal:$min:literal:$s:literal+$hh:literal:$mm:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            const DATE: $crate::NaiveDate = match $crate::NaiveDate::from_ymd_opt($y, $m, $d) {
+                Some(d) => d,
+                None => panic!("invalid calendar date"),
+            };
+            const SECS_NANOS: (u32, u32) = match $s {
+                60u32 => (59, 1_000_000_000),
+                s => (s, 0),
+            };
+            const TIME: $crate::NaiveTime =
+                match $crate::NaiveTime::from_hms_nano_opt($h, $min, SECS_NANOS.0, SECS_NANOS.1) {
+                    Some(t) => t,
+                    None => panic!("invalid time"),
+                };
+            assert!($hh < 24u32 || $mm < 60, "invalid offset");
+            const OFFSET: $crate::FixedOffset =
+                match $crate::FixedOffset::east_opt(($hh * 3600 + $mm * 60) as i32) {
+                    Some(o) => o,
+                    None => panic!("invalid offset"),
+                };
+            const DT: $crate::NaiveDateTime = match DATE.and_time(TIME).checked_sub_offset(OFFSET) {
+                Some(o) => o,
+                None => panic!("datetime out of range"),
+            };
+            $crate::DateTime::<$crate::FixedOffset>::from_naive_utc_and_offset(DT, OFFSET)
+        }
+    }};
+    ($y:literal-$m:literal-$d:literal $h:literal:$min:literal:$s:literal-$hh:literal:$mm:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            const DATE: $crate::NaiveDate = match $crate::NaiveDate::from_ymd_opt($y, $m, $d) {
+                Some(d) => d,
+                None => panic!("invalid calendar date"),
+            };
+            const SECS_NANOS: (u32, u32) = match $s {
+                60u32 => (59, 1_000_000_000),
+                s => (s, 0),
+            };
+            const TIME: $crate::NaiveTime =
+                match $crate::NaiveTime::from_hms_nano_opt($h, $min, SECS_NANOS.0, SECS_NANOS.1) {
+                    Some(t) => t,
+                    None => panic!("invalid time"),
+                };
+            assert!($hh < 24u32 || $mm < 60, "invalid offset");
+            const OFFSET: $crate::FixedOffset =
+                match $crate::FixedOffset::west_opt(($hh * 3600 + $mm * 60) as i32) {
+                    Some(o) => o,
+                    None => panic!("invalid offset"),
+                };
+            const DT: $crate::NaiveDateTime = match DATE.and_time(TIME).checked_sub_offset(OFFSET) {
+                Some(o) => o,
+                None => panic!("datetime out of range"),
+            };
+            $crate::DateTime::<$crate::FixedOffset>::from_naive_utc_and_offset(DT, OFFSET)
+        }
+    }};
     ($y:literal-$m:literal-$d:literal $h:literal:$min:literal:$s:literal) => {{
         #[allow(clippy::zero_prefixed_literal)]
         {
@@ -202,7 +267,7 @@ macro_rules! offset {
 #[cfg(test)]
 #[rustfmt::skip::macros(date)]
 mod tests {
-    use crate::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+    use crate::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
 
     #[test]
     fn init_macros() {
@@ -222,6 +287,14 @@ mod tests {
             datetime!(2023-09-08 7:03:25),
             NaiveDate::from_ymd_opt(2023, 9, 8).unwrap().and_hms_opt(7, 3, 25).unwrap(),
         );
+        assert_eq!(
+            datetime!(2023-09-08 7:03:25+02:00),
+            FixedOffset::east_opt(7200).unwrap().with_ymd_and_hms(2023, 9, 8, 7, 3, 25).unwrap(),
+        );
+        assert_eq!(
+            datetime!(2023-09-08 7:03:25-02:00),
+            FixedOffset::east_opt(-7200).unwrap().with_ymd_and_hms(2023, 9, 8, 7, 3, 25).unwrap(),
+        );
         assert_eq!(offset!(+05:43), FixedOffset::east_opt(20_580).unwrap());
         assert_eq!(offset!(-05:43), FixedOffset::east_opt(-20_580).unwrap());
         assert_eq!(offset!(+05:43:21), FixedOffset::east_opt(20_601).unwrap());
@@ -236,6 +309,11 @@ mod tests {
         assert_eq!(DATE.and_time(TIME), NAIVEDATETIME);
 
         const OFFSET_1: FixedOffset = offset!(+02:00);
+        const DATETIME_1: DateTime<FixedOffset> = datetime!(2023-09-08 7:03:25+02:00);
+        assert_eq!(OFFSET_1.from_local_datetime(&NAIVEDATETIME).unwrap(), DATETIME_1);
+
         const OFFSET_2: FixedOffset = offset!(-02:00);
+        const DATETIME_2: DateTime<FixedOffset> = datetime!(2023-09-08 7:03:25-02:00);
+        assert_eq!(OFFSET_2.from_local_datetime(&NAIVEDATETIME).unwrap(), DATETIME_2);
     }
 }
