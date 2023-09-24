@@ -39,19 +39,66 @@ macro_rules! date {
     }};
 }
 
+/// Create a [`NaiveTime`](crate::naive::NaiveTime) with a statically known value.
+///
+/// Supported formats are 'hour:minute' and 'hour:minute:second'.
+///
+/// The input is checked at compile time.
+///
+/// # Examples
+/// ```
+/// use chrono::time;
+/// # use chrono::Timelike;
+///
+/// assert_eq!(time!(7:03), time!(7:03:00));
+/// let leap_second = time!(23:59:60);
+/// # assert!(leap_second.second() == 59 && leap_second.nanosecond() == 1_000_000_000);
+/// ```
+#[macro_export]
+macro_rules! time {
+    ($h:literal:$m:literal:$s:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            const SECS_NANOS: (u32, u32) = match $s {
+                60u32 => (59, 1_000_000_000),
+                s => (s, 0),
+            };
+            const TIME: $crate::NaiveTime =
+                match $crate::NaiveTime::from_hms_nano_opt($h, $m, SECS_NANOS.0, SECS_NANOS.1) {
+                    Some(t) => t,
+                    None => panic!("invalid time"),
+                };
+            TIME
+        }
+    }};
+    ($h:literal:$m:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            const TIME: $crate::NaiveTime = match $crate::NaiveTime::from_hms_opt($h, $m, 0) {
+                Some(t) => t,
+                None => panic!("invalid time"),
+            };
+            TIME
+        }
+    }};
+}
+
 #[cfg(test)]
 #[rustfmt::skip::macros(date)]
 mod tests {
-    use crate::NaiveDate;
+    use crate::{NaiveDate, NaiveTime};
 
     #[test]
     fn init_macros() {
         assert_eq!(date!(2023-09-08), NaiveDate::from_ymd_opt(2023, 9, 8).unwrap());
         assert_eq!(date!(2023-253), NaiveDate::from_yo_opt(2023, 253).unwrap());
+        assert_eq!(time!(7:03), NaiveTime::from_hms_opt(7, 3, 0).unwrap());
+        assert_eq!(time!(7:03:25), NaiveTime::from_hms_opt(7, 3, 25).unwrap());
     }
 
     #[test]
     fn macros_are_const() {
         const DATE: NaiveDate = date!(2023-09-08);
+        const TIME: NaiveTime = time!(7:03:25);
     }
 }
