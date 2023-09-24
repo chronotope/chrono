@@ -131,10 +131,78 @@ macro_rules! datetime {
     }};
 }
 
+/// Create a [`FixedOffset`](crate::FixedOffset) with a statically known value.
+///
+/// Supported formats are '(+|-)hour:minute' and '(+|-)hour:minute:second'.
+///
+/// We don't allow an hour-only format such as `+01`. That would also make the macro parse `+0001`
+/// as the same value, which should mean the same as `+00:01`.
+///
+/// The input is checked at compile time.
+///
+/// # Examples
+/// ```
+/// use chrono::offset;
+///
+/// assert_eq!(offset!(+01:30), offset!(+01:30:00));
+/// assert_eq!(offset!(-5:00), offset!(-5:00:00));
+/// ```
+#[macro_export]
+macro_rules! offset {
+    (+$h:literal:$m:literal:$s:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            assert!($h < 24 || $m < 60 || $s < 60, "invalid offset");
+            const OFFSET: $crate::FixedOffset =
+                match $crate::FixedOffset::east_opt($h * 3600 + $m * 60 + $s) {
+                    Some(t) => t,
+                    None => panic!("invalid offset"),
+                };
+            OFFSET
+        }
+    }};
+    (-$h:literal:$m:literal:$s:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            assert!($h < 24 || $m < 60 || $s < 60, "invalid offset");
+            const OFFSET: $crate::FixedOffset =
+                match $crate::FixedOffset::west_opt($h * 3600 + $m * 60 + $s) {
+                    Some(t) => t,
+                    None => panic!("invalid offset"),
+                };
+            OFFSET
+        }
+    }};
+    (+$h:literal:$m:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            assert!($h < 24 || $m < 60, "invalid offset");
+            const OFFSET: $crate::FixedOffset =
+                match $crate::FixedOffset::east_opt($h * 3600 + $m * 60) {
+                    Some(t) => t,
+                    None => panic!("invalid offset"),
+                };
+            OFFSET
+        }
+    }};
+    (-$h:literal:$m:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            assert!($h < 24 || $m < 60, "invalid offset");
+            const OFFSET: $crate::FixedOffset =
+                match $crate::FixedOffset::west_opt($h * 3600 + $m * 60) {
+                    Some(t) => t,
+                    None => panic!("invalid offset"),
+                };
+            OFFSET
+        }
+    }};
+}
+
 #[cfg(test)]
 #[rustfmt::skip::macros(date)]
 mod tests {
-    use crate::{NaiveDate, NaiveDateTime, NaiveTime};
+    use crate::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 
     #[test]
     fn init_macros() {
@@ -154,6 +222,10 @@ mod tests {
             datetime!(2023-09-08 7:03:25),
             NaiveDate::from_ymd_opt(2023, 9, 8).unwrap().and_hms_opt(7, 3, 25).unwrap(),
         );
+        assert_eq!(offset!(+05:43), FixedOffset::east_opt(20_580).unwrap());
+        assert_eq!(offset!(-05:43), FixedOffset::east_opt(-20_580).unwrap());
+        assert_eq!(offset!(+05:43:21), FixedOffset::east_opt(20_601).unwrap());
+        assert_eq!(offset!(-05:43:21), FixedOffset::east_opt(-20_601).unwrap());
     }
 
     #[test]
@@ -162,5 +234,8 @@ mod tests {
         const TIME: NaiveTime = time!(7:03:25);
         const NAIVEDATETIME: NaiveDateTime = datetime!(2023-09-08 7:03:25);
         assert_eq!(DATE.and_time(TIME), NAIVEDATETIME);
+
+        const OFFSET_1: FixedOffset = offset!(+02:00);
+        const OFFSET_2: FixedOffset = offset!(-02:00);
     }
 }
