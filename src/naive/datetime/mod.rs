@@ -1624,7 +1624,7 @@ impl Add<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveDateTime {
-        self.checked_add_offset(rhs).unwrap()
+        self.checked_add_offset(rhs).expect("`NaiveDateTime + FixedOffset` out of range")
     }
 }
 
@@ -1668,7 +1668,7 @@ impl Add<Months> for NaiveDateTime {
     /// );
     /// ```
     fn add(self, rhs: Months) -> Self::Output {
-        Self { date: self.date.checked_add_months(rhs).unwrap(), time: self.time }
+        self.checked_add_months(rhs).expect("`NaiveDateTime + Months` out of range")
     }
 }
 
@@ -1760,7 +1760,7 @@ impl Sub<FixedOffset> for NaiveDateTime {
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
-        self.checked_sub_offset(rhs).unwrap()
+        self.checked_sub_offset(rhs).expect("`NaiveDateTime - FixedOffset` out of range")
     }
 }
 
@@ -1792,7 +1792,7 @@ impl Sub<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn sub(self, rhs: Months) -> Self::Output {
-        Self { date: self.date.checked_sub_months(rhs).unwrap(), time: self.time }
+        self.checked_sub_months(rhs).expect("`NaiveDateTime - Months` out of range")
     }
 }
 
@@ -1848,7 +1848,7 @@ impl Add<Days> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn add(self, days: Days) -> Self::Output {
-        self.checked_add_days(days).unwrap()
+        self.checked_add_days(days).expect("`NaiveDateTime + Days` out of range")
     }
 }
 
@@ -1856,7 +1856,7 @@ impl Sub<Days> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn sub(self, days: Days) -> Self::Output {
-        self.checked_sub_days(days).unwrap()
+        self.checked_sub_days(days).expect("`NaiveDateTime - Days` out of range")
     }
 }
 

@@ -1252,7 +1252,8 @@ impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
 
     #[inline]
     fn add(mut self, rhs: FixedOffset) -> DateTime<Tz> {
-        self.datetime = self.naive_utc().checked_add_offset(rhs).unwrap();
+        self.datetime =
+            self.naive_utc().checked_add_offset(rhs).expect("`DateTime + FixedOffset` overflowed");
         self
     }
 }
@@ -1261,7 +1262,7 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     fn add(self, rhs: Months) -> Self::Output {
-        self.checked_add_months(rhs).unwrap()
+        self.checked_add_months(rhs).expect("`DateTime + Months` out of range")
     }
 }
 
@@ -1309,7 +1310,8 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
 
     #[inline]
     fn sub(mut self, rhs: FixedOffset) -> DateTime<Tz> {
-        self.datetime = self.naive_utc().checked_sub_offset(rhs).unwrap();
+        self.datetime =
+            self.naive_utc().checked_sub_offset(rhs).expect("`DateTime - FixedOffset` overflowed");
         self
     }
 }
@@ -1318,7 +1320,7 @@ impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     fn sub(self, rhs: Months) -> Self::Output {
-        self.checked_sub_months(rhs).unwrap()
+        self.checked_sub_months(rhs).expect("`DateTime - Months` out of range")
     }
 }
 
@@ -1344,7 +1346,7 @@ impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     fn add(self, days: Days) -> Self::Output {
-        self.checked_add_days(days).unwrap()
+        self.checked_add_days(days).expect("`DateTime + Days` out of range")
     }
 }
 
@@ -1352,7 +1354,7 @@ impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     fn sub(self, days: Days) -> Self::Output {
-        self.checked_sub_days(days).unwrap()
+        self.checked_sub_days(days).expect("`DateTime - Days` out of range")
     }
 }
 
