@@ -1889,7 +1889,7 @@ impl Add<Months> for NaiveDate {
     /// assert_eq!(from_ymd(2020, 1, 31) + Months::new(1), from_ymd(2020, 2, 29));
     /// ```
     fn add(self, months: Months) -> Self::Output {
-        self.checked_add_months(months).unwrap()
+        self.checked_add_months(months).expect("`NaiveDate + Months` out of range")
     }
 }
 
@@ -1914,7 +1914,7 @@ impl Sub<Months> for NaiveDate {
     /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(13), from_ymd(2012, 12, 1));
     /// ```
     fn sub(self, months: Months) -> Self::Output {
-        self.checked_sub_months(months).unwrap()
+        self.checked_sub_months(months).expect("`NaiveDate - Months` out of range")
     }
 }
 
@@ -1922,7 +1922,7 @@ impl Add<Days> for NaiveDate {
     type Output = NaiveDate;
 
     fn add(self, days: Days) -> Self::Output {
-        self.checked_add_days(days).unwrap()
+        self.checked_add_days(days).expect("`NaiveDate + Days` out of range")
     }
 }
 
@@ -1930,7 +1930,7 @@ impl Sub<Days> for NaiveDate {
     type Output = NaiveDate;
 
     fn sub(self, days: Days) -> Self::Output {
-        self.checked_sub_days(days).unwrap()
+        self.checked_sub_days(days).expect("`NaiveDate - Days` out of range")
     }
 }
 
