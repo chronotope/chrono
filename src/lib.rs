@@ -484,26 +484,17 @@ use core::fmt;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
-    #[doc(no_inline)]
     #[allow(deprecated)]
     pub use crate::Date;
     #[cfg(feature = "clock")]
-    #[doc(no_inline)]
     pub use crate::Local;
     #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-    #[doc(no_inline)]
     pub use crate::Locale;
-    #[doc(no_inline)]
     pub use crate::SubsecRound;
-    #[doc(no_inline)]
     pub use crate::{DateTime, SecondsFormat};
-    #[doc(no_inline)]
     pub use crate::{Datelike, Month, Timelike, Weekday};
-    #[doc(no_inline)]
     pub use crate::{FixedOffset, Utc};
-    #[doc(no_inline)]
     pub use crate::{NaiveDate, NaiveDateTime, NaiveTime};
-    #[doc(no_inline)]
     pub use crate::{Offset, TimeZone};
 }
 
