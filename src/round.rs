@@ -1,6 +1,8 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
+//! Functionality for rounding or truncating a `DateTime` by a `Duration`.
+
 use crate::datetime::DateTime;
 use crate::duration::Duration;
 use crate::NaiveDateTime;

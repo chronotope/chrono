@@ -532,7 +532,7 @@ pub use offset::LocalResult;
 #[doc(inline)]
 pub use offset::{FixedOffset, Offset, TimeZone, Utc};
 
-mod round;
+pub mod round;
 pub use round::{DurationRound, RoundingError, SubsecRound};
 
 mod weekday;
