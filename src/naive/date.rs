@@ -1826,10 +1826,15 @@ impl Datelike for NaiveDate {
     }
 }
 
-/// An addition of `Duration` to `NaiveDate` discards the fractional days,
-/// rounding to the closest integral number of days towards `Duration::zero()`.
+/// Add `chrono::Duration` to `NaiveDate`.
 ///
-/// Panics on underflow or overflow. Use [`NaiveDate::checked_add_signed`] to detect that.
+/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
+/// towards `Duration::zero()`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDate::checked_add_signed`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1858,6 +1863,15 @@ impl Add<OldDuration> for NaiveDate {
     }
 }
 
+/// Add-assign of `chrono::Duration` to `NaiveDate`.
+///
+/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
+/// towards `Duration::zero()`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDate::checked_add_signed`] to get an `Option` instead.
 impl AddAssign<OldDuration> for NaiveDate {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
@@ -1865,11 +1879,15 @@ impl AddAssign<OldDuration> for NaiveDate {
     }
 }
 
-/// An addition of months to `NaiveDate` clamped to valid days in resulting month.
+/// Add `Months` to `NaiveDate`.
+///
+/// The result will be clamped to valid days in the resulting month, see `checked_add_months` for
+/// details.
 ///
 /// # Panics
 ///
 /// Panics if the resulting date would be out of range.
+/// Consider using `NaiveDate::checked_add_months` to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1893,11 +1911,15 @@ impl Add<Months> for NaiveDate {
     }
 }
 
-/// A subtraction of Months from `NaiveDate` clamped to valid days in resulting month.
+/// Subtract `Months` from `NaiveDate`.
+///
+/// The result will be clamped to valid days in the resulting month, see `checked_sub_months` for
+/// details.
 ///
 /// # Panics
 ///
 /// Panics if the resulting date would be out of range.
+/// Consider using `NaiveDate::checked_sub_months` to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1918,6 +1940,12 @@ impl Sub<Months> for NaiveDate {
     }
 }
 
+/// Add `Days` to `NaiveDate`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `NaiveDate::checked_add_days` to get an `Option` instead.
 impl Add<Days> for NaiveDate {
     type Output = NaiveDate;
 
@@ -1926,6 +1954,12 @@ impl Add<Days> for NaiveDate {
     }
 }
 
+/// Subtract `Days` from `NaiveDate`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `NaiveDate::checked_sub_days` to get an `Option` instead.
 impl Sub<Days> for NaiveDate {
     type Output = NaiveDate;
 
@@ -1934,11 +1968,16 @@ impl Sub<Days> for NaiveDate {
     }
 }
 
-/// A subtraction of `Duration` from `NaiveDate` discards the fractional days,
-/// rounding to the closest integral number of days towards `Duration::zero()`.
+/// Subtract `chrono::Duration` from `NaiveDate`.
+///
+/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
+/// towards `Duration::zero()`.
 /// It is the same as the addition with a negated `Duration`.
 ///
-/// Panics on underflow or overflow. Use [`NaiveDate::checked_sub_signed`] to detect that.
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDate::checked_sub_signed`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1967,6 +2006,16 @@ impl Sub<OldDuration> for NaiveDate {
     }
 }
 
+/// Subtract-assign `chrono::Duration` from `NaiveDate`.
+///
+/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
+/// towards `Duration::zero()`.
+/// It is the same as the addition with a negated `Duration`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDate::checked_sub_signed`] to get an `Option` instead.
 impl SubAssign<OldDuration> for NaiveDate {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
