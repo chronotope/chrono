@@ -1208,6 +1208,16 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
+/// Add `chrono::Duration` to `DateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_add_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1217,6 +1227,16 @@ impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
     }
 }
 
+/// Add `std::time::Duration` to `DateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_add_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1228,6 +1248,16 @@ impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
     }
 }
 
+/// Add-assign `chrono::Duration` to `DateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_add_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
@@ -1238,6 +1268,16 @@ impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
     }
 }
 
+/// Add-assign `std::time::Duration` to `DateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_add_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
@@ -1247,6 +1287,11 @@ impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     }
 }
 
+/// Add `FixedOffset` to the datetime value of `DateTime` (offset remains unchanged).
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
 impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1258,6 +1303,19 @@ impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
     }
 }
 
+/// Add `Months` to `DateTime`.
+///
+/// The result will be clamped to valid days in the resulting month, see `checked_add_months` for
+/// details.
+///
+/// # Panics
+///
+/// Panics if:
+/// - The resulting date would be out of range.
+/// - The local time at the resulting date does not exist or is ambiguous, for example during a
+///   daylight saving time transition.
+///
+/// Strongly consider using [`DateTime<Tz>::checked_add_months`] to get an `Option` instead.
 impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1266,6 +1324,18 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     }
 }
 
+/// Subtract `chrono::Duration` from `DateTime`.
+///
+/// This is the same as the addition with a negated `Duration`.
+///
+/// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
+/// second ever**, except when the `DateTime` itself represents a leap second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_sub_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1275,6 +1345,16 @@ impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
     }
 }
 
+/// Subtract `std::time::Duration` from `DateTime`.
+///
+/// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
+/// second ever**, except when the `DateTime` itself represents a leap second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_sub_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1286,6 +1366,18 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
     }
 }
 
+/// Subtract-assign `chrono::Duration` from `DateTime`.
+///
+/// This is the same as the addition with a negated `Duration`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `DateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_sub_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
@@ -1296,6 +1388,16 @@ impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
     }
 }
 
+/// Subtract-assign `std::time::Duration` from `DateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `DateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`DateTime<Tz>::checked_sub_signed`] to get an `Option` instead.
 impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
@@ -1305,6 +1407,11 @@ impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
     }
 }
 
+/// Subtract `FixedOffset` from the datetime value of `DateTime` (offset remains unchanged).
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
 impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1316,6 +1423,19 @@ impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
     }
 }
 
+/// Subtract `Months` from `DateTime`.
+///
+/// The result will be clamped to valid days in the resulting month, see
+/// [`DateTime<Tz>::checked_sub_months`] for details.
+///
+/// # Panics
+///
+/// Panics if:
+/// - The resulting date would be out of range.
+/// - The local time at the resulting date does not exist or is ambiguous, for example during a
+///   daylight saving time transition.
+///
+/// Strongly consider using [`DateTime<Tz>::checked_sub_months`] to get an `Option` instead.
 impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1342,6 +1462,16 @@ impl<Tz: TimeZone> Sub<&DateTime<Tz>> for DateTime<Tz> {
     }
 }
 
+/// Add `Days` to `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if:
+/// - The resulting date would be out of range.
+/// - The local time at the resulting date does not exist or is ambiguous, for example during a
+///   daylight saving time transition.
+///
+/// Strongly consider using `DateTime<Tz>::checked_sub_days` to get an `Option` instead.
 impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1350,6 +1480,16 @@ impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
     }
 }
 
+/// Subtract `Days` from `DateTime`.
+///
+/// # Panics
+///
+/// Panics if:
+/// - The resulting date would be out of range.
+/// - The local time at the resulting date does not exist or is ambiguous, for example during a
+///   daylight saving time transition.
+///
+/// Strongly consider using `DateTime<Tz>::checked_sub_days` to get an `Option` instead.
 impl<Tz: TimeZone> Sub<Days> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
