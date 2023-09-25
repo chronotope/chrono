@@ -1533,7 +1533,7 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-/// An addition of `Duration` to `NaiveDateTime` yields another `NaiveDateTime`.
+/// Add `chrono::Duration` to `NaiveDateTime`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
@@ -1541,8 +1541,8 @@ impl Timelike for NaiveDateTime {
 ///
 /// # Panics
 ///
-/// Panics if the resulting date would be out of range. Use [`NaiveDateTime::checked_add_signed`]
-/// to detect that.
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1594,6 +1594,16 @@ impl Add<OldDuration> for NaiveDateTime {
     }
 }
 
+/// Add `std::time::Duration` to `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 impl Add<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1605,6 +1615,16 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
+/// Add-assign `chrono::Duration` to `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 impl AddAssign<OldDuration> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
@@ -1612,6 +1632,16 @@ impl AddAssign<OldDuration> for NaiveDateTime {
     }
 }
 
+/// Add-assign `std::time::Duration` to `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 impl AddAssign<Duration> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
@@ -1619,6 +1649,12 @@ impl AddAssign<Duration> for NaiveDateTime {
     }
 }
 
+/// Add `FixedOffset` to `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_add_offset` to get an `Option` instead.
 impl Add<FixedOffset> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1628,11 +1664,15 @@ impl Add<FixedOffset> for NaiveDateTime {
     }
 }
 
-/// An addition of months to `NaiveDateTime` clamped to valid days in resulting month.
+/// Add `Months` to `NaiveDateTime`.
+///
+/// The result will be clamped to valid days in the resulting month, see `checked_add_months` for
+/// details.
 ///
 /// # Panics
 ///
 /// Panics if the resulting date would be out of range.
+/// Consider using `checked_add_months` to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1672,15 +1712,18 @@ impl Add<Months> for NaiveDateTime {
     }
 }
 
-/// A subtraction of `Duration` from `NaiveDateTime` yields another `NaiveDateTime`.
-/// It is the same as the addition with a negated `Duration`.
+/// Subtract `chrono::Duration` from `NaiveDateTime`.
+///
+/// This is the same as the addition with a negated `Duration`.
 ///
 /// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
 /// the assumption becomes that **there is exactly a single leap second ever**.
 ///
-/// Panics on underflow or overflow. Use [`NaiveDateTime::checked_sub_signed`]
-/// to detect that.
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1730,6 +1773,16 @@ impl Sub<OldDuration> for NaiveDateTime {
     }
 }
 
+/// Subtract `std::time::Duration` from `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 impl Sub<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1741,6 +1794,18 @@ impl Sub<Duration> for NaiveDateTime {
     }
 }
 
+/// Subtract-assign `chrono::Duration` from `NaiveDateTime`.
+///
+/// This is the same as the addition with a negated `Duration`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 impl SubAssign<OldDuration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
@@ -1748,6 +1813,16 @@ impl SubAssign<OldDuration> for NaiveDateTime {
     }
 }
 
+/// Subtract-assign `std::time::Duration` from `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 impl SubAssign<Duration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
@@ -1755,6 +1830,12 @@ impl SubAssign<Duration> for NaiveDateTime {
     }
 }
 
+/// Subtract `FixedOffset` from `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_sub_offset` to get an `Option` instead.
 impl Sub<FixedOffset> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1764,11 +1845,15 @@ impl Sub<FixedOffset> for NaiveDateTime {
     }
 }
 
-/// A subtraction of Months from `NaiveDateTime` clamped to valid days in resulting month.
+/// Subtract `Months` from `NaiveDateTime`.
+///
+/// The result will be clamped to valid days in the resulting month, see
+/// [`NaiveDateTime::checked_sub_months`] for details.
 ///
 /// # Panics
 ///
 /// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_months`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1844,6 +1929,12 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
     }
 }
 
+/// Add `Days` to `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_add_days` to get an `Option` instead.
 impl Add<Days> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1852,6 +1943,12 @@ impl Add<Days> for NaiveDateTime {
     }
 }
 
+/// Subtract `Days` from `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_sub_days` to get an `Option` instead.
 impl Sub<Days> for NaiveDateTime {
     type Output = NaiveDateTime;
 
