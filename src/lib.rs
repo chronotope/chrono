@@ -614,6 +614,7 @@ impl std::error::Error for OutOfRange {}
 
 /// Workaround because `?` is not (yet) available in const context.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! try_opt {
     ($e:expr) => {
         match $e {
@@ -625,6 +626,7 @@ macro_rules! try_opt {
 
 /// Workaround because `.expect()` is not (yet) available in const context.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! expect {
     ($e:expr, $m:literal) => {
         match $e {
