@@ -1165,18 +1165,19 @@ impl Add<Duration> for NaiveTime {
 
     #[inline]
     fn add(self, rhs: Duration) -> NaiveTime {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.overflowing_add_signed(rhs).0
+        // We don't care about values beyond `24 * 60 * 60`, so we can take a modulus and avoid
+        // overflow during the conversion to `chrono::Duration`.
+        // But we limit to double that just in case `self` is a leap-second.
+        let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
+        let d = OldDuration::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        self.overflowing_add_signed(d).0
     }
 }
 
 impl AddAssign<Duration> for NaiveTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        *self += rhs;
+        *self = *self + rhs;
     }
 }
 
@@ -1256,18 +1257,19 @@ impl Sub<Duration> for NaiveTime {
 
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveTime {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.overflowing_sub_signed(rhs).0
+        // We don't care about values beyond `24 * 60 * 60`, so we can take a modulus and avoid
+        // overflow during the conversion to `chrono::Duration`.
+        // But we limit to double that just in case `self` is a leap-second.
+        let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
+        let d = OldDuration::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        self.overflowing_sub_signed(d).0
     }
 }
 
 impl SubAssign<Duration> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        *self -= rhs;
+        *self = *self - rhs;
     }
 }
 
