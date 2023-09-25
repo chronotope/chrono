@@ -1094,7 +1094,9 @@ impl Timelike for NaiveTime {
     }
 }
 
-/// An addition of `Duration` to `NaiveTime` wraps around and never overflows or underflows.
+/// Add `chrono::Duration` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
@@ -1153,6 +1155,10 @@ impl Add<OldDuration> for NaiveTime {
     }
 }
 
+/// Add-assign `chrono::Duration` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl AddAssign<OldDuration> for NaiveTime {
     #[inline]
     fn add_assign(&mut self, rhs: OldDuration) {
@@ -1160,6 +1166,10 @@ impl AddAssign<OldDuration> for NaiveTime {
     }
 }
 
+/// Add `std::time::Duration` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1174,6 +1184,10 @@ impl Add<Duration> for NaiveTime {
     }
 }
 
+/// Add-assign `std::time::Duration` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl AddAssign<Duration> for NaiveTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
@@ -1181,6 +1195,10 @@ impl AddAssign<Duration> for NaiveTime {
     }
 }
 
+/// Add `FixedOffset` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl Add<FixedOffset> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1190,9 +1208,11 @@ impl Add<FixedOffset> for NaiveTime {
     }
 }
 
-/// A subtraction of `Duration` from `NaiveTime` wraps around and never overflows or underflows.
-/// In particular the addition ignores integral number of days.
-/// It is the same as the addition with a negated `Duration`.
+/// Subtract `chrono::Duration` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
+/// This is the same as addition with a negated `Duration`.
 ///
 /// As a part of Chrono's [leap second handling], the subtraction assumes that **there is no leap
 /// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
@@ -1245,6 +1265,10 @@ impl Sub<OldDuration> for NaiveTime {
     }
 }
 
+/// Subtract-assign `chrono::Duration` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl SubAssign<OldDuration> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: OldDuration) {
@@ -1252,6 +1276,10 @@ impl SubAssign<OldDuration> for NaiveTime {
     }
 }
 
+/// Subtract `std::time::Duration` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1266,6 +1294,10 @@ impl Sub<Duration> for NaiveTime {
     }
 }
 
+/// Subtract-assign `std::time::Duration` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl SubAssign<Duration> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
@@ -1273,6 +1305,10 @@ impl SubAssign<Duration> for NaiveTime {
     }
 }
 
+/// Subtract `FixedOffset` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl Sub<FixedOffset> for NaiveTime {
     type Output = NaiveTime;
 
