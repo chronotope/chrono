@@ -121,6 +121,7 @@ fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTim
 
     let output = process::Command::new(path)
         .env("LANG", "c")
+        .env("LC_ALL", "c")
         .arg("-d")
         .arg(format!(
             "{}-{:02}-{:02} {:02}:{:02}:{:02}",
