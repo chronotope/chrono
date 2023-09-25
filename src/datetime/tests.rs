@@ -1519,3 +1519,41 @@ fn nano_roundrip() {
         assert_eq!(nanos, nanos2);
     }
 }
+
+#[test]
+fn test_auto_conversion_fixedoffset_into_utc() {
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    let cdt_dt = FixedOffset::west_opt(5 * 60 * 60)
+        .unwrap()
+        .with_ymd_and_hms(2018, 9, 5, 18, 58, 0)
+        .unwrap();
+    let utc_dt2: DateTime<Utc> = cdt_dt.into();
+    assert_eq!(utc_dt, utc_dt2);
+}
+
+#[test]
+fn test_auto_conversion_utc_into_fixedoffset() {
+    let utc_dt = Utc.with_ymd_and_hms(2018, 9, 5, 23, 58, 0).unwrap();
+    let cdt_dt = FixedOffset::west_opt(5 * 60 * 60)
+        .unwrap()
+        .with_ymd_and_hms(2018, 9, 5, 18, 58, 0)
+        .unwrap();
+    let cdt_dt2: DateTime<FixedOffset> = utc_dt.into();
+    assert_eq!(cdt_dt, cdt_dt2);
+}
+
+#[cfg(feature = "clock")]
+#[test]
+fn test_auto_conversion_local_into_utc() {
+    let loc_dt = Local.with_ymd_and_hms(2020, 1, 2, 3, 4, 5).unwrap();
+    let utc_dt: DateTime<Utc> = loc_dt.into();
+    assert_eq!(utc_dt, loc_dt);
+}
+
+#[cfg(feature = "clock")]
+#[test]
+fn test_auto_conversion_utc_into_local() {
+    let utc_dt = Utc.with_ymd_and_hms(2020, 1, 2, 3, 4, 5).unwrap();
+    let loc_dt: DateTime<Local> = utc_dt.into();
+    assert_eq!(utc_dt, loc_dt);
+}
