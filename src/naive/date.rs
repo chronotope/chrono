@@ -1865,54 +1865,54 @@ impl AddAssign<OldDuration> for NaiveDate {
     }
 }
 
+/// An addition of months to `NaiveDate` clamped to valid days in resulting month.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+///
+/// # Example
+///
+/// ```
+/// use chrono::{NaiveDate, Months};
+///
+/// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+///
+/// assert_eq!(from_ymd(2014, 1, 1) + Months::new(1), from_ymd(2014, 2, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + Months::new(11), from_ymd(2014, 12, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + Months::new(12), from_ymd(2015, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + Months::new(13), from_ymd(2015, 2, 1));
+/// assert_eq!(from_ymd(2014, 1, 31) + Months::new(1), from_ymd(2014, 2, 28));
+/// assert_eq!(from_ymd(2020, 1, 31) + Months::new(1), from_ymd(2020, 2, 29));
+/// ```
 impl Add<Months> for NaiveDate {
     type Output = NaiveDate;
 
-    /// An addition of months to `NaiveDate` clamped to valid days in resulting month.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the resulting date would be out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Months};
-    ///
-    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-    ///
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(1), from_ymd(2014, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(11), from_ymd(2014, 12, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(12), from_ymd(2015, 1, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) + Months::new(13), from_ymd(2015, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 31) + Months::new(1), from_ymd(2014, 2, 28));
-    /// assert_eq!(from_ymd(2020, 1, 31) + Months::new(1), from_ymd(2020, 2, 29));
-    /// ```
     fn add(self, months: Months) -> Self::Output {
         self.checked_add_months(months).expect("`NaiveDate + Months` out of range")
     }
 }
 
+/// A subtraction of Months from `NaiveDate` clamped to valid days in resulting month.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+///
+/// # Example
+///
+/// ```
+/// use chrono::{NaiveDate, Months};
+///
+/// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+///
+/// assert_eq!(from_ymd(2014, 1, 1) - Months::new(11), from_ymd(2013, 2, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - Months::new(12), from_ymd(2013, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - Months::new(13), from_ymd(2012, 12, 1));
+/// ```
 impl Sub<Months> for NaiveDate {
     type Output = NaiveDate;
 
-    /// A subtraction of Months from `NaiveDate` clamped to valid days in resulting month.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the resulting date would be out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Months};
-    ///
-    /// let from_ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
-    ///
-    /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(11), from_ymd(2013, 2, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(12), from_ymd(2013, 1, 1));
-    /// assert_eq!(from_ymd(2014, 1, 1) - Months::new(13), from_ymd(2012, 12, 1));
-    /// ```
     fn sub(self, months: Months) -> Self::Output {
         self.checked_sub_months(months).expect("`NaiveDate - Months` out of range")
     }

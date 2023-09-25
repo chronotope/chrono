@@ -1628,45 +1628,45 @@ impl Add<FixedOffset> for NaiveDateTime {
     }
 }
 
+/// An addition of months to `NaiveDateTime` clamped to valid days in resulting month.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+///
+/// # Example
+///
+/// ```
+/// use chrono::{Months, NaiveDate};
+///
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap() + Months::new(1),
+///     NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 2, 0).unwrap() + Months::new(11),
+///     NaiveDate::from_ymd_opt(2014, 12, 1).unwrap().and_hms_opt(0, 2, 0).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap() + Months::new(12),
+///     NaiveDate::from_ymd_opt(2015, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 4).unwrap() + Months::new(13),
+///     NaiveDate::from_ymd_opt(2015, 2, 1).unwrap().and_hms_opt(0, 0, 4).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 31).unwrap().and_hms_opt(0, 5, 0).unwrap() + Months::new(1),
+///     NaiveDate::from_ymd_opt(2014, 2, 28).unwrap().and_hms_opt(0, 5, 0).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2020, 1, 31).unwrap().and_hms_opt(6, 0, 0).unwrap() + Months::new(1),
+///     NaiveDate::from_ymd_opt(2020, 2, 29).unwrap().and_hms_opt(6, 0, 0).unwrap()
+/// );
+/// ```
 impl Add<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
-    /// An addition of months to `NaiveDateTime` clamped to valid days in resulting month.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the resulting date would be out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Months, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 2, 0).unwrap() + Months::new(11),
-    ///     NaiveDate::from_ymd_opt(2014, 12, 1).unwrap().and_hms_opt(0, 2, 0).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap() + Months::new(12),
-    ///     NaiveDate::from_ymd_opt(2015, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 4).unwrap() + Months::new(13),
-    ///     NaiveDate::from_ymd_opt(2015, 2, 1).unwrap().and_hms_opt(0, 0, 4).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 31).unwrap().and_hms_opt(0, 5, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2014, 2, 28).unwrap().and_hms_opt(0, 5, 0).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2020, 1, 31).unwrap().and_hms_opt(6, 0, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2020, 2, 29).unwrap().and_hms_opt(6, 0, 0).unwrap()
-    /// );
-    /// ```
     fn add(self, rhs: Months) -> Self::Output {
         self.checked_add_months(rhs).expect("`NaiveDateTime + Months` out of range")
     }
