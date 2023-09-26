@@ -219,7 +219,7 @@
 //! # #[allow(unused_imports)]
 //! use chrono::prelude::*;
 //!
-//! # #[cfg(feature = "unstable-locales")]
+//! # #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 //! # fn test() {
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
@@ -236,9 +236,9 @@
 //! let dt_nano = NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(12, 0, 9, 1).unwrap().and_local_timezone(Utc).unwrap();
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # }
-//! # #[cfg(not(feature = "unstable-locales"))]
+//! # #[cfg(not(all(feature = "unstable-locales", feature = "alloc")))]
 //! # fn test() {}
-//! # if cfg!(feature = "unstable-locales") {
+//! # if cfg!(all(feature = "unstable-locales", feature = "alloc")) {
 //! #    test();
 //! # }
 //! ```
@@ -301,22 +301,22 @@
 //!
 //! ### Conversion from and to EPOCH timestamps
 //!
-//! Use [`Utc.timestamp(seconds, nanoseconds)`](./offset/trait.TimeZone.html#method.timestamp)
-//! to construct a [`DateTime<Utc>`](./struct.DateTime.html) from a UNIX timestamp
+//! Use [`DateTime::from_timestamp(seconds, nanoseconds)`](DateTime::from_timestamp)
+//! to construct a [`DateTime<Utc>`] from a UNIX timestamp
 //! (seconds, nanoseconds that passed since January 1st 1970).
 //!
-//! Use [`DateTime.timestamp`](./struct.DateTime.html#method.timestamp) to get the timestamp (in seconds)
-//! from a [`DateTime`](./struct.DateTime.html). Additionally, you can use
-//! [`DateTime.timestamp_subsec_nanos`](./struct.DateTime.html#method.timestamp_subsec_nanos)
+//! Use [`DateTime.timestamp`](DateTime::timestamp) to get the timestamp (in seconds)
+//! from a [`DateTime`]. Additionally, you can use
+//! [`DateTime.timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos)
 //! to get the number of additional number of nanoseconds.
 //!
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 #![cfg_attr(feature = "std", doc = "```rust")]
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::{DateTime, TimeZone, Utc};
+//! use chrono::{DateTime, Utc};
 //!
 //! // Construct a datetime from epoch:
-//! let dt = Utc.timestamp_opt(1_500_000_000, 0).unwrap();
+//! let dt: DateTime<Utc> = DateTime::from_timestamp(1_500_000_000, 0).unwrap();
 //! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
 //!
 //! // Get epoch value from a datetime:
@@ -458,7 +458,7 @@
 #![warn(unreachable_pub)]
 #![deny(clippy::tests_outside_test_module)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -474,11 +474,9 @@ pub mod prelude {
     #[allow(deprecated)]
     pub use crate::Date;
     #[cfg(feature = "clock")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
     #[doc(no_inline)]
     pub use crate::Local;
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[doc(no_inline)]
     pub use crate::Locale;
     #[doc(no_inline)]
@@ -506,7 +504,6 @@ pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
 pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
-#[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
 pub use format::Locale;
 pub use format::{ParseError, ParseResult};
 
@@ -516,7 +513,6 @@ pub use naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
 
 pub mod offset;
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 #[doc(no_inline)]
 pub use offset::Local;
 #[doc(no_inline)]
@@ -548,9 +544,27 @@ pub use naive::__BenchYearFlags;
 /// [1]: https://tools.ietf.org/html/rfc3339
 /// [2]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
     pub use super::datetime::serde::*;
+}
+
+/// Zero-copy serialization/deserialization with rkyv.
+///
+/// This module re-exports the `Archived*` versions of chrono's types.
+#[cfg(feature = "rkyv")]
+pub mod rkyv {
+    pub use crate::datetime::ArchivedDateTime;
+    pub use crate::month::ArchivedMonth;
+    pub use crate::naive::date::ArchivedNaiveDate;
+    pub use crate::naive::datetime::ArchivedNaiveDateTime;
+    pub use crate::naive::isoweek::ArchivedIsoWeek;
+    pub use crate::naive::time::ArchivedNaiveTime;
+    pub use crate::offset::fixed::ArchivedFixedOffset;
+    #[cfg(feature = "clock")]
+    pub use crate::offset::local::ArchivedLocal;
+    pub use crate::offset::utc::ArchivedUtc;
+    pub use crate::time_delta::ArchivedTimeDelta;
+    pub use crate::weekday::ArchivedWeekday;
 }
 
 /// Out of range error type used in various converting APIs

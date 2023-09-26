@@ -6,7 +6,7 @@ use chrono::format::StrftimeItems;
 use chrono::prelude::*;
 #[cfg(feature = "unstable-locales")]
 use chrono::Locale;
-use chrono::{DateTime, FixedOffset, Local, Utc, __BenchYearFlags};
+use chrono::{DateTime, FixedOffset, Local, TimeDelta, Utc, __BenchYearFlags};
 
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
@@ -195,6 +195,22 @@ fn bench_format_manual(c: &mut Criterion) {
         })
     });
 }
+
+fn bench_naivedate_add_signed(c: &mut Criterion) {
+    let date = NaiveDate::from_ymd_opt(2023, 7, 29).unwrap();
+    let extra = TimeDelta::days(25);
+    c.bench_function("bench_naivedate_add_signed", |b| {
+        b.iter(|| black_box(date).checked_add_signed(extra).unwrap())
+    });
+}
+
+fn bench_datetime_with(c: &mut Criterion) {
+    let dt = FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2023, 9, 23, 7, 36, 0).unwrap();
+    c.bench_function("bench_datetime_with", |b| {
+        b.iter(|| black_box(black_box(dt).with_hour(12)).unwrap())
+    });
+}
+
 criterion_group!(
     benches,
     bench_datetime_parse_from_rfc2822,
@@ -210,6 +226,8 @@ criterion_group!(
     bench_format,
     bench_format_with_items,
     bench_format_manual,
+    bench_naivedate_add_signed,
+    bench_datetime_with,
 );
 
 #[cfg(feature = "unstable-locales")]

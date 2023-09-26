@@ -3,7 +3,7 @@
 
 //! ISO 8601 date and time without timezone.
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -13,13 +13,16 @@ use core::{fmt, str};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
-use crate::{DateTime, Datelike, LocalResult, Months, TimeDelta, TimeZone, Timelike, Weekday};
+use crate::{
+    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
+    Timelike, Weekday,
+};
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
@@ -70,6 +73,10 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// ```
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+)]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct NaiveDateTime {
     date: NaiveDate,
@@ -106,9 +113,9 @@ impl NaiveDateTime {
     /// For a non-naive version of this function see
     /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
     ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent the
-    /// [leap second](./struct.NaiveTime.html#leap-second-handling). (The true "UNIX
-    /// timestamp" cannot represent a leap second unambiguously.)
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Panics
     ///
@@ -192,8 +199,8 @@ impl NaiveDateTime {
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Errors
@@ -212,8 +219,9 @@ impl NaiveDateTime {
     ///
     /// assert!(from_timestamp_opt(0, 0).is_some());
     /// assert!(from_timestamp_opt(0, 999_999_999).is_some());
-    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_some()); // leap second
-    /// assert!(from_timestamp_opt(0, 2_000_000_000).is_none());
+    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_none()); // invalid leap second
+    /// assert!(from_timestamp_opt(59, 1_500_000_000).is_some()); // leap second
+    /// assert!(from_timestamp_opt(59, 2_000_000_000).is_none());
     /// assert!(from_timestamp_opt(i64::MAX, 0).is_none());
     /// ```
     #[inline]
@@ -454,8 +462,28 @@ impl NaiveDateTime {
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
     /// an out of range `NaiveDateTime`.
     ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
+    #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
+    #[inline]
+    #[must_use]
+    pub fn timestamp_nanos(&self) -> i64 {
+        self.timestamp_nanos_opt()
+            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    }
+
+    /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
+    ///
+    /// Note that this does *not* account for the timezone!
+    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
+    ///
+    /// # Errors
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
+    /// `None` on an out of range `NaiveDateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
     ///
     /// # Example
     ///
@@ -463,12 +491,12 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, NaiveDateTime};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap();
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap();
     ///
     /// const A_BILLION: i64 = 1_000_000_000;
-    /// let nanos = dt.timestamp_nanos();
+    /// let nanos = dt.timestamp_nanos_opt().unwrap();
     /// assert_eq!(nanos, 1_000_000_000_000_000_555);
     /// assert_eq!(
     ///     Some(dt),
@@ -477,11 +505,27 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.timestamp()
-            .checked_mul(1_000_000_000)
-            .and_then(|ns| ns.checked_add(i64::from(self.timestamp_subsec_nanos())))
-            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
+        let mut timestamp = self.timestamp();
+        let mut timestamp_subsec_nanos = i64::from(self.timestamp_subsec_nanos());
+
+        // subsec nanos are always non-negative, however the timestamp itself (both in seconds and in nanos) can be
+        // negative. Now i64::MIN is NOT dividable by 1_000_000_000, so
+        //
+        //   (timestamp * 1_000_000_000) + nanos
+        //
+        // may underflow (even when in theory we COULD represent the datetime as i64) because we add the non-negative
+        // nanos AFTER the multiplication. This is fixed by converting the negative case to
+        //
+        //   ((timestamp + 1) * 1_000_000_000) + (ns - 1_000_000_000)
+        //
+        // Also see <https://github.com/chronotope/chrono/issues/1289>.
+        if timestamp < 0 && timestamp_subsec_nanos > 0 {
+            timestamp_subsec_nanos -= 1_000_000_000;
+            timestamp += 1;
+        }
+
+        timestamp.checked_mul(1_000_000_000).and_then(|ns| ns.checked_add(timestamp_subsec_nanos))
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
@@ -658,6 +702,37 @@ impl NaiveDateTime {
     #[must_use]
     pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
         Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    }
+
+    /// Adds given `FixedOffset` to the current datetime.
+    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
+    ///
+    /// This method is similar to [`checked_add_signed`](#method.checked_add_offset), but preserves
+    /// leap seconds.
+    #[must_use]
+    pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+        let (time, days) = self.time.overflowing_add_offset(rhs);
+        let date = match days {
+            -1 => try_opt!(self.date.pred_opt()),
+            1 => try_opt!(self.date.succ_opt()),
+            _ => self.date,
+        };
+        Some(NaiveDateTime { date, time })
+    }
+
+    /// Subtracts given `FixedOffset` from the current datetime.
+    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
+    ///
+    /// This method is similar to [`checked_sub_signed`](#method.checked_sub_signed), but preserves
+    /// leap seconds.
+    pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+        let (time, days) = self.time.overflowing_sub_offset(rhs);
+        let date = match days {
+            -1 => try_opt!(self.date.pred_opt()),
+            1 => try_opt!(self.date.succ_opt()),
+            _ => self.date,
+        };
+        Some(NaiveDateTime { date, time })
     }
 
     /// Subtracts given `TimeDelta` from the current date and time.
@@ -852,8 +927,7 @@ impl NaiveDateTime {
     /// # let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap();
     /// assert_eq!(format!("{}", dt.format_with_items(fmt)), "2015-09-05 23:56:04");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -896,8 +970,7 @@ impl NaiveDateTime {
     /// assert_eq!(format!("{}", dt.format("%Y-%m-%d %H:%M:%S")), "2015-09-05 23:56:04");
     /// assert_eq!(format!("{}", dt.format("around %l %p on %b %-d")), "around 11 PM on Sep 5");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -945,8 +1018,13 @@ impl NaiveDateTime {
 
     /// The minimum possible `NaiveDateTime`.
     pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
+
     /// The maximum possible `NaiveDateTime`.
     pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
+
+    /// The Unix Epoch, 1970-01-01 00:00:00.
+    pub const UNIX_EPOCH: Self =
+        expect!(NaiveDate::from_ymd_opt(1970, 1, 1), "").and_time(NaiveTime::MIN);
 }
 
 impl Datelike for NaiveDateTime {
@@ -1439,11 +1517,11 @@ impl Timelike for NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_milli_opt(12, 34, 59, 789).unwrap();
     /// assert_eq!(dt.with_nanosecond(333_333_333),
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 56, 333_333_333).unwrap()));
+    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 59, 333_333_333).unwrap()));
     /// assert_eq!(dt.with_nanosecond(1_333_333_333), // leap second
-    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 56, 1_333_333_333).unwrap()));
+    ///            Some(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 59, 1_333_333_333).unwrap()));
     /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
     /// ```
     #[inline]
@@ -1535,6 +1613,15 @@ impl AddAssign<Duration> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
         *self = self.add(rhs);
+    }
+}
+
+impl Add<FixedOffset> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn add(self, rhs: FixedOffset) -> NaiveDateTime {
+        self.checked_add_offset(rhs).unwrap()
     }
 }
 
@@ -1662,6 +1749,15 @@ impl SubAssign<Duration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
         *self = self.sub(rhs);
+    }
+}
+
+impl Sub<FixedOffset> for NaiveDateTime {
+    type Output = NaiveDateTime;
+
+    #[inline]
+    fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
+        self.checked_sub_offset(rhs).unwrap()
     }
 }
 

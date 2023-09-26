@@ -142,9 +142,6 @@ pub trait DurationRound: Sized {
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err>;
 }
 
-/// The maximum number of seconds a DateTime can be to be represented as nanoseconds
-const MAX_SECONDS_TIMESTAMP_FOR_NANOS: i64 = 9_223_372_036;
-
 impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
     type Err = RoundingError;
 
@@ -181,10 +178,7 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
+        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
@@ -223,10 +217,7 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        if naive.timestamp().abs() > MAX_SECONDS_TIMESTAMP_FOR_NANOS {
-            return Err(RoundingError::TimestampExceedsLimit);
-        }
-        let stamp = naive.timestamp_nanos();
+        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
@@ -300,7 +291,6 @@ impl fmt::Display for RoundingError {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for RoundingError {
     #[allow(deprecated)]
     fn description(&self) -> &str {
@@ -769,16 +759,16 @@ mod tests {
 
     #[test]
     fn issue1010() {
-        let dt = NaiveDateTime::from_timestamp_opt(-4227854320, 1678774288).unwrap();
-        let span = TimeDelta::microseconds(-7019067213869040);
+        let dt = NaiveDateTime::from_timestamp_opt(-4_227_854_320, 678_774_288).unwrap();
+        let span = TimeDelta::microseconds(-7_019_067_213_869_040);
         assert_eq!(dt.duration_trunc(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(320041586, 1920103021).unwrap();
-        let span = TimeDelta::nanoseconds(-8923838508697114584);
+        let dt = NaiveDateTime::from_timestamp_opt(320_041_586, 920_103_021).unwrap();
+        let span = TimeDelta::nanoseconds(-8_923_838_508_697_114_584);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(-2621440, 0).unwrap();
-        let span = TimeDelta::nanoseconds(-9223372036854771421);
+        let dt = NaiveDateTime::from_timestamp_opt(-2_621_440, 0).unwrap();
+        let span = TimeDelta::nanoseconds(-9_223_372_036_854_771_421);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
     }
 }

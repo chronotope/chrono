@@ -31,6 +31,7 @@ use crate::OutOfRange;
 /// ```
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash)))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Weekday {
     /// Monday.
@@ -193,7 +194,6 @@ pub struct ParseWeekdayError {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for ParseWeekdayError {}
 
 impl fmt::Display for ParseWeekdayError {
@@ -211,7 +211,6 @@ impl fmt::Debug for ParseWeekdayError {
 // the actual `FromStr` implementation is in the `format` module to leverage the existing code
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 mod weekday_serde {
     use super::Weekday;
     use core::fmt;

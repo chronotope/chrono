@@ -42,11 +42,11 @@ use crate::{Date, DateTime};
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash)))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Utc;
 
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
     #[deprecated(

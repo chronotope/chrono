@@ -14,13 +14,13 @@ use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use crate::format::Locale;
 use crate::format::{
     parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
     StrftimeItems, TOO_LONG,
 };
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 use crate::format::{write_rfc3339, DelayedFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
@@ -202,6 +202,18 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Returns the number of non-leap seconds since January 1, 1970 0:00:00 UTC
     /// (aka "UNIX timestamp").
+    ///
+    /// The reverse operation of creating a [`DateTime`] from a timestamp can be performed
+    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp_opt`].
+    ///
+    /// ```
+    /// use chrono::{DateTime, TimeZone, Utc};
+    ///
+    /// let dt: DateTime<Utc> = Utc.with_ymd_and_hms(2015, 5, 15, 0, 0, 0).unwrap();
+    /// assert_eq!(dt.timestamp(), 1431648000);
+    ///
+    /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
+    /// ```
     #[inline]
     #[must_use]
     pub fn timestamp(&self) -> i64 {
@@ -253,8 +265,25 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
     /// an out of range `DateTime`.
     ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:44.0 and
-    /// 2262-04-11T23:47:16.854775804.
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
+    #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
+    #[inline]
+    #[must_use]
+    pub fn timestamp_nanos(&self) -> i64 {
+        self.timestamp_nanos_opt()
+            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    }
+
+    /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
+    ///
+    /// # Errors
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
+    /// `None` on an out of range `DateTime`.
+    ///
+    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
+    /// and 2262-04-11T23:47:16.854775807.
     ///
     /// # Example
     ///
@@ -262,15 +291,27 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_444);
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos(), 1_000_000_000_000_000_555);
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_000_000_000_555));
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_192).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(-9_223_372_036_854_775_808));
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_807).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), Some(9_223_372_036_854_775_807));
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_191).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), None);
+    ///
+    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_808).unwrap().and_local_timezone(Utc).unwrap();
+    /// assert_eq!(dt.timestamp_nanos_opt(), None);
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.datetime.timestamp_nanos()
+    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
+        self.datetime.timestamp_nanos_opt()
     }
 
     /// Returns the number of milliseconds since the last second boundary.
@@ -488,8 +529,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// Panics if the date can not be represented in this format: the year may not be negative and
     /// can not have more than 4 digits.
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc2822(&self) -> String {
         let mut result = String::with_capacity(32);
@@ -499,8 +539,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc3339(&self) -> String {
         // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
@@ -536,8 +575,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn to_rfc3339_opts(&self, secform: SecondsFormat, use_z: bool) -> String {
         let mut result = String::with_capacity(38);
@@ -547,6 +585,46 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 }
 
+impl DateTime<Utc> {
+    /// Makes a new [`DateTime<Utc>`] from the number of non-leap seconds
+    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
+    /// and the number of nanoseconds since the last whole non-leap second.
+    ///
+    /// This is guaranteed to round-trip with regard to [`timestamp`](DateTime::timestamp) and
+    /// [`timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos).
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_opt`] or [`DateTime::with_timezone`].
+    ///
+    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
+    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on out-of-range number of seconds and/or
+    /// invalid nanosecond, otherwise returns `Some(DateTime {...})`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{DateTime, Utc};
+    ///
+    /// let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp(1431648000, 0).expect("invalid timestamp");
+    ///
+    /// assert_eq!(dt.to_string(), "2015-05-15 00:00:00 UTC");
+    /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
+        NaiveDateTime::from_timestamp_opt(secs, nsecs).as_ref().map(NaiveDateTime::and_utc)
+    }
+
+    /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
+    pub const UNIX_EPOCH: Self = Self { datetime: NaiveDateTime::UNIX_EPOCH, offset: Utc };
+}
+
 impl Default for DateTime<Utc> {
     fn default() -> Self {
         Utc.from_utc_datetime(&NaiveDateTime::default())
@@ -554,7 +632,6 @@ impl Default for DateTime<Utc> {
 }
 
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl Default for DateTime<Local> {
     fn default() -> Self {
         Local.from_utc_datetime(&NaiveDateTime::default())
@@ -580,7 +657,6 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
 
 /// Convert a `DateTime<Utc>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Utc>> for DateTime<Local> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
@@ -603,7 +679,6 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
 
 /// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<FixedOffset>> for DateTime<Local> {
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
@@ -616,7 +691,6 @@ impl From<DateTime<FixedOffset>> for DateTime<Local> {
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<Utc>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Local>> for DateTime<Utc> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<Utc>` instance.
     ///
@@ -629,7 +703,6 @@ impl From<DateTime<Local>> for DateTime<Utc> {
 
 /// Convert a `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<DateTime<Local>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Local>` instance into a `DateTime<FixedOffset>` instance.
     ///
@@ -784,8 +857,7 @@ where
     Tz::Offset: fmt::Display,
 {
     /// Formats the combined date and time with the specified formatting items.
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -809,8 +881,7 @@ where
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -818,8 +889,7 @@ where
     }
 
     /// Formats the combined date and time with the specified formatting items and locale.
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -846,8 +916,7 @@ where
     ///
     /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(
@@ -1176,6 +1245,16 @@ impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     }
 }
 
+impl<Tz: TimeZone> Add<FixedOffset> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn add(mut self, rhs: FixedOffset) -> DateTime<Tz> {
+        self.datetime = self.naive_utc().checked_add_offset(rhs).unwrap();
+        self
+    }
+}
+
 impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
@@ -1220,6 +1299,16 @@ impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
         let rhs = TimeDelta::from_std(rhs)
             .expect("overflow converting from core::time::Duration to chrono::Duration");
         *self -= rhs;
+    }
+}
+
+impl<Tz: TimeZone> Sub<FixedOffset> for DateTime<Tz> {
+    type Output = DateTime<Tz>;
+
+    #[inline]
+    fn sub(mut self, rhs: FixedOffset) -> DateTime<Tz> {
+        self.datetime = self.naive_utc().checked_sub_offset(rhs).unwrap();
+        self
     }
 }
 
@@ -1318,7 +1407,6 @@ impl str::FromStr for DateTime<Utc> {
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl str::FromStr for DateTime<Local> {
     type Err = ParseError;
 
@@ -1328,7 +1416,6 @@ impl str::FromStr for DateTime<Local> {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl From<SystemTime> for DateTime<Utc> {
     fn from(t: SystemTime) -> DateTime<Utc> {
         let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
@@ -1349,7 +1436,6 @@ impl From<SystemTime> for DateTime<Utc> {
 }
 
 #[cfg(feature = "clock")]
-#[cfg_attr(docsrs, doc(cfg(feature = "clock")))]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
         DateTime::<Utc>::from(t).with_timezone(&Local)
@@ -1357,7 +1443,6 @@ impl From<SystemTime> for DateTime<Local> {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     fn from(dt: DateTime<Tz>) -> SystemTime {
         let sec = dt.timestamp();
@@ -1376,14 +1461,6 @@ impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<js_sys::Date> for DateTime<Utc> {
     fn from(date: js_sys::Date) -> DateTime<Utc> {
         DateTime::<Utc>::from(&date)
@@ -1395,14 +1472,6 @@ impl From<js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
         Utc.timestamp_millis_opt(date.get_time() as i64).unwrap()
@@ -1414,14 +1483,6 @@ impl From<&js_sys::Date> for DateTime<Utc> {
     feature = "wasmbind",
     not(any(target_os = "emscripten", target_os = "wasi"))
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))
-)]
 impl From<DateTime<Utc>> for js_sys::Date {
     /// Converts a `DateTime<Utc>` to a JS `Date`. The resulting value may be lossy,
     /// any values that have a millisecond timestamp value greater/less than ±8,640,000,000,000,000

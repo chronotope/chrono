@@ -19,7 +19,7 @@ fn test_datetime_from_timestamp_millis() {
     for (timestamp_millis, _formatted) in valid_map.iter().copied() {
         let naive_datetime = NaiveDateTime::from_timestamp_millis(timestamp_millis);
         assert_eq!(timestamp_millis, naive_datetime.unwrap().timestamp_millis());
-        #[cfg(any(feature = "alloc", feature = "std"))]
+        #[cfg(feature = "alloc")]
         assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -57,7 +57,7 @@ fn test_datetime_from_timestamp_micros() {
     for (timestamp_micros, _formatted) in valid_map.iter().copied() {
         let naive_datetime = NaiveDateTime::from_timestamp_micros(timestamp_micros);
         assert_eq!(timestamp_micros, naive_datetime.unwrap().timestamp_micros());
-        #[cfg(any(feature = "alloc", feature = "std"))]
+        #[cfg(feature = "alloc")]
         assert_eq!(naive_datetime.unwrap().format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -407,7 +407,7 @@ fn test_nanosecond_range() {
     const A_BILLION: i64 = 1_000_000_000;
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
-    let nanos = parsed.timestamp_nanos();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
     assert_eq!(
         parsed,
         NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
@@ -415,29 +415,23 @@ fn test_nanosecond_range() {
 
     let minimum = "1677-09-21T00:12:44.000000000";
     let parsed: NaiveDateTime = minimum.parse().unwrap();
-    let nanos = parsed.timestamp_nanos();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
     assert_eq!(
         parsed,
         NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
     );
-}
 
-#[test]
-#[should_panic]
-fn test_nanosecond_just_beyond_range() {
+    // Just beyond range
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
     let beyond_max = parsed + TimeDelta::milliseconds(300);
-    let _ = beyond_max.timestamp_nanos();
-}
+    assert!(beyond_max.timestamp_nanos_opt().is_none());
 
-#[test]
-#[should_panic]
-fn test_nanosecond_far_beyond_range() {
+    // Far beyond range
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
     let beyond_max = parsed + TimeDelta::days(365);
-    let _ = beyond_max.timestamp_nanos();
+    assert!(beyond_max.timestamp_nanos_opt().is_none());
 }
 
 #[test]
@@ -459,4 +453,61 @@ fn test_and_utc() {
     let dt_utc = ndt.and_utc();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
+}
+
+#[test]
+fn test_checked_add_offset() {
+    let ymdhmsm = |y, m, d, h, mn, s, mi| {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi)
+    };
+
+    let positive_offset = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    // regular date
+    let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
+    assert_eq!(dt.checked_add_offset(positive_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
+    // leap second is preserved
+    let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
+    assert_eq!(dt.checked_add_offset(positive_offset), ymdhmsm(2023, 7, 1, 1, 59, 59, 1_000));
+    // out of range
+    assert!(NaiveDateTime::MAX.checked_add_offset(positive_offset).is_none());
+
+    let negative_offset = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    // regular date
+    let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
+    assert_eq!(dt.checked_add_offset(negative_offset), ymdhmsm(2023, 5, 5, 18, 10, 0, 0));
+    // leap second is preserved
+    let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
+    assert_eq!(dt.checked_add_offset(negative_offset), ymdhmsm(2023, 6, 30, 21, 59, 59, 1_000));
+    // out of range
+    assert!(NaiveDateTime::MIN.checked_add_offset(negative_offset).is_none());
+}
+
+#[test]
+fn test_checked_sub_offset() {
+    let ymdhmsm = |y, m, d, h, mn, s, mi| {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi)
+    };
+
+    let positive_offset = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    // regular date
+    let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
+    assert_eq!(dt.checked_sub_offset(positive_offset), ymdhmsm(2023, 5, 5, 18, 10, 0, 0));
+    // leap second is preserved
+    let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
+    assert_eq!(dt.checked_sub_offset(positive_offset), ymdhmsm(2023, 6, 30, 21, 59, 59, 1_000));
+    // out of range
+    assert!(NaiveDateTime::MIN.checked_sub_offset(positive_offset).is_none());
+
+    let negative_offset = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    // regular date
+    let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
+    assert_eq!(dt.checked_sub_offset(negative_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
+    // leap second is preserved
+    let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
+    assert_eq!(dt.checked_sub_offset(negative_offset), ymdhmsm(2023, 7, 1, 1, 59, 59, 1_000));
+    // out of range
+    assert!(NaiveDateTime::MAX.checked_sub_offset(negative_offset).is_none());
+
+    assert_eq!(dt.checked_add_offset(positive_offset), Some(dt + positive_offset));
+    assert_eq!(dt.checked_sub_offset(positive_offset), Some(dt - positive_offset));
 }

@@ -191,7 +191,6 @@ impl<'a> StrftimeItems<'a> {
 
     /// Creates a new parsing iterator from the `strftime`-like format string.
     #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
     #[must_use]
     pub const fn new_with_locale(s: &'a str, locale: Locale) -> StrftimeItems<'a> {
         StrftimeItems { remainder: s, queue: &[], locale_str: "", locale: Some(locale) }
@@ -501,7 +500,7 @@ mod tests {
     use crate::format::Locale;
     use crate::format::{fixed, internal_fixed, num, num0, nums};
     use crate::format::{Fixed, InternalInternal, Numeric::*};
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Timelike, Utc};
 
     #[test]
@@ -663,7 +662,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     fn test_strftime_docs() {
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
@@ -774,7 +773,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_docs_localized() {
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
@@ -827,7 +826,7 @@ mod tests {
     ///
     /// See <https://github.com/chronotope/chrono/issues/1139>.
     #[test]
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     fn test_parse_only_timezone_offset_permissive_no_panic() {
         use crate::NaiveDate;
         use crate::{FixedOffset, TimeZone};
@@ -848,7 +847,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_localized_korean() {
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
@@ -877,7 +876,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_localized_japanese() {
         let dt = FixedOffset::east_opt(34200)
             .unwrap()
