@@ -379,6 +379,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
         self.with_timezone(&self.offset().fix())
     }
 
+    /// Turn this `DateTime` into a `DateTime<Utc>`, dropping the offset and associated timezone
+    /// information.
+    #[inline]
+    #[must_use]
+    pub fn to_utc(&self) -> DateTime<Utc> {
+        DateTime { datetime: self.datetime, offset: Utc }
+    }
+
     /// Adds given `Duration` to the current date and time.
     ///
     /// # Errors
