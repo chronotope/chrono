@@ -743,18 +743,15 @@ mod tests {
         );
         assert_eq!(
             dt.with_timezone(&Utc),
-            DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+")
-                .unwrap()
+            DateTime::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
         );
         assert_eq!(
             dt.with_timezone(&Utc),
-            DateTime::<FixedOffset>::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+")
-                .unwrap()
+            DateTime::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
         );
         assert_eq!(
             dt.with_timezone(&Utc),
-            DateTime::<FixedOffset>::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+")
-                .unwrap()
+            DateTime::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
         );
 
         assert_eq!(

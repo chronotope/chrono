@@ -1865,7 +1865,7 @@ mod tests {
 
         // Test against test data above
         for &(date, checkdate) in testdates.iter() {
-            let dt = DateTime::<FixedOffset>::parse_from_rfc3339(date);
+            let dt = DateTime::parse_from_rfc3339(date);
             if dt != checkdate {
                 // check for expected result
                 panic!(
