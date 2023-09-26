@@ -1332,6 +1332,20 @@ fn test_datetime_sub_assign() {
 }
 
 #[test]
+#[should_panic]
+fn test_local_beyond_min_datetime() {
+    let min = FixedOffset::west_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MIN);
+    let _ = min.naive_local();
+}
+
+#[test]
+#[should_panic]
+fn test_local_beyond_max_datetime() {
+    let max = FixedOffset::east_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MAX);
+    let _ = max.naive_local();
+}
+
+#[test]
 #[cfg(feature = "clock")]
 fn test_datetime_sub_assign_local() {
     let naivedatetime = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();

@@ -513,7 +513,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn naive_local(&self) -> NaiveDateTime {
-        self.datetime + self.offset.fix()
+        self.datetime
+            .checked_add_offset(self.offset.fix())
+            .expect("Local time out of range for `NaiveDateTime`")
     }
 
     /// Retrieve the elapsed years from now to the given [`DateTime`].
