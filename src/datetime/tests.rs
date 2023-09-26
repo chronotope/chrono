@@ -272,7 +272,7 @@ fn ymdhms_milli(
 
 // local helper function to easily create a DateTime<FixedOffset>
 #[allow(clippy::too_many_arguments)]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn ymdhms_micro(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -292,7 +292,7 @@ fn ymdhms_micro(
 
 // local helper function to easily create a DateTime<FixedOffset>
 #[allow(clippy::too_many_arguments)]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn ymdhms_nano(
     fixedoffset: &FixedOffset,
     year: i32,
@@ -311,7 +311,7 @@ fn ymdhms_nano(
 }
 
 // local helper function to easily create a DateTime<Utc>
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn ymdhms_utc(year: i32, month: u32, day: u32, hour: u32, min: u32, sec: u32) -> DateTime<Utc> {
     Utc.with_ymd_and_hms(year, month, day, hour, min, sec).unwrap()
 }
@@ -450,7 +450,7 @@ fn test_datetime_with_timezone() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_datetime_rfc2822() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
 
@@ -458,6 +458,10 @@ fn test_datetime_rfc2822() {
     assert_eq!(
         Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc2822(),
         "Wed, 18 Feb 2015 23:16:09 +0000"
+    );
+    assert_eq!(
+        Utc.with_ymd_and_hms(2015, 2, 1, 23, 16, 9).unwrap().to_rfc2822(),
+        "Sun, 1 Feb 2015 23:16:09 +0000"
     );
     // timezone +05
     assert_eq!(
@@ -572,7 +576,7 @@ fn test_datetime_rfc2822() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_datetime_rfc3339() {
     let edt5 = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     let edt0 = FixedOffset::east_opt(0).unwrap();
@@ -658,7 +662,7 @@ fn test_datetime_rfc3339() {
 }
 
 #[test]
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 fn test_rfc3339_opts() {
     use crate::SecondsFormat::*;
     let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
@@ -1461,7 +1465,7 @@ fn test_test_deprecated_from_offset() {
 }
 
 #[test]
-#[cfg(all(feature = "unstable-locales", any(feature = "alloc", feature = "std")))]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 fn locale_decimal_point() {
     use crate::Locale::{ar_SY, nl_NL};
     let dt =
@@ -1476,4 +1480,37 @@ fn locale_decimal_point() {
     assert_eq!(dt.format_localized("%T%.3f", ar_SY).to_string(), "18:58:00.123");
     assert_eq!(dt.format_localized("%T%.6f", ar_SY).to_string(), "18:58:00.123456");
     assert_eq!(dt.format_localized("%T%.9f", ar_SY).to_string(), "18:58:00.123456780");
+}
+
+/// This is an extended test for <https://github.com/chronotope/chrono/issues/1289>.
+#[test]
+fn nano_roundrip() {
+    const BILLION: i64 = 1_000_000_000;
+
+    for nanos in [
+        i64::MIN,
+        i64::MIN + 1,
+        i64::MIN + 2,
+        i64::MIN + BILLION - 1,
+        i64::MIN + BILLION,
+        i64::MIN + BILLION + 1,
+        -BILLION - 1,
+        -BILLION,
+        -BILLION + 1,
+        0,
+        BILLION - 1,
+        BILLION,
+        BILLION + 1,
+        i64::MAX - BILLION - 1,
+        i64::MAX - BILLION,
+        i64::MAX - BILLION + 1,
+        i64::MAX - 2,
+        i64::MAX - 1,
+        i64::MAX,
+    ] {
+        println!("nanos: {}", nanos);
+        let dt = Utc.timestamp_nanos(nanos);
+        let nanos2 = dt.timestamp_nanos_opt().expect("value roundtrips");
+        assert_eq!(nanos, nanos2);
+    }
 }

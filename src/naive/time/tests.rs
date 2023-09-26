@@ -1,5 +1,5 @@
 use super::NaiveTime;
-use crate::{TimeDelta, Timelike};
+use crate::{FixedOffset, TimeDelta, Timelike};
 
 #[test]
 fn test_time_from_hms_milli() {
@@ -12,12 +12,12 @@ fn test_time_from_hms_milli() {
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 777_000_000).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 7, 1_999),
-        Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 1_999_000_000).unwrap())
+        NaiveTime::from_hms_milli_opt(3, 5, 59, 1_999),
+        Some(NaiveTime::from_hms_nano_opt(3, 5, 59, 1_999_000_000).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 7, 2_000), None);
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 7, 5_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 7, u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, 2_000), None);
+    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, 5_000), None); // overflow check
+    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, u32::MAX), None);
 }
 
 #[test]
@@ -35,12 +35,12 @@ fn test_time_from_hms_micro() {
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 777_777_000).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 1_999_999),
-        Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 1_999_999_000).unwrap())
+        NaiveTime::from_hms_micro_opt(3, 5, 59, 1_999_999),
+        Some(NaiveTime::from_hms_nano_opt(3, 5, 59, 1_999_999_000).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 7, 2_000_000), None);
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 7, 5_000_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 7, u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, 2_000_000), None);
+    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, 5_000_000), None); // overflow check
+    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, u32::MAX), None);
 }
 
 #[test]
@@ -93,19 +93,19 @@ fn test_time_add() {
 
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
 
-    check!(hmsm(3, 5, 7, 900), TimeDelta::zero(), hmsm(3, 5, 7, 900));
-    check!(hmsm(3, 5, 7, 900), TimeDelta::milliseconds(100), hmsm(3, 5, 8, 0));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-1800), hmsm(3, 5, 6, 500));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-800), hmsm(3, 5, 7, 500));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(-100), hmsm(3, 5, 7, 1_200));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(100), hmsm(3, 5, 7, 1_400));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(800), hmsm(3, 5, 8, 100));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 5, 9, 100));
-    check!(hmsm(3, 5, 7, 900), TimeDelta::seconds(86399), hmsm(3, 5, 6, 900)); // overwrap
-    check!(hmsm(3, 5, 7, 900), TimeDelta::seconds(-86399), hmsm(3, 5, 8, 900));
-    check!(hmsm(3, 5, 7, 900), TimeDelta::days(12345), hmsm(3, 5, 7, 900));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::days(1), hmsm(3, 5, 7, 300));
-    check!(hmsm(3, 5, 7, 1_300), TimeDelta::days(-1), hmsm(3, 5, 8, 300));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::zero(), hmsm(3, 5, 59, 900));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::milliseconds(100), hmsm(3, 6, 0, 0));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(-1800), hmsm(3, 5, 58, 500));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(-800), hmsm(3, 5, 59, 500));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(-100), hmsm(3, 5, 59, 1_200));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(100), hmsm(3, 5, 59, 1_400));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(800), hmsm(3, 6, 0, 100));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 6, 1, 100));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(86399), hmsm(3, 5, 58, 900)); // overwrap
+    check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(-86399), hmsm(3, 6, 0, 900));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::days(12345), hmsm(3, 5, 59, 900));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::days(1), hmsm(3, 5, 59, 300));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::days(-1), hmsm(3, 6, 0, 300));
 
     // regression tests for #37
     check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10));
@@ -131,12 +131,12 @@ fn test_time_overflowing_add() {
 
     // overflowing_add_signed with leap seconds may be counter-intuitive
     assert_eq!(
-        hmsm(3, 4, 5, 1_678).overflowing_add_signed(TimeDelta::days(1)),
-        (hmsm(3, 4, 5, 678), 86_400)
+        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::days(1)),
+        (hmsm(3, 4, 59, 678), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 1_678).overflowing_add_signed(TimeDelta::days(-1)),
-        (hmsm(3, 4, 6, 678), -86_400)
+        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::days(-1)),
+        (hmsm(3, 5, 0, 678), -86_400)
     );
 }
 
@@ -183,14 +183,29 @@ fn test_time_sub() {
 
     // treats the leap second as if it coincides with the prior non-leap second,
     // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
-    check!(hmsm(3, 5, 7, 200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(400));
-    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(1400));
-    check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), TimeDelta::milliseconds(1400));
+    check!(hmsm(3, 6, 0, 200), hmsm(3, 5, 59, 1_800), TimeDelta::milliseconds(400));
+    //check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(1400));
+    //check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), TimeDelta::milliseconds(1400));
 
     // additional equality: `time1 + duration = time2` is equivalent to
     // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
     assert_eq!(hmsm(3, 5, 6, 800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
-    assert_eq!(hmsm(3, 5, 6, 1_800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
+    //assert_eq!(hmsm(3, 5, 6, 1_800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
+}
+
+#[test]
+fn test_core_duration_ops() {
+    use core::time::Duration;
+
+    let mut t = NaiveTime::from_hms_opt(11, 34, 23).unwrap();
+    let same = t + Duration::ZERO;
+    assert_eq!(t, same);
+
+    t += Duration::new(3600, 0);
+    assert_eq!(t, NaiveTime::from_hms_opt(12, 34, 23).unwrap());
+
+    t -= Duration::new(7200, 0);
+    assert_eq!(t, NaiveTime::from_hms_opt(10, 34, 23).unwrap());
 }
 
 #[test]
@@ -341,4 +356,30 @@ fn test_time_parse_from_str() {
     assert!(NaiveTime::parse_from_str("\t\t12:59 PM\t", "\t\t%H:%M\t%P\t").is_err());
     assert!(NaiveTime::parse_from_str("12:59  PM", "%H:%M %P").is_err());
     assert!(NaiveTime::parse_from_str("12:3456", "%H:%M:%S").is_err());
+}
+
+#[test]
+fn test_overflowing_offset() {
+    let hmsm = |h, m, s, n| NaiveTime::from_hms_milli_opt(h, m, s, n).unwrap();
+
+    let positive_offset = FixedOffset::east_opt(4 * 60 * 60).unwrap();
+    // regular time
+    let t = hmsm(5, 6, 7, 890);
+    assert_eq!(t.overflowing_add_offset(positive_offset), (hmsm(9, 6, 7, 890), 0));
+    assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(1, 6, 7, 890), 0));
+    // leap second is preserved, and wrap to next day
+    let t = hmsm(23, 59, 59, 1_000);
+    assert_eq!(t.overflowing_add_offset(positive_offset), (hmsm(3, 59, 59, 1_000), 1));
+    assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(19, 59, 59, 1_000), 0));
+    // wrap to previous day
+    let t = hmsm(1, 2, 3, 456);
+    assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(21, 2, 3, 456), -1));
+    // an odd offset
+    let negative_offset = FixedOffset::west_opt(((2 * 60) + 3) * 60 + 4).unwrap();
+    let t = hmsm(5, 6, 7, 890);
+    assert_eq!(t.overflowing_add_offset(negative_offset), (hmsm(3, 3, 3, 890), 0));
+    assert_eq!(t.overflowing_sub_offset(negative_offset), (hmsm(7, 9, 11, 890), 0));
+
+    assert_eq!(t.overflowing_add_offset(positive_offset).0, t + positive_offset);
+    assert_eq!(t.overflowing_sub_offset(positive_offset).0, t - positive_offset);
 }

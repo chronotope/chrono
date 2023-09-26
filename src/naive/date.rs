@@ -3,7 +3,7 @@
 
 //! ISO 8601 calendar date without timezone.
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 use core::iter::FusedIterator;
 use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
@@ -13,10 +13,10 @@ use core::{fmt, str};
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// L10n locales.
-#[cfg(feature = "unstable-locales")]
+#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use pure_rust_locales::Locale;
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
     parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseError, ParseResult,
@@ -191,6 +191,10 @@ impl Days {
 /// [proleptic Gregorian date]: crate::NaiveDate#calendar-date
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(
+    feature = "rkyv",
+    archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+)]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -781,9 +785,15 @@ impl NaiveDate {
 
     /// Add a duration of `i32` days to the date.
     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
-        if days == 0 {
-            return Some(self);
+        // fast path if the result is within the same year
+        const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
+        if let Some(ordinal) = ((self.ymdf & ORDINAL_MASK) >> 4).checked_add(days) {
+            if ordinal > 0 && ordinal <= 365 {
+                let year_and_flags = self.ymdf & !ORDINAL_MASK;
+                return Some(NaiveDate { ymdf: year_and_flags | (ordinal << 4) });
+            }
         }
+        // do the full check
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.of().ordinal());
@@ -860,8 +870,8 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     ///
-    /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Panics
     ///
@@ -875,8 +885,8 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
     ///
-    /// The millisecond part can exceed 1,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -910,8 +920,8 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     ///
-    /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The microsecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Panics
     ///
@@ -939,8 +949,8 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
     ///
-    /// The microsecond part can exceed 1,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The microsecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -974,8 +984,8 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Panics
     ///
@@ -989,8 +999,8 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
     ///
-    /// The nanosecond part can exceed 1,000,000,000
-    /// in order to represent the [leap second](./struct.NaiveTime.html#leap-second-handling).
+    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
+    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
     /// # Errors
     ///
@@ -1255,8 +1265,7 @@ impl NaiveDate {
     /// # let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
     /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -1299,8 +1308,7 @@ impl NaiveDate {
     /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
     /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ```
-    #[cfg(any(feature = "alloc", feature = "std"))]
-    #[cfg_attr(docsrs, doc(cfg(any(feature = "alloc", feature = "std"))))]
+    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -1308,8 +1316,7 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified formatting items and locale.
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -1328,8 +1335,7 @@ impl NaiveDate {
     ///
     /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
-    #[cfg(feature = "unstable-locales")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "unstable-locales")))]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(
@@ -2263,7 +2269,6 @@ where
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 mod serde {
     use super::NaiveDate;
     use core::fmt;
@@ -2359,13 +2364,14 @@ mod tests {
         let calculated_max = NaiveDate::from_ymd_opt(MAX_YEAR, 12, 31).unwrap();
         assert!(
             NaiveDate::MIN == calculated_min,
-            "`NaiveDate::MIN` should have a year flag {:?}",
+            "`NaiveDate::MIN` should have year flag {:?}",
             calculated_min.of().flags()
         );
         assert!(
             NaiveDate::MAX == calculated_max,
-            "`NaiveDate::MAX` should have a year flag {:?}",
-            calculated_max.of().flags()
+            "`NaiveDate::MAX` should have year flag {:?} and ordinal {}",
+            calculated_max.of().flags(),
+            calculated_max.of().ordinal()
         );
 
         // let's also check that the entire range do not exceed 2^44 seconds
@@ -3198,22 +3204,16 @@ mod tests {
     }
 
     //   MAX_YEAR-12-31 minus 0000-01-01
-    // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + (0001-01-01 minus 0000-01-01) - 1 day
-    // = ((MAX_YEAR+1)-01-01 minus 0001-01-01) + 365 days
-    // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365 days
+    // = (MAX_YEAR-12-31 minus 0000-12-31) + (0000-12-31 - 0000-01-01)
+    // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365
+    // = (MAX_YEAR + 1) * 365 + (# of leap years from 0001 to MAX_YEAR)
     const MAX_DAYS_FROM_YEAR_0: i32 =
-        MAX_YEAR * 365 + MAX_YEAR / 4 - MAX_YEAR / 100 + MAX_YEAR / 400 + 365;
+        (MAX_YEAR + 1) * 365 + MAX_YEAR / 4 - MAX_YEAR / 100 + MAX_YEAR / 400;
 
     //   MIN_YEAR-01-01 minus 0000-01-01
-    // = (MIN_YEAR+400n+1)-01-01 minus (400n+1)-01-01
-    // = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - ((400n+1)-01-01 minus 0001-01-01)
-    // = ((MIN_YEAR+400n+1)-01-01 minus 0001-01-01) - 146097n days
-    //
-    // n is set to 1000 for convenience.
-    const MIN_DAYS_FROM_YEAR_0: i32 = (MIN_YEAR + 400_000) * 365 + (MIN_YEAR + 400_000) / 4
-        - (MIN_YEAR + 400_000) / 100
-        + (MIN_YEAR + 400_000) / 400
-        - 146_097_000;
+    // = MIN_YEAR * 365 + (# of leap years from MIN_YEAR to 0000)
+    const MIN_DAYS_FROM_YEAR_0: i32 =
+        MIN_YEAR * 365 + MIN_YEAR / 4 - MIN_YEAR / 100 + MIN_YEAR / 400;
 
     // only used for testing, but duplicated in naive::datetime
     const MAX_BITS: usize = 44;

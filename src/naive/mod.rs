@@ -4,11 +4,11 @@
 //! (e.g. [`TimeZone`](../offset/trait.TimeZone.html)),
 //! but can be also used for the simpler date and time handling.
 
-mod date;
+pub(crate) mod date;
 pub(crate) mod datetime;
 mod internals;
-mod isoweek;
-mod time;
+pub(crate) mod isoweek;
+pub(crate) mod time;
 
 pub use self::date::{Days, NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator, NaiveWeek};
 #[allow(deprecated)]
@@ -31,7 +31,6 @@ pub use self::internals::YearFlags as __BenchYearFlags;
 /// [1]: https://serde.rs/attributes.html#field-attributes
 /// [2]: https://tools.ietf.org/html/rfc3339
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde {
     pub use super::datetime::serde::*;
 }
