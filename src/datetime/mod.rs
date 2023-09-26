@@ -773,60 +773,6 @@ impl DateTime<FixedOffset> {
 }
 
 impl DateTime<Utc> {
-    /// Parses an RFC 2822 date-and-time string into a `DateTime<Utc>` value.
-    ///
-    /// This parses valid RFC 2822 datetime values (such as `Tue, 1 Jul 2003 10:52:37 +0200`)
-    /// and returns a new `DateTime<Utc>` instance corresponding to the UTC date/time, accounting
-    /// for the difference between UTC and the parsed timezone, should they differ.
-    ///
-    /// RFC 2822 is the internet message standard that specifies the representation of times in HTTP
-    /// and email headers.
-    pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<Utc>> {
-        DateTime::<FixedOffset>::parse_from_rfc2822(s).map(|result| result.into())
-    }
-
-    /// Parses an RFC 3339 date-and-time string into a `DateTime<Utc>` value.
-    ///
-    /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
-    /// also valid RFC 3339 date-and-time values) and returns a new `DateTime<Utc>` instance
-    /// corresponding to the matching UTC date/time, accounting for the difference between UTC and
-    /// the parsed input's timezone, should they differ. While RFC 3339 values come in a wide
-    /// variety of shapes and sizes, `1996-12-19T16:39:57-08:00` is an example of the most commonly
-    /// encountered variety of RFC 3339 formats.
-    ///
-    /// Why isn't this named `parse_from_iso8601`? That's because ISO 8601 allows representing
-    /// values in a wide range of formats, only some of which represent actual date-and-time
-    /// instances (rather than periods, ranges, dates, or times). Some valid ISO 8601 values are
-    /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
-    /// values (or the other way around).
-    pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<Utc>> {
-        DateTime::<FixedOffset>::parse_from_rfc3339(s).map(|result| result.into())
-    }
-
-    /// Parses a string from a user-specified format into a `DateTime<Utc>` value.
-    ///
-    /// Note that this method *requires a timezone* in the input string. See
-    /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
-    /// for a version that does not require a timezone in the to-be-parsed str. The returned
-    /// `DateTime<Utc>` value will reflect the difference in timezones between UTC and the parsed
-    /// time zone, should they differ.
-    ///
-    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
-    /// sequences.
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use chrono::{DateTime, NaiveDate, Utc};
-    ///
-    /// let dt = DateTime::<Utc>::parse_from_str(
-    ///     "1983 Apr 13 12:09:14.274 +0100", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(11, 9, 14, 274).unwrap().and_utc()));
-    /// ```
-    pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<Utc>> {
-        DateTime::<FixedOffset>::parse_from_str(s, fmt).map(|result| result.into())
-    }
-
     /// The minimum possible `DateTime<Utc>`.
     pub const MIN_UTC: Self = DateTime { datetime: NaiveDateTime::MIN, offset: Utc };
     /// The maximum possible `DateTime<Utc>`.
