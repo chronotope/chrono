@@ -677,7 +677,7 @@ impl DateTime<FixedOffset> {
     /// ```
     /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// assert_eq!(
-    ///     DateTime::<FixedOffset>::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
+    ///     DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
     ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// ```
@@ -727,7 +727,7 @@ impl DateTime<FixedOffset> {
     /// ```rust
     /// use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
     ///
-    /// let dt = DateTime::<FixedOffset>::parse_from_str(
+    /// let dt = DateTime::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
     /// assert_eq!(dt, Ok(FixedOffset::east_opt(0).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(12, 9, 14, 274).unwrap()).unwrap()));
     /// ```

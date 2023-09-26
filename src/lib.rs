@@ -282,18 +282,18 @@
 //! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixed_dt.clone()));
 //!
 //! // method 2
-//! assert_eq!(DateTime::<FixedOffset>::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
+//! assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
 //!            Ok(fixed_dt.clone()));
-//! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
+//! assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
 //!            Ok(fixed_dt.clone()));
-//! assert_eq!(DateTime::<FixedOffset>::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
+//! assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
 //!
 //! // oops, the year is missing!
-//! assert!(DateTime::<FixedOffset>::parse_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
+//! assert!(DateTime::parse_from_str("Fri Nov 28 12:00:09", "%a %b %e %T %Y").is_err());
 //! // oops, the format string does not include the year at all!
-//! assert!(DateTime::<FixedOffset>::parse_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
+//! assert!(DateTime::parse_from_str("Fri Nov 28 12:00:09", "%a %b %e %T").is_err());
 //! // oops, the weekday is incorrect!
-//! assert!(DateTime::<FixedOffset>::parse_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
+//! assert!(DateTime::parse_from_str("Sat Nov 28 12:00:09 2014", "%a %b %e %T %Y").is_err());
 //! ```
 //!
 //! Again : See [`format::strftime`](./format/strftime/index.html#specifiers)
@@ -313,14 +313,14 @@
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 #![cfg_attr(feature = "std", doc = "```rust")]
 //! // We need the trait in scope to use Utc::timestamp().
-//! use chrono::{DateTime, FixedOffset, TimeZone, Utc};
+//! use chrono::{DateTime, TimeZone, Utc};
 //!
 //! // Construct a datetime from epoch:
 //! let dt = Utc.timestamp_opt(1_500_000_000, 0).unwrap();
 //! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
 //!
 //! // Get epoch value from a datetime:
-//! let dt = DateTime::<FixedOffset>::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();
+//! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();
 //! assert_eq!(dt.timestamp(), 1_500_000_000);
 //! ```
 //!
