@@ -382,7 +382,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[must_use]
     pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
+        self.overflowing_naive_local()
             .checked_add_months(rhs)?
             .and_local_timezone(Tz::from_offset(&self.offset))
             .single()
@@ -415,7 +415,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[must_use]
     pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
+        self.overflowing_naive_local()
             .checked_sub_months(rhs)?
             .and_local_timezone(Tz::from_offset(&self.offset))
             .single()
