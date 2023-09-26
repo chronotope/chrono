@@ -784,10 +784,13 @@ impl NaiveDate {
 
     /// Add a duration of `i32` days to the date.
     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
-        // fast path if the result is within the same year
+        // Fast path if the result is within the same year.
+        // Also `DateTime::checked_(add|sub)_days` relies on this path, because if the value remains
+        // within the year it doesn't do a check if the year is in range.
+        // That is useful when working with values near `DateTime::MIN` or `DateTime::MAX`.
         const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
         if let Some(ordinal) = ((self.ymdf & ORDINAL_MASK) >> 4).checked_add(days) {
-            if ordinal > 0 && ordinal <= 365 {
+            if ordinal > 0 && ordinal <= (365 + self.leap_year() as i32) {
                 let year_and_flags = self.ymdf & !ORDINAL_MASK;
                 return Some(NaiveDate { ymdf: year_and_flags | (ordinal << 4) });
             }

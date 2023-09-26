@@ -431,8 +431,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_add_days(days)?
+        self.overflowing_naive_local()
+            .checked_add_days(days)
+            .filter(|d| d.date() <= NaiveDate::AFTER_MAX)?
             .and_local_timezone(TimeZone::from_offset(&self.offset))
             .single()
     }
@@ -447,8 +448,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_sub_days(days)?
+        self.overflowing_naive_local()
+            .checked_sub_days(days)
+            .filter(|d| d.date() >= NaiveDate::BEFORE_MIN)?
             .and_local_timezone(TimeZone::from_offset(&self.offset))
             .single()
     }
