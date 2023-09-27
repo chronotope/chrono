@@ -9,7 +9,7 @@ jobs:
     name: llvm-cov
     runs-on: ubuntu-latest
     env:
-      CARGO_TERM_COLOR: always
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       # nightly is required for --doctests, see cargo-llvm-cov#2
@@ -22,6 +22,5 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
           fail_ci_if_error: true
