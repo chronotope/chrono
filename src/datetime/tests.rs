@@ -1341,9 +1341,9 @@ fn test_min_max_getters() {
     assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
     // RFC 2822 doesn't support years with more than 4 digits.
     // assert_eq!(beyond_min.to_rfc2822(), "");
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_min.format("%Y-%m-%dT%H:%M:%S%:z").to_string(),
         "-262144-12-31T22:00:00-02:00"
@@ -1366,9 +1366,9 @@ fn test_min_max_getters() {
     assert_eq!(format!("{:?}", beyond_max), "+262143-01-01T01:59:59.999999999+02:00");
     // RFC 2822 doesn't support years with more than 4 digits.
     // assert_eq!(beyond_max.to_rfc2822(), "");
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
-    #[cfg(any(feature = "alloc", feature = "std"))]
+    #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_max.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string(),
         "+262143-01-01T01:59:59.999999999+02:00"
