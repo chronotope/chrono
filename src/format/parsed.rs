@@ -859,6 +859,26 @@ impl Parsed {
         FixedOffset::east_opt(self.offset.ok_or(NOT_ENOUGH)?).ok_or(OUT_OF_RANGE)
     }
 
+    /// Returns a parsed naive date and time out of given fields.
+    ///
+    /// The offset field will be ignored. If there is a timestamp field set, all other date and time
+    /// fields must be in UTC.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `IMPOSSIBLE` if any of the date fields conflict, or if a timestamp conflicts with any of
+    ///   the other fields.
+    /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime.
+    /// - `OUT_OF_RANGE`
+    ///   - if any of the date or time fields of `Parsed` are set to a value beyond their acceptable
+    ///     range.
+    ///   - if the value would be outside the range of a [`NaiveDateTime`].
+    ///   - if the date does not exist.
+    pub fn to_naive_datetime(&self) -> ParseResult<NaiveDateTime> {
+        self.to_naive_datetime_with_offset(0)
+    }
+
     /// Returns a parsed timezone-aware date and time out of given fields.
     ///
     /// This method is able to determine the combined date and time from date, time and offset

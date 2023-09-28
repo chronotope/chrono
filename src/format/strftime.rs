@@ -325,7 +325,7 @@ impl<'a> StrftimeItems<'a> {
     /// // Parsing
     /// let mut parsed = Parsed::new();
     /// parse(&mut parsed, "11 Jul 2023  9.00", fmt_items.as_slice().iter())?;
-    /// let parsed_dt = parsed.to_naive_datetime_with_offset(0)?;
+    /// let parsed_dt = parsed.to_naive_datetime()?;
     /// assert_eq!(parsed_dt, datetime);
     /// # Ok::<(), chrono::ParseError>(())
     /// ```
