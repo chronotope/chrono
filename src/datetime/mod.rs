@@ -1099,12 +1099,15 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
-    /// - When the `NaiveDateTime` would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless the year remains the same).
     fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_year(year))
+        map_local(self, |dt| match dt.year() == year {
+            true => Some(dt),
+            false => dt.with_year(year),
+        })
     }
 
     /// Makes a new `DateTime` with the month number (starting from 1) changed.
