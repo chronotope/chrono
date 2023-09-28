@@ -493,15 +493,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `days` is zero).
     #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_add_days(days)?
-            .and_local_timezone(TimeZone::from_offset(&self.offset))
-            .single()
+        if days == Days::new(0) {
+            return Some(self);
+        }
+        // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
+        // does not validate the resulting date. This allows us to return `Some` even for an out of
+        // range local datetime when adding `Days(0)`.
+        self.overflowing_naive_local()
+            .checked_add_days(days)
+            .and_then(|dt| self.timezone().from_local_datetime(&dt).single())
+            .filter(|dt| dt <= &DateTime::<Utc>::MAX_UTC)
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`.
@@ -509,15 +516,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `days` is zero).
     #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_sub_days(days)?
-            .and_local_timezone(TimeZone::from_offset(&self.offset))
-            .single()
+        // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
+        // does not validate the resulting date. This allows us to return `Some` even for an out of
+        // range local datetime when adding `Days(0)`.
+        self.overflowing_naive_local()
+            .checked_sub_days(days)
+            .and_then(|dt| self.timezone().from_local_datetime(&dt).single())
+            .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC)
     }
 
     /// Subtracts another `DateTime` from the current date and time.
