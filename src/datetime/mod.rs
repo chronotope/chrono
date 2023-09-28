@@ -523,22 +523,114 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Panics
     ///
-    /// Panics if the date can not be represented in this format: the year may not be negative and
-    /// can not have more than 4 digits.
+    /// RFC 2822 is only defined on years 0 through 9999, and this method panics on dates outside
+    /// of that range.
     #[cfg(feature = "alloc")]
     #[must_use]
+    #[deprecated(
+        since = "0.4.32",
+        note = "Can panic on years outside of the range 0..=9999. Use `try_to_rfc2822()` instead."
+    )]
     pub fn to_rfc2822(&self) -> String {
-        let mut result = String::with_capacity(32);
-        write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix())
-            .expect("writing rfc2822 datetime to string should never fail");
-        result
+        self.try_to_rfc2822().expect("date outside of defined range for rfc2822")
     }
 
-    /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    ///
+    /// # Errors
+    ///
+    /// RFC 2822 is only defined on years 0 through 9999, and this method returns an error on dates
+    /// outside of that range.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{TimeZone, Utc};
+    /// let dt = Utc.with_ymd_and_hms(2023, 6, 10, 9, 18, 25).unwrap();
+    /// assert_eq!(dt.try_to_rfc2822(), Some("Sat, 10 Jun 2023 09:18:25 +0000".to_owned()));
+    ///
+    /// let dt = Utc.with_ymd_and_hms(10_000, 1, 1, 0, 0, 0).unwrap();
+    /// assert_eq!(dt.try_to_rfc2822(), None);
+    /// ```
+    #[cfg(feature = "alloc")]
+    pub fn try_to_rfc2822(&self) -> Option<String> {
+        let naive_local = self.overflowing_naive_local();
+        if !(0..=9999).contains(&naive_local.year()) {
+            return None;
+        }
+        let mut result = String::with_capacity(32);
+        write_rfc2822(&mut result, naive_local, self.offset.fix()).ok()?;
+        Some(result)
+    }
+
+    /// Returns an RFC 3339 date and time string such as `1996-12-19T16:39:57-08:00`.
+    /// This is also valid ISO 8601.
+    ///
+    /// # Warning
+    ///
+    /// RFC 3339 is only defined on years 0 through 9999. This method switches to an ISO 8601
+    /// representation on dates outside of that range, which is not supported by conforming RFC 3339
+    /// parsers.
     #[cfg(feature = "alloc")]
     #[must_use]
+    #[deprecated(
+        since = "0.4.32",
+        note = "Produces invalid data on years outside of the range 0..=9999. Use `try_to_rfc3339()` or `to_iso8601` instead."
+    )]
     pub fn to_rfc3339(&self) -> String {
-        // For some reason a string with a capacity less than 32 is ca 20% slower when benchmarking.
+        self.to_iso8601()
+    }
+
+    /// Returns an RFC 3339 date and time string such as `1996-12-19T16:39:57-08:00`.
+    /// This is also valid ISO 8601.
+    ///
+    /// # Errors
+    ///
+    /// RFC 3339 is only defined on years 0 through 9999, and returns an error on dates outside of
+    /// this range.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{TimeZone, Utc};
+    /// let dt = Utc.with_ymd_and_hms(2023, 6, 10, 9, 18, 25).unwrap();
+    /// assert_eq!(dt.try_to_rfc3339(), Some("2023-06-10T09:18:25+00:00".to_owned()));
+    ///
+    /// let dt = Utc.with_ymd_and_hms(10_000, 1, 1, 0, 0, 0).unwrap();
+    /// assert_eq!(dt.try_to_rfc3339(), None);
+    /// ```
+    #[cfg(feature = "alloc")]
+    #[must_use]
+    pub fn try_to_rfc3339(&self) -> Option<String> {
+        let year = self.year();
+        if !(0..=9999).contains(&year) {
+            return None;
+        }
+        Some(self.to_iso8601())
+    }
+
+    /// Returns an ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
+    ///
+    /// Note that although the standard supports many different formats, we choose one that is
+    /// compatible with the RFC 3339 format for most common cases.
+    /// This format supports years outside of the range 0 through 9999, which RFC 3339 does not.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{TimeZone, Utc};
+    /// let dt = Utc.with_ymd_and_hms(2023, 6, 10, 9, 18, 25).unwrap();
+    /// assert_eq!(dt.to_iso8601(), "2023-06-10T09:18:25+00:00");
+    ///
+    /// let dt = Utc.with_ymd_and_hms(10_000, 1, 1, 0, 0, 0).unwrap();
+    /// assert_eq!(dt.to_iso8601(), "+10000-01-01T00:00:00+00:00");
+    ///
+    /// let dt = Utc.with_ymd_and_hms(-537, 6, 10, 9, 18, 25).unwrap();
+    /// assert_eq!(dt.to_iso8601(), "-0537-06-10T09:18:25+00:00");
+    /// ```
+    #[cfg(feature = "alloc")]
+    #[must_use]
+    pub fn to_iso8601(&self) -> String {
         let mut result = String::with_capacity(32);
         let naive = self.overflowing_naive_local();
         let offset = self.offset.fix();
@@ -547,12 +639,15 @@ impl<Tz: TimeZone> DateTime<Tz> {
         result
     }
 
-    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds
-    /// formatted as per `SecondsFormat`.
+    /// Return an RFC 3339 and ISO 8601 date and time string with subseconds formatted as per
+    /// `SecondsFormat`.
     ///
-    /// If `use_z` is true and the timezone is UTC (offset 0), uses `Z` as
-    /// per [`Fixed::TimezoneOffsetColonZ`]. If `use_z` is false, uses
-    /// [`Fixed::TimezoneOffsetColon`]
+    /// If `use_z` is `false` and the time zone is UTC the offset will be formatted as `+00:00`.
+    /// If `use_z` is `true` the offset will be formatted as `Z` instead.
+    ///
+    /// Note that if the year of the `DateTime` is outside of the range 0 through 9999 then the date
+    /// while be formatted as an expanded representation according to ISO 8601. This makes the
+    /// string incompatible with RFC 3339.
     ///
     /// # Examples
     ///

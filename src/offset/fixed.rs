@@ -52,7 +52,7 @@ impl FixedOffset {
     ///     .unwrap()
     ///     .with_ymd_and_hms(2016, 11, 08, 0, 0, 0)
     ///     .unwrap();
-    /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
+    /// assert_eq!(&datetime.to_iso8601(), "2016-11-08T00:00:00+05:00")
     /// ```
     #[must_use]
     pub const fn east_opt(secs: i32) -> Option<FixedOffset> {
@@ -88,7 +88,7 @@ impl FixedOffset {
     ///     .unwrap()
     ///     .with_ymd_and_hms(2016, 11, 08, 0, 0, 0)
     ///     .unwrap();
-    /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
+    /// assert_eq!(&datetime.to_iso8601(), "2016-11-08T00:00:00-05:00")
     /// ```
     #[must_use]
     pub const fn west_opt(secs: i32) -> Option<FixedOffset> {
