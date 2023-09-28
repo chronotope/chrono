@@ -1421,6 +1421,7 @@ fn test_min_max_setters() {
     let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
 
     assert_eq!(beyond_min.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_min.with_year(beyond_min.year()), Some(beyond_min));
     assert_eq!(beyond_min.with_month(beyond_min.month()), Some(beyond_min));
     assert_eq!(beyond_min.with_month(3), None);
     assert_eq!(beyond_min.with_month0(beyond_min.month0()), Some(beyond_min));
@@ -1441,6 +1442,7 @@ fn test_min_max_setters() {
     assert_eq!(beyond_min.with_nanosecond(0), Some(beyond_min));
 
     assert_eq!(beyond_max.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_max.with_year(beyond_max.year()), Some(beyond_max));
     assert_eq!(beyond_max.with_month(beyond_max.month()), Some(beyond_max));
     assert_eq!(beyond_max.with_month(3), None);
     assert_eq!(beyond_max.with_month0(beyond_max.month0()), Some(beyond_max));
