@@ -436,13 +436,17 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `months` is zero).
     #[must_use]
-    pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
-            .checked_add_months(rhs)?
+    pub fn checked_add_months(self, months: Months) -> Option<DateTime<Tz>> {
+        // `NaiveDate::checked_add_months` has a fast path for `Months(0)` that does not validate
+        // the resulting date, with which we can return `Some` even for an out of range local
+        // datetime.
+        self.overflowing_naive_local()
+            .checked_add_months(months)?
             .and_local_timezone(Tz::from_offset(&self.offset))
             .single()
     }
@@ -469,13 +473,17 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `months` is zero).
     #[must_use]
-    pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
-            .checked_sub_months(rhs)?
+    pub fn checked_sub_months(self, months: Months) -> Option<DateTime<Tz>> {
+        // `NaiveDate::checked_sub_months` has a fast path for `Months(0)` that does not validate
+        // the resulting date, with which we can return `Some` even for an out of range local
+        // datetime.
+        self.overflowing_naive_local()
+            .checked_sub_months(months)?
             .and_local_timezone(Tz::from_offset(&self.offset))
             .single()
     }
