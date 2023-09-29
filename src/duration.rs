@@ -61,10 +61,10 @@ pub struct Duration {
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
 }
 
-/// The minimum possible `Duration`: `i64::MIN` milliseconds.
+/// The minimum possible `Duration`: `-i64::MAX` milliseconds.
 pub(crate) const MIN: Duration = Duration {
-    secs: i64::MIN / MILLIS_PER_SEC - 1,
-    nanos: NANOS_PER_SEC + (i64::MIN % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
+    secs: -i64::MAX / MILLIS_PER_SEC - 1,
+    nanos: NANOS_PER_SEC + (-i64::MAX % MILLIS_PER_SEC) as i32 * NANOS_PER_MILLI,
 };
 
 /// The maximum possible `Duration`: `i64::MAX` milliseconds.
@@ -144,7 +144,7 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of seconds.
     /// Panics when the duration is more than `i64::MAX` milliseconds
-    /// or less than `i64::MIN` milliseconds.
+    /// or less than `-i64::MAX` milliseconds.
     #[inline]
     #[must_use]
     pub fn seconds(seconds: i64) -> Duration {
@@ -153,7 +153,7 @@ impl Duration {
 
     /// Makes a new `Duration` with given number of seconds.
     /// Returns `None` when the duration is more than `i64::MAX` milliseconds
-    /// or less than `i64::MIN` milliseconds.
+    /// or less than `-i64::MAX` milliseconds.
     #[inline]
     pub fn try_seconds(seconds: i64) -> Option<Duration> {
         let d = Duration { secs: seconds, nanos: 0 };
@@ -303,7 +303,7 @@ impl Duration {
         }
     }
 
-    /// The minimum possible `Duration`: `i64::MIN` milliseconds.
+    /// The minimum possible `Duration`: `-i64::MAX` milliseconds.
     #[inline]
     pub const fn min_value() -> Duration {
         MIN
@@ -507,7 +507,7 @@ const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
 #[cfg(feature = "arbitrary")]
 impl arbitrary::Arbitrary<'_> for Duration {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<Duration> {
-        const MIN_SECS: i64 = i64::MIN / MILLIS_PER_SEC - 1;
+        const MIN_SECS: i64 = -i64::MAX / MILLIS_PER_SEC - 1;
         const MAX_SECS: i64 = i64::MAX / MILLIS_PER_SEC;
 
         let secs: i64 = u.int_in_range(MIN_SECS..=MAX_SECS)?;
@@ -588,9 +588,9 @@ mod tests {
         assert_eq!(Duration::microseconds(-999).num_milliseconds(), 0);
         assert_eq!(Duration::microseconds(-1001).num_milliseconds(), -1);
         assert_eq!(Duration::milliseconds(i64::MAX).num_milliseconds(), i64::MAX);
-        assert_eq!(Duration::milliseconds(i64::MIN).num_milliseconds(), i64::MIN);
+        assert_eq!(Duration::milliseconds(-i64::MAX).num_milliseconds(), -i64::MAX);
         assert_eq!(MAX.num_milliseconds(), i64::MAX);
-        assert_eq!(MIN.num_milliseconds(), i64::MIN);
+        assert_eq!(MIN.num_milliseconds(), -i64::MAX);
     }
 
     #[test]
@@ -603,7 +603,7 @@ mod tests {
         assert_eq!(Duration::nanoseconds(-999).num_microseconds(), Some(0));
         assert_eq!(Duration::nanoseconds(-1001).num_microseconds(), Some(-1));
         assert_eq!(Duration::microseconds(i64::MAX).num_microseconds(), Some(i64::MAX));
-        assert_eq!(Duration::microseconds(i64::MIN).num_microseconds(), Some(i64::MIN));
+        assert_eq!(Duration::microseconds(-i64::MAX).num_microseconds(), Some(-i64::MAX));
         assert_eq!(MAX.num_microseconds(), None);
         assert_eq!(MIN.num_microseconds(), None);
 
@@ -614,11 +614,11 @@ mod tests {
             Some(i64::MAX / MICROS_PER_DAY * MICROS_PER_DAY)
         );
         assert_eq!(
-            Duration::days(i64::MIN / MICROS_PER_DAY).num_microseconds(),
-            Some(i64::MIN / MICROS_PER_DAY * MICROS_PER_DAY)
+            Duration::days(-i64::MAX / MICROS_PER_DAY).num_microseconds(),
+            Some(-i64::MAX / MICROS_PER_DAY * MICROS_PER_DAY)
         );
         assert_eq!(Duration::days(i64::MAX / MICROS_PER_DAY + 1).num_microseconds(), None);
-        assert_eq!(Duration::days(i64::MIN / MICROS_PER_DAY - 1).num_microseconds(), None);
+        assert_eq!(Duration::days(-i64::MAX / MICROS_PER_DAY - 1).num_microseconds(), None);
     }
 
     #[test]
@@ -627,7 +627,7 @@ mod tests {
         assert_eq!(Duration::nanoseconds(1).num_nanoseconds(), Some(1));
         assert_eq!(Duration::nanoseconds(-1).num_nanoseconds(), Some(-1));
         assert_eq!(Duration::nanoseconds(i64::MAX).num_nanoseconds(), Some(i64::MAX));
-        assert_eq!(Duration::nanoseconds(i64::MIN).num_nanoseconds(), Some(i64::MIN));
+        assert_eq!(Duration::nanoseconds(-i64::MAX).num_nanoseconds(), Some(-i64::MAX));
         assert_eq!(MAX.num_nanoseconds(), None);
         assert_eq!(MIN.num_nanoseconds(), None);
 
@@ -638,11 +638,11 @@ mod tests {
             Some(i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY)
         );
         assert_eq!(
-            Duration::days(i64::MIN / NANOS_PER_DAY).num_nanoseconds(),
-            Some(i64::MIN / NANOS_PER_DAY * NANOS_PER_DAY)
+            Duration::days(-i64::MAX / NANOS_PER_DAY).num_nanoseconds(),
+            Some(-i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY)
         );
         assert_eq!(Duration::days(i64::MAX / NANOS_PER_DAY + 1).num_nanoseconds(), None);
-        assert_eq!(Duration::days(i64::MIN / NANOS_PER_DAY - 1).num_nanoseconds(), None);
+        assert_eq!(Duration::days(-i64::MAX / NANOS_PER_DAY - 1).num_nanoseconds(), None);
     }
 
     #[test]
@@ -656,10 +656,12 @@ mod tests {
             .is_none());
 
         assert_eq!(
-            Duration::milliseconds(i64::MIN).checked_sub(&Duration::milliseconds(0)),
-            Some(Duration::milliseconds(i64::MIN))
+            Duration::milliseconds(-i64::MAX).checked_sub(&Duration::milliseconds(0)),
+            Some(Duration::milliseconds(-i64::MAX))
         );
-        assert!(Duration::milliseconds(i64::MIN).checked_sub(&Duration::milliseconds(1)).is_none());
+        assert!(Duration::milliseconds(-i64::MAX)
+            .checked_sub(&Duration::milliseconds(1))
+            .is_none());
     }
 
     #[test]
@@ -673,6 +675,7 @@ mod tests {
         assert_eq!(Duration::milliseconds(-1000).abs(), Duration::milliseconds(1000));
         assert_eq!(Duration::milliseconds(-1300).abs(), Duration::milliseconds(1300));
         assert_eq!(Duration::milliseconds(-1700).abs(), Duration::milliseconds(1700));
+        assert_eq!(Duration::milliseconds(-i64::MAX).abs(), Duration::milliseconds(i64::MAX));
     }
 
     #[test]
