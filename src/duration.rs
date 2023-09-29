@@ -75,6 +75,23 @@ pub(crate) const MAX: Duration = Duration {
 };
 
 impl Duration {
+    /// Makes a new `Duration` with given number of seconds and nanoseconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` when the duration is out of bounds, or if `nanos` ≥ 1,000,000,000.
+    pub(crate) const fn new(secs: i64, nanos: u32) -> Option<Duration> {
+        if secs < MIN.secs
+            || secs > MAX.secs
+            || nanos > 1_000_000_000
+            || (secs == MAX.secs && nanos > MAX.nanos as u32)
+            || (secs == MIN.secs && nanos < MIN.nanos as u32)
+        {
+            return None;
+        }
+        Some(Duration { secs, nanos: nanos as i32 })
+    }
+
     /// Makes a new `Duration` with the given number of weeks.
     ///
     /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with
