@@ -1194,7 +1194,7 @@ impl Add<Duration> for NaiveTime {
         // overflow during the conversion to `chrono::Duration`.
         // But we limit to double that just in case `self` is a leap-second.
         let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
-        let d = OldDuration::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        let d = OldDuration::new(secs as i64, rhs.subsec_nanos()).unwrap();
         self.overflowing_add_signed(d).0
     }
 }
@@ -1304,7 +1304,7 @@ impl Sub<Duration> for NaiveTime {
         // overflow during the conversion to `chrono::Duration`.
         // But we limit to double that just in case `self` is a leap-second.
         let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
-        let d = OldDuration::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        let d = OldDuration::new(secs as i64, rhs.subsec_nanos()).unwrap();
         self.overflowing_sub_signed(d).0
     }
 }
