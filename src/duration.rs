@@ -16,6 +16,8 @@ use core::{fmt, i64};
 #[cfg(feature = "std")]
 use std::error::Error;
 
+use crate::try_opt;
+
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -37,15 +39,6 @@ const SECS_PER_HOUR: i64 = 3600;
 const SECS_PER_DAY: i64 = 86_400;
 /// The number of (non-leap) seconds in a week.
 const SECS_PER_WEEK: i64 = 604_800;
-
-macro_rules! try_opt {
-    ($e:expr) => {
-        match $e {
-            Some(v) => v,
-            None => return None,
-        }
-    };
-}
 
 /// ISO 8601 time duration with nanosecond precision.
 ///
