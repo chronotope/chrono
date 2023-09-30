@@ -1673,165 +1673,11 @@ mod tests {
     }
 
     #[test]
-    fn test_parsed_to_naive_datetime_with_offset() {
-        macro_rules! parse {
-            (offset = $offset:expr; $($k:ident: $v:expr),*) => (
-                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_naive_datetime_with_offset($offset)
-            );
-            ($($k:ident: $v:expr),*) => (parse!(offset = 0; $($k: $v),*))
-        }
-
-        let ymdhms = |y, m, d, h, n, s| {
-            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap())
-        };
-        let ymdhmsn = |y, m, d, h, n, s, nano| {
-            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap())
-        };
-
-        // omission of fields
-        assert_eq!(parse!(), Err(NOT_ENOUGH));
-        assert_eq!(
-            parse!(year: 2015, month: 1, day: 30,
-                          hour_div_12: 1, hour_mod_12: 2, minute: 38),
-            ymdhms(2015, 1, 30, 14, 38, 0)
-        );
-        assert_eq!(
-            parse!(year: 1997, month: 1, day: 30,
-                          hour_div_12: 1, hour_mod_12: 2, minute: 38, second: 5),
-            ymdhms(1997, 1, 30, 14, 38, 5)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 34, hour_div_12: 0, hour_mod_12: 5,
-                          minute: 6, second: 7, nanosecond: 890_123_456),
-            ymdhmsn(2012, 2, 3, 5, 6, 7, 890_123_456)
-        );
-        assert_eq!(parse!(timestamp: 0), ymdhms(1970, 1, 1, 0, 0, 0));
-        assert_eq!(parse!(timestamp: 1, nanosecond: 0), ymdhms(1970, 1, 1, 0, 0, 1));
-        assert_eq!(parse!(timestamp: 1, nanosecond: 1), ymdhmsn(1970, 1, 1, 0, 0, 1, 1));
-        assert_eq!(parse!(timestamp: 1_420_000_000), ymdhms(2014, 12, 31, 4, 26, 40));
-        assert_eq!(parse!(timestamp: -0x1_0000_0000), ymdhms(1833, 11, 24, 17, 31, 44));
-
-        // full fields
-        assert_eq!(
-            parse!(year: 2014, year_div_100: 20, year_mod_100: 14, month: 12, day: 31,
-                          ordinal: 365, isoyear: 2015, isoyear_div_100: 20, isoyear_mod_100: 15,
-                          isoweek: 1, week_from_sun: 52, week_from_mon: 52, weekday: Wed,
-                          hour_div_12: 0, hour_mod_12: 4, minute: 26, second: 40,
-                          nanosecond: 12_345_678, timestamp: 1_420_000_000),
-            ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678)
-        );
-        assert_eq!(
-            parse!(year: 2014, year_div_100: 20, year_mod_100: 14, month: 12, day: 31,
-                          ordinal: 365, isoyear: 2015, isoyear_div_100: 20, isoyear_mod_100: 15,
-                          isoweek: 1, week_from_sun: 52, week_from_mon: 52, weekday: Wed,
-                          hour_div_12: 0, hour_mod_12: 4, minute: 26, second: 40,
-                          nanosecond: 12_345_678, timestamp: 1_419_999_999),
-            Err(IMPOSSIBLE)
-        );
-        assert_eq!(
-            parse!(offset = 32400;
-                          year: 2014, year_div_100: 20, year_mod_100: 14, month: 12, day: 31,
-                          ordinal: 365, isoyear: 2015, isoyear_div_100: 20, isoyear_mod_100: 15,
-                          isoweek: 1, week_from_sun: 52, week_from_mon: 52, weekday: Wed,
-                          hour_div_12: 0, hour_mod_12: 4, minute: 26, second: 40,
-                          nanosecond: 12_345_678, timestamp: 1_419_967_600),
-            ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678)
-        );
-
-        // more timestamps
-        let max_days_from_year_1970 =
-            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-        let year_0_from_year_1970 = NaiveDate::from_ymd_opt(0, 1, 1)
-            .unwrap()
-            .signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-        let min_days_from_year_1970 =
-            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-        assert_eq!(
-            parse!(timestamp: min_days_from_year_1970.num_seconds()),
-            ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0)
-        );
-        assert_eq!(
-            parse!(timestamp: year_0_from_year_1970.num_seconds()),
-            ymdhms(0, 1, 1, 0, 0, 0)
-        );
-        assert_eq!(
-            parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
-            ymdhms(NaiveDate::MAX.year(), 12, 31, 23, 59, 59)
-        );
-
-        // leap seconds #1: partial fields
-        assert_eq!(parse!(second: 59, timestamp: 1_341_100_798), Err(IMPOSSIBLE));
-        assert_eq!(parse!(second: 59, timestamp: 1_341_100_799), ymdhms(2012, 6, 30, 23, 59, 59));
-        assert_eq!(parse!(second: 59, timestamp: 1_341_100_800), Err(IMPOSSIBLE));
-        assert_eq!(
-            parse!(second: 60, timestamp: 1_341_100_799),
-            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)
-        );
-        assert_eq!(
-            parse!(second: 60, timestamp: 1_341_100_800),
-            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)
-        );
-        assert_eq!(parse!(second: 0, timestamp: 1_341_100_800), ymdhms(2012, 7, 1, 0, 0, 0));
-        assert_eq!(parse!(second: 1, timestamp: 1_341_100_800), Err(IMPOSSIBLE));
-        assert_eq!(parse!(second: 60, timestamp: 1_341_100_801), Err(IMPOSSIBLE));
-
-        // leap seconds #2: full fields
-        // we need to have separate tests for them since it uses another control flow.
-        assert_eq!(
-            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 59, timestamp: 1_341_100_798),
-            Err(IMPOSSIBLE)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 59, timestamp: 1_341_100_799),
-            ymdhms(2012, 6, 30, 23, 59, 59)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 59, timestamp: 1_341_100_800),
-            Err(IMPOSSIBLE)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 60, timestamp: 1_341_100_799),
-            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 60, timestamp: 1_341_100_800),
-            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
-                          minute: 0, second: 0, timestamp: 1_341_100_800),
-            ymdhms(2012, 7, 1, 0, 0, 0)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
-                          minute: 0, second: 1, timestamp: 1_341_100_800),
-            Err(IMPOSSIBLE)
-        );
-        assert_eq!(
-            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 60, timestamp: 1_341_100_801),
-            Err(IMPOSSIBLE)
-        );
-
-        // error codes
-        assert_eq!(
-            parse!(year: 2015, month: 1, day: 20, weekday: Tue,
-                          hour_div_12: 2, hour_mod_12: 1, minute: 35, second: 20),
-            Err(OUT_OF_RANGE)
-        ); // `hour_div_12` is out of range
-    }
-
-    #[test]
     fn test_parsed_to_datetime() {
         macro_rules! parse {
             ($($k:ident: $v:expr),*) => (
                 Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime()
-            )
+            );
         }
 
         let ymdhmsn = |y, m, d, h, n, s, nano, off| {
@@ -1846,30 +1692,169 @@ mod tests {
                 .unwrap())
         };
 
+        // omission of fields
+        assert_eq!(parse!(), Err(NOT_ENOUGH));
+        assert_eq!(
+            parse!(year: 2015, month: 1, day: 30,
+                   hour_div_12: 1, hour_mod_12: 2, minute: 38, offset: 0),
+            ymdhmsn(2015, 1, 30, 14, 38, 0, 0, 0)
+        );
+        assert_eq!(
+            parse!(year: 1997, month: 1, day: 30,
+                   hour_div_12: 1, hour_mod_12: 2, minute: 38, second: 5, offset: 0),
+            ymdhmsn(1997, 1, 30, 14, 38, 5, 0, 0)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 34, hour_div_12: 0, hour_mod_12: 5,
+                   minute: 6, second: 7, nanosecond: 890_123_456, offset: 0),
+            ymdhmsn(2012, 2, 3, 5, 6, 7, 890_123_456, 0)
+        );
+        assert_eq!(parse!(timestamp: 0), ymdhmsn(1970, 1, 1, 0, 0, 0, 0, 0));
+        assert_eq!(parse!(timestamp: 1, nanosecond: 0), ymdhmsn(1970, 1, 1, 0, 0, 1, 0, 0));
+        assert_eq!(parse!(timestamp: 1, nanosecond: 1), ymdhmsn(1970, 1, 1, 0, 0, 1, 1, 0));
+        assert_eq!(parse!(timestamp: 1_420_000_000), ymdhmsn(2014, 12, 31, 4, 26, 40, 0, 0));
+        assert_eq!(parse!(timestamp: -0x1_0000_0000), ymdhmsn(1833, 11, 24, 17, 31, 44, 0, 0));
+
+        // full fields
+        assert_eq!(
+            parse!(year: 2014, year_div_100: 20, year_mod_100: 14, month: 12, day: 31,
+                   ordinal: 365, isoyear: 2015, isoyear_div_100: 20, isoyear_mod_100: 15,
+                   isoweek: 1, week_from_sun: 52, week_from_mon: 52, weekday: Wed,
+                   hour_div_12: 0, hour_mod_12: 4, minute: 26, second: 40,
+                   nanosecond: 12_345_678, timestamp: 1_420_000_000, offset: 0),
+            ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678, 0)
+        );
+        assert_eq!(
+            parse!(year: 2014, year_div_100: 20, year_mod_100: 14, month: 12, day: 31,
+                   ordinal: 365, isoyear: 2015, isoyear_div_100: 20, isoyear_mod_100: 15,
+                   isoweek: 1, week_from_sun: 52, week_from_mon: 52, weekday: Wed,
+                   hour_div_12: 0, hour_mod_12: 4, minute: 26, second: 40,
+                   nanosecond: 12_345_678, timestamp: 1_419_999_999, offset: 0),
+            Err(IMPOSSIBLE)
+        );
+        assert_eq!(
+            parse!(year: 2014, year_div_100: 20, year_mod_100: 14, month: 12, day: 31,
+                   ordinal: 365, isoyear: 2015, isoyear_div_100: 20, isoyear_mod_100: 15,
+                   isoweek: 1, week_from_sun: 52, week_from_mon: 52, weekday: Wed,
+                   hour_div_12: 0, hour_mod_12: 4, minute: 26, second: 40,
+                   nanosecond: 12_345_678, timestamp: 1_419_967_600, offset: 32400),
+            ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678, 32400)
+        );
+
+        // more timestamps
+        let max_days_from_year_1970 =
+            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+        let year_0_from_year_1970 = NaiveDate::from_ymd_opt(0, 1, 1)
+            .unwrap()
+            .signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+        let min_days_from_year_1970 =
+            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+        assert_eq!(
+            parse!(timestamp: min_days_from_year_1970.num_seconds()),
+            ymdhmsn(NaiveDate::MIN.year(), 1, 1, 0, 0, 0, 0, 0)
+        );
+        assert_eq!(
+            parse!(timestamp: year_0_from_year_1970.num_seconds()),
+            ymdhmsn(0, 1, 1, 0, 0, 0, 0, 0)
+        );
+        assert_eq!(
+            parse!(timestamp: max_days_from_year_1970.num_seconds() + 86399),
+            ymdhmsn(NaiveDate::MAX.year(), 12, 31, 23, 59, 59, 0, 0)
+        );
+
+        // leap seconds #1: partial fields
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_798), Err(IMPOSSIBLE));
+        assert_eq!(
+            parse!(second: 59, timestamp: 1_341_100_799),
+            ymdhmsn(2012, 6, 30, 23, 59, 59, 0, 0)
+        );
+        assert_eq!(parse!(second: 59, timestamp: 1_341_100_800), Err(IMPOSSIBLE));
+        assert_eq!(
+            parse!(second: 60, timestamp: 1_341_100_799),
+            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000, 0)
+        );
+        assert_eq!(
+            parse!(second: 60, timestamp: 1_341_100_800),
+            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000, 0)
+        );
+        assert_eq!(parse!(second: 0, timestamp: 1_341_100_800), ymdhmsn(2012, 7, 1, 0, 0, 0, 0, 0));
+        assert_eq!(parse!(second: 1, timestamp: 1_341_100_800), Err(IMPOSSIBLE));
+        assert_eq!(parse!(second: 60, timestamp: 1_341_100_801), Err(IMPOSSIBLE));
+
+        // leap seconds #2: full fields
+        // we need to have separate tests for them since it uses another control flow.
+        assert_eq!(
+            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                   minute: 59, second: 59, offset: 0, timestamp: 1_341_100_798),
+            Err(IMPOSSIBLE)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                   minute: 59, second: 59, offset: 0, timestamp: 1_341_100_799),
+            ymdhmsn(2012, 6, 30, 23, 59, 59, 0, 0)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                   minute: 59, second: 59, offset: 0, timestamp: 1_341_100_800),
+            Err(IMPOSSIBLE)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                   minute: 59, second: 60, timestamp: 1_341_100_799),
+            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000, 0)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                   minute: 59, second: 60, timestamp: 1_341_100_800),
+            ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000, 0)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
+                   minute: 0, second: 0, timestamp: 1_341_100_800),
+            ymdhmsn(2012, 7, 1, 0, 0, 0, 0, 0)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
+                   minute: 0, second: 1, offset: 0, timestamp: 1_341_100_800),
+            Err(IMPOSSIBLE)
+        );
+        assert_eq!(
+            parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
+                   minute: 59, second: 60, offset: 0, timestamp: 1_341_100_801),
+            Err(IMPOSSIBLE)
+        );
+
+        // error codes
+        assert_eq!(
+            parse!(year: 2015, month: 1, day: 20, weekday: Tue,
+                   hour_div_12: 2, hour_mod_12: 1, minute: 35, second: 20, offset: 0),
+            Err(OUT_OF_RANGE)
+        ); // `hour_div_12` is out of range
+
         assert_eq!(parse!(offset: 0), Err(NOT_ENOUGH));
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
-                          minute: 26, second: 40, nanosecond: 12_345_678),
+                   minute: 26, second: 40, nanosecond: 12_345_678),
             Err(NOT_ENOUGH)
         );
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
-                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
+                   minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
             ymdhmsn(2014, 12, 31, 4, 26, 40, 12_345_678, 0)
         );
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
-                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
+                   minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
             ymdhmsn(2014, 12, 31, 13, 26, 40, 12_345_678, 32400)
         );
         assert_eq!(
             parse!(year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 1,
-                          minute: 42, second: 4, nanosecond: 12_345_678, offset: -9876),
+                   minute: 42, second: 4, nanosecond: 12_345_678, offset: -9876),
             ymdhmsn(2014, 12, 31, 1, 42, 4, 12_345_678, -9876)
         );
         assert_eq!(
             parse!(year: 2015, ordinal: 1, hour_div_12: 0, hour_mod_12: 4,
-                          minute: 26, second: 40, nanosecond: 12_345_678, offset: 86_400),
+                   minute: 26, second: 40, nanosecond: 12_345_678, offset: 86_400),
             Err(OUT_OF_RANGE)
         ); // `FixedOffset` does not support such huge offset
     }
