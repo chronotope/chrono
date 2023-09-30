@@ -886,6 +886,10 @@ impl Parsed {
     ///     range.
     ///   - if the value would be outside the range of a [`NaiveDateTime`].
     ///   - if the date does not exist.
+    #[deprecated(
+        since = "0.4.36",
+        note = "Use `to_datetime_or_utc`, `to_naive_datetime()` or `to_datetime()` instead"
+    )]
     pub fn to_naive_datetime_with_offset(&self, offset: i32) -> ParseResult<NaiveDateTime> {
         let date = self.to_naive_date();
         let time = self.to_naive_time();
