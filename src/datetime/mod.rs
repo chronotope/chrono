@@ -1696,7 +1696,7 @@ impl From<DateTime<Utc>> for js_sys::Date {
 
 // Note that implementation of Arbitrary cannot be simply derived for DateTime<Tz>, due to
 // the nontrivial bound <Tz as TimeZone>::Offset: Arbitrary.
-#[cfg(feature = "arbitrary")]
+#[cfg(all(feature = "arbitrary", feature = "std"))]
 impl<'a, Tz> arbitrary::Arbitrary<'a> for DateTime<Tz>
 where
     Tz: TimeZone,

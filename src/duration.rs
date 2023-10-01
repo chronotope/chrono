@@ -506,7 +506,7 @@ const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
     (this.div_euclid(other), this.rem_euclid(other))
 }
 
-#[cfg(feature = "arbitrary")]
+#[cfg(all(feature = "arbitrary", feature = "std"))]
 impl arbitrary::Arbitrary<'_> for Duration {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<Duration> {
         const MIN_SECS: i64 = -i64::MAX / MILLIS_PER_SEC - 1;
