@@ -504,9 +504,11 @@ impl NaiveDateTime {
     #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.timestamp_nanos_opt()
-            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    pub const fn timestamp_nanos(&self) -> i64 {
+        expect!(
+            self.timestamp_nanos_opt(),
+            "value can not be represented in a timestamp with nanosecond precision."
+        )
     }
 
     /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
@@ -542,9 +544,9 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
+    pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
         let mut timestamp = self.timestamp();
-        let mut timestamp_subsec_nanos = i64::from(self.timestamp_subsec_nanos());
+        let mut timestamp_subsec_nanos = self.timestamp_subsec_nanos() as i64;
 
         // subsec nanos are always non-negative, however the timestamp itself (both in seconds and in nanos) can be
         // negative. Now i64::MIN is NOT dividable by 1_000_000_000, so
@@ -562,7 +564,7 @@ impl NaiveDateTime {
             timestamp += 1;
         }
 
-        timestamp.checked_mul(1_000_000_000).and_then(|ns| ns.checked_add(timestamp_subsec_nanos))
+        try_opt!(timestamp.checked_mul(1_000_000_000)).checked_add(timestamp_subsec_nanos)
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
@@ -699,7 +701,7 @@ impl NaiveDateTime {
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli_opt(3, 5, 59, 300).unwrap()));
     /// ```
     #[must_use]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
+    pub const fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
 
         // early checking to avoid overflow in OldDuration::seconds
@@ -852,7 +854,7 @@ impl NaiveDateTime {
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli_opt(3, 6, 0, 300).unwrap()));
     /// ```
     #[must_use]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
+    pub const fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
 
         // early checking to avoid overflow in OldDuration::seconds
@@ -860,7 +862,7 @@ impl NaiveDateTime {
             return None;
         }
 
-        let date = self.date.checked_sub_signed(OldDuration::seconds(rhs))?;
+        let date = try_opt!(self.date.checked_sub_signed(OldDuration::seconds(rhs)));
         Some(NaiveDateTime { date, time })
     }
 
@@ -949,8 +951,13 @@ impl NaiveDateTime {
     ///            Duration::seconds(3600) - Duration::milliseconds(500));
     /// ```
     #[must_use]
-    pub fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
-        self.date.signed_duration_since(rhs.date) + self.time.signed_duration_since(rhs.time)
+    pub const fn signed_duration_since(self, rhs: NaiveDateTime) -> OldDuration {
+        expect!(
+            self.date
+                .signed_duration_since(rhs.date)
+                .checked_add(&self.time.signed_duration_since(rhs.time)),
+            "always in range"
+        )
     }
 
     /// Formats the combined date and time with the specified formatting items.
