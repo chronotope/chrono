@@ -126,8 +126,8 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for Delayed
         for item in self.items.clone() {
             format_inner(
                 &mut result,
-                self.date.as_ref(),
-                self.time.as_ref(),
+                self.date,
+                self.time,
                 self.off.as_ref(),
                 item.borrow(),
                 locale,
@@ -187,8 +187,8 @@ pub fn format_item(
 #[cfg(feature = "alloc")]
 fn format_inner(
     w: &mut impl Write,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
+    date: Option<NaiveDate>,
+    time: Option<NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     item: &Item<'_>,
     locale: Option<Locale>,
@@ -206,16 +206,16 @@ fn format_inner(
 #[cfg(feature = "alloc")]
 fn format_numeric(
     w: &mut impl Write,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
+    date: Option<NaiveDate>,
+    time: Option<NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     spec: &Numeric,
     pad: &Pad,
 ) -> fmt::Result {
     use self::Numeric::*;
 
-    let week_from_sun = |d: &NaiveDate| d.weeks_from(Weekday::Sun);
-    let week_from_mon = |d: &NaiveDate| d.weeks_from(Weekday::Mon);
+    let week_from_sun = |d: NaiveDate| d.weeks_from(Weekday::Sun);
+    let week_from_mon = |d: NaiveDate| d.weeks_from(Weekday::Mon);
 
     let (width, v) = match *spec {
         Year => (4, date.map(|d| i64::from(d.year()))),
@@ -240,9 +240,9 @@ fn format_numeric(
         Timestamp => (
             1,
             match (date, time, off) {
-                (Some(d), Some(t), None) => Some(d.and_time(*t).and_utc().timestamp()),
+                (Some(d), Some(t), None) => Some(d.and_time(t).and_utc().timestamp()),
                 (Some(d), Some(t), Some(&(_, off))) => {
-                    Some(d.and_time(*t).and_utc().timestamp() - i64::from(off.local_minus_utc()))
+                    Some(d.and_time(t).and_utc().timestamp() - i64::from(off.local_minus_utc()))
                 }
                 (_, _, _) => None,
             },
@@ -275,8 +275,8 @@ fn format_numeric(
 #[cfg(feature = "alloc")]
 fn format_fixed(
     w: &mut impl Write,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
+    date: Option<NaiveDate>,
+    time: Option<NaiveTime>,
     off: Option<&(String, FixedOffset)>,
     spec: &Fixed,
     locale: Option<Locale>,
@@ -402,7 +402,7 @@ fn format_fixed(
         // same as `%a, %d %b %Y %H:%M:%S %z`
         {
             if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                Some(write_rfc2822(w, crate::NaiveDateTime::new(*d, *t), off))
+                Some(write_rfc2822(w, crate::NaiveDateTime::new(d, t), off))
             } else {
                 None
             }
@@ -413,7 +413,7 @@ fn format_fixed(
             if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
                 Some(write_rfc3339(
                     w,
-                    crate::NaiveDateTime::new(*d, *t),
+                    crate::NaiveDateTime::new(d, t),
                     off.fix(),
                     SecondsFormat::AutoSi,
                     false,
