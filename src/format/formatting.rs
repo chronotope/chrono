@@ -112,20 +112,16 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         let name_and_diff = (offset.to_string(), offset.fix());
         DelayedFormat { date, time, off: Some(name_and_diff), items, locale: Some(locale) }
     }
-}
 
-#[cfg(feature = "alloc")]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn format(&self, w: &mut impl Write) -> fmt::Result {
         #[cfg(feature = "unstable-locales")]
         let locale = self.locale;
         #[cfg(not(feature = "unstable-locales"))]
         let locale = None;
 
-        let mut result = String::new();
         for item in self.items.clone() {
             format_inner(
-                &mut result,
+                w,
                 self.date,
                 self.time,
                 self.off.as_ref(),
@@ -133,6 +129,15 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for Delayed
                 locale,
             )?;
         }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut result = String::new();
+        self.format(&mut result)?;
         f.pad(&result)
     }
 }
