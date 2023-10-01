@@ -1155,9 +1155,12 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MAX.checked_add_signed(Duration::days(1)), None);
     /// ```
     #[must_use]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
-        let days = i32::try_from(rhs.num_days()).ok()?;
-        self.add_days(days)
+    pub const fn checked_add_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
+        let days = rhs.num_days();
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        self.add_days(days as i32)
     }
 
     /// Subtracts the number of whole days in the given `Duration` from the current date.
@@ -1181,9 +1184,12 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MIN.checked_sub_signed(Duration::days(1)), None);
     /// ```
     #[must_use]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
-        let days = i32::try_from(-rhs.num_days()).ok()?;
-        self.add_days(days)
+    pub const fn checked_sub_signed(self, rhs: OldDuration) -> Option<NaiveDate> {
+        let days = -rhs.num_days();
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        self.add_days(days as i32)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1209,7 +1215,7 @@ impl NaiveDate {
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), Duration::days(365*400 + 97));
     /// ```
     #[must_use]
-    pub fn signed_duration_since(self, rhs: NaiveDate) -> OldDuration {
+    pub const fn signed_duration_since(self, rhs: NaiveDate) -> OldDuration {
         let year1 = self.year();
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
