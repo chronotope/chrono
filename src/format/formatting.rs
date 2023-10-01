@@ -120,14 +120,18 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         let locale = None;
 
         for item in self.items.clone() {
-            format_inner(
-                w,
-                self.date,
-                self.time,
-                self.off.as_ref(),
-                item.borrow(),
-                locale,
-            )?;
+            match *item.borrow() {
+                Item::Literal(s) | Item::Space(s) => w.write_str(s),
+                #[cfg(feature = "alloc")]
+                Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
+                Item::Numeric(ref spec, ref pad) => {
+                    format_numeric(w, self.date, self.time, self.off.as_ref(), spec, pad)
+                }
+                Item::Fixed(ref spec) => {
+                    format_fixed(w, self.date, self.time, self.off.as_ref(), spec, locale)
+                }
+                Item::Error => Err(fmt::Error),
+            }?;
         }
         Ok(())
     }
@@ -187,25 +191,6 @@ pub fn format_item(
         locale: None,
     }
     .fmt(w)
-}
-
-#[cfg(feature = "alloc")]
-fn format_inner(
-    w: &mut impl Write,
-    date: Option<NaiveDate>,
-    time: Option<NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
-    item: &Item<'_>,
-    locale: Option<Locale>,
-) -> fmt::Result {
-    match *item {
-        Item::Literal(s) | Item::Space(s) => w.write_str(s),
-        #[cfg(feature = "alloc")]
-        Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
-        Item::Numeric(ref spec, ref pad) => format_numeric(w, date, time, off, spec, pad),
-        Item::Fixed(ref spec) => format_fixed(w, date, time, off, spec, locale),
-        Item::Error => Err(fmt::Error),
-    }
 }
 
 #[cfg(feature = "alloc")]
