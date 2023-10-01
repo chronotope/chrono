@@ -724,7 +724,7 @@ impl NaiveTime {
     ///            Duration::seconds(61));
     /// ```
     #[must_use]
-    pub fn signed_duration_since(self, rhs: NaiveTime) -> OldDuration {
+    pub const fn signed_duration_since(self, rhs: NaiveTime) -> OldDuration {
         //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
         //     |    |    :    |    |    |    |    |    |    |    :    |    |
         // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
@@ -735,25 +735,20 @@ impl NaiveTime {
         //      `rhs.frac`|========================================>|
         //          |     |   |        `self - rhs`         |       |
 
-        use core::cmp::Ordering;
-
-        let secs = i64::from(self.secs) - i64::from(rhs.secs);
-        let frac = i64::from(self.frac) - i64::from(rhs.frac);
+        let mut secs = self.secs as i64 - rhs.secs as i64;
+        let frac = self.frac as i64 - rhs.frac as i64;
 
         // `secs` may contain a leap second yet to be counted
-        let adjust = match self.secs.cmp(&rhs.secs) {
-            Ordering::Greater => i64::from(rhs.frac >= 1_000_000_000),
-            Ordering::Equal => 0,
-            Ordering::Less => {
-                if self.frac >= 1_000_000_000 {
-                    -1
-                } else {
-                    0
-                }
-            }
-        };
+        if self.secs > rhs.secs && rhs.frac >= 1_000_000_000 {
+            secs += 1;
+        } else if self.secs < rhs.secs && self.frac >= 1_000_000_000 {
+            secs -= 1;
+        }
 
-        OldDuration::seconds(secs + adjust) + OldDuration::nanoseconds(frac)
+        let secs_from_frac = frac.div_euclid(1_000_000_000);
+        let frac = frac.rem_euclid(1_000_000_000) as u32;
+
+        expect!(OldDuration::new(secs + secs_from_frac, frac), "must be in range")
     }
 
     /// Adds given `FixedOffset` to the current time, and returns the number of days that should be
