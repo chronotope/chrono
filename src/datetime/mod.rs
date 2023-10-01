@@ -27,6 +27,7 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::try_opt;
 #[allow(deprecated)]
 use crate::Date;
 use crate::{Datelike, Months, Timelike, Weekday};
@@ -626,8 +627,11 @@ impl DateTime<Utc> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
-        NaiveDateTime::from_timestamp_opt(secs, nsecs).as_ref().map(NaiveDateTime::and_utc)
+    pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
+        Some(DateTime {
+            datetime: try_opt!(NaiveDateTime::from_timestamp_opt(secs, nsecs)),
+            offset: Utc,
+        })
     }
 
     /// Makes a new [`DateTime<Utc>`] from the number of non-leap milliseconds
