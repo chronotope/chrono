@@ -124,9 +124,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                 Item::Literal(s) | Item::Space(s) => w.write_str(s),
                 #[cfg(feature = "alloc")]
                 Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
-                Item::Numeric(ref spec, ref pad) => {
-                    format_numeric(w, self.date, self.time, self.off.as_ref(), spec, pad)
-                }
+                Item::Numeric(ref spec, ref pad) => self.format_numeric(w, spec, pad),
                 Item::Fixed(ref spec) => {
                     format_fixed(w, self.date, self.time, self.off.as_ref(), spec, locale)
                 }
@@ -134,6 +132,70 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             }?;
         }
         Ok(())
+    }
+
+    #[cfg(feature = "alloc")]
+    fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: &Pad) -> fmt::Result {
+        use self::Numeric::*;
+
+        let week_from_sun = |d: NaiveDate| d.weeks_from(Weekday::Sun);
+        let week_from_mon = |d: NaiveDate| d.weeks_from(Weekday::Mon);
+
+        let (width, v) = match *spec {
+            Year => (4, self.date.map(|d| i64::from(d.year()))),
+            YearDiv100 => (2, self.date.map(|d| i64::from(d.year()).div_euclid(100))),
+            YearMod100 => (2, self.date.map(|d| i64::from(d.year()).rem_euclid(100))),
+            IsoYear => (4, self.date.map(|d| i64::from(d.iso_week().year()))),
+            IsoYearDiv100 => (2, self.date.map(|d| i64::from(d.iso_week().year()).div_euclid(100))),
+            IsoYearMod100 => (2, self.date.map(|d| i64::from(d.iso_week().year()).rem_euclid(100))),
+            Month => (2, self.date.map(|d| i64::from(d.month()))),
+            Day => (2, self.date.map(|d| i64::from(d.day()))),
+            WeekFromSun => (2, self.date.map(|d| i64::from(week_from_sun(d)))),
+            WeekFromMon => (2, self.date.map(|d| i64::from(week_from_mon(d)))),
+            IsoWeek => (2, self.date.map(|d| i64::from(d.iso_week().week()))),
+            NumDaysFromSun => (1, self.date.map(|d| i64::from(d.weekday().num_days_from_sunday()))),
+            WeekdayFromMon => (1, self.date.map(|d| i64::from(d.weekday().number_from_monday()))),
+            Ordinal => (3, self.date.map(|d| i64::from(d.ordinal()))),
+            Hour => (2, self.time.map(|t| i64::from(t.hour()))),
+            Hour12 => (2, self.time.map(|t| i64::from(t.hour12().1))),
+            Minute => (2, self.time.map(|t| i64::from(t.minute()))),
+            Second => {
+                (2, self.time.map(|t| i64::from(t.second() + t.nanosecond() / 1_000_000_000)))
+            }
+            Nanosecond => (9, self.time.map(|t| i64::from(t.nanosecond() % 1_000_000_000))),
+            Timestamp => (
+                1,
+                match (self.date, self.time, self.off.as_ref()) {
+                    (Some(d), Some(t), None) => Some(d.and_time(t).and_utc().timestamp()),
+                    (Some(d), Some(t), Some(&(_, off))) => {
+                        Some(d.and_time(t).and_utc().timestamp() - i64::from(off.local_minus_utc()))
+                    }
+                    (_, _, _) => None,
+                },
+            ),
+
+            // for the future expansion
+            Internal(ref int) => match int._dummy {},
+        };
+
+        if let Some(v) = v {
+            if (spec == &Year || spec == &IsoYear) && !(0..10_000).contains(&v) {
+                // non-four-digit years require an explicit sign as per ISO 8601
+                match *pad {
+                    Pad::None => write!(w, "{:+}", v),
+                    Pad::Zero => write!(w, "{:+01$}", v, width + 1),
+                    Pad::Space => write!(w, "{:+1$}", v, width + 1),
+                }
+            } else {
+                match *pad {
+                    Pad::None => write!(w, "{}", v),
+                    Pad::Zero => write!(w, "{:01$}", v, width),
+                    Pad::Space => write!(w, "{:1$}", v, width),
+                }
+            }
+        } else {
+            Err(fmt::Error) // insufficient arguments for given format
+        }
     }
 }
 
@@ -191,75 +253,6 @@ pub fn format_item(
         locale: None,
     }
     .fmt(w)
-}
-
-#[cfg(feature = "alloc")]
-fn format_numeric(
-    w: &mut impl Write,
-    date: Option<NaiveDate>,
-    time: Option<NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
-    spec: &Numeric,
-    pad: &Pad,
-) -> fmt::Result {
-    use self::Numeric::*;
-
-    let week_from_sun = |d: NaiveDate| d.weeks_from(Weekday::Sun);
-    let week_from_mon = |d: NaiveDate| d.weeks_from(Weekday::Mon);
-
-    let (width, v) = match *spec {
-        Year => (4, date.map(|d| i64::from(d.year()))),
-        YearDiv100 => (2, date.map(|d| i64::from(d.year()).div_euclid(100))),
-        YearMod100 => (2, date.map(|d| i64::from(d.year()).rem_euclid(100))),
-        IsoYear => (4, date.map(|d| i64::from(d.iso_week().year()))),
-        IsoYearDiv100 => (2, date.map(|d| i64::from(d.iso_week().year()).div_euclid(100))),
-        IsoYearMod100 => (2, date.map(|d| i64::from(d.iso_week().year()).rem_euclid(100))),
-        Month => (2, date.map(|d| i64::from(d.month()))),
-        Day => (2, date.map(|d| i64::from(d.day()))),
-        WeekFromSun => (2, date.map(|d| i64::from(week_from_sun(d)))),
-        WeekFromMon => (2, date.map(|d| i64::from(week_from_mon(d)))),
-        IsoWeek => (2, date.map(|d| i64::from(d.iso_week().week()))),
-        NumDaysFromSun => (1, date.map(|d| i64::from(d.weekday().num_days_from_sunday()))),
-        WeekdayFromMon => (1, date.map(|d| i64::from(d.weekday().number_from_monday()))),
-        Ordinal => (3, date.map(|d| i64::from(d.ordinal()))),
-        Hour => (2, time.map(|t| i64::from(t.hour()))),
-        Hour12 => (2, time.map(|t| i64::from(t.hour12().1))),
-        Minute => (2, time.map(|t| i64::from(t.minute()))),
-        Second => (2, time.map(|t| i64::from(t.second() + t.nanosecond() / 1_000_000_000))),
-        Nanosecond => (9, time.map(|t| i64::from(t.nanosecond() % 1_000_000_000))),
-        Timestamp => (
-            1,
-            match (date, time, off) {
-                (Some(d), Some(t), None) => Some(d.and_time(t).and_utc().timestamp()),
-                (Some(d), Some(t), Some(&(_, off))) => {
-                    Some(d.and_time(t).and_utc().timestamp() - i64::from(off.local_minus_utc()))
-                }
-                (_, _, _) => None,
-            },
-        ),
-
-        // for the future expansion
-        Internal(ref int) => match int._dummy {},
-    };
-
-    if let Some(v) = v {
-        if (spec == &Year || spec == &IsoYear) && !(0..10_000).contains(&v) {
-            // non-four-digit years require an explicit sign as per ISO 8601
-            match *pad {
-                Pad::None => write!(w, "{:+}", v),
-                Pad::Zero => write!(w, "{:+01$}", v, width + 1),
-                Pad::Space => write!(w, "{:+1$}", v, width + 1),
-            }
-        } else {
-            match *pad {
-                Pad::None => write!(w, "{}", v),
-                Pad::Zero => write!(w, "{:01$}", v, width),
-                Pad::Space => write!(w, "{:1$}", v, width),
-            }
-        }
-    } else {
-        Err(fmt::Error) // insufficient arguments for given format
-    }
 }
 
 #[cfg(feature = "alloc")]
