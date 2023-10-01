@@ -61,14 +61,14 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub fn first_day(&self) -> NaiveDate {
+    pub const fn first_day(&self) -> NaiveDate {
         let start = self.start.num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to subtract from `self.date`.
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        self.date.add_days(days).unwrap()
+        expect!(self.date.add_days(days), "first weekday out of range for `NaiveDate`")
     }
 
     /// Returns a date representing the last day of the week.
@@ -89,14 +89,14 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub fn last_day(&self) -> NaiveDate {
+    pub const fn last_day(&self) -> NaiveDate {
         let end = self.start.pred().num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to add to `self.date`.
         // Do not construct an intermediate date before `self.date` (like with `first_day()`),
         // because that may be out of range if `date` is close to `NaiveDate::MIN`.
         let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        self.date.add_days(days).unwrap()
+        expect!(self.date.add_days(days), "last weekday out of range for `NaiveDate`")
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -119,7 +119,7 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub fn days(&self) -> RangeInclusive<NaiveDate> {
+    pub const fn days(&self) -> RangeInclusive<NaiveDate> {
         self.first_day()..=self.last_day()
     }
 }
