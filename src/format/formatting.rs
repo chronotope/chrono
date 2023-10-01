@@ -115,9 +115,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: &Pad) -> fmt::Result {
         use self::Numeric::*;
 
-        let week_from_sun = |d: NaiveDate| d.weeks_from(Weekday::Sun);
-        let week_from_mon = |d: NaiveDate| d.weeks_from(Weekday::Mon);
-
         let (width, v) = match *spec {
             Year => (4, self.date.map(|d| i64::from(d.year()))),
             YearDiv100 => (2, self.date.map(|d| i64::from(d.year()).div_euclid(100))),
@@ -127,8 +124,8 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             IsoYearMod100 => (2, self.date.map(|d| i64::from(d.iso_week().year()).rem_euclid(100))),
             Month => (2, self.date.map(|d| i64::from(d.month()))),
             Day => (2, self.date.map(|d| i64::from(d.day()))),
-            WeekFromSun => (2, self.date.map(|d| i64::from(week_from_sun(d)))),
-            WeekFromMon => (2, self.date.map(|d| i64::from(week_from_mon(d)))),
+            WeekFromSun => (2, self.date.map(|d| i64::from(d.weeks_from(Weekday::Sun)))),
+            WeekFromMon => (2, self.date.map(|d| i64::from(d.weeks_from(Weekday::Mon)))),
             IsoWeek => (2, self.date.map(|d| i64::from(d.iso_week().week()))),
             NumDaysFromSun => (1, self.date.map(|d| i64::from(d.weekday().num_days_from_sunday()))),
             WeekdayFromMon => (1, self.date.map(|d| i64::from(d.weekday().number_from_monday()))),
