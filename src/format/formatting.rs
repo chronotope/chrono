@@ -41,10 +41,8 @@ pub struct DelayedFormat<I> {
     /// An iterator returning formatting items.
     items: I,
     /// Locale used for text.
-    // TODO: Only used with the locale feature. We should make this property
-    // only present when the feature is enabled.
-    #[cfg(feature = "unstable-locales")]
-    locale: Option<Locale>,
+    /// ZST if the `unstable-locales` feature is not enabled.
+    locale: Locale,
 }
 
 #[cfg(feature = "alloc")]
@@ -52,14 +50,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     #[must_use]
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
-        DelayedFormat {
-            date,
-            time,
-            off: None,
-            items,
-            #[cfg(feature = "unstable-locales")]
-            locale: None,
-        }
+        DelayedFormat { date, time, off: None, items, locale: default_locale() }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
@@ -74,14 +65,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         Off: Offset + Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat {
-            date,
-            time,
-            off: Some(name_and_diff),
-            items,
-            #[cfg(feature = "unstable-locales")]
-            locale: None,
-        }
+        DelayedFormat { date, time, off: Some(name_and_diff), items, locale: default_locale() }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
@@ -93,7 +77,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         items: I,
         locale: Locale,
     ) -> DelayedFormat<I> {
-        DelayedFormat { date, time, off: None, items, locale: Some(locale) }
+        DelayedFormat { date, time, off: None, items, locale }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
@@ -110,22 +94,17 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         Off: Offset + Display,
     {
         let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date, time, off: Some(name_and_diff), items, locale: Some(locale) }
+        DelayedFormat { date, time, off: Some(name_and_diff), items, locale }
     }
 
     fn format(&self, w: &mut impl Write) -> fmt::Result {
-        #[cfg(feature = "unstable-locales")]
-        let locale = self.locale;
-        #[cfg(not(feature = "unstable-locales"))]
-        let locale = None;
-
         for item in self.items.clone() {
             match *item.borrow() {
                 Item::Literal(s) | Item::Space(s) => w.write_str(s),
                 #[cfg(feature = "alloc")]
                 Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
                 Item::Numeric(ref spec, ref pad) => self.format_numeric(w, spec, pad),
-                Item::Fixed(ref spec) => self.format_fixed(w, spec, locale),
+                Item::Fixed(ref spec) => self.format_fixed(w, spec),
                 Item::Error => Err(fmt::Error),
             }?;
         }
@@ -197,42 +176,43 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     #[cfg(feature = "alloc")]
-    fn format_fixed(
-        &self,
-        w: &mut impl Write,
-        spec: &Fixed,
-        locale: Option<Locale>,
-    ) -> fmt::Result {
+    fn format_fixed(&self, w: &mut impl Write, spec: &Fixed) -> fmt::Result {
         use self::Fixed::*;
-
-        let locale = locale.unwrap_or(default_locale());
 
         let ret = match *spec {
             ShortMonthName => self.date.map(|d| {
-                w.write_str(short_months(locale)[d.month0() as usize])?;
+                w.write_str(short_months(self.locale)[d.month0() as usize])?;
                 Ok(())
             }),
             LongMonthName => self.date.map(|d| {
-                w.write_str(long_months(locale)[d.month0() as usize])?;
+                w.write_str(long_months(self.locale)[d.month0() as usize])?;
                 Ok(())
             }),
             ShortWeekdayName => self.date.map(|d| {
-                w.write_str(short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize])?;
+                w.write_str(
+                    short_weekdays(self.locale)[d.weekday().num_days_from_sunday() as usize],
+                )?;
                 Ok(())
             }),
             LongWeekdayName => self.date.map(|d| {
-                w.write_str(long_weekdays(locale)[d.weekday().num_days_from_sunday() as usize])?;
+                w.write_str(
+                    long_weekdays(self.locale)[d.weekday().num_days_from_sunday() as usize],
+                )?;
                 Ok(())
             }),
             LowerAmPm => self.time.map(|t| {
-                let ampm = if t.hour12().0 { am_pm(locale)[1] } else { am_pm(locale)[0] };
+                let ampm = if t.hour12().0 { am_pm(self.locale)[1] } else { am_pm(self.locale)[0] };
                 for c in ampm.chars().flat_map(|c| c.to_lowercase()) {
                     w.write_char(c)?
                 }
                 Ok(())
             }),
             UpperAmPm => self.time.map(|t| {
-                w.write_str(if t.hour12().0 { am_pm(locale)[1] } else { am_pm(locale)[0] })?;
+                w.write_str(if t.hour12().0 {
+                    am_pm(self.locale)[1]
+                } else {
+                    am_pm(self.locale)[0]
+                })?;
                 Ok(())
             }),
             Nanosecond => self.time.map(|t| {
@@ -240,7 +220,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                 if nano == 0 {
                     Ok(())
                 } else {
-                    w.write_str(decimal_point(locale))?;
+                    w.write_str(decimal_point(self.locale))?;
                     if nano % 1_000_000 == 0 {
                         write!(w, "{:03}", nano / 1_000_000)
                     } else if nano % 1_000 == 0 {
@@ -252,17 +232,17 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             }),
             Nanosecond3 => self.time.map(|t| {
                 let nano = t.nanosecond() % 1_000_000_000;
-                w.write_str(decimal_point(locale))?;
+                w.write_str(decimal_point(self.locale))?;
                 write!(w, "{:03}", nano / 1_000_000)
             }),
             Nanosecond6 => self.time.map(|t| {
                 let nano = t.nanosecond() % 1_000_000_000;
-                w.write_str(decimal_point(locale))?;
+                w.write_str(decimal_point(self.locale))?;
                 write!(w, "{:06}", nano / 1_000)
             }),
             Nanosecond9 => self.time.map(|t| {
                 let nano = t.nanosecond() % 1_000_000_000;
-                w.write_str(decimal_point(locale))?;
+                w.write_str(decimal_point(self.locale))?;
                 write!(w, "{:09}", nano)
             }),
             Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
@@ -389,8 +369,7 @@ where
         time: time.copied(),
         off: off.cloned(),
         items,
-        #[cfg(feature = "unstable-locales")]
-        locale: None,
+        locale: default_locale(),
     }
     .fmt(w)
 }
@@ -410,8 +389,7 @@ pub fn format_item(
         time: time.copied(),
         off: off.cloned(),
         items: [item].into_iter(),
-        #[cfg(feature = "unstable-locales")]
-        locale: None,
+        locale: default_locale(),
     }
     .fmt(w)
 }
