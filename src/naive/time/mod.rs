@@ -639,8 +639,8 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn overflowing_sub_signed(&self, rhs: OldDuration) -> (NaiveTime, i64) {
-        let (time, rhs) = self.overflowing_add_signed(-rhs);
+    pub const fn overflowing_sub_signed(&self, rhs: OldDuration) -> (NaiveTime, i64) {
+        let (time, rhs) = self.overflowing_add_signed(rhs.neg());
         (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
     }
 
