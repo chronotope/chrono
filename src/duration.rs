@@ -435,6 +435,15 @@ impl Duration {
         }
         Ok(StdDuration::new(self.secs as u64, self.nanos as u32))
     }
+
+    /// This duplicates `Neg::neg` because trait methods can't be const yet.
+    pub(crate) const fn neg(self) -> Duration {
+        let (secs_diff, nanos) = match self.nanos {
+            0 => (0, 0),
+            nanos => (1, NANOS_PER_SEC - nanos),
+        };
+        Duration { secs: -self.secs - secs_diff, nanos }
+    }
 }
 
 impl Neg for Duration {
@@ -442,11 +451,11 @@ impl Neg for Duration {
 
     #[inline]
     fn neg(self) -> Duration {
-        if self.nanos == 0 {
-            Duration { secs: -self.secs, nanos: 0 }
-        } else {
-            Duration { secs: -self.secs - 1, nanos: NANOS_PER_SEC - self.nanos }
-        }
+        let (secs_diff, nanos) = match self.nanos {
+            0 => (0, 0),
+            nanos => (1, NANOS_PER_SEC - nanos),
+        };
+        Duration { secs: -self.secs - secs_diff, nanos }
     }
 }
 
