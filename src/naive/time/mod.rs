@@ -582,46 +582,30 @@ impl NaiveTime {
     ///            (from_hms(20, 4, 5), -86_400));
     /// ```
     #[must_use]
-    pub fn overflowing_add_signed(&self, mut rhs: OldDuration) -> (NaiveTime, i64) {
-        let mut secs = self.secs;
-        let mut frac = self.frac;
+    pub const fn overflowing_add_signed(&self, rhs: OldDuration) -> (NaiveTime, i64) {
+        let mut secs = self.secs as i64;
+        let mut frac = self.frac as i32;
+        let secs_to_add = rhs.num_seconds();
+        let frac_to_add = rhs.subsec_nanos();
 
-        // check if `self` is a leap second and adding `rhs` would escape that leap second.
-        // if it's the case, update `self` and `rhs` to involve no leap second;
-        // otherwise the addition immediately finishes.
+        // Check if `self` is a leap second and adding `rhs` would escape that leap second.
+        // If that is the case, update `frac` and `secs` to involve no leap second.
+        // If it stays within the leap second or the second before, and only adds a fractional
+        // second, just do that and return (this way the rest of the code can ignore leap seconds).
         if frac >= 1_000_000_000 {
-            let rfrac = 2_000_000_000 - frac;
-            if rhs >= OldDuration::nanoseconds(i64::from(rfrac)) {
-                rhs -= OldDuration::nanoseconds(i64::from(rfrac));
+            // check below is adjusted to not overflow an i32: `frac + frac_to_add >= 2_000_000_000`
+            if secs_to_add > 0 || (frac_to_add > 0 && frac >= 2_000_000_000 - frac_to_add) {
+                frac -= 1_000_000_000;
+            } else if secs_to_add < 0 {
+                frac -= 1_000_000_000;
                 secs += 1;
-                frac = 0;
-            } else if rhs < OldDuration::nanoseconds(-i64::from(frac)) {
-                rhs += OldDuration::nanoseconds(i64::from(frac));
-                frac = 0;
             } else {
-                frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
-                debug_assert!(frac < 2_000_000_000);
-                return (NaiveTime { secs, frac }, 0);
+                return (NaiveTime { secs: self.secs, frac: (frac + frac_to_add) as u32 }, 0);
             }
         }
-        debug_assert!(secs <= 86_400);
-        debug_assert!(frac < 1_000_000_000);
 
-        let rhssecs = rhs.num_seconds();
-        let rhsfrac = (rhs - OldDuration::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert_eq!(OldDuration::seconds(rhssecs) + OldDuration::nanoseconds(rhsfrac), rhs);
-        let rhssecsinday = rhssecs % 86_400;
-        let mut morerhssecs = rhssecs - rhssecsinday;
-        let rhssecs = rhssecsinday as i32;
-        let rhsfrac = rhsfrac as i32;
-        debug_assert!(-86_400 < rhssecs && rhssecs < 86_400);
-        debug_assert_eq!(morerhssecs % 86_400, 0);
-        debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
-
-        let mut secs = secs as i32 + rhssecs;
-        let mut frac = frac as i32 + rhsfrac;
-        debug_assert!(-86_400 < secs && secs < 2 * 86_400);
-        debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
+        let mut secs = secs + secs_to_add;
+        frac += frac_to_add;
 
         if frac < 0 {
             frac += 1_000_000_000;
@@ -630,19 +614,10 @@ impl NaiveTime {
             frac -= 1_000_000_000;
             secs += 1;
         }
-        debug_assert!((-86_400..2 * 86_400).contains(&secs));
-        debug_assert!((0..1_000_000_000).contains(&frac));
 
-        if secs < 0 {
-            secs += 86_400;
-            morerhssecs -= 86_400;
-        } else if secs >= 86_400 {
-            secs -= 86_400;
-            morerhssecs += 86_400;
-        }
-        debug_assert!((0..86_400).contains(&secs));
-
-        (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
+        let secs_in_day = secs.rem_euclid(86_400);
+        let remaining = secs - secs_in_day;
+        (NaiveTime { secs: secs_in_day as u32, frac: frac as u32 }, remaining)
     }
 
     /// Subtracts given `Duration` from the current time, and also returns the number of *seconds*
