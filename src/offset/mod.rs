@@ -241,7 +241,8 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap microseconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// #Example
+    /// # Example
+    ///
     /// ```
     /// use chrono::{Utc, TimeZone};
     ///
