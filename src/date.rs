@@ -479,7 +479,7 @@ impl<Tz: TimeZone> Eq for Date<Tz> {}
 
 impl<Tz: TimeZone> PartialOrd for Date<Tz> {
     fn partial_cmp(&self, other: &Date<Tz>) -> Option<Ordering> {
-        self.date.partial_cmp(&other.date)
+        Some(self.cmp(other))
     }
 }
 
