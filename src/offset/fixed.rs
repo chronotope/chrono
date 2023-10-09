@@ -21,7 +21,12 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 /// [`west_opt`](#method.west_opt) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-#[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug)))]
+#[cfg_attr(
+    feature = "rkyv",
+    archive(compare(PartialEq)),
+    archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug))
+)]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
