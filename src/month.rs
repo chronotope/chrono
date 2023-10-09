@@ -419,4 +419,12 @@ mod tests {
             from_str::<Month>(string).unwrap_err();
         }
     }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let month = Month::January;
+        let bytes = rkyv::to_bytes::<_, 1>(&month).unwrap();
+        assert_eq!(rkyv::from_bytes::<Month>(&bytes).unwrap(), month);
+    }
 }

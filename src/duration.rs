@@ -797,4 +797,12 @@ mod tests {
             Err(OutOfRangeError(()))
         );
     }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let duration = Duration::seconds(1);
+        let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
+        assert_eq!(rkyv::from_bytes::<Duration>(&bytes).unwrap(), duration);
+    }
 }

@@ -3326,6 +3326,18 @@ mod tests {
         }
     }
 
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let date_min = NaiveDate::MIN;
+        let bytes = rkyv::to_bytes::<_, 4>(&date_min).unwrap();
+        assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_min);
+
+        let date_max = NaiveDate::MAX;
+        let bytes = rkyv::to_bytes::<_, 4>(&date_max).unwrap();
+        assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_max);
+    }
+
     //   MAX_YEAR-12-31 minus 0000-01-01
     // = (MAX_YEAR-12-31 minus 0000-12-31) + (0000-12-31 - 0000-01-01)
     // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365

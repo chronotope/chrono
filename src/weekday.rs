@@ -386,4 +386,13 @@ mod tests {
             from_str::<Weekday>(str).unwrap_err();
         }
     }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let mon = Weekday::Mon;
+        let bytes = rkyv::to_bytes::<_, 1>(&mon).unwrap();
+
+        assert_eq!(rkyv::from_bytes::<Weekday>(&bytes).unwrap(), mon);
+    }
 }
