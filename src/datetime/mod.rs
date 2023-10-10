@@ -51,6 +51,8 @@ mod tests;
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
+#[cfg_attr(feature = "rkyv", archive(compare(PartialEq, PartialOrd)))]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
@@ -1501,6 +1503,31 @@ impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.overflowing_naive_local().fmt(f)?;
         self.offset.fmt(f)
+    }
+}
+
+// `fmt::Debug` is hand implemented for the `rkyv::Archive` variant of `DateTime` because
+// deriving a trait recursively does not propagate trait defined associated types with their own
+// constraints:
+// In our case `<<Tz as offset::TimeZone>::Offset as Archive>::Archived`
+// cannot be formatted using `{:?}` because it doesn't implement `Debug`.
+// See below for further discussion:
+// * https://github.com/rust-lang/rust/issues/26925
+// * https://github.com/rkyv/rkyv/issues/333
+// * https://github.com/dtolnay/syn/issues/370
+#[cfg(feature = "rkyv-validation")]
+impl<Tz: TimeZone> fmt::Debug for ArchivedDateTime<Tz>
+where
+    Tz: Archive,
+    <Tz as Archive>::Archived: fmt::Debug,
+    <<Tz as TimeZone>::Offset as Archive>::Archived: fmt::Debug,
+    <Tz as TimeZone>::Offset: fmt::Debug + Archive,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("ArchivedDateTime")
+            .field("datetime", &self.datetime)
+            .field("offset", &self.offset)
+            .finish()
     }
 }
 

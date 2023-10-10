@@ -21,7 +21,12 @@ use crate::naive::{NaiveDate, NaiveDateTime};
 /// [`west_opt`](#method.west_opt) methods for examples.
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-#[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug)))]
+#[cfg_attr(
+    feature = "rkyv",
+    archive(compare(PartialEq)),
+    archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug))
+)]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }
@@ -221,5 +226,13 @@ mod tests {
         assert_eq!(offset.local_minus_utc, -8 * 3600);
         let offset = FixedOffset::from_str("+06:30").unwrap();
         assert_eq!(offset.local_minus_utc, (6 * 3600) + 1800);
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let offset = FixedOffset::from_str("-0500").unwrap();
+        let bytes = rkyv::to_bytes::<_, 4>(&offset).unwrap();
+        assert_eq!(rkyv::from_bytes::<FixedOffset>(&bytes).unwrap(), offset);
     }
 }

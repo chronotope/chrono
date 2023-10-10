@@ -192,8 +192,10 @@ impl Days {
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(
     feature = "rkyv",
+    archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
@@ -3322,6 +3324,18 @@ mod tests {
             assert_eq!(date.leap_year(), is_leap);
             assert_eq!(date.leap_year(), date.with_ordinal(366).is_some());
         }
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let date_min = NaiveDate::MIN;
+        let bytes = rkyv::to_bytes::<_, 4>(&date_min).unwrap();
+        assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_min);
+
+        let date_max = NaiveDate::MAX;
+        let bytes = rkyv::to_bytes::<_, 4>(&date_max).unwrap();
+        assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_max);
     }
 
     //   MAX_YEAR-12-31 minus 0000-01-01

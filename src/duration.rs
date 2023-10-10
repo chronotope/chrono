@@ -54,8 +54,10 @@ macro_rules! try_opt {
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(
     feature = "rkyv",
+    archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct Duration {
     secs: i64,
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
@@ -794,5 +796,13 @@ mod tests {
             Duration::from_std(StdDuration::new(9_223_372_036_854_775, 807_000_001)),
             Err(OutOfRangeError(()))
         );
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let duration = Duration::seconds(1);
+        let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
+        assert_eq!(rkyv::from_bytes::<Duration>(&bytes).unwrap(), duration);
     }
 }
