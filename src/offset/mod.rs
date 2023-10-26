@@ -469,7 +469,14 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// See also [`DateTime::parse_from_str`] which gives a [`DateTime`] with
     /// parsed [`FixedOffset`].
-    #[deprecated(since = "0.4.29", note = "use `DateTime::parse_from_str` instead")]
+    ///
+    /// See also [`NaiveDateTime::parse_from_str`] which gives a [`NaiveDateTime`] without
+    /// an offset, but can be converted to a [`DateTime`] with [`NaiveDateTime::and_utc`] or
+    /// [`NaiveDateTime::and_local_timezone`].
+    #[deprecated(
+        since = "0.4.29",
+        note = "use `DateTime::parse_from_str` or `NaiveDateTime::parse_from_str` with `and_utc()` or `and_local_timezone()` instead"
+    )]
     fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
