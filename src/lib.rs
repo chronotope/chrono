@@ -108,21 +108,28 @@
 //! or in the local time zone
 //! ([`Local::now()`](./offset/struct.Local.html#method.now)).
 //!
+#![cfg_attr(not(feature = "now"), doc = "```ignore")]
+#![cfg_attr(feature = "now", doc = "```rust")]
+//! use chrono::prelude::*;
+//!
+//! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
+//! # let _ = utc;
+//! ```
+//!
 #![cfg_attr(not(feature = "clock"), doc = "```ignore")]
 #![cfg_attr(feature = "clock", doc = "```rust")]
 //! use chrono::prelude::*;
 //!
-//! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 //! let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
-//! # let _ = utc; let _ = local;
+//! # let _ = local;
 //! ```
 //!
 //! Alternatively, you can create your own date and time.
 //! This is a bit verbose due to Rust's lack of function and method overloading,
 //! but in turn we get a rich combination of initialization methods.
 //!
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-#![cfg_attr(feature = "std", doc = "```rust")]
+#![cfg_attr(not(feature = "now"), doc = "```ignore")]
+#![cfg_attr(feature = "now", doc = "```rust")]
 //! use chrono::prelude::*;
 //! use chrono::offset::LocalResult;
 //!
@@ -146,12 +153,14 @@
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::None);
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::None);
 //!
+//! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
 //! let local_dt = Local.from_local_datetime(&NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap()).unwrap();
 //! let fixed_dt = FixedOffset::east_opt(9 * 3600).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(18, 10, 11, 12).unwrap()).unwrap();
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
+//! # }
 //! # Some(())
 //! # }
 //! # doctest().unwrap();
