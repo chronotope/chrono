@@ -53,7 +53,8 @@ Default features:
 * `alloc`: Enable features that depend on allocation (primarily string formatting)
 * `std`: Enables functionality that depends on the standard library. This is a superset of `alloc`
   and adds interoperation with standard library types and traits.
-* `clock`: Enables reading the system time (`now`) and local timezone (`Local`).
+* `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
+* `now`: Enables reading the system time (`now`)
 * `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 
 Optional features:

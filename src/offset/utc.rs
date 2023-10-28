@@ -5,7 +5,7 @@
 
 use core::fmt;
 #[cfg(all(
-    feature = "clock",
+    feature = "now",
     not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
@@ -19,7 +19,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
-#[cfg(feature = "clock")]
+#[cfg(feature = "now")]
 #[allow(deprecated)]
 use crate::{Date, DateTime};
 
@@ -51,7 +51,7 @@ use crate::{Date, DateTime};
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Utc;
 
-#[cfg(feature = "clock")]
+#[cfg(feature = "now")]
 impl Utc {
     /// Returns a `Date` which corresponds to the current date.
     #[deprecated(
