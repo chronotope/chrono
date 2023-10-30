@@ -19,7 +19,7 @@ jobs:
       - run: cargo test --all-features --color=always -- --color=always
 
   # later this may be able to be included with the below
-  # kept separate for now as the following don't compile on 1.57
+  # kept separate for now as the following don't compile on 1.60
   # * arbitrary (requires 1.63 as of v1.3.0)
   rust_msrv:
     strategy:
@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.57
+          toolchain: "1.61.0"
       - uses: Swatinem/rust-cache@v2
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere
