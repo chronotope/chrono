@@ -34,7 +34,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.MSRV }}
-      - run: rustup override set ${{ env.MSRV }}
+      #- run: rustup override set ${{ env.MSRV }}
       - uses: Swatinem/rust-cache@v2
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere
