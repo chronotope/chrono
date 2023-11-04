@@ -5,6 +5,9 @@ on:
     branches: [main, 0.4.x]
   pull_request:
 
+env:
+  MSRV: "1.57.0"
+
 jobs:
   timezones:
     strategy:
@@ -30,16 +33,21 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.57
+          toolchain: ${{ env.MSRV }}
+      - run: rustup override set ${{ env.MSRV }}
       - uses: Swatinem/rust-cache@v2
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere
       - run: |
+          set -eux
+          cargo --version
           cargo test --lib \
             --features \
             unstable-locales,wasmbind,oldtime,clock,rustc-serialize,winapi,serde \
             --color=always -- --color=always
       - run: |
+          set -eux
+          cargo --version
           cargo test --doc \
             --features \
             unstable-locales,wasmbind,oldtime,clock,rustc-serialize,winapi,serde \
