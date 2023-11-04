@@ -232,6 +232,20 @@ impl Duration {
         }
     }
 
+    /// Returns the number of microseconds such that
+    /// `subsec_micros() + num_seconds() * MICROS_PER_SEC` is the total number of
+    /// microseconds in the duration.
+    pub const fn subsec_micros(&self) -> i32 {
+        self.subsec_nanos() / NANOS_PER_MICRO
+    }
+
+    /// Returns the number of milliseconds such that
+    /// `subsec_millis() + num_seconds() * MILLIS_PER_SEC` is the total number of
+    /// milliseconds in the duration.
+    pub const fn subsec_millis(&self) -> i32 {
+        self.subsec_nanos() / NANOS_PER_MILLI
+    }
+
     /// Returns the total number of whole milliseconds in the duration,
     pub const fn num_milliseconds(&self) -> i64 {
         // A proper Duration will not overflow, because MIN and MAX are defined
@@ -645,6 +659,33 @@ mod tests {
         );
         assert_eq!(Duration::days(i64::MAX / NANOS_PER_DAY + 1).num_nanoseconds(), None);
         assert_eq!(Duration::days(-i64::MAX / NANOS_PER_DAY - 1).num_nanoseconds(), None);
+    }
+
+    #[test]
+    fn test_duration_subsec_nanos() {
+        assert_eq!(Duration::zero().subsec_nanos(), 0);
+        assert_eq!(Duration::nanoseconds(1).subsec_nanos(), 1);
+        assert_eq!(Duration::nanoseconds(-1).subsec_nanos(), -1);
+        assert_eq!(Duration::seconds(1).subsec_nanos(), 0);
+        assert_eq!(Duration::nanoseconds(1_000_000_001).subsec_nanos(), 1);
+    }
+
+    #[test]
+    fn test_duration_subsec_micros() {
+        assert_eq!(Duration::zero().subsec_micros(), 0);
+        assert_eq!(Duration::microseconds(1).subsec_micros(), 1);
+        assert_eq!(Duration::microseconds(-1).subsec_micros(), -1);
+        assert_eq!(Duration::seconds(1).subsec_micros(), 0);
+        assert_eq!(Duration::microseconds(1_000_001).subsec_micros(), 1);
+    }
+
+    #[test]
+    fn test_duration_subsec_millis() {
+        assert_eq!(Duration::zero().subsec_millis(), 0);
+        assert_eq!(Duration::milliseconds(1).subsec_millis(), 1);
+        assert_eq!(Duration::milliseconds(-1).subsec_millis(), -1);
+        assert_eq!(Duration::seconds(1).subsec_millis(), 0);
+        assert_eq!(Duration::milliseconds(1_000_001).subsec_millis(), 1);
     }
 
     #[test]
