@@ -120,8 +120,6 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
-        with:
-          node-version: "12"
       - run: cargo build --target ${{ matrix.target }}  --color=always
 
   test_wasm:
