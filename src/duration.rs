@@ -221,7 +221,9 @@ impl Duration {
         }
     }
 
-    /// Returns the number of nanoseconds such that
+    /// Returns the number of nanoseconds in the fractional part of the duration.
+    ///
+    /// This is the number of nanoseconds such that
     /// `subsec_nanos() + num_seconds() * NANOS_PER_SEC` is the total number of
     /// nanoseconds in the duration.
     pub const fn subsec_nanos(&self) -> i32 {
@@ -232,14 +234,18 @@ impl Duration {
         }
     }
 
-    /// Returns the number of microseconds such that
+    /// Returns the number of microseconds in the fractional part of the duration.
+    ///
+    /// This is the number of microseconds such that
     /// `subsec_micros() + num_seconds() * MICROS_PER_SEC` is the total number of
     /// microseconds in the duration.
     pub const fn subsec_micros(&self) -> i32 {
         self.subsec_nanos() / NANOS_PER_MICRO
     }
 
-    /// Returns the number of milliseconds such that
+    /// Returns the number of milliseconds in the fractional part of the duration.
+    ///
+    /// This is the number of milliseconds such that
     /// `subsec_millis() + num_seconds() * MILLIS_PER_SEC` is the total number of
     /// milliseconds in the duration.
     pub const fn subsec_millis(&self) -> i32 {
