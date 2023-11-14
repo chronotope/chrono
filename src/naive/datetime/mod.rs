@@ -197,6 +197,39 @@ impl NaiveDateTime {
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
+    /// Creates a new [NaiveDateTime] from nanoseconds since the UNIX epoch.
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the number of nanoseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDateTime;
+    /// let timestamp_nanos: i64 = 1662921288_000_000_000; //Sunday, September 11, 2022 6:34:48 PM
+    /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_nanos: i64 = -2208936075_000_000_000; //Mon Jan 01 1900 14:38:45 GMT+0000
+    /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
+        let secs = nanos.div_euclid(1_000_000_000);
+        let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
+        
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+    }
+
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
     /// from the number of non-leap seconds
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
