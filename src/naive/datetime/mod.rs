@@ -226,7 +226,7 @@ impl NaiveDateTime {
     pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
         let secs = nanos.div_euclid(1_000_000_000);
         let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
-        
+
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 

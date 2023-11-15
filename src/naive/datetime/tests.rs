@@ -105,17 +105,18 @@ fn test_datetime_from_timestamp_nanos() {
     let maximum = "2262-04-11T23:47:16.854775804";
     let parsed: NaiveDateTime = maximum.parse().unwrap();
     let nanos = parsed.timestamp_nanos_opt().unwrap();
-    let max_date_time_nanos = NaiveDateTime::from_timestamp_nanos(nanos).unwrap();
-    let max_date_time_opt = NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap();
-    assert_eq!(max_date_time_opt, max_date_time_nanos);
-    
+    assert_eq!(
+        NaiveDateTime::from_timestamp_nanos(nanos).unwrap(),
+        NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
     // Minimum datetime in nanoseconds
     let minimum = "1677-09-21T00:12:44.000000000";
     let parsed: NaiveDateTime = minimum.parse().unwrap();
     let nanos = parsed.timestamp_nanos_opt().unwrap();
-    let min_date_time_opt = NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap();
-    let min_date_time_nanos = NaiveDateTime::from_timestamp_nanos(nanos).unwrap();
-    assert_eq!(min_date_time_opt, min_date_time_nanos);
+    assert_eq!(
+        NaiveDateTime::from_timestamp_nanos(nanos).unwrap(),
+        NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
 
     // Test that the result of `from_timestamp_nanos` compares equal to
     // that of `from_timestamp_opt`.
