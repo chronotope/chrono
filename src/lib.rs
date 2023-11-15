@@ -585,6 +585,25 @@ pub mod rkyv {
     pub use crate::weekday::ArchivedWeekday;
 }
 
+/// The number of nanoseconds in a microsecond.
+pub const NANOS_PER_MICRO: i32 = 1000;
+/// The number of nanoseconds in a millisecond.
+pub const NANOS_PER_MILLI: i32 = 1_000_000;
+/// The number of nanoseconds in a second.
+pub const NANOS_PER_SEC: i32 = 1_000_000_000;
+/// The number of microseconds in a second.
+pub const MICROS_PER_SEC: i64 = 1_000_000;
+/// The number of milliseconds in a second.
+pub const MILLIS_PER_SEC: i64 = 1000;
+/// The number of seconds in a minute.
+pub const SECS_PER_MINUTE: i64 = 60;
+/// The number of seconds in an hour.
+pub const SECS_PER_HOUR: i64 = 3600;
+/// The number of (non-leap) seconds in a day.
+pub const SECS_PER_DAY: i64 = 86_400;
+/// The number of (non-leap) seconds in a week.
+pub const SECS_PER_WEEK: i64 = 604_800;
+
 /// Out of range error type used in various converting APIs
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct OutOfRange {

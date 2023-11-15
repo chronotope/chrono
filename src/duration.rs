@@ -19,24 +19,10 @@ use std::error::Error;
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-/// The number of nanoseconds in a microsecond.
-const NANOS_PER_MICRO: i32 = 1000;
-/// The number of nanoseconds in a millisecond.
-const NANOS_PER_MILLI: i32 = 1_000_000;
-/// The number of nanoseconds in seconds.
-const NANOS_PER_SEC: i32 = 1_000_000_000;
-/// The number of microseconds per second.
-const MICROS_PER_SEC: i64 = 1_000_000;
-/// The number of milliseconds per second.
-const MILLIS_PER_SEC: i64 = 1000;
-/// The number of seconds in a minute.
-const SECS_PER_MINUTE: i64 = 60;
-/// The number of seconds in an hour.
-const SECS_PER_HOUR: i64 = 3600;
-/// The number of (non-leap) seconds in days.
-const SECS_PER_DAY: i64 = 86_400;
-/// The number of (non-leap) seconds in a week.
-const SECS_PER_WEEK: i64 = 604_800;
+use crate::{
+    MICROS_PER_SEC, MILLIS_PER_SEC, NANOS_PER_MICRO, NANOS_PER_MILLI, NANOS_PER_SEC, SECS_PER_DAY,
+    SECS_PER_HOUR, SECS_PER_MINUTE, SECS_PER_WEEK,
+};
 
 macro_rules! try_opt {
     ($e:expr) => {
