@@ -412,6 +412,7 @@ fn signed_duration_since_autoref() {
     let dt1 = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     let dt2 = Utc.with_ymd_and_hms(2014, 3, 4, 5, 6, 7).unwrap();
     let diff1 = dt1.signed_duration_since(dt2); // Copy/consume
+    #[allow(clippy::needless_borrows_for_generic_args)]
     let diff2 = dt2.signed_duration_since(&dt1); // Take by reference
     assert_eq!(diff1, -diff2);
 
