@@ -13,7 +13,7 @@ use core::{fmt, str};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::duration::Duration as OldDuration;
+use crate::duration::{Duration as OldDuration, NANOS_PER_SEC};
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -224,8 +224,8 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
-        let secs = nanos.div_euclid(1_000_000_000);
-        let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
+        let secs = nanos.div_euclid(NANOS_PER_SEC as i64);
+        let nsecs = nanos.rem_euclid(NANOS_PER_SEC as i64) as u32;
 
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
