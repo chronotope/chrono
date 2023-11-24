@@ -13,7 +13,7 @@ use core::{fmt, str};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::duration::Duration as OldDuration;
+use crate::duration::{Duration as OldDuration, NANOS_PER_SEC};
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
@@ -194,6 +194,39 @@ impl NaiveDateTime {
     pub const fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
         let secs = micros.div_euclid(1_000_000);
         let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+    }
+
+    /// Creates a new [NaiveDateTime] from nanoseconds since the UNIX epoch.
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the number of nanoseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDateTime;
+    /// let timestamp_nanos: i64 = 1662921288_000_000_000; //Sunday, September 11, 2022 6:34:48 PM
+    /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_nanos: i64 = -2208936075_000_000_000; //Mon Jan 01 1900 14:38:45 GMT+0000
+    /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
+        let secs = nanos.div_euclid(NANOS_PER_SEC as i64);
+        let nsecs = nanos.rem_euclid(NANOS_PER_SEC as i64) as u32;
+
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
