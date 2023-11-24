@@ -104,6 +104,7 @@ mod tz_info;
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, Debug)))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(feature = "borsh", derive(borsh::BorshDeserialize, borsh::BorshSerialize))]
 pub struct Local;
 
 impl Local {

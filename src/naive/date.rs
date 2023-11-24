@@ -195,6 +195,7 @@ impl Days {
     feature = "rkyv",
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "borsh", derive(borsh::BorshDeserialize, borsh::BorshSerialize))]
 pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }

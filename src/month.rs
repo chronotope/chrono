@@ -35,6 +35,11 @@ use crate::OutOfRange;
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+#[cfg_attr(
+    feature = "borsh",
+    derive(borsh::BorshDeserialize, borsh::BorshSerialize),
+    borsh(use_discriminant = true)
+)]
 pub enum Month {
     /// January
     January = 0,

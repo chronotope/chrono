@@ -22,6 +22,7 @@ use crate::{NaiveDateTime, ParseError};
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 #[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, PartialEq, Eq, Hash, Debug)))]
+#[cfg_attr(feature = "borsh", derive(borsh::BorshDeserialize, borsh::BorshSerialize))]
 pub struct FixedOffset {
     local_minus_utc: i32,
 }

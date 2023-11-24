@@ -204,6 +204,7 @@ mod tests;
     feature = "rkyv",
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "borsh", derive(borsh::BorshDeserialize, borsh::BorshSerialize))]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
