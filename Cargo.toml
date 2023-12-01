@@ -17,6 +17,7 @@ rust-version = "1.61.0"
 name = "chrono"
 
 [features]
+# Don't forget to adjust `ALL_NON_EXCLUSIVE_FEATURES` in CI scripts when adding a feature or an optional dependency.
 default = ["clock", "std", "oldtime", "wasmbind"]
 alloc = []
 libc = []
@@ -27,7 +28,12 @@ now = ["std"]
 oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales"]
-rkyv-validation = ["rkyv/validation"]
+# Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
+rkyv-16 = ["rkyv", "rkyv?/size_16"]
+rkyv-32 = ["rkyv", "rkyv?/size_32"]
+rkyv-64 = ["rkyv", "rkyv?/size_64"]
+rkyv-validation = ["rkyv?/validation"]
+# Features for internal use only:
 __internal_bench = []
 
 [dependencies]
@@ -35,7 +41,7 @@ num-traits = { version = "0.2", default-features = false }
 rustc-serialize = { version = "0.3.20", optional = true }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.7", optional = true }
-rkyv = { version = "0.7.41", optional = true }
+rkyv = { version = "0.7.43", optional = true, default-features = false }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
