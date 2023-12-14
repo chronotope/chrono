@@ -32,7 +32,7 @@ unstable-locales = ["pure-rust-locales"]
 rkyv-16 = ["rkyv", "rkyv?/size_16"]
 rkyv-32 = ["rkyv", "rkyv?/size_32"]
 rkyv-64 = ["rkyv", "rkyv?/size_64"]
-rkyv-validation = ["rkyv?/validation"]
+rkyv-validation = ["rkyv", "rkyv?/validation"]
 # Features for internal use only:
 __internal_bench = []
 
