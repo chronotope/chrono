@@ -39,6 +39,7 @@ jobs:
     container:
       image: tamasfe/taplo:0.8.0
     steps:
+      - uses: actions/checkout@v4
       - run: taplo lint
       - run: taplo fmt --check --diff
 
