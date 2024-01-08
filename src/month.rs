@@ -227,6 +227,18 @@ impl Months {
     pub const fn new(num: u32) -> Self {
         Self(num)
     }
+
+    /// Returns the total number of months in the `Months` instance.
+    #[inline]
+    pub const fn num_months(&self) -> u32 {
+        self.0
+    }
+
+    /// Returns the total number of whole years in the `Months` instance.
+    #[inline]
+    pub const fn num_years(&self) -> u32 {
+        self.0 / 12
+    }
 }
 
 /// An error resulting from reading `<Month>` value with `FromStr`.
@@ -298,7 +310,7 @@ mod month_serde {
 #[cfg(test)]
 mod tests {
     use super::Month;
-    use crate::{Datelike, OutOfRange, TimeZone, Utc};
+    use crate::{Datelike, Months, OutOfRange, TimeZone, Utc};
 
     #[test]
     fn test_month_enum_try_from() {
@@ -351,6 +363,24 @@ mod tests {
         assert!(Month::January < Month::December);
         assert!(Month::July >= Month::May);
         assert!(Month::September > Month::March);
+    }
+
+    #[test]
+    fn test_months_num_months() {
+        assert_eq!(Months::new(0).num_months(), 0);
+        assert_eq!(Months::new(1).num_months(), 1);
+        assert_eq!(Months::new(u32::MAX).num_months(), u32::MAX);
+    }
+
+    #[test]
+    fn test_months_num_years() {
+        assert_eq!(Months::new(0).num_years(), 0);
+        assert_eq!(Months::new(1).num_years(), 0);
+        assert_eq!(Months::new(11).num_years(), 0);
+        assert_eq!(Months::new(12).num_years(), 1);
+        assert_eq!(Months::new(23).num_years(), 1);
+        assert_eq!(Months::new(24).num_years(), 2);
+        assert_eq!(Months::new(u32::MAX).num_years(), u32::MAX / 12);
     }
 
     #[test]
