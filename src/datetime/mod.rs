@@ -624,34 +624,6 @@ impl DateTime<Utc> {
         NaiveDateTime::from_timestamp_opt(secs, nsecs).as_ref().map(NaiveDateTime::and_utc)
     }
 
-    /// Makes a new [`DateTime<Utc>`] from the number of non-leap microseconds
-    /// since January 1, 1970 0:00:00.000000 UTC (aka "UNIX timestamp").
-    ///
-    /// This is guaranteed to round-trip with regard to [`timestamp_micros`](DateTime::timestamp_micros).
-    ///
-    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_micros`] or [`DateTime::with_timezone`].
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` on out-of-range number of microseconds, otherwise returns `Some(DateTime {...})`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{DateTime, Utc};
-    ///
-    /// let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_micros(947638923000004).expect("invalid timestamp");
-    ///
-    /// assert_eq!(dt.to_string(), "2000-01-12 01:02:03.000004 UTC");
-    /// assert_eq!(DateTime::from_timestamp_micros(dt.timestamp_micros()).unwrap(), dt);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn from_timestamp_micros(micros: i64) -> Option<Self> {
-        NaiveDateTime::from_timestamp_micros(micros).as_ref().map(NaiveDateTime::and_utc)
-    }
-
     /// Makes a new [`DateTime<Utc>`] from the number of non-leap milliseconds
     /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
     ///

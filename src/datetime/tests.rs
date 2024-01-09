@@ -1254,18 +1254,6 @@ fn test_datetime_from_local() {
 }
 
 #[test]
-fn test_datetime_from_timestamp_micros() {
-    // 2000-01-12 01:02:03.000004Z
-    let naive_dt =
-        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_micro_opt(1, 2, 3, 4).unwrap();
-    let datetime_utc = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
-    assert_eq!(
-        datetime_utc,
-        DateTime::<Utc>::from_timestamp_micros(datetime_utc.timestamp_micros()).unwrap()
-    );
-}
-
-#[test]
 fn test_datetime_from_timestamp_millis() {
     // 2000-01-12T01:02:03:004Z
     let naive_dt =
