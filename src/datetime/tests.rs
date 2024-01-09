@@ -1254,6 +1254,18 @@ fn test_datetime_from_local() {
 }
 
 #[test]
+fn test_datetime_from_timestamp_millis() {
+    // 2000-01-12T01:02:03:004Z
+    let naive_dt =
+        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_milli_opt(1, 2, 3, 4).unwrap();
+    let datetime_utc = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
+    assert_eq!(
+        datetime_utc,
+        DateTime::<Utc>::from_timestamp_millis(datetime_utc.timestamp_millis()).unwrap()
+    );
+}
+
+#[test]
 #[cfg(feature = "clock")]
 fn test_years_elapsed() {
     const WEEKS_PER_YEAR: f32 = 52.1775;

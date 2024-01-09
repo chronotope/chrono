@@ -624,6 +624,34 @@ impl DateTime<Utc> {
         NaiveDateTime::from_timestamp_opt(secs, nsecs).as_ref().map(NaiveDateTime::and_utc)
     }
 
+    /// Makes a new [`DateTime<Utc>`] from the number of non-leap milliseconds
+    /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
+    ///
+    /// This is guaranteed to round-trip with regard to [`timestamp_millis`](DateTime::timestamp_millis).
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_millis_opt`] or [`DateTime::with_timezone`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` on out-of-range number of milliseconds, otherwise returns `Some(DateTime {...})`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{DateTime, Utc};
+    ///
+    /// let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_millis(947638923004).expect("invalid timestamp");
+    ///
+    /// assert_eq!(dt.to_string(), "2000-01-12 01:02:03.004 UTC");
+    /// assert_eq!(DateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap(), dt);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn from_timestamp_millis(millis: i64) -> Option<Self> {
+        NaiveDateTime::from_timestamp_millis(millis).as_ref().map(NaiveDateTime::and_utc)
+    }
+
     // FIXME: remove when our MSRV is 1.61+
     // This method is used by `NaiveDateTime::and_utc` because `DateTime::from_naive_utc_and_offset`
     // can't be made const yet.
