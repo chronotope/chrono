@@ -230,14 +230,8 @@ impl Months {
 
     /// Returns the total number of months in the `Months` instance.
     #[inline]
-    pub const fn num_months(&self) -> u32 {
+    pub const fn as_u32(&self) -> u32 {
         self.0
-    }
-
-    /// Returns the total number of whole years in the `Months` instance.
-    #[inline]
-    pub const fn num_years(&self) -> u32 {
-        self.0 / 12
     }
 }
 
@@ -366,21 +360,10 @@ mod tests {
     }
 
     #[test]
-    fn test_months_num_months() {
-        assert_eq!(Months::new(0).num_months(), 0);
-        assert_eq!(Months::new(1).num_months(), 1);
-        assert_eq!(Months::new(u32::MAX).num_months(), u32::MAX);
-    }
-
-    #[test]
-    fn test_months_num_years() {
-        assert_eq!(Months::new(0).num_years(), 0);
-        assert_eq!(Months::new(1).num_years(), 0);
-        assert_eq!(Months::new(11).num_years(), 0);
-        assert_eq!(Months::new(12).num_years(), 1);
-        assert_eq!(Months::new(23).num_years(), 1);
-        assert_eq!(Months::new(24).num_years(), 2);
-        assert_eq!(Months::new(u32::MAX).num_years(), u32::MAX / 12);
+    fn test_months_as_u32() {
+        assert_eq!(Months::new(0).as_u32(), 0);
+        assert_eq!(Months::new(1).as_u32(), 1);
+        assert_eq!(Months::new(u32::MAX).as_u32(), u32::MAX);
     }
 
     #[test]
