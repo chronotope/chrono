@@ -1,6 +1,7 @@
 --out src/offset/local/win_bindings.rs
 --config flatten sys
 --filter
+    Windows.Win32.Foundation.ERROR_INVALID_PARAMETER
     Windows.Win32.System.Time.SystemTimeToFileTime
     Windows.Win32.System.Time.SystemTimeToTzSpecificLocalTime
     Windows.Win32.System.Time.TzSpecificLocalTimeToSystemTime

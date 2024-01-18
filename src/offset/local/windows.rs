@@ -15,7 +15,7 @@ use std::result::Result;
 
 use super::win_bindings::{
     SystemTimeToFileTime, SystemTimeToTzSpecificLocalTime, TzSpecificLocalTimeToSystemTime,
-    FILETIME, SYSTEMTIME,
+    ERROR_INVALID_PARAMETER, FILETIME, SYSTEMTIME,
 };
 
 use super::FixedOffset;
@@ -61,8 +61,28 @@ pub(super) fn offset(d: &NaiveDateTime, local: bool) -> LocalResult<FixedOffset>
     LocalResult::None
 }
 
-fn from_utc_time(utc_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
-    let local_time = utc_to_local_time(&utc_time)?;
+fn from_utc_time(mut utc_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
+    let local_time = match utc_to_local_time(&utc_time) {
+        Ok(time) => time,
+        // Workaround for #1364
+        // If converting to local time fails with `ERROR_INVALID_PARAMETER`
+        // and the date is 1601-01-01 then try again with the year set to 1602.
+        // This is usually a bad idea as offsets can be different depending on the year.
+        // However, 1601 is long enough ago that dynamic timezones aren't an issue
+        // and timezone offsets are much less than a year.
+        Err(e) => {
+            if e.raw_os_error() == Some(ERROR_INVALID_PARAMETER as i32)
+                && utc_time.wYear == 1601
+                && utc_time.wMonth == 1
+                && utc_time.wDay == 1
+            {
+                utc_time.wYear = 1602;
+                return from_utc_time(utc_time);
+            } else {
+                return Err(e);
+            }
+        }
+    };
     let utc_secs = system_time_as_unix_seconds(&utc_time)?;
     let local_secs = system_time_as_unix_seconds(&local_time)?;
     let offset = (local_secs - utc_secs) as i32;

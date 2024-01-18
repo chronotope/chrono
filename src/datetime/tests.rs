@@ -1267,6 +1267,17 @@ fn test_datetime_from_timestamp_millis() {
 
 #[test]
 #[cfg(feature = "clock")]
+fn test_datetime_before_windows_api_limits() {
+    // dt corresponds to `FILETIME = 147221225472` from issue 651.
+    // This used to fail on Windows for timezones with an offset of -5:00 or greater.
+    // The API limits years to 1601..=30827.
+    let dt = NaiveDate::from_ymd_opt(1601, 1, 1).unwrap().and_hms_milli_opt(4, 5, 22, 122).unwrap();
+    let local_dt = Local.from_utc_datetime(&dt);
+    dbg!(local_dt);
+}
+
+#[test]
+#[cfg(feature = "clock")]
 fn test_years_elapsed() {
     const WEEKS_PER_YEAR: f32 = 52.1775;
 

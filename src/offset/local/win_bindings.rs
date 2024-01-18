@@ -5,6 +5,7 @@
 ::windows_targets::link!("kernel32.dll" "system" fn SystemTimeToTzSpecificLocalTime(lptimezoneinformation : *const TIME_ZONE_INFORMATION, lpuniversaltime : *const SYSTEMTIME, lplocaltime : *mut SYSTEMTIME) -> BOOL);
 ::windows_targets::link!("kernel32.dll" "system" fn TzSpecificLocalTimeToSystemTime(lptimezoneinformation : *const TIME_ZONE_INFORMATION, lplocaltime : *const SYSTEMTIME, lpuniversaltime : *mut SYSTEMTIME) -> BOOL);
 pub type BOOL = i32;
+pub const ERROR_INVALID_PARAMETER: WIN32_ERROR = 87u32;
 #[repr(C)]
 pub struct FILETIME {
     pub dwLowDateTime: u32,
@@ -49,3 +50,4 @@ impl ::core::clone::Clone for TIME_ZONE_INFORMATION {
         *self
     }
 }
+pub type WIN32_ERROR = u32;
