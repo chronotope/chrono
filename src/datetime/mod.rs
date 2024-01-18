@@ -1045,7 +1045,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
         map_local(self, |datetime| datetime.with_month0(month0))
     }
 
-    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    /// Makes a new `DateTime` with the day of month (starting from 1) changed.
     ///
     /// See also the [`NaiveDate::with_day`] method.
     ///
@@ -1061,7 +1061,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
         map_local(self, |datetime| datetime.with_day(day))
     }
 
-    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    /// Makes a new `DateTime` with the day of month (starting from 0) changed.
     ///
     /// See also the [`NaiveDate::with_day0`] method.
     ///
@@ -1077,7 +1077,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
         map_local(self, |datetime| datetime.with_day0(day0))
     }
 
-    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    /// Makes a new `DateTime` with the day of year (starting from 1) changed.
     ///
     /// See also the [`NaiveDate::with_ordinal`] method.
     ///
@@ -1093,7 +1093,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
         map_local(self, |datetime| datetime.with_ordinal(ordinal))
     }
 
-    /// Makes a new `DateTime` with the month number (starting from 0) changed.
+    /// Makes a new `DateTime` with the day of year (starting from 0) changed.
     ///
     /// See also the [`NaiveDate::with_ordinal0`] method.
     ///
