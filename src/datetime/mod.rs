@@ -31,7 +31,7 @@ use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::Date;
 use crate::{Datelike, Months, Timelike, Weekday};
 
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "rustc-serialize")]
@@ -50,8 +50,11 @@ mod tests;
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-#[cfg_attr(feature = "rkyv", archive(compare(PartialEq, PartialOrd)))]
+#[cfg_attr(
+    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    derive(Archive, Deserialize, Serialize),
+    archive(compare(PartialEq, PartialOrd))
+)]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
