@@ -29,10 +29,11 @@ oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
-rkyv-16 = ["rkyv", "rkyv?/size_16"]
-rkyv-32 = ["rkyv", "rkyv?/size_32"]
-rkyv-64 = ["rkyv", "rkyv?/size_64"]
-rkyv-validation = ["rkyv", "rkyv?/validation"]
+rkyv = ["dep:rkyv", "rkyv/size_32"]
+rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
+rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
+rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
+rkyv-validation = ["rkyv?/validation"]
 # Features for internal use only:
 __internal_bench = []
 
