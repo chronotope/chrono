@@ -116,7 +116,7 @@ impl Duration {
     #[inline]
     #[must_use]
     pub fn hours(hours: i64) -> Duration {
-        Duration::try_hours(hours).expect("Duration::hours ouf of bounds")
+        Duration::try_hours(hours).expect("Duration::hours out of bounds")
     }
 
     /// Makes a new `Duration` with given number of hours.
