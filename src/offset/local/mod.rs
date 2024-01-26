@@ -222,21 +222,23 @@ impl TzInfo {
     //
     // The correct order in `LocalResult::Ambiguous` is the offset right before the transition, then
     // the offset right after.
-    fn lookup_with_dst_transitions(&self, dt: NaiveDateTime) -> LocalResult<FixedOffset> {
+    fn lookup_with_dst_transitions(&self, dt: NaiveDateTime) -> Option<LocalResult<FixedOffset>> {
         let std_offset = self.std_offset;
         let dst_offset = self.dst_offset;
-        let std_transition_after = self.std_transition.unwrap() + std_offset - dst_offset;
-        let dst_transition_after = self.dst_transition.unwrap() + dst_offset - std_offset;
+        let std_transition = self.std_transition?;
+        let dst_transition = self.dst_transition?;
+        let std_transition_after = std_transition + std_offset - dst_offset;
+        let dst_transition_after = dst_transition + dst_offset - std_offset;
 
         // Depending on the dst and std offsets, *_transition_after can have a local time that is
         // before or after *_transition. To remain sane we define *_min and *_max values that have
         // the times in order.
-        let std_transition_min = cmp::min(self.std_transition.unwrap(), std_transition_after);
-        let std_transition_max = cmp::max(self.std_transition.unwrap(), std_transition_after);
-        let dst_transition_min = cmp::min(self.dst_transition.unwrap(), dst_transition_after);
-        let dst_transition_max = cmp::max(self.dst_transition.unwrap(), dst_transition_after);
+        let std_transition_min = cmp::min(std_transition, std_transition_after);
+        let std_transition_max = cmp::max(std_transition, std_transition_after);
+        let dst_transition_min = cmp::min(dst_transition, dst_transition_after);
+        let dst_transition_max = cmp::max(dst_transition, dst_transition_after);
 
-        match std_offset.local_minus_utc().cmp(&dst_offset.local_minus_utc()) {
+        Some(match std_offset.local_minus_utc().cmp(&dst_offset.local_minus_utc()) {
             Ordering::Equal => LocalResult::Single(std_offset),
             Ordering::Less => {
                 if dst_transition_min < std_transition_min {
@@ -300,7 +302,7 @@ impl TzInfo {
                     }
                 }
             }
-        }
+        })
     }
 }
 
@@ -405,7 +407,7 @@ mod tests {
             result: LocalResult<FixedOffset>,
         ) {
             let dt = NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
-            assert_eq!(tz_info.lookup_with_dst_transitions(dt), result);
+            assert_eq!(tz_info.lookup_with_dst_transitions(dt).unwrap(), result);
         }
 
         // dst transition before std transition

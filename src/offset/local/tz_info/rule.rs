@@ -248,14 +248,12 @@ impl AlternateTime {
         let tz_info = TzInfo {
             std_offset: self.std.offset(),
             dst_offset: self.dst.offset(),
-            std_transition: Some(NaiveDateTime::from_timestamp_opt(dst_end_transition, 0).unwrap()),
-            dst_transition: Some(
-                NaiveDateTime::from_timestamp_opt(dst_start_transition, 0).unwrap(),
-            ),
+            std_transition: NaiveDateTime::from_timestamp_opt(dst_end_transition, 0),
+            dst_transition: NaiveDateTime::from_timestamp_opt(dst_start_transition, 0),
         };
 
         let local_datetime = NaiveDateTime::from_timestamp_opt(local_time, 0).unwrap();
-        Ok(tz_info.lookup_with_dst_transitions(local_datetime))
+        Ok(tz_info.lookup_with_dst_transitions(local_datetime).unwrap())
     }
 }
 

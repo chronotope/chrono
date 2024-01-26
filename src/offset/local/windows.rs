@@ -57,9 +57,10 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<F
         Some(tz_info) => tz_info,
         None => return LocalResult::None,
     };
-    match (tz_info.std_transition, tz_info.dst_transition) {
-        (Some(_), Some(_)) => tz_info.lookup_with_dst_transitions(*local),
-        _ => LocalResult::Single(tz_info.std_offset),
+    if let Some(result) = tz_info.lookup_with_dst_transitions(*local) {
+        result
+    } else {
+        LocalResult::Single(tz_info.std_offset)
     }
 }
 
