@@ -29,25 +29,24 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<Fixed
         Some(tz_info) => tz_info,
         None => return LocalResult::None,
     };
-    LocalResult::Single(match (tz_info.std_transition, tz_info.dst_transition) {
-        (Some(std_transition), Some(dst_transition)) => {
-            let std_transition_utc = std_transition - tz_info.dst_offset;
-            let dst_transition_utc = dst_transition - tz_info.std_offset;
-            if dst_transition_utc < std_transition_utc {
-                if utc >= &dst_transition_utc && utc < &std_transition_utc {
-                    tz_info.dst_offset
-                } else {
-                    tz_info.std_offset
-                }
-            } else {
-                if utc >= &std_transition_utc && utc < &dst_transition_utc {
-                    tz_info.std_offset
-                } else {
-                    tz_info.dst_offset
-                }
-            }
+    let (std_transition, dst_transition) = match (tz_info.std_transition, tz_info.dst_transition) {
+        (Some(std_transition), Some(dst_transition)) => (std_transition, dst_transition),
+        _ => return LocalResult::Single(tz_info.std_offset),
+    };
+    let std_transition_utc = std_transition - tz_info.dst_offset;
+    let dst_transition_utc = dst_transition - tz_info.std_offset;
+    LocalResult::Single(if dst_transition_utc < std_transition_utc {
+        if utc >= &dst_transition_utc && utc < &std_transition_utc {
+            tz_info.dst_offset
+        } else {
+            tz_info.std_offset
         }
-        _ => tz_info.std_offset,
+    } else {
+        if utc >= &std_transition_utc && utc < &dst_transition_utc {
+            tz_info.std_offset
+        } else {
+            tz_info.dst_offset
+        }
     })
 }
 
