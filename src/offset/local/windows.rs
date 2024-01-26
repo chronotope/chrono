@@ -100,6 +100,8 @@ fn systemtime_to_naive_dt(st: SYSTEMTIME, year: i32) -> Option<NaiveDateTime> {
         st.wSecond as u32,
         st.wMilliseconds as u32,
     )?;
+    // In Chrono's Weekday, Monday is 0 whereas in SYSTEMTIME Monday is 1 and Sunday is 0.
+    // Therefore we move back one day after converting the u16 value to a Weekday.
     let day_of_week = Weekday::try_from(u8::try_from(st.wDayOfWeek).ok()?).ok()?.pred();
     let date = if st.wYear == 0 {
         if let Some(date) =
