@@ -20,7 +20,6 @@ use crate::{Datelike, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Weekday}
 // We don't use `SystemTimeToTzSpecificLocalTime` because it doesn't support the same range of dates
 // as Chrono. Also it really isn't that difficult to work out the correct offset from the provided
 // DST rules.
-#[allow(clippy::collapsible_else_if)]
 pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
     // Using a `TzInfo` based on the year of an UTC datetime is technically wrong, we should be
     // using the rules for the year of the corresponding local time. But this matches what
@@ -35,18 +34,18 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<Fixed
     };
     let std_transition_utc = std_transition - tz_info.dst_offset;
     let dst_transition_utc = dst_transition - tz_info.std_offset;
-    LocalResult::Single(if dst_transition_utc < std_transition_utc {
-        if utc >= &dst_transition_utc && utc < &std_transition_utc {
-            tz_info.dst_offset
+
+    let (start_offset, first_transition, middle_offset, second_transition) =
+        if dst_transition_utc < std_transition_utc {
+            (tz_info.std_offset, dst_transition_utc, tz_info.dst_offset, std_transition_utc)
         } else {
-            tz_info.std_offset
-        }
+            (tz_info.dst_offset, std_transition_utc, tz_info.std_offset, dst_transition_utc)
+        };
+
+    LocalResult::Single(if utc >= &first_transition && utc < &second_transition {
+        middle_offset
     } else {
-        if utc >= &std_transition_utc && utc < &dst_transition_utc {
-            tz_info.std_offset
-        } else {
-            tz_info.dst_offset
-        }
+        start_offset
     })
 }
 
