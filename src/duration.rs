@@ -579,6 +579,42 @@ mod tests {
         assert_eq!(Duration::milliseconds(-999).num_seconds(), 0);
         assert_eq!(Duration::milliseconds(-1001).num_seconds(), -1);
     }
+    #[test]
+    fn test_duration_seconds_max_allowed() {
+        let duration = Duration::seconds(i64::MAX / 1_000);
+        assert_eq!(duration.num_seconds(), i64::MAX / 1_000);
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128 / 1_000 * 1_000_000_000
+        );
+    }
+    #[test]
+    fn test_duration_seconds_max_overflow() {
+        assert!(Duration::try_seconds(i64::MAX / 1_000 + 1).is_none());
+    }
+    #[test]
+    #[should_panic(expected = "Duration::seconds out of bounds")]
+    fn test_duration_seconds_max_overflow_panic() {
+        let _ = Duration::seconds(i64::MAX / 1_000 + 1);
+    }
+    #[test]
+    fn test_duration_seconds_min_allowed() {
+        let duration = Duration::seconds(i64::MIN / 1_000); // Same as -i64::MAX / 1_000 due to rounding
+        assert_eq!(duration.num_seconds(), i64::MIN / 1_000); // Same as -i64::MAX / 1_000 due to rounding
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            -i64::MAX as i128 / 1_000 * 1_000_000_000
+        );
+    }
+    #[test]
+    fn test_duration_seconds_min_underflow() {
+        assert!(Duration::try_seconds(-i64::MAX / 1_000 - 1).is_none());
+    }
+    #[test]
+    #[should_panic(expected = "Duration::seconds out of bounds")]
+    fn test_duration_seconds_min_underflow_panic() {
+        let _ = Duration::seconds(-i64::MAX / 1_000 - 1);
+    }
 
     #[test]
     fn test_duration_num_milliseconds() {
@@ -589,10 +625,59 @@ mod tests {
         assert_eq!(Duration::microseconds(1001).num_milliseconds(), 1);
         assert_eq!(Duration::microseconds(-999).num_milliseconds(), 0);
         assert_eq!(Duration::microseconds(-1001).num_milliseconds(), -1);
-        assert_eq!(Duration::milliseconds(i64::MAX).num_milliseconds(), i64::MAX);
-        assert_eq!(Duration::milliseconds(-i64::MAX).num_milliseconds(), -i64::MAX);
-        assert_eq!(MAX.num_milliseconds(), i64::MAX);
-        assert_eq!(MIN.num_milliseconds(), -i64::MAX);
+    }
+    #[test]
+    fn test_duration_milliseconds_max_allowed() {
+        // The maximum number of milliseconds acceptable through the constructor is
+        // equal to the number that can be stored in a Duration.
+        let duration = Duration::milliseconds(i64::MAX);
+        assert_eq!(duration.num_milliseconds(), i64::MAX);
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128 * 1_000_000
+        );
+    }
+    #[test]
+    fn test_duration_milliseconds_max_overflow() {
+        // Here we ensure that trying to add one millisecond to the maximum storable
+        // value will fail.
+        assert!(Duration::milliseconds(i64::MAX).checked_add(&Duration::milliseconds(1)).is_none());
+    }
+    #[test]
+    fn test_duration_milliseconds_min_allowed() {
+        // The minimum number of milliseconds acceptable through the constructor is
+        // not equal to the number that can be stored in a Duration - there is a
+        // difference of one (i64::MIN vs -i64::MAX).
+        let duration = Duration::milliseconds(-i64::MAX);
+        assert_eq!(duration.num_milliseconds(), -i64::MAX);
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            -i64::MAX as i128 * 1_000_000
+        );
+    }
+    #[test]
+    fn test_duration_milliseconds_min_underflow() {
+        // Here we ensure that trying to subtract one millisecond from the minimum
+        // storable value will fail.
+        assert!(Duration::milliseconds(-i64::MAX)
+            .checked_sub(&Duration::milliseconds(1))
+            .is_none());
+    }
+    #[test]
+    #[ignore]
+    #[should_panic(expected = "Duration::milliseconds out of bounds")]
+    fn test_duration_milliseconds_min_underflow_panic() {
+        // Here we ensure that trying to create a value one millisecond below the
+        // minimum storable value will fail. This test is necessary because the
+        // storable range is -i64::MAX, but the constructor type of i64 will allow
+        // i64::MIN, which is one value below.
+        // WARNING:
+        // This test currently fails, because Duration::milliseconds() does not
+        // check against MIN, and hence allows an unsupported value to be created.
+        // Therefore it is currently marked as "ignore", until the fix is applied.
+        // This is because the current implementation of milliseconds() cannot
+        // actually panic.
+        let _ = Duration::milliseconds(i64::MIN); // Same as -i64::MAX - 1
     }
 
     #[test]
@@ -604,10 +689,6 @@ mod tests {
         assert_eq!(Duration::nanoseconds(1001).num_microseconds(), Some(1));
         assert_eq!(Duration::nanoseconds(-999).num_microseconds(), Some(0));
         assert_eq!(Duration::nanoseconds(-1001).num_microseconds(), Some(-1));
-        assert_eq!(Duration::microseconds(i64::MAX).num_microseconds(), Some(i64::MAX));
-        assert_eq!(Duration::microseconds(-i64::MAX).num_microseconds(), Some(-i64::MAX));
-        assert_eq!(MAX.num_microseconds(), None);
-        assert_eq!(MIN.num_microseconds(), None);
 
         // overflow checks
         const MICROS_PER_DAY: i64 = 86_400_000_000;
@@ -622,16 +703,86 @@ mod tests {
         assert_eq!(Duration::days(i64::MAX / MICROS_PER_DAY + 1).num_microseconds(), None);
         assert_eq!(Duration::days(-i64::MAX / MICROS_PER_DAY - 1).num_microseconds(), None);
     }
+    #[test]
+    fn test_duration_microseconds_max_allowed() {
+        // The number of microseconds acceptable through the constructor is far
+        // fewer than the number that can actually be stored in a Duration, so this
+        // is not a particular insightful test.
+        let duration = Duration::microseconds(i64::MAX);
+        assert_eq!(duration.num_microseconds(), Some(i64::MAX));
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128 * 1_000
+        );
+        // Here we create a Duration with the maximum possible number of
+        // microseconds by creating a Duration with the maximum number of
+        // milliseconds and then checking that the number of microseconds matches
+        // the storage limit.
+        let duration = Duration::milliseconds(i64::MAX);
+        assert!(duration.num_microseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128 * 1_000_000
+        );
+    }
+    #[test]
+    fn test_duration_microseconds_max_overflow() {
+        // This test establishes that a Duration can store more microseconds than
+        // are representable through the return of duration.num_microseconds().
+        let duration = Duration::microseconds(i64::MAX) + Duration::microseconds(1);
+        assert!(duration.num_microseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            (i64::MAX as i128 + 1) * 1_000
+        );
+        // Here we ensure that trying to add one microsecond to the maximum storable
+        // value will fail.
+        assert!(Duration::milliseconds(i64::MAX).checked_add(&Duration::microseconds(1)).is_none());
+    }
+    #[test]
+    fn test_duration_microseconds_min_allowed() {
+        // The number of microseconds acceptable through the constructor is far
+        // fewer than the number that can actually be stored in a Duration, so this
+        // is not a particular insightful test.
+        let duration = Duration::microseconds(i64::MIN);
+        assert_eq!(duration.num_microseconds(), Some(i64::MIN));
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MIN as i128 * 1_000
+        );
+        // Here we create a Duration with the minimum possible number of
+        // microseconds by creating a Duration with the minimum number of
+        // milliseconds and then checking that the number of microseconds matches
+        // the storage limit.
+        let duration = Duration::milliseconds(-i64::MAX);
+        assert!(duration.num_microseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            -i64::MAX as i128 * 1_000_000
+        );
+    }
+    #[test]
+    fn test_duration_microseconds_min_underflow() {
+        // This test establishes that a Duration can store more microseconds than
+        // are representable through the return of duration.num_microseconds().
+        let duration = Duration::microseconds(i64::MIN) - Duration::microseconds(1);
+        assert!(duration.num_microseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            (i64::MIN as i128 - 1) * 1_000
+        );
+        // Here we ensure that trying to subtract one microsecond from the minimum
+        // storable value will fail.
+        assert!(Duration::milliseconds(-i64::MAX)
+            .checked_sub(&Duration::microseconds(1))
+            .is_none());
+    }
 
     #[test]
     fn test_duration_num_nanoseconds() {
         assert_eq!(Duration::zero().num_nanoseconds(), Some(0));
         assert_eq!(Duration::nanoseconds(1).num_nanoseconds(), Some(1));
         assert_eq!(Duration::nanoseconds(-1).num_nanoseconds(), Some(-1));
-        assert_eq!(Duration::nanoseconds(i64::MAX).num_nanoseconds(), Some(i64::MAX));
-        assert_eq!(Duration::nanoseconds(-i64::MAX).num_nanoseconds(), Some(-i64::MAX));
-        assert_eq!(MAX.num_nanoseconds(), None);
-        assert_eq!(MIN.num_nanoseconds(), None);
 
         // overflow checks
         const NANOS_PER_DAY: i64 = 86_400_000_000_000;
@@ -646,9 +797,124 @@ mod tests {
         assert_eq!(Duration::days(i64::MAX / NANOS_PER_DAY + 1).num_nanoseconds(), None);
         assert_eq!(Duration::days(-i64::MAX / NANOS_PER_DAY - 1).num_nanoseconds(), None);
     }
+    #[test]
+    fn test_duration_nanoseconds_max_allowed() {
+        // The number of nanoseconds acceptable through the constructor is far fewer
+        // than the number that can actually be stored in a Duration, so this is not
+        // a particular insightful test.
+        let duration = Duration::nanoseconds(i64::MAX);
+        assert_eq!(duration.num_nanoseconds(), Some(i64::MAX));
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128
+        );
+        // Here we create a Duration with the maximum possible number of nanoseconds
+        // by creating a Duration with the maximum number of milliseconds and then
+        // checking that the number of nanoseconds matches the storage limit.
+        let duration = Duration::milliseconds(i64::MAX);
+        assert!(duration.num_nanoseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128 * 1_000_000
+        );
+    }
+    #[test]
+    fn test_duration_nanoseconds_max_overflow() {
+        // This test establishes that a Duration can store more nanoseconds than are
+        // representable through the return of duration.num_nanoseconds().
+        let duration = Duration::nanoseconds(i64::MAX) + Duration::nanoseconds(1);
+        assert!(duration.num_nanoseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MAX as i128 + 1
+        );
+        // Here we ensure that trying to add one nanosecond to the maximum storable
+        // value will fail.
+        assert!(Duration::milliseconds(i64::MAX).checked_add(&Duration::nanoseconds(1)).is_none());
+    }
+    #[test]
+    fn test_duration_nanoseconds_min_allowed() {
+        // The number of nanoseconds acceptable through the constructor is far fewer
+        // than the number that can actually be stored in a Duration, so this is not
+        // a particular insightful test.
+        let duration = Duration::nanoseconds(i64::MIN);
+        assert_eq!(duration.num_nanoseconds(), Some(i64::MIN));
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MIN as i128
+        );
+        // Here we create a Duration with the minimum possible number of nanoseconds
+        // by creating a Duration with the minimum number of milliseconds and then
+        // checking that the number of nanoseconds matches the storage limit.
+        let duration = Duration::milliseconds(-i64::MAX);
+        assert!(duration.num_nanoseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            -i64::MAX as i128 * 1_000_000
+        );
+    }
+    #[test]
+    fn test_duration_nanoseconds_min_underflow() {
+        // This test establishes that a Duration can store more nanoseconds than are
+        // representable through the return of duration.num_nanoseconds().
+        let duration = Duration::nanoseconds(i64::MIN) - Duration::nanoseconds(1);
+        assert!(duration.num_nanoseconds().is_none());
+        assert_eq!(
+            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
+            i64::MIN as i128 - 1
+        );
+        // Here we ensure that trying to subtract one nanosecond from the minimum
+        // storable value will fail.
+        assert!(Duration::milliseconds(-i64::MAX).checked_sub(&Duration::nanoseconds(1)).is_none());
+    }
+
+    #[test]
+    fn test_max() {
+        assert_eq!(
+            MAX.secs as i128 * 1_000_000_000 + MAX.nanos as i128,
+            i64::MAX as i128 * 1_000_000
+        );
+        assert_eq!(MAX, Duration::milliseconds(i64::MAX));
+        assert_eq!(MAX.num_milliseconds(), i64::MAX);
+        assert_eq!(MAX.num_microseconds(), None);
+        assert_eq!(MAX.num_nanoseconds(), None);
+    }
+    #[test]
+    fn test_min() {
+        assert_eq!(
+            MIN.secs as i128 * 1_000_000_000 + MIN.nanos as i128,
+            -i64::MAX as i128 * 1_000_000
+        );
+        assert_eq!(MIN, Duration::milliseconds(-i64::MAX));
+        assert_eq!(MIN.num_milliseconds(), -i64::MAX);
+        assert_eq!(MIN.num_microseconds(), None);
+        assert_eq!(MIN.num_nanoseconds(), None);
+    }
+
+    #[test]
+    fn test_duration_ord() {
+        assert!(Duration::milliseconds(1) < Duration::milliseconds(2));
+        assert!(Duration::milliseconds(2) > Duration::milliseconds(1));
+        assert!(Duration::milliseconds(-1) > Duration::milliseconds(-2));
+        assert!(Duration::milliseconds(-2) < Duration::milliseconds(-1));
+        assert!(Duration::milliseconds(-1) < Duration::milliseconds(1));
+        assert!(Duration::milliseconds(1) > Duration::milliseconds(-1));
+        assert!(Duration::milliseconds(0) < Duration::milliseconds(1));
+        assert!(Duration::milliseconds(0) > Duration::milliseconds(-1));
+        assert!(Duration::milliseconds(1_001) < Duration::milliseconds(1_002));
+        assert!(Duration::milliseconds(-1_001) > Duration::milliseconds(-1_002));
+        assert!(Duration::nanoseconds(1_234_567_890) < Duration::nanoseconds(1_234_567_891));
+        assert!(Duration::nanoseconds(-1_234_567_890) > Duration::nanoseconds(-1_234_567_891));
+        assert!(Duration::milliseconds(i64::MAX) > Duration::milliseconds(i64::MAX - 1));
+        assert!(Duration::milliseconds(-i64::MAX) < Duration::milliseconds(-i64::MAX + 1));
+    }
 
     #[test]
     fn test_duration_checked_ops() {
+        assert_eq!(
+            Duration::milliseconds(i64::MAX).checked_add(&Duration::milliseconds(0)),
+            Some(Duration::milliseconds(i64::MAX))
+        );
         assert_eq!(
             Duration::milliseconds(i64::MAX - 1).checked_add(&Duration::microseconds(999)),
             Some(Duration::milliseconds(i64::MAX - 2) + Duration::microseconds(1999))
@@ -656,14 +922,20 @@ mod tests {
         assert!(Duration::milliseconds(i64::MAX)
             .checked_add(&Duration::microseconds(1000))
             .is_none());
+        assert!(Duration::milliseconds(i64::MAX).checked_add(&Duration::nanoseconds(1)).is_none());
 
         assert_eq!(
             Duration::milliseconds(-i64::MAX).checked_sub(&Duration::milliseconds(0)),
             Some(Duration::milliseconds(-i64::MAX))
         );
+        assert_eq!(
+            Duration::milliseconds(-i64::MAX + 1).checked_sub(&Duration::microseconds(999)),
+            Some(Duration::milliseconds(-i64::MAX + 2) - Duration::microseconds(1999))
+        );
         assert!(Duration::milliseconds(-i64::MAX)
             .checked_sub(&Duration::milliseconds(1))
             .is_none());
+        assert!(Duration::milliseconds(-i64::MAX).checked_sub(&Duration::nanoseconds(1)).is_none());
     }
 
     #[test]
