@@ -7,8 +7,8 @@
 [![Chat][discord-image]][discord]
 [![codecov.io][codecov-img]][codecov-link]
 
-[gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg
-[gh-checks]: https://github.com/chronotope/chrono/actions?query=workflow%3Atest
+[gh-image]: https://github.com/chronotope/chrono/actions/workflows/test.yml/badge.svg?branch=main
+[gh-checks]: https://github.com/chronotope/chrono/actions/workflows/test.yml?query=branch%3Amain
 [cratesio-image]: https://img.shields.io/crates/v/chrono.svg
 [cratesio]: https://crates.io/crates/chrono
 [docsrs-image]: https://docs.rs/chrono/badge.svg
