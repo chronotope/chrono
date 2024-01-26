@@ -621,8 +621,11 @@ impl LocalTimeType {
     }
 
     pub(super) const UTC: LocalTimeType = {
-        let ut_offset = expect!(FixedOffset::east_opt(0), "FixedOffset::east out of bounds");
-        Self { ut_offset, is_dst: false, name: None }
+        Self {
+            ut_offset: expect!(FixedOffset::east_opt(0), "FixedOffset::east out of bounds"),
+            is_dst: false,
+            name: None,
+        }
     };
 }
 
