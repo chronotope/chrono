@@ -1,4 +1,4 @@
-use std::{cmp, cmp::Ordering};
+use std::cmp::Ordering;
 
 use super::parser::Cursor;
 use super::timezone::{LocalTimeType, SECONDS_PER_WEEK};
@@ -6,7 +6,8 @@ use super::{
     Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
     SECONDS_PER_DAY,
 };
-use crate::{FixedOffset, LocalResult, NaiveDateTime};
+use crate::offset::local::TzInfo;
+use crate::{FixedOffset, NaiveDateTime};
 
 /// Transition rule
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -244,89 +245,17 @@ impl AlternateTime {
         let dst_end_transition =
             self.dst_end.unix_time(current_year, 0) + i64::from(self.dst_end_time);
 
-        let dt = NaiveDateTime::from_timestamp_opt(local_time, 0).unwrap();
-        let std_offset = self.std.offset();
-        let dst_offset = self.dst.offset();
-        let std_transition =
-            Some(NaiveDateTime::from_timestamp_opt(dst_end_transition, 0).unwrap());
-        let dst_transition =
-            Some(NaiveDateTime::from_timestamp_opt(dst_start_transition, 0).unwrap());
-        let std_transition_after = std_transition.unwrap() + std_offset - dst_offset;
-        let dst_transition_after = dst_transition.unwrap() + dst_offset - std_offset;
+        let tz_info = TzInfo {
+            std_offset: self.std.offset(),
+            dst_offset: self.dst.offset(),
+            std_transition: Some(NaiveDateTime::from_timestamp_opt(dst_end_transition, 0).unwrap()),
+            dst_transition: Some(
+                NaiveDateTime::from_timestamp_opt(dst_start_transition, 0).unwrap(),
+            ),
+        };
 
-        // Depending on the dst and std offsets, *_transition_after can have a local time that is
-        // before or after *_transition. To remain sane we define *_min and *_max values that have
-        // the times in order.
-        let std_transition_min = cmp::min(std_transition.unwrap(), std_transition_after);
-        let std_transition_max = cmp::max(std_transition.unwrap(), std_transition_after);
-        let dst_transition_min = cmp::min(dst_transition.unwrap(), dst_transition_after);
-        let dst_transition_max = cmp::max(dst_transition.unwrap(), dst_transition_after);
-
-        Ok(match std_offset.local_minus_utc().cmp(&dst_offset.local_minus_utc()) {
-            Ordering::Equal => LocalResult::Single(std_offset),
-            Ordering::Less => {
-                if dst_transition_min < std_transition_min {
-                    // Northern hemisphere DST.
-                    // - The transition to DST happens at an earlier date than that to STD.
-                    // - At DST start the local time is adjusted forwards (creating a gap), at DST
-                    //   end the local time is adjusted backwards (creating ambiguous datetimes).
-                    if dt > dst_transition_min && dt < dst_transition_max {
-                        LocalResult::None
-                    } else if dt >= dst_transition_max && dt < std_transition_min {
-                        LocalResult::Single(dst_offset)
-                    } else if dt >= std_transition_min && dt <= std_transition_max {
-                        LocalResult::Ambiguous(dst_offset, std_offset)
-                    } else {
-                        LocalResult::Single(std_offset)
-                    }
-                } else {
-                    // Southern hemisphere DST.
-                    // - The transition to STD happens at a earlier date than that to DST.
-                    // - At DST start the local time is adjusted forwards (creating a gap), at DST
-                    //   end the local time is adjusted backwards (creating ambiguous datetimes).
-                    if dt >= std_transition_min && dt <= std_transition_max {
-                        LocalResult::Ambiguous(dst_offset, std_offset)
-                    } else if dt > std_transition_max && dt <= dst_transition_min {
-                        LocalResult::Single(std_offset)
-                    } else if dt > dst_transition_min && dt < dst_transition_max {
-                        LocalResult::None
-                    } else {
-                        LocalResult::Single(dst_offset)
-                    }
-                }
-            }
-            Ordering::Greater => {
-                if dst_transition_min < std_transition_min {
-                    // Southern hemisphere reverse DST.
-                    // - The transition to DST happens at an earlier date than that to STD.
-                    // - At DST start the local time is adjusted backwards (creating ambiguous
-                    //   datetimes), at DST end the local time is adjusted forwards (creating a gap)
-                    if dt >= dst_transition_min && dt <= dst_transition_max {
-                        LocalResult::Ambiguous(std_offset, dst_offset)
-                    } else if dt > dst_transition_max && dt <= std_transition_min {
-                        LocalResult::Single(dst_offset)
-                    } else if dt > std_transition_min && dt < std_transition_max {
-                        LocalResult::None
-                    } else {
-                        LocalResult::Single(std_offset)
-                    }
-                } else {
-                    // Northern hemisphere reverse DST.
-                    // - The transition to STD happens at a earlier date than that to DST.
-                    // - At DST start the local time is adjusted backwards (creating ambiguous
-                    //   datetimes), at DST end the local time is adjusted forwards (creating a gap)
-                    if dt > std_transition_min && dt < std_transition_max {
-                        LocalResult::None
-                    } else if dt >= std_transition_max && dt < dst_transition_min {
-                        LocalResult::Single(std_offset)
-                    } else if dt >= dst_transition_min && dt <= dst_transition_max {
-                        LocalResult::Ambiguous(std_offset, dst_offset)
-                    } else {
-                        LocalResult::Single(dst_offset)
-                    }
-                }
-            }
-        })
+        let local_datetime = NaiveDateTime::from_timestamp_opt(local_time, 0).unwrap();
+        Ok(tz_info.lookup_with_dst_transitions(local_datetime))
     }
 }
 
