@@ -9,7 +9,7 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, str};
 
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "alloc")]
@@ -199,11 +199,13 @@ mod tests;
 /// Since Chrono alone cannot determine any existence of leap seconds,
 /// **there is absolutely no guarantee that the leap second read has actually happened**.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(
-    feature = "rkyv",
+    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    derive(Archive, Deserialize, Serialize),
+    archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveTime {
     secs: u32,
     frac: u32,
@@ -470,7 +472,7 @@ impl NaiveTime {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -538,7 +540,7 @@ impl NaiveTime {
 
     /// Parses a string from a user-specified format into a new `NaiveTime` value, and a slice with
     /// the remaining portion of the string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// Similar to [`parse_from_str`](#method.parse_from_str).
@@ -586,11 +588,11 @@ impl NaiveTime {
         if frac >= 1_000_000_000 {
             let rfrac = 2_000_000_000 - frac;
             if rhs >= TimeDelta::nanoseconds(i64::from(rfrac)) {
-                rhs = rhs - TimeDelta::nanoseconds(i64::from(rfrac));
+                rhs -= TimeDelta::nanoseconds(i64::from(rfrac));
                 secs += 1;
                 frac = 0;
             } else if rhs < TimeDelta::nanoseconds(-i64::from(frac)) {
-                rhs = rhs + TimeDelta::nanoseconds(i64::from(frac));
+                rhs += TimeDelta::nanoseconds(i64::from(frac));
                 frac = 0;
             } else {
                 frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
@@ -815,7 +817,7 @@ impl NaiveTime {
     }
 
     /// Formats the time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -862,6 +864,21 @@ impl NaiveTime {
         let min = mins % 60;
         let hour = mins / 60;
         (hour, min, sec)
+    }
+
+    /// Returns the number of non-leap seconds past the last midnight.
+    // This duplicates `Timelike::num_seconds_from_midnight()`, because trait methods can't be const
+    // yet.
+    #[inline]
+    pub(crate) const fn num_seconds_from_midnight(&self) -> u32 {
+        self.secs
+    }
+
+    /// Returns the number of nanoseconds since the whole non-leap second.
+    // This duplicates `Timelike::nanosecond()`, because trait methods can't be const yet.
+    #[inline]
+    pub(crate) const fn nanosecond(&self) -> u32 {
+        self.frac
     }
 
     /// The earliest possible `NaiveTime`
@@ -1090,7 +1107,9 @@ impl Timelike for NaiveTime {
     }
 }
 
-/// An addition of `TimeDelta` to `NaiveTime` wraps around and never overflows or underflows.
+/// Add `TimeDelta` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
 /// In particular the addition ignores integral number of days.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
@@ -1149,6 +1168,10 @@ impl Add<TimeDelta> for NaiveTime {
     }
 }
 
+/// Add-assign `TimeDelta` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl AddAssign<TimeDelta> for NaiveTime {
     #[inline]
     fn add_assign(&mut self, rhs: TimeDelta) {
@@ -1156,26 +1179,39 @@ impl AddAssign<TimeDelta> for NaiveTime {
     }
 }
 
+/// Add `std::time::Duration` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl Add<Duration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
     fn add(self, rhs: Duration) -> NaiveTime {
-        let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.overflowing_add_signed(rhs).0
+        // We don't care about values beyond `24 * 60 * 60`, so we can take a modulus and avoid
+        // overflow during the conversion to `TimeDelta`.
+        // But we limit to double that just in case `self` is a leap-second.
+        let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
+        let d = TimeDelta::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        self.overflowing_add_signed(d).0
     }
 }
 
+/// Add-assign `std::time::Duration` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl AddAssign<Duration> for NaiveTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
-        let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        *self += rhs;
+        *self = *self + rhs;
     }
 }
 
+/// Add `FixedOffset` to `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the addition ignores integral number of days.
 impl Add<FixedOffset> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1185,9 +1221,11 @@ impl Add<FixedOffset> for NaiveTime {
     }
 }
 
-/// A subtraction of `TimeDelta` from `NaiveTime` wraps around and never overflows or underflows.
-/// In particular the addition ignores integral number of days.
-/// It is the same as the addition with a negated `TimeDelta`.
+/// Subtract `TimeDelta` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
+/// This is the same as addition with a negated `Duration`.
 ///
 /// As a part of Chrono's [leap second handling], the subtraction assumes that **there is no leap
 /// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
@@ -1240,6 +1278,10 @@ impl Sub<TimeDelta> for NaiveTime {
     }
 }
 
+/// Subtract-assign `TimeDelta` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl SubAssign<TimeDelta> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: TimeDelta) {
@@ -1247,26 +1289,39 @@ impl SubAssign<TimeDelta> for NaiveTime {
     }
 }
 
+/// Subtract `std::time::Duration` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl Sub<Duration> for NaiveTime {
     type Output = NaiveTime;
 
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveTime {
-        let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.overflowing_sub_signed(rhs).0
+        // We don't care about values beyond `24 * 60 * 60`, so we can take a modulus and avoid
+        // overflow during the conversion to `TimeDelta`.
+        // But we limit to double that just in case `self` is a leap-second.
+        let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
+        let d = TimeDelta::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        self.overflowing_sub_signed(d).0
     }
 }
 
+/// Subtract-assign `std::time::Duration` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl SubAssign<Duration> for NaiveTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
-        let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        *self -= rhs;
+        *self = *self - rhs;
     }
 }
 
+/// Subtract `FixedOffset` from `NaiveTime`.
+///
+/// This wraps around and never overflows or underflows.
+/// In particular the subtraction ignores integral number of days.
 impl Sub<FixedOffset> for NaiveTime {
     type Output = NaiveTime;
 
@@ -1331,7 +1386,7 @@ impl Sub<NaiveTime> for NaiveTime {
 }
 
 /// The `Debug` output of the naive time `t` is the same as
-/// [`t.format("%H:%M:%S%.f")`](../format/strftime/index.html).
+/// [`t.format("%H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1387,7 +1442,7 @@ impl fmt::Debug for NaiveTime {
 }
 
 /// The `Display` output of the naive time `t` is the same as
-/// [`t.format("%H:%M:%S%.f")`](../format/strftime/index.html).
+/// [`t.format("%H:%M:%S%.f")`](crate::format::strftime).
 ///
 /// The string printed can be readily parsed via the `parse` method on `str`.
 ///
@@ -1421,7 +1476,7 @@ impl fmt::Display for NaiveTime {
 }
 
 /// Parsing a `str` into a `NaiveTime` uses the same format,
-/// [`%H:%M:%S%.f`](../format/strftime/index.html), as in `Debug` and `Display`.
+/// [`%H:%M:%S%.f`](crate::format::strftime), as in `Debug` and `Display`.
 ///
 /// # Example
 ///

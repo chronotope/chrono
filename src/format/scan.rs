@@ -306,7 +306,7 @@ where
     };
     s = match s.len() {
         len if len >= 2 => &s[2..],
-        len if len == 0 => s,
+        0 => s,
         _ => return Err(TOO_SHORT),
     };
 

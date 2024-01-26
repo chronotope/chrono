@@ -11,8 +11,6 @@ use core::borrow::Borrow;
 use core::fmt::Display;
 use core::fmt::{self, Write};
 
-#[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
-use crate::datetime::SecondsFormat;
 #[cfg(feature = "alloc")]
 use crate::offset::Offset;
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
@@ -395,7 +393,7 @@ fn format_inner(
                 // same as `%a, %d %b %Y %H:%M:%S %z`
                 {
                     if let (Some(d), Some(t), Some(&(_, off))) = (date, time, off) {
-                        Some(write_rfc2822_inner(w, *d, *t, off, locale))
+                        Some(write_rfc2822(w, crate::NaiveDateTime::new(*d, *t), off))
                     } else {
                         None
                     }
@@ -504,6 +502,31 @@ impl OffsetFormat {
     }
 }
 
+/// Specific formatting options for seconds. This may be extended in the
+/// future, so exhaustive matching in external code is not recommended.
+///
+/// See the `TimeZone::to_rfc3339_opts` function for usage.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[allow(clippy::manual_non_exhaustive)]
+pub enum SecondsFormat {
+    /// Format whole seconds only, with no decimal point nor subseconds.
+    Secs,
+
+    /// Use fixed 3 subsecond digits. This corresponds to [Fixed::Nanosecond3].
+    Millis,
+
+    /// Use fixed 6 subsecond digits. This corresponds to [Fixed::Nanosecond6].
+    Micros,
+
+    /// Use fixed 9 subsecond digits. This corresponds to [Fixed::Nanosecond9].
+    Nanos,
+
+    /// Automatically select one of `Secs`, `Millis`, `Micros`, or `Nanos` to display all available
+    /// non-zero sub-second digits.  This corresponds to [Fixed::Nanosecond].
+    AutoSi,
+}
+
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
 #[inline]
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
@@ -575,45 +598,35 @@ pub(crate) fn write_rfc2822(
     dt: NaiveDateTime,
     off: FixedOffset,
 ) -> fmt::Result {
-    write_rfc2822_inner(w, dt.date(), dt.time(), off, default_locale())
-}
-
-#[cfg(feature = "alloc")]
-/// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
-fn write_rfc2822_inner(
-    w: &mut impl Write,
-    d: NaiveDate,
-    t: NaiveTime,
-    off: FixedOffset,
-    locale: Locale,
-) -> fmt::Result {
-    let year = d.year();
+    let year = dt.year();
     // RFC2822 is only defined on years 0 through 9999
     if !(0..=9999).contains(&year) {
         return Err(fmt::Error);
     }
 
-    w.write_str(short_weekdays(locale)[d.weekday().num_days_from_sunday() as usize])?;
+    let english = default_locale();
+
+    w.write_str(short_weekdays(english)[dt.weekday().num_days_from_sunday() as usize])?;
     w.write_str(", ")?;
-    let day = d.day();
+    let day = dt.day();
     if day < 10 {
         w.write_char((b'0' + day as u8) as char)?;
     } else {
         write_hundreds(w, day as u8)?;
     }
     w.write_char(' ')?;
-    w.write_str(short_months(locale)[d.month0() as usize])?;
+    w.write_str(short_months(english)[dt.month0() as usize])?;
     w.write_char(' ')?;
     write_hundreds(w, (year / 100) as u8)?;
     write_hundreds(w, (year % 100) as u8)?;
     w.write_char(' ')?;
 
-    let (hour, min, sec) = t.hms();
+    let (hour, min, sec) = dt.time().hms();
     write_hundreds(w, hour as u8)?;
     w.write_char(':')?;
     write_hundreds(w, min as u8)?;
     w.write_char(':')?;
-    let sec = sec + t.nanosecond() / 1_000_000_000;
+    let sec = sec + dt.nanosecond() / 1_000_000_000;
     write_hundreds(w, sec as u8)?;
     w.write_char(' ')?;
     OffsetFormat {

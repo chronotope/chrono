@@ -10,7 +10,7 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, str};
 
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "alloc")]
@@ -19,9 +19,10 @@ use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed,
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
+use crate::time_delta::{TimeDelta, NANOS_PER_SEC};
 use crate::{
-    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
-    Timelike, Weekday,
+    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeZone, Timelike,
+    Weekday,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -50,7 +51,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 ///
 /// # Example
 ///
-/// `NaiveDateTime` is commonly created from [`NaiveDate`](./struct.NaiveDate.html).
+/// `NaiveDateTime` is commonly created from [`NaiveDate`].
 ///
 /// ```
 /// use chrono::{NaiveDate, NaiveDateTime};
@@ -59,8 +60,7 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// # let _ = dt;
 /// ```
 ///
-/// You can use typical [date-like](../trait.Datelike.html) and
-/// [time-like](../trait.Timelike.html) methods,
+/// You can use typical [date-like](Datelike) and [time-like](Timelike) methods,
 /// provided that relevant traits are in the scope.
 ///
 /// ```
@@ -72,11 +72,13 @@ pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
 /// assert_eq!(dt.num_seconds_from_midnight(), 33011);
 /// ```
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(
-    feature = "rkyv",
+    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    derive(Archive, Deserialize, Serialize),
+    archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct NaiveDateTime {
     date: NaiveDate,
@@ -110,8 +112,7 @@ impl NaiveDateTime {
     /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
-    /// For a non-naive version of this function see
-    /// [`TimeZone::timestamp`](../offset/trait.TimeZone.html#method.timestamp).
+    /// For a non-naive version of this function see [`TimeZone::timestamp`].
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
     /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
@@ -125,9 +126,9 @@ impl NaiveDateTime {
     #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
+    pub const fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
-        datetime.expect("invalid or out-of-range datetime")
+        expect!(datetime, "invalid or out-of-range datetime")
     }
 
     /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
@@ -156,7 +157,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
         let secs = millis.div_euclid(1000);
         let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
@@ -188,9 +189,42 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
         let secs = micros.div_euclid(1_000_000);
         let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
+        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+    }
+
+    /// Creates a new [NaiveDateTime] from nanoseconds since the UNIX epoch.
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the number of nanoseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDateTime;
+    /// let timestamp_nanos: i64 = 1662921288_000_000_000; //Sunday, September 11, 2022 6:34:48 PM
+    /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_nanos: i64 = -2208936075_000_000_000; //Mon Jan 01 1900 14:38:45 GMT+0000
+    /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert!(naive_datetime.is_some());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
+        let secs = nanos.div_euclid(NANOS_PER_SEC as i64);
+        let nsecs = nanos.rem_euclid(NANOS_PER_SEC as i64) as u32;
+
         NaiveDateTime::from_timestamp_opt(secs, nsecs)
     }
 
@@ -226,13 +260,14 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let days = secs.div_euclid(86_400);
         let secs = secs.rem_euclid(86_400);
-        let date = i32::try_from(days)
-            .ok()
-            .and_then(|days| days.checked_add(719_163))
-            .and_then(NaiveDate::from_num_days_from_ce_opt);
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        let date =
+            NaiveDate::from_num_days_from_ce_opt(try_opt!((days as i32).checked_add(719_163)));
         let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
         match (date, time) {
             (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
@@ -241,7 +276,7 @@ impl NaiveDateTime {
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// # Example
@@ -319,7 +354,7 @@ impl NaiveDateTime {
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`, and a
     /// slice with the remaining portion of the string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// Similar to [`parse_from_str`](#method.parse_from_str).
@@ -396,10 +431,10 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp(&self) -> i64 {
+    pub const fn timestamp(&self) -> i64 {
         const UNIX_EPOCH_DAY: i64 = 719_163;
-        let gregorian_day = i64::from(self.date.num_days_from_ce());
-        let seconds_from_midnight = i64::from(self.time.num_seconds_from_midnight());
+        let gregorian_day = self.date.num_days_from_ce() as i64;
+        let seconds_from_midnight = self.time.num_seconds_from_midnight() as i64;
         (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 
@@ -424,9 +459,9 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_millis(&self) -> i64 {
+    pub const fn timestamp_millis(&self) -> i64 {
         let as_ms = self.timestamp() * 1000;
-        as_ms + i64::from(self.timestamp_subsec_millis())
+        as_ms + self.timestamp_subsec_millis() as i64
     }
 
     /// Returns the number of non-leap *microseconds* since midnight on January 1, 1970.
@@ -447,9 +482,9 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_micros(&self) -> i64 {
+    pub const fn timestamp_micros(&self) -> i64 {
         let as_us = self.timestamp() * 1_000_000;
-        as_us + i64::from(self.timestamp_subsec_micros())
+        as_us + self.timestamp_subsec_micros() as i64
     }
 
     /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
@@ -546,7 +581,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_millis(&self) -> u32 {
+    pub const fn timestamp_subsec_millis(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000_000
     }
 
@@ -568,7 +603,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_micros(&self) -> u32 {
+    pub const fn timestamp_subsec_micros(&self) -> u32 {
         self.timestamp_subsec_nanos() / 1_000
     }
 
@@ -590,7 +625,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_nanos(&self) -> u32 {
+    pub const fn timestamp_subsec_nanos(&self) -> u32 {
         self.time.nanosecond()
     }
 
@@ -670,7 +705,7 @@ impl NaiveDateTime {
             return None;
         }
 
-        let date = self.date.checked_add_signed(TimeDelta::seconds(rhs))?;
+        let date = try_opt!(self.date.checked_add_signed(TimeDelta::seconds(rhs)));
         Some(NaiveDateTime { date, time })
     }
 
@@ -700,8 +735,8 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[must_use]
-    pub fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: self.date.checked_add_months(rhs)?, time: self.time })
+    pub const fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        Some(Self { date: try_opt!(self.date.checked_add_months(rhs)), time: self.time })
     }
 
     /// Adds given `FixedOffset` to the current datetime.
@@ -733,6 +768,22 @@ impl NaiveDateTime {
             _ => self.date,
         };
         Some(NaiveDateTime { date, time })
+    }
+
+    /// Adds given `FixedOffset` to the current datetime.
+    /// The resulting value may be outside the valid range of [`NaiveDateTime`].
+    ///
+    /// This can be useful for intermediate values, but the resulting out-of-range `NaiveDate`
+    /// should not be exposed to library users.
+    #[must_use]
+    pub(crate) fn overflowing_add_offset(self, rhs: FixedOffset) -> NaiveDateTime {
+        let (time, days) = self.time.overflowing_add_offset(rhs);
+        let date = match days {
+            -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
+            1 => self.date.succ_opt().unwrap_or(NaiveDate::AFTER_MAX),
+            _ => self.date,
+        };
+        NaiveDateTime { date, time }
     }
 
     /// Subtracts given `TimeDelta` from the current date and time.
@@ -837,24 +888,24 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[must_use]
-    pub fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: self.date.checked_sub_months(rhs)?, time: self.time })
+    pub const fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
+        Some(Self { date: try_opt!(self.date.checked_sub_months(rhs)), time: self.time })
     }
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
     #[must_use]
-    pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: self.date.checked_add_days(days)?, ..self })
+    pub const fn checked_add_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: try_opt!(self.date.checked_add_days(days)), ..self })
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
     ///
     /// Returns `None` if the resulting date would be out of range.
     #[must_use]
-    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: self.date.checked_sub_days(days)?, ..self })
+    pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
+        Some(Self { date: try_opt!(self.date.checked_sub_days(days)), ..self })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
@@ -939,7 +990,7 @@ impl NaiveDateTime {
     }
 
     /// Formats the combined date and time with the specified format string.
-    /// See the [`format::strftime` module](../format/strftime/index.html)
+    /// See the [`format::strftime` module](crate::format::strftime)
     /// on the supported escape sequences.
     ///
     /// This returns a `DelayedFormat`,
@@ -1012,8 +1063,9 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timezone(), Utc);
     /// ```
     #[must_use]
-    pub fn and_utc(&self) -> DateTime<Utc> {
-        Utc.from_utc_datetime(self)
+    pub const fn and_utc(&self) -> DateTime<Utc> {
+        // FIXME: use `DateTime::from_naive_utc_and_offset` when our MSRV is 1.61+.
+        DateTime::from_naive_utc(*self)
     }
 
     /// The minimum possible `NaiveDateTime`.
@@ -1025,6 +1077,22 @@ impl NaiveDateTime {
     /// The Unix Epoch, 1970-01-01 00:00:00.
     pub const UNIX_EPOCH: Self =
         expect!(NaiveDate::from_ymd_opt(1970, 1, 1), "").and_time(NaiveTime::MIN);
+}
+
+impl From<NaiveDate> for NaiveDateTime {
+    /// Converts a `NaiveDate` to a `NaiveDateTime` of the same date but at midnight.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime};
+    ///
+    /// let nd = NaiveDate::from_ymd_opt(2016, 5, 28).unwrap();
+    /// let ndt = NaiveDate::from_ymd_opt(2016, 5, 28).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    /// assert_eq!(ndt, NaiveDateTime::from(nd));
+    fn from(date: NaiveDate) -> Self {
+        date.and_hms_opt(0, 0, 0).unwrap()
+    }
 }
 
 impl Datelike for NaiveDateTime {
@@ -1068,7 +1136,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// The return value ranges from 0 to 11.
     ///
-    /// See also the [`NaiveDate::month0`](./struct.NaiveDate.html#method.month0) method.
+    /// See also the [`NaiveDate::month0`] method.
     ///
     /// # Example
     ///
@@ -1106,7 +1174,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// The return value ranges from 0 to 30. (The last day of month differs by months.)
     ///
-    /// See also the [`NaiveDate::day0`](./struct.NaiveDate.html#method.day0) method.
+    /// See also the [`NaiveDate::day0`] method.
     ///
     /// # Example
     ///
@@ -1144,7 +1212,7 @@ impl Datelike for NaiveDateTime {
     ///
     /// The return value ranges from 0 to 365. (The last day of year differs by years.)
     ///
-    /// See also the [`NaiveDate::ordinal0`](./struct.NaiveDate.html#method.ordinal0) method.
+    /// See also the [`NaiveDate::ordinal0`] method.
     ///
     /// # Example
     ///
@@ -1413,7 +1481,7 @@ impl Timelike for NaiveDateTime {
     /// The range from 1,000,000,000 to 1,999,999,999 represents
     /// the [leap second](./struct.NaiveTime.html#leap-second-handling).
     ///
-    /// See also the [`NaiveTime::nanosecond`] method.
+    /// See also the [`NaiveTime#method.nanosecond`] method.
     ///
     /// # Example
     ///
@@ -1530,7 +1598,7 @@ impl Timelike for NaiveDateTime {
     }
 }
 
-/// An addition of `TimeDelta` to `NaiveDateTime` yields another `NaiveDateTime`.
+/// Add `TimeDelta` to `NaiveDateTime`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
@@ -1538,8 +1606,8 @@ impl Timelike for NaiveDateTime {
 ///
 /// # Panics
 ///
-/// Panics if the resulting date would be out of range. Use [`NaiveDateTime::checked_add_signed`]
-/// to detect that.
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1591,6 +1659,16 @@ impl Add<TimeDelta> for NaiveDateTime {
     }
 }
 
+/// Add `std::time::Duration` to `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 impl Add<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1602,6 +1680,16 @@ impl Add<Duration> for NaiveDateTime {
     }
 }
 
+/// Add-assign `TimeDelta` to `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 impl AddAssign<TimeDelta> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: TimeDelta) {
@@ -1609,6 +1697,16 @@ impl AddAssign<TimeDelta> for NaiveDateTime {
     }
 }
 
+/// Add-assign `std::time::Duration` to `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_add_signed`] to get an `Option` instead.
 impl AddAssign<Duration> for NaiveDateTime {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
@@ -1616,68 +1714,81 @@ impl AddAssign<Duration> for NaiveDateTime {
     }
 }
 
+/// Add `FixedOffset` to `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_add_offset` to get an `Option` instead.
 impl Add<FixedOffset> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     #[inline]
     fn add(self, rhs: FixedOffset) -> NaiveDateTime {
-        self.checked_add_offset(rhs).unwrap()
+        self.checked_add_offset(rhs).expect("`NaiveDateTime + FixedOffset` out of range")
     }
 }
 
+/// Add `Months` to `NaiveDateTime`.
+///
+/// The result will be clamped to valid days in the resulting month, see `checked_add_months` for
+/// details.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_add_months` to get an `Option` instead.
+///
+/// # Example
+///
+/// ```
+/// use chrono::{Months, NaiveDate};
+///
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap() + Months::new(1),
+///     NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 2, 0).unwrap() + Months::new(11),
+///     NaiveDate::from_ymd_opt(2014, 12, 1).unwrap().and_hms_opt(0, 2, 0).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap() + Months::new(12),
+///     NaiveDate::from_ymd_opt(2015, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 4).unwrap() + Months::new(13),
+///     NaiveDate::from_ymd_opt(2015, 2, 1).unwrap().and_hms_opt(0, 0, 4).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2014, 1, 31).unwrap().and_hms_opt(0, 5, 0).unwrap() + Months::new(1),
+///     NaiveDate::from_ymd_opt(2014, 2, 28).unwrap().and_hms_opt(0, 5, 0).unwrap()
+/// );
+/// assert_eq!(
+///     NaiveDate::from_ymd_opt(2020, 1, 31).unwrap().and_hms_opt(6, 0, 0).unwrap() + Months::new(1),
+///     NaiveDate::from_ymd_opt(2020, 2, 29).unwrap().and_hms_opt(6, 0, 0).unwrap()
+/// );
+/// ```
 impl Add<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
-    /// An addition of months to `NaiveDateTime` clamped to valid days in resulting month.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the resulting date would be out of range.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Months, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(1, 0, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2014, 2, 1).unwrap().and_hms_opt(1, 0, 0).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 2, 0).unwrap() + Months::new(11),
-    ///     NaiveDate::from_ymd_opt(2014, 12, 1).unwrap().and_hms_opt(0, 2, 0).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap() + Months::new(12),
-    ///     NaiveDate::from_ymd_opt(2015, 1, 1).unwrap().and_hms_opt(0, 0, 3).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 1).unwrap().and_hms_opt(0, 0, 4).unwrap() + Months::new(13),
-    ///     NaiveDate::from_ymd_opt(2015, 2, 1).unwrap().and_hms_opt(0, 0, 4).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2014, 1, 31).unwrap().and_hms_opt(0, 5, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2014, 2, 28).unwrap().and_hms_opt(0, 5, 0).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2020, 1, 31).unwrap().and_hms_opt(6, 0, 0).unwrap() + Months::new(1),
-    ///     NaiveDate::from_ymd_opt(2020, 2, 29).unwrap().and_hms_opt(6, 0, 0).unwrap()
-    /// );
-    /// ```
     fn add(self, rhs: Months) -> Self::Output {
-        Self { date: self.date.checked_add_months(rhs).unwrap(), time: self.time }
+        self.checked_add_months(rhs).expect("`NaiveDateTime + Months` out of range")
     }
 }
 
-/// A subtraction of `TimeDelta` from `NaiveDateTime` yields another `NaiveDateTime`.
-/// It is the same as the addition with a negated `TimeDelta`.
+/// Subtract `TimeDelta` from `NaiveDateTime`.
+///
+/// This is the same as the addition with a negated `Duration`.
 ///
 /// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
 /// the assumption becomes that **there is exactly a single leap second ever**.
 ///
-/// Panics on underflow or overflow. Use [`NaiveDateTime::checked_sub_signed`]
-/// to detect that.
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1727,6 +1838,16 @@ impl Sub<TimeDelta> for NaiveDateTime {
     }
 }
 
+/// Subtract `std::time::Duration` from `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 impl Sub<Duration> for NaiveDateTime {
     type Output = NaiveDateTime;
 
@@ -1738,6 +1859,18 @@ impl Sub<Duration> for NaiveDateTime {
     }
 }
 
+/// Subtract-assign `TimeDelta` from `NaiveDateTime`.
+///
+/// This is the same as the addition with a negated `Duration`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 impl SubAssign<TimeDelta> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: TimeDelta) {
@@ -1745,6 +1878,16 @@ impl SubAssign<TimeDelta> for NaiveDateTime {
     }
 }
 
+/// Subtract-assign `std::time::Duration` from `NaiveDateTime`.
+///
+/// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
+/// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
+/// the assumption becomes that **there is exactly a single leap second ever**.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_signed`] to get an `Option` instead.
 impl SubAssign<Duration> for NaiveDateTime {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
@@ -1752,20 +1895,30 @@ impl SubAssign<Duration> for NaiveDateTime {
     }
 }
 
+/// Subtract `FixedOffset` from `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_sub_offset` to get an `Option` instead.
 impl Sub<FixedOffset> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     #[inline]
     fn sub(self, rhs: FixedOffset) -> NaiveDateTime {
-        self.checked_sub_offset(rhs).unwrap()
+        self.checked_sub_offset(rhs).expect("`NaiveDateTime - FixedOffset` out of range")
     }
 }
 
-/// A subtraction of Months from `NaiveDateTime` clamped to valid days in resulting month.
+/// Subtract `Months` from `NaiveDateTime`.
+///
+/// The result will be clamped to valid days in the resulting month, see
+/// [`NaiveDateTime::checked_sub_months`] for details.
 ///
 /// # Panics
 ///
 /// Panics if the resulting date would be out of range.
+/// Consider using [`NaiveDateTime::checked_sub_months`] to get an `Option` instead.
 ///
 /// # Example
 ///
@@ -1789,7 +1942,7 @@ impl Sub<Months> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn sub(self, rhs: Months) -> Self::Output {
-        Self { date: self.date.checked_sub_months(rhs).unwrap(), time: self.time }
+        self.checked_sub_months(rhs).expect("`NaiveDateTime - Months` out of range")
     }
 }
 
@@ -1841,19 +1994,31 @@ impl Sub<NaiveDateTime> for NaiveDateTime {
     }
 }
 
+/// Add `Days` to `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_add_days` to get an `Option` instead.
 impl Add<Days> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn add(self, days: Days) -> Self::Output {
-        self.checked_add_days(days).unwrap()
+        self.checked_add_days(days).expect("`NaiveDateTime + Days` out of range")
     }
 }
 
+/// Subtract `Days` from `NaiveDateTime`.
+///
+/// # Panics
+///
+/// Panics if the resulting date would be out of range.
+/// Consider using `checked_sub_days` to get an `Option` instead.
 impl Sub<Days> for NaiveDateTime {
     type Output = NaiveDateTime;
 
     fn sub(self, days: Days) -> Self::Output {
-        self.checked_sub_days(days).unwrap()
+        self.checked_sub_days(days).expect("`NaiveDateTime - Days` out of range")
     }
 }
 
@@ -2023,11 +2188,11 @@ where
     );
     assert_eq!(
         to_string(&NaiveDate::MIN.and_hms_opt(0, 0, 0).unwrap()).ok(),
-        Some(r#""-262144-01-01T00:00:00""#.into())
+        Some(r#""-262143-01-01T00:00:00""#.into())
     );
     assert_eq!(
         to_string(&NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap()).ok(),
-        Some(r#""+262143-12-31T23:59:60.999999999""#.into())
+        Some(r#""+262142-12-31T23:59:60.999999999""#.into())
     );
 }
 
@@ -2066,15 +2231,15 @@ where
         Some(NaiveDate::from_ymd_opt(-1, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap())
     );
     assert_eq!(
-        from_str(r#""-262144-01-01T00:00:00""#).ok(),
+        from_str(r#""-262143-01-01T00:00:00""#).ok(),
         Some(NaiveDate::MIN.and_hms_opt(0, 0, 0).unwrap())
     );
     assert_eq!(
-        from_str(r#""+262143-12-31T23:59:60.999999999""#).ok(),
+        from_str(r#""+262142-12-31T23:59:60.999999999""#).ok(),
         Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
     );
     assert_eq!(
-        from_str(r#""+262143-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
+        from_str(r#""+262142-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
         Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
     );
 

@@ -1,6 +1,6 @@
 use core::fmt;
 
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::OutOfRange;
@@ -29,11 +29,13 @@ use crate::OutOfRange;
 /// Can be Serialized/Deserialized with serde
 // Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
 #[cfg_attr(
-    feature = "rkyv",
+    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    derive(Archive, Deserialize, Serialize),
+    archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
 )]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub enum Month {
     /// January
@@ -193,6 +195,12 @@ impl Months {
     pub const fn new(num: u32) -> Self {
         Self(num)
     }
+
+    /// Returns the total number of months in the `Months` instance.
+    #[inline]
+    pub const fn as_u32(&self) -> u32 {
+        self.0
+    }
 }
 
 /// An error resulting from reading `<Month>` value with `FromStr`.
@@ -262,7 +270,7 @@ mod month_serde {
 #[cfg(test)]
 mod tests {
     use super::Month;
-    use crate::{Datelike, OutOfRange, TimeZone, Utc};
+    use crate::{Datelike, Months, OutOfRange, TimeZone, Utc};
 
     #[test]
     fn test_month_enum_try_from() {
@@ -294,6 +302,13 @@ mod tests {
         assert!(Month::January < Month::December);
         assert!(Month::July >= Month::May);
         assert!(Month::September > Month::March);
+    }
+
+    #[test]
+    fn test_months_as_u32() {
+        assert_eq!(Months::new(0).as_u32(), 0);
+        assert_eq!(Months::new(1).as_u32(), 1);
+        assert_eq!(Months::new(u32::MAX).as_u32(), u32::MAX);
     }
 
     #[test]
@@ -357,5 +372,13 @@ mod tests {
         for string in errors {
             from_str::<Month>(string).unwrap_err();
         }
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let month = Month::January;
+        let bytes = rkyv::to_bytes::<_, 1>(&month).unwrap();
+        assert_eq!(rkyv::from_bytes::<Month>(&bytes).unwrap(), month);
     }
 }
