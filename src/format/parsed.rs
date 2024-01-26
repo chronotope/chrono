@@ -629,11 +629,6 @@ impl Parsed {
         let datetime = self.to_naive_datetime_with_offset(offset)?;
         let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
 
-        // this is used to prevent an overflow when calling FixedOffset::from_local_datetime
-        datetime
-            .checked_sub_signed(TimeDelta::seconds(i64::from(offset.local_minus_utc())))
-            .ok_or(OUT_OF_RANGE)?;
-
         match offset.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
             LocalResult::Single(t) => Ok(t),

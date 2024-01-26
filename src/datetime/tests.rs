@@ -3,7 +3,7 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike};
+use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
 
 #[derive(Clone)]
 struct DstTester;
@@ -403,6 +403,7 @@ fn signed_duration_since_autoref() {
     let dt1 = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     let dt2 = Utc.with_ymd_and_hms(2014, 3, 4, 5, 6, 7).unwrap();
     let diff1 = dt1.signed_duration_since(dt2); // Copy/consume
+    #[allow(clippy::needless_borrows_for_generic_args)]
     let diff2 = dt2.signed_duration_since(&dt1); // Take by reference
     assert_eq!(diff1, -diff2);
 
@@ -1240,6 +1241,18 @@ fn test_datetime_from_local() {
 }
 
 #[test]
+fn test_datetime_from_timestamp_millis() {
+    // 2000-01-12T01:02:03:004Z
+    let naive_dt =
+        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_milli_opt(1, 2, 3, 4).unwrap();
+    let datetime_utc = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
+    assert_eq!(
+        datetime_utc,
+        DateTime::<Utc>::from_timestamp_millis(datetime_utc.timestamp_millis()).unwrap()
+    );
+}
+
+#[test]
 #[cfg(feature = "clock")]
 fn test_years_elapsed() {
     const WEEKS_PER_YEAR: f32 = 52.1775;
@@ -1316,6 +1329,126 @@ fn test_datetime_sub_assign() {
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
     assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
+}
+
+#[test]
+fn test_min_max_getters() {
+    let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+
+    assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
+    // RFC 2822 doesn't support years with more than 4 digits.
+    // assert_eq!(beyond_min.to_rfc2822(), "");
+    #[cfg(feature = "alloc")]
+    assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
+    #[cfg(feature = "alloc")]
+    assert_eq!(
+        beyond_min.format("%Y-%m-%dT%H:%M:%S%:z").to_string(),
+        "-262144-12-31T22:00:00-02:00"
+    );
+    assert_eq!(beyond_min.year(), -262144);
+    assert_eq!(beyond_min.month(), 12);
+    assert_eq!(beyond_min.month0(), 11);
+    assert_eq!(beyond_min.day(), 31);
+    assert_eq!(beyond_min.day0(), 30);
+    assert_eq!(beyond_min.ordinal(), 366);
+    assert_eq!(beyond_min.ordinal0(), 365);
+    assert_eq!(beyond_min.weekday(), Weekday::Wed);
+    assert_eq!(beyond_min.iso_week().year(), -262143);
+    assert_eq!(beyond_min.iso_week().week(), 1);
+    assert_eq!(beyond_min.hour(), 22);
+    assert_eq!(beyond_min.minute(), 0);
+    assert_eq!(beyond_min.second(), 0);
+    assert_eq!(beyond_min.nanosecond(), 0);
+
+    assert_eq!(format!("{:?}", beyond_max), "+262143-01-01T01:59:59.999999999+02:00");
+    // RFC 2822 doesn't support years with more than 4 digits.
+    // assert_eq!(beyond_max.to_rfc2822(), "");
+    #[cfg(feature = "alloc")]
+    assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
+    #[cfg(feature = "alloc")]
+    assert_eq!(
+        beyond_max.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string(),
+        "+262143-01-01T01:59:59.999999999+02:00"
+    );
+    assert_eq!(beyond_max.year(), 262143);
+    assert_eq!(beyond_max.month(), 1);
+    assert_eq!(beyond_max.month0(), 0);
+    assert_eq!(beyond_max.day(), 1);
+    assert_eq!(beyond_max.day0(), 0);
+    assert_eq!(beyond_max.ordinal(), 1);
+    assert_eq!(beyond_max.ordinal0(), 0);
+    assert_eq!(beyond_max.weekday(), Weekday::Tue);
+    assert_eq!(beyond_max.iso_week().year(), 262143);
+    assert_eq!(beyond_max.iso_week().week(), 1);
+    assert_eq!(beyond_max.hour(), 1);
+    assert_eq!(beyond_max.minute(), 59);
+    assert_eq!(beyond_max.second(), 59);
+    assert_eq!(beyond_max.nanosecond(), 999_999_999);
+}
+
+#[test]
+fn test_min_max_setters() {
+    let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+
+    assert_eq!(beyond_min.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_min.with_month(beyond_min.month()), Some(beyond_min));
+    assert_eq!(beyond_min.with_month(3), None);
+    assert_eq!(beyond_min.with_month0(beyond_min.month0()), Some(beyond_min));
+    assert_eq!(beyond_min.with_month0(3), None);
+    assert_eq!(beyond_min.with_day(beyond_min.day()), Some(beyond_min));
+    assert_eq!(beyond_min.with_day(15), None);
+    assert_eq!(beyond_min.with_day0(beyond_min.day0()), Some(beyond_min));
+    assert_eq!(beyond_min.with_day0(15), None);
+    assert_eq!(beyond_min.with_ordinal(beyond_min.ordinal()), Some(beyond_min));
+    assert_eq!(beyond_min.with_ordinal(200), None);
+    assert_eq!(beyond_min.with_ordinal0(beyond_min.ordinal0()), Some(beyond_min));
+    assert_eq!(beyond_min.with_ordinal0(200), None);
+    assert_eq!(beyond_min.with_hour(beyond_min.hour()), Some(beyond_min));
+    assert_eq!(beyond_min.with_hour(23), beyond_min.checked_add_signed(TimeDelta::hours(1)));
+    assert_eq!(beyond_min.with_hour(5), None);
+    assert_eq!(beyond_min.with_minute(0), Some(beyond_min));
+    assert_eq!(beyond_min.with_second(0), Some(beyond_min));
+    assert_eq!(beyond_min.with_nanosecond(0), Some(beyond_min));
+
+    assert_eq!(beyond_max.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_max.with_month(beyond_max.month()), Some(beyond_max));
+    assert_eq!(beyond_max.with_month(3), None);
+    assert_eq!(beyond_max.with_month0(beyond_max.month0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_month0(3), None);
+    assert_eq!(beyond_max.with_day(beyond_max.day()), Some(beyond_max));
+    assert_eq!(beyond_max.with_day(15), None);
+    assert_eq!(beyond_max.with_day0(beyond_max.day0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_day0(15), None);
+    assert_eq!(beyond_max.with_ordinal(beyond_max.ordinal()), Some(beyond_max));
+    assert_eq!(beyond_max.with_ordinal(200), None);
+    assert_eq!(beyond_max.with_ordinal0(beyond_max.ordinal0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_ordinal0(200), None);
+    assert_eq!(beyond_max.with_hour(beyond_max.hour()), Some(beyond_max));
+    assert_eq!(beyond_max.with_hour(0), beyond_max.checked_sub_signed(TimeDelta::hours(1)));
+    assert_eq!(beyond_max.with_hour(5), None);
+    assert_eq!(beyond_max.with_minute(beyond_max.minute()), Some(beyond_max));
+    assert_eq!(beyond_max.with_second(beyond_max.second()), Some(beyond_max));
+    assert_eq!(beyond_max.with_nanosecond(beyond_max.nanosecond()), Some(beyond_max));
+}
+
+#[test]
+#[should_panic]
+fn test_local_beyond_min_datetime() {
+    let min = FixedOffset::west_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MIN);
+    let _ = min.naive_local();
+}
+
+#[test]
+#[should_panic]
+fn test_local_beyond_max_datetime() {
+    let max = FixedOffset::east_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MAX);
+    let _ = max.naive_local();
 }
 
 #[test]
@@ -1413,6 +1546,14 @@ fn test_datetime_fixed_offset() {
     let fixed_offset = FixedOffset::east_opt(3600).unwrap();
     let datetime_fixed = fixed_offset.from_local_datetime(&naivedatetime).unwrap();
     assert_eq!(datetime_fixed.fixed_offset(), datetime_fixed);
+}
+
+#[test]
+fn test_datetime_to_utc() {
+    let dt =
+        FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 2, 22, 23, 24, 25).unwrap();
+    let dt_utc: DateTime<Utc> = dt.to_utc();
+    assert_eq!(dt, dt_utc);
 }
 
 #[test]

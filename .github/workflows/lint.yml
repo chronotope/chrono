@@ -1,5 +1,9 @@
 name: lint
 
+env:
+  # It's really `--all-features`, but not adding the mutually exclusive features from rkyv
+  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-64 rkyv-validation serde arbitrary"
+
 on:
   push:
     branches: [main, 0.4.x]
@@ -19,7 +23,7 @@ jobs:
       - run: cargo fmt --check --manifest-path fuzz/Cargo.toml
       - run: cargo fmt --check --manifest-path bench/Cargo.toml
       - run: |
-          cargo clippy --all-features --all-targets --color=always \
+          cargo clippy ${{ env.ALL_NON_EXCLUSIVE_FEATURES }} --all-targets --color=always \
             -- -D warnings
       - run: |
           cargo clippy --manifest-path fuzz/Cargo.toml --color=always \
@@ -35,6 +39,7 @@ jobs:
     container:
       image: tamasfe/taplo:0.8.0
     steps:
+      - uses: actions/checkout@v4
       - run: taplo lint
       - run: taplo fmt --check --diff
 
@@ -50,8 +55,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo install cargo-deadlinks
-      - run: cargo deadlinks -- --all-features
-      - run: cargo doc --all-features --no-deps
+      - run: cargo deadlinks -- ${{ env.ALL_NON_EXCLUSIVE_FEATURES }}
+      - run: cargo doc ${{ env.ALL_NON_EXCLUSIVE_FEATURES }} --no-deps
         env:
           RUSTDOCFLAGS: -Dwarnings
 

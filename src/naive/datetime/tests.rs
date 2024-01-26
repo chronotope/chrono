@@ -1,7 +1,6 @@
 use super::NaiveDateTime;
 use crate::time_delta::TimeDelta;
-use crate::NaiveDate;
-use crate::{Datelike, FixedOffset, Utc};
+use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, Utc};
 
 #[test]
 fn test_datetime_from_timestamp_millis() {
@@ -74,6 +73,57 @@ fn test_datetime_from_timestamp_micros() {
     for secs in secs_test.iter().copied() {
         assert_eq!(
             NaiveDateTime::from_timestamp_micros(secs * 1_000_000),
+            NaiveDateTime::from_timestamp_opt(secs, 0)
+        );
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp_nanos() {
+    let valid_map = [
+        (1662921288000000000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123456000, "2022-09-11 18:34:48.123456000"),
+        (1662921288123456789, "2022-09-11 18:34:48.123456789"),
+        (1662921287890000000, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000000000, "1900-01-01 14:38:45.000000000"),
+        (-5337182663000000000, "1800-11-15 01:15:37.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000000000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000000000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000000000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_nanos, _formatted) in valid_map.iter().copied() {
+        let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos).unwrap();
+        assert_eq!(timestamp_nanos, naive_datetime.timestamp_nanos_opt().unwrap());
+        #[cfg(feature = "alloc")]
+        assert_eq!(naive_datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    const A_BILLION: i64 = 1_000_000_000;
+    // Maximum datetime in nanoseconds
+    let maximum = "2262-04-11T23:47:16.854775804";
+    let parsed: NaiveDateTime = maximum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
+    assert_eq!(
+        NaiveDateTime::from_timestamp_nanos(nanos).unwrap(),
+        NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
+    // Minimum datetime in nanoseconds
+    let minimum = "1677-09-21T00:12:44.000000000";
+    let parsed: NaiveDateTime = minimum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
+    assert_eq!(
+        NaiveDateTime::from_timestamp_nanos(nanos).unwrap(),
+        NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
+
+    // Test that the result of `from_timestamp_nanos` compares equal to
+    // that of `from_timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().copied() {
+        assert_eq!(
+            NaiveDateTime::from_timestamp_nanos(secs * 1_000_000_000),
             NaiveDateTime::from_timestamp_opt(secs, 0)
         );
     }
@@ -510,4 +560,63 @@ fn test_checked_sub_offset() {
 
     assert_eq!(dt.checked_add_offset(positive_offset), Some(dt + positive_offset));
     assert_eq!(dt.checked_sub_offset(positive_offset), Some(dt - positive_offset));
+}
+
+#[test]
+fn test_overflowing_add_offset() {
+    let ymdhmsm = |y, m, d, h, mn, s, mi| {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi).unwrap()
+    };
+    let positive_offset = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    // regular date
+    let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0);
+    assert_eq!(dt.overflowing_add_offset(positive_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
+    // leap second is preserved
+    let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000);
+    assert_eq!(dt.overflowing_add_offset(positive_offset), ymdhmsm(2023, 7, 1, 1, 59, 59, 1_000));
+    // out of range
+    assert!(NaiveDateTime::MAX.overflowing_add_offset(positive_offset) > NaiveDateTime::MAX);
+
+    let negative_offset = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    // regular date
+    let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0);
+    assert_eq!(dt.overflowing_add_offset(negative_offset), ymdhmsm(2023, 5, 5, 18, 10, 0, 0));
+    // leap second is preserved
+    let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000);
+    assert_eq!(dt.overflowing_add_offset(negative_offset), ymdhmsm(2023, 6, 30, 21, 59, 59, 1_000));
+    // out of range
+    assert!(NaiveDateTime::MIN.overflowing_add_offset(negative_offset) < NaiveDateTime::MIN);
+}
+
+#[test]
+fn test_and_timezone_min_max_dates() {
+    for offset_hour in -23..=23 {
+        dbg!(offset_hour);
+        let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
+
+        let local_max = NaiveDateTime::MAX.and_local_timezone(offset);
+        if offset_hour >= 0 {
+            assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
+        } else {
+            assert_eq!(local_max, LocalResult::None);
+        }
+        let local_min = NaiveDateTime::MIN.and_local_timezone(offset);
+        if offset_hour <= 0 {
+            assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
+        } else {
+            assert_eq!(local_min, LocalResult::None);
+        }
+    }
+}
+
+#[test]
+#[cfg(feature = "rkyv-validation")]
+fn test_rkyv_validation() {
+    let dt_min = NaiveDateTime::MIN;
+    let bytes = rkyv::to_bytes::<_, 12>(&dt_min).unwrap();
+    assert_eq!(rkyv::from_bytes::<NaiveDateTime>(&bytes).unwrap(), dt_min);
+
+    let dt_max = NaiveDateTime::MAX;
+    let bytes = rkyv::to_bytes::<_, 12>(&dt_max).unwrap();
+    assert_eq!(rkyv::from_bytes::<NaiveDateTime>(&bytes).unwrap(), dt_max);
 }

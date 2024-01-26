@@ -100,21 +100,28 @@
 //! or in the local time zone
 //! ([`Local::now()`](./offset/struct.Local.html#method.now)).
 //!
+#![cfg_attr(not(feature = "now"), doc = "```ignore")]
+#![cfg_attr(feature = "now", doc = "```rust")]
+//! use chrono::prelude::*;
+//!
+//! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
+//! # let _ = utc;
+//! ```
+//!
 #![cfg_attr(not(feature = "clock"), doc = "```ignore")]
 #![cfg_attr(feature = "clock", doc = "```rust")]
 //! use chrono::prelude::*;
 //!
-//! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
 //! let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
-//! # let _ = utc; let _ = local;
+//! # let _ = local;
 //! ```
 //!
 //! Alternatively, you can create your own date and time.
 //! This is a bit verbose due to Rust's lack of function and method overloading,
 //! but in turn we get a rich combination of initialization methods.
 //!
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-#![cfg_attr(feature = "std", doc = "```rust")]
+#![cfg_attr(not(feature = "now"), doc = "```ignore")]
+#![cfg_attr(feature = "now", doc = "```rust")]
 //! use chrono::prelude::*;
 //! use chrono::offset::LocalResult;
 //!
@@ -138,12 +145,14 @@
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::None);
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::None);
 //!
+//! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
 //! let local_dt = Local.from_local_datetime(&NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap()).unwrap();
 //! let fixed_dt = FixedOffset::east_opt(9 * 3600).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(18, 10, 11, 12).unwrap()).unwrap();
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
+//! # }
 //! # Some(())
 //! # }
 //! # doctest().unwrap();
@@ -351,7 +360,7 @@
 //!
 //! ## Rust version requirements
 //!
-//! The Minimum Supported Rust Version (MSRV) is currently **Rust 1.57.0**.
+//! The Minimum Supported Rust Version (MSRV) is currently **Rust 1.61.0**.
 //!
 //! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
 //! lightly.
@@ -463,62 +472,64 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use core::fmt;
-
 mod time_delta;
+#[cfg(feature = "std")]
+pub use time_delta::OutOfRangeError;
 pub use time_delta::TimeDelta;
+
+use core::fmt;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
     #[cfg(feature = "clock")]
-    #[doc(no_inline)]
     pub use crate::Local;
     #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-    #[doc(no_inline)]
     pub use crate::Locale;
-    #[doc(no_inline)]
     pub use crate::SubsecRound;
-    #[doc(no_inline)]
     pub use crate::{DateTime, SecondsFormat};
-    #[doc(no_inline)]
     pub use crate::{Datelike, Month, Timelike, Weekday};
-    #[doc(no_inline)]
     pub use crate::{FixedOffset, Utc};
-    #[doc(no_inline)]
     pub use crate::{NaiveDate, NaiveDateTime, NaiveTime};
-    #[doc(no_inline)]
     pub use crate::{Offset, TimeZone};
 }
 
 mod datetime;
+pub use datetime::DateTime;
 #[allow(deprecated)]
-pub use datetime::{DateTime, SecondsFormat, MAX_DATETIME, MIN_DATETIME};
+#[doc(no_inline)]
+pub use datetime::{MAX_DATETIME, MIN_DATETIME};
 
 pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
 pub use format::Locale;
-pub use format::{ParseError, ParseResult};
+pub use format::{ParseError, ParseResult, SecondsFormat};
 
 pub mod naive;
-#[doc(no_inline)]
-pub use naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime, NaiveWeek};
+#[doc(inline)]
+pub use naive::{Days, NaiveDate, NaiveDateTime, NaiveTime};
+pub use naive::{IsoWeek, NaiveWeek};
 
 pub mod offset;
 #[cfg(feature = "clock")]
-#[doc(no_inline)]
+#[doc(inline)]
 pub use offset::Local;
-#[doc(no_inline)]
-pub use offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+pub use offset::LocalResult;
+#[doc(inline)]
+pub use offset::{FixedOffset, Offset, TimeZone, Utc};
 
-mod round;
+pub mod round;
 pub use round::{DurationRound, RoundingError, SubsecRound};
 
 mod weekday;
-pub use weekday::{ParseWeekdayError, Weekday};
+#[doc(no_inline)]
+pub use weekday::ParseWeekdayError;
+pub use weekday::Weekday;
 
 mod month;
-pub use month::{Month, Months, ParseMonthError};
+#[doc(no_inline)]
+pub use month::ParseMonthError;
+pub use month::{Month, Months};
 
 mod traits;
 pub use traits::{Datelike, Timelike};
@@ -544,7 +555,7 @@ pub mod serde {
 /// Zero-copy serialization/deserialization with rkyv.
 ///
 /// This module re-exports the `Archived*` versions of chrono's types.
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 pub mod rkyv {
     pub use crate::datetime::ArchivedDateTime;
     pub use crate::month::ArchivedMonth;
@@ -589,6 +600,7 @@ impl std::error::Error for OutOfRange {}
 
 /// Workaround because `?` is not (yet) available in const context.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! try_opt {
     ($e:expr) => {
         match $e {
@@ -600,6 +612,7 @@ macro_rules! try_opt {
 
 /// Workaround because `.expect()` is not (yet) available in const context.
 #[macro_export]
+#[doc(hidden)]
 macro_rules! expect {
     ($e:expr, $m:literal) => {
         match $e {

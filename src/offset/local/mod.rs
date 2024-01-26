@@ -3,7 +3,7 @@
 
 //! The local (system) time zone.
 
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
@@ -85,7 +85,7 @@ mod inner {
 #[cfg(unix)]
 mod tz_info;
 
-/// The local timescale. This is implemented via the standard `time` crate.
+/// The local timescale.
 ///
 /// Using the [`TimeZone`](./trait.TimeZone.html) methods
 /// on the Local struct is the preferred way to construct `DateTime<Local>`
@@ -101,8 +101,13 @@ mod tz_info;
 /// assert!(dt1 >= dt2);
 /// ```
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-#[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, Debug)))]
+#[cfg_attr(
+    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    derive(Archive, Deserialize, Serialize),
+    archive(compare(PartialEq)),
+    archive_attr(derive(Clone, Copy, Debug))
+)]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Local;
 
@@ -234,5 +239,18 @@ mod tests {
                 timestr
             );
         }
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-validation")]
+    fn test_rkyv_validation() {
+        let local = Local;
+        // Local is a ZST and serializes to 0 bytes
+        let bytes = rkyv::to_bytes::<_, 0>(&local).unwrap();
+        assert_eq!(bytes.len(), 0);
+
+        // but is deserialized to an archived variant without a
+        // wrapping object
+        assert_eq!(rkyv::from_bytes::<Local>(&bytes).unwrap(), super::ArchivedLocal);
     }
 }

@@ -1,4 +1,9 @@
 name: codecov
+
+env:
+  # It's really `--all-features`, but not adding the mutually exclusive features from rkyv
+  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-64 rkyv-validation serde arbitrary"
+
 on:
   push:
     branches: [main, 0.4.x]
@@ -18,7 +23,7 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate code coverage
-        run: cargo +nightly llvm-cov --all-features --workspace --lcov --doctests --output-path lcov.info
+        run: cargo +nightly llvm-cov ${{ env.ALL_NON_EXCLUSIVE_FEATURES }} --workspace --lcov --doctests --output-path lcov.info
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         env:

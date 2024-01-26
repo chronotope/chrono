@@ -5,7 +5,7 @@
 
 use core::fmt;
 #[cfg(all(
-    feature = "clock",
+    feature = "now",
     not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
@@ -14,12 +14,12 @@ use core::fmt;
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(feature = "rkyv")]
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::naive::NaiveDateTime;
-#[cfg(feature = "clock")]
+#[cfg(feature = "now")]
 use crate::DateTime;
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
@@ -40,12 +40,17 @@ use crate::DateTime;
 /// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "rkyv", derive(Archive, Deserialize, Serialize))]
-#[cfg_attr(feature = "rkyv", archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash)))]
+#[cfg_attr(
+    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    derive(Archive, Deserialize, Serialize),
+    archive(compare(PartialEq)),
+    archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash))
+)]
+#[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 pub struct Utc;
 
-#[cfg(feature = "clock")]
+#[cfg(feature = "now")]
 impl Utc {
     /// Returns a `DateTime<Utc>` which corresponds to the current date and time in UTC.
     ///
