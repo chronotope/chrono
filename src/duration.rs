@@ -76,8 +76,13 @@ pub(crate) const MAX: Duration = Duration {
 };
 
 impl Duration {
-    /// Makes a new `Duration` with given number of weeks.
-    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
+    /// Makes a new `Duration` with the given number of weeks.
+    ///
+    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with
+    /// overflow checks.
+    ///
+    /// # Panics
+    ///
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
@@ -85,16 +90,26 @@ impl Duration {
         Duration::try_weeks(weeks).expect("Duration::weeks out of bounds")
     }
 
-    /// Makes a new `Duration` with given number of weeks.
-    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with overflow checks.
+    /// Makes a new `Duration` with the given number of weeks.
+    ///
+    /// Equivalent to `Duration::seconds(weeks * 7 * 24 * 60 * 60)` with
+    /// overflow checks.
+    ///
+    /// # Errors
+    ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
     pub fn try_weeks(weeks: i64) -> Option<Duration> {
         weeks.checked_mul(SECS_PER_WEEK).and_then(Duration::try_seconds)
     }
 
-    /// Makes a new `Duration` with given number of days.
-    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
+    /// Makes a new `Duration` with the given number of days.
+    ///
+    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow
+    /// checks.
+    ///
+    /// # Panics
+    ///
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
@@ -102,16 +117,25 @@ impl Duration {
         Duration::try_days(days).expect("Duration::days out of bounds")
     }
 
-    /// Makes a new `Duration` with given number of days.
-    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow checks.
+    /// Makes a new `Duration` with the given number of days.
+    ///
+    /// Equivalent to `Duration::seconds(days * 24 * 60 * 60)` with overflow
+    /// checks.
+    ///
+    /// # Errors
+    ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
     pub fn try_days(days: i64) -> Option<Duration> {
         days.checked_mul(SECS_PER_DAY).and_then(Duration::try_seconds)
     }
 
-    /// Makes a new `Duration` with given number of hours.
+    /// Makes a new `Duration` with the given number of hours.
+    ///
     /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
+    ///
+    /// # Panics
+    ///
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
@@ -119,16 +143,24 @@ impl Duration {
         Duration::try_hours(hours).expect("Duration::hours out of bounds")
     }
 
-    /// Makes a new `Duration` with given number of hours.
+    /// Makes a new `Duration` with the given number of hours.
+    ///
     /// Equivalent to `Duration::seconds(hours * 60 * 60)` with overflow checks.
+    ///
+    /// # Errors
+    ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
     pub fn try_hours(hours: i64) -> Option<Duration> {
         hours.checked_mul(SECS_PER_HOUR).and_then(Duration::try_seconds)
     }
 
-    /// Makes a new `Duration` with given number of minutes.
+    /// Makes a new `Duration` with the given number of minutes.
+    ///
     /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
+    ///
+    /// # Panics
+    ///
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
@@ -136,26 +168,39 @@ impl Duration {
         Duration::try_minutes(minutes).expect("Duration::minutes out of bounds")
     }
 
-    /// Makes a new `Duration` with given number of minutes.
+    /// Makes a new `Duration` with the given number of minutes.
+    ///
     /// Equivalent to `Duration::seconds(minutes * 60)` with overflow checks.
+    ///
+    /// # Errors
+    ///
     /// Returns `None` when the duration is out of bounds.
     #[inline]
     pub fn try_minutes(minutes: i64) -> Option<Duration> {
         minutes.checked_mul(SECS_PER_MINUTE).and_then(Duration::try_seconds)
     }
 
-    /// Makes a new `Duration` with given number of seconds.
-    /// Panics when the duration is more than `i64::MAX` milliseconds
-    /// or less than `-i64::MAX` milliseconds.
+    /// Makes a new `Duration` with the given number of seconds.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the duration is out of bounds, i.e. when the value is more
+    /// than `i64::MAX / 1_000` seconds or less than `-i64::MAX / 1_000` seconds
+    /// (in this context, this is the same as `i64::MIN / 1_000` due to
+    /// rounding).
     #[inline]
     #[must_use]
     pub fn seconds(seconds: i64) -> Duration {
         Duration::try_seconds(seconds).expect("Duration::seconds out of bounds")
     }
 
-    /// Makes a new `Duration` with given number of seconds.
-    /// Returns `None` when the duration is more than `i64::MAX` milliseconds
-    /// or less than `-i64::MAX` milliseconds.
+    /// Makes a new `Duration` with the given number of seconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` when the duration is more than `i64::MAX / 1_000` seconds
+    /// or less than `-i64::MAX / 1_000` seconds (in this context, this is the
+    /// same as `i64::MIN / 1_000` due to rounding).
     #[inline]
     pub fn try_seconds(seconds: i64) -> Option<Duration> {
         let d = Duration { secs: seconds, nanos: 0 };
@@ -165,7 +210,7 @@ impl Duration {
         Some(d)
     }
 
-    /// Makes a new `Duration` with given number of milliseconds.
+    /// Makes a new `Duration` with the given number of milliseconds.
     #[inline]
     pub const fn milliseconds(milliseconds: i64) -> Duration {
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
@@ -173,7 +218,7 @@ impl Duration {
         Duration { secs, nanos }
     }
 
-    /// Makes a new `Duration` with given number of microseconds.
+    /// Makes a new `Duration` with the given number of microseconds.
     #[inline]
     pub const fn microseconds(microseconds: i64) -> Duration {
         let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
@@ -181,7 +226,7 @@ impl Duration {
         Duration { secs, nanos }
     }
 
-    /// Makes a new `Duration` with given number of nanoseconds.
+    /// Makes a new `Duration` with the given number of nanoseconds.
     #[inline]
     pub const fn nanoseconds(nanos: i64) -> Duration {
         let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
