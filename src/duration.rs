@@ -211,14 +211,42 @@ impl Duration {
     }
 
     /// Makes a new `Duration` with the given number of milliseconds.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the duration is out of bounds, i.e. when the duration is
+    /// more than `i64::MAX` milliseconds or less than `-i64::MAX` milliseconds.
+    /// Notably, this is not the same as `i64::MIN`.
     #[inline]
-    pub const fn milliseconds(milliseconds: i64) -> Duration {
+    pub fn milliseconds(milliseconds: i64) -> Duration {
+        Duration::try_milliseconds(milliseconds).expect("Duration::milliseconds out of bounds")
+    }
+
+    /// Makes a new `Duration` with the given number of milliseconds.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` when the duration is more than `i64::MAX` milliseconds or
+    /// less than `-i64::MAX` milliseconds. Notably, this is not the same as
+    /// `i64::MIN`.
+    #[inline]
+    pub fn try_milliseconds(milliseconds: i64) -> Option<Duration> {
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
-        let nanos = millis as i32 * NANOS_PER_MILLI;
-        Duration { secs, nanos }
+        let d = Duration { secs, nanos: millis as i32 * NANOS_PER_MILLI };
+        // We don't need to compare against MAX, as this function accepts an
+        // i64, and MAX is aligned to i64::MAX milliseconds.
+        if d < MIN {
+            return None;
+        }
+        Some(d)
     }
 
     /// Makes a new `Duration` with the given number of microseconds.
+    ///
+    /// The number of microseconds acceptable by this constructor is less than
+    /// the total number that can actually be stored in a `Duration`, so it is
+    /// not possible to specify a value that would be out of bounds. This
+    /// function is therefore infallible.
     #[inline]
     pub const fn microseconds(microseconds: i64) -> Duration {
         let (secs, micros) = div_mod_floor_64(microseconds, MICROS_PER_SEC);
@@ -227,6 +255,11 @@ impl Duration {
     }
 
     /// Makes a new `Duration` with the given number of nanoseconds.
+    ///
+    /// The number of nanoseconds acceptable by this constructor is less than
+    /// the total number that can actually be stored in a `Duration`, so it is
+    /// not possible to specify a value that would be out of bounds. This
+    /// function is therefore infallible.
     #[inline]
     pub const fn nanoseconds(nanos: i64) -> Duration {
         let (secs, nanos) = div_mod_floor_64(nanos, NANOS_PER_SEC as i64);
@@ -709,19 +742,12 @@ mod tests {
             .is_none());
     }
     #[test]
-    #[ignore]
     #[should_panic(expected = "Duration::milliseconds out of bounds")]
     fn test_duration_milliseconds_min_underflow_panic() {
         // Here we ensure that trying to create a value one millisecond below the
         // minimum storable value will fail. This test is necessary because the
         // storable range is -i64::MAX, but the constructor type of i64 will allow
         // i64::MIN, which is one value below.
-        // WARNING:
-        // This test currently fails, because Duration::milliseconds() does not
-        // check against MIN, and hence allows an unsupported value to be created.
-        // Therefore it is currently marked as "ignore", until the fix is applied.
-        // This is because the current implementation of milliseconds() cannot
-        // actually panic.
         let _ = Duration::milliseconds(i64::MIN); // Same as -i64::MAX - 1
     }
 
