@@ -49,7 +49,13 @@ macro_rules! try_opt {
 
 /// ISO 8601 time duration with nanosecond precision.
 ///
-/// This also allows for the negative duration; see individual methods for details.
+/// This also allows for negative durations; see individual methods for details.
+///
+/// A `Duration` is represented internally as a complement of seconds and
+/// nanoseconds. The range is restricted to that of `i64` milliseconds, with the
+/// minimum value notably being set to `-i64::MAX` rather than allowing the full
+/// range of `i64::MIN`. This is to allow easy flipping of sign, so that for
+/// instance `abs()` can be called without any checks.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Debug, Hash)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
@@ -266,30 +272,30 @@ impl Duration {
         Duration { secs, nanos: nanos as i32 }
     }
 
-    /// Returns the total number of whole weeks in the duration.
+    /// Returns the total number of whole weeks in the `Duration`.
     #[inline]
     pub const fn num_weeks(&self) -> i64 {
         self.num_days() / 7
     }
 
-    /// Returns the total number of whole days in the duration.
+    /// Returns the total number of whole days in the `Duration`.
     pub const fn num_days(&self) -> i64 {
         self.num_seconds() / SECS_PER_DAY
     }
 
-    /// Returns the total number of whole hours in the duration.
+    /// Returns the total number of whole hours in the `Duration`.
     #[inline]
     pub const fn num_hours(&self) -> i64 {
         self.num_seconds() / SECS_PER_HOUR
     }
 
-    /// Returns the total number of whole minutes in the duration.
+    /// Returns the total number of whole minutes in the `Duration`.
     #[inline]
     pub const fn num_minutes(&self) -> i64 {
         self.num_seconds() / SECS_PER_MINUTE
     }
 
-    /// Returns the total number of whole seconds in the duration.
+    /// Returns the total number of whole seconds in the `Duration`.
     pub const fn num_seconds(&self) -> i64 {
         // If secs is negative, nanos should be subtracted from the duration.
         if self.secs < 0 && self.nanos > 0 {
@@ -301,7 +307,7 @@ impl Duration {
 
     /// Returns the number of nanoseconds such that
     /// `subsec_nanos() + num_seconds() * NANOS_PER_SEC` is the total number of
-    /// nanoseconds in the duration.
+    /// nanoseconds in the `Duration`.
     pub const fn subsec_nanos(&self) -> i32 {
         if self.secs < 0 && self.nanos > 0 {
             self.nanos - NANOS_PER_SEC
@@ -310,16 +316,17 @@ impl Duration {
         }
     }
 
-    /// Returns the total number of whole milliseconds in the duration,
+    /// Returns the total number of whole milliseconds in the `Duration`.
     pub const fn num_milliseconds(&self) -> i64 {
-        // A proper Duration will not overflow, because MIN and MAX are defined
-        // such that the range is exactly i64 milliseconds.
+        // A proper Duration will not overflow, because MIN and MAX are defined such
+        // that the range is within the bounds of an i64, from -i64::MAX through to
+        // +i64::MAX inclusive. Notably, i64::MIN is excluded from this range.
         let secs_part = self.num_seconds() * MILLIS_PER_SEC;
         let nanos_part = self.subsec_nanos() / NANOS_PER_MILLI;
         secs_part + nanos_part as i64
     }
 
-    /// Returns the total number of whole microseconds in the duration,
+    /// Returns the total number of whole microseconds in the `Duration`,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
     pub const fn num_microseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(MICROS_PER_SEC));
@@ -327,7 +334,7 @@ impl Duration {
         secs_part.checked_add(nanos_part as i64)
     }
 
-    /// Returns the total number of whole nanoseconds in the duration,
+    /// Returns the total number of whole nanoseconds in the `Duration`,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
     pub const fn num_nanoseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64));
@@ -335,7 +342,7 @@ impl Duration {
         secs_part.checked_add(nanos_part as i64)
     }
 
-    /// Add two durations, returning `None` if overflow occurred.
+    /// Add two `Duration`s, returning `None` if overflow occurred.
     #[must_use]
     pub fn checked_add(&self, rhs: &Duration) -> Option<Duration> {
         let mut secs = try_opt!(self.secs.checked_add(rhs.secs));
@@ -354,7 +361,7 @@ impl Duration {
         }
     }
 
-    /// Subtract two durations, returning `None` if overflow occurred.
+    /// Subtract two `Duration`s, returning `None` if overflow occurred.
     #[must_use]
     pub fn checked_sub(&self, rhs: &Duration) -> Option<Duration> {
         let mut secs = try_opt!(self.secs.checked_sub(rhs.secs));
@@ -373,7 +380,7 @@ impl Duration {
         }
     }
 
-    /// Returns the duration as an absolute (non-negative) value.
+    /// Returns the `Duration` as an absolute (non-negative) value.
     #[inline]
     pub const fn abs(&self) -> Duration {
         if self.secs < 0 && self.nanos != 0 {
@@ -395,13 +402,13 @@ impl Duration {
         MAX
     }
 
-    /// A duration where the stored seconds and nanoseconds are equal to zero.
+    /// A `Duration` where the stored seconds and nanoseconds are equal to zero.
     #[inline]
     pub const fn zero() -> Duration {
         Duration { secs: 0, nanos: 0 }
     }
 
-    /// Returns `true` if the duration equals `Duration::zero()`.
+    /// Returns `true` if the `Duration` equals `Duration::zero()`.
     #[inline]
     pub const fn is_zero(&self) -> bool {
         self.secs == 0 && self.nanos == 0
