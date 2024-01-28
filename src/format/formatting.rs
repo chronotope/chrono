@@ -139,53 +139,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for Delayed
     }
 }
 
-/// Tries to format given arguments with given formatting items.
-/// Internally used by `DelayedFormat`.
-#[cfg(feature = "alloc")]
-#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
-pub fn format<'a, I, B>(
-    w: &mut fmt::Formatter,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
-    items: I,
-) -> fmt::Result
-where
-    I: Iterator<Item = B> + Clone,
-    B: Borrow<Item<'a>>,
-{
-    DelayedFormat {
-        date: date.copied(),
-        time: time.copied(),
-        off: off.cloned(),
-        items,
-        #[cfg(feature = "unstable-locales")]
-        locale: None,
-    }
-    .fmt(w)
-}
-
-/// Formats single formatting item
-#[cfg(feature = "alloc")]
-#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
-pub fn format_item(
-    w: &mut fmt::Formatter,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
-    item: &Item<'_>,
-) -> fmt::Result {
-    DelayedFormat {
-        date: date.copied(),
-        time: time.copied(),
-        off: off.cloned(),
-        items: [item].into_iter(),
-        #[cfg(feature = "unstable-locales")]
-        locale: None,
-    }
-    .fmt(w)
-}
-
 #[cfg(feature = "alloc")]
 fn format_inner(
     w: &mut impl Write,
