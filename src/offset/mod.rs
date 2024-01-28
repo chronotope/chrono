@@ -20,7 +20,6 @@
 
 use core::fmt;
 
-use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
 use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::DateTime;
 
@@ -146,23 +145,6 @@ pub trait TimeZone: Sized + Clone {
     /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
-    /// # Panics
-    ///
-    /// Panics on the out-of-range number of seconds and/or invalid nanosecond,
-    /// for a non-panicking version see [`timestamp_opt`](#method.timestamp_opt).
-    #[deprecated(since = "0.4.23", note = "use `timestamp_opt()` instead")]
-    fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
-        self.timestamp_opt(secs, nsecs).unwrap()
-    }
-
-    /// Makes a new `DateTime` from the number of non-leap seconds
-    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
-    ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
-    ///
     /// # Errors
     ///
     /// Returns `LocalResult::None` on out-of-range number of seconds and/or
@@ -180,16 +162,6 @@ pub trait TimeZone: Sized + Clone {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
         }
-    }
-
-    /// Makes a new `DateTime` from the number of non-leap milliseconds
-    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
-    ///
-    /// Panics on out-of-range number of milliseconds for a non-panicking
-    /// version see [`timestamp_millis_opt`](#method.timestamp_millis_opt).
-    #[deprecated(since = "0.4.23", note = "use `timestamp_millis_opt()` instead")]
-    fn timestamp_millis(&self, millis: i64) -> DateTime<Self> {
-        self.timestamp_millis_opt(millis).unwrap()
     }
 
     /// Makes a new `DateTime` from the number of non-leap milliseconds
@@ -252,31 +224,6 @@ pub trait TimeZone: Sized + Clone {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
         }
-    }
-
-    /// Parses a string with the specified format string and returns a
-    /// `DateTime` with the current offset.
-    ///
-    /// See the [`crate::format::strftime`] module on the
-    /// supported escape sequences.
-    ///
-    /// If the to-be-parsed string includes an offset, it *must* match the
-    /// offset of the TimeZone, otherwise an error will be returned.
-    ///
-    /// See also [`DateTime::parse_from_str`] which gives a [`DateTime`] with
-    /// parsed [`FixedOffset`].
-    ///
-    /// See also [`NaiveDateTime::parse_from_str`] which gives a [`NaiveDateTime`] without
-    /// an offset, but can be converted to a [`DateTime`] with [`NaiveDateTime::and_utc`] or
-    /// [`NaiveDateTime::and_local_timezone`].
-    #[deprecated(
-        since = "0.4.29",
-        note = "use `DateTime::parse_from_str` or `NaiveDateTime::parse_from_str` with `and_utc()` or `and_local_timezone()` instead"
-    )]
-    fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
-        let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
-        parsed.to_datetime_with_timezone(self)
     }
 
     /// Reconstructs the time zone from the offset.
