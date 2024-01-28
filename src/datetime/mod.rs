@@ -56,13 +56,6 @@ pub struct DateTime<Tz: TimeZone> {
     offset: Tz::Offset,
 }
 
-/// The minimum possible `DateTime<Utc>`.
-#[deprecated(since = "0.4.20", note = "Use DateTime::MIN_UTC instead")]
-pub const MIN_DATETIME: DateTime<Utc> = DateTime::<Utc>::MIN_UTC;
-/// The maximum possible `DateTime<Utc>`.
-#[deprecated(since = "0.4.20", note = "Use DateTime::MAX_UTC instead")]
-pub const MAX_DATETIME: DateTime<Utc> = DateTime::<Utc>::MAX_UTC;
-
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
     ///
@@ -93,37 +86,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
         offset: Tz::Offset,
     ) -> DateTime<Tz> {
         DateTime { datetime, offset }
-    }
-
-    /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
-    #[inline]
-    #[must_use]
-    #[deprecated(
-        since = "0.4.27",
-        note = "Use TimeZone::from_utc_datetime() or DateTime::from_naive_utc_and_offset instead"
-    )]
-    pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
-        DateTime { datetime, offset }
-    }
-
-    /// Makes a new `DateTime` from a `NaiveDateTime` in *local* time and an `Offset`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the local datetime can't be converted to UTC because it would be out of range.
-    ///
-    /// This can happen if `datetime` is near the end of the representable range of `NaiveDateTime`,
-    /// and the offset from UTC pushes it beyond that.
-    #[inline]
-    #[must_use]
-    #[deprecated(
-        since = "0.4.27",
-        note = "Use TimeZone::from_local_datetime() or NaiveDateTime::and_local_timezone instead"
-    )]
-    pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
-        let datetime_utc = datetime - offset.fix();
-
-        DateTime { datetime: datetime_utc, offset }
     }
 
     /// Retrieves the date without an associated timezone.
@@ -213,23 +175,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[must_use]
     pub fn timestamp_micros(&self) -> i64 {
         self.datetime.timestamp_micros()
-    }
-
-    /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
-    ///
-    /// # Panics
-    ///
-    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
-    /// an out of range `DateTime`.
-    ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
-    /// and 2262-04-11T23:47:16.854775807.
-    #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.timestamp_nanos_opt()
-            .expect("value can not be represented in a timestamp with nanosecond precision.")
     }
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.

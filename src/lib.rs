@@ -477,9 +477,6 @@ pub mod prelude {
 
 mod datetime;
 pub use datetime::DateTime;
-#[allow(deprecated)]
-#[doc(no_inline)]
-pub use datetime::{MAX_DATETIME, MIN_DATETIME};
 
 pub mod format;
 /// L10n locales.

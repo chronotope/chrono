@@ -1217,30 +1217,6 @@ fn test_from_system_time() {
 }
 
 #[test]
-#[allow(deprecated)]
-fn test_datetime_from_local() {
-    // 2000-01-12T02:00:00Z
-    let naivedatetime_utc =
-        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(2, 0, 0).unwrap();
-    let datetime_utc = DateTime::<Utc>::from_utc(naivedatetime_utc, Utc);
-
-    // 2000-01-12T10:00:00+8:00:00
-    let timezone_east = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    let naivedatetime_east =
-        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_opt(10, 0, 0).unwrap();
-    let datetime_east = DateTime::<FixedOffset>::from_local(naivedatetime_east, timezone_east);
-
-    // 2000-01-11T19:00:00-7:00:00
-    let timezone_west = FixedOffset::west_opt(7 * 60 * 60).unwrap();
-    let naivedatetime_west =
-        NaiveDate::from_ymd_opt(2000, 1, 11).unwrap().and_hms_opt(19, 0, 0).unwrap();
-    let datetime_west = DateTime::<FixedOffset>::from_local(naivedatetime_west, timezone_west);
-
-    assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
-    assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
-}
-
-#[test]
 fn test_datetime_from_timestamp_millis() {
     // 2000-01-12T01:02:03:004Z
     let naive_dt =
@@ -1582,19 +1558,6 @@ fn test_auto_conversion() {
         .unwrap();
     let utc_dt2: DateTime<Utc> = cdt_dt.into();
     assert_eq!(utc_dt, utc_dt2);
-}
-
-#[test]
-#[cfg(feature = "clock")]
-#[allow(deprecated)]
-fn test_test_deprecated_from_offset() {
-    let now = Local::now();
-    let naive = now.naive_local();
-    let utc = now.naive_utc();
-    let offset: FixedOffset = *now.offset();
-
-    assert_eq!(DateTime::<Local>::from_local(naive, offset), now);
-    assert_eq!(DateTime::<Local>::from_utc(utc, offset), now);
 }
 
 #[test]
