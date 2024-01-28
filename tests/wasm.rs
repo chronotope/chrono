@@ -22,7 +22,7 @@ fn now() {
 
     // Ensure time set by the test script is correct
     let now = env!("NOW");
-    let actual = Utc.datetime_from_str(&now, "%s").unwrap();
+    let actual = NaiveDateTime::parse_from_str(&now, "%s").unwrap().and_utc();
     let diff = utc - actual;
     assert!(
         diff < chrono::Duration::minutes(5),
