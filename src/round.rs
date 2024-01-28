@@ -97,7 +97,7 @@ const fn span_for_digits(digits: u16) -> u32 {
 ///
 /// # Limitations
 /// Both rounding and truncating are done via [`Duration::num_nanoseconds`] and
-/// [`DateTime::timestamp_nanos`]. This means that they will fail if either the
+/// [`DateTime::timestamp_nanos_opt`]. This means that they will fail if either the
 /// `Duration` or the `DateTime` are too big to represented as nanoseconds. They
 /// will also fail if the `Duration` is bigger than the timestamp.
 pub trait DurationRound: Sized {

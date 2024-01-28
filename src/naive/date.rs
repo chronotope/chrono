@@ -1556,7 +1556,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd_opt(-308, 3, 14).unwrap().day(), 14);
     /// ```
     ///
-    /// Combined with [`NaiveDate::pred`](#method.pred),
+    /// Combined with [`NaiveDate::pred_opt`](#method.pred_opt),
     /// one can determine the number of days in a particular month.
     /// (Note that this panics when `year` is out of range.)
     ///
@@ -1613,7 +1613,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd_opt(-308, 3, 14).unwrap().ordinal(), 74);
     /// ```
     ///
-    /// Combined with [`NaiveDate::pred`](#method.pred),
+    /// Combined with [`NaiveDate::pred_opt`](#method.pred_opt),
     /// one can determine the number of days in a particular year.
     /// (Note that this panics when `year` is out of range.)
     ///

@@ -260,7 +260,7 @@
 //! # }
 //! ```
 //!
-//! Parsing can be done with three methods:
+//! Parsing can be done with two methods:
 //!
 //! 1. The standard [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait
 //!    (and [`parse`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) method
@@ -277,12 +277,6 @@
 //!    and
 //!    [`DateTime::parse_from_rfc3339`](./struct.DateTime.html#method.parse_from_rfc3339)
 //!    are similar but for well-known formats.
-//!
-//! 3. [`Offset::datetime_from_str`](./offset/trait.TimeZone.html#method.datetime_from_str) is
-//!    similar but returns `DateTime` of given offset.
-//!    When the explicit offset is missing from the input, it simply uses given offset.
-//!    It issues an error when the input contains an explicit offset different
-//!    from the current offset.
 //!
 //! More detailed control over the parsing process is available via
 //! [`format`](./format/index.html) module.
