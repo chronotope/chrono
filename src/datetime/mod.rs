@@ -93,7 +93,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_naive_utc_and_offset(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
+    pub const fn from_naive_utc_and_offset(
+        datetime: NaiveDateTime,
+        offset: Tz::Offset,
+    ) -> DateTime<Tz> {
         DateTime { datetime, offset }
     }
 
@@ -653,14 +656,6 @@ impl DateTime<Utc> {
     #[must_use]
     pub fn from_timestamp_millis(millis: i64) -> Option<Self> {
         NaiveDateTime::from_timestamp_millis(millis).as_ref().map(NaiveDateTime::and_utc)
-    }
-
-    // FIXME: remove when our MSRV is 1.61+
-    // This method is used by `NaiveDateTime::and_utc` because `DateTime::from_naive_utc_and_offset`
-    // can't be made const yet.
-    // Trait bounds in const function / implementation blocks were not supported until 1.61.
-    pub(crate) const fn from_naive_utc(datetime: NaiveDateTime) -> Self {
-        DateTime { datetime, offset: Utc }
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
