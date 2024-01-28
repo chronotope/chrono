@@ -35,16 +35,6 @@ impl FixedOffset {
     /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
     /// The negative `secs` means the Western Hemisphere.
     ///
-    /// Panics on the out-of-bound `secs`.
-    #[deprecated(since = "0.4.23", note = "use `east_opt()` instead")]
-    #[must_use]
-    pub fn east(secs: i32) -> FixedOffset {
-        FixedOffset::east_opt(secs).expect("FixedOffset::east out of bounds")
-    }
-
-    /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
-    /// The negative `secs` means the Western Hemisphere.
-    ///
     /// Returns `None` on the out-of-bound `secs`.
     ///
     /// # Example
@@ -66,16 +56,6 @@ impl FixedOffset {
         } else {
             None
         }
-    }
-
-    /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
-    /// The negative `secs` means the Eastern Hemisphere.
-    ///
-    /// Panics on the out-of-bound `secs`.
-    #[deprecated(since = "0.4.23", note = "use `west_opt()` instead")]
-    #[must_use]
-    pub fn west(secs: i32) -> FixedOffset {
-        FixedOffset::west_opt(secs).expect("FixedOffset::west out of bounds")
     }
 
     /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
