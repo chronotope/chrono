@@ -1066,8 +1066,7 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn and_utc(&self) -> DateTime<Utc> {
-        // FIXME: use `DateTime::from_naive_utc_and_offset` when our MSRV is 1.61+.
-        DateTime::from_naive_utc(*self)
+        DateTime::from_naive_utc_and_offset(*self, Utc)
     }
 
     /// The minimum possible `NaiveDateTime`.
