@@ -199,13 +199,6 @@ pub struct NaiveDate {
     ymdf: DateImpl, // (year << 13) | of
 }
 
-/// The minimum possible `NaiveDate` (January 1, 262145 BCE).
-#[deprecated(since = "0.4.20", note = "Use NaiveDate::MIN instead")]
-pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
-/// The maximum possible `NaiveDate` (December 31, 262143 CE).
-#[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
-pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
-
 #[cfg(all(feature = "arbitrary", feature = "std"))]
 impl arbitrary::Arbitrary<'_> for NaiveDate {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveDate> {
@@ -253,19 +246,6 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
     /// (year, month and day).
     ///
-    /// # Panics
-    ///
-    /// Panics if the specified calendar day does not exist, on invalid values for `month` or `day`,
-    /// or if `year` is out of range for `NaiveDate`.
-    #[deprecated(since = "0.4.23", note = "use `from_ymd_opt()` instead")]
-    #[must_use]
-    pub const fn from_ymd(year: i32, month: u32, day: u32) -> NaiveDate {
-        expect!(NaiveDate::from_ymd_opt(year, month, day), "invalid or out-of-range date")
-    }
-
-    /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
-    /// (year, month and day).
-    ///
     /// # Errors
     ///
     /// Returns `None` if:
@@ -301,19 +281,6 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
     /// (year and day of the year).
     ///
-    /// # Panics
-    ///
-    /// Panics if the specified ordinal day does not exist, on invalid values for `ordinal`, or if
-    /// `year` is out of range for `NaiveDate`.
-    #[deprecated(since = "0.4.23", note = "use `from_yo_opt()` instead")]
-    #[must_use]
-    pub const fn from_yo(year: i32, ordinal: u32) -> NaiveDate {
-        expect!(NaiveDate::from_yo_opt(year, ordinal), "invalid or out-of-range date")
-    }
-
-    /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
-    /// (year and day of the year).
-    ///
     /// # Errors
     ///
     /// Returns `None` if:
@@ -340,20 +307,6 @@ impl NaiveDate {
     pub const fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
-    }
-
-    /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
-    /// (year, week number and day of the week).
-    /// The resulting `NaiveDate` may have a different year from the input year.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the specified week does not exist in that year, on invalid values for `week`, or
-    /// if the resulting date is out of range for `NaiveDate`.
-    #[deprecated(since = "0.4.23", note = "use `from_isoywd_opt()` instead")]
-    #[must_use]
-    pub const fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> NaiveDate {
-        expect!(NaiveDate::from_isoywd_opt(year, week, weekday), "invalid or out-of-range date")
     }
 
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
@@ -441,19 +394,6 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
     /// January 1, 1 being day 1.
     ///
-    /// # Panics
-    ///
-    /// Panics if the date is out of range.
-    #[deprecated(since = "0.4.23", note = "use `from_num_days_from_ce_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_num_days_from_ce(days: i32) -> NaiveDate {
-        expect!(NaiveDate::from_num_days_from_ce_opt(days), "out-of-range date")
-    }
-
-    /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
-    /// January 1, 1 being day 1.
-    ///
     /// # Errors
     ///
     /// Returns `None` if the date is out of range.
@@ -481,27 +421,6 @@ impl NaiveDate {
         let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
-    }
-
-    /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
-    /// since the beginning of the given month. For instance, if you want the 2nd Friday of March
-    /// 2017, you would use `NaiveDate::from_weekday_of_month(2017, 3, Weekday::Fri, 2)`.
-    ///
-    /// `n` is 1-indexed.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the specified day does not exist in that month, on invalid values for `month` or
-    /// `n`, or if `year` is out of range for `NaiveDate`.
-    #[deprecated(since = "0.4.23", note = "use `from_weekday_of_month_opt()` instead")]
-    #[must_use]
-    pub const fn from_weekday_of_month(
-        year: i32,
-        month: u32,
-        weekday: Weekday,
-        n: u8,
-    ) -> NaiveDate {
-        expect!(NaiveDate::from_weekday_of_month_opt(year, month, weekday, n), "out-of-range date")
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -829,21 +748,6 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
     /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
-    /// use `NaiveDate::and_hms_*` methods with a subsecond parameter instead.
-    ///
-    /// # Panics
-    ///
-    /// Panics on invalid hour, minute and/or second.
-    #[deprecated(since = "0.4.23", note = "use `and_hms_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn and_hms(&self, hour: u32, min: u32, sec: u32) -> NaiveDateTime {
-        expect!(self.and_hms_opt(hour, min, sec), "invalid time")
-    }
-
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
-    ///
-    /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
     /// use `NaiveDate::and_hms_*_opt` methods with a subsecond parameter instead.
     ///
     /// # Errors
@@ -866,21 +770,6 @@ impl NaiveDate {
     pub const fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
         let time = try_opt!(NaiveTime::from_hms(hour, min, sec));
         Some(self.and_time(time))
-    }
-
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
-    ///
-    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
-    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
-    ///
-    /// # Panics
-    ///
-    /// Panics on invalid hour, minute, second and/or millisecond.
-    #[deprecated(since = "0.4.23", note = "use `and_hms_milli_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> NaiveDateTime {
-        expect!(self.and_hms_milli_opt(hour, min, sec, milli), "invalid time")
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
@@ -923,35 +812,6 @@ impl NaiveDate {
     /// The microsecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
     /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
     ///
-    /// # Panics
-    ///
-    /// Panics on invalid hour, minute, second and/or microsecond.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, Datelike, Timelike, Weekday};
-    ///
-    /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    ///
-    /// let dt: NaiveDateTime = d.and_hms_micro_opt(12, 34, 56, 789_012).unwrap();
-    /// assert_eq!(dt.year(), 2015);
-    /// assert_eq!(dt.weekday(), Weekday::Wed);
-    /// assert_eq!(dt.second(), 56);
-    /// assert_eq!(dt.nanosecond(), 789_012_000);
-    /// ```
-    #[deprecated(since = "0.4.23", note = "use `and_hms_micro_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> NaiveDateTime {
-        expect!(self.and_hms_micro_opt(hour, min, sec, micro), "invalid time")
-    }
-
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
-    ///
-    /// The microsecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
-    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
-    ///
     /// # Errors
     ///
     /// Returns `None` on invalid hour, minute, second and/or microsecond.
@@ -980,21 +840,6 @@ impl NaiveDate {
     ) -> Option<NaiveDateTime> {
         let time = try_opt!(NaiveTime::from_hms_micro(hour, min, sec, micro));
         Some(self.and_time(time))
-    }
-
-    /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
-    ///
-    /// The nanosecond part is allowed to exceed 1,000,000,000 in order to represent a [leap second](
-    /// ./struct.NaiveTime.html#leap-second-handling), but only when `sec == 59`.
-    ///
-    /// # Panics
-    ///
-    /// Panics on invalid hour, minute, second and/or nanosecond.
-    #[deprecated(since = "0.4.23", note = "use `and_hms_nano_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> NaiveDateTime {
-        expect!(self.and_hms_nano_opt(hour, min, sec, nano), "invalid time")
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
@@ -1063,18 +908,6 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` for the next calendar date.
     ///
-    /// # Panics
-    ///
-    /// Panics when `self` is the last representable date.
-    #[deprecated(since = "0.4.23", note = "use `succ_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn succ(&self) -> NaiveDate {
-        expect!(self.succ_opt(), "out of bound")
-    }
-
-    /// Makes a new `NaiveDate` for the next calendar date.
-    ///
     /// # Errors
     ///
     /// Returns `None` when `self` is the last representable date.
@@ -1095,18 +928,6 @@ impl NaiveDate {
             Some(of) => Some(self.with_of(of)),
             None => NaiveDate::from_ymd_opt(self.year() + 1, 1, 1),
         }
-    }
-
-    /// Makes a new `NaiveDate` for the previous calendar date.
-    ///
-    /// # Panics
-    ///
-    /// Panics when `self` is the first representable date.
-    #[deprecated(since = "0.4.23", note = "use `pred_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn pred(&self) -> NaiveDate {
-        expect!(self.pred_opt(), "out of bound")
     }
 
     /// Makes a new `NaiveDate` for the previous calendar date.
