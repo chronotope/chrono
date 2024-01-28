@@ -40,13 +40,6 @@ mod tests;
 /// touching that call when we are already sure that it WILL overflow...
 const MAX_SECS_BITS: usize = 44;
 
-/// The minimum possible `NaiveDateTime`.
-#[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MIN instead")]
-pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime::MIN;
-/// The maximum possible `NaiveDateTime`.
-#[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MAX instead")]
-pub const MAX_DATETIME: NaiveDateTime = NaiveDateTime::MAX;
-
 /// ISO 8601 combined date and time without timezone.
 ///
 /// # Example
@@ -105,30 +98,6 @@ impl NaiveDateTime {
     #[inline]
     pub const fn new(date: NaiveDate, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime { date, time }
-    }
-
-    /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
-    /// from the number of non-leap seconds
-    /// since the midnight UTC on January 1, 1970 (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
-    ///
-    /// For a non-naive version of this function see [`TimeZone::timestamp`].
-    ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
-    ///
-    /// # Panics
-    ///
-    /// Panics if the number of seconds would be out of range for a `NaiveDateTime` (more than
-    /// ca. 262,000 years away from common era), and panics on an invalid nanosecond (2 seconds or
-    /// more).
-    #[deprecated(since = "0.4.23", note = "use `from_timestamp_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
-        let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
-        expect!(datetime, "invalid or out-of-range datetime")
     }
 
     /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
@@ -485,28 +454,6 @@ impl NaiveDateTime {
     pub const fn timestamp_micros(&self) -> i64 {
         let as_us = self.timestamp() * 1_000_000;
         as_us + self.timestamp_subsec_micros() as i64
-    }
-
-    /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
-    ///
-    /// Note that this does *not* account for the timezone!
-    /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    ///
-    /// # Panics
-    ///
-    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
-    /// an out of range `NaiveDateTime`.
-    ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
-    /// and 2262-04-11T23:47:16.854775807.
-    #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub const fn timestamp_nanos(&self) -> i64 {
-        expect!(
-            self.timestamp_nanos_opt(),
-            "value can not be represented in a timestamp with nanosecond precision."
-        )
     }
 
     /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
