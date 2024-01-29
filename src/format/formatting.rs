@@ -706,7 +706,7 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_time_format() {
-        let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
+        let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432).unwrap();
         assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
         assert_eq!(t.format("%M").to_string(), "05");
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");

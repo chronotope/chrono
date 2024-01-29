@@ -526,7 +526,7 @@ impl Parsed {
             None => 0,
         };
 
-        NaiveTime::from_hms_nano_opt(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
+        NaiveTime::from_hms_nano(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
     }
 
     /// Returns a parsed naive date and time out of given fields,
@@ -967,7 +967,7 @@ mod tests {
         }
 
         let hms = |h, m, s| Ok(NaiveTime::from_hms(h, m, s).unwrap());
-        let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano_opt(h, m, s, n).unwrap());
+        let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano(h, m, s, n).unwrap());
 
         // omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
