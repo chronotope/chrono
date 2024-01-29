@@ -155,9 +155,9 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(Utc.timestamp_opt(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
+    /// assert_eq!(Utc.timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
-    fn timestamp_opt(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
+    fn timestamp(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp(secs, nsecs) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
@@ -176,12 +176,12 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// ```
     /// use chrono::{Utc, TimeZone, LocalResult};
-    /// match Utc.timestamp_millis_opt(1431648000) {
+    /// match Utc.timestamp_millis(1431648000) {
     ///     LocalResult::Single(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     _ => panic!("Incorrect timestamp_millis"),
     /// };
     /// ```
-    fn timestamp_millis_opt(&self, millis: i64) -> LocalResult<DateTime<Self>> {
+    fn timestamp_millis(&self, millis: i64) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp_millis(millis) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
@@ -191,7 +191,7 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap nanoseconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// Unlike [`timestamp_millis_opt`](#method.timestamp_millis_opt), this never fails.
+    /// Unlike [`timestamp_millis`](#method.timestamp_millis), this never fails.
     ///
     /// # Example
     ///
@@ -206,7 +206,7 @@ pub trait TimeZone: Sized + Clone {
             secs -= 1;
             nanos += 1_000_000_000;
         }
-        self.timestamp_opt(secs, nanos as u32).unwrap()
+        self.timestamp(secs, nanos as u32).unwrap()
     }
 
     /// Makes a new `DateTime` from the number of non-leap microseconds
@@ -298,21 +298,21 @@ mod tests {
 
     #[test]
     fn test_negative_millis() {
-        let dt = Utc.timestamp_millis_opt(-1000).unwrap();
+        let dt = Utc.timestamp_millis(-1000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
-        let dt = Utc.timestamp_millis_opt(-7000).unwrap();
+        let dt = Utc.timestamp_millis(-7000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:53 UTC");
-        let dt = Utc.timestamp_millis_opt(-7001).unwrap();
+        let dt = Utc.timestamp_millis(-7001).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.999 UTC");
-        let dt = Utc.timestamp_millis_opt(-7003).unwrap();
+        let dt = Utc.timestamp_millis(-7003).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.997 UTC");
-        let dt = Utc.timestamp_millis_opt(-999).unwrap();
+        let dt = Utc.timestamp_millis(-999).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
-        let dt = Utc.timestamp_millis_opt(-1).unwrap();
+        let dt = Utc.timestamp_millis(-1).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999 UTC");
-        let dt = Utc.timestamp_millis_opt(-60000).unwrap();
+        let dt = Utc.timestamp_millis(-60000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
-        let dt = Utc.timestamp_millis_opt(-3600000).unwrap();
+        let dt = Utc.timestamp_millis(-3600000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
 
         for (millis, expected) in &[
@@ -320,7 +320,7 @@ mod tests {
             (-7001, "1969-12-31 23:59:52.999 UTC"),
             (-7003, "1969-12-31 23:59:52.997 UTC"),
         ] {
-            match Utc.timestamp_millis_opt(*millis) {
+            match Utc.timestamp_millis(*millis) {
                 LocalResult::Single(dt) => {
                     assert_eq!(dt.to_string(), *expected);
                 }

@@ -123,7 +123,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// (aka "UNIX timestamp").
     ///
     /// The reverse operation of creating a [`DateTime`] from a timestamp can be performed
-    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp_opt`].
+    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp`].
     ///
     /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
@@ -517,7 +517,7 @@ impl DateTime<Utc> {
     /// [`timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_opt`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::timestamp`] or [`DateTime::with_timezone`].
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
     /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
@@ -553,7 +553,7 @@ impl DateTime<Utc> {
     /// This is guaranteed to round-trip with regard to [`timestamp_millis`](DateTime::timestamp_millis).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_millis_opt`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::timestamp_millis`] or [`DateTime::with_timezone`].
     ///
     /// # Errors
     ///
@@ -1554,7 +1554,7 @@ impl From<SystemTime> for DateTime<Utc> {
                 }
             }
         };
-        Utc.timestamp_opt(sec, nsec).unwrap()
+        Utc.timestamp(sec, nsec).unwrap()
     }
 }
 
@@ -1597,7 +1597,7 @@ impl From<js_sys::Date> for DateTime<Utc> {
 ))]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
-        Utc.timestamp_millis_opt(date.get_time() as i64).unwrap()
+        Utc.timestamp_millis(date.get_time() as i64).unwrap()
     }
 }
 
