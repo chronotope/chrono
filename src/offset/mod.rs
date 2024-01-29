@@ -176,7 +176,7 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.timestamp_opt(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
     fn timestamp_opt(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
-        match NaiveDateTime::from_timestamp_opt(secs, nsecs) {
+        match NaiveDateTime::from_timestamp(secs, nsecs) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
         }

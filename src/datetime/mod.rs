@@ -268,7 +268,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn timestamp_nanos_opt(&self) -> Option<i64> {
-        self.datetime.timestamp_nanos_opt()
+        self.datetime.timestamp_nanos()
     }
 
     /// Returns the number of milliseconds since the last second boundary.
@@ -597,7 +597,7 @@ impl DateTime<Utc> {
     #[must_use]
     pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
         Some(DateTime {
-            datetime: try_opt!(NaiveDateTime::from_timestamp_opt(secs, nsecs)),
+            datetime: try_opt!(NaiveDateTime::from_timestamp(secs, nsecs)),
             offset: Utc,
         })
     }

@@ -569,7 +569,7 @@ impl Parsed {
 
             // reconstruct date and time fields from timestamp
             let ts = timestamp.checked_add(i64::from(offset)).ok_or(OUT_OF_RANGE)?;
-            let datetime = NaiveDateTime::from_timestamp_opt(ts, 0);
+            let datetime = NaiveDateTime::from_timestamp(ts, 0);
             let mut datetime = datetime.ok_or(OUT_OF_RANGE)?;
 
             // fill year, ordinal, hour, minute and second fields from timestamp.
@@ -652,7 +652,7 @@ impl Parsed {
             // make a naive `DateTime` from given timestamp and (if any) nanosecond.
             // an empty `nanosecond` is always equal to zero, so missing nanosecond is fine.
             let nanosecond = self.nanosecond.unwrap_or(0);
-            let dt = NaiveDateTime::from_timestamp_opt(timestamp, nanosecond);
+            let dt = NaiveDateTime::from_timestamp(timestamp, nanosecond);
             let dt = dt.ok_or(OUT_OF_RANGE)?;
             guessed_offset = tz.offset_from_utc_datetime(&dt).fix().local_minus_utc();
         }

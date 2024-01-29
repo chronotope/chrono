@@ -129,7 +129,7 @@ impl NaiveDateTime {
     pub const fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
         let secs = millis.div_euclid(1000);
         let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+        NaiveDateTime::from_timestamp(secs, nsecs)
     }
 
     /// Creates a new [NaiveDateTime] from microseconds since the UNIX epoch.
@@ -161,7 +161,7 @@ impl NaiveDateTime {
     pub const fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
         let secs = micros.div_euclid(1_000_000);
         let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+        NaiveDateTime::from_timestamp(secs, nsecs)
     }
 
     /// Creates a new [NaiveDateTime] from nanoseconds since the UNIX epoch.
@@ -180,13 +180,13 @@ impl NaiveDateTime {
     /// let timestamp_nanos: i64 = 1662921288_000_000_000; //Sunday, September 11, 2022 6:34:48 PM
     /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
     /// assert!(naive_datetime.is_some());
-    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos().unwrap());
     ///
     /// // Negative timestamps (before the UNIX epoch) are supported as well.
     /// let timestamp_nanos: i64 = -2208936075_000_000_000; //Mon Jan 01 1900 14:38:45 GMT+0000
     /// let naive_datetime = NaiveDateTime::from_timestamp_nanos(timestamp_nanos);
     /// assert!(naive_datetime.is_some());
-    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos_opt().unwrap());
+    /// assert_eq!(timestamp_nanos, naive_datetime.unwrap().timestamp_nanos().unwrap());
     /// ```
     #[inline]
     #[must_use]
@@ -194,7 +194,7 @@ impl NaiveDateTime {
         let secs = nanos.div_euclid(NANOS_PER_SEC as i64);
         let nsecs = nanos.rem_euclid(NANOS_PER_SEC as i64) as u32;
 
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+        NaiveDateTime::from_timestamp(secs, nsecs)
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -218,18 +218,18 @@ impl NaiveDateTime {
     /// use chrono::NaiveDateTime;
     /// use std::i64;
     ///
-    /// let from_timestamp_opt = NaiveDateTime::from_timestamp_opt;
+    /// let from_timestamp = NaiveDateTime::from_timestamp;
     ///
-    /// assert!(from_timestamp_opt(0, 0).is_some());
-    /// assert!(from_timestamp_opt(0, 999_999_999).is_some());
-    /// assert!(from_timestamp_opt(0, 1_500_000_000).is_none()); // invalid leap second
-    /// assert!(from_timestamp_opt(59, 1_500_000_000).is_some()); // leap second
-    /// assert!(from_timestamp_opt(59, 2_000_000_000).is_none());
-    /// assert!(from_timestamp_opt(i64::MAX, 0).is_none());
+    /// assert!(from_timestamp(0, 0).is_some());
+    /// assert!(from_timestamp(0, 999_999_999).is_some());
+    /// assert!(from_timestamp(0, 1_500_000_000).is_none()); // invalid leap second
+    /// assert!(from_timestamp(59, 1_500_000_000).is_some()); // leap second
+    /// assert!(from_timestamp(59, 2_000_000_000).is_none());
+    /// assert!(from_timestamp(i64::MAX, 0).is_none());
     /// ```
     #[inline]
     #[must_use]
-    pub const fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
+    pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
         let days = secs.div_euclid(86_400);
         let secs = secs.rem_euclid(86_400);
         if days < i32::MIN as i64 || days > i32::MAX as i64 {
@@ -475,21 +475,21 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, NaiveDateTime};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
+    /// assert_eq!(dt.timestamp_nanos(), Some(1_000_000_444));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap();
     ///
     /// const A_BILLION: i64 = 1_000_000_000;
-    /// let nanos = dt.timestamp_nanos_opt().unwrap();
+    /// let nanos = dt.timestamp_nanos().unwrap();
     /// assert_eq!(nanos, 1_000_000_000_000_000_555);
     /// assert_eq!(
     ///     Some(dt),
-    ///     NaiveDateTime::from_timestamp_opt(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    ///     NaiveDateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
     /// );
     /// ```
     #[inline]
     #[must_use]
-    pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
+    pub const fn timestamp_nanos(&self) -> Option<i64> {
         let mut timestamp = self.timestamp();
         let mut timestamp_subsec_nanos = self.timestamp_subsec_nanos() as i64;
 
@@ -2099,11 +2099,11 @@ impl str::FromStr for NaiveDateTime {
 /// use chrono::NaiveDateTime;
 ///
 /// let default_date = NaiveDateTime::default();
-/// assert_eq!(Some(default_date), NaiveDateTime::from_timestamp_opt(0, 0));
+/// assert_eq!(Some(default_date), NaiveDateTime::from_timestamp(0, 0));
 /// ```
 impl Default for NaiveDateTime {
     fn default() -> Self {
-        NaiveDateTime::from_timestamp_opt(0, 0).unwrap()
+        NaiveDateTime::from_timestamp(0, 0).unwrap()
     }
 }
 
