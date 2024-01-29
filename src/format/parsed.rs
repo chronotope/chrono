@@ -966,7 +966,7 @@ mod tests {
             )
         }
 
-        let hms = |h, m, s| Ok(NaiveTime::from_hms_opt(h, m, s).unwrap());
+        let hms = |h, m, s| Ok(NaiveTime::from_hms(h, m, s).unwrap());
         let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano_opt(h, m, s, n).unwrap());
 
         // omission of fields

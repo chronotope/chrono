@@ -864,7 +864,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms_opt(hour, min, sec));
+        let time = try_opt!(NaiveTime::from_hms(hour, min, sec));
         Some(self.and_time(time))
     }
 

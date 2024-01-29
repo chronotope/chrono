@@ -369,7 +369,7 @@ impl NaiveDateTime {
     /// use chrono::{NaiveDate, NaiveTime};
     ///
     /// let dt = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap().and_hms_opt(9, 10, 11).unwrap();
-    /// assert_eq!(dt.time(), NaiveTime::from_hms_opt(9, 10, 11).unwrap());
+    /// assert_eq!(dt.time(), NaiveTime::from_hms(9, 10, 11).unwrap());
     /// ```
     #[inline]
     pub const fn time(&self) -> NaiveTime {
