@@ -221,7 +221,7 @@ impl arbitrary::Arbitrary<'_> for NaiveTime {
             secs = 59;
             nano += 1_000_000_000;
         }
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(mins * 60 + secs, nano)
+        let time = NaiveTime::from_num_seconds_from_midnight(mins * 60 + secs, nano)
             .expect("Could not generate a valid chrono::NaiveTime. It looks like implementation of Arbitrary for NaiveTime is erroneous.");
         Ok(time)
     }
@@ -369,7 +369,7 @@ impl NaiveTime {
     /// ```
     /// use chrono::NaiveTime;
     ///
-    /// let from_nsecs_opt = NaiveTime::from_num_seconds_from_midnight_opt;
+    /// let from_nsecs_opt = NaiveTime::from_num_seconds_from_midnight;
     ///
     /// assert!(from_nsecs_opt(0, 0).is_some());
     /// assert!(from_nsecs_opt(86399, 999_999_999).is_some());
@@ -379,7 +379,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn from_num_seconds_from_midnight_opt(secs: u32, nano: u32) -> Option<NaiveTime> {
+    pub const fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Option<NaiveTime> {
         if secs >= 86_400 || nano >= 2_000_000_000 || (nano >= 1_000_000_000 && secs % 60 != 59) {
             return None;
         }
