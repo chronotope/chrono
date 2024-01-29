@@ -940,8 +940,7 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp(value, 0)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value, 0).ok_or_else(|| E::custom(ne_timestamp(value)))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>

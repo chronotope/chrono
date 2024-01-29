@@ -301,7 +301,7 @@ impl NaiveTime {
     /// ```
     /// use chrono::NaiveTime;
     ///
-    /// let from_hmsu_opt = NaiveTime::from_hms_micro_opt;
+    /// let from_hmsu_opt = NaiveTime::from_hms_micro;
     ///
     /// assert!(from_hmsu_opt(0, 0, 0, 0).is_some());
     /// assert!(from_hmsu_opt(23, 59, 59, 999_999).is_some());
@@ -313,12 +313,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn from_hms_micro_opt(
-        hour: u32,
-        min: u32,
-        sec: u32,
-        micro: u32,
-    ) -> Option<NaiveTime> {
+    pub const fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> Option<NaiveTime> {
         let nano = try_opt!(micro.checked_mul(1_000));
         NaiveTime::from_hms_nano_opt(hour, min, sec, nano)
     }
@@ -405,7 +400,7 @@ impl NaiveTime {
     /// assert_eq!(parse_from_str("23:56:04", "%H:%M:%S"),
     ///            Ok(NaiveTime::from_hms(23, 56, 4).unwrap()));
     /// assert_eq!(parse_from_str("pm012345.6789", "%p%I%M%S%.f"),
-    ///            Ok(NaiveTime::from_hms_micro_opt(13, 23, 45, 678_900).unwrap()));
+    ///            Ok(NaiveTime::from_hms_micro(13, 23, 45, 678_900).unwrap()));
     /// ```
     ///
     /// Date and offset is ignored for the purpose of parsing.
@@ -1293,7 +1288,7 @@ impl Sub<NaiveTime> for NaiveTime {
 ///
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms(23, 56, 4).unwrap()),              "23:56:04");
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(23, 56, 4, 12).unwrap()),    "23:56:04.012");
-/// assert_eq!(format!("{:?}", NaiveTime::from_hms_micro_opt(23, 56, 4, 1234).unwrap()),  "23:56:04.001234");
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_micro(23, 56, 4, 1234).unwrap()),  "23:56:04.001234");
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_nano_opt(23, 56, 4, 123456).unwrap()), "23:56:04.000123456");
 /// ```
 ///
@@ -1349,7 +1344,7 @@ impl fmt::Debug for NaiveTime {
 ///
 /// assert_eq!(format!("{}", NaiveTime::from_hms(23, 56, 4).unwrap()),              "23:56:04");
 /// assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 56, 4, 12).unwrap()),    "23:56:04.012");
-/// assert_eq!(format!("{}", NaiveTime::from_hms_micro_opt(23, 56, 4, 1234).unwrap()),  "23:56:04.001234");
+/// assert_eq!(format!("{}", NaiveTime::from_hms_micro(23, 56, 4, 1234).unwrap()),  "23:56:04.001234");
 /// assert_eq!(format!("{}", NaiveTime::from_hms_nano_opt(23, 56, 4, 123456).unwrap()), "23:56:04.000123456");
 /// ```
 ///
@@ -1463,7 +1458,7 @@ where
         Some(r#""07:08:09""#.into())
     );
     assert_eq!(
-        to_string(&NaiveTime::from_hms_micro_opt(12, 34, 56, 789).unwrap()).ok(),
+        to_string(&NaiveTime::from_hms_micro(12, 34, 56, 789).unwrap()).ok(),
         Some(r#""12:34:56.000789""#.into())
     );
     assert_eq!(
@@ -1500,7 +1495,7 @@ where
     assert_eq!(from_str(r#""07:08:09""#).ok(), Some(NaiveTime::from_hms(7, 8, 9).unwrap()));
     assert_eq!(
         from_str(r#""12:34:56.000789""#).ok(),
-        Some(NaiveTime::from_hms_micro_opt(12, 34, 56, 789).unwrap())
+        Some(NaiveTime::from_hms_micro(12, 34, 56, 789).unwrap())
     );
     assert_eq!(
         from_str(r#""23:59:60.999999999""#).ok(),

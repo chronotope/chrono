@@ -978,7 +978,7 @@ impl NaiveDate {
         sec: u32,
         micro: u32,
     ) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms_micro_opt(hour, min, sec, micro));
+        let time = try_opt!(NaiveTime::from_hms_micro(hour, min, sec, micro));
         Some(self.and_time(time))
     }
 

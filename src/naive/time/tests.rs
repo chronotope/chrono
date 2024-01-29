@@ -23,24 +23,24 @@ fn test_time_from_hms_milli() {
 #[test]
 fn test_time_from_hms_micro() {
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 0),
+        NaiveTime::from_hms_micro(3, 5, 7, 0),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 0).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 333),
+        NaiveTime::from_hms_micro(3, 5, 7, 333),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 333_000).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 7, 777_777),
+        NaiveTime::from_hms_micro(3, 5, 7, 777_777),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 777_777_000).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_micro_opt(3, 5, 59, 1_999_999),
+        NaiveTime::from_hms_micro(3, 5, 59, 1_999_999),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 59, 1_999_999_000).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, 2_000_000), None);
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, 5_000_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_micro_opt(3, 5, 59, u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, 2_000_000), None);
+    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, 5_000_000), None); // overflow check
+    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, u32::MAX), None);
 }
 
 #[test]
@@ -217,7 +217,7 @@ fn test_time_fmt() {
         "23:59:60.001"
     );
     assert_eq!(
-        format!("{}", NaiveTime::from_hms_micro_opt(0, 0, 0, 43210).unwrap()),
+        format!("{}", NaiveTime::from_hms_micro(0, 0, 0, 43210).unwrap()),
         "00:00:00.043210"
     );
     assert_eq!(

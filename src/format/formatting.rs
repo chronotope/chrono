@@ -716,7 +716,7 @@ mod tests {
         assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
         assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
-        let t = NaiveTime::from_hms_micro_opt(3, 5, 7, 432100).unwrap();
+        let t = NaiveTime::from_hms_micro(3, 5, 7, 432100).unwrap();
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
         assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
 
