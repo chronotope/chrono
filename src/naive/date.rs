@@ -814,7 +814,7 @@ impl NaiveDate {
     /// use chrono::{NaiveDate, NaiveTime, NaiveDateTime};
     ///
     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// let t = NaiveTime::from_hms_milli_opt(12, 34, 56, 789).unwrap();
+    /// let t = NaiveTime::from_hms_milli(12, 34, 56, 789).unwrap();
     ///
     /// let dt: NaiveDateTime = d.and_time(t);
     /// assert_eq!(dt.date(), d);
@@ -914,7 +914,7 @@ impl NaiveDate {
         sec: u32,
         milli: u32,
     ) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms_milli_opt(hour, min, sec, milli));
+        let time = try_opt!(NaiveTime::from_hms_milli(hour, min, sec, milli));
         Some(self.and_time(time))
     }
 

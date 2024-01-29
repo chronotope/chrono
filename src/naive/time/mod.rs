@@ -75,7 +75,7 @@ mod tests;
 /// ```
 /// use chrono::{NaiveDate, NaiveTime, Utc};
 ///
-/// let t = NaiveTime::from_hms_milli_opt(8, 59, 59, 1_000).unwrap();
+/// let t = NaiveTime::from_hms_milli(8, 59, 59, 1_000).unwrap();
 ///
 /// let dt1 = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_micro_opt(8, 59, 59, 1_000_000).unwrap();
 ///
@@ -270,7 +270,7 @@ impl NaiveTime {
     /// ```
     /// use chrono::NaiveTime;
     ///
-    /// let from_hmsm_opt = NaiveTime::from_hms_milli_opt;
+    /// let from_hmsm_opt = NaiveTime::from_hms_milli;
     ///
     /// assert!(from_hmsm_opt(0, 0, 0, 0).is_some());
     /// assert!(from_hmsm_opt(23, 59, 59, 999).is_some());
@@ -282,12 +282,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn from_hms_milli_opt(
-        hour: u32,
-        min: u32,
-        sec: u32,
-        milli: u32,
-    ) -> Option<NaiveTime> {
+    pub const fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> Option<NaiveTime> {
         let nano = try_opt!(milli.checked_mul(1_000_000));
         NaiveTime::from_hms_nano_opt(hour, min, sec, nano)
     }
@@ -430,7 +425,7 @@ impl NaiveTime {
     /// # use chrono::NaiveTime;
     /// # let parse_from_str = NaiveTime::parse_from_str;
     /// assert_eq!(parse_from_str("08:59:60.123", "%H:%M:%S%.f"),
-    ///            Ok(NaiveTime::from_hms_milli_opt(8, 59, 59, 1_123).unwrap()));
+    ///            Ok(NaiveTime::from_hms_milli(8, 59, 59, 1_123).unwrap()));
     /// ```
     ///
     /// Missing seconds are assumed to be zero,
@@ -580,7 +575,7 @@ impl NaiveTime {
     /// ```
     /// use chrono::{TimeDelta, NaiveTime};
     ///
-    /// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+    /// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
     /// let since = NaiveTime::signed_duration_since;
     ///
     /// assert_eq!(since(from_hmsm(3, 5, 7, 900), from_hmsm(3, 5, 7, 900)),
@@ -606,7 +601,7 @@ impl NaiveTime {
     ///
     /// ```
     /// # use chrono::{TimeDelta, NaiveTime};
-    /// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+    /// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
     /// # let since = NaiveTime::signed_duration_since;
     /// assert_eq!(since(from_hmsm(3, 0, 59, 1_000), from_hmsm(3, 0, 59, 0)),
     ///            TimeDelta::seconds(1));
@@ -830,7 +825,7 @@ impl Timelike for NaiveTime {
     #[cfg_attr(not(feature = "std"), doc = "```ignore")]
     #[cfg_attr(feature = "std", doc = "```")]
     /// # use chrono::{NaiveTime, Timelike};
-    /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+    /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.second(), 59);
     /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
     /// ```
@@ -859,7 +854,7 @@ impl Timelike for NaiveTime {
     #[cfg_attr(not(feature = "std"), doc = "```ignore")]
     #[cfg_attr(feature = "std", doc = "```")]
     /// # use chrono::{NaiveTime, Timelike};
-    /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+    /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
     /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
     /// ```
@@ -993,7 +988,7 @@ impl Timelike for NaiveTime {
     ///            3723);
     /// assert_eq!(NaiveTime::from_hms_nano_opt(23, 56, 4, 12_345_678).unwrap().num_seconds_from_midnight(),
     ///            86164);
-    /// assert_eq!(NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().num_seconds_from_midnight(),
+    /// assert_eq!(NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap().num_seconds_from_midnight(),
     ///            86399);
     /// ```
     #[inline]
@@ -1016,7 +1011,7 @@ impl Timelike for NaiveTime {
 /// ```
 /// use chrono::{TimeDelta, NaiveTime};
 ///
-/// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 ///
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + TimeDelta::zero(),                  from_hmsm(3, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + TimeDelta::seconds(1),              from_hmsm(3, 5, 8, 0));
@@ -1032,7 +1027,7 @@ impl Timelike for NaiveTime {
 ///
 /// ```
 /// # use chrono::{TimeDelta, NaiveTime};
-/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + TimeDelta::seconds(22*60*60), from_hmsm(1, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + TimeDelta::seconds(-8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) + TimeDelta::days(800),         from_hmsm(3, 5, 7, 0));
@@ -1042,7 +1037,7 @@ impl Timelike for NaiveTime {
 ///
 /// ```
 /// # use chrono::{TimeDelta, NaiveTime};
-/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 /// let leap = from_hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap + TimeDelta::zero(),             from_hmsm(3, 5, 59, 1_300));
 /// assert_eq!(leap + TimeDelta::milliseconds(-500), from_hmsm(3, 5, 59, 800));
@@ -1131,7 +1126,7 @@ impl Add<FixedOffset> for NaiveTime {
 /// ```
 /// use chrono::{TimeDelta, NaiveTime};
 ///
-/// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 ///
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - TimeDelta::zero(),                  from_hmsm(3, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - TimeDelta::seconds(1),              from_hmsm(3, 5, 6, 0));
@@ -1145,7 +1140,7 @@ impl Add<FixedOffset> for NaiveTime {
 ///
 /// ```
 /// # use chrono::{TimeDelta, NaiveTime};
-/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - TimeDelta::seconds(8*60*60), from_hmsm(19, 5, 7, 0));
 /// assert_eq!(from_hmsm(3, 5, 7, 0) - TimeDelta::days(800),        from_hmsm(3, 5, 7, 0));
 /// ```
@@ -1154,7 +1149,7 @@ impl Add<FixedOffset> for NaiveTime {
 ///
 /// ```
 /// # use chrono::{TimeDelta, NaiveTime};
-/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 /// let leap = from_hmsm(3, 5, 59, 1_300);
 /// assert_eq!(leap - TimeDelta::zero(),            from_hmsm(3, 5, 59, 1_300));
 /// assert_eq!(leap - TimeDelta::milliseconds(200), from_hmsm(3, 5, 59, 1_100));
@@ -1244,7 +1239,7 @@ impl Sub<FixedOffset> for NaiveTime {
 /// ```
 /// use chrono::{TimeDelta, NaiveTime};
 ///
-/// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 ///
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 900), TimeDelta::zero());
 /// assert_eq!(from_hmsm(3, 5, 7, 900) - from_hmsm(3, 5, 7, 875), TimeDelta::milliseconds(25));
@@ -1262,7 +1257,7 @@ impl Sub<FixedOffset> for NaiveTime {
 ///
 /// ```
 /// # use chrono::{TimeDelta, NaiveTime};
-/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli_opt(h, m, s, milli).unwrap() };
+/// # let from_hmsm = |h, m, s, milli| { NaiveTime::from_hms_milli(h, m, s, milli).unwrap() };
 /// assert_eq!(from_hmsm(3, 0, 59, 1_000) - from_hmsm(3, 0, 59, 0), TimeDelta::seconds(1));
 /// assert_eq!(from_hmsm(3, 0, 59, 1_500) - from_hmsm(3, 0, 59, 0),
 ///            TimeDelta::milliseconds(1500));
@@ -1297,7 +1292,7 @@ impl Sub<NaiveTime> for NaiveTime {
 /// use chrono::NaiveTime;
 ///
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms(23, 56, 4).unwrap()),              "23:56:04");
-/// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli_opt(23, 56, 4, 12).unwrap()),    "23:56:04.012");
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(23, 56, 4, 12).unwrap()),    "23:56:04.012");
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_micro_opt(23, 56, 4, 1234).unwrap()),  "23:56:04.001234");
 /// assert_eq!(format!("{:?}", NaiveTime::from_hms_nano_opt(23, 56, 4, 123456).unwrap()), "23:56:04.000123456");
 /// ```
@@ -1306,7 +1301,7 @@ impl Sub<NaiveTime> for NaiveTime {
 ///
 /// ```
 /// # use chrono::NaiveTime;
-/// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli_opt(6, 59, 59, 1_500).unwrap()), "06:59:60.500");
+/// assert_eq!(format!("{:?}", NaiveTime::from_hms_milli(6, 59, 59, 1_500).unwrap()), "06:59:60.500");
 /// ```
 impl fmt::Debug for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1353,7 +1348,7 @@ impl fmt::Debug for NaiveTime {
 /// use chrono::NaiveTime;
 ///
 /// assert_eq!(format!("{}", NaiveTime::from_hms(23, 56, 4).unwrap()),              "23:56:04");
-/// assert_eq!(format!("{}", NaiveTime::from_hms_milli_opt(23, 56, 4, 12).unwrap()),    "23:56:04.012");
+/// assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 56, 4, 12).unwrap()),    "23:56:04.012");
 /// assert_eq!(format!("{}", NaiveTime::from_hms_micro_opt(23, 56, 4, 1234).unwrap()),  "23:56:04.001234");
 /// assert_eq!(format!("{}", NaiveTime::from_hms_nano_opt(23, 56, 4, 123456).unwrap()), "23:56:04.000123456");
 /// ```
@@ -1362,7 +1357,7 @@ impl fmt::Debug for NaiveTime {
 ///
 /// ```
 /// # use chrono::NaiveTime;
-/// assert_eq!(format!("{}", NaiveTime::from_hms_milli_opt(6, 59, 59, 1_500).unwrap()), "06:59:60.500");
+/// assert_eq!(format!("{}", NaiveTime::from_hms_milli(6, 59, 59, 1_500).unwrap()), "06:59:60.500");
 /// ```
 impl fmt::Display for NaiveTime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -1448,11 +1443,11 @@ where
         Some(r#""00:00:00""#.into())
     );
     assert_eq!(
-        to_string(&NaiveTime::from_hms_milli_opt(0, 0, 0, 950).unwrap()).ok(),
+        to_string(&NaiveTime::from_hms_milli(0, 0, 0, 950).unwrap()).ok(),
         Some(r#""00:00:00.950""#.into())
     );
     assert_eq!(
-        to_string(&NaiveTime::from_hms_milli_opt(0, 0, 59, 1_000).unwrap()).ok(),
+        to_string(&NaiveTime::from_hms_milli(0, 0, 59, 1_000).unwrap()).ok(),
         Some(r#""00:00:60""#.into())
     );
     assert_eq!(
@@ -1487,15 +1482,15 @@ where
     assert_eq!(from_str(r#""0:0:0""#).ok(), Some(NaiveTime::from_hms(0, 0, 0).unwrap()));
     assert_eq!(
         from_str(r#""00:00:00.950""#).ok(),
-        Some(NaiveTime::from_hms_milli_opt(0, 0, 0, 950).unwrap())
+        Some(NaiveTime::from_hms_milli(0, 0, 0, 950).unwrap())
     );
     assert_eq!(
         from_str(r#""0:0:0.95""#).ok(),
-        Some(NaiveTime::from_hms_milli_opt(0, 0, 0, 950).unwrap())
+        Some(NaiveTime::from_hms_milli(0, 0, 0, 950).unwrap())
     );
     assert_eq!(
         from_str(r#""00:00:60""#).ok(),
-        Some(NaiveTime::from_hms_milli_opt(0, 0, 59, 1_000).unwrap())
+        Some(NaiveTime::from_hms_milli(0, 0, 59, 1_000).unwrap())
     );
     assert_eq!(from_str(r#""00:01:02""#).ok(), Some(NaiveTime::from_hms(0, 1, 2).unwrap()));
     assert_eq!(

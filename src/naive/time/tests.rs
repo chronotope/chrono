@@ -4,20 +4,20 @@ use crate::{FixedOffset, TimeDelta, Timelike};
 #[test]
 fn test_time_from_hms_milli() {
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 7, 0),
+        NaiveTime::from_hms_milli(3, 5, 7, 0),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 0).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 7, 777),
+        NaiveTime::from_hms_milli(3, 5, 7, 777),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 7, 777_000_000).unwrap())
     );
     assert_eq!(
-        NaiveTime::from_hms_milli_opt(3, 5, 59, 1_999),
+        NaiveTime::from_hms_milli(3, 5, 59, 1_999),
         Some(NaiveTime::from_hms_nano_opt(3, 5, 59, 1_999_000_000).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, 2_000), None);
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, 5_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_milli_opt(3, 5, 59, u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, 2_000), None);
+    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, 5_000), None); // overflow check
+    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, u32::MAX), None);
 }
 
 #[test]
@@ -91,7 +91,7 @@ fn test_time_add() {
         }};
     }
 
-    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
+    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     check!(hmsm(3, 5, 59, 900), TimeDelta::zero(), hmsm(3, 5, 59, 900));
     check!(hmsm(3, 5, 59, 900), TimeDelta::milliseconds(100), hmsm(3, 6, 0, 0));
@@ -114,7 +114,7 @@ fn test_time_add() {
 
 #[test]
 fn test_time_overflowing_add() {
-    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
+    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     assert_eq!(
         hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(11)),
@@ -170,7 +170,7 @@ fn test_time_sub() {
         }};
     }
 
-    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli_opt(h, m, s, ms).unwrap();
+    let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), TimeDelta::zero());
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::milliseconds(300));
@@ -210,16 +210,10 @@ fn test_core_duration_ops() {
 
 #[test]
 fn test_time_fmt() {
+    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 999).unwrap()), "23:59:59.999");
+    assert_eq!(format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap()), "23:59:60");
     assert_eq!(
-        format!("{}", NaiveTime::from_hms_milli_opt(23, 59, 59, 999).unwrap()),
-        "23:59:59.999"
-    );
-    assert_eq!(
-        format!("{}", NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap()),
-        "23:59:60"
-    );
-    assert_eq!(
-        format!("{}", NaiveTime::from_hms_milli_opt(23, 59, 59, 1_001).unwrap()),
+        format!("{}", NaiveTime::from_hms_milli(23, 59, 59, 1_001).unwrap()),
         "23:59:60.001"
     );
     assert_eq!(
@@ -232,10 +226,7 @@ fn test_time_fmt() {
     );
 
     // the format specifier should have no effect on `NaiveTime`
-    assert_eq!(
-        format!("{:30}", NaiveTime::from_hms_milli_opt(3, 5, 7, 9).unwrap()),
-        "03:05:07.009"
-    );
+    assert_eq!(format!("{:30}", NaiveTime::from_hms_milli(3, 5, 7, 9).unwrap()), "03:05:07.009");
 }
 
 #[test]
@@ -360,7 +351,7 @@ fn test_time_parse_from_str() {
 
 #[test]
 fn test_overflowing_offset() {
-    let hmsm = |h, m, s, n| NaiveTime::from_hms_milli_opt(h, m, s, n).unwrap();
+    let hmsm = |h, m, s, n| NaiveTime::from_hms_milli(h, m, s, n).unwrap();
 
     let positive_offset = FixedOffset::east_opt(4 * 60 * 60).unwrap();
     // regular time

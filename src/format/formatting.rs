@@ -720,7 +720,7 @@ mod tests {
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
         assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
 
-        let t = NaiveTime::from_hms_milli_opt(3, 5, 7, 210).unwrap();
+        let t = NaiveTime::from_hms_milli(3, 5, 7, 210).unwrap();
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
         assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
 
@@ -731,7 +731,7 @@ mod tests {
         // corner cases
         assert_eq!(NaiveTime::from_hms(13, 57, 9).unwrap().format("%r").to_string(), "01:57:09 PM");
         assert_eq!(
-            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
+            NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
             "23:59:60"
         );
     }
