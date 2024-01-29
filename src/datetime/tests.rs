@@ -1606,7 +1606,7 @@ fn nano_roundrip() {
     ] {
         println!("nanos: {}", nanos);
         let dt = Utc.timestamp_nanos(nanos);
-        let nanos2 = dt.timestamp_nanos_opt().expect("value roundtrips");
+        let nanos2 = dt.timestamp_nanos().expect("value roundtrips");
         assert_eq!(nanos, nanos2);
     }
 }
