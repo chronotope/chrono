@@ -155,7 +155,7 @@ impl Cache {
                 .expect("unable to select local time type")
                 .offset();
 
-            return match FixedOffset::east_opt(offset) {
+            return match FixedOffset::east(offset) {
                 Some(offset) => LocalResult::Single(offset),
                 None => LocalResult::None,
             };
@@ -166,6 +166,6 @@ impl Cache {
         self.zone
             .find_local_time_type_from_local(d.timestamp(), d.year())
             .expect("unable to select local time type")
-            .map(|o| FixedOffset::east_opt(o.offset()).unwrap())
+            .map(|o| FixedOffset::east(o.offset()).unwrap())
     }
 }

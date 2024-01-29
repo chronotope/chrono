@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_round_subsecs() {
-        let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+        let pst = FixedOffset::east(8 * 60 * 60).unwrap();
         let dt = pst
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2018, 1, 11)
@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn test_trunc_subsecs() {
-        let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+        let pst = FixedOffset::east(8 * 60 * 60).unwrap();
         let dt = pst
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2018, 1, 11)
@@ -501,8 +501,7 @@ mod tests {
         );
 
         // timezone east
-        let dt =
-            FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
@@ -513,8 +512,7 @@ mod tests {
         );
 
         // timezone west
-        let dt =
-            FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
@@ -663,8 +661,7 @@ mod tests {
         );
 
         // timezone east
-        let dt =
-            FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
@@ -675,8 +672,7 @@ mod tests {
         );
 
         // timezone west
-        let dt =
-            FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"

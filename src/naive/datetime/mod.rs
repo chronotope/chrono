@@ -998,7 +998,7 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, FixedOffset};
     /// let hour = 3600;
-    /// let tz = FixedOffset::east_opt(5 * hour).unwrap();
+    /// let tz = FixedOffset::east(5 * hour).unwrap();
     /// let dt = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap().and_hms_opt(23, 56, 4).unwrap().and_local_timezone(tz).unwrap();
     /// assert_eq!(dt.timezone(), tz);
     /// ```

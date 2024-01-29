@@ -180,7 +180,7 @@ mod tests;
 /// ```
 /// use chrono::{FixedOffset, NaiveDate, TimeZone};
 ///
-/// let paramaribo_pre1945 = FixedOffset::east_opt(-13236).unwrap(); // -03:40:36
+/// let paramaribo_pre1945 = FixedOffset::east(-13236).unwrap(); // -03:40:36
 /// let leap_sec_2015 =
 ///     NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
 /// let dt1 = paramaribo_pre1945.from_utc_datetime(&leap_sec_2015);

@@ -812,13 +812,13 @@ mod tests {
             }
             // +03:45, -03:30, +11:00, -11:00:22, +02:34:26, -12:34:30, +00:00
             let offsets = [
-                FixedOffset::east_opt(13_500).unwrap(),
-                FixedOffset::east_opt(-12_600).unwrap(),
-                FixedOffset::east_opt(39_600).unwrap(),
-                FixedOffset::east_opt(-39_622).unwrap(),
-                FixedOffset::east_opt(9266).unwrap(),
-                FixedOffset::east_opt(-45270).unwrap(),
-                FixedOffset::east_opt(0).unwrap(),
+                FixedOffset::east(13_500).unwrap(),
+                FixedOffset::east(-12_600).unwrap(),
+                FixedOffset::east(39_600).unwrap(),
+                FixedOffset::east(-39_622).unwrap(),
+                FixedOffset::east(9266).unwrap(),
+                FixedOffset::east(-45270).unwrap(),
+                FixedOffset::east(0).unwrap(),
             ];
             check(precision, Colons::Colon, Pad::Zero, false, offsets, expected[0]);
             check(precision, Colons::Colon, Pad::Zero, true, offsets, expected[1]);

@@ -353,7 +353,7 @@ fn test_time_parse_from_str() {
 fn test_overflowing_offset() {
     let hmsm = |h, m, s, n| NaiveTime::from_hms_milli(h, m, s, n).unwrap();
 
-    let positive_offset = FixedOffset::east_opt(4 * 60 * 60).unwrap();
+    let positive_offset = FixedOffset::east(4 * 60 * 60).unwrap();
     // regular time
     let t = hmsm(5, 6, 7, 890);
     assert_eq!(t.overflowing_add_offset(positive_offset), (hmsm(9, 6, 7, 890), 0));
@@ -366,7 +366,7 @@ fn test_overflowing_offset() {
     let t = hmsm(1, 2, 3, 456);
     assert_eq!(t.overflowing_sub_offset(positive_offset), (hmsm(21, 2, 3, 456), -1));
     // an odd offset
-    let negative_offset = FixedOffset::west_opt(((2 * 60) + 3) * 60 + 4).unwrap();
+    let negative_offset = FixedOffset::west(((2 * 60) + 3) * 60 + 4).unwrap();
     let t = hmsm(5, 6, 7, 890);
     assert_eq!(t.overflowing_add_offset(negative_offset), (hmsm(3, 3, 3, 890), 0));
     assert_eq!(t.overflowing_sub_offset(negative_offset), (hmsm(7, 9, 11, 890), 0));

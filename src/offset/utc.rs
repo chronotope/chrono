@@ -71,7 +71,7 @@ impl Utc {
     /// let today_utc = now_utc.date_naive();
     ///
     /// // Current time in some timezone (let's use +05:00)
-    /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    /// let offset = FixedOffset::east(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
     #[cfg(not(all(
@@ -119,7 +119,7 @@ impl TimeZone for Utc {
 
 impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
-        FixedOffset::east_opt(0).unwrap()
+        FixedOffset::east(0).unwrap()
     }
 }
 

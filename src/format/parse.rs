@@ -1629,7 +1629,7 @@ mod tests {
     #[test]
     fn test_rfc2822() {
         let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
-            FixedOffset::east_opt(off * 60 * 60)
+            FixedOffset::east(off * 60 * 60)
                 .unwrap()
                 .with_ymd_and_hms(y, m, d, h, n, s)
                 .unwrap()
@@ -1794,7 +1794,7 @@ mod tests {
     #[test]
     fn test_rfc3339() {
         let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
-            FixedOffset::east_opt(off * 60 * 60)
+            FixedOffset::east(off * 60 * 60)
                 .unwrap()
                 .with_ymd_and_hms(y, m, d, h, n, s)
                 .unwrap()

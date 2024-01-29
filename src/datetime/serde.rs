@@ -1225,7 +1225,7 @@ mod tests {
         }
         impl Offset for TestTimeZone {
             fn fix(&self) -> FixedOffset {
-                FixedOffset::east_opt(15 * 60 * 60).unwrap()
+                FixedOffset::east(15 * 60 * 60).unwrap()
             }
         }
 

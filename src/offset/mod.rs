@@ -274,7 +274,7 @@ mod tests {
     fn test_fixed_offset_min_max_dates() {
         for offset_hour in -23..=23 {
             dbg!(offset_hour);
-            let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
+            let offset = FixedOffset::east(offset_hour * 60 * 60).unwrap();
 
             let local_max = offset.from_utc_datetime(&NaiveDateTime::MAX);
             assert_eq!(local_max.naive_utc(), NaiveDateTime::MAX);

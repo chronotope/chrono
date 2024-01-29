@@ -491,7 +491,7 @@ fn test_and_local_timezone() {
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 
-    let offset_tz = FixedOffset::west_opt(4 * 3600).unwrap();
+    let offset_tz = FixedOffset::west(4 * 3600).unwrap();
     let dt_offset = ndt.and_local_timezone(offset_tz).unwrap();
     assert_eq!(dt_offset.naive_local(), ndt);
     assert_eq!(dt_offset.timezone(), offset_tz);
@@ -511,7 +511,7 @@ fn test_checked_add_offset() {
         NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi)
     };
 
-    let positive_offset = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
     assert_eq!(dt.checked_add_offset(positive_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
@@ -521,7 +521,7 @@ fn test_checked_add_offset() {
     // out of range
     assert!(NaiveDateTime::MAX.checked_add_offset(positive_offset).is_none());
 
-    let negative_offset = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let negative_offset = FixedOffset::west(2 * 60 * 60).unwrap();
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
     assert_eq!(dt.checked_add_offset(negative_offset), ymdhmsm(2023, 5, 5, 18, 10, 0, 0));
@@ -538,7 +538,7 @@ fn test_checked_sub_offset() {
         NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi)
     };
 
-    let positive_offset = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
     assert_eq!(dt.checked_sub_offset(positive_offset), ymdhmsm(2023, 5, 5, 18, 10, 0, 0));
@@ -548,7 +548,7 @@ fn test_checked_sub_offset() {
     // out of range
     assert!(NaiveDateTime::MIN.checked_sub_offset(positive_offset).is_none());
 
-    let negative_offset = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let negative_offset = FixedOffset::west(2 * 60 * 60).unwrap();
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
     assert_eq!(dt.checked_sub_offset(negative_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
@@ -567,7 +567,7 @@ fn test_overflowing_add_offset() {
     let ymdhmsm = |y, m, d, h, mn, s, mi| {
         NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi).unwrap()
     };
-    let positive_offset = FixedOffset::east_opt(2 * 60 * 60).unwrap();
+    let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0);
     assert_eq!(dt.overflowing_add_offset(positive_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
@@ -577,7 +577,7 @@ fn test_overflowing_add_offset() {
     // out of range
     assert!(NaiveDateTime::MAX.overflowing_add_offset(positive_offset) > NaiveDateTime::MAX);
 
-    let negative_offset = FixedOffset::west_opt(2 * 60 * 60).unwrap();
+    let negative_offset = FixedOffset::west(2 * 60 * 60).unwrap();
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0);
     assert_eq!(dt.overflowing_add_offset(negative_offset), ymdhmsm(2023, 5, 5, 18, 10, 0, 0));
@@ -592,7 +592,7 @@ fn test_overflowing_add_offset() {
 fn test_and_timezone_min_max_dates() {
     for offset_hour in -23..=23 {
         dbg!(offset_hour);
-        let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
+        let offset = FixedOffset::east(offset_hour * 60 * 60).unwrap();
 
         let local_max = NaiveDateTime::MAX.and_local_timezone(offset);
         if offset_hour >= 0 {

@@ -35,13 +35,13 @@ mod inner {
     use crate::{FixedOffset, LocalResult, NaiveDateTime};
 
     pub(super) fn offset_from_utc_datetime(_utc_time: &NaiveDateTime) -> LocalResult<FixedOffset> {
-        LocalResult::Single(FixedOffset::east_opt(0).unwrap())
+        LocalResult::Single(FixedOffset::east(0).unwrap())
     }
 
     pub(super) fn offset_from_local_datetime(
         _local_time: &NaiveDateTime,
     ) -> LocalResult<FixedOffset> {
-        LocalResult::Single(FixedOffset::east_opt(0).unwrap())
+        LocalResult::Single(FixedOffset::east(0).unwrap())
     }
 }
 
@@ -55,7 +55,7 @@ mod inner {
 
     pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
         let offset = js_sys::Date::from(utc.and_utc()).get_timezone_offset();
-        LocalResult::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
+        LocalResult::Single(FixedOffset::west((offset as i32) * 60).unwrap())
     }
 
     pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
@@ -78,7 +78,7 @@ mod inner {
         );
         let offset = js_date.get_timezone_offset();
         // We always get a result, even if this time does not exist or is ambiguous.
-        LocalResult::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
+        LocalResult::Single(FixedOffset::west((offset as i32) * 60).unwrap())
     }
 }
 
@@ -136,7 +136,7 @@ impl Local {
     ///
     /// // Current time in some timezone (let's use +05:00)
     /// // Note that it is usually more efficient to use `Utc::now` for this use case.
-    /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    /// let offset = FixedOffset::east(5 * 60 * 60).unwrap();
     /// let now_with_offset = Local::now().with_timezone(&offset);
     /// ```
     pub fn now() -> DateTime<Local> {
