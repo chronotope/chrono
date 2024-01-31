@@ -24,6 +24,10 @@ pub struct MicroSecondsTimestampVisitor;
 #[derive(Debug)]
 pub struct MilliSecondsTimestampVisitor;
 
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct Rfc2822Visitor;
+
 /// Serialize into an ISO 8601 formatted string.
 ///
 /// See [the `serde` module](./serde/index.html) for alternate
@@ -1164,6 +1168,76 @@ pub mod ts_seconds_option {
             E: de::Error,
         {
             Ok(None)
+        }
+    }
+}
+
+/// Ser/de to/from RFC 2822 strings
+///
+/// Intended for use with `serde`'s `with` attribute.
+///
+/// # Example:
+///
+/// ```rust
+/// use chrono::{DateTime, Utc, NaiveDate};
+/// use serde_derive::{Deserialize, Serialize};
+/// #[derive(Deserialize, Serialize)]
+/// struct Example {
+///     #[serde(with = "chrono::serde::rfc2822")]
+///     time: DateTime<Utc>
+/// }
+///
+/// let actual_time = NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_opt(02, 04, 59).unwrap().and_local_timezone(Utc).unwrap();
+/// let to_serialize = Example {
+///     time: actual_time.clone(),
+/// };
+///
+/// let serialized = serde_json::to_string(&to_serialize).unwrap();
+/// assert_eq!(serialized, r#"{"time":"Thu, 17 May 2018 02:04:59 +0000"}"#);
+///
+/// let deserialized: Example = serde_json::from_str(&serialized).unwrap();
+/// assert_eq!(deserialized.time, actual_time);
+/// ```
+pub mod rfc2822 {
+    use core::fmt;
+    use serde::{de, ser};
+    use crate::{DateTime, Utc};
+    use crate::serde::Rfc2822Visitor;
+
+    /// Serialize a datetime into an RFC 2822 formatted string, e.g. "01 Jun 2016 14:31:46 -0700"
+    ///
+    /// Intended for use with `serde`s `serialize_with` attribute.
+    pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: ser::Serializer,
+    {
+        serializer.serialize_str(&dt.to_rfc2822())
+    }
+
+    /// Deserialize a [`DateTime`] from an RFC 2822 datetime
+    ///
+    /// Intended for use with `serde`s `deserialize_with` attribute.
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+        where
+            D: de::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(Rfc2822Visitor)
+    }
+
+    impl<'de> de::Visitor<'de> for Rfc2822Visitor {
+        type Value = DateTime<Utc>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("an RFC 2822 (email) formatted datetime string")
+        }
+
+        fn visit_str<E>(self, date_string: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+        {
+            DateTime::parse_from_rfc2822(date_string)
+                .map_err(E::custom)
+                .map(|dt| dt.with_timezone(&Utc))
         }
     }
 }
