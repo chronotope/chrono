@@ -354,11 +354,11 @@
 //!
 //! ## Limitations
 //!
-//! Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
-//! Date types are limited to about +/- 262,000 years from the common epoch.
-//! Time types are limited to nanosecond accuracy.
-//! Leap seconds can be represented, but Chrono does not fully support them.
-//! See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
+//! * Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
+//! * Date types are limited to about +/- 262,000 years from the common epoch.
+//! * Time types are limited to nanosecond accuracy.
+//! * Leap seconds can be represented, but Chrono does not fully support them.
+//!   See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
 //!
 //! ## Rust version requirements
 //!
@@ -366,18 +366,6 @@
 //!
 //! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
 //! lightly.
-//!
-//! Chrono inherently does not support an inaccurate or partial date and time representation.
-//! Any operation that can be ambiguous will return `None` in such cases.
-//! For example, "a month later" of 2014-01-30 is not well-defined
-//! and consequently `Utc.ymd_opt(2014, 1, 30).unwrap().with_month(2)` returns `None`.
-//!
-//! Non ISO week handling is not yet supported.
-//! For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
-//! crate ([sources](https://github.com/bcourtine/chrono-ext/)).
-//!
-//! Advanced time zone handling is not yet supported.
-//! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
 //!
 //! ## Relation between chrono and time 0.1
 //!
