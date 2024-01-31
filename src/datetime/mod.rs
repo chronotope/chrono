@@ -200,7 +200,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp(&self) -> i64 {
+    pub const fn timestamp(&self) -> i64 {
         self.datetime.timestamp()
     }
 
@@ -219,7 +219,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_millis(&self) -> i64 {
+    pub const fn timestamp_millis(&self) -> i64 {
         self.datetime.timestamp_millis()
     }
 
@@ -238,7 +238,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_micros(&self) -> i64 {
+    pub const fn timestamp_micros(&self) -> i64 {
         self.datetime.timestamp_micros()
     }
 
@@ -254,9 +254,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.timestamp_nanos_opt()
-            .expect("value can not be represented in a timestamp with nanosecond precision.")
+    #[allow(deprecated)]
+    pub const fn timestamp_nanos(&self) -> i64 {
+        self.datetime.timestamp_nanos()
     }
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
@@ -294,7 +294,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
+    pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
         self.datetime.timestamp_nanos_opt()
     }
 
@@ -303,7 +303,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// In event of a leap second this may exceed 999.
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_millis(&self) -> u32 {
+    pub const fn timestamp_subsec_millis(&self) -> u32 {
         self.datetime.timestamp_subsec_millis()
     }
 
@@ -312,7 +312,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// In event of a leap second this may exceed 999,999.
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_micros(&self) -> u32 {
+    pub const fn timestamp_subsec_micros(&self) -> u32 {
         self.datetime.timestamp_subsec_micros()
     }
 
@@ -321,14 +321,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// In event of a leap second this may exceed 999,999,999.
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_nanos(&self) -> u32 {
+    pub const fn timestamp_subsec_nanos(&self) -> u32 {
         self.datetime.timestamp_subsec_nanos()
     }
 
     /// Retrieves an associated offset from UTC.
     #[inline]
     #[must_use]
-    pub fn offset(&self) -> &Tz::Offset {
+    pub const fn offset(&self) -> &Tz::Offset {
         &self.offset
     }
 
@@ -360,7 +360,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// information.
     #[inline]
     #[must_use]
-    pub fn to_utc(&self) -> DateTime<Utc> {
+    pub const fn to_utc(&self) -> DateTime<Utc> {
         DateTime { datetime: self.datetime, offset: Utc }
     }
 
@@ -476,7 +476,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns a view to the naive UTC datetime.
     #[inline]
     #[must_use]
-    pub fn naive_utc(&self) -> NaiveDateTime {
+    pub const fn naive_utc(&self) -> NaiveDateTime {
         self.datetime
     }
 
@@ -658,8 +658,8 @@ impl DateTime<Utc> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_millis(millis: i64) -> Option<Self> {
-        NaiveDateTime::from_timestamp_millis(millis).as_ref().map(NaiveDateTime::and_utc)
+    pub const fn from_timestamp_millis(millis: i64) -> Option<Self> {
+        Some(try_opt!(NaiveDateTime::from_timestamp_millis(millis)).and_utc())
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
