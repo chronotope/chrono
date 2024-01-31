@@ -1,12 +1,19 @@
 //! Serialization/Deserialization with serde.
 //!
-//! This module provides default implementations for `DateTime` using the [RFC 3339][1] format and
-//! various alternatives for use with serde's [`with` annotation][2].
+//! This module provides default implementations for [`DateTime`] using the [RFC 3339] format and
+//! various alternatives.
+//!
+//! The alternatives are for use with serde's [`with` annotation] combined with the module name.
+//! Alternatively the individual `serialize` and `deserialize` functions in each module can be used
+//! with serde's [`serialize_with`] and [`deserialize_with`] annotations.
 //!
 //! *Available on crate feature 'serde' only.*
 //!
-//! [1]: https://tools.ietf.org/html/rfc3339
-//! [2]: https://serde.rs/field-attrs.html#with
+//! [`DateTime`]: crate::DateTime
+//! [RFC 3339]: https://tools.ietf.org/html/rfc3339
+//! [`with` annotation]: https://serde.rs/field-attrs.html#with
+//! [`serialize_with`]: https://serde.rs/field-attrs.html#serialize_with
+//! [`deserialize_with`]: https://serde.rs/field-attrs.html#deserialize_with
 use core::fmt;
 use serde::de;
 
