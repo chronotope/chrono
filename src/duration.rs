@@ -83,7 +83,7 @@ impl Duration {
     pub const fn new(secs: i64, nanos: u32) -> Option<Duration> {
         if secs < MIN.secs
             || secs > MAX.secs
-            || nanos > 1_000_000_000
+            || nanos >= 1_000_000_000
             || (secs == MAX.secs && nanos > MAX.nanos as u32)
             || (secs == MIN.secs && nanos < MIN.nanos as u32)
         {
