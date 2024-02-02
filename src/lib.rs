@@ -471,6 +471,9 @@ pub use duration::Duration;
 #[doc(no_inline)]
 pub use duration::OutOfRangeError;
 
+/// Alias of [`Duration`].
+pub type TimeDelta = Duration;
+
 use core::fmt;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
