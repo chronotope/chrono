@@ -219,8 +219,7 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap nanoseconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// Unlike [`timestamp_millis`](#method.timestamp_millis), this never
-    /// panics.
+    /// Unlike [`timestamp_millis_opt`](#method.timestamp_millis_opt), this never fails.
     ///
     /// # Example
     ///

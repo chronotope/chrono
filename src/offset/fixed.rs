@@ -170,7 +170,7 @@ impl fmt::Display for FixedOffset {
     }
 }
 
-#[cfg(feature = "arbitrary")]
+#[cfg(all(feature = "arbitrary", feature = "std"))]
 impl arbitrary::Arbitrary<'_> for FixedOffset {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<FixedOffset> {
         let secs = u.int_in_range(-86_399..=86_399)?;

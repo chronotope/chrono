@@ -77,7 +77,7 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - run: |
-          cargo hack check --feature-powerset --optional-deps serde \
+          cargo hack check --feature-powerset --optional-deps arbitrary,serde \
             --skip __internal_bench,iana-time-zone,pure-rust-locales,libc,winapi,rkyv-16,rkyv-64,rkyv-validation \
             --all-targets
         # run using `bash` on all platforms for consistent

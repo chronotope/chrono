@@ -578,46 +578,30 @@ impl NaiveTime {
     ///            (from_hms(20, 4, 5), -86_400));
     /// ```
     #[must_use]
-    pub fn overflowing_add_signed(&self, mut rhs: TimeDelta) -> (NaiveTime, i64) {
-        let mut secs = self.secs;
-        let mut frac = self.frac;
+    pub const fn overflowing_add_signed(&self, rhs: TimeDelta) -> (NaiveTime, i64) {
+        let mut secs = self.secs as i64;
+        let mut frac = self.frac as i32;
+        let secs_to_add = rhs.num_seconds();
+        let frac_to_add = rhs.subsec_nanos();
 
-        // check if `self` is a leap second and adding `rhs` would escape that leap second.
-        // if it's the case, update `self` and `rhs` to involve no leap second;
-        // otherwise the addition immediately finishes.
+        // Check if `self` is a leap second and adding `rhs` would escape that leap second.
+        // If that is the case, update `frac` and `secs` to involve no leap second.
+        // If it stays within the leap second or the second before, and only adds a fractional
+        // second, just do that and return (this way the rest of the code can ignore leap seconds).
         if frac >= 1_000_000_000 {
-            let rfrac = 2_000_000_000 - frac;
-            if rhs >= TimeDelta::nanoseconds(i64::from(rfrac)) {
-                rhs -= TimeDelta::nanoseconds(i64::from(rfrac));
+            // check below is adjusted to not overflow an i32: `frac + frac_to_add >= 2_000_000_000`
+            if secs_to_add > 0 || (frac_to_add > 0 && frac >= 2_000_000_000 - frac_to_add) {
+                frac -= 1_000_000_000;
+            } else if secs_to_add < 0 {
+                frac -= 1_000_000_000;
                 secs += 1;
-                frac = 0;
-            } else if rhs < TimeDelta::nanoseconds(-i64::from(frac)) {
-                rhs += TimeDelta::nanoseconds(i64::from(frac));
-                frac = 0;
             } else {
-                frac = (i64::from(frac) + rhs.num_nanoseconds().unwrap()) as u32;
-                debug_assert!(frac < 2_000_000_000);
-                return (NaiveTime { secs, frac }, 0);
+                return (NaiveTime { secs: self.secs, frac: (frac + frac_to_add) as u32 }, 0);
             }
         }
-        debug_assert!(secs <= 86_400);
-        debug_assert!(frac < 1_000_000_000);
 
-        let rhssecs = rhs.num_seconds();
-        let rhsfrac = (rhs - TimeDelta::seconds(rhssecs)).num_nanoseconds().unwrap();
-        debug_assert_eq!(TimeDelta::seconds(rhssecs) + TimeDelta::nanoseconds(rhsfrac), rhs);
-        let rhssecsinday = rhssecs % 86_400;
-        let mut morerhssecs = rhssecs - rhssecsinday;
-        let rhssecs = rhssecsinday as i32;
-        let rhsfrac = rhsfrac as i32;
-        debug_assert!(-86_400 < rhssecs && rhssecs < 86_400);
-        debug_assert_eq!(morerhssecs % 86_400, 0);
-        debug_assert!(-1_000_000_000 < rhsfrac && rhsfrac < 1_000_000_000);
-
-        let mut secs = secs as i32 + rhssecs;
-        let mut frac = frac as i32 + rhsfrac;
-        debug_assert!(-86_400 < secs && secs < 2 * 86_400);
-        debug_assert!(-1_000_000_000 < frac && frac < 2_000_000_000);
+        let mut secs = secs + secs_to_add;
+        frac += frac_to_add;
 
         if frac < 0 {
             frac += 1_000_000_000;
@@ -626,19 +610,10 @@ impl NaiveTime {
             frac -= 1_000_000_000;
             secs += 1;
         }
-        debug_assert!((-86_400..2 * 86_400).contains(&secs));
-        debug_assert!((0..1_000_000_000).contains(&frac));
 
-        if secs < 0 {
-            secs += 86_400;
-            morerhssecs -= 86_400;
-        } else if secs >= 86_400 {
-            secs -= 86_400;
-            morerhssecs += 86_400;
-        }
-        debug_assert!((0..86_400).contains(&secs));
-
-        (NaiveTime { secs: secs as u32, frac: frac as u32 }, morerhssecs)
+        let secs_in_day = secs.rem_euclid(86_400);
+        let remaining = secs - secs_in_day;
+        (NaiveTime { secs: secs_in_day as u32, frac: frac as u32 }, remaining)
     }
 
     /// Subtracts given `TimeDelta` from the current time, and also returns the number of *seconds*
@@ -660,8 +635,8 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub fn overflowing_sub_signed(&self, rhs: TimeDelta) -> (NaiveTime, i64) {
-        let (time, rhs) = self.overflowing_add_signed(-rhs);
+    pub const fn overflowing_sub_signed(&self, rhs: TimeDelta) -> (NaiveTime, i64) {
+        let (time, rhs) = self.overflowing_add_signed(rhs.neg());
         (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
     }
 
@@ -720,7 +695,7 @@ impl NaiveTime {
     ///            TimeDelta::seconds(61));
     /// ```
     #[must_use]
-    pub fn signed_duration_since(self, rhs: NaiveTime) -> TimeDelta {
+    pub const fn signed_duration_since(self, rhs: NaiveTime) -> TimeDelta {
         //     |    |    :leap|    |    |    |    |    |    |    :leap|    |
         //     |    |    :    |    |    |    |    |    |    |    :    |    |
         // ----+----+-----*---+----+----+----+----+----+----+-------*-+----+----
@@ -731,25 +706,20 @@ impl NaiveTime {
         //      `rhs.frac`|========================================>|
         //          |     |   |        `self - rhs`         |       |
 
-        use core::cmp::Ordering;
-
-        let secs = i64::from(self.secs) - i64::from(rhs.secs);
-        let frac = i64::from(self.frac) - i64::from(rhs.frac);
+        let mut secs = self.secs as i64 - rhs.secs as i64;
+        let frac = self.frac as i64 - rhs.frac as i64;
 
         // `secs` may contain a leap second yet to be counted
-        let adjust = match self.secs.cmp(&rhs.secs) {
-            Ordering::Greater => i64::from(rhs.frac >= 1_000_000_000),
-            Ordering::Equal => 0,
-            Ordering::Less => {
-                if self.frac >= 1_000_000_000 {
-                    -1
-                } else {
-                    0
-                }
-            }
-        };
+        if self.secs > rhs.secs && rhs.frac >= 1_000_000_000 {
+            secs += 1;
+        } else if self.secs < rhs.secs && self.frac >= 1_000_000_000 {
+            secs -= 1;
+        }
 
-        TimeDelta::seconds(secs + adjust) + TimeDelta::nanoseconds(frac)
+        let secs_from_frac = frac.div_euclid(1_000_000_000);
+        let frac = frac.rem_euclid(1_000_000_000) as u32;
+
+        expect!(TimeDelta::new(secs + secs_from_frac, frac), "must be in range")
     }
 
     /// Adds given `FixedOffset` to the current time, and returns the number of days that should be
@@ -1192,7 +1162,7 @@ impl Add<Duration> for NaiveTime {
         // overflow during the conversion to `TimeDelta`.
         // But we limit to double that just in case `self` is a leap-second.
         let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
-        let d = TimeDelta::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        let d = TimeDelta::new(secs as i64, rhs.subsec_nanos()).unwrap();
         self.overflowing_add_signed(d).0
     }
 }
@@ -1302,7 +1272,7 @@ impl Sub<Duration> for NaiveTime {
         // overflow during the conversion to `TimeDelta`.
         // But we limit to double that just in case `self` is a leap-second.
         let secs = rhs.as_secs() % (2 * 24 * 60 * 60);
-        let d = TimeDelta::from_std(Duration::new(secs, rhs.subsec_nanos())).unwrap();
+        let d = TimeDelta::new(secs as i64, rhs.subsec_nanos()).unwrap();
         self.overflowing_sub_signed(d).0
     }
 }
