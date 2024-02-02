@@ -231,15 +231,7 @@ where
 pub enum RoundingError {
     /// Error when the TimeDelta exceeds the TimeDelta from or until the Unix epoch.
     ///
-    /// ``` rust
-    /// # use chrono::{DurationRound, TimeDelta, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0).unwrap();
-    ///
-    /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::days(365)),
-    ///     Err(RoundingError::DurationExceedsTimestamp),
-    /// );
-    /// ```
+    /// Note: this error is not produced anymore.
     DurationExceedsTimestamp,
 
     /// Error when `TimeDelta.num_nanoseconds` exceeds the limit.
@@ -767,22 +759,22 @@ mod tests {
     #[test]
     fn test_duration_trunc_close_to_epoch() {
         let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
-        let span = Duration::minutes(15);
+        let span = TimeDelta::minutes(15);
         assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1970-01-01 00:00:00");
 
         let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 45).unwrap();
-        let span = Duration::minutes(15);
+        let span = TimeDelta::minutes(15);
         assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1969-12-31 23:45:00");
     }
 
     #[test]
     fn test_duration_round_close_to_epoch() {
         let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
-        let span = Duration::minutes(15);
+        let span = TimeDelta::minutes(15);
         assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
 
         let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 45).unwrap();
-        let span = Duration::minutes(15);
+        let span = TimeDelta::minutes(15);
         assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
     }
 }
