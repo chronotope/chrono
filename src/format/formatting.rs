@@ -139,53 +139,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for Delayed
     }
 }
 
-/// Tries to format given arguments with given formatting items.
-/// Internally used by `DelayedFormat`.
-#[cfg(feature = "alloc")]
-#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
-pub fn format<'a, I, B>(
-    w: &mut fmt::Formatter,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
-    items: I,
-) -> fmt::Result
-where
-    I: Iterator<Item = B> + Clone,
-    B: Borrow<Item<'a>>,
-{
-    DelayedFormat {
-        date: date.copied(),
-        time: time.copied(),
-        off: off.cloned(),
-        items,
-        #[cfg(feature = "unstable-locales")]
-        locale: None,
-    }
-    .fmt(w)
-}
-
-/// Formats single formatting item
-#[cfg(feature = "alloc")]
-#[deprecated(since = "0.4.32", note = "Use DelayedFormat::fmt instead")]
-pub fn format_item(
-    w: &mut fmt::Formatter,
-    date: Option<&NaiveDate>,
-    time: Option<&NaiveTime>,
-    off: Option<&(String, FixedOffset)>,
-    item: &Item<'_>,
-) -> fmt::Result {
-    DelayedFormat {
-        date: date.copied(),
-        time: time.copied(),
-        off: off.cloned(),
-        items: [item].into_iter(),
-        #[cfg(feature = "unstable-locales")]
-        locale: None,
-    }
-    .fmt(w)
-}
-
 #[cfg(feature = "alloc")]
 fn format_inner(
     w: &mut impl Write,
@@ -706,7 +659,7 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_time_format() {
-        let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
+        let t = NaiveTime::from_hms_nano(3, 5, 7, 98765432).unwrap();
         assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
         assert_eq!(t.format("%M").to_string(), "05");
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");
@@ -716,25 +669,22 @@ mod tests {
         assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
         assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
-        let t = NaiveTime::from_hms_micro_opt(3, 5, 7, 432100).unwrap();
+        let t = NaiveTime::from_hms_micro(3, 5, 7, 432100).unwrap();
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
         assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
 
-        let t = NaiveTime::from_hms_milli_opt(3, 5, 7, 210).unwrap();
+        let t = NaiveTime::from_hms_milli(3, 5, 7, 210).unwrap();
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
         assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
 
-        let t = NaiveTime::from_hms_opt(3, 5, 7).unwrap();
+        let t = NaiveTime::from_hms(3, 5, 7).unwrap();
         assert_eq!(t.format("%S,%f,%.f").to_string(), "07,000000000,");
         assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".000,.000000,.000000000");
 
         // corner cases
+        assert_eq!(NaiveTime::from_hms(13, 57, 9).unwrap().format("%r").to_string(), "01:57:09 PM");
         assert_eq!(
-            NaiveTime::from_hms_opt(13, 57, 9).unwrap().format("%r").to_string(),
-            "01:57:09 PM"
-        );
-        assert_eq!(
-            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
+            NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
             "23:59:60"
         );
     }
@@ -815,13 +765,13 @@ mod tests {
             }
             // +03:45, -03:30, +11:00, -11:00:22, +02:34:26, -12:34:30, +00:00
             let offsets = [
-                FixedOffset::east_opt(13_500).unwrap(),
-                FixedOffset::east_opt(-12_600).unwrap(),
-                FixedOffset::east_opt(39_600).unwrap(),
-                FixedOffset::east_opt(-39_622).unwrap(),
-                FixedOffset::east_opt(9266).unwrap(),
-                FixedOffset::east_opt(-45270).unwrap(),
-                FixedOffset::east_opt(0).unwrap(),
+                FixedOffset::east(13_500).unwrap(),
+                FixedOffset::east(-12_600).unwrap(),
+                FixedOffset::east(39_600).unwrap(),
+                FixedOffset::east(-39_622).unwrap(),
+                FixedOffset::east(9266).unwrap(),
+                FixedOffset::east(-45270).unwrap(),
+                FixedOffset::east(0).unwrap(),
             ];
             check(precision, Colons::Colon, Pad::Zero, false, offsets, expected[0]);
             check(precision, Colons::Colon, Pad::Zero, true, offsets, expected[1]);

@@ -120,7 +120,7 @@ pub mod ts_nanoseconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.timestamp_nanos_opt().ok_or(ser::Error::custom(
+        serializer.serialize_i64(dt.timestamp_nanos().ok_or(ser::Error::custom(
             "value out of range for a timestamp with nanosecond precision",
         ))?)
     }
@@ -142,10 +142,10 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355733).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1526522699, 918355733).unwrap() });
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(-1, 999_999_999).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(-1, 999_999_999).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
@@ -168,7 +168,7 @@ pub mod ts_nanoseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 value.div_euclid(1_000_000_000),
                 (value.rem_euclid(1_000_000_000)) as u32,
             )
@@ -179,7 +179,7 @@ pub mod ts_nanoseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 (value / 1_000_000_000) as i64,
                 (value % 1_000_000_000) as u32,
             )
@@ -258,7 +258,7 @@ pub mod ts_nanoseconds_option {
         S: ser::Serializer,
     {
         match *opt {
-            Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos_opt().ok_or(
+            Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos().ok_or(
                 ser::Error::custom("value out of range for a timestamp with nanosecond precision"),
             )?),
             None => serializer.serialize_none(),
@@ -282,10 +282,10 @@ pub mod ts_nanoseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355733 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355733) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1526522699, 918355733) });
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(-1, 999_999_999) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(-1, 999_999_999) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
@@ -409,10 +409,10 @@ pub mod ts_microseconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355000).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1526522699, 918355000).unwrap() });
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(-1, 999_999_000).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(-1, 999_999_000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
@@ -443,7 +443,7 @@ pub mod ts_microseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 (value / 1_000_000) as i64,
                 ((value % 1_000_000) * 1_000) as u32,
             )
@@ -536,10 +536,10 @@ pub mod ts_microseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918355 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918355000) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1526522699, 918355000) });
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(-1, 999_999_000) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(-1, 999_999_000) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
@@ -663,10 +663,10 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918000000).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1526522699, 918000000).unwrap() });
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(-1, 999_000_000).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(-1, 999_000_000).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
@@ -697,7 +697,7 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(
+            NaiveDateTime::from_timestamp(
                 (value / 1000) as i64,
                 ((value % 1000) * 1_000_000) as u32,
             )
@@ -790,10 +790,10 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1526522699918 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1526522699, 918000000) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1526522699, 918000000) });
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": -1 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(-1, 999_000_000) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(-1, 999_000_000) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>
@@ -917,7 +917,7 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1431684000, 0).unwrap() });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1431684000, 0).unwrap() });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<NaiveDateTime, D::Error>
@@ -940,15 +940,14 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value, 0)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value, 0).ok_or_else(|| E::custom(ne_timestamp(value)))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value as i64, 0)
+            NaiveDateTime::from_timestamp(value as i64, 0)
                 .ok_or_else(|| E::custom(ne_timestamp(value)))
         }
     }
@@ -1038,7 +1037,7 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s: S = serde_json::from_str(r#"{ "time": 1431684000 }"#)?;
-    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp_opt(1431684000, 0) });
+    /// assert_eq!(my_s, S { time: NaiveDateTime::from_timestamp(1431684000, 0) });
     /// # Ok::<(), serde_json::Error>(())
     /// ```
     pub fn deserialize<'de, D>(d: D) -> Result<Option<NaiveDateTime>, D::Error>

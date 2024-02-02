@@ -11,10 +11,7 @@ pub(crate) mod isoweek;
 pub(crate) mod time;
 
 pub use self::date::{Days, NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator, NaiveWeek};
-#[allow(deprecated)]
-pub use self::date::{MAX_DATE, MIN_DATE};
-#[allow(deprecated)]
-pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
+pub use self::datetime::NaiveDateTime;
 pub use self::isoweek::IsoWeek;
 pub use self::time::NaiveTime;
 

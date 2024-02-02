@@ -20,7 +20,6 @@
 
 use core::fmt;
 
-use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
 use crate::naive::{NaiveDate, NaiveDateTime};
 use crate::DateTime;
 
@@ -146,23 +145,6 @@ pub trait TimeZone: Sized + Clone {
     /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
-    /// # Panics
-    ///
-    /// Panics on the out-of-range number of seconds and/or invalid nanosecond,
-    /// for a non-panicking version see [`timestamp_opt`](#method.timestamp_opt).
-    #[deprecated(since = "0.4.23", note = "use `timestamp_opt()` instead")]
-    fn timestamp(&self, secs: i64, nsecs: u32) -> DateTime<Self> {
-        self.timestamp_opt(secs, nsecs).unwrap()
-    }
-
-    /// Makes a new `DateTime` from the number of non-leap seconds
-    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
-    /// and the number of nanoseconds since the last whole non-leap second.
-    ///
-    /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
-    /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
-    ///
     /// # Errors
     ///
     /// Returns `LocalResult::None` on out-of-range number of seconds and/or
@@ -173,23 +155,13 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     /// use chrono::{Utc, TimeZone};
     ///
-    /// assert_eq!(Utc.timestamp_opt(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
+    /// assert_eq!(Utc.timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
-    fn timestamp_opt(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
-        match NaiveDateTime::from_timestamp_opt(secs, nsecs) {
+    fn timestamp(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
+        match NaiveDateTime::from_timestamp(secs, nsecs) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
         }
-    }
-
-    /// Makes a new `DateTime` from the number of non-leap milliseconds
-    /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
-    ///
-    /// Panics on out-of-range number of milliseconds for a non-panicking
-    /// version see [`timestamp_millis_opt`](#method.timestamp_millis_opt).
-    #[deprecated(since = "0.4.23", note = "use `timestamp_millis_opt()` instead")]
-    fn timestamp_millis(&self, millis: i64) -> DateTime<Self> {
-        self.timestamp_millis_opt(millis).unwrap()
     }
 
     /// Makes a new `DateTime` from the number of non-leap milliseconds
@@ -204,12 +176,12 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// ```
     /// use chrono::{Utc, TimeZone, LocalResult};
-    /// match Utc.timestamp_millis_opt(1431648000) {
+    /// match Utc.timestamp_millis(1431648000) {
     ///     LocalResult::Single(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     _ => panic!("Incorrect timestamp_millis"),
     /// };
     /// ```
-    fn timestamp_millis_opt(&self, millis: i64) -> LocalResult<DateTime<Self>> {
+    fn timestamp_millis(&self, millis: i64) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp_millis(millis) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
@@ -219,7 +191,7 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap nanoseconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// Unlike [`timestamp_millis_opt`](#method.timestamp_millis_opt), this never fails.
+    /// Unlike [`timestamp_millis`](#method.timestamp_millis), this never fails.
     ///
     /// # Example
     ///
@@ -234,7 +206,7 @@ pub trait TimeZone: Sized + Clone {
             secs -= 1;
             nanos += 1_000_000_000;
         }
-        self.timestamp_opt(secs, nanos as u32).unwrap()
+        self.timestamp(secs, nanos as u32).unwrap()
     }
 
     /// Makes a new `DateTime` from the number of non-leap microseconds
@@ -252,31 +224,6 @@ pub trait TimeZone: Sized + Clone {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
             None => LocalResult::None,
         }
-    }
-
-    /// Parses a string with the specified format string and returns a
-    /// `DateTime` with the current offset.
-    ///
-    /// See the [`crate::format::strftime`] module on the
-    /// supported escape sequences.
-    ///
-    /// If the to-be-parsed string includes an offset, it *must* match the
-    /// offset of the TimeZone, otherwise an error will be returned.
-    ///
-    /// See also [`DateTime::parse_from_str`] which gives a [`DateTime`] with
-    /// parsed [`FixedOffset`].
-    ///
-    /// See also [`NaiveDateTime::parse_from_str`] which gives a [`NaiveDateTime`] without
-    /// an offset, but can be converted to a [`DateTime`] with [`NaiveDateTime::and_utc`] or
-    /// [`NaiveDateTime::and_local_timezone`].
-    #[deprecated(
-        since = "0.4.29",
-        note = "use `DateTime::parse_from_str` or `NaiveDateTime::parse_from_str` with `and_utc()` or `and_local_timezone()` instead"
-    )]
-    fn datetime_from_str(&self, s: &str, fmt: &str) -> ParseResult<DateTime<Self>> {
-        let mut parsed = Parsed::new();
-        parse(&mut parsed, s, StrftimeItems::new(fmt))?;
-        parsed.to_datetime_with_timezone(self)
     }
 
     /// Reconstructs the time zone from the offset.
@@ -327,7 +274,7 @@ mod tests {
     fn test_fixed_offset_min_max_dates() {
         for offset_hour in -23..=23 {
             dbg!(offset_hour);
-            let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
+            let offset = FixedOffset::east(offset_hour * 60 * 60).unwrap();
 
             let local_max = offset.from_utc_datetime(&NaiveDateTime::MAX);
             assert_eq!(local_max.naive_utc(), NaiveDateTime::MAX);
@@ -351,21 +298,21 @@ mod tests {
 
     #[test]
     fn test_negative_millis() {
-        let dt = Utc.timestamp_millis_opt(-1000).unwrap();
+        let dt = Utc.timestamp_millis(-1000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
-        let dt = Utc.timestamp_millis_opt(-7000).unwrap();
+        let dt = Utc.timestamp_millis(-7000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:53 UTC");
-        let dt = Utc.timestamp_millis_opt(-7001).unwrap();
+        let dt = Utc.timestamp_millis(-7001).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.999 UTC");
-        let dt = Utc.timestamp_millis_opt(-7003).unwrap();
+        let dt = Utc.timestamp_millis(-7003).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.997 UTC");
-        let dt = Utc.timestamp_millis_opt(-999).unwrap();
+        let dt = Utc.timestamp_millis(-999).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
-        let dt = Utc.timestamp_millis_opt(-1).unwrap();
+        let dt = Utc.timestamp_millis(-1).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999 UTC");
-        let dt = Utc.timestamp_millis_opt(-60000).unwrap();
+        let dt = Utc.timestamp_millis(-60000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
-        let dt = Utc.timestamp_millis_opt(-3600000).unwrap();
+        let dt = Utc.timestamp_millis(-3600000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
 
         for (millis, expected) in &[
@@ -373,7 +320,7 @@ mod tests {
             (-7001, "1969-12-31 23:59:52.999 UTC"),
             (-7003, "1969-12-31 23:59:52.997 UTC"),
         ] {
-            match Utc.timestamp_millis_opt(*millis) {
+            match Utc.timestamp_millis(*millis) {
                 LocalResult::Single(dt) => {
                     assert_eq!(dt.to_string(), *expected);
                 }

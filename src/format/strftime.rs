@@ -664,7 +664,7 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_strftime_docs() {
-        let dt = FixedOffset::east_opt(34200)
+        let dt = FixedOffset::east(34200)
             .unwrap()
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2001, 7, 8)
@@ -775,7 +775,7 @@ mod tests {
     #[test]
     #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_docs_localized() {
-        let dt = FixedOffset::east_opt(34200)
+        let dt = FixedOffset::east(34200)
             .unwrap()
             .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
             .unwrap()
@@ -832,7 +832,7 @@ mod tests {
         use crate::{FixedOffset, TimeZone};
         use std::fmt::Write;
 
-        let dt = FixedOffset::east_opt(34200)
+        let dt = FixedOffset::east(34200)
             .unwrap()
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2001, 7, 8)
@@ -849,7 +849,7 @@ mod tests {
     #[test]
     #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_localized_korean() {
-        let dt = FixedOffset::east_opt(34200)
+        let dt = FixedOffset::east(34200)
             .unwrap()
             .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
             .unwrap()
@@ -878,7 +878,7 @@ mod tests {
     #[test]
     #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_localized_japanese() {
-        let dt = FixedOffset::east_opt(34200)
+        let dt = FixedOffset::east(34200)
             .unwrap()
             .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
             .unwrap()

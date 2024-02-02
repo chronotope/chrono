@@ -56,13 +56,6 @@ pub struct DateTime<Tz: TimeZone> {
     offset: Tz::Offset,
 }
 
-/// The minimum possible `DateTime<Utc>`.
-#[deprecated(since = "0.4.20", note = "Use DateTime::MIN_UTC instead")]
-pub const MIN_DATETIME: DateTime<Utc> = DateTime::<Utc>::MIN_UTC;
-/// The maximum possible `DateTime<Utc>`.
-#[deprecated(since = "0.4.20", note = "Use DateTime::MAX_UTC instead")]
-pub const MAX_DATETIME: DateTime<Utc> = DateTime::<Utc>::MAX_UTC;
-
 impl<Tz: TimeZone> DateTime<Tz> {
     /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
     ///
@@ -95,37 +88,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime, offset }
     }
 
-    /// Makes a new `DateTime` from its components: a `NaiveDateTime` in UTC and an `Offset`.
-    #[inline]
-    #[must_use]
-    #[deprecated(
-        since = "0.4.27",
-        note = "Use TimeZone::from_utc_datetime() or DateTime::from_naive_utc_and_offset instead"
-    )]
-    pub fn from_utc(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
-        DateTime { datetime, offset }
-    }
-
-    /// Makes a new `DateTime` from a `NaiveDateTime` in *local* time and an `Offset`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the local datetime can't be converted to UTC because it would be out of range.
-    ///
-    /// This can happen if `datetime` is near the end of the representable range of `NaiveDateTime`,
-    /// and the offset from UTC pushes it beyond that.
-    #[inline]
-    #[must_use]
-    #[deprecated(
-        since = "0.4.27",
-        note = "Use TimeZone::from_local_datetime() or NaiveDateTime::and_local_timezone instead"
-    )]
-    pub fn from_local(datetime: NaiveDateTime, offset: Tz::Offset) -> DateTime<Tz> {
-        let datetime_utc = datetime - offset.fix();
-
-        DateTime { datetime: datetime_utc, offset }
-    }
-
     /// Retrieves the date without an associated timezone.
     ///
     /// # Panics
@@ -140,7 +102,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::prelude::*;
     ///
     /// let date: DateTime<Utc> = Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
-    /// let other: DateTime<FixedOffset> = FixedOffset::east_opt(23).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
+    /// let other: DateTime<FixedOffset> = FixedOffset::east(23).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
     /// assert_eq!(date.date_naive(), other.date_naive());
     /// ```
     #[inline]
@@ -161,7 +123,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// (aka "UNIX timestamp").
     ///
     /// The reverse operation of creating a [`DateTime`] from a timestamp can be performed
-    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp_opt`].
+    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp`].
     ///
     /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
@@ -217,23 +179,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
     ///
-    /// # Panics
-    ///
-    /// An `i64` with nanosecond precision can span a range of ~584 years. This function panics on
-    /// an out of range `DateTime`.
-    ///
-    /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
-    /// and 2262-04-11T23:47:16.854775807.
-    #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
-    #[inline]
-    #[must_use]
-    pub fn timestamp_nanos(&self) -> i64 {
-        self.timestamp_nanos_opt()
-            .expect("value can not be represented in a timestamp with nanosecond precision.")
-    }
-
-    /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
-    ///
     /// # Errors
     ///
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
@@ -248,27 +193,27 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::{Utc, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
+    /// assert_eq!(dt.timestamp_nanos(), Some(1_000_000_444));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_000_000_000_555));
+    /// assert_eq!(dt.timestamp_nanos(), Some(1_000_000_000_000_000_555));
     ///
     /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_192).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), Some(-9_223_372_036_854_775_808));
+    /// assert_eq!(dt.timestamp_nanos(), Some(-9_223_372_036_854_775_808));
     ///
     /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_807).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), Some(9_223_372_036_854_775_807));
+    /// assert_eq!(dt.timestamp_nanos(), Some(9_223_372_036_854_775_807));
     ///
     /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_191).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), None);
+    /// assert_eq!(dt.timestamp_nanos(), None);
     ///
     /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_808).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.timestamp_nanos_opt(), None);
+    /// assert_eq!(dt.timestamp_nanos(), None);
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos_opt(&self) -> Option<i64> {
-        self.datetime.timestamp_nanos_opt()
+    pub fn timestamp_nanos(&self) -> Option<i64> {
+        self.datetime.timestamp_nanos()
     }
 
     /// Returns the number of milliseconds since the last second boundary.
@@ -548,7 +493,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T18:30:09Z");
     ///
-    /// let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+    /// let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(10, 30, 9, 453_829).unwrap()).unwrap();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
     ///            "2018-01-26T10:30:09+08:00");
@@ -572,7 +517,7 @@ impl DateTime<Utc> {
     /// [`timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_opt`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::timestamp`] or [`DateTime::with_timezone`].
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
     /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
@@ -597,7 +542,7 @@ impl DateTime<Utc> {
     #[must_use]
     pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
         Some(DateTime {
-            datetime: try_opt!(NaiveDateTime::from_timestamp_opt(secs, nsecs)),
+            datetime: try_opt!(NaiveDateTime::from_timestamp(secs, nsecs)),
             offset: Utc,
         })
     }
@@ -608,7 +553,7 @@ impl DateTime<Utc> {
     /// This is guaranteed to round-trip with regard to [`timestamp_millis`](DateTime::timestamp_millis).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_millis_opt`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::timestamp_millis`] or [`DateTime::with_timezone`].
     ///
     /// # Errors
     ///
@@ -649,7 +594,7 @@ impl Default for DateTime<Local> {
 
 impl Default for DateTime<FixedOffset> {
     fn default() -> Self {
-        FixedOffset::west_opt(0).unwrap().from_utc_datetime(&NaiveDateTime::default())
+        FixedOffset::west(0).unwrap().from_utc_datetime(&NaiveDateTime::default())
     }
 }
 
@@ -660,7 +605,7 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
     /// Conversion is done via [`DateTime::with_timezone`]. Note that the converted value returned by
     /// this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&FixedOffset::east_opt(0).unwrap())
+        src.with_timezone(&FixedOffset::east(0).unwrap())
     }
 }
 
@@ -762,7 +707,7 @@ impl DateTime<FixedOffset> {
     /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// assert_eq!(
     ///     DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
-    ///     FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    ///     FixedOffset::east(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// ```
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
@@ -813,7 +758,7 @@ impl DateTime<FixedOffset> {
     ///
     /// let dt = DateTime::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(FixedOffset::east_opt(0).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(12, 9, 14, 274).unwrap()).unwrap()));
+    /// assert_eq!(dt, Ok(FixedOffset::east(0).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(12, 9, 14, 274).unwrap()).unwrap()));
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
@@ -842,7 +787,7 @@ impl DateTime<FixedOffset> {
     ///     "2015-02-18 23:16:09 +0200 trailing text", "%Y-%m-%d %H:%M:%S %z").unwrap();
     /// assert_eq!(
     ///     datetime,
-    ///     FixedOffset::east_opt(2*3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    ///     FixedOffset::east(2*3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// assert_eq!(remainder, " trailing text");
     /// ```
@@ -1192,8 +1137,8 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// let earlier = Utc.with_ymd_and_hms(2015, 5, 15, 2, 0, 0).unwrap().with_timezone(&FixedOffset::west_opt(1 * 3600).unwrap());
-    /// let later   = Utc.with_ymd_and_hms(2015, 5, 15, 3, 0, 0).unwrap().with_timezone(&FixedOffset::west_opt(5 * 3600).unwrap());
+    /// let earlier = Utc.with_ymd_and_hms(2015, 5, 15, 2, 0, 0).unwrap().with_timezone(&FixedOffset::west(1 * 3600).unwrap());
+    /// let later   = Utc.with_ymd_and_hms(2015, 5, 15, 3, 0, 0).unwrap().with_timezone(&FixedOffset::west(5 * 3600).unwrap());
     ///
     /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
@@ -1609,7 +1554,7 @@ impl From<SystemTime> for DateTime<Utc> {
                 }
             }
         };
-        Utc.timestamp_opt(sec, nsec).unwrap()
+        Utc.timestamp(sec, nsec).unwrap()
     }
 }
 
@@ -1652,7 +1597,7 @@ impl From<js_sys::Date> for DateTime<Utc> {
 ))]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
-        Utc.timestamp_millis_opt(date.get_time() as i64).unwrap()
+        Utc.timestamp_millis(date.get_time() as i64).unwrap()
     }
 }
 
@@ -1700,14 +1645,14 @@ where
 
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east_opt(3660).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3660).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
         )
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:01""#.into())
     );
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east_opt(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
         )
         .ok(),
         // An offset with seconds is not allowed by RFC 3339, so we round it to the nearest minute.
@@ -1744,13 +1689,13 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
         norm(&Some(
-            FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            FixedOffset::east(0).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
         ))
     );
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
         norm(&Some(
-            FixedOffset::east_opt(60 * 60 + 23 * 60)
+            FixedOffset::east(60 * 60 + 23 * 60)
                 .unwrap()
                 .with_ymd_and_hms(2014, 7, 24, 13, 57, 6)
                 .unwrap()

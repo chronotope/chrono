@@ -526,7 +526,7 @@ impl Parsed {
             None => 0,
         };
 
-        NaiveTime::from_hms_nano_opt(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
+        NaiveTime::from_hms_nano(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
     }
 
     /// Returns a parsed naive date and time out of given fields,
@@ -569,7 +569,7 @@ impl Parsed {
 
             // reconstruct date and time fields from timestamp
             let ts = timestamp.checked_add(i64::from(offset)).ok_or(OUT_OF_RANGE)?;
-            let datetime = NaiveDateTime::from_timestamp_opt(ts, 0);
+            let datetime = NaiveDateTime::from_timestamp(ts, 0);
             let mut datetime = datetime.ok_or(OUT_OF_RANGE)?;
 
             // fill year, ordinal, hour, minute and second fields from timestamp.
@@ -610,7 +610,7 @@ impl Parsed {
 
     /// Returns a parsed fixed time zone offset out of given fields.
     pub fn to_fixed_offset(&self) -> ParseResult<FixedOffset> {
-        self.offset.and_then(FixedOffset::east_opt).ok_or(OUT_OF_RANGE)
+        self.offset.and_then(FixedOffset::east).ok_or(OUT_OF_RANGE)
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields.
@@ -627,7 +627,7 @@ impl Parsed {
             (None, None) => return Err(NOT_ENOUGH),
         };
         let datetime = self.to_naive_datetime_with_offset(offset)?;
-        let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
+        let offset = FixedOffset::east(offset).ok_or(OUT_OF_RANGE)?;
 
         match offset.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
@@ -652,7 +652,7 @@ impl Parsed {
             // make a naive `DateTime` from given timestamp and (if any) nanosecond.
             // an empty `nanosecond` is always equal to zero, so missing nanosecond is fine.
             let nanosecond = self.nanosecond.unwrap_or(0);
-            let dt = NaiveDateTime::from_timestamp_opt(timestamp, nanosecond);
+            let dt = NaiveDateTime::from_timestamp(timestamp, nanosecond);
             let dt = dt.ok_or(OUT_OF_RANGE)?;
             guessed_offset = tz.offset_from_utc_datetime(&dt).fix().local_minus_utc();
         }
@@ -966,8 +966,8 @@ mod tests {
             )
         }
 
-        let hms = |h, m, s| Ok(NaiveTime::from_hms_opt(h, m, s).unwrap());
-        let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano_opt(h, m, s, n).unwrap());
+        let hms = |h, m, s| Ok(NaiveTime::from_hms(h, m, s).unwrap());
+        let hmsn = |h, m, s, n| Ok(NaiveTime::from_hms_nano(h, m, s, n).unwrap());
 
         // omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
@@ -1176,7 +1176,7 @@ mod tests {
         }
 
         let ymdhmsn = |y, m, d, h, n, s, nano, off| {
-            Ok(FixedOffset::east_opt(off)
+            Ok(FixedOffset::east(off)
                 .unwrap()
                 .from_local_datetime(
                     &NaiveDate::from_ymd_opt(y, m, d)
@@ -1244,16 +1244,16 @@ mod tests {
             Err(IMPOSSIBLE)
         );
         assert_eq!(
-            parse!(FixedOffset::east_opt(32400).unwrap();
+            parse!(FixedOffset::east(32400).unwrap();
                           year: 2014, ordinal: 365, hour_div_12: 0, hour_mod_12: 4,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
-            parse!(FixedOffset::east_opt(32400).unwrap();
+            parse!(FixedOffset::east(32400).unwrap();
                           year: 2014, ordinal: 365, hour_div_12: 1, hour_mod_12: 1,
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 32400),
-            Ok(FixedOffset::east_opt(32400)
+            Ok(FixedOffset::east(32400)
                 .unwrap()
                 .from_local_datetime(
                     &NaiveDate::from_ymd_opt(2014, 12, 31)
@@ -1271,12 +1271,12 @@ mod tests {
         );
         assert_eq!(parse!(Utc; timestamp: 1_420_000_000, offset: 32400), Err(IMPOSSIBLE));
         assert_eq!(
-            parse!(FixedOffset::east_opt(32400).unwrap(); timestamp: 1_420_000_000, offset: 0),
+            parse!(FixedOffset::east(32400).unwrap(); timestamp: 1_420_000_000, offset: 0),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
-            parse!(FixedOffset::east_opt(32400).unwrap(); timestamp: 1_420_000_000, offset: 32400),
-            Ok(FixedOffset::east_opt(32400)
+            parse!(FixedOffset::east(32400).unwrap(); timestamp: 1_420_000_000, offset: 32400),
+            Ok(FixedOffset::east(32400)
                 .unwrap()
                 .with_ymd_and_hms(2014, 12, 31, 13, 26, 40)
                 .unwrap())

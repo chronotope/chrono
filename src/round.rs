@@ -97,7 +97,7 @@ const fn span_for_digits(digits: u16) -> u32 {
 ///
 /// # Limitations
 /// Both rounding and truncating are done via [`TimeDelta::num_nanoseconds`] and
-/// [`DateTime::timestamp_nanos_opt`]. This means that they will fail if either the
+/// [`DateTime::timestamp_nanos`]. This means that they will fail if either the
 /// `TimeDelta` or the `DateTime` are too big to represented as nanoseconds. They
 /// will also fail if the `TimeDelta` is bigger than the timestamp.
 pub trait DurationRound: Sized {
@@ -180,7 +180,7 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
+        let stamp = naive.timestamp_nanos().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
@@ -219,7 +219,7 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
+        let stamp = naive.timestamp_nanos().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span > stamp.abs() {
             return Err(RoundingError::DurationExceedsTimestamp);
         }
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_round_subsecs() {
-        let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+        let pst = FixedOffset::east(8 * 60 * 60).unwrap();
         let dt = pst
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2018, 1, 11)
@@ -373,7 +373,7 @@ mod tests {
 
     #[test]
     fn test_trunc_subsecs() {
-        let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
+        let pst = FixedOffset::east(8 * 60 * 60).unwrap();
         let dt = pst
             .from_local_datetime(
                 &NaiveDate::from_ymd_opt(2018, 1, 11)
@@ -501,8 +501,7 @@ mod tests {
         );
 
         // timezone east
-        let dt =
-            FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
@@ -513,8 +512,7 @@ mod tests {
         );
 
         // timezone west
-        let dt =
-            FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
@@ -663,8 +661,7 @@ mod tests {
         );
 
         // timezone east
-        let dt =
-            FixedOffset::east_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
@@ -675,8 +672,7 @@ mod tests {
         );
 
         // timezone west
-        let dt =
-            FixedOffset::west_opt(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"
@@ -761,15 +757,15 @@ mod tests {
 
     #[test]
     fn issue1010() {
-        let dt = NaiveDateTime::from_timestamp_opt(-4_227_854_320, 678_774_288).unwrap();
+        let dt = NaiveDateTime::from_timestamp(-4_227_854_320, 678_774_288).unwrap();
         let span = TimeDelta::microseconds(-7_019_067_213_869_040);
         assert_eq!(dt.duration_trunc(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(320_041_586, 920_103_021).unwrap();
+        let dt = NaiveDateTime::from_timestamp(320_041_586, 920_103_021).unwrap();
         let span = TimeDelta::nanoseconds(-8_923_838_508_697_114_584);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(-2_621_440, 0).unwrap();
+        let dt = NaiveDateTime::from_timestamp(-2_621_440, 0).unwrap();
         let span = TimeDelta::nanoseconds(-9_223_372_036_854_771_421);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
     }

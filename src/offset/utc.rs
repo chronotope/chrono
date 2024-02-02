@@ -34,9 +34,9 @@ use crate::DateTime;
 /// ```
 /// use chrono::{TimeZone, NaiveDateTime, Utc};
 ///
-/// let dt = Utc.from_utc_datetime(&NaiveDateTime::from_timestamp_opt(61, 0).unwrap());
+/// let dt = Utc.from_utc_datetime(&NaiveDateTime::from_timestamp(61, 0).unwrap());
 ///
-/// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
+/// assert_eq!(Utc.timestamp(61, 0).unwrap(), dt);
 /// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -71,7 +71,7 @@ impl Utc {
     /// let today_utc = now_utc.date_naive();
     ///
     /// // Current time in some timezone (let's use +05:00)
-    /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
+    /// let offset = FixedOffset::east(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
     #[cfg(not(all(
@@ -84,7 +84,7 @@ impl Utc {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
         let naive =
-            NaiveDateTime::from_timestamp_opt(now.as_secs() as i64, now.subsec_nanos()).unwrap();
+            NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap();
         Utc.from_utc_datetime(&naive)
     }
 
@@ -119,7 +119,7 @@ impl TimeZone for Utc {
 
 impl Offset for Utc {
     fn fix(&self) -> FixedOffset {
-        FixedOffset::east_opt(0).unwrap()
+        FixedOffset::east(0).unwrap()
     }
 }
 

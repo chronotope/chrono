@@ -66,7 +66,7 @@ fn from_utc_time(utc_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
     let utc_secs = system_time_as_unix_seconds(&utc_time)?;
     let local_secs = system_time_as_unix_seconds(&local_time)?;
     let offset = (local_secs - utc_secs) as i32;
-    Ok(FixedOffset::east_opt(offset).unwrap())
+    Ok(FixedOffset::east(offset).unwrap())
 }
 
 fn from_local_time(local_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
@@ -74,7 +74,7 @@ fn from_local_time(local_time: SYSTEMTIME) -> Result<FixedOffset, Error> {
     let utc_secs = system_time_as_unix_seconds(&utc_time)?;
     let local_secs = system_time_as_unix_seconds(&local_time)?;
     let offset = (local_secs - utc_secs) as i32;
-    Ok(FixedOffset::east_opt(offset).unwrap())
+    Ok(FixedOffset::east(offset).unwrap())
 }
 
 fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> SYSTEMTIME {
