@@ -52,23 +52,18 @@
 //!
 //! ## Overview
 //!
-//! ### Duration
+//! ### Time delta / Duration
 //!
-//! Chrono currently uses its own [`Duration`] type to represent the magnitude
-//! of a time span. Since this has the same name as the newer, standard type for
-//! duration, the reference will refer this type as `OldDuration`.
+//! Chrono has a [`TimeDelta`] type to represent the magnitude of a time span. This is an
+//! "accurate" duration represented as seconds and nanoseconds, and does not represent "nominal"
+//! components such as days or months.
 //!
-//! Note that this is an "accurate" duration represented as seconds and
-//! nanoseconds and does not represent "nominal" components such as days or
-//! months.
+//! The [`TimeDelta`] type was previously named `Duration` (and is still available as a type alias
+//! with that name). A notable difference with the similar [`core::time::Duration`] is that it is a
+//! signed value instead of unsigned.
 //!
-//! Chrono does not yet natively support
-//! the standard [`Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html) type,
-//! but it will be supported in the future.
-//! Meanwhile you can convert between two types with
-//! [`Duration::from_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.from_std)
-//! and
-//! [`Duration::to_std`](https://docs.rs/time/0.1.40/time/struct.Duration.html#method.to_std)
+//! Chrono currently only supports a small number of operations with [`core::time::Duration`] .
+//! You can convert between both types with the [`TimeDelta::from_std`] and [`TimeDelta::to_std`]
 //! methods.
 //!
 //! ### Date and Time
