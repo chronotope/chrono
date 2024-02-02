@@ -466,13 +466,13 @@
 extern crate alloc;
 
 mod duration;
-pub use duration::Duration;
 #[cfg(feature = "std")]
 #[doc(no_inline)]
 pub use duration::OutOfRangeError;
+pub use duration::TimeDelta;
 
-/// Alias of [`Duration`].
-pub type TimeDelta = Duration;
+/// Alias of [`TimeDelta`].
+pub type Duration = TimeDelta;
 
 use core::fmt;
 
@@ -566,7 +566,7 @@ pub mod serde {
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 pub mod rkyv {
     pub use crate::datetime::ArchivedDateTime;
-    pub use crate::duration::ArchivedDuration;
+    pub use crate::duration::ArchivedTimeDelta;
     pub use crate::month::ArchivedMonth;
     pub use crate::naive::date::ArchivedNaiveDate;
     pub use crate::naive::datetime::ArchivedNaiveDateTime;
@@ -577,6 +577,9 @@ pub mod rkyv {
     pub use crate::offset::local::ArchivedLocal;
     pub use crate::offset::utc::ArchivedUtc;
     pub use crate::weekday::ArchivedWeekday;
+
+    /// Alias of [`ArchivedTimeDelta`]
+    pub type ArchivedDuration = ArchivedTimeDelta;
 }
 
 /// Out of range error type used in various converting APIs
