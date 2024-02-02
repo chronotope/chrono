@@ -14,7 +14,6 @@ use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::duration::Duration as OldDuration;
 #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use crate::format::Locale;
 use crate::format::{
@@ -30,7 +29,7 @@ use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::try_opt;
 #[allow(deprecated)]
 use crate::Date;
-use crate::{Datelike, Months, Timelike, Weekday};
+use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -364,14 +363,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime: self.datetime, offset: Utc }
     }
 
-    /// Adds given `Duration` to the current date and time.
+    /// Adds given `TimeDelta` to the current date and time.
     ///
     /// # Errors
     ///
     /// Returns `None` if the resulting date would be out of range.
     #[inline]
     #[must_use]
-    pub fn checked_add_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
@@ -397,14 +396,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .single()
     }
 
-    /// Subtracts given `Duration` from the current date and time.
+    /// Subtracts given `TimeDelta` from the current date and time.
     ///
     /// # Errors
     ///
     /// Returns `None` if the resulting date would be out of range.
     #[inline]
     #[must_use]
-    pub fn checked_sub_signed(self, rhs: OldDuration) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
@@ -469,7 +468,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn signed_duration_since<Tz2: TimeZone>(
         self,
         rhs: impl Borrow<DateTime<Tz2>>,
-    ) -> OldDuration {
+    ) -> TimeDelta {
         self.datetime.signed_duration_since(rhs.borrow().datetime)
     }
 
@@ -1239,7 +1238,7 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
-/// Add `chrono::Duration` to `DateTime`.
+/// Add `TimeDelta` to `DateTime`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
@@ -1249,12 +1248,12 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
 ///
 /// Panics if the resulting date would be out of range.
 /// Consider using [`DateTime<Tz>::checked_add_signed`] to get an `Option` instead.
-impl<Tz: TimeZone> Add<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Add<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn add(self, rhs: OldDuration) -> DateTime<Tz> {
-        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+    fn add(self, rhs: TimeDelta) -> DateTime<Tz> {
+        self.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed")
     }
 }
 
@@ -1273,9 +1272,9 @@ impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
 
     #[inline]
     fn add(self, rhs: Duration) -> DateTime<Tz> {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to TimeDelta");
+        self.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed")
     }
 }
 
@@ -1289,11 +1288,11 @@ impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
 ///
 /// Panics if the resulting date would be out of range.
 /// Consider using [`DateTime<Tz>::checked_add_signed`] to get an `Option` instead.
-impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
-    fn add_assign(&mut self, rhs: OldDuration) {
+    fn add_assign(&mut self, rhs: TimeDelta) {
         let datetime =
-            self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
+            self.datetime.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime);
     }
@@ -1312,8 +1311,8 @@ impl<Tz: TimeZone> AddAssign<OldDuration> for DateTime<Tz> {
 impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to TimeDelta");
         *self += rhs;
     }
 }
@@ -1355,9 +1354,9 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     }
 }
 
-/// Subtract `chrono::Duration` from `DateTime`.
+/// Subtract `TimeDelta` from `DateTime`.
 ///
-/// This is the same as the addition with a negated `Duration`.
+/// This is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
 /// second ever**, except when the `DateTime` itself represents a leap second in which case
@@ -1367,12 +1366,12 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
 ///
 /// Panics if the resulting date would be out of range.
 /// Consider using [`DateTime<Tz>::checked_sub_signed`] to get an `Option` instead.
-impl<Tz: TimeZone> Sub<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> Sub<TimeDelta> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
     #[inline]
-    fn sub(self, rhs: OldDuration) -> DateTime<Tz> {
-        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+    fn sub(self, rhs: TimeDelta) -> DateTime<Tz> {
+        self.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed")
     }
 }
 
@@ -1391,15 +1390,15 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
 
     #[inline]
     fn sub(self, rhs: Duration) -> DateTime<Tz> {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to TimeDelta");
+        self.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed")
     }
 }
 
-/// Subtract-assign `chrono::Duration` from `DateTime`.
+/// Subtract-assign `TimeDelta` from `DateTime`.
 ///
-/// This is the same as the addition with a negated `Duration`.
+/// This is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `DateTime` itself represents a leap  second in which case
@@ -1409,11 +1408,11 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
 ///
 /// Panics if the resulting date would be out of range.
 /// Consider using [`DateTime<Tz>::checked_sub_signed`] to get an `Option` instead.
-impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
+impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
-    fn sub_assign(&mut self, rhs: OldDuration) {
+    fn sub_assign(&mut self, rhs: TimeDelta) {
         let datetime =
-            self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
+            self.datetime.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
     }
@@ -1432,8 +1431,8 @@ impl<Tz: TimeZone> SubAssign<OldDuration> for DateTime<Tz> {
 impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
-        let rhs = OldDuration::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
+        let rhs = TimeDelta::from_std(rhs)
+            .expect("overflow converting from core::time::Duration to TimeDelta");
         *self -= rhs;
     }
 }
@@ -1476,19 +1475,19 @@ impl<Tz: TimeZone> Sub<Months> for DateTime<Tz> {
 }
 
 impl<Tz: TimeZone> Sub<DateTime<Tz>> for DateTime<Tz> {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: DateTime<Tz>) -> OldDuration {
+    fn sub(self, rhs: DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }
 
 impl<Tz: TimeZone> Sub<&DateTime<Tz>> for DateTime<Tz> {
-    type Output = OldDuration;
+    type Output = TimeDelta;
 
     #[inline]
-    fn sub(self, rhs: &DateTime<Tz>) -> OldDuration {
+    fn sub(self, rhs: &DateTime<Tz>) -> TimeDelta {
         self.signed_duration_since(rhs)
     }
 }
