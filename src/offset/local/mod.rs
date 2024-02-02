@@ -187,7 +187,7 @@ impl TimeZone for Local {
 mod tests {
     use super::Local;
     use crate::offset::TimeZone;
-    use crate::{Datelike, Duration, Utc};
+    use crate::{Datelike, TimeDelta, Utc};
 
     #[test]
     fn verify_correct_offsets() {
@@ -204,8 +204,8 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_past() {
-        // let distant_past = Local::now() - Duration::days(365 * 100);
-        let distant_past = Local::now() - Duration::days(250 * 31);
+        // let distant_past = Local::now() - TimeDelta::days(365 * 100);
+        let distant_past = Local::now() - TimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + Duration::days(250 * 31);
+        let distant_future = Local::now() + TimeDelta::days(250 * 31);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 
