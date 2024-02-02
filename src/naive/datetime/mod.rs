@@ -13,13 +13,13 @@ use core::{fmt, str};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::duration::NANOS_PER_SEC;
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
+use crate::time_delta::NANOS_PER_SEC;
 use crate::{
     expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
     Timelike, Weekday,

@@ -465,11 +465,11 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-mod duration;
+mod time_delta;
 #[cfg(feature = "std")]
 #[doc(no_inline)]
-pub use duration::OutOfRangeError;
-pub use duration::TimeDelta;
+pub use time_delta::OutOfRangeError;
+pub use time_delta::TimeDelta;
 
 /// Alias of [`TimeDelta`].
 pub type Duration = TimeDelta;
@@ -566,7 +566,6 @@ pub mod serde {
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 pub mod rkyv {
     pub use crate::datetime::ArchivedDateTime;
-    pub use crate::duration::ArchivedTimeDelta;
     pub use crate::month::ArchivedMonth;
     pub use crate::naive::date::ArchivedNaiveDate;
     pub use crate::naive::datetime::ArchivedNaiveDateTime;
@@ -576,6 +575,7 @@ pub mod rkyv {
     #[cfg(feature = "clock")]
     pub use crate::offset::local::ArchivedLocal;
     pub use crate::offset::utc::ArchivedUtc;
+    pub use crate::time_delta::ArchivedTimeDelta;
     pub use crate::weekday::ArchivedWeekday;
 
     /// Alias of [`ArchivedTimeDelta`]
