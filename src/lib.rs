@@ -252,7 +252,7 @@
 //! # }
 //! ```
 //!
-//! Parsing can be done with three methods:
+//! Parsing can be done with two methods:
 //!
 //! 1. The standard [`FromStr`](https://doc.rust-lang.org/std/str/trait.FromStr.html) trait
 //!    (and [`parse`](https://doc.rust-lang.org/std/primitive.str.html#method.parse) method
@@ -269,12 +269,6 @@
 //!    and
 //!    [`DateTime::parse_from_rfc3339`](./struct.DateTime.html#method.parse_from_rfc3339)
 //!    are similar but for well-known formats.
-//!
-//! 3. [`Offset::datetime_from_str`](./offset/trait.TimeZone.html#method.datetime_from_str) is
-//!    similar but returns `DateTime` of given offset.
-//!    When the explicit offset is missing from the input, it simply uses given offset.
-//!    It issues an error when the input contains an explicit offset different
-//!    from the current offset.
 //!
 //! More detailed control over the parsing process is available via
 //! [`format`](./format/index.html) module.
@@ -352,11 +346,11 @@
 //!
 //! ## Limitations
 //!
-//! Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
-//! Date types are limited to about +/- 262,000 years from the common epoch.
-//! Time types are limited to nanosecond accuracy.
-//! Leap seconds can be represented, but Chrono does not fully support them.
-//! See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
+//! * Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
+//! * Date types are limited to about +/- 262,000 years from the common epoch.
+//! * Time types are limited to nanosecond accuracy.
+//! * Leap seconds can be represented, but Chrono does not fully support them.
+//!   See [Leap Second Handling](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveTime.html#leap-second-handling).
 //!
 //! ## Rust version requirements
 //!
@@ -364,18 +358,6 @@
 //!
 //! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
 //! lightly.
-//!
-//! Chrono inherently does not support an inaccurate or partial date and time representation.
-//! Any operation that can be ambiguous will return `None` in such cases.
-//! For example, "a month later" of 2014-01-30 is not well-defined
-//! and consequently `Utc.ymd_opt(2014, 1, 30).unwrap().with_month(2)` returns `None`.
-//!
-//! Non ISO week handling is not yet supported.
-//! For now you can use the [chrono_ext](https://crates.io/crates/chrono_ext)
-//! crate ([sources](https://github.com/bcourtine/chrono-ext/)).
-//!
-//! Advanced time zone handling is not yet supported.
-//! For now you can try the [Chrono-tz](https://github.com/chronotope/chrono-tz/) crate instead.
 //!
 //! ## Relation between chrono and time 0.1
 //!

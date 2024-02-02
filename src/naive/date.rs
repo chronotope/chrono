@@ -60,14 +60,14 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub fn first_day(&self) -> NaiveDate {
+    pub const fn first_day(&self) -> NaiveDate {
         let start = self.start.num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to subtract from `self.date`.
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        self.date.add_days(days).unwrap()
+        expect!(self.date.add_days(days), "first weekday out of range for `NaiveDate`")
     }
 
     /// Returns a date representing the last day of the week.
@@ -88,14 +88,14 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub fn last_day(&self) -> NaiveDate {
+    pub const fn last_day(&self) -> NaiveDate {
         let end = self.start.pred().num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to add to `self.date`.
         // Do not construct an intermediate date before `self.date` (like with `first_day()`),
         // because that may be out of range if `date` is close to `NaiveDate::MIN`.
         let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        self.date.add_days(days).unwrap()
+        expect!(self.date.add_days(days), "last weekday out of range for `NaiveDate`")
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -118,7 +118,7 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub fn days(&self) -> RangeInclusive<NaiveDate> {
+    pub const fn days(&self) -> RangeInclusive<NaiveDate> {
         self.first_day()..=self.last_day()
     }
 }
@@ -206,7 +206,7 @@ pub const MIN_DATE: NaiveDate = NaiveDate::MIN;
 #[deprecated(since = "0.4.20", note = "Use NaiveDate::MAX instead")]
 pub const MAX_DATE: NaiveDate = NaiveDate::MAX;
 
-#[cfg(feature = "arbitrary")]
+#[cfg(all(feature = "arbitrary", feature = "std"))]
 impl arbitrary::Arbitrary<'_> for NaiveDate {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<NaiveDate> {
         let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
@@ -1154,9 +1154,12 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)), None);
     /// ```
     #[must_use]
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
-        let days = i32::try_from(rhs.num_days()).ok()?;
-        self.add_days(days)
+    pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
+        let days = rhs.num_days();
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        self.add_days(days as i32)
     }
 
     /// Subtracts the number of whole days in the given `TimeDelta` from the current date.
@@ -1180,9 +1183,12 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)), None);
     /// ```
     #[must_use]
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
-        let days = i32::try_from(-rhs.num_days()).ok()?;
-        self.add_days(days)
+    pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
+        let days = -rhs.num_days();
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        self.add_days(days as i32)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1208,7 +1214,7 @@ impl NaiveDate {
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), TimeDelta::days(365*400 + 97));
     /// ```
     #[must_use]
-    pub fn signed_duration_since(self, rhs: NaiveDate) -> TimeDelta {
+    pub const fn signed_duration_since(self, rhs: NaiveDate) -> TimeDelta {
         let year1 = self.year();
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
@@ -1553,7 +1559,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd_opt(-308, 3, 14).unwrap().day(), 14);
     /// ```
     ///
-    /// Combined with [`NaiveDate::pred`](#method.pred),
+    /// Combined with [`NaiveDate::pred_opt`](#method.pred_opt),
     /// one can determine the number of days in a particular month.
     /// (Note that this panics when `year` is out of range.)
     ///
@@ -1610,7 +1616,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd_opt(-308, 3, 14).unwrap().ordinal(), 74);
     /// ```
     ///
-    /// Combined with [`NaiveDate::pred`](#method.pred),
+    /// Combined with [`NaiveDate::pred_opt`](#method.pred_opt),
     /// one can determine the number of days in a particular year.
     /// (Note that this panics when `year` is out of range.)
     ///
