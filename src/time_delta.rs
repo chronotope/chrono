@@ -40,7 +40,7 @@ const SECS_PER_DAY: i64 = 86_400;
 /// The number of (non-leap) seconds in a week.
 const SECS_PER_WEEK: i64 = 604_800;
 
-/// ISO 8601 time duration with nanosecond precision.
+/// Time duration with nanosecond precision.
 ///
 /// This also allows for negative durations; see individual methods for details.
 ///
