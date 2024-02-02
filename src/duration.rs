@@ -80,7 +80,7 @@ impl Duration {
     /// # Errors
     ///
     /// Returns `None` when the duration is out of bounds, or if `nanos` ≥ 1,000,000,000.
-    pub(crate) const fn new(secs: i64, nanos: u32) -> Option<Duration> {
+    pub const fn new(secs: i64, nanos: u32) -> Option<Duration> {
         if secs < MIN.secs
             || secs > MAX.secs
             || nanos > 1_000_000_000
