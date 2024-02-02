@@ -4,14 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "0.4.x"
+    target-branch: "main"
   - package-ecosystem: "cargo"
     directory: "/fuzz/"
     schedule:
       interval: "weekly"
-    target-branch: "0.4.x"
+    target-branch: "main"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    target-branch: "0.4.x"
+    target-branch: "main"
