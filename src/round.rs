@@ -758,23 +758,40 @@ mod tests {
 
     #[test]
     fn test_duration_trunc_close_to_epoch() {
-        let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
         let span = TimeDelta::minutes(15);
+
+        let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
         assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1970-01-01 00:00:00");
 
         let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 45).unwrap();
-        let span = TimeDelta::minutes(15);
         assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1969-12-31 23:45:00");
     }
 
     #[test]
     fn test_duration_round_close_to_epoch() {
-        let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
         let span = TimeDelta::minutes(15);
+
+        let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
         assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
 
         let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 45).unwrap();
-        let span = TimeDelta::minutes(15);
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+    }
+
+    #[test]
+    fn test_duration_round_close_to_min_max() {
+        let span = TimeDelta::nanoseconds(i64::MAX);
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MIN / 2 - 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1677-09-21 00:12:43.145224193");
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MIN / 2 + 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MAX / 2 + 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "2262-04-11 23:47:16.854775807");
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MAX / 2 - 1).unwrap();
         assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
     }
 }
