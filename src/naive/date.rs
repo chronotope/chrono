@@ -24,7 +24,7 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
-use crate::{expect, try_opt};
+use crate::{expect, ok, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
@@ -768,7 +768,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms(hour, min, sec));
+        let time = try_opt!(ok!(NaiveTime::from_hms(hour, min, sec)));
         Some(self.and_time(time))
     }
 
@@ -803,7 +803,7 @@ impl NaiveDate {
         sec: u32,
         milli: u32,
     ) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms_milli(hour, min, sec, milli));
+        let time = try_opt!(ok!(NaiveTime::from_hms_milli(hour, min, sec, milli)));
         Some(self.and_time(time))
     }
 
@@ -838,7 +838,7 @@ impl NaiveDate {
         sec: u32,
         micro: u32,
     ) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms_micro(hour, min, sec, micro));
+        let time = try_opt!(ok!(NaiveTime::from_hms_micro(hour, min, sec, micro)));
         Some(self.and_time(time))
     }
 
@@ -873,7 +873,7 @@ impl NaiveDate {
         sec: u32,
         nano: u32,
     ) -> Option<NaiveDateTime> {
-        let time = try_opt!(NaiveTime::from_hms_nano(hour, min, sec, nano));
+        let time = try_opt!(ok!(NaiveTime::from_hms_nano(hour, min, sec, nano)));
         Some(self.and_time(time))
     }
 

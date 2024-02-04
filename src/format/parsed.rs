@@ -526,7 +526,7 @@ impl Parsed {
             None => 0,
         };
 
-        NaiveTime::from_hms_nano(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
+        NaiveTime::from_hms_nano(hour, minute, second, nano).map_err(|_| OUT_OF_RANGE)
     }
 
     /// Returns a parsed naive date and time out of given fields,

@@ -1,46 +1,46 @@
 use super::NaiveTime;
-use crate::{FixedOffset, TimeDelta, Timelike};
+use crate::{Error, FixedOffset, TimeDelta, Timelike};
 
 #[test]
 fn test_time_from_hms_milli() {
     assert_eq!(
         NaiveTime::from_hms_milli(3, 5, 7, 0),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 0).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 7, 0).unwrap())
     );
     assert_eq!(
         NaiveTime::from_hms_milli(3, 5, 7, 777),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 777_000_000).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 7, 777_000_000).unwrap())
     );
     assert_eq!(
         NaiveTime::from_hms_milli(3, 5, 59, 1_999),
-        Some(NaiveTime::from_hms_nano(3, 5, 59, 1_999_000_000).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 59, 1_999_000_000).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, 2_000), None);
-    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, 5_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, 2_000), Err(Error::InvalidArgument));
+    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, 5_000), Err(Error::InvalidArgument)); // overflow check
+    assert_eq!(NaiveTime::from_hms_milli(3, 5, 59, u32::MAX), Err(Error::InvalidArgument));
 }
 
 #[test]
 fn test_time_from_hms_micro() {
     assert_eq!(
         NaiveTime::from_hms_micro(3, 5, 7, 0),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 0).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 7, 0).unwrap())
     );
     assert_eq!(
         NaiveTime::from_hms_micro(3, 5, 7, 333),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 333_000).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 7, 333_000).unwrap())
     );
     assert_eq!(
         NaiveTime::from_hms_micro(3, 5, 7, 777_777),
-        Some(NaiveTime::from_hms_nano(3, 5, 7, 777_777_000).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 7, 777_777_000).unwrap())
     );
     assert_eq!(
         NaiveTime::from_hms_micro(3, 5, 59, 1_999_999),
-        Some(NaiveTime::from_hms_nano(3, 5, 59, 1_999_999_000).unwrap())
+        Ok(NaiveTime::from_hms_nano(3, 5, 59, 1_999_999_000).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, 2_000_000), None);
-    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, 5_000_000), None); // overflow check
-    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, 2_000_000), Err(Error::InvalidArgument));
+    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, 5_000_000), Err(Error::InvalidArgument)); // overflow check
+    assert_eq!(NaiveTime::from_hms_micro(3, 5, 59, u32::MAX), Err(Error::InvalidArgument));
 }
 
 #[test]

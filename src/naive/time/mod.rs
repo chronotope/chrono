@@ -12,14 +12,14 @@ use core::{fmt, str};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+use crate::expect;
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
     parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
     Parsed, StrftimeItems,
 };
-use crate::{expect, try_opt};
-use crate::{FixedOffset, TimeDelta, Timelike};
+use crate::{Error, FixedOffset, TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -230,29 +230,28 @@ impl arbitrary::Arbitrary<'_> for NaiveTime {
 impl NaiveTime {
     /// Makes a new `NaiveTime` from hour, minute and second.
     ///
-    /// The millisecond part is allowed to exceed 1,000,000,000 in order to represent a
-    /// [leap second](#leap-second-handling), but only when `sec == 59`.
+    /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
+    /// use `NaiveTime::from_hms_*` methods with a subsecond parameter instead.
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute and/or second.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute and/or second.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
     /// let from_hms = NaiveTime::from_hms;
     ///
-    /// assert!(from_hms(0, 0, 0).is_some());
-    /// assert!(from_hms(23, 59, 59).is_some());
-    /// assert!(from_hms(24, 0, 0).is_none());
-    /// assert!(from_hms(23, 60, 0).is_none());
-    /// assert!(from_hms(23, 59, 60).is_none());
+    /// assert!(from_hms(0, 0, 0).is_ok());
+    /// assert!(from_hms(23, 59, 59).is_ok());
+    /// assert_eq!(from_hms(24, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms(23, 60, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms(23, 59, 60), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_hms(hour: u32, min: u32, sec: u32) -> Option<NaiveTime> {
+    pub const fn from_hms(hour: u32, min: u32, sec: u32) -> Result<NaiveTime, Error> {
         NaiveTime::from_hms_nano(hour, min, sec, 0)
     }
 
@@ -263,28 +262,38 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute, second and/or millisecond.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute, second and/or millisecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the millisecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let from_hmsm_opt = NaiveTime::from_hms_milli;
+    /// let from_hms_milli = NaiveTime::from_hms_milli;
     ///
-    /// assert!(from_hmsm_opt(0, 0, 0, 0).is_some());
-    /// assert!(from_hmsm_opt(23, 59, 59, 999).is_some());
-    /// assert!(from_hmsm_opt(23, 59, 59, 1_999).is_some()); // a leap second after 23:59:59
-    /// assert!(from_hmsm_opt(24, 0, 0, 0).is_none());
-    /// assert!(from_hmsm_opt(23, 60, 0, 0).is_none());
-    /// assert!(from_hmsm_opt(23, 59, 60, 0).is_none());
-    /// assert!(from_hmsm_opt(23, 59, 59, 2_000).is_none());
+    /// assert!(from_hms_milli(0, 0, 0, 0).is_ok());
+    /// assert!(from_hms_milli(23, 59, 59, 999).is_ok());
+    /// assert!(from_hms_milli(23, 59, 59, 1_999).is_ok()); // a leap second after 23:59:59
+    /// assert_eq!(from_hms_milli(24, 0, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_milli(23, 60, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_milli(23, 59, 60, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_milli(23, 59, 59, 2_000), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_milli(23, 59, 30, 1_999), Err(Error::DoesNotExist));
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> Option<NaiveTime> {
-        let nano = try_opt!(milli.checked_mul(1_000_000));
-        NaiveTime::from_hms_nano(hour, min, sec, nano)
+    pub const fn from_hms_milli(
+        hour: u32,
+        min: u32,
+        sec: u32,
+        milli: u32,
+    ) -> Result<NaiveTime, Error> {
+        match milli.checked_mul(1_000_000) {
+            Some(nano) => NaiveTime::from_hms_nano(hour, min, sec, nano),
+            None => Err(Error::InvalidArgument),
+        }
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
@@ -294,28 +303,38 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute, second and/or microsecond.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute, second and/or microsecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the microsecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let from_hmsu_opt = NaiveTime::from_hms_micro;
+    /// let from_hms_micro = NaiveTime::from_hms_micro;
     ///
-    /// assert!(from_hmsu_opt(0, 0, 0, 0).is_some());
-    /// assert!(from_hmsu_opt(23, 59, 59, 999_999).is_some());
-    /// assert!(from_hmsu_opt(23, 59, 59, 1_999_999).is_some()); // a leap second after 23:59:59
-    /// assert!(from_hmsu_opt(24, 0, 0, 0).is_none());
-    /// assert!(from_hmsu_opt(23, 60, 0, 0).is_none());
-    /// assert!(from_hmsu_opt(23, 59, 60, 0).is_none());
-    /// assert!(from_hmsu_opt(23, 59, 59, 2_000_000).is_none());
+    /// assert!(from_hms_micro(0, 0, 0, 0).is_ok());
+    /// assert!(from_hms_micro(23, 59, 59, 999_999).is_ok());
+    /// assert!(from_hms_micro(23, 59, 59, 1_999_999).is_ok()); // a leap second after 23:59:59
+    /// assert_eq!(from_hms_micro(24, 0, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_micro(23, 60, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_micro(23, 59, 60, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_micro(23, 59, 59, 2_000_000), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_micro(23, 59, 30, 1_999_999), Err(Error::DoesNotExist));
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> Option<NaiveTime> {
-        let nano = try_opt!(micro.checked_mul(1_000));
-        NaiveTime::from_hms_nano(hour, min, sec, nano)
+    pub const fn from_hms_micro(
+        hour: u32,
+        min: u32,
+        sec: u32,
+        micro: u32,
+    ) -> Result<NaiveTime, Error> {
+        match micro.checked_mul(1_000) {
+            Some(nano) => NaiveTime::from_hms_nano(hour, min, sec, nano),
+            None => Err(Error::InvalidArgument),
+        }
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
@@ -325,34 +344,41 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute, second and/or nanosecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the nanosecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let from_hmsn_opt = NaiveTime::from_hms_nano;
+    /// let from_hms_nano = NaiveTime::from_hms_nano;
     ///
-    /// assert!(from_hmsn_opt(0, 0, 0, 0).is_some());
-    /// assert!(from_hmsn_opt(23, 59, 59, 999_999_999).is_some());
-    /// assert!(from_hmsn_opt(23, 59, 59, 1_999_999_999).is_some()); // a leap second after 23:59:59
-    /// assert!(from_hmsn_opt(24, 0, 0, 0).is_none());
-    /// assert!(from_hmsn_opt(23, 60, 0, 0).is_none());
-    /// assert!(from_hmsn_opt(23, 59, 60, 0).is_none());
-    /// assert!(from_hmsn_opt(23, 59, 59, 2_000_000_000).is_none());
+    /// assert!(from_hms_nano(0, 0, 0, 0).is_ok());
+    /// assert!(from_hms_nano(23, 59, 59, 999_999_999).is_ok());
+    /// assert!(from_hms_nano(23, 59, 59, 1_999_999_999).is_ok()); // a leap second after 23:59:59
+    /// assert_eq!(from_hms_nano(24, 0, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_nano(23, 60, 0, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_nano(23, 59, 60, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_nano(23, 59, 59, 2_000_000_000), Err(Error::InvalidArgument));
+    /// assert_eq!(from_hms_nano(23, 59, 30, 1_999_999_999), Err(Error::DoesNotExist));
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> Option<NaiveTime> {
-        if (hour >= 24 || min >= 60 || sec >= 60)
-            || (nano >= 1_000_000_000 && sec != 59)
-            || nano >= 2_000_000_000
-        {
-            return None;
+    pub const fn from_hms_nano(
+        hour: u32,
+        min: u32,
+        sec: u32,
+        nano: u32,
+    ) -> Result<NaiveTime, Error> {
+        if hour >= 24 || min >= 60 || sec >= 60 || nano >= 2_000_000_000 {
+            return Err(Error::InvalidArgument);
+        } else if nano >= 1_000_000_000 && sec != 59 {
+            return Err(Error::DoesNotExist);
         }
         let secs = hour * 3600 + min * 60 + sec;
-        Some(NaiveTime { secs, frac: nano })
+        Ok(NaiveTime { secs, frac: nano })
     }
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
