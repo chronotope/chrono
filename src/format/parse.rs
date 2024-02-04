@@ -142,10 +142,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     s = scan::space(s)?; // mandatory
-    if let Some(offset) = try_consume!(scan::timezone_offset_2822(s)) {
-        // only set the offset when it is definitely known (i.e. not `-0000`)
-        parsed.set_offset(i64::from(offset))?;
-    }
+    parsed.set_offset(i64::from(try_consume!(scan::timezone_offset_2822(s))))?;
 
     // optional comments
     while let Ok((s_out, ())) = scan::comment_2822(s) {
@@ -1644,7 +1641,6 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:90 -0800", Err(OUT_OF_RANGE)), // bad second
             ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset
             ("6 Jun 1944 04:00:00Z", Err(INVALID)),            // bad offset (zulu not allowed)
-            ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named time zone
             // named timezones that have specific timezone offsets
             // see https://www.rfc-editor.org/rfc/rfc2822#section-4.3
             ("Tue, 20 Jan 2015 17:35:20 GMT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
@@ -1666,14 +1662,14 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:20 K", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             ("Tue, 20 Jan 2015 17:35:20 k", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             // named single-letter timezone "J" is specifically not valid
-            ("Tue, 20 Jan 2015 17:35:20 J", Err(NOT_ENOUGH)),
+            ("Tue, 20 Jan 2015 17:35:20 J", Err(INVALID)),
             ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset minutes
             ("Tue, 20 Jan 2015 17:35:20Z", Err(INVALID)),           // bad offset: zulu not allowed
-            ("Tue, 20 Jan 2015 17:35:20 Zulu", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
-            ("Tue, 20 Jan 2015 17:35:20 ZULU", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
+            ("Tue, 20 Jan 2015 17:35:20 Zulu", Err(INVALID)),       // bad offset: zulu not allowed
+            ("Tue, 20 Jan 2015 17:35:20 ZULU", Err(INVALID)),       // bad offset: zulu not allowed
             ("Tue, 20 Jan 2015 17:35:20 −0800", Err(INVALID)), // bad offset: timezone offset using MINUS SIGN (U+2212), not specified for RFC 2822
             ("Tue, 20 Jan 2015 17:35:20 0800", Err(INVALID)),  // missing offset sign
-            ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named timezone
+            ("Tue, 20 Jan 2015 17:35:20 HAS", Err(INVALID)),   // bad named timezone
             ("Tue, 20 Jan 2015😈17:35:20 -0800", Err(INVALID)), // bad character!
         ];
 
