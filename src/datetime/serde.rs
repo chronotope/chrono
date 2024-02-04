@@ -1202,17 +1202,17 @@ pub mod ts_seconds_option {
 /// assert_eq!(deserialized.time, actual_time);
 /// ```
 pub mod rfc2822 {
+    use crate::serde::Rfc2822Visitor;
+    use crate::{DateTime, FixedOffset};
     use core::fmt;
     use serde::{de, ser};
-    use crate::{DateTime, FixedOffset};
-    use crate::serde::Rfc2822Visitor;
 
     /// Serialize a datetime into an RFC 2822 formatted string, e.g. "01 Jun 2016 14:31:46 -0700"
     ///
     /// Intended for use with `serde`s `serialize_with` attribute.
     pub fn serialize<S>(dt: &DateTime<FixedOffset>, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
+    where
+        S: ser::Serializer,
     {
         serializer.serialize_str(&dt.to_rfc2822())
     }
@@ -1221,8 +1221,8 @@ pub mod rfc2822 {
     ///
     /// Intended for use with `serde`s `deserialize_with` attribute.
     pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<FixedOffset>, D::Error>
-        where
-            D: de::Deserializer<'de>,
+    where
+        D: de::Deserializer<'de>,
     {
         deserializer.deserialize_str(Rfc2822Visitor)
     }
@@ -1235,11 +1235,10 @@ pub mod rfc2822 {
         }
 
         fn visit_str<E>(self, date_string: &str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
+        where
+            E: de::Error,
         {
-            DateTime::parse_from_rfc2822(date_string)
-                .map_err(E::custom)
+            DateTime::parse_from_rfc2822(date_string).map_err(E::custom)
         }
     }
 }
