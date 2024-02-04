@@ -388,28 +388,33 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid number of seconds and/or nanosecond.
+    /// Returns `[`Error::InvalidArgument`]` on invalid number of seconds and/or nanosecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the nanosecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let from_nsecs_opt = NaiveTime::from_num_seconds_from_midnight;
+    /// let from_nsecs = NaiveTime::from_num_seconds_from_midnight;
     ///
-    /// assert!(from_nsecs_opt(0, 0).is_some());
-    /// assert!(from_nsecs_opt(86399, 999_999_999).is_some());
-    /// assert!(from_nsecs_opt(86399, 1_999_999_999).is_some()); // a leap second after 23:59:59
-    /// assert!(from_nsecs_opt(86_400, 0).is_none());
-    /// assert!(from_nsecs_opt(86399, 2_000_000_000).is_none());
+    /// assert!(from_nsecs(0, 0).is_ok());
+    /// assert!(from_nsecs(86399, 999_999_999).is_ok());
+    /// assert!(from_nsecs(86399, 1_999_999_999).is_ok()); // a leap second after 23:59:59
+    /// assert_eq!(from_nsecs(86_400, 0), Err(Error::InvalidArgument));
+    /// assert_eq!(from_nsecs(86399, 2_000_000_000), Err(Error::InvalidArgument));
+    /// assert_eq!(from_nsecs(1, 1_999_999_999), Err(Error::DoesNotExist));
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Option<NaiveTime> {
-        if secs >= 86_400 || nano >= 2_000_000_000 || (nano >= 1_000_000_000 && secs % 60 != 59) {
-            return None;
+    pub const fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> Result<NaiveTime, Error> {
+        if secs >= 86_400 || nano >= 2_000_000_000 {
+            return Err(Error::InvalidArgument);
+        } else if nano >= 1_000_000_000 && secs % 60 != 59 {
+            return Err(Error::DoesNotExist);
         }
-        Some(NaiveTime { secs, frac: nano })
+        Ok(NaiveTime { secs, frac: nano })
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveTime`.
