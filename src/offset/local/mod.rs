@@ -220,7 +220,7 @@ mod tests {
         // issue #123
         let today = Utc::now().date_naive();
 
-        if let Some(dt) = today.and_hms_milli_opt(15, 2, 59, 1000) {
+        if let Ok(dt) = today.and_hms_milli_opt(15, 2, 59, 1000) {
             let timestr = dt.time().to_string();
             // the OS API may or may not support the leap second,
             // but there are only two sensible options.
@@ -231,7 +231,7 @@ mod tests {
             );
         }
 
-        if let Some(dt) = today.and_hms_milli_opt(15, 2, 3, 1234) {
+        if let Ok(dt) = today.and_hms_milli_opt(15, 2, 3, 1234) {
             let timestr = dt.time().to_string();
             assert!(
                 timestr == "15:02:03.234" || timestr == "15:02:04.234",

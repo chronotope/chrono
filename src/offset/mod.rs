@@ -130,7 +130,8 @@ pub trait TimeZone: Sized + Clone {
         min: u32,
         sec: u32,
     ) -> LocalResult<DateTime<Self>> {
-        match NaiveDate::from_ymd_opt(year, month, day).and_then(|d| d.and_hms_opt(hour, min, sec))
+        match NaiveDate::from_ymd_opt(year, month, day)
+            .and_then(|d| d.and_hms_opt(hour, min, sec).ok())
         {
             Some(dt) => self.from_local_datetime(&dt),
             None => LocalResult::None,

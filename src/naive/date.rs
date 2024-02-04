@@ -24,8 +24,8 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
-use crate::{expect, ok, try_opt};
-use crate::{Datelike, TimeDelta, Weekday};
+use crate::{expect, try_err, try_opt};
+use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
@@ -752,24 +752,23 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute and/or second.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute and/or second.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_opt(12, 34, 56).is_some());
-    /// assert!(d.and_hms_opt(12, 34, 60).is_none()); // use `and_hms_milli_opt` instead
-    /// assert!(d.and_hms_opt(12, 60, 56).is_none());
-    /// assert!(d.and_hms_opt(24, 34, 56).is_none());
+    /// assert!(d.and_hms_opt(12, 34, 56).is_ok());
+    /// assert_eq!(d.and_hms_opt(12, 34, 60), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_opt(12, 60, 56), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_opt(24, 34, 56), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Option<NaiveDateTime> {
-        let time = try_opt!(ok!(NaiveTime::from_hms(hour, min, sec)));
-        Some(self.and_time(time))
+    pub const fn and_hms_opt(&self, hour: u32, min: u32, sec: u32) -> Result<NaiveDateTime, Error> {
+        let time = try_err!(NaiveTime::from_hms(hour, min, sec));
+        Ok(self.and_time(time))
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
@@ -779,32 +778,34 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute, second and/or millisecond.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute, second and/or millisecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the millisecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_milli_opt(12, 34, 56,   789).is_some());
-    /// assert!(d.and_hms_milli_opt(12, 34, 59, 1_789).is_some()); // leap second
-    /// assert!(d.and_hms_milli_opt(12, 34, 59, 2_789).is_none());
-    /// assert!(d.and_hms_milli_opt(12, 34, 60,   789).is_none());
-    /// assert!(d.and_hms_milli_opt(12, 60, 56,   789).is_none());
-    /// assert!(d.and_hms_milli_opt(24, 34, 56,   789).is_none());
+    /// assert!(d.and_hms_milli_opt(12, 34, 56,   789).is_ok());
+    /// assert!(d.and_hms_milli_opt(12, 34, 59, 1_789).is_ok()); // leap second
+    /// assert_eq!(d.and_hms_milli_opt(12, 34, 59, 2_789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_milli_opt(12, 34, 60,   789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_milli_opt(12, 60, 56,   789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_milli_opt(24, 34, 56,   789), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    #[must_use]
     pub const fn and_hms_milli_opt(
         &self,
         hour: u32,
         min: u32,
         sec: u32,
         milli: u32,
-    ) -> Option<NaiveDateTime> {
-        let time = try_opt!(ok!(NaiveTime::from_hms_milli(hour, min, sec, milli)));
-        Some(self.and_time(time))
+    ) -> Result<NaiveDateTime, Error> {
+        let time = try_err!(NaiveTime::from_hms_milli(hour, min, sec, milli));
+        Ok(self.and_time(time))
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
@@ -814,32 +815,34 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute, second and/or microsecond.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute, second and/or microsecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the microsecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_micro_opt(12, 34, 56,   789_012).is_some());
-    /// assert!(d.and_hms_micro_opt(12, 34, 59, 1_789_012).is_some()); // leap second
-    /// assert!(d.and_hms_micro_opt(12, 34, 59, 2_789_012).is_none());
-    /// assert!(d.and_hms_micro_opt(12, 34, 60,   789_012).is_none());
-    /// assert!(d.and_hms_micro_opt(12, 60, 56,   789_012).is_none());
-    /// assert!(d.and_hms_micro_opt(24, 34, 56,   789_012).is_none());
+    /// assert!(d.and_hms_micro_opt(12, 34, 56,   789_012).is_ok());
+    /// assert!(d.and_hms_micro_opt(12, 34, 59, 1_789_012).is_ok()); // leap second
+    /// assert_eq!(d.and_hms_micro_opt(12, 34, 59, 2_789_012), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_micro_opt(12, 34, 60,   789_012), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_micro_opt(12, 60, 56,   789_012), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_micro_opt(24, 34, 56,   789_012), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    #[must_use]
     pub const fn and_hms_micro_opt(
         &self,
         hour: u32,
         min: u32,
         sec: u32,
         micro: u32,
-    ) -> Option<NaiveDateTime> {
-        let time = try_opt!(ok!(NaiveTime::from_hms_micro(hour, min, sec, micro)));
-        Some(self.and_time(time))
+    ) -> Result<NaiveDateTime, Error> {
+        let time = try_err!(NaiveTime::from_hms_micro(hour, min, sec, micro));
+        Ok(self.and_time(time))
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
@@ -849,32 +852,34 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` on invalid hour, minute, second and/or nanosecond.
+    /// Returns [`Error::InvalidArgument`] on invalid hour, minute, second and/or nanosecond.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the nanosecond part to represent a leap second is not on
+    /// a minute boundary.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd_opt(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_nano_opt(12, 34, 56,   789_012_345).is_some());
-    /// assert!(d.and_hms_nano_opt(12, 34, 59, 1_789_012_345).is_some()); // leap second
-    /// assert!(d.and_hms_nano_opt(12, 34, 59, 2_789_012_345).is_none());
-    /// assert!(d.and_hms_nano_opt(12, 34, 60,   789_012_345).is_none());
-    /// assert!(d.and_hms_nano_opt(12, 60, 56,   789_012_345).is_none());
-    /// assert!(d.and_hms_nano_opt(24, 34, 56,   789_012_345).is_none());
+    /// assert!(d.and_hms_nano_opt(12, 34, 56,   789_012_345).is_ok());
+    /// assert!(d.and_hms_nano_opt(12, 34, 59, 1_789_012_345).is_ok()); // leap second
+    /// assert_eq!(d.and_hms_nano_opt(12, 34, 59, 2_789_012_345), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_nano_opt(12, 34, 60,   789_012_345), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_nano_opt(12, 60, 56,   789_012_345), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_nano_opt(24, 34, 56,   789_012_345), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    #[must_use]
     pub const fn and_hms_nano_opt(
         &self,
         hour: u32,
         min: u32,
         sec: u32,
         nano: u32,
-    ) -> Option<NaiveDateTime> {
-        let time = try_opt!(ok!(NaiveTime::from_hms_nano(hour, min, sec, nano)));
-        Some(self.and_time(time))
+    ) -> Result<NaiveDateTime, Error> {
+        let time = try_err!(NaiveTime::from_hms_nano(hour, min, sec, nano));
+        Ok(self.and_time(time))
     }
 
     /// Returns the packed month-day-flags.
