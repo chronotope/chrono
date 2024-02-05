@@ -243,7 +243,11 @@ pub enum Fixed {
     RFC2822,
     /// RFC 3339 & ISO 8601 date and time syntax.
     RFC3339,
-
+    /// Offset from the local time to UTC (`+9.5` or `+09.50` or `-4.0`).
+    ///
+    /// +9.5 = +09:30, +09.50 = +09:30, -4.0 = -04:00.
+    /// The offset is limited from `-24.0` to `+24.0`,
+    TimezoneOffsetDot,
     /// Internal uses only.
     ///
     /// This item exists so that one can add additional internal-only formatting
@@ -282,7 +286,7 @@ pub struct OffsetFormat {
     /// See `OffsetPrecision`.
     pub precision: OffsetPrecision,
     /// Separator between hours, minutes and seconds.
-    pub colons: Colons,
+    pub separator: Separator,
     /// Represent `+00:00` as `Z`.
     pub allow_zulu: bool,
     /// Pad the hour value to two digits.
@@ -312,11 +316,13 @@ pub enum OffsetPrecision {
 
 /// The separator between hours and minutes in an offset.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum Colons {
+pub enum Separator {
     /// No separator
     None,
     /// Colon (`:`) as separator
     Colon,
+    /// Dot (`.`) as separator
+    Dot,
     /// No separator when formatting, colon allowed when parsing.
     Maybe,
 }

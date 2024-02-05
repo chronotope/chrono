@@ -22,10 +22,10 @@ use crate::{NaiveDate, NaiveTime, Weekday};
 use super::locales;
 #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use super::Locale;
-#[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
-use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
 #[cfg(feature = "alloc")]
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric};
+#[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
+use super::{OffsetFormat, OffsetPrecision, Pad, Separator};
 #[cfg(feature = "alloc")]
 use locales::*;
 
@@ -353,7 +353,7 @@ fn format_inner(
                 TimezoneOffset | TimezoneOffsetZ => off.map(|&(_, off)| {
                     OffsetFormat {
                         precision: OffsetPrecision::Minutes,
-                        colons: Colons::Maybe,
+                        separator: Separator::Maybe,
                         allow_zulu: *spec == TimezoneOffsetZ,
                         padding: Pad::Zero,
                     }
@@ -362,7 +362,7 @@ fn format_inner(
                 TimezoneOffsetColon | TimezoneOffsetColonZ => off.map(|&(_, off)| {
                     OffsetFormat {
                         precision: OffsetPrecision::Minutes,
-                        colons: Colons::Colon,
+                        separator: Separator::Colon,
                         allow_zulu: *spec == TimezoneOffsetColonZ,
                         padding: Pad::Zero,
                     }
@@ -371,7 +371,7 @@ fn format_inner(
                 TimezoneOffsetDoubleColon => off.map(|&(_, off)| {
                     OffsetFormat {
                         precision: OffsetPrecision::Seconds,
-                        colons: Colons::Colon,
+                        separator: Separator::Colon,
                         allow_zulu: false,
                         padding: Pad::Zero,
                     }
@@ -380,12 +380,22 @@ fn format_inner(
                 TimezoneOffsetTripleColon => off.map(|&(_, off)| {
                     OffsetFormat {
                         precision: OffsetPrecision::Hours,
-                        colons: Colons::None,
+                        separator: Separator::None,
                         allow_zulu: false,
                         padding: Pad::Zero,
                     }
                     .format(w, off)
                 }),
+                TimezoneOffsetDot => off.map(|&(_, off)| {
+                    OffsetFormat {
+                        precision: OffsetPrecision::Minutes,
+                        separator: Separator::Dot,
+                        allow_zulu: false,
+                        padding: Pad::Zero,
+                    }
+                    .format(w, off)
+                }),
+
                 Internal(InternalFixed { val: InternalInternal::TimezoneOffsetPermissive }) => {
                     return Err(fmt::Error);
                 }
@@ -436,6 +446,8 @@ impl OffsetFormat {
         let hours;
         let mut mins = 0;
         let mut secs = 0;
+        let colons = self.separator == Separator::Colon;
+        let dot = self.separator == Separator::Dot;
         let precision = match self.precision {
             OffsetPrecision::Hours => {
                 // Minutes and seconds are simply truncated
@@ -445,7 +457,7 @@ impl OffsetFormat {
             OffsetPrecision::Minutes | OffsetPrecision::OptionalMinutes => {
                 // Round seconds to the nearest minute.
                 let minutes = (off + 30) / 60;
-                mins = (minutes % 60) as u8;
+                mins = if dot { (minutes % 60 * 100 / 60) as u8 } else { (minutes % 60) as u8 };
                 hours = (minutes / 60) as u8;
                 if self.precision == OffsetPrecision::OptionalMinutes && mins == 0 {
                     OffsetPrecision::Hours
@@ -471,7 +483,6 @@ impl OffsetFormat {
                 }
             }
         };
-        let colons = self.colons == Colons::Colon;
 
         if hours < 10 {
             if self.padding == Pad::Space {
@@ -489,6 +500,8 @@ impl OffsetFormat {
         if let OffsetPrecision::Minutes | OffsetPrecision::Seconds = precision {
             if colons {
                 w.write_char(':')?;
+            } else if dot {
+                w.write_char('.')?;
             }
             write_hundreds(w, mins)?;
         }
@@ -588,7 +601,7 @@ pub(crate) fn write_rfc3339(
 
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
-        colons: Colons::Colon,
+        separator: Separator::Colon,
         allow_zulu: use_z,
         padding: Pad::Zero,
     }
@@ -635,7 +648,7 @@ pub(crate) fn write_rfc2822(
     w.write_char(' ')?;
     OffsetFormat {
         precision: OffsetPrecision::Minutes,
-        colons: Colons::None,
+        separator: Separator::None,
         allow_zulu: false,
         padding: Pad::Zero,
     }
@@ -657,7 +670,7 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
 #[cfg(test)]
 #[cfg(feature = "alloc")]
 mod tests {
-    use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
+    use super::{OffsetFormat, OffsetPrecision, Pad, Separator};
     use crate::FixedOffset;
     #[cfg(feature = "alloc")]
     use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
@@ -804,13 +817,14 @@ mod tests {
         fn check_all(precision: OffsetPrecision, expected: [[&str; 7]; 12]) {
             fn check(
                 precision: OffsetPrecision,
-                colons: Colons,
+                colons: Separator,
                 padding: Pad,
                 allow_zulu: bool,
                 offsets: [FixedOffset; 7],
                 expected: [&str; 7],
             ) {
-                let offset_format = OffsetFormat { precision, colons, allow_zulu, padding };
+                let offset_format =
+                    OffsetFormat { precision, separator: colons, allow_zulu, padding };
                 for (offset, expected) in offsets.iter().zip(expected.iter()) {
                     let mut output = String::new();
                     offset_format.format(&mut output, *offset).unwrap();
@@ -827,25 +841,25 @@ mod tests {
                 FixedOffset::east_opt(-45270).unwrap(),
                 FixedOffset::east_opt(0).unwrap(),
             ];
-            check(precision, Colons::Colon, Pad::Zero, false, offsets, expected[0]);
-            check(precision, Colons::Colon, Pad::Zero, true, offsets, expected[1]);
-            check(precision, Colons::Colon, Pad::Space, false, offsets, expected[2]);
-            check(precision, Colons::Colon, Pad::Space, true, offsets, expected[3]);
-            check(precision, Colons::Colon, Pad::None, false, offsets, expected[4]);
-            check(precision, Colons::Colon, Pad::None, true, offsets, expected[5]);
-            check(precision, Colons::None, Pad::Zero, false, offsets, expected[6]);
-            check(precision, Colons::None, Pad::Zero, true, offsets, expected[7]);
-            check(precision, Colons::None, Pad::Space, false, offsets, expected[8]);
-            check(precision, Colons::None, Pad::Space, true, offsets, expected[9]);
-            check(precision, Colons::None, Pad::None, false, offsets, expected[10]);
-            check(precision, Colons::None, Pad::None, true, offsets, expected[11]);
+            check(precision, Separator::Colon, Pad::Zero, false, offsets, expected[0]);
+            check(precision, Separator::Colon, Pad::Zero, true, offsets, expected[1]);
+            check(precision, Separator::Colon, Pad::Space, false, offsets, expected[2]);
+            check(precision, Separator::Colon, Pad::Space, true, offsets, expected[3]);
+            check(precision, Separator::Colon, Pad::None, false, offsets, expected[4]);
+            check(precision, Separator::Colon, Pad::None, true, offsets, expected[5]);
+            check(precision, Separator::None, Pad::Zero, false, offsets, expected[6]);
+            check(precision, Separator::None, Pad::Zero, true, offsets, expected[7]);
+            check(precision, Separator::None, Pad::Space, false, offsets, expected[8]);
+            check(precision, Separator::None, Pad::Space, true, offsets, expected[9]);
+            check(precision, Separator::None, Pad::None, false, offsets, expected[10]);
+            check(precision, Separator::None, Pad::None, true, offsets, expected[11]);
             // `Colons::Maybe` should format the same as `Colons::None`
-            check(precision, Colons::Maybe, Pad::Zero, false, offsets, expected[6]);
-            check(precision, Colons::Maybe, Pad::Zero, true, offsets, expected[7]);
-            check(precision, Colons::Maybe, Pad::Space, false, offsets, expected[8]);
-            check(precision, Colons::Maybe, Pad::Space, true, offsets, expected[9]);
-            check(precision, Colons::Maybe, Pad::None, false, offsets, expected[10]);
-            check(precision, Colons::Maybe, Pad::None, true, offsets, expected[11]);
+            check(precision, Separator::Maybe, Pad::Zero, false, offsets, expected[6]);
+            check(precision, Separator::Maybe, Pad::Zero, true, offsets, expected[7]);
+            check(precision, Separator::Maybe, Pad::Space, false, offsets, expected[8]);
+            check(precision, Separator::Maybe, Pad::Space, true, offsets, expected[9]);
+            check(precision, Separator::Maybe, Pad::None, false, offsets, expected[10]);
+            check(precision, Separator::Maybe, Pad::None, true, offsets, expected[11]);
         }
         check_all(
             OffsetPrecision::Hours,

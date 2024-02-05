@@ -185,6 +185,68 @@ pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_start_matches(|c: char| c == ':' || c.is_whitespace()))
 }
 
+/// Consumes any number (including zero) of dot or spaces.
+pub(super) fn dot_or_space(s: &str) -> ParseResult<&str> {
+    Ok(s.trim_start_matches(|c: char| c == '.' || c.is_whitespace()))
+}
+
+pub(crate) fn timezone_offset_with_dot_separator(mut s: &str) -> ParseResult<(&str, i32)> {
+    const fn digits(s: &str) -> ParseResult<u8> {
+        let b = s.as_bytes();
+        if b.is_empty() {
+            Err(TOO_SHORT)
+        } else {
+            match b[0] {
+                d1 @ b'0'..=b'9' => Ok(d1 - b'0'),
+                _ => Err(INVALID),
+            }
+        }
+    }
+    let negative = match s.chars().next() {
+        Some('+') => {
+            // PLUS SIGN (U+2B)
+            s = &s['+'.len_utf8()..];
+
+            false
+        }
+        Some('-') => {
+            // HYPHEN-MINUS (U+2D)
+            s = &s['-'.len_utf8()..];
+
+            true
+        }
+        Some('−') => {
+            // MINUS SIGN (U+2212)
+            s = &s['−'.len_utf8()..];
+
+            true
+        }
+        Some(_) => return Err(INVALID),
+        None => return Err(TOO_SHORT),
+    };
+    // hour (0--99)
+    let h1 = digits(s)?;
+    s = &s[1..];
+    let h2 = digits(s);
+    let mut seconds = if let Ok(h2) = h2 {
+        s = &s[1..];
+        (h1 * 10 + h2) as i32 * 3600
+    } else {
+        h1 as i32 * 3600
+    };
+    s = dot_or_space(s)?;
+
+    // .hour (0--99)
+    let dot_hour1 = digits(s)?;
+    seconds += dot_hour1 as i32 * 6 * 60; // .dot_hour1 * 60 / 100 * 60 * 60
+    s = &s[1..];
+    if let Ok(doc_hour2) = digits(s) {
+        seconds += doc_hour2 as i32 * 6 * 6; // .dot_hour1 / 10 * 60 / 100 * 60 * 60
+        s = &s[1..];
+    }
+    Ok((s, if negative { -seconds } else { seconds }))
+}
+
 /// Parse a timezone from `s` and return the offset in seconds.
 ///
 /// The `consume_colon` function is used to parse a mandatory or optional `:`

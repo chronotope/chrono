@@ -417,6 +417,7 @@ impl<'a> StrftimeItems<'a> {
                             _ => Item::Error,
                         },
                         'f' => fixed(Fixed::Nanosecond),
+                        'z' => fixed(Fixed::TimezoneOffsetDot),
                         _ => Item::Error,
                     },
                     '3' => match next!() {
@@ -651,6 +652,7 @@ mod tests {
         assert_eq!(parse_and_collect("%_e"), [nums(Day)]);
         assert_eq!(parse_and_collect("%z"), [fixed(Fixed::TimezoneOffset)]);
         assert_eq!(parse_and_collect("%:z"), [fixed(Fixed::TimezoneOffsetColon)]);
+        assert_eq!(parse_and_collect("%.z"), [fixed(Fixed::TimezoneOffsetDot)]);
         assert_eq!(parse_and_collect("%Z"), [fixed(Fixed::TimezoneName)]);
         assert_eq!(parse_and_collect("%ZZZZ"), [fixed(Fixed::TimezoneName), Literal("ZZZ")]);
         assert_eq!(parse_and_collect("%Z😽"), [fixed(Fixed::TimezoneName), Literal("😽")]);
@@ -758,6 +760,8 @@ mod tests {
             "2001-07-08T00:34:60.026490+09:30"
         );
         assert_eq!(dt.format("%s").to_string(), "994518299");
+
+        assert_eq!(dt.format("%F %.z %R").to_string(), "2001-07-08 +09.50 00:34");
 
         // special specifiers
         assert_eq!(dt.format("%t").to_string(), "\t");
@@ -920,5 +924,17 @@ mod tests {
         assert_eq!(size_of::<Item>(), 12);
         assert_eq!(size_of::<StrftimeItems>(), 28);
         assert_eq!(size_of::<Locale>(), 2);
+    }
+
+    #[test]
+    fn test_parse_dot_utc() {
+        use crate::DateTime;
+        let dt1 =
+            DateTime::parse_from_str("2021-06-27 +08:30 23:30:12.729", "%Y-%m-%d %:z %H:%M:%S%.f")
+                .unwrap();
+        let dt2 =
+            DateTime::parse_from_str("2021-06-27 +8.5 23:30:12.729", "%Y-%m-%d %.z %H:%M:%S%.f")
+                .unwrap();
+        assert_eq!(dt1, dt2);
     }
 }

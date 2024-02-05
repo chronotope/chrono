@@ -474,6 +474,11 @@ where
                         ));
                         parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
                     }
+                    &TimezoneOffsetDot => {
+                        let offset =
+                            try_consume!(scan::timezone_offset_with_dot_separator(s.trim_start()));
+                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                    }
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
@@ -1428,6 +1433,47 @@ mod tests {
         check(" -Z", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
         check("+:Z", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("Y", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
+
+        // TimezoneOffsetDot
+        check("+00.00", &[fixed(TimezoneOffsetDot)], parsed!(offset: 0));
+        check("-00.00", &[fixed(TimezoneOffsetDot)], parsed!(offset: 0));
+        check("+00.01", &[fixed(TimezoneOffsetDot)], parsed!(offset: 36));
+        check("+0.01", &[fixed(TimezoneOffsetDot)], parsed!(offset: 36));
+        check("-00.01", &[fixed(TimezoneOffsetDot)], parsed!(offset: -36));
+        check("-0.01", &[fixed(TimezoneOffsetDot)], parsed!(offset: -36));
+        check("+00.30", &[fixed(TimezoneOffsetDot)], parsed!(offset: 30 * 6 * 6));
+        check("-00.30", &[fixed(TimezoneOffsetDot)], parsed!(offset: -30 * 6 * 6));
+        check("+04.56", &[fixed(TimezoneOffsetDot)], parsed!(offset: 456 * 6 * 6));
+        check("+4.56", &[fixed(TimezoneOffsetDot)], parsed!(offset: 456 * 6 * 6));
+        check("-04.56", &[fixed(TimezoneOffsetDot)], parsed!(offset: -456 * 6 * 6));
+        check("-4.56", &[fixed(TimezoneOffsetDot)], parsed!(offset: -456 * 6 * 6));
+        check("+24.00", &[fixed(TimezoneOffsetDot)], parsed!(offset: 24 * 60 * 60));
+        check("-24.00", &[fixed(TimezoneOffsetDot)], parsed!(offset: -24 * 60 * 60));
+        check("+99.59", &[fixed(TimezoneOffsetDot)], parsed!(offset: 9959 * 6 * 6));
+        check("-99.59", &[fixed(TimezoneOffsetDot)], parsed!(offset: -9959 * 6 * 6));
+        check("+00.59", &[fixed(TimezoneOffsetDot)], parsed!(offset: 59 * 6 * 6));
+        check("+00.60", &[fixed(TimezoneOffsetDot)], parsed!(offset: 60 * 6 * 6));
+        check("+8.5", &[fixed(TimezoneOffsetDot)], parsed!(offset: 850 * 6 * 6));
+        check("+00.99", &[fixed(TimezoneOffsetDot)], parsed!(offset: 99 * 6 * 6));
+        check("#12.34", &[fixed(TimezoneOffsetDot)], Err(INVALID));
+        check("12.34", &[fixed(TimezoneOffsetDot)], Err(INVALID));
+        check("+12.34 ", &[fixed(TimezoneOffsetDot)], Err(TOO_LONG));
+        check(" +12.34", &[fixed(TimezoneOffsetDot)], parsed!(offset: 1234 * 6 * 6));
+        check("\t -12.34", &[fixed(TimezoneOffsetDot)], parsed!(offset: -1234 * 6 * 6));
+        check("", &[fixed(TimezoneOffsetDot)], Err(TOO_SHORT));
+        check("+", &[fixed(TimezoneOffsetDot)], Err(TOO_SHORT));
+        check("+1", &[fixed(TimezoneOffsetDot)], Err(TOO_SHORT));
+        check("+12", &[fixed(TimezoneOffsetDot)], Err(TOO_SHORT));
+        check("+123", &[fixed(TimezoneOffsetDot)], parsed!(offset: 123 * 6 * 60));
+        check("+1234", &[fixed(TimezoneOffsetDot)], parsed!(offset: 1234 * 6 * 6));
+        check("+12345", &[fixed(TimezoneOffsetDot)], Err(TOO_LONG));
+        check(
+            "+12345",
+            &[fixed(TimezoneOffsetDot), num(Numeric::Day)],
+            parsed!(offset: 1234 * 6 * 6, day: 5),
+        );
+        check("Z", &[fixed(TimezoneOffsetDot)], Err(INVALID));
+        check("z", &[fixed(TimezoneOffsetDot)], Err(INVALID));
 
         // TimezoneName
         check("CEST", &[fixed(TimezoneName)], parsed!());
