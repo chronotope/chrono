@@ -49,7 +49,6 @@ arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }       # contains FFI bindings for the JS Date API
 
-
 [target.'cfg(windows)'.dependencies]
 windows-targets = { version = "0.52", optional = true }
 

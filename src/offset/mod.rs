@@ -211,7 +211,7 @@ pub trait Offset: Sized + Clone + fmt::Debug {
 
 /// The time zone.
 ///
-/// The methods here are the primary constructors for [`Date`] and [`DateTime`] types.
+/// The methods here are the primary constructors for the [`DateTime`] type.
 pub trait TimeZone: Sized + Clone {
     /// An associated offset type.
     /// This type is used to store the actual offset in date and time types.
@@ -347,7 +347,7 @@ pub trait TimeZone: Sized + Clone {
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Panics
@@ -364,7 +364,7 @@ pub trait TimeZone: Sized + Clone {
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
-    /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
+    /// [leap second](crate::NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
     /// (The true "UNIX timestamp" cannot represent a leap second unambiguously.)
     ///
     /// # Errors
