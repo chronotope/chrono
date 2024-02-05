@@ -88,7 +88,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         DateTime { datetime, offset }
     }
 
-    /// Retrieves the date without an associated timezone.
+    /// Retrieves the date component.
     ///
     /// # Panics
     ///
@@ -677,8 +677,7 @@ where
 }
 
 impl DateTime<FixedOffset> {
-    /// Parses an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`,
-    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses an RFC 2822 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
     /// This parses valid RFC 2822 datetime strings (such as `Tue, 1 Jul 2003 10:52:37 +0200`)
     /// and returns a new [`DateTime`] instance with the parsed timezone as the [`FixedOffset`].
@@ -717,8 +716,7 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`,
-    /// then returns a new [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses an RFC 3339 date-and-time string into a `DateTime<FixedOffset>` value.
     ///
     /// Parses all valid RFC 3339 values (as well as the subset of valid ISO 8601 values that are
     /// also valid RFC 3339 date-and-time values) and returns a new [`DateTime`] with a
@@ -740,8 +738,7 @@ impl DateTime<FixedOffset> {
         parsed.to_datetime()
     }
 
-    /// Parses a string with the specified format string and returns a new
-    /// [`DateTime`] with a parsed [`FixedOffset`].
+    /// Parses a string from a user-specified format into a `DateTime<FixedOffset>` value.
     ///
     /// Note that this method *requires a timezone* in the input string. See
     /// [`NaiveDateTime::parse_from_str`](./naive/struct.NaiveDateTime.html#method.parse_from_str)
