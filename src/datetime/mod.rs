@@ -135,7 +135,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp(&self) -> i64 {
+    pub const fn timestamp(&self) -> i64 {
         self.datetime.timestamp()
     }
 
@@ -154,7 +154,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_millis(&self) -> i64 {
+    pub const fn timestamp_millis(&self) -> i64 {
         self.datetime.timestamp_millis()
     }
 
@@ -173,7 +173,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_micros(&self) -> i64 {
+    pub const fn timestamp_micros(&self) -> i64 {
         self.datetime.timestamp_micros()
     }
 
@@ -212,7 +212,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn timestamp_nanos(&self) -> Option<i64> {
+    pub const fn timestamp_nanos(&self) -> Option<i64> {
         self.datetime.timestamp_nanos()
     }
 
@@ -221,7 +221,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// In event of a leap second this may exceed 999.
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_millis(&self) -> u32 {
+    pub const fn timestamp_subsec_millis(&self) -> u32 {
         self.datetime.timestamp_subsec_millis()
     }
 
@@ -230,7 +230,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// In event of a leap second this may exceed 999,999.
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_micros(&self) -> u32 {
+    pub const fn timestamp_subsec_micros(&self) -> u32 {
         self.datetime.timestamp_subsec_micros()
     }
 
@@ -239,14 +239,14 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// In event of a leap second this may exceed 999,999,999.
     #[inline]
     #[must_use]
-    pub fn timestamp_subsec_nanos(&self) -> u32 {
+    pub const fn timestamp_subsec_nanos(&self) -> u32 {
         self.datetime.timestamp_subsec_nanos()
     }
 
     /// Retrieves an associated offset from UTC.
     #[inline]
     #[must_use]
-    pub fn offset(&self) -> &Tz::Offset {
+    pub const fn offset(&self) -> &Tz::Offset {
         &self.offset
     }
 
@@ -278,11 +278,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// information.
     #[inline]
     #[must_use]
-    pub fn to_utc(&self) -> DateTime<Utc> {
+    pub const fn to_utc(&self) -> DateTime<Utc> {
         DateTime { datetime: self.datetime, offset: Utc }
     }
 
-    /// Adds given `Duration` to the current date and time.
+    /// Adds given `TimeDelta` to the current date and time.
     ///
     /// # Errors
     ///
@@ -315,7 +315,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
             .single()
     }
 
-    /// Subtracts given `Duration` from the current date and time.
+    /// Subtracts given `TimeDelta` from the current date and time.
     ///
     /// # Errors
     ///
@@ -394,7 +394,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns a view to the naive UTC datetime.
     #[inline]
     #[must_use]
-    pub fn naive_utc(&self) -> NaiveDateTime {
+    pub const fn naive_utc(&self) -> NaiveDateTime {
         self.datetime
     }
 
@@ -571,8 +571,8 @@ impl DateTime<Utc> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn from_timestamp_millis(millis: i64) -> Option<Self> {
-        NaiveDateTime::from_timestamp_millis(millis).as_ref().map(NaiveDateTime::and_utc)
+    pub const fn from_timestamp_millis(millis: i64) -> Option<Self> {
+        Some(try_opt!(NaiveDateTime::from_timestamp_millis(millis)).and_utc())
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
@@ -1162,7 +1162,7 @@ impl<Tz: TimeZone> hash::Hash for DateTime<Tz> {
     }
 }
 
-/// Add `chrono::Duration` to `DateTime`.
+/// Add `TimeDelta` to `DateTime`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case
@@ -1177,7 +1177,7 @@ impl<Tz: TimeZone> Add<TimeDelta> for DateTime<Tz> {
 
     #[inline]
     fn add(self, rhs: TimeDelta) -> DateTime<Tz> {
-        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+        self.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed")
     }
 }
 
@@ -1197,8 +1197,8 @@ impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
     #[inline]
     fn add(self, rhs: Duration) -> DateTime<Tz> {
         let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed")
+            .expect("overflow converting from core::time::Duration to TimeDelta");
+        self.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed")
     }
 }
 
@@ -1216,7 +1216,7 @@ impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: TimeDelta) {
         let datetime =
-            self.datetime.checked_add_signed(rhs).expect("`DateTime + Duration` overflowed");
+            self.datetime.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime);
     }
@@ -1236,7 +1236,7 @@ impl<Tz: TimeZone> AddAssign<Duration> for DateTime<Tz> {
     #[inline]
     fn add_assign(&mut self, rhs: Duration) {
         let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
+            .expect("overflow converting from core::time::Duration to TimeDelta");
         *self += rhs;
     }
 }
@@ -1278,9 +1278,9 @@ impl<Tz: TimeZone> Add<Months> for DateTime<Tz> {
     }
 }
 
-/// Subtract `chrono::Duration` from `DateTime`.
+/// Subtract `TimeDelta` from `DateTime`.
 ///
-/// This is the same as the addition with a negated `Duration`.
+/// This is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
 /// second ever**, except when the `DateTime` itself represents a leap second in which case
@@ -1295,7 +1295,7 @@ impl<Tz: TimeZone> Sub<TimeDelta> for DateTime<Tz> {
 
     #[inline]
     fn sub(self, rhs: TimeDelta) -> DateTime<Tz> {
-        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+        self.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed")
     }
 }
 
@@ -1315,14 +1315,14 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
     #[inline]
     fn sub(self, rhs: Duration) -> DateTime<Tz> {
         let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed")
+            .expect("overflow converting from core::time::Duration to TimeDelta");
+        self.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed")
     }
 }
 
-/// Subtract-assign `chrono::Duration` from `DateTime`.
+/// Subtract-assign `TimeDelta` from `DateTime`.
 ///
-/// This is the same as the addition with a negated `Duration`.
+/// This is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `DateTime` itself represents a leap  second in which case
@@ -1336,7 +1336,7 @@ impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: TimeDelta) {
         let datetime =
-            self.datetime.checked_sub_signed(rhs).expect("`DateTime - Duration` overflowed");
+            self.datetime.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed");
         let tz = self.timezone();
         *self = tz.from_utc_datetime(&datetime)
     }
@@ -1356,7 +1356,7 @@ impl<Tz: TimeZone> SubAssign<Duration> for DateTime<Tz> {
     #[inline]
     fn sub_assign(&mut self, rhs: Duration) {
         let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
+            .expect("overflow converting from core::time::Duration to TimeDelta");
         *self -= rhs;
     }
 }

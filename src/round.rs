@@ -1,13 +1,9 @@
 // This is a part of Chrono.
 // See README.md and LICENSE.txt for details.
 
-//! Functionality for rounding or truncating a `DateTime` by a `Duration`.
+//! Functionality for rounding or truncating a `DateTime` by a `TimeDelta`.
 
-use crate::datetime::DateTime;
-use crate::naive::NaiveDateTime;
-use crate::time_delta::TimeDelta;
-use crate::TimeZone;
-use crate::Timelike;
+use crate::{DateTime, NaiveDateTime, TimeDelta, TimeZone, Timelike};
 use core::cmp::Ordering;
 use core::fmt;
 use core::marker::Sized;

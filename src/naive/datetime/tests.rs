@@ -1,6 +1,5 @@
 use super::NaiveDateTime;
-use crate::time_delta::TimeDelta;
-use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, Utc};
+use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, TimeDelta, Utc};
 
 #[test]
 fn test_datetime_from_timestamp_millis() {

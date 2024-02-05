@@ -125,10 +125,10 @@ impl NaiveWeek {
 
 /// A duration in calendar days.
 ///
-/// This is useful because when using `TimeDelta` it is possible
-/// that adding `TimeDelta::days(1)` doesn't increment the day value as expected due to it being a
-/// fixed number of seconds. This difference applies only when dealing with `DateTime<TimeZone>` data types
-/// and in other cases `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
+/// This is useful because when using `TimeDelta` it is possible that adding `TimeDelta::days(1)`
+/// doesn't increment the day value as expected due to it being a fixed number of seconds. This
+/// difference applies only when dealing with `DateTime<TimeZone>` data types and in other cases
+/// `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Days(pub(crate) u64);
 
@@ -954,7 +954,7 @@ impl NaiveDate {
         }
     }
 
-    /// Adds the number of whole days in the given `Duration` to the current date.
+    /// Adds the number of whole days in the given `TimeDelta` to the current date.
     ///
     /// # Errors
     ///
@@ -1680,10 +1680,10 @@ impl Datelike for NaiveDate {
     }
 }
 
-/// Add `chrono::Duration` to `NaiveDate`.
+/// Add `TimeDelta` to `NaiveDate`.
 ///
-/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
-/// towards `Duration::zero()`.
+/// This discards the fractional days in `TimeDelta`, rounding to the closest integral number of
+/// days towards `TimeDelta::zero()`.
 ///
 /// # Panics
 ///
@@ -1719,8 +1719,8 @@ impl Add<TimeDelta> for NaiveDate {
 
 /// Add-assign of `TimeDelta` to `NaiveDate`.
 ///
-/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
-/// towards `Duration::zero()`.
+/// This discards the fractional days in `TimeDelta`, rounding to the closest integral number of days
+/// towards `TimeDelta::zero()`.
 ///
 /// # Panics
 ///
@@ -1824,9 +1824,9 @@ impl Sub<Days> for NaiveDate {
 
 /// Subtract `TimeDelta` from `NaiveDate`.
 ///
-/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
-/// towards `Duration::zero()`.
-/// It is the same as the addition with a negated `Duration`.
+/// This discards the fractional days in `TimeDelta`, rounding to the closest integral number of
+/// days towards `TimeDelta::zero()`.
+/// It is the same as the addition with a negated `TimeDelta`.
 ///
 /// # Panics
 ///
@@ -1862,9 +1862,9 @@ impl Sub<TimeDelta> for NaiveDate {
 
 /// Subtract-assign `TimeDelta` from `NaiveDate`.
 ///
-/// This discards the fractional days in `Duration`, rounding to the closest integral number of days
-/// towards `Duration::zero()`.
-/// It is the same as the addition with a negated `Duration`.
+/// This discards the fractional days in `TimeDelta`, rounding to the closest integral number of
+/// days towards `TimeDelta::zero()`.
+/// It is the same as the addition with a negated `TimeDelta`.
 ///
 /// # Panics
 ///
@@ -2260,8 +2260,7 @@ mod serde {
 mod tests {
     use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
     use crate::naive::internals::YearFlags;
-    use crate::time_delta::TimeDelta;
-    use crate::{Datelike, Weekday};
+    use crate::{Datelike, TimeDelta, Weekday};
 
     // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
     // we use a separate run-time test.
@@ -2282,7 +2281,7 @@ mod tests {
         );
 
         // let's also check that the entire range do not exceed 2^44 seconds
-        // (sometimes used for bounding `Duration` against overflow)
+        // (sometimes used for bounding `TimeDelta` against overflow)
         let maxsecs = NaiveDate::MAX.signed_duration_since(NaiveDate::MIN).num_seconds();
         let maxsecs = maxsecs + 86401; // also take care of DateTime
         assert!(

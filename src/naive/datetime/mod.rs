@@ -19,10 +19,10 @@ use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed,
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
-use crate::time_delta::{TimeDelta, NANOS_PER_SEC};
+use crate::time_delta::NANOS_PER_SEC;
 use crate::{
-    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeZone, Timelike,
-    Weekday,
+    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
+    Timelike, Weekday,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -32,7 +32,7 @@ pub(crate) mod serde;
 #[cfg(test)]
 mod tests;
 
-/// The tight upper bound guarantees that a duration with `|TimeDelta| >= 2^MAX_SECS_BITS`
+/// The tight upper bound guarantees that a time delta with `|TimeDelta| >= 2^MAX_SECS_BITS`
 /// will always overflow the addition with any date and time type.
 ///
 /// So why is this needed? `TimeDelta::seconds(rhs)` may overflow, and we don't have
@@ -649,7 +649,7 @@ impl NaiveDateTime {
     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_add_signed(rhs);
 
-        // early checking to avoid overflow in OldTimeDelta::seconds
+        // early checking to avoid overflow in TimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
             return None;
         }
@@ -802,7 +802,7 @@ impl NaiveDateTime {
     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
         let (time, rhs) = self.time.overflowing_sub_signed(rhs);
 
-        // early checking to avoid overflow in OldTimeDelta::seconds
+        // early checking to avoid overflow in TimeDelta::seconds
         if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
             return None;
         }
@@ -1628,8 +1628,8 @@ impl Add<Duration> for NaiveDateTime {
     #[inline]
     fn add(self, rhs: Duration) -> NaiveDateTime {
         let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.checked_add_signed(rhs).expect("`NaiveDateTime + Duration` overflowed")
+            .expect("overflow converting from core::time::Duration to TimeDelta");
+        self.checked_add_signed(rhs).expect("`NaiveDateTime + TimeDelta` overflowed")
     }
 }
 
@@ -1732,7 +1732,7 @@ impl Add<Months> for NaiveDateTime {
 
 /// Subtract `TimeDelta` from `NaiveDateTime`.
 ///
-/// This is the same as the addition with a negated `Duration`.
+/// This is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling] the subtraction assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap second in which case
@@ -1807,14 +1807,14 @@ impl Sub<Duration> for NaiveDateTime {
     #[inline]
     fn sub(self, rhs: Duration) -> NaiveDateTime {
         let rhs = TimeDelta::from_std(rhs)
-            .expect("overflow converting from core::time::Duration to chrono::Duration");
-        self.checked_sub_signed(rhs).expect("`NaiveDateTime - Duration` overflowed")
+            .expect("overflow converting from core::time::Duration to TimeDelta");
+        self.checked_sub_signed(rhs).expect("`NaiveDateTime - TimeDelta` overflowed")
     }
 }
 
 /// Subtract-assign `TimeDelta` from `NaiveDateTime`.
 ///
-/// This is the same as the addition with a negated `Duration`.
+/// This is the same as the addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling], the addition assumes that **there is no leap
 /// second ever**, except when the `NaiveDateTime` itself represents a leap  second in which case

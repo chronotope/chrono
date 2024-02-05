@@ -1110,7 +1110,7 @@ impl Add<FixedOffset> for NaiveTime {
 ///
 /// This wraps around and never overflows or underflows.
 /// In particular the subtraction ignores integral number of days.
-/// This is the same as addition with a negated `Duration`.
+/// This is the same as addition with a negated `TimeDelta`.
 ///
 /// As a part of Chrono's [leap second handling], the subtraction assumes that **there is no leap
 /// second ever**, except when the `NaiveTime` itself represents a leap second in which case the
