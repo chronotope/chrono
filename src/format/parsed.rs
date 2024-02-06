@@ -570,6 +570,18 @@ impl Parsed {
     ///
     /// Gregorian year and ISO week date year can have their century number (`*_div_100`) omitted,
     /// the two-digit year is used to guess the century number then.
+    ///
+    /// It checks all given date fields are consistent with each other.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `IMPOSSIBLE` if any of the date fields conflict.
+    /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete date.
+    /// - `OUT_OF_RANGE`
+    ///   - if any of the date fields of `Parsed` are set to a value beyond their acceptable range.
+    ///   - if the value would be outside the range of a [`NaiveDate`].
+    ///   - if the date does not exist.
     pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
         fn resolve_year(
             y: Option<i32>,
@@ -776,6 +788,14 @@ impl Parsed {
     /// - Hour, minute, second, nanosecond.
     ///
     /// It is able to handle leap seconds when given second is 60.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `OUT_OF_RANGE` if any of the time fields of `Parsed` are set to a value beyond
+    ///   their acceptable range.
+    /// - `NOT_ENOUGH` if an hour field is missing, if AM/PM is missing in a 12-hour clock,
+    ///   if minutes are missing, or if seconds are missing while the nanosecond field is present.
     pub fn to_naive_time(&self) -> ParseResult<NaiveTime> {
         let hour_div_12 = match self.hour_div_12 {
             Some(v @ 0..=1) => v,
@@ -811,13 +831,25 @@ impl Parsed {
         NaiveTime::from_hms_nano_opt(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
     }
 
-    /// Returns a parsed naive date and time out of given fields,
-    /// except for the [`offset`](#structfield.offset) field (assumed to have a given value).
-    /// This is required for parsing a local time or other known-timezone inputs.
+    /// Returns a parsed naive date and time out of given fields, except for the offset field.
     ///
-    /// This method is able to determine the combined date and time
-    /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field.
-    /// Either way those fields have to be consistent to each other.
+    /// The offset is assumed to have a given value. It is not compared against the offset field set
+    /// in the `Parsed` type, so it is allowed to be inconsistent.
+    ///
+    /// This method is able to determine the combined date and time from date and time fields or
+    /// from a single timestamp field. It checks all fields are consistent with each other.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `IMPOSSIBLE`  if any of the date fields conflict, or if a timestamp conflicts with any of
+    ///   the other fields.
+    /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime.
+    /// - `OUT_OF_RANGE`
+    ///   - if any of the date or time fields of `Parsed` are set to a value beyond their acceptable
+    ///     range.
+    ///   - if the value would be outside the range of a [`NaiveDateTime`].
+    ///   - if the date does not exist.
     pub fn to_naive_datetime_with_offset(&self, offset: i32) -> ParseResult<NaiveDateTime> {
         let date = self.to_naive_date();
         let time = self.to_naive_time();
@@ -891,16 +923,32 @@ impl Parsed {
     }
 
     /// Returns a parsed fixed time zone offset out of given fields.
+    ///
+    /// # Errors
+    ///
+    /// Returns `OUT_OF_RANGE` if the offset is out of range for a `FixedOffset`.
     pub fn to_fixed_offset(&self) -> ParseResult<FixedOffset> {
         self.offset.and_then(FixedOffset::east_opt).ok_or(OUT_OF_RANGE)
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields.
     ///
-    /// This method is able to determine the combined date and time
-    /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field,
-    /// plus a time zone offset.
-    /// Either way those fields have to be consistent to each other.
+    /// This method is able to determine the combined date and time from date, time and offset
+    /// fields, and/or from a single timestamp field. It checks all fields are consistent with each
+    /// other.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `IMPOSSIBLE`  if any of the date fields conflict, or if a timestamp conflicts with any of
+    ///   the other fields.
+    /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime
+    ///   including offset from UTC.
+    /// - `OUT_OF_RANGE`
+    ///   - if any of the fields of `Parsed` are set to a value beyond their acceptable
+    ///   range.
+    ///   - if the value would be outside the range of a [`NaiveDateTime`] or [`FixedOffset`].
+    ///   - if the date does not exist.
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
         // If there is no explicit offset, consider a timestamp value as indication of a UTC value.
         let offset = match (self.offset, self.timestamp) {
@@ -919,14 +967,30 @@ impl Parsed {
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields,
-    /// with an additional `TimeZone` used to interpret and validate the local date.
+    /// with an additional [`TimeZone`] used to interpret and validate the local date.
     ///
-    /// This method is able to determine the combined date and time
-    /// from date and time fields or a single [`timestamp`](#structfield.timestamp) field,
-    /// plus a time zone offset.
-    /// Either way those fields have to be consistent to each other.
-    /// If parsed fields include an UTC offset, it also has to be consistent to
-    /// [`offset`](#structfield.offset).
+    /// This method is able to determine the combined date and time from date and time, and/or from
+    /// a single timestamp field. It checks all fields are consistent with each other.
+    ///
+    /// If the parsed fields include an UTC offset, it also has to be consistent with the offset in
+    /// the provided `tz` time zone for that datetime.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `IMPOSSIBLE`
+    ///   - if any of the date fields conflict, if a timestamp conflicts with any of the other
+    ///     fields, or if the offset field is set but differs from the offset at that time in the
+    ///     `tz` time zone.
+    ///   - if the local datetime does not exists in the provided time zone (because it falls in a
+    ///     transition due to for example DST).
+    /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime, or if
+    ///   the local time in the provided time zone is ambiguous (because it falls in a transition
+    ///   due to for example DST) while there is no offset field or timestamp field set.
+    /// - `OUT_OF_RANGE`
+    ///   - if the value would be outside the range of a [`NaiveDateTime`] or [`FixedOffset`].
+    ///   - if any of the fields of `Parsed` are set to a value beyond their acceptable range.
+    ///   - if the date does not exist.
     pub fn to_datetime_with_timezone<Tz: TimeZone>(&self, tz: &Tz) -> ParseResult<DateTime<Tz>> {
         // if we have `timestamp` specified, guess an offset from that.
         let mut guessed_offset = 0;
