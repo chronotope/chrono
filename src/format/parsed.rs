@@ -63,26 +63,28 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// use chrono::Weekday;
 ///
 /// let mut parsed = Parsed::new();
-/// parsed.set_weekday(Weekday::Wed)?;
-/// parsed.set_day(31)?;
-/// parsed.set_month(12)?;
-/// parsed.set_year(2014)?;
-/// parsed.set_hour(4)?;
-/// parsed.set_minute(26)?;
-/// parsed.set_second(40)?;
-/// parsed.set_offset(0)?;
+/// parsed
+///     .set_weekday(Weekday::Wed)?
+///     .set_day(31)?
+///     .set_month(12)?
+///     .set_year(2014)?
+///     .set_hour(4)?
+///     .set_minute(26)?
+///     .set_second(40)?
+///     .set_offset(0)?;
 /// let dt = parsed.to_datetime()?;
 /// assert_eq!(dt.to_rfc2822(), "Wed, 31 Dec 2014 04:26:40 +0000");
 ///
 /// let mut parsed = Parsed::new();
-/// parsed.set_weekday(Weekday::Thu)?; // changed to the wrong day
-/// parsed.set_day(31)?;
-/// parsed.set_month(12)?;
-/// parsed.set_year(2014)?;
-/// parsed.set_hour(4)?;
-/// parsed.set_minute(26)?;
-/// parsed.set_second(40)?;
-/// parsed.set_offset(0)?;
+/// parsed
+///     .set_weekday(Weekday::Thu)? // changed to the wrong day
+///     .set_day(31)?
+///     .set_month(12)?
+///     .set_year(2014)?
+///     .set_hour(4)?
+///     .set_minute(26)?
+///     .set_second(40)?
+///     .set_offset(0)?;
 /// let result = parsed.to_datetime();
 ///
 /// assert!(result.is_err());
@@ -240,8 +242,9 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_year(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+    pub fn set_year(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)?;
+        Ok(self)
     }
 
     /// Set the 'year divided by 100' field to the given value.
@@ -252,11 +255,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_year_div_100(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_year_div_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=i32::MAX as i64).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.year_div_100, value as i32)
+        set_if_consistent(&mut self.year_div_100, value as i32)?;
+        Ok(self)
     }
 
     /// Set the 'year modulo 100' field to the given value.
@@ -273,11 +277,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_year_mod_100(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_year_mod_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..100).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.year_mod_100, value as i32)
+        set_if_consistent(&mut self.year_mod_100, value as i32)?;
+        Ok(self)
     }
 
     /// Set the 'year' field that is part of an [ISO 8601 week date] to the given value.
@@ -292,8 +297,9 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_isoyear(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+    pub fn set_isoyear(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)?;
+        Ok(self)
     }
 
     /// Set the 'year divided by 100' field that is part of an [ISO 8601 week date] to the given
@@ -307,11 +313,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_isoyear_div_100(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_isoyear_div_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=i32::MAX as i64).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoyear_div_100, value as i32)
+        set_if_consistent(&mut self.isoyear_div_100, value as i32)?;
+        Ok(self)
     }
 
     /// Set the 'year modulo 100' that is part of an [ISO 8601 week date] field to the given value.
@@ -330,11 +337,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_isoyear_mod_100(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_isoyear_mod_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..100).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoyear_mod_100, value as i32)
+        set_if_consistent(&mut self.isoyear_mod_100, value as i32)?;
+        Ok(self)
     }
 
     /// Set the 'month' field to the given value.
@@ -345,11 +353,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_month(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_month(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(1..=12).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.month, value as u32)
+        set_if_consistent(&mut self.month, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'week number starting with Sunday' field to the given value.
@@ -362,11 +371,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_week_from_sun(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_week_from_sun(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=53).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.week_from_sun, value as u32)
+        set_if_consistent(&mut self.week_from_sun, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'week number starting with Monday' field to the given value.
@@ -379,11 +389,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_week_from_mon(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_week_from_mon(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=53).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.week_from_mon, value as u32)
+        set_if_consistent(&mut self.week_from_mon, value as u32)?;
+        Ok(self)
     }
 
     /// Set the '[ISO 8601 week number]' field to the given value.
@@ -396,11 +407,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_isoweek(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_isoweek(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(1..=53).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.isoweek, value as u32)
+        set_if_consistent(&mut self.isoweek, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'day of the week' field to the given value.
@@ -409,8 +421,9 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_weekday(&mut self, value: Weekday) -> ParseResult<()> {
-        set_if_consistent(&mut self.weekday, value)
+    pub fn set_weekday(&mut self, value: Weekday) -> ParseResult<&mut Parsed> {
+        set_if_consistent(&mut self.weekday, value)?;
+        Ok(self)
     }
 
     /// Set the 'ordinal' (day of the year) field to the given value.
@@ -421,11 +434,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_ordinal(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_ordinal(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(1..=366).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.ordinal, value as u32)
+        set_if_consistent(&mut self.ordinal, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'day of the month' field to the given value.
@@ -436,11 +450,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_day(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_day(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(1..=31).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.day, value as u32)
+        set_if_consistent(&mut self.day, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'am/pm' field to the given value.
@@ -451,8 +466,9 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_ampm(&mut self, value: bool) -> ParseResult<()> {
-        set_if_consistent(&mut self.hour_div_12, value as u32)
+    pub fn set_ampm(&mut self, value: bool) -> ParseResult<&mut Parsed> {
+        set_if_consistent(&mut self.hour_div_12, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'hour number in 12-hour clocks' field to the given value.
@@ -466,14 +482,15 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_hour12(&mut self, mut value: i64) -> ParseResult<()> {
+    pub fn set_hour12(&mut self, mut value: i64) -> ParseResult<&mut Parsed> {
         if !(1..=12).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
         if value == 12 {
             value = 0
         }
-        set_if_consistent(&mut self.hour_mod_12, value as u32)
+        set_if_consistent(&mut self.hour_mod_12, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'hour' field to the given value.
@@ -487,12 +504,13 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` one of the fields was already set to a different value.
     #[inline]
-    pub fn set_hour(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_hour(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=23).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
         set_if_consistent(&mut self.hour_div_12, value as u32 / 12)?;
-        set_if_consistent(&mut self.hour_mod_12, value as u32 % 12)
+        set_if_consistent(&mut self.hour_mod_12, value as u32 % 12)?;
+        Ok(self)
     }
 
     /// Set the 'minute' field to the given value.
@@ -503,11 +521,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_minute(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_minute(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=59).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.minute, value as u32)
+        set_if_consistent(&mut self.minute, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'second' field to the given value.
@@ -520,11 +539,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_second(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_second(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=60).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.second, value as u32)
+        set_if_consistent(&mut self.second, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'nanosecond' field to the given value.
@@ -537,11 +557,12 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_nanosecond(&mut self, value: i64) -> ParseResult<()> {
+    pub fn set_nanosecond(&mut self, value: i64) -> ParseResult<&mut Parsed> {
         if !(0..=999_999_999).contains(&value) {
             return Err(OUT_OF_RANGE);
         }
-        set_if_consistent(&mut self.nanosecond, value as u32)
+        set_if_consistent(&mut self.nanosecond, value as u32)?;
+        Ok(self)
     }
 
     /// Set the 'timestamp' field to the given value.
@@ -553,8 +574,9 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_timestamp(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.timestamp, value)
+    pub fn set_timestamp(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+        set_if_consistent(&mut self.timestamp, value)?;
+        Ok(self)
     }
 
     /// Set the 'offset from local time to UTC' field to the given value.
@@ -567,8 +589,9 @@ impl Parsed {
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]
-    pub fn set_offset(&mut self, value: i64) -> ParseResult<()> {
-        set_if_consistent(&mut self.offset, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)
+    pub fn set_offset(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+        set_if_consistent(&mut self.offset, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)?;
+        Ok(self)
     }
 
     /// Get the 'year' field if set.
@@ -1231,69 +1254,69 @@ mod tests {
     fn test_parsed_set_fields() {
         // year*, isoyear*
         let mut p = Parsed::new();
-        assert_eq!(p.set_year(1987), Ok(()));
+        assert!(p.set_year(1987).is_ok());
         assert_eq!(p.set_year(1986), Err(IMPOSSIBLE));
         assert_eq!(p.set_year(1988), Err(IMPOSSIBLE));
-        assert_eq!(p.set_year(1987), Ok(()));
-        assert_eq!(p.set_year_div_100(20), Ok(())); // independent to `year`
+        assert!(p.set_year(1987).is_ok());
+        assert!(p.set_year_div_100(20).is_ok()); // independent to `year`
         assert_eq!(p.set_year_div_100(21), Err(IMPOSSIBLE));
         assert_eq!(p.set_year_div_100(19), Err(IMPOSSIBLE));
-        assert_eq!(p.set_year_mod_100(37), Ok(())); // ditto
+        assert!(p.set_year_mod_100(37).is_ok()); // ditto
         assert_eq!(p.set_year_mod_100(38), Err(IMPOSSIBLE));
         assert_eq!(p.set_year_mod_100(36), Err(IMPOSSIBLE));
 
         let mut p = Parsed::new();
-        assert_eq!(p.set_year(0), Ok(()));
-        assert_eq!(p.set_year_div_100(0), Ok(()));
-        assert_eq!(p.set_year_mod_100(0), Ok(()));
+        assert!(p.set_year(0).is_ok());
+        assert!(p.set_year_div_100(0).is_ok());
+        assert!(p.set_year_mod_100(0).is_ok());
 
         let mut p = Parsed::new();
         assert_eq!(p.set_year_div_100(-1), Err(OUT_OF_RANGE));
         assert_eq!(p.set_year_mod_100(-1), Err(OUT_OF_RANGE));
-        assert_eq!(p.set_year(-1), Ok(()));
+        assert!(p.set_year(-1).is_ok());
         assert_eq!(p.set_year(-2), Err(IMPOSSIBLE));
         assert_eq!(p.set_year(0), Err(IMPOSSIBLE));
 
         let mut p = Parsed::new();
         assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(OUT_OF_RANGE));
-        assert_eq!(p.set_year_div_100(8), Ok(()));
+        assert!(p.set_year_div_100(8).is_ok());
         assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(OUT_OF_RANGE));
 
         // month, week*, isoweek, ordinal, day, minute, second, nanosecond, offset
         let mut p = Parsed::new();
-        assert_eq!(p.set_month(7), Ok(()));
+        assert!(p.set_month(7).is_ok());
         assert_eq!(p.set_month(1), Err(IMPOSSIBLE));
         assert_eq!(p.set_month(6), Err(IMPOSSIBLE));
         assert_eq!(p.set_month(8), Err(IMPOSSIBLE));
         assert_eq!(p.set_month(12), Err(IMPOSSIBLE));
 
         let mut p = Parsed::new();
-        assert_eq!(p.set_month(8), Ok(()));
+        assert!(p.set_month(8).is_ok());
         assert_eq!(p.set_month(0x1_0000_0008), Err(OUT_OF_RANGE));
 
         // hour
         let mut p = Parsed::new();
-        assert_eq!(p.set_hour(12), Ok(()));
+        assert!(p.set_hour(12).is_ok());
         assert_eq!(p.set_hour(11), Err(IMPOSSIBLE));
         assert_eq!(p.set_hour(13), Err(IMPOSSIBLE));
-        assert_eq!(p.set_hour(12), Ok(()));
+        assert!(p.set_hour(12).is_ok());
         assert_eq!(p.set_ampm(false), Err(IMPOSSIBLE));
-        assert_eq!(p.set_ampm(true), Ok(()));
-        assert_eq!(p.set_hour12(12), Ok(()));
+        assert!(p.set_ampm(true).is_ok());
+        assert!(p.set_hour12(12).is_ok());
         assert_eq!(p.set_hour12(0), Err(OUT_OF_RANGE)); // requires canonical representation
         assert_eq!(p.set_hour12(1), Err(IMPOSSIBLE));
         assert_eq!(p.set_hour12(11), Err(IMPOSSIBLE));
 
         let mut p = Parsed::new();
-        assert_eq!(p.set_ampm(true), Ok(()));
-        assert_eq!(p.set_hour12(7), Ok(()));
+        assert!(p.set_ampm(true).is_ok());
+        assert!(p.set_hour12(7).is_ok());
         assert_eq!(p.set_hour(7), Err(IMPOSSIBLE));
         assert_eq!(p.set_hour(18), Err(IMPOSSIBLE));
-        assert_eq!(p.set_hour(19), Ok(()));
+        assert!(p.set_hour(19).is_ok());
 
         // timestamp
         let mut p = Parsed::new();
-        assert_eq!(p.set_timestamp(1_234_567_890), Ok(()));
+        assert!(p.set_timestamp(1_234_567_890).is_ok());
         assert_eq!(p.set_timestamp(1_234_567_889), Err(IMPOSSIBLE));
         assert_eq!(p.set_timestamp(1_234_567_891), Err(IMPOSSIBLE));
     }
