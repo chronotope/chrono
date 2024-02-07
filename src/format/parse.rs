@@ -216,7 +216,11 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     }
 
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
-    const MAX_RFC3339_OFFSET: i32 = 86_400;
+    // This range check is similar to the one in `FixedOffset::east_opt`, so it would be redundant.
+    // But it is possible to read the offset directly from `Parsed`. We want to only successfully
+    // populate `Parsed` if the input is fully valid RFC 3339.
+    // Max for the hours field is `23`, and for the minutes field `59`.
+    const MAX_RFC3339_OFFSET: i32 = (23 * 60 + 59) * 60;
     if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
         return Err(OUT_OF_RANGE);
     }
