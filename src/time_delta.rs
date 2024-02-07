@@ -40,7 +40,7 @@ const SECS_PER_DAY: i64 = 86_400;
 /// The number of (non-leap) seconds in a week.
 const SECS_PER_WEEK: i64 = 604_800;
 
-/// ISO 8601 time duration with nanosecond precision.
+/// Time duration with nanosecond precision.
 ///
 /// This also allows for negative durations; see individual methods for details.
 ///
@@ -80,10 +80,10 @@ impl TimeDelta {
     /// # Errors
     ///
     /// Returns `None` when the duration is out of bounds, or if `nanos` ≥ 1,000,000,000.
-    pub(crate) const fn new(secs: i64, nanos: u32) -> Option<TimeDelta> {
+    pub const fn new(secs: i64, nanos: u32) -> Option<TimeDelta> {
         if secs < MIN.secs
             || secs > MAX.secs
-            || nanos > 1_000_000_000
+            || nanos >= 1_000_000_000
             || (secs == MAX.secs && nanos > MAX.nanos as u32)
             || (secs == MIN.secs && nanos < MIN.nanos as u32)
         {
