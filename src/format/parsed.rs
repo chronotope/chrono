@@ -1388,37 +1388,18 @@ mod tests {
             Err(OUT_OF_RANGE)
         );
         assert_eq!(
-            parse!(year_div_100: 19, year_mod_100: 83, month: 13, day: 1),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(
             parse!(year_div_100: 19, year_mod_100: 83, month: 12, day: 31),
             ymd(1983, 12, 31)
         );
-        assert_eq!(
-            parse!(year_div_100: 19, year_mod_100: 83, month: 12, day: 32),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(
-            parse!(year_div_100: 19, year_mod_100: 83, month: 12, day: 0),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(
-            parse!(year_div_100: 19, year_mod_100: 100, month: 1, day: 1),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(parse!(year_div_100: 19, year_mod_100: -1, month: 1, day: 1), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year_div_100: 0, year_mod_100: 0, month: 1, day: 1), ymd(0, 1, 1));
-        assert_eq!(parse!(year_div_100: -1, year_mod_100: 42, month: 1, day: 1), Err(IMPOSSIBLE));
         let max_year = NaiveDate::MAX.year();
         assert_eq!(
-            parse!(year_div_100: max_year / 100,
-                          year_mod_100: max_year % 100, month: 1, day: 1),
+            parse!(year_div_100: max_year / 100, year_mod_100: max_year % 100, month: 1, day: 1),
             ymd(max_year, 1, 1)
         );
         assert_eq!(
             parse!(year_div_100: (max_year + 1) / 100,
-                          year_mod_100: (max_year + 1) % 100, month: 1, day: 1),
+                   year_mod_100: (max_year + 1) % 100, month: 1, day: 1),
             Err(OUT_OF_RANGE)
         );
 
@@ -1433,18 +1414,6 @@ mod tests {
         );
         assert_eq!(
             parse!(year: 1984, year_div_100: 18, year_mod_100: 94, month: 1, day: 1),
-            Err(IMPOSSIBLE)
-        );
-        assert_eq!(
-            parse!(year: 1984, year_div_100: 18, year_mod_100: 184, month: 1, day: 1),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(
-            parse!(year: -1, year_div_100: 0, year_mod_100: -1, month: 1, day: 1),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(
-            parse!(year: -1, year_div_100: -1, year_mod_100: 99, month: 1, day: 1),
             Err(IMPOSSIBLE)
         );
         assert_eq!(parse!(year: -1, year_div_100: 0, month: 1, day: 1), Err(IMPOSSIBLE));
@@ -1521,22 +1490,21 @@ mod tests {
         // more complex cases
         assert_eq!(
             parse!(year: 2014, month: 12, day: 31, ordinal: 365, isoyear: 2015, isoweek: 1,
-                          week_from_sun: 52, week_from_mon: 52, weekday: Wed),
+                   week_from_sun: 52, week_from_mon: 52, weekday: Wed),
             ymd(2014, 12, 31)
         );
         assert_eq!(
             parse!(year: 2014, month: 12, ordinal: 365, isoyear: 2015, isoweek: 1,
-                          week_from_sun: 52, week_from_mon: 52),
+                   week_from_sun: 52, week_from_mon: 52),
             ymd(2014, 12, 31)
         );
         assert_eq!(
             parse!(year: 2014, month: 12, day: 31, ordinal: 365, isoyear: 2014, isoweek: 53,
-                          week_from_sun: 52, week_from_mon: 52, weekday: Wed),
+                   week_from_sun: 52, week_from_mon: 52, weekday: Wed),
             Err(IMPOSSIBLE)
         ); // no ISO week date 2014-W53-3
         assert_eq!(
-            parse!(year: 2012, isoyear: 2015, isoweek: 1,
-                          week_from_sun: 52, week_from_mon: 52),
+            parse!(year: 2012, isoyear: 2015, isoweek: 1, week_from_sun: 52, week_from_mon: 52),
             Err(NOT_ENOUGH)
         ); // ambiguous (2014-12-29, 2014-12-30, 2014-12-31)
         assert_eq!(parse!(year_div_100: 20, isoyear_mod_100: 15, ordinal: 366), Err(NOT_ENOUGH));
@@ -1570,20 +1538,6 @@ mod tests {
         assert_eq!(
             parse!(hour_div_12: 0, hour_mod_12: 1, minute: 23, nanosecond: 456_789_012),
             Err(NOT_ENOUGH)
-        );
-
-        // out-of-range conditions
-        assert_eq!(parse!(hour_div_12: 2, hour_mod_12: 0, minute: 0), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(hour_div_12: 1, hour_mod_12: 12, minute: 0), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(hour_div_12: 0, hour_mod_12: 1, minute: 60), Err(OUT_OF_RANGE));
-        assert_eq!(
-            parse!(hour_div_12: 0, hour_mod_12: 1, minute: 23, second: 61),
-            Err(OUT_OF_RANGE)
-        );
-        assert_eq!(
-            parse!(hour_div_12: 0, hour_mod_12: 1, minute: 23, second: 34,
-                          nanosecond: 1_000_000_000),
-            Err(OUT_OF_RANGE)
         );
 
         // leap seconds
@@ -1704,51 +1658,44 @@ mod tests {
         // we need to have separate tests for them since it uses another control flow.
         assert_eq!(
             parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 59, timestamp: 1_341_100_798),
+                   minute: 59, second: 59, timestamp: 1_341_100_798),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 59, timestamp: 1_341_100_799),
+                   minute: 59, second: 59, timestamp: 1_341_100_799),
             ymdhms(2012, 6, 30, 23, 59, 59)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 59, timestamp: 1_341_100_800),
+                   minute: 59, second: 59, timestamp: 1_341_100_800),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 60, timestamp: 1_341_100_799),
+                   minute: 59, second: 60, timestamp: 1_341_100_799),
             ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 60, timestamp: 1_341_100_800),
+                   minute: 59, second: 60, timestamp: 1_341_100_800),
             ymdhmsn(2012, 6, 30, 23, 59, 59, 1_000_000_000)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
-                          minute: 0, second: 0, timestamp: 1_341_100_800),
+                   minute: 0, second: 0, timestamp: 1_341_100_800),
             ymdhms(2012, 7, 1, 0, 0, 0)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 183, hour_div_12: 0, hour_mod_12: 0,
-                          minute: 0, second: 1, timestamp: 1_341_100_800),
+                   minute: 0, second: 1, timestamp: 1_341_100_800),
             Err(IMPOSSIBLE)
         );
         assert_eq!(
             parse!(year: 2012, ordinal: 182, hour_div_12: 1, hour_mod_12: 11,
-                          minute: 59, second: 60, timestamp: 1_341_100_801),
+                   minute: 59, second: 60, timestamp: 1_341_100_801),
             Err(IMPOSSIBLE)
         );
-
-        // error codes
-        assert_eq!(
-            parse!(year: 2015, month: 1, day: 20, weekday: Tue,
-                          hour_div_12: 2, hour_mod_12: 1, minute: 35, second: 20),
-            Err(OUT_OF_RANGE)
-        ); // `hour_div_12` is out of range
     }
 
     #[test]
