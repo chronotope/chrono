@@ -10,8 +10,8 @@ use core::usize;
 
 use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
-use super::{ParseError, ParseErrorKind, ParseResult};
-use super::{BAD_FORMAT, INVALID, NOT_ENOUGH, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
+use super::{ParseError, ParseResult};
+use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use crate::{DateTime, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
@@ -247,7 +247,11 @@ where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    parse_internal(parsed, s, items).map(|_| ()).map_err(|(_s, e)| e)
+    match parse_internal(parsed, s, items) {
+        Ok("") => Ok(()),
+        Ok(_) => Err(TOO_LONG), // if there are trailing chars it is an error
+        Err((_, e)) => Err(e),
+    }
 }
 
 /// Tries to parse given string into `parsed` with given formatting items.
@@ -273,11 +277,7 @@ where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    match parse_internal(parsed, s, items) {
-        Ok(s) => Ok(s),
-        Err((s, ParseError(ParseErrorKind::TooLong))) => Ok(s),
-        Err((_s, e)) => Err(e),
-    }
+    parse_internal(parsed, s, items).map_err(|(_s, e)| e)
 }
 
 fn parse_internal<'a, 'b, I, B>(
@@ -505,13 +505,7 @@ where
             }
         }
     }
-
-    // if there are trailling chars, it is an error
-    if !s.is_empty() {
-        Err((s, TOO_LONG))
-    } else {
-        Ok(s)
-    }
+    Ok(s)
 }
 
 /// Accepts a relaxed form of RFC3339.
@@ -570,11 +564,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Item::Space(""),
     ];
 
-    s = match parse_internal(parsed, s, DATE_ITEMS.iter()) {
-        Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => remainder,
-        Err((_s, e)) => return Err(e),
-        Ok(_) => return Err(NOT_ENOUGH),
-    };
+    s = parse_internal(parsed, s, DATE_ITEMS.iter()).map_err(|(_s, e)| e)?;
 
     s = match s.as_bytes().first() {
         Some(&b't' | &b'T' | &b' ') => &s[1..],
@@ -582,11 +572,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         None => return Err(TOO_SHORT),
     };
 
-    s = match parse_internal(parsed, s, TIME_ITEMS.iter()) {
-        Err((s, e)) if e.0 == ParseErrorKind::TooLong => s,
-        Err((_s, e)) => return Err(e),
-        Ok(_) => return Err(NOT_ENOUGH),
-    };
+    s = parse_internal(parsed, s, TIME_ITEMS.iter()).map_err(|(_s, e)| e)?;
     s = s.trim_start();
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
