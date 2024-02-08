@@ -309,7 +309,7 @@ impl Parsed {
                 // we should filter a negative full year first.
                 (Some(y), q, r @ Some(0..=99)) | (Some(y), q, r @ None) => {
                     if y < 0 {
-                        return Err(OUT_OF_RANGE);
+                        return Err(IMPOSSIBLE);
                     }
                     let q_ = y / 100;
                     let r_ = y % 100;
@@ -324,7 +324,7 @@ impl Parsed {
                 // reconstruct the full year. make sure that the result is always positive.
                 (None, Some(q), Some(r @ 0..=99)) => {
                     if q < 0 {
-                        return Err(OUT_OF_RANGE);
+                        return Err(IMPOSSIBLE);
                     }
                     let y = q.checked_mul(100).and_then(|v| v.checked_add(r));
                     Ok(Some(y.ok_or(OUT_OF_RANGE)?))
@@ -828,7 +828,7 @@ mod tests {
         );
         assert_eq!(parse!(year_div_100: 19, year_mod_100: -1, month: 1, day: 1), Err(OUT_OF_RANGE));
         assert_eq!(parse!(year_div_100: 0, year_mod_100: 0, month: 1, day: 1), ymd(0, 1, 1));
-        assert_eq!(parse!(year_div_100: -1, year_mod_100: 42, month: 1, day: 1), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year_div_100: -1, year_mod_100: 42, month: 1, day: 1), Err(IMPOSSIBLE));
         let max_year = NaiveDate::MAX.year();
         assert_eq!(
             parse!(year_div_100: max_year / 100,
@@ -864,10 +864,10 @@ mod tests {
         );
         assert_eq!(
             parse!(year: -1, year_div_100: -1, year_mod_100: 99, month: 1, day: 1),
-            Err(OUT_OF_RANGE)
+            Err(IMPOSSIBLE)
         );
-        assert_eq!(parse!(year: -1, year_div_100: 0, month: 1, day: 1), Err(OUT_OF_RANGE));
-        assert_eq!(parse!(year: -1, year_mod_100: 99, month: 1, day: 1), Err(OUT_OF_RANGE));
+        assert_eq!(parse!(year: -1, year_div_100: 0, month: 1, day: 1), Err(IMPOSSIBLE));
+        assert_eq!(parse!(year: -1, year_mod_100: 99, month: 1, day: 1), Err(IMPOSSIBLE));
 
         // weekdates
         assert_eq!(parse!(year: 2000, week_from_mon: 0), Err(NOT_ENOUGH));
