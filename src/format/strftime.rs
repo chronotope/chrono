@@ -905,6 +905,22 @@ mod tests {
     }
 
     #[test]
+    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    fn test_strftime_localized_time() {
+        let dt1 = Utc.with_ymd_and_hms(2024, 2, 9, 6, 54, 32).unwrap();
+        let dt2 = Utc.with_ymd_and_hms(2024, 2, 9, 18, 54, 32).unwrap();
+        // Some of these locales gave issues before pure-rust-locales 0.8.0 with chrono 0.4.27+
+        assert_eq!(dt1.format_localized("%X", Locale::nl_NL).to_string(), "06:54:32");
+        assert_eq!(dt2.format_localized("%X", Locale::nl_NL).to_string(), "18:54:32");
+        assert_eq!(dt1.format_localized("%X", Locale::en_US).to_string(), "06:54:32 AM");
+        assert_eq!(dt2.format_localized("%X", Locale::en_US).to_string(), "06:54:32 PM");
+        assert_eq!(dt1.format_localized("%X", Locale::hy_AM).to_string(), "06:54:32");
+        assert_eq!(dt2.format_localized("%X", Locale::hy_AM).to_string(), "18:54:32");
+        assert_eq!(dt1.format_localized("%X", Locale::chr_US).to_string(), "06:54:32 ᏌᎾᎴ");
+        assert_eq!(dt2.format_localized("%X", Locale::chr_US).to_string(), "06:54:32 ᏒᎯᏱᎢᏗᏢ");
+    }
+
+    #[test]
     #[cfg(all(feature = "unstable-locales", target_pointer_width = "64"))]
     fn test_type_sizes() {
         use core::mem::size_of;
