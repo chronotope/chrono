@@ -538,27 +538,30 @@ impl fmt::Display for TimeDelta {
         // but we need to print it anyway.
         let (abs, sign) = if self.secs < 0 { (-*self, "-") } else { (*self, "") };
 
-        let days = abs.secs / SECS_PER_DAY;
-        let secs = abs.secs - days * SECS_PER_DAY;
-        let hasdate = days != 0;
-        let hastime = (secs != 0 || abs.nanos != 0) || !hasdate;
-
         write!(f, "{}P", sign)?;
+        // Plenty of ways to encode an empty string. `P0D` is short and not too strange.
+        if abs.secs == 0 && abs.nanos == 0 {
+            return f.write_str("0D");
+        }
 
-        if hasdate {
-            write!(f, "{}D", days)?;
-        }
-        if hastime {
-            if abs.nanos == 0 {
-                write!(f, "T{}S", secs)?;
-            } else if abs.nanos % NANOS_PER_MILLI == 0 {
-                write!(f, "T{}.{:03}S", secs, abs.nanos / NANOS_PER_MILLI)?;
-            } else if abs.nanos % NANOS_PER_MICRO == 0 {
-                write!(f, "T{}.{:06}S", secs, abs.nanos / NANOS_PER_MICRO)?;
-            } else {
-                write!(f, "T{}.{:09}S", secs, abs.nanos)?;
+        f.write_fmt(format_args!("T{}", abs.secs))?;
+
+        if abs.nanos > 0 {
+            // Count the number of significant digits, while removing all trailing zero's.
+            let mut figures = 9usize;
+            let mut fraction_digits = abs.nanos;
+            loop {
+                let div = fraction_digits / 10;
+                let last_digit = fraction_digits % 10;
+                if last_digit != 0 {
+                    break;
+                }
+                fraction_digits = div;
+                figures -= 1;
             }
+            f.write_fmt(format_args!(".{:01$}", fraction_digits, figures))?;
         }
+        f.write_str("S")?;
         Ok(())
     }
 }
@@ -1111,21 +1114,24 @@ mod tests {
 
     #[test]
     fn test_duration_fmt() {
-        assert_eq!(TimeDelta::zero().to_string(), "PT0S");
-        assert_eq!(TimeDelta::days(42).to_string(), "P42D");
-        assert_eq!(TimeDelta::days(-42).to_string(), "-P42D");
+        assert_eq!(TimeDelta::zero().to_string(), "P0D");
+        assert_eq!(TimeDelta::days(42).to_string(), "PT3628800S");
+        assert_eq!(TimeDelta::days(-42).to_string(), "-PT3628800S");
         assert_eq!(TimeDelta::seconds(42).to_string(), "PT42S");
         assert_eq!(TimeDelta::milliseconds(42).to_string(), "PT0.042S");
         assert_eq!(TimeDelta::microseconds(42).to_string(), "PT0.000042S");
         assert_eq!(TimeDelta::nanoseconds(42).to_string(), "PT0.000000042S");
-        assert_eq!((TimeDelta::days(7) + TimeDelta::milliseconds(6543)).to_string(), "P7DT6.543S");
-        assert_eq!(TimeDelta::seconds(-86_401).to_string(), "-P1DT1S");
+        assert_eq!(
+            (TimeDelta::days(7) + TimeDelta::milliseconds(6543)).to_string(),
+            "PT604806.543S"
+        );
+        assert_eq!(TimeDelta::seconds(-86_401).to_string(), "-PT86401S");
         assert_eq!(TimeDelta::nanoseconds(-1).to_string(), "-PT0.000000001S");
 
         // the format specifier should have no effect on `TimeDelta`
         assert_eq!(
             format!("{:30}", TimeDelta::days(1) + TimeDelta::milliseconds(2345)),
-            "P1DT2.345S"
+            "PT86402.345S"
         );
     }
 
