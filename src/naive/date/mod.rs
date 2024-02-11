@@ -16,6 +16,7 @@
 #[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 use core::iter::FusedIterator;
+use core::num::NonZeroI32;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
@@ -99,7 +100,7 @@ mod tests;
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveDate {
-    yof: i32, // (year << 13) | of
+    yof: NonZeroI32, // (year << 13) | of
 }
 
 /// The minimum possible `NaiveDate` (January 1, 262145 BCE).
@@ -140,7 +141,7 @@ impl NaiveDate {
         debug_assert!(YearFlags::from_year(year).0 == flags.0);
         let yof = (year << 13) | (ordinal << 4) as i32 | flags.0 as i32;
         match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate { yof }),
+            true => Some(NaiveDate::from_yof(yof)),
             false => None, // Does not exist: Ordinal 366 in a common year.
         }
     }
@@ -691,10 +692,10 @@ impl NaiveDate {
     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
         // fast path if the result is within the same year
         const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
-        if let Some(ordinal) = ((self.yof & ORDINAL_MASK) >> 4).checked_add(days) {
+        if let Some(ordinal) = ((self.yof() & ORDINAL_MASK) >> 4).checked_add(days) {
             if ordinal > 0 && ordinal <= 365 {
-                let year_and_flags = self.yof & !ORDINAL_MASK;
-                return Some(NaiveDate { yof: year_and_flags | (ordinal << 4) });
+                let year_and_flags = self.yof() & !ORDINAL_MASK;
+                return Some(NaiveDate::from_yof(year_and_flags | (ordinal << 4)));
             }
         }
         // do the full check
@@ -939,7 +940,7 @@ impl NaiveDate {
     /// Returns the packed month-day-flags.
     #[inline]
     const fn mdf(&self) -> Mdf {
-        Mdf::from_ol((self.yof & OL_MASK) >> 3, self.year_flags())
+        Mdf::from_ol((self.yof() & OL_MASK) >> 3, self.year_flags())
     }
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
@@ -950,7 +951,7 @@ impl NaiveDate {
         debug_assert!(self.year_flags().0 == mdf.year_flags().0);
         match mdf.ordinal() {
             Some(ordinal) => {
-                Some(NaiveDate { yof: (self.yof & !ORDINAL_MASK) | (ordinal << 4) as i32 })
+                Some(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
             }
             None => None, // Non-existing date
         }
@@ -986,9 +987,9 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn succ_opt(&self) -> Option<NaiveDate> {
-        let new_ol = (self.yof & OL_MASK) + (1 << 4);
+        let new_ol = (self.yof() & OL_MASK) + (1 << 4);
         match new_ol <= MAX_OL {
-            true => Some(NaiveDate { yof: self.yof & !OL_MASK | new_ol }),
+            true => Some(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
             false => NaiveDate::from_yo_opt(self.year() + 1, 1),
         }
     }
@@ -1023,9 +1024,9 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn pred_opt(&self) -> Option<NaiveDate> {
-        let new_shifted_ordinal = (self.yof & ORDINAL_MASK) - (1 << 4);
+        let new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
         match new_shifted_ordinal > 0 {
-            true => Some(NaiveDate { yof: self.yof & !ORDINAL_MASK | new_shifted_ordinal }),
+            true => Some(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
             false => NaiveDate::from_ymd_opt(self.year() - 1, 12, 31),
         }
     }
@@ -1330,20 +1331,20 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd_opt(2100, 1, 1).unwrap().leap_year(), false);
     /// ```
     pub const fn leap_year(&self) -> bool {
-        self.yof & (0b1000) == 0
+        self.yof() & (0b1000) == 0
     }
 
     // This duplicates `Datelike::year()`, because trait methods can't be const yet.
     #[inline]
     const fn year(&self) -> i32 {
-        self.yof >> 13
+        self.yof() >> 13
     }
 
     /// Returns the day of year starting from 1.
     // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
     #[inline]
     const fn ordinal(&self) -> u32 {
-        ((self.yof & ORDINAL_MASK) >> 4) as u32
+        ((self.yof() & ORDINAL_MASK) >> 4) as u32
     }
 
     // This duplicates `Datelike::month()`, because trait methods can't be const yet.
@@ -1362,7 +1363,7 @@ impl NaiveDate {
     // This duplicates `Datelike::weekday()`, because trait methods can't be const yet.
     #[inline]
     pub(super) const fn weekday(&self) -> Weekday {
-        match (((self.yof & ORDINAL_MASK) >> 4) + (self.yof & WEEKDAY_FLAGS_MASK)) % 7 {
+        match (((self.yof() & ORDINAL_MASK) >> 4) + (self.yof() & WEEKDAY_FLAGS_MASK)) % 7 {
             0 => Weekday::Mon,
             1 => Weekday::Tue,
             2 => Weekday::Wed,
@@ -1375,7 +1376,7 @@ impl NaiveDate {
 
     #[inline]
     const fn year_flags(&self) -> YearFlags {
-        YearFlags((self.yof & YEAR_FLAGS_MASK) as u8)
+        YearFlags((self.yof() & YEAR_FLAGS_MASK) as u8)
     }
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
@@ -1394,17 +1395,32 @@ impl NaiveDate {
         ndays + self.ordinal() as i32
     }
 
+    /// Create a new `NaiveDate` from a raw year-ordinal-flags `i32`.
+    ///
+    /// In a valid value an ordinal is never `0`, and neither are the year flags. This method
+    /// doesn't do any validation; it only panics if the value is `0`.
+    #[inline]
+    const fn from_yof(yof: i32) -> NaiveDate {
+        NaiveDate { yof: expect!(NonZeroI32::new(yof), "invalid internal value") }
+    }
+
+    /// Get the raw year-ordinal-flags `i32`.
+    #[inline]
+    const fn yof(&self) -> i32 {
+        self.yof.get()
+    }
+
     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
-    pub const MIN: NaiveDate = NaiveDate { yof: (MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/ };
+    pub const MIN: NaiveDate = NaiveDate::from_yof((MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/);
     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
-    pub const MAX: NaiveDate = NaiveDate { yof: (MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/ };
+    pub const MAX: NaiveDate = NaiveDate::from_yof((MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/);
 
     /// One day before the minimum possible `NaiveDate` (December 31, 262145 BCE).
     pub(crate) const BEFORE_MIN: NaiveDate =
-        NaiveDate { yof: ((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /*FE*/ };
+        NaiveDate::from_yof(((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /*FE*/);
     /// One day after the maximum possible `NaiveDate` (January 1, 262143 CE).
     pub(crate) const AFTER_MAX: NaiveDate =
-        NaiveDate { yof: ((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /*F*/ };
+        NaiveDate::from_yof(((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /*F*/);
 }
 
 impl Datelike for NaiveDate {
@@ -1550,7 +1566,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn ordinal(&self) -> u32 {
-        ((self.yof & ORDINAL_MASK) >> 4) as u32
+        ((self.yof() & ORDINAL_MASK) >> 4) as u32
     }
 
     /// Returns the day of year starting from 0.
@@ -1741,9 +1757,9 @@ impl Datelike for NaiveDate {
         if ordinal == 0 || ordinal > 366 {
             return None;
         }
-        let yof = (self.yof & !ORDINAL_MASK) | (ordinal << 4) as i32;
+        let yof = (self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32;
         match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate { yof }),
+            true => Some(NaiveDate::from_yof(yof)),
             false => None, // Does not exist: Ordinal 366 in a common year.
         }
     }
