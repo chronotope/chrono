@@ -30,8 +30,8 @@ use crate::{Datelike, Error, TimeDelta, Weekday};
 use super::internals::{self, DateImpl, Mdf, Of, YearFlags};
 use super::isoweek;
 
-const MAX_YEAR: i32 = internals::MAX_YEAR;
-const MIN_YEAR: i32 = internals::MIN_YEAR;
+pub(crate) const MAX_YEAR: i32 = internals::MAX_YEAR;
+pub(crate) const MIN_YEAR: i32 = internals::MIN_YEAR;
 
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.

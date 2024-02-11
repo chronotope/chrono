@@ -1,4 +1,6 @@
 use super::DateTime;
+use crate::format::{Fixed, ParseResult};
+use crate::naive::date::{MAX_YEAR, MIN_YEAR};
 use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
@@ -945,9 +947,258 @@ fn test_parse_from_str() {
 }
 
 #[test]
-fn test_datetime_parse_from_str() {
-    let dt = ymdhms(&FixedOffset::east(-9 * 60 * 60).unwrap(), 2013, 8, 9, 23, 54, 35);
-    let parse = DateTime::parse_from_str;
+fn test_utc_datetime_from_str_with_spaces() {
+    let dt = ymdhms_utc(2013, 8, 9, 23, 54, 35);
+    
+    // with varying spaces - should succeed
+    assert_eq!(Utc.datetime_from_str(" Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S "), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str(" Aug 09 2013  23:54:35 ", " %b %d %Y  %H:%M:%S "), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("  Aug 09 2013 23:54:35", "  %b %d %Y %H:%M:%S"), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("   Aug 09 2013 23:54:35", "   %b %d %Y %H:%M:%S"), Ok(dt),);
+    assert_eq!(
+        Utc.datetime_from_str("\n\tAug 09 2013 23:54:35  ", "\n\t%b %d %Y %H:%M:%S  "),
+        Ok(dt),
+    );
+    assert_eq!(Utc.datetime_from_str("\tAug 09 2013 23:54:35\t", "\t%b %d %Y %H:%M:%S\t"), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("Aug  09 2013 23:54:35", "%b  %d %Y %H:%M:%S"), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("Aug    09 2013 23:54:35", "%b    %d %Y %H:%M:%S"), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("Aug  09 2013\t23:54:35", "%b  %d %Y\t%H:%M:%S"), Ok(dt),);
+    assert_eq!(Utc.datetime_from_str("Aug  09 2013\t\t23:54:35", "%b  %d %Y\t\t%H:%M:%S"), Ok(dt),);
+    // with varying spaces - should fail
+    // leading whitespace in format
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S").is_err());
+    // trailing whitespace in format
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
+    // extra mid-string whitespace in format
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y  %H:%M:%S").is_err());
+    // mismatched leading whitespace
+    assert!(Utc.datetime_from_str("\tAug 09 2013 23:54:35", "\n%b %d %Y %H:%M:%S").is_err());
+    // mismatched trailing whitespace
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S\n").is_err());
+    // mismatched mid-string whitespace
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y\t%H:%M:%S").is_err());
+    // trailing whitespace in format
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
+    // trailing whitespace (newline) in format
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
+    // leading space in data
+    assert!(Utc.datetime_from_str(" Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S").is_err());
+    // trailing space in data
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S").is_err());
+    // trailing tab in data
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35\t", "%b %d %Y %H:%M:%S").is_err());
+    // mismatched newlines
+    assert!(Utc.datetime_from_str("\nAug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
+    // trailing literal in data
+    assert!(Utc.datetime_from_str("Aug 09 2013 23:54:35 !!!", "%b %d %Y %H:%M:%S ").is_err());
+}
+
+/// Test `parse_from_str` focused on strftime `%Y`, `%y`, and `%C` specifiers.
+#[test]
+fn test_datetime_parse_from_str_year() {
+    fn parse(data: &str, format: &str) -> ParseResult<DateTime<FixedOffset>> {
+        eprintln!("parse: data: {:?}, format: {:?}", data, format);
+        DateTime::<FixedOffset>::parse_from_str(data, format)
+    }
+    fn parse_year(data: &str, format: &str) -> i32 {
+        eprintln!("parse_year: data: {:?}, format: {:?}", data, format);
+        DateTime::<FixedOffset>::parse_from_str(data, format).unwrap().year()
+    }
+    let dt = ymdhms(&FixedOffset::east_opt(-9 * 60 * 60).unwrap(), 2013, 8, 9, 23, 54, 35);
+
+    //
+    // %Y
+    //
+    // ok
+    assert_eq!(parse("2013-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("08-2013-09T23:54:35 -0900", "%m-%Y-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse_year("9999-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), 9999);
+    assert_eq!(parse_year("999-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), 999);
+    assert_eq!(parse_year("99-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), 99);
+    assert_eq!(parse_year("9-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), 9);
+    assert_eq!(parse_year("0-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), 0);
+    let d1: String = MIN_YEAR.to_string() + "-08-09T23:54:35 -0900";
+    assert_eq!(parse_year(d1.as_str(), "%Y-%m-%dT%H:%M:%S %z"), MIN_YEAR);
+    let d1: String = (MIN_YEAR + 1).to_string() + "-08-09T23:54:35 -0900";
+    assert_eq!(parse_year(d1.as_str(), "%Y-%m-%dT%H:%M:%S %z"), MIN_YEAR + 1);
+    // errors
+    // XXX: MAX_YEAR cannont be parsed, can only parse up to four decimal digits
+    let d1: String = MAX_YEAR.to_string() + "-08-09T23:54:35 -0900";
+    assert!(parse(d1.as_str(), "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("99999-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("A-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("0x11-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("108-09T23:54:35 -0900", "%Y%m-%dT%H:%M:%S %z").is_err());
+
+    //
+    // %y
+    //
+    // ok
+    assert_eq!(parse("13-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("08-13-09T23:54:35 -0900", "%m-%y-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse_year("0-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z"), 2000);
+    assert_eq!(parse_year("99-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z"), 1999);
+    assert_eq!(parse_year("108-09T23:54:35 -0900", "%y%m-%dT%H:%M:%S %z"), 2010);
+    assert_eq!(parse_year("081-09T23:54:35 -0900", "%m%y-%dT%H:%M:%S %z"), 2001);
+    // errors
+    assert!(parse("999-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("100-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("013-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("0x11-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("A-08-09T23:54:35 -0900", "%y-%m-%dT%H:%M:%S %z").is_err());
+
+    //
+    // %C
+    //
+    // ok
+    assert_eq!(parse("2013-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("20_13-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse_year("0_13-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z"), 13);
+    assert_eq!(parse_year("9_13-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z"), 913);
+    assert_eq!(parse_year("99_13-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z"), 9913);
+    assert_eq!(parse_year("013-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), 103);
+    assert_eq!(parse_year("113-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), 1103);
+    assert_eq!(parse_year("223-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), 2203);
+    assert_eq!(parse_year("553-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), 5503);
+    assert_eq!(parse_year("993-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), 9903);
+    assert_eq!(parse_year("9923-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z"), 9923);
+    // errors
+    assert!(parse("913_2-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("9913-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("99923-08-09T23:54:35 -0900", "%C%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("20-13-09T23:54:35 -0900", "%m-%C-%dT%H:%M:%S %z").is_err());
+    assert!(parse("999_01-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("100_01-08-09T23:54:35 -0900", "%C_%y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("0x11-08-09T23:54:35 -0900", "%C-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("A-08-09T23:54:35 -0900", "%C-%m-%dT%H:%M:%S %z").is_err());
+}
+
+/// Test `parse_from_str` focused on strftime `%m`, `%b`, `%h`, and `%B` specifiers.
+#[test]
+fn test_datetime_parse_from_str_month() {
+    fn parse(data: &str, format: &str) -> ParseResult<DateTime<FixedOffset>> {
+        eprintln!("parse: data: {:?}, format: {:?}", data, format);
+        DateTime::<FixedOffset>::parse_from_str(data, format)
+    }
+    fn parse_month(data: &str, format: &str) -> u32 {
+        eprintln!("parse_month: data: {:?}, format: {:?}", data, format);
+        DateTime::<FixedOffset>::parse_from_str(data, format).unwrap().month()
+    }
+    let dt = ymdhms(&FixedOffset::east_opt(-9 * 60 * 60).unwrap(), 2013, 8, 9, 23, 54, 35);
+
+    //
+    // %m
+    //
+    // ok
+    assert_eq!(parse("2013-08-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("201308-09T23:54:35 -0900", "%Y%m-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013-0809T23:54:35 -0900", "%Y-%m%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("20130809T23:54:35 -0900", "%Y%m%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("20130809235435-0900", "%Y%m%d%H%M%S%z"), Ok(dt));
+    assert_eq!(parse_month("20130109235435-0900", "%Y%m%d%H%M%S%z"), 1);
+    assert_eq!(parse_month("20131209235435-0900", "%Y%m%d%H%M%S%z"), 12);
+    // errors
+    assert!(parse("2013-00-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-13-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-55-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-99-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-123-09T23:54:35 -0900", "%Y-%m-%dT%H:%M:%S %z").is_err());
+
+    //
+    // %b
+    //
+    // ok
+    assert_eq!(parse("2013-Aug-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013aug-09T23:54:35 -0900", "%Y%b-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013-AUG09T23:54:35 -0900", "%Y-%b%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013aug09T23:54:35 -0900", "%Y%b%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013aug09235435-0900", "%Y%b%d%H%M%S%z"), Ok(dt));
+    assert_eq!(parse_month("2013jan09235435-0900", "%Y%b%d%H%M%S%z"), 1);
+    assert_eq!(parse_month("2013feb09235435-0900", "%Y%b%d%H%M%S%z"), 2);
+    assert_eq!(parse_month("2013mar09235435-0900", "%Y%b%d%H%M%S%z"), 3);
+    assert_eq!(parse_month("2013apr09235435-0900", "%Y%b%d%H%M%S%z"), 4);
+    assert_eq!(parse_month("2013may09235435-0900", "%Y%b%d%H%M%S%z"), 5);
+    assert_eq!(parse_month("2013jun09235435-0900", "%Y%b%d%H%M%S%z"), 6);
+    assert_eq!(parse_month("2013jul09235435-0900", "%Y%b%d%H%M%S%z"), 7);
+    assert_eq!(parse_month("2013aug09235435-0900", "%Y%b%d%H%M%S%z"), 8);
+    assert_eq!(parse_month("2013sep09235435-0900", "%Y%b%d%H%M%S%z"), 9);
+    assert_eq!(parse_month("2013oct09235435-0900", "%Y%b%d%H%M%S%z"), 10);
+    assert_eq!(parse_month("2013nov09235435-0900", "%Y%b%d%H%M%S%z"), 11);
+    assert_eq!(parse_month("2013dec09235435-0900", "%Y%b%d%H%M%S%z"), 12);
+    // errors
+    assert!(parse("2013-AWG-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AU-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AG-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUG.-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUGU-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUGUST-09T23:54:35 -0900", "%Y-%b-%dT%H:%M:%S %z").is_err());
+
+    //
+    // %h
+    //
+    // ok
+    assert_eq!(parse("2013-Aug-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013aug-09T23:54:35 -0900", "%Y%h-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013-AUG09T23:54:35 -0900", "%Y-%h%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013aug09T23:54:35 -0900", "%Y%h%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013aug09235435-0900", "%Y%h%d%H%M%S%z"), Ok(dt));
+    assert_eq!(parse_month("2013jan09235435-0900", "%Y%h%d%H%M%S%z"), 1);
+    assert_eq!(parse_month("2013feb09235435-0900", "%Y%h%d%H%M%S%z"), 2);
+    assert_eq!(parse_month("2013mar09235435-0900", "%Y%h%d%H%M%S%z"), 3);
+    assert_eq!(parse_month("2013apr09235435-0900", "%Y%h%d%H%M%S%z"), 4);
+    assert_eq!(parse_month("2013may09235435-0900", "%Y%h%d%H%M%S%z"), 5);
+    assert_eq!(parse_month("2013jun09235435-0900", "%Y%h%d%H%M%S%z"), 6);
+    assert_eq!(parse_month("2013jul09235435-0900", "%Y%h%d%H%M%S%z"), 7);
+    assert_eq!(parse_month("2013aug09235435-0900", "%Y%h%d%H%M%S%z"), 8);
+    assert_eq!(parse_month("2013sep09235435-0900", "%Y%h%d%H%M%S%z"), 9);
+    assert_eq!(parse_month("2013oct09235435-0900", "%Y%h%d%H%M%S%z"), 10);
+    assert_eq!(parse_month("2013nov09235435-0900", "%Y%h%d%H%M%S%z"), 11);
+    assert_eq!(parse_month("2013dec09235435-0900", "%Y%h%d%H%M%S%z"), 12);
+    // errors
+    assert!(parse("2013-AWG-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AU-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AG-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUG.-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUGU-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUGUST-09T23:54:35 -0900", "%Y-%h-%dT%H:%M:%S %z").is_err());
+
+    //
+    // %B
+    //
+    // ok
+    assert_eq!(parse("2013-August-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013-aUgUsT-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013-august-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013august-09T23:54:35 -0900", "%Y%B-%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013-AUGust09T23:54:35 -0900", "%Y-%B%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013august09T23:54:35 -0900", "%Y%B%dT%H:%M:%S %z"), Ok(dt));
+    assert_eq!(parse("2013august09235435-0900", "%Y%B%d%H%M%S%z"), Ok(dt));
+    assert_eq!(parse_month("2013january09235435-0900", "%Y%B%d%H%M%S%z"), 1);
+    assert_eq!(parse_month("2013february09235435-0900", "%Y%B%d%H%M%S%z"), 2);
+    assert_eq!(parse_month("2013march09235435-0900", "%Y%B%d%H%M%S%z"), 3);
+    assert_eq!(parse_month("2013april09235435-0900", "%Y%B%d%H%M%S%z"), 4);
+    assert_eq!(parse_month("2013may09235435-0900", "%Y%B%d%H%M%S%z"), 5);
+    assert_eq!(parse_month("2013june09235435-0900", "%Y%B%d%H%M%S%z"), 6);
+    assert_eq!(parse_month("2013july09235435-0900", "%Y%B%d%H%M%S%z"), 7);
+    assert_eq!(parse_month("2013august09235435-0900", "%Y%B%d%H%M%S%z"), 8);
+    assert_eq!(parse_month("2013september09235435-0900", "%Y%B%d%H%M%S%z"), 9);
+    assert_eq!(parse_month("2013october09235435-0900", "%Y%B%d%H%M%S%z"), 10);
+    assert_eq!(parse_month("2013november09235435-0900", "%Y%B%d%H%M%S%z"), 11);
+    assert_eq!(parse_month("2013december09235435-0900", "%Y%B%d%H%M%S%z"), 12);
+    // errors
+    assert!(parse("2013-AUGUS-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUGU-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AUG.-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-AG-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z").is_err());
+    assert!(parse("2013-A-09T23:54:35 -0900", "%Y-%B-%dT%H:%M:%S %z").is_err());
+}
+
+/// Test `parse_from_str` focused on strftime `%Z`, `%z`, `%:z`, and `%::z` specifiers.
+#[test]
+fn test_datetime_parse_from_str_timezone() {
+    let dt = ymdhms(&FixedOffset::east_opt(-9 * 60 * 60).unwrap(), 2013, 8, 9, 23, 54, 35);
+    let parse = DateTime::<FixedOffset>::parse_from_str;
 
     // timezone variations
 
