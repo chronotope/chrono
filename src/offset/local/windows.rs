@@ -184,7 +184,7 @@ mod tests {
     use crate::offset::local::win_bindings::{
         SystemTimeToFileTime, TzSpecificLocalTimeToSystemTime, FILETIME, SYSTEMTIME,
     };
-    use crate::{DateTime, Duration, FixedOffset, Local, NaiveDate, NaiveDateTime};
+    use crate::{DateTime, FixedOffset, Local, NaiveDate, NaiveDateTime, TimeDelta};
     use crate::{Datelike, TimeZone, Timelike};
     use std::mem::MaybeUninit;
     use std::ptr;
@@ -256,7 +256,7 @@ mod tests {
             if let Some(our_result) = Local.from_local_datetime(&date).earliest() {
                 assert_eq!(from_local_time(&date), our_result);
             }
-            date += Duration::hours(1);
+            date += TimeDelta::hours(1);
         }
     }
 }
