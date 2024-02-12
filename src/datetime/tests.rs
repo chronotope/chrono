@@ -1150,9 +1150,9 @@ fn test_from_system_time() {
     let epoch = Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap();
 
     // SystemTime -> DateTime<Utc>
-    assert_eq!(DateTime::<Utc>::from(UNIX_EPOCH), epoch);
+    assert_eq!(DateTime::<Utc>::try_from(UNIX_EPOCH).unwrap(), epoch);
     assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH + Duration::new(999_999_999, nanos)),
+        DateTime::<Utc>::try_from(UNIX_EPOCH + Duration::new(999_999_999, nanos)).unwrap(),
         Utc.from_local_datetime(
             &NaiveDate::from_ymd_opt(2001, 9, 9)
                 .unwrap()
@@ -1162,7 +1162,7 @@ fn test_from_system_time() {
         .unwrap()
     );
     assert_eq!(
-        DateTime::<Utc>::from(UNIX_EPOCH - Duration::new(999_999_999, nanos)),
+        DateTime::<Utc>::try_from(UNIX_EPOCH - Duration::new(999_999_999, nanos)).unwrap(),
         Utc.from_local_datetime(
             &NaiveDate::from_ymd_opt(1938, 4, 24)
                 .unwrap()
@@ -1171,11 +1171,18 @@ fn test_from_system_time() {
         )
         .unwrap()
     );
+    assert_eq!(
+        DateTime::<Utc>::try_from(UNIX_EPOCH - Duration::new(999_999_999, 0)).unwrap(),
+        Utc.from_local_datetime(
+            &NaiveDate::from_ymd_opt(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 21, 0).unwrap()
+        )
+        .unwrap()
+    );
 
     // DateTime<Utc> -> SystemTime
-    assert_eq!(SystemTime::from(epoch), UNIX_EPOCH);
+    assert_eq!(SystemTime::try_from(epoch).unwrap(), UNIX_EPOCH);
     assert_eq!(
-        SystemTime::from(
+        SystemTime::try_from(
             Utc.from_local_datetime(
                 &NaiveDate::from_ymd_opt(2001, 9, 9)
                     .unwrap()
@@ -1183,11 +1190,12 @@ fn test_from_system_time() {
                     .unwrap()
             )
             .unwrap()
-        ),
+        )
+        .unwrap(),
         UNIX_EPOCH + Duration::new(999_999_999, nanos)
     );
     assert_eq!(
-        SystemTime::from(
+        SystemTime::try_from(
             Utc.from_local_datetime(
                 &NaiveDate::from_ymd_opt(1938, 4, 24)
                     .unwrap()
@@ -1195,21 +1203,25 @@ fn test_from_system_time() {
                     .unwrap()
             )
             .unwrap()
-        ),
+        )
+        .unwrap(),
         UNIX_EPOCH - Duration::new(999_999_999, nanos)
     );
 
     // DateTime<any tz> -> SystemTime (via `with_timezone`)
     #[cfg(feature = "clock")]
     {
-        assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
+        let local_at_epoch = epoch.with_timezone(&Local);
+        let local_systemtime_at_epoch = SystemTime::try_from(local_at_epoch).unwrap();
+        assert_eq!(local_systemtime_at_epoch, UNIX_EPOCH);
+        assert_eq!(DateTime::<Local>::try_from(local_systemtime_at_epoch).unwrap(), local_at_epoch);
     }
     assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::east(32400).unwrap())),
+        SystemTime::try_from(epoch.with_timezone(&FixedOffset::east(32400).unwrap())).unwrap(),
         UNIX_EPOCH
     );
     assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::west(28800).unwrap())),
+        SystemTime::try_from(epoch.with_timezone(&FixedOffset::west(28800).unwrap())).unwrap(),
         UNIX_EPOCH
     );
 }

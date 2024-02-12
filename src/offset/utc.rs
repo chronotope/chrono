@@ -12,7 +12,7 @@ use core::fmt;
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))
 ))]
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -21,6 +21,8 @@ use super::{FixedOffset, LocalResult, Offset, TimeZone};
 use crate::naive::NaiveDateTime;
 #[cfg(feature = "now")]
 use crate::DateTime;
+#[cfg(all(feature = "now", doc))]
+use crate::OutOfRange;
 
 /// The UTC time zone. This is the most efficient time zone when you don't need the local time.
 /// It is also used as an offset (which is also a dummy type).
@@ -74,6 +76,12 @@ impl Utc {
     /// let offset = FixedOffset::east(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
+    ///
+    /// # Panics
+    ///
+    /// Panics if the system clock is set to a time in the extremely distant past or future, such
+    /// that it is out of the range representable by `DateTime<Utc>`. It is assumed that this
+    /// crate will no longer be in use by that time.
     #[cfg(not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
@@ -81,11 +89,9 @@ impl Utc {
     )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
-        let now =
-            SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        let naive =
-            NaiveDateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap();
-        Utc.from_utc_datetime(&naive)
+        SystemTime::now().try_into().expect(
+            "system clock is set to a time extremely far into the past or future; cannot convert",
+        )
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.

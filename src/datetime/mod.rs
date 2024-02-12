@@ -27,6 +27,8 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::try_opt;
+#[cfg(any(feature = "clock", feature = "std"))]
+use crate::OutOfRange;
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
@@ -1536,42 +1538,73 @@ impl str::FromStr for DateTime<Local> {
 }
 
 #[cfg(feature = "std")]
-impl From<SystemTime> for DateTime<Utc> {
-    fn from(t: SystemTime) -> DateTime<Utc> {
+impl TryFrom<SystemTime> for DateTime<Utc> {
+    type Error = OutOfRange;
+
+    fn try_from(t: SystemTime) -> Result<DateTime<Utc>, OutOfRange> {
         let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
-            Ok(dur) => (dur.as_secs() as i64, dur.subsec_nanos()),
+            Ok(dur) => {
+                // `t` is at or after the Unix epoch.
+                let sec = i64::try_from(dur.as_secs()).map_err(|_| OutOfRange::new())?;
+                let nsec = dur.subsec_nanos();
+                (sec, nsec)
+            }
             Err(e) => {
-                // unlikely but should be handled
+                // `t` is before the Unix epoch. `e.duration()` is how long before the epoch it
+                // is.
                 let dur = e.duration();
-                let (sec, nsec) = (dur.as_secs() as i64, dur.subsec_nanos());
+                let sec = i64::try_from(dur.as_secs()).map_err(|_| OutOfRange::new())?;
+                let nsec = dur.subsec_nanos();
                 if nsec == 0 {
+                    // Overflow safety: `sec` was returned by `dur.as_secs()`, and is guaranteed to
+                    // be non-negative. Negating a non-negative signed integer cannot overflow.
                     (-sec, 0)
                 } else {
-                    (-sec - 1, 1_000_000_000 - nsec)
+                    // Overflow safety: In addition to the above, `-x - 1`, where `x` is a
+                    // non-negative signed integer, also cannot overflow.
+                    let sec = -sec - 1;
+                    // Overflow safety: `nsec` was returned by `dur.subsec_nanos()`, and is
+                    // guaranteed to be between 0 and 999_999_999 inclusive. Subtracting it from
+                    // 1_000_000_000 is therefore guaranteed not to overflow.
+                    let nsec = 1_000_000_000 - nsec;
+                    (sec, nsec)
                 }
             }
         };
-        Utc.timestamp(sec, nsec).unwrap()
+        Utc.timestamp(sec, nsec).single().ok_or(OutOfRange::new())
     }
 }
 
 #[cfg(feature = "clock")]
-impl From<SystemTime> for DateTime<Local> {
-    fn from(t: SystemTime) -> DateTime<Local> {
-        DateTime::<Utc>::from(t).with_timezone(&Local)
+impl TryFrom<SystemTime> for DateTime<Local> {
+    type Error = OutOfRange;
+
+    fn try_from(t: SystemTime) -> Result<DateTime<Local>, OutOfRange> {
+        DateTime::<Utc>::try_from(t).map(|t| t.with_timezone(&Local))
     }
 }
 
 #[cfg(feature = "std")]
-impl<Tz: TimeZone> From<DateTime<Tz>> for SystemTime {
-    fn from(dt: DateTime<Tz>) -> SystemTime {
+impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for SystemTime {
+    type Error = OutOfRange;
+
+    fn try_from(dt: DateTime<Tz>) -> Result<SystemTime, OutOfRange> {
         let sec = dt.timestamp();
+        let sec_abs = sec.unsigned_abs();
         let nsec = dt.timestamp_subsec_nanos();
         if sec < 0 {
-            // unlikely but should be handled
-            UNIX_EPOCH - Duration::new(-sec as u64, 0) + Duration::new(0, nsec)
+            // `dt` is before the Unix epoch.
+            let mut t =
+                UNIX_EPOCH.checked_sub(Duration::new(sec_abs, 0)).ok_or_else(OutOfRange::new)?;
+
+            // Overflow safety: `t` is before the Unix epoch. Adding nanoseconds therefore cannot
+            // overflow.
+            t += Duration::new(0, nsec);
+
+            Ok(t)
         } else {
-            UNIX_EPOCH + Duration::new(sec as u64, nsec)
+            // `dt` is after the Unix epoch.
+            UNIX_EPOCH.checked_add(Duration::new(sec_abs, nsec)).ok_or_else(OutOfRange::new)
         }
     }
 }
