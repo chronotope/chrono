@@ -97,6 +97,7 @@ pub enum Pad {
 /// It also trims the preceding whitespace if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
@@ -168,6 +169,7 @@ impl fmt::Debug for InternalNumeric {
 ///
 /// They have their own rules of formatting and parsing.
 /// Otherwise noted, they print in the specified cases but parse case-insensitively.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Fixed {
     /// Abbreviated month names.
