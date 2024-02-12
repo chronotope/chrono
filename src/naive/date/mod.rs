@@ -2014,10 +2014,13 @@ impl str::FromStr for NaiveDate {
     fn from_str(s: &str) -> ParseResult<NaiveDate> {
         const ITEMS: &[Item<'static>] = &[
             Item::Numeric(Numeric::Year, Pad::Zero),
+            Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Month, Pad::Zero),
+            Item::Space(""),
             Item::Literal("-"),
             Item::Numeric(Numeric::Day, Pad::Zero),
+            Item::Space(""),
         ];
 
         let mut parsed = Parsed::new();
