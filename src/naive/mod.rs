@@ -15,7 +15,7 @@ mod internals;
 pub(crate) mod isoweek;
 pub(crate) mod time;
 
-pub use self::date::{Days, NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
+pub use self::date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
 #[allow(deprecated)]
 pub use self::date::{MAX_DATE, MIN_DATE};
 #[cfg(feature = "rustc-serialize")]
@@ -122,6 +122,22 @@ impl NaiveWeek {
     #[must_use]
     pub const fn days(&self) -> RangeInclusive<NaiveDate> {
         self.first_day()..=self.last_day()
+    }
+}
+
+/// A duration in calendar days.
+///
+/// This is useful because when using `TimeDelta` it is possible that adding `TimeDelta::days(1)`
+/// doesn't increment the day value as expected due to it being a fixed number of seconds. This
+/// difference applies only when dealing with `DateTime<TimeZone>` data types and in other cases
+/// `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+pub struct Days(pub(crate) u64);
+
+impl Days {
+    /// Construct a new `Days` from a number of days
+    pub const fn new(num: u64) -> Self {
+        Self(num)
     }
 }
 
