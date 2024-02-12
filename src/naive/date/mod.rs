@@ -35,7 +35,7 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{try_err, try_opt};
+use crate::{ok, try_err, try_opt};
 use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{Mdf, YearFlags};
@@ -145,7 +145,7 @@ impl NaiveDate {
         if year < MIN_YEAR || year > MAX_YEAR {
             return None; // Out-of-range
         }
-        Some(NaiveDate::from_yof((year << 13) | try_opt!(mdf.ordinal_and_flags())))
+        Some(NaiveDate::from_yof((year << 13) | try_opt!(ok!(mdf.ordinal_and_flags()))))
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
@@ -176,7 +176,7 @@ impl NaiveDate {
     pub const fn from_ymd(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
 
-        if let Some(mdf) = Mdf::new(month, day, flags) {
+        if let Ok(mdf) = Mdf::new(month, day, flags) {
             NaiveDate::from_mdf(year, mdf)
         } else {
             None
@@ -546,7 +546,7 @@ impl NaiveDate {
             day = day_max;
         };
 
-        NaiveDate::from_mdf(year, try_opt!(Mdf::new(month as u32, day, flags)))
+        NaiveDate::from_mdf(year, try_opt!(ok!(Mdf::new(month as u32, day, flags))))
     }
 
     /// Add a duration in [`Days`] to the date
@@ -800,10 +800,10 @@ impl NaiveDate {
     const fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
         debug_assert!(self.year_flags().0 == mdf.year_flags().0);
         match mdf.ordinal() {
-            Some(ordinal) => {
+            Ok(ordinal) => {
                 Some(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
             }
-            None => None, // Non-existing date
+            Err(_) => None, // Non-existing date
         }
     }
 
@@ -1488,7 +1488,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month)?)
+        self.with_mdf(self.mdf().with_month(month).ok()?)
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
@@ -1511,7 +1511,7 @@ impl Datelike for NaiveDate {
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
         let month = month0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_month(month)?)
+        self.with_mdf(self.mdf().with_month(month).ok()?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1532,7 +1532,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day)?)
+        self.with_mdf(self.mdf().with_day(day).ok()?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
@@ -1554,7 +1554,7 @@ impl Datelike for NaiveDate {
     #[inline]
     fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
         let day = day0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_day(day)?)
+        self.with_mdf(self.mdf().with_day(day).ok()?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
