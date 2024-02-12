@@ -33,7 +33,7 @@ use crate::format::{
     Parsed, StrftimeItems,
 };
 use crate::month::Months;
-use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
+use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
 use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
@@ -41,22 +41,6 @@ use super::internals::{Mdf, YearFlags};
 
 #[cfg(test)]
 mod tests;
-
-/// A duration in calendar days.
-///
-/// This is useful because when using `TimeDelta` it is possible that adding `TimeDelta::days(1)`
-/// doesn't increment the day value as expected due to it being a fixed number of seconds. This
-/// difference applies only when dealing with `DateTime<TimeZone>` data types and in other cases
-/// `TimeDelta::days(n)` and `Days::new(n)` are equivalent.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct Days(pub(crate) u64);
-
-impl Days {
-    /// Construct a new `Days` from a number of days
-    pub const fn new(num: u64) -> Self {
-        Self(num)
-    }
-}
 
 /// ISO 8601 calendar date without timezone.
 /// Allows for every [proleptic Gregorian date] from Jan 1, 262145 BCE to Dec 31, 262143 CE.
