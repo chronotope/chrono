@@ -51,6 +51,11 @@ pub struct NaiveWeek {
 }
 
 impl NaiveWeek {
+    /// Create a new `NaiveWeek`
+    pub(crate) const fn new(date: NaiveDate, start: Weekday) -> Self {
+        Self { date, start }
+    }
+
     /// Returns a date representing the first day of the week.
     ///
     /// # Panics
@@ -1421,7 +1426,7 @@ impl NaiveDate {
     /// specified.
     #[inline]
     pub const fn week(&self, start: Weekday) -> NaiveWeek {
-        NaiveWeek { date: *self, start }
+        NaiveWeek::new(*self, start)
     }
 
     /// Returns `true` if this is a leap year.
