@@ -37,7 +37,7 @@ use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
 use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
-use super::internals::{self, Mdf, YearFlags};
+use super::internals::{Mdf, YearFlags};
 
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.
@@ -485,7 +485,7 @@ impl NaiveDate {
         let days = try_opt!(days.checked_add(365)); // make December 31, 1 BCE equal to day 0
         let year_div_400 = days.div_euclid(146_097);
         let cycle = days.rem_euclid(146_097);
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
+        let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
     }
@@ -803,12 +803,12 @@ impl NaiveDate {
         // do the full check
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
-        let cycle = internals::yo_to_cycle(year_mod_400 as u32, self.ordinal());
+        let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal());
         let cycle = try_opt!((cycle as i32).checked_add(days));
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
-        let (year_mod_400, ordinal) = internals::cycle_to_yo(cycle as u32);
+        let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
         NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
     }
@@ -1219,8 +1219,8 @@ impl NaiveDate {
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = internals::yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i64;
-        let cycle2 = internals::yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i64;
+        let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i64;
+        let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i64;
         TimeDelta::days((year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2))
     }
 
@@ -2309,6 +2309,23 @@ impl Default for NaiveDate {
     }
 }
 
+const fn cycle_to_yo(cycle: u32) -> (u32, u32) {
+    let mut year_mod_400 = cycle / 365;
+    let mut ordinal0 = cycle % 365;
+    let delta = YEAR_DELTAS[year_mod_400 as usize] as u32;
+    if ordinal0 < delta {
+        year_mod_400 -= 1;
+        ordinal0 += 365 - YEAR_DELTAS[year_mod_400 as usize] as u32;
+    } else {
+        ordinal0 -= delta;
+    }
+    (year_mod_400, ordinal0 + 1)
+}
+
+const fn yo_to_cycle(year_mod_400: u32, ordinal: u32) -> u32 {
+    year_mod_400 * 365 + YEAR_DELTAS[year_mod_400 as usize] as u32 + ordinal - 1
+}
+
 const fn div_mod_floor(val: i32, div: i32) -> (i32, i32) {
     (val.div_euclid(div), val.rem_euclid(div))
 }
@@ -2339,6 +2356,28 @@ const MAX_OL: i32 = 366 << 4;
 const WEEKDAY_FLAGS_MASK: i32 = 0b111;
 
 const YEAR_FLAGS_MASK: i32 = LEAP_YEAR_MASK | WEEKDAY_FLAGS_MASK;
+
+const YEAR_DELTAS: &[u8; 401] = &[
+    0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8,
+    8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14,
+    15, 15, 15, 15, 16, 16, 16, 16, 17, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19, 20, 20, 20, 20,
+    21, 21, 21, 21, 22, 22, 22, 22, 23, 23, 23, 23, 24, 24, 24, 24, 25, 25, 25, // 100
+    25, 25, 25, 25, 25, 26, 26, 26, 26, 27, 27, 27, 27, 28, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30,
+    30, 31, 31, 31, 31, 32, 32, 32, 32, 33, 33, 33, 33, 34, 34, 34, 34, 35, 35, 35, 35, 36, 36, 36,
+    36, 37, 37, 37, 37, 38, 38, 38, 38, 39, 39, 39, 39, 40, 40, 40, 40, 41, 41, 41, 41, 42, 42, 42,
+    42, 43, 43, 43, 43, 44, 44, 44, 44, 45, 45, 45, 45, 46, 46, 46, 46, 47, 47, 47, 47, 48, 48, 48,
+    48, 49, 49, 49, // 200
+    49, 49, 49, 49, 49, 50, 50, 50, 50, 51, 51, 51, 51, 52, 52, 52, 52, 53, 53, 53, 53, 54, 54, 54,
+    54, 55, 55, 55, 55, 56, 56, 56, 56, 57, 57, 57, 57, 58, 58, 58, 58, 59, 59, 59, 59, 60, 60, 60,
+    60, 61, 61, 61, 61, 62, 62, 62, 62, 63, 63, 63, 63, 64, 64, 64, 64, 65, 65, 65, 65, 66, 66, 66,
+    66, 67, 67, 67, 67, 68, 68, 68, 68, 69, 69, 69, 69, 70, 70, 70, 70, 71, 71, 71, 71, 72, 72, 72,
+    72, 73, 73, 73, // 300
+    73, 73, 73, 73, 73, 74, 74, 74, 74, 75, 75, 75, 75, 76, 76, 76, 76, 77, 77, 77, 77, 78, 78, 78,
+    78, 79, 79, 79, 79, 80, 80, 80, 80, 81, 81, 81, 81, 82, 82, 82, 82, 83, 83, 83, 83, 84, 84, 84,
+    84, 85, 85, 85, 85, 86, 86, 86, 86, 87, 87, 87, 87, 88, 88, 88, 88, 89, 89, 89, 89, 90, 90, 90,
+    90, 91, 91, 91, 91, 92, 92, 92, 92, 93, 93, 93, 93, 94, 94, 94, 94, 95, 95, 95, 95, 96, 96, 96,
+    96, 97, 97, 97, 97, // 400+1
+];
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<F, E>(to_string: F)
