@@ -8,6 +8,16 @@ use chrono::prelude::*;
 use chrono::Locale;
 use chrono::{DateTime, FixedOffset, Local, TimeDelta, Utc, __BenchYearFlags};
 
+fn bench_date_from_ymd(c: &mut Criterion) {
+    c.bench_function("bench_date_from_ymd", |b| {
+        let expected = NaiveDate::from_ymd_opt(2024, 2, 12);
+        b.iter(|| {
+            let (y, m, d) = black_box((2024, 2, 12));
+            assert_eq!(NaiveDate::from_ymd_opt(y, m, d), expected)
+        })
+    });
+}
+
 fn bench_datetime_parse_from_rfc2822(c: &mut Criterion) {
     c.bench_function("bench_datetime_parse_from_rfc2822", |b| {
         b.iter(|| {
@@ -213,6 +223,7 @@ fn bench_datetime_with(c: &mut Criterion) {
 
 criterion_group!(
     benches,
+    bench_date_from_ymd,
     bench_datetime_parse_from_rfc2822,
     bench_datetime_parse_from_rfc3339,
     bench_datetime_from_str,
