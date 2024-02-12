@@ -16,7 +16,7 @@
 #[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 use core::iter::FusedIterator;
-use core::ops::{Add, AddAssign, RangeInclusive, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
@@ -33,7 +33,7 @@ use crate::format::{
     Parsed, StrftimeItems,
 };
 use crate::month::Months;
-use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime};
+use crate::naive::{IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
 use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
 
@@ -41,101 +41,6 @@ use super::internals::{Mdf, YearFlags};
 
 #[cfg(test)]
 mod tests;
-
-/// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
-/// day of the week.
-#[derive(Debug)]
-pub struct NaiveWeek {
-    date: NaiveDate,
-    start: Weekday,
-}
-
-impl NaiveWeek {
-    /// Create a new `NaiveWeek`
-    pub(crate) const fn new(date: NaiveDate, start: Weekday) -> Self {
-        Self { date, start }
-    }
-
-    /// Returns a date representing the first day of the week.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the first day of the week happens to fall just out of range of `NaiveDate`
-    /// (more than ca. 262,000 years away from common era).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Weekday};
-    ///
-    /// let date = NaiveDate::from_ymd_opt(2022, 4, 18).unwrap();
-    /// let week = date.week(Weekday::Mon);
-    /// assert!(week.first_day() <= date);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub const fn first_day(&self) -> NaiveDate {
-        let start = self.start.num_days_from_monday() as i32;
-        let ref_day = self.date.weekday().num_days_from_monday() as i32;
-        // Calculate the number of days to subtract from `self.date`.
-        // Do not construct an intermediate date beyond `self.date`, because that may be out of
-        // range if `date` is close to `NaiveDate::MAX`.
-        let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        expect!(self.date.add_days(days), "first weekday out of range for `NaiveDate`")
-    }
-
-    /// Returns a date representing the last day of the week.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the last day of the week happens to fall just out of range of `NaiveDate`
-    /// (more than ca. 262,000 years away from common era).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Weekday};
-    ///
-    /// let date = NaiveDate::from_ymd_opt(2022, 4, 18).unwrap();
-    /// let week = date.week(Weekday::Mon);
-    /// assert!(week.last_day() >= date);
-    /// ```
-    #[inline]
-    #[must_use]
-    pub const fn last_day(&self) -> NaiveDate {
-        let end = self.start.pred().num_days_from_monday() as i32;
-        let ref_day = self.date.weekday().num_days_from_monday() as i32;
-        // Calculate the number of days to add to `self.date`.
-        // Do not construct an intermediate date before `self.date` (like with `first_day()`),
-        // because that may be out of range if `date` is close to `NaiveDate::MIN`.
-        let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        expect!(self.date.add_days(days), "last weekday out of range for `NaiveDate`")
-    }
-
-    /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
-    /// [first_day](NaiveWeek::first_day) and [last_day](NaiveWeek::last_day) functions.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the either the first or last day of the week happens to fall just out of range of
-    /// `NaiveDate` (more than ca. 262,000 years away from common era).
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Weekday};
-    ///
-    /// let date = NaiveDate::from_ymd_opt(2022, 4, 18).unwrap();
-    /// let week = date.week(Weekday::Mon);
-    /// let days = week.days();
-    /// assert!(days.contains(&date));
-    /// ```
-    #[inline]
-    #[must_use]
-    pub const fn days(&self) -> RangeInclusive<NaiveDate> {
-        self.first_day()..=self.last_day()
-    }
-}
 
 /// A duration in calendar days.
 ///
@@ -1472,7 +1377,7 @@ impl NaiveDate {
     /// Returns the day of week.
     // This duplicates `Datelike::weekday()`, because trait methods can't be const yet.
     #[inline]
-    const fn weekday(&self) -> Weekday {
+    pub(super) const fn weekday(&self) -> Weekday {
         match (((self.yof & ORDINAL_MASK) >> 4) + (self.yof & WEEKDAY_FLAGS_MASK)) % 7 {
             0 => Weekday::Mon,
             1 => Weekday::Tue,

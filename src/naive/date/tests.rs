@@ -688,35 +688,6 @@ fn test_week_iterator_limit() {
 }
 
 #[test]
-fn test_naiveweek() {
-    let date = NaiveDate::from_ymd_opt(2022, 5, 18).unwrap();
-    let asserts = [
-        (Weekday::Mon, "Mon 2022-05-16", "Sun 2022-05-22"),
-        (Weekday::Tue, "Tue 2022-05-17", "Mon 2022-05-23"),
-        (Weekday::Wed, "Wed 2022-05-18", "Tue 2022-05-24"),
-        (Weekday::Thu, "Thu 2022-05-12", "Wed 2022-05-18"),
-        (Weekday::Fri, "Fri 2022-05-13", "Thu 2022-05-19"),
-        (Weekday::Sat, "Sat 2022-05-14", "Fri 2022-05-20"),
-        (Weekday::Sun, "Sun 2022-05-15", "Sat 2022-05-21"),
-    ];
-    for (start, first_day, last_day) in asserts {
-        let week = date.week(start);
-        let days = week.days();
-        assert_eq!(Ok(week.first_day()), NaiveDate::parse_from_str(first_day, "%a %Y-%m-%d"));
-        assert_eq!(Ok(week.last_day()), NaiveDate::parse_from_str(last_day, "%a %Y-%m-%d"));
-        assert!(days.contains(&date));
-    }
-}
-
-#[test]
-fn test_naiveweek_min_max() {
-    let date_max = NaiveDate::MAX;
-    assert!(date_max.week(Weekday::Mon).first_day() <= date_max);
-    let date_min = NaiveDate::MIN;
-    assert!(date_min.week(Weekday::Mon).last_day() >= date_min);
-}
-
-#[test]
 fn test_weeks_from() {
     // tests per: https://github.com/chronotope/chrono/issues/961
     // these internally use `weeks_from` via the parsing infrastructure
