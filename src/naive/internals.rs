@@ -4,6 +4,8 @@
 
 use core::fmt;
 
+use crate::Error;
+
 /// Year flags (aka the dominical letter).
 ///
 /// `YearFlags` are used as the last four bits of `NaiveDate`, `Mdf` and `IsoWeek`.
@@ -134,46 +136,47 @@ const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
 // The next table are adjustment values to convert a date encoded as month-day-leapyear to
 // ordinal-leapyear. OL = MDL - adjustment.
-// Dates that do not exist are encoded as `XX`.
+// Error cases are encoded as `-1` and `XX` (`0`). For a quick check all positive values are
+// adjustments, `XX` indicates a date does not exist, and negative values are for invalid input.
 const XX: i8 = 0;
 const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
-    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
-    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
-    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, // 0
-    XX, XX, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0
+    -1, -1, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
     64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, // 1
-    XX, XX, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
+    -1, -1, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
     66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66,
     66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, XX, XX, XX, XX, XX, // 2
-    XX, XX, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
+    -1, -1, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
     72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74,
     72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, 72, 74, // 3
-    XX, XX, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
+    -1, -1, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
     74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76,
     74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, 74, 76, XX, XX, // 4
-    XX, XX, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
+    -1, -1, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
     78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80,
     78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, 78, 80, // 5
-    XX, XX, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
+    -1, -1, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
     80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82,
     80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, 80, 82, XX, XX, // 6
-    XX, XX, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
+    -1, -1, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
     84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86,
     84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, 84, 86, // 7
-    XX, XX, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
+    -1, -1, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
     86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88,
     86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, 86, 88, // 8
-    XX, XX, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
+    -1, -1, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
     88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90,
     88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, 88, 90, XX, XX, // 9
-    XX, XX, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
+    -1, -1, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
     92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94,
     92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, 92, 94, // 10
-    XX, XX, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
+    -1, -1, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
     94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96,
     94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, 94, 96, XX, XX, // 11
-    XX, XX, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
+    -1, -1, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
     100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100,
     98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98, 100, 98,
     100, // 12
@@ -244,12 +247,16 @@ impl Mdf {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `month > 12` or `day > 31`.
+    /// Returns [`Error::InvalidArgument`] if `month > 12` or `day > 31`.
     #[inline]
-    pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
+    pub(super) const fn new(
+        month: u32,
+        day: u32,
+        YearFlags(flags): YearFlags,
+    ) -> Result<Mdf, Error> {
         match month <= 12 && day <= 31 {
-            true => Some(Mdf((month << 9) | (day << 4) | flags as u32)),
-            false => None,
+            true => Ok(Mdf((month << 9) | (day << 4) | flags as u32)),
+            false => Err(Error::InvalidArgument),
         }
     }
 
@@ -275,15 +282,15 @@ impl Mdf {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `month > 12`.
+    /// Returns [`Error::InvalidArgument`] if `month > 12`.
     #[inline]
-    pub(super) const fn with_month(&self, month: u32) -> Option<Mdf> {
+    pub(super) const fn with_month(&self, month: u32) -> Result<Mdf, Error> {
         if month > 12 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
 
         let Mdf(mdf) = *self;
-        Some(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
+        Ok(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
     }
 
     /// Returns the day of this `Mdf`.
@@ -297,15 +304,15 @@ impl Mdf {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `day > 31`.
+    /// Returns [`Error::InvalidArgument`] if `day > 31`.
     #[inline]
-    pub(super) const fn with_day(&self, day: u32) -> Option<Mdf> {
+    pub(super) const fn with_day(&self, day: u32) -> Result<Mdf, Error> {
         if day > 31 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
 
         let Mdf(mdf) = *self;
-        Some(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
+        Ok(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
     }
 
     /// Replaces the flags of this `Mdf`, keeping the month and day.
@@ -322,14 +329,17 @@ impl Mdf {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
-    /// given month.
+    /// Returns [`Error::InvalidArgument`] if `month == 0` or `day == 0`.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the given day does not exist in the given month.
     #[inline]
-    pub(super) const fn ordinal(&self) -> Option<u32> {
+    pub(super) const fn ordinal(&self) -> Result<u32, Error> {
         let mdl = self.0 >> 3;
-        match MDL_TO_OL[mdl as usize] {
-            XX => None,
-            v => Some((mdl - v as u8 as u32) >> 1),
+        let adjustment = MDL_TO_OL[mdl as usize];
+        match adjustment {
+            1.. => Ok((mdl - adjustment as u8 as u32) >> 1),
+            0 => Err(Error::DoesNotExist),
+            _ => Err(Error::InvalidArgument),
         }
     }
 
@@ -346,14 +356,17 @@ impl Mdf {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
-    /// given month.
+    /// Returns [`Error::InvalidArgument`] if `month == 0` or `day == 0`.
+    ///
+    /// Returns [`Error::DoesNotExist`] if the given day does not exist in the given month.
     #[inline]
-    pub(super) const fn ordinal_and_flags(&self) -> Option<i32> {
+    pub(super) const fn ordinal_and_flags(&self) -> Result<i32, Error> {
         let mdl = self.0 >> 3;
-        match MDL_TO_OL[mdl as usize] {
-            XX => None,
-            v => Some(self.0 as i32 - ((v as i32) << 3)),
+        let adjustment = MDL_TO_OL[mdl as usize];
+        match adjustment {
+            1.. => Ok(self.0 as i32 - ((adjustment as i32) << 3)),
+            0 => Err(Error::DoesNotExist),
+            _ => Err(Error::InvalidArgument),
         }
     }
 
@@ -382,6 +395,7 @@ impl fmt::Debug for Mdf {
 mod tests {
     use super::Mdf;
     use super::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
+    use crate::Error;
 
     const NONLEAP_FLAGS: [YearFlags; 7] = [A, B, C, D, E, F, G];
     const LEAP_FLAGS: [YearFlags; 7] = [AG, BA, CB, DC, ED, FE, GF];
@@ -428,9 +442,9 @@ mod tests {
             for month in month1..=month2 {
                 for day in day1..=day2 {
                     let mdf = match Mdf::new(month, day, flags) {
-                        Some(mdf) => mdf,
-                        None if !expected => continue,
-                        None => panic!("Mdf::new({}, {}, {:?}) returned None", month, day, flags),
+                        Ok(mdf) => mdf,
+                        Err(_) if !expected => continue,
+                        Err(_) => panic!("Mdf::new({}, {}, {:?}) returned Err", month, day, flags),
                     };
 
                     assert!(
@@ -519,8 +533,8 @@ mod tests {
             for month in 1u32..=12 {
                 for day in 1u32..31 {
                     let mdf = match Mdf::new(month, day, flags) {
-                        Some(mdf) => mdf,
-                        None => continue,
+                        Ok(mdf) => mdf,
+                        Err(_) => continue,
                     };
 
                     if mdf.valid() {
@@ -539,9 +553,9 @@ mod tests {
 
             for month in 0u32..=16 {
                 let mdf = match mdf.with_month(month) {
-                    Some(mdf) => mdf,
-                    None if month > 12 => continue,
-                    None => panic!("failed to create Mdf with month {}", month),
+                    Ok(mdf) => mdf,
+                    Err(_) if month > 12 => continue,
+                    Err(_) => panic!("failed to create Mdf with month {}", month),
                 };
 
                 if mdf.valid() {
@@ -552,9 +566,9 @@ mod tests {
 
             for day in 0u32..=1024 {
                 let mdf = match mdf.with_day(day) {
-                    Some(mdf) => mdf,
-                    None if day > 31 => continue,
-                    None => panic!("failed to create Mdf with month {}", month),
+                    Ok(mdf) => mdf,
+                    Err(_) if day > 31 => continue,
+                    Err(_) => panic!("failed to create Mdf with month {}", month),
                 };
 
                 if mdf.valid() {
@@ -585,7 +599,7 @@ mod tests {
     #[test]
     fn test_mdf_new_range() {
         let flags = YearFlags::from_year(2023);
-        assert!(Mdf::new(13, 1, flags).is_none());
-        assert!(Mdf::new(1, 32, flags).is_none());
+        assert_eq!(Mdf::new(13, 1, flags), Err(Error::InvalidArgument));
+        assert_eq!(Mdf::new(1, 32, flags), Err(Error::InvalidArgument));
     }
 }
