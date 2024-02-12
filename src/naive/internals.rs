@@ -4,32 +4,47 @@
 
 use core::fmt;
 
-/// The year flags (aka the dominical letter).
+/// Year flags (aka the dominical letter).
+///
+/// `YearFlags` are used as the last four bits of `NaiveDate`, `Mdf` and `IsoWeek`.
 ///
 /// There are 14 possible classes of year in the Gregorian calendar:
 /// common and leap years starting with Monday through Sunday.
-/// The `YearFlags` stores this information into 4 bits `abbb`,
-/// where `a` is `1` for the common year (simplifies the `Of` validation)
-/// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
-/// (simplifies the day of week calculation from the 1-based ordinal).
+///
+/// The `YearFlags` stores this information into 4 bits `LWWW`. `L` is the leap year flag, with `1`
+/// for the common year (this simplifies validating an ordinal in `NaiveDate`). `WWW` is a non-zero
+/// `Weekday` of the last day in the preceding year.
 #[allow(unreachable_pub)] // public as an alias for benchmarks only
 #[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct YearFlags(pub(super) u8);
 
-pub(super) const A: YearFlags = YearFlags(0o15);
-pub(super) const AG: YearFlags = YearFlags(0o05);
-pub(super) const B: YearFlags = YearFlags(0o14);
-pub(super) const BA: YearFlags = YearFlags(0o04);
-pub(super) const C: YearFlags = YearFlags(0o13);
-pub(super) const CB: YearFlags = YearFlags(0o03);
-pub(super) const D: YearFlags = YearFlags(0o12);
-pub(super) const DC: YearFlags = YearFlags(0o02);
-pub(super) const E: YearFlags = YearFlags(0o11);
-pub(super) const ED: YearFlags = YearFlags(0o01);
-pub(super) const F: YearFlags = YearFlags(0o17);
-pub(super) const FE: YearFlags = YearFlags(0o07);
-pub(super) const G: YearFlags = YearFlags(0o16);
-pub(super) const GF: YearFlags = YearFlags(0o06);
+// Weekday of the last day in the preceding year.
+// Allows for quick day of week calculation from the 1-based ordinal.
+const YEAR_STARTS_AFTER_MONDAY: u8 = 7; // non-zero to allow use with `NonZero*`.
+const YEAR_STARTS_AFTER_THUESDAY: u8 = 1;
+const YEAR_STARTS_AFTER_WEDNESDAY: u8 = 2;
+const YEAR_STARTS_AFTER_THURSDAY: u8 = 3;
+const YEAR_STARTS_AFTER_FRIDAY: u8 = 4;
+const YEAR_STARTS_AFTER_SATURDAY: u8 = 5;
+const YEAR_STARTS_AFTER_SUNDAY: u8 = 6;
+
+const COMMON_YEAR: u8 = 1 << 3;
+const LEAP_YEAR: u8 = 0 << 3;
+
+pub(super) const A: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub(super) const AG: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub(super) const B: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub(super) const BA: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub(super) const C: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub(super) const CB: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub(super) const D: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub(super) const DC: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub(super) const E: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THUESDAY);
+pub(super) const ED: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THUESDAY);
+pub(super) const F: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_MONDAY);
+pub(super) const FE: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_MONDAY);
+pub(super) const G: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub(super) const GF: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
 
 const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
     BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA,
