@@ -39,7 +39,7 @@ __internal_bench = []
 
 [dependencies]
 serde = { version = "1.0.99", default-features = false, optional = true }
-pure-rust-locales = { version = "0.7", optional = true }
+pure-rust-locales = { version = "0.8", optional = true }
 rkyv = { version = "0.7.43", optional = true, default-features = false }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 

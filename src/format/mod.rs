@@ -96,6 +96,7 @@ pub enum Pad {
 /// It also trims the preceding whitespace if any.
 /// It cannot parse the negative number, so some date and time cannot be formatted then
 /// parsed with the same formatting items.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Numeric {
     /// Full Gregorian year (FW=4, PW=∞).
@@ -167,6 +168,7 @@ impl fmt::Debug for InternalNumeric {
 ///
 /// They have their own rules of formatting and parsing.
 /// Otherwise noted, they print in the specified cases but parse case-insensitively.
+#[non_exhaustive]
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
 pub enum Fixed {
     /// Abbreviated month names.
@@ -360,6 +362,22 @@ const fn fixed(fixed: Fixed) -> Item<'static> {
 
 const fn internal_fixed(val: InternalInternal) -> Item<'static> {
     Item::Fixed(Fixed::Internal(InternalFixed { val }))
+}
+
+impl<'a> Item<'a> {
+    /// Convert items that contain a reference to the format string into an owned variant.
+    #[cfg(any(feature = "alloc", feature = "std"))]
+    pub fn to_owned(self) -> Item<'static> {
+        match self {
+            Item::Literal(s) => Item::OwnedLiteral(Box::from(s)),
+            Item::Space(s) => Item::OwnedSpace(Box::from(s)),
+            Item::Numeric(n, p) => Item::Numeric(n, p),
+            Item::Fixed(f) => Item::Fixed(f),
+            Item::OwnedLiteral(l) => Item::OwnedLiteral(l),
+            Item::OwnedSpace(s) => Item::OwnedSpace(s),
+            Item::Error => Item::Error,
+        }
+    }
 }
 
 /// An error from the `parse` function.

@@ -10,8 +10,8 @@ use core::usize;
 
 use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
-use super::{ParseError, ParseErrorKind, ParseResult};
-use super::{BAD_FORMAT, INVALID, NOT_ENOUGH, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
+use super::{ParseError, ParseResult};
+use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use crate::{DateTime, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<()> {
@@ -146,10 +146,7 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
     }
 
     s = scan::space(s)?; // mandatory
-    if let Some(offset) = try_consume!(scan::timezone_offset_2822(s)) {
-        // only set the offset when it is definitely known (i.e. not `-0000`)
-        parsed.set_offset(i64::from(offset))?;
-    }
+    parsed.set_offset(i64::from(try_consume!(scan::timezone_offset_2822(s))))?;
 
     // optional comments
     while let Ok((s_out, ())) = scan::comment_2822(s) {
@@ -220,7 +217,12 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     }
 
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
-    if offset <= -86_400 || offset >= 86_400 {
+    // This range check is similar to the one in `FixedOffset::east_opt`, so it would be redundant.
+    // But it is possible to read the offset directly from `Parsed`. We want to only successfully
+    // populate `Parsed` if the input is fully valid RFC 3339.
+    // Max for the hours field is `23`, and for the minutes field `59`.
+    const MAX_RFC3339_OFFSET: i32 = (23 * 60 + 59) * 60;
+    if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
         return Err(OUT_OF_RANGE);
     }
     parsed.set_offset(i64::from(offset))?;
@@ -249,7 +251,11 @@ where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    parse_internal(parsed, s, items).map(|_| ()).map_err(|(_s, e)| e)
+    match parse_internal(parsed, s, items) {
+        Ok("") => Ok(()),
+        Ok(_) => Err(TOO_LONG), // if there are trailing chars it is an error
+        Err((_, e)) => Err(e),
+    }
 }
 
 /// Tries to parse given string into `parsed` with given formatting items.
@@ -275,11 +281,7 @@ where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    match parse_internal(parsed, s, items) {
-        Ok(s) => Ok(s),
-        Err((s, ParseError(ParseErrorKind::TooLong))) => Ok(s),
-        Err((_s, e)) => Err(e),
-    }
+    parse_internal(parsed, s, items).map_err(|(_s, e)| e)
 }
 
 fn parse_internal<'a, 'b, I, B>(
@@ -533,13 +535,7 @@ where
             }
         }
     }
-
-    // if there are trailling chars, it is an error
-    if !s.is_empty() {
-        Err((s, TOO_LONG))
-    } else {
-        Ok(s)
-    }
+    Ok(s)
 }
 
 /// Accepts a relaxed form of RFC3339.
@@ -596,11 +592,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Item::Space(""),
     ];
 
-    s = match parse_internal(parsed, s, DATE_ITEMS.iter()) {
-        Err((remainder, e)) if e.0 == ParseErrorKind::TooLong => remainder,
-        Err((_s, e)) => return Err(e),
-        Ok(_) => return Err(NOT_ENOUGH),
-    };
+    s = parse_internal(parsed, s, DATE_ITEMS.iter()).map_err(|(_s, e)| e)?;
 
     s = match s.as_bytes().first() {
         Some(&b't' | &b'T' | &b' ') => &s[1..],
@@ -608,11 +600,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         None => return Err(TOO_SHORT),
     };
 
-    s = match parse_internal(parsed, s, TIME_ITEMS.iter()) {
-        Err((s, e)) if e.0 == ParseErrorKind::TooLong => s,
-        Err((_s, e)) => return Err(e),
-        Ok(_) => return Err(NOT_ENOUGH),
-    };
+    s = parse_internal(parsed, s, TIME_ITEMS.iter()).map_err(|(_s, e)| e)?;
     s = s.trim_start();
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
@@ -1668,7 +1656,6 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:90 -0800", Err(OUT_OF_RANGE)), // bad second
             ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset
             ("6 Jun 1944 04:00:00Z", Err(INVALID)),            // bad offset (zulu not allowed)
-            ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named time zone
             // named timezones that have specific timezone offsets
             // see https://www.rfc-editor.org/rfc/rfc2822#section-4.3
             ("Tue, 20 Jan 2015 17:35:20 GMT", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
@@ -1690,14 +1677,14 @@ mod tests {
             ("Tue, 20 Jan 2015 17:35:20 K", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             ("Tue, 20 Jan 2015 17:35:20 k", Ok(ymd_hmsn(2015, 1, 20, 17, 35, 20, 0, 0))),
             // named single-letter timezone "J" is specifically not valid
-            ("Tue, 20 Jan 2015 17:35:20 J", Err(NOT_ENOUGH)),
+            ("Tue, 20 Jan 2015 17:35:20 J", Err(INVALID)),
             ("Tue, 20 Jan 2015 17:35:20 -0890", Err(OUT_OF_RANGE)), // bad offset minutes
             ("Tue, 20 Jan 2015 17:35:20Z", Err(INVALID)),           // bad offset: zulu not allowed
-            ("Tue, 20 Jan 2015 17:35:20 Zulu", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
-            ("Tue, 20 Jan 2015 17:35:20 ZULU", Err(NOT_ENOUGH)),    // bad offset: zulu not allowed
+            ("Tue, 20 Jan 2015 17:35:20 Zulu", Err(INVALID)),       // bad offset: zulu not allowed
+            ("Tue, 20 Jan 2015 17:35:20 ZULU", Err(INVALID)),       // bad offset: zulu not allowed
             ("Tue, 20 Jan 2015 17:35:20 −0800", Err(INVALID)), // bad offset: timezone offset using MINUS SIGN (U+2212), not specified for RFC 2822
             ("Tue, 20 Jan 2015 17:35:20 0800", Err(INVALID)),  // missing offset sign
-            ("Tue, 20 Jan 2015 17:35:20 HAS", Err(NOT_ENOUGH)), // bad named timezone
+            ("Tue, 20 Jan 2015 17:35:20 HAS", Err(INVALID)),   // bad named timezone
             ("Tue, 20 Jan 2015😈17:35:20 -0800", Err(INVALID)), // bad character!
         ];
 
