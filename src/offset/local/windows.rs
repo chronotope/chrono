@@ -165,7 +165,7 @@ fn system_time_from_naive_date_time(st: SYSTEMTIME, year: i32) -> Option<NaiveDa
     // Therefore we move back one day after converting the u16 value to a Weekday.
     let day_of_week = Weekday::try_from(u8::try_from(st.wDayOfWeek).ok()?).ok()?.pred();
     if st.wYear != 0 {
-        return NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32)
+        return NaiveDate::from_ymd(st.wYear as i32, st.wMonth as u32, st.wDay as u32)
             .map(|d| d.and_time(time));
     }
     let date = if let Some(date) =
@@ -250,7 +250,7 @@ mod tests {
             (bit_shift as i64 - HECTONANOSEC_TO_UNIX_EPOCH) / HECTONANOSECS_IN_SEC
         }
 
-        let mut date = NaiveDate::from_ymd_opt(1975, 1, 1).unwrap().and_hms_opt(0, 30, 0).unwrap();
+        let mut date = NaiveDate::from_ymd(1975, 1, 1).unwrap().and_hms_opt(0, 30, 0).unwrap();
 
         while date.year() < 2078 {
             // Windows doesn't handle non-existing dates, it just treats it as valid.

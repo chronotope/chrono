@@ -614,7 +614,7 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_date_format() {
-        let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
+        let d = NaiveDate::from_ymd(2012, 3, 4).unwrap();
         assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
         assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
         assert_eq!(d.format("%d,%e").to_string(), "04, 4");
@@ -627,31 +627,25 @@ mod tests {
         assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
         // non-four-digit years
-        assert_eq!(
-            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").to_string(),
-            "+12345"
-        );
-        assert_eq!(NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
-        assert_eq!(NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
-        assert_eq!(NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
-        assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
-        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
-        assert_eq!(NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
-        assert_eq!(NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
-        assert_eq!(NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
-        assert_eq!(NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
-        assert_eq!(
-            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
-            "-12345"
-        );
+        assert_eq!(NaiveDate::from_ymd(12345, 1, 1).unwrap().format("%Y").to_string(), "+12345");
+        assert_eq!(NaiveDate::from_ymd(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
+        assert_eq!(NaiveDate::from_ymd(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
+        assert_eq!(NaiveDate::from_ymd(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
+        assert_eq!(NaiveDate::from_ymd(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
+        assert_eq!(NaiveDate::from_ymd(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
+        assert_eq!(NaiveDate::from_ymd(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
+        assert_eq!(NaiveDate::from_ymd(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
+        assert_eq!(NaiveDate::from_ymd(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
+        assert_eq!(NaiveDate::from_ymd(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
+        assert_eq!(NaiveDate::from_ymd(-12345, 1, 1).unwrap().format("%Y").to_string(), "-12345");
 
         // corner cases
         assert_eq!(
-            NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
+            NaiveDate::from_ymd(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
             "2008,08,52,53,01"
         );
         assert_eq!(
-            NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
+            NaiveDate::from_ymd(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
             "2009,09,01,00,53"
         );
     }
@@ -692,17 +686,14 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_datetime_format() {
-        let dt =
-            NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
+        let dt = NaiveDate::from_ymd(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
         assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
         assert_eq!(dt.format("%s").to_string(), "1283929614");
         assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
         // a horror of leap second: coming near to you.
-        let dt = NaiveDate::from_ymd_opt(2012, 6, 30)
-            .unwrap()
-            .and_hms_milli_opt(23, 59, 59, 1_000)
-            .unwrap();
+        let dt =
+            NaiveDate::from_ymd(2012, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
         assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
         assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
     }

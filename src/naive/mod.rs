@@ -50,7 +50,7 @@ impl NaiveWeek {
     /// ```
     /// use chrono::{NaiveDate, Weekday};
     ///
-    /// let date = NaiveDate::from_ymd_opt(2022, 4, 18).unwrap();
+    /// let date = NaiveDate::from_ymd(2022, 4, 18).unwrap();
     /// let week = date.week(Weekday::Mon);
     /// assert!(week.first_day() <= date);
     /// ```
@@ -78,7 +78,7 @@ impl NaiveWeek {
     /// ```
     /// use chrono::{NaiveDate, Weekday};
     ///
-    /// let date = NaiveDate::from_ymd_opt(2022, 4, 18).unwrap();
+    /// let date = NaiveDate::from_ymd(2022, 4, 18).unwrap();
     /// let week = date.week(Weekday::Mon);
     /// assert!(week.last_day() >= date);
     /// ```
@@ -107,7 +107,7 @@ impl NaiveWeek {
     /// ```
     /// use chrono::{NaiveDate, Weekday};
     ///
-    /// let date = NaiveDate::from_ymd_opt(2022, 4, 18).unwrap();
+    /// let date = NaiveDate::from_ymd(2022, 4, 18).unwrap();
     /// let week = date.week(Weekday::Mon);
     /// let days = week.days();
     /// assert!(days.contains(&date));
@@ -153,7 +153,7 @@ mod test {
     use crate::{NaiveDate, Weekday};
     #[test]
     fn test_naiveweek() {
-        let date = NaiveDate::from_ymd_opt(2022, 5, 18).unwrap();
+        let date = NaiveDate::from_ymd(2022, 5, 18).unwrap();
         let asserts = [
             (Weekday::Mon, "Mon 2022-05-16", "Sun 2022-05-22"),
             (Weekday::Tue, "Tue 2022-05-17", "Mon 2022-05-23"),
