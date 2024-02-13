@@ -267,7 +267,7 @@ fn test_date_from_isoywd_and_iso_week() {
 
 #[test]
 fn test_date_from_num_days_from_ce() {
-    let from_ndays_from_ce = NaiveDate::from_num_days_from_ce_opt;
+    let from_ndays_from_ce = NaiveDate::from_num_days_from_ce;
     assert_eq!(from_ndays_from_ce(1), Some(NaiveDate::from_ymd(1, 1, 1).unwrap()));
     assert_eq!(from_ndays_from_ce(2), Some(NaiveDate::from_ymd(1, 1, 2).unwrap()));
     assert_eq!(from_ndays_from_ce(31), Some(NaiveDate::from_ymd(1, 1, 31).unwrap()));

@@ -308,18 +308,18 @@ impl NaiveDate {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let from_ndays_opt = NaiveDate::from_num_days_from_ce_opt;
+    /// let from_ndays = NaiveDate::from_num_days_from_ce;
     /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     ///
-    /// assert_eq!(from_ndays_opt(730_000),      Some(from_ymd(1999, 9, 3)));
-    /// assert_eq!(from_ndays_opt(1),            Some(from_ymd(1, 1, 1)));
-    /// assert_eq!(from_ndays_opt(0),            Some(from_ymd(0, 12, 31)));
-    /// assert_eq!(from_ndays_opt(-1),           Some(from_ymd(0, 12, 30)));
-    /// assert_eq!(from_ndays_opt(100_000_000),  None);
-    /// assert_eq!(from_ndays_opt(-100_000_000), None);
+    /// assert_eq!(from_ndays(730_000),      Some(from_ymd(1999, 9, 3)));
+    /// assert_eq!(from_ndays(1),            Some(from_ymd(1, 1, 1)));
+    /// assert_eq!(from_ndays(0),            Some(from_ymd(0, 12, 31)));
+    /// assert_eq!(from_ndays(-1),           Some(from_ymd(0, 12, 30)));
+    /// assert_eq!(from_ndays(100_000_000),  None);
+    /// assert_eq!(from_ndays(-100_000_000), None);
     /// ```
     #[must_use]
-    pub const fn from_num_days_from_ce_opt(days: i32) -> Option<NaiveDate> {
+    pub const fn from_num_days_from_ce(days: i32) -> Option<NaiveDate> {
         let days = try_opt!(days.checked_add(365)); // make December 31, 1 BCE equal to day 0
         let year_div_400 = days.div_euclid(146_097);
         let cycle = days.rem_euclid(146_097);
