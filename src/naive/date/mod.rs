@@ -109,7 +109,7 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
         let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
         let max_days = YearFlags::from_year(year).ndays();
         let ord = u.int_in_range(1..=max_days)?;
-        NaiveDate::from_yo_opt(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
+        NaiveDate::from_yo(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
     }
 }
 
@@ -198,18 +198,18 @@ impl NaiveDate {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let from_yo_opt = NaiveDate::from_yo_opt;
+    /// let from_yo = NaiveDate::from_yo;
     ///
-    /// assert!(from_yo_opt(2015, 100).is_some());
-    /// assert!(from_yo_opt(2015, 0).is_none());
-    /// assert!(from_yo_opt(2015, 365).is_some());
-    /// assert!(from_yo_opt(2015, 366).is_none());
-    /// assert!(from_yo_opt(-4, 366).is_some()); // 5 BCE is a leap year
-    /// assert!(from_yo_opt(400000, 1).is_none());
-    /// assert!(from_yo_opt(-400000, 1).is_none());
+    /// assert!(from_yo(2015, 100).is_some());
+    /// assert!(from_yo(2015, 0).is_none());
+    /// assert!(from_yo(2015, 365).is_some());
+    /// assert!(from_yo(2015, 366).is_none());
+    /// assert!(from_yo(-4, 366).is_some()); // 5 BCE is a leap year
+    /// assert!(from_yo(400000, 1).is_none());
+    /// assert!(from_yo(-400000, 1).is_none());
     /// ```
     #[must_use]
-    pub const fn from_yo_opt(year: i32, ordinal: u32) -> Option<NaiveDate> {
+    pub const fn from_yo(year: i32, ordinal: u32) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
     }
@@ -828,7 +828,7 @@ impl NaiveDate {
         let new_ol = (self.yof() & OL_MASK) + (1 << 4);
         match new_ol <= MAX_OL {
             true => Some(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
-            false => NaiveDate::from_yo_opt(self.year() + 1, 1),
+            false => NaiveDate::from_yo(self.year() + 1, 1),
         }
     }
 

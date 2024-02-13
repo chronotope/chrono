@@ -167,7 +167,7 @@ fn test_date_from_ymd() {
 
 #[test]
 fn test_date_from_yo() {
-    let from_yo = NaiveDate::from_yo_opt;
+    let from_yo = NaiveDate::from_yo;
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 
     assert_eq!(from_yo(2012, 0), None);
@@ -326,7 +326,7 @@ fn test_date_fields() {
         assert_eq!(d1.day(), day);
         assert_eq!(d1.ordinal(), ordinal);
 
-        let d2 = NaiveDate::from_yo_opt(year, ordinal).unwrap();
+        let d2 = NaiveDate::from_yo(year, ordinal).unwrap();
         assert_eq!(d2.year(), year);
         assert_eq!(d2.month(), month);
         assert_eq!(d2.day(), day);
@@ -769,21 +769,21 @@ fn test_leap_year() {
 #[test]
 fn test_date_yearflags() {
     for (year, year_flags, _) in YEAR_FLAGS {
-        assert_eq!(NaiveDate::from_yo_opt(year, 1).unwrap().year_flags(), year_flags);
+        assert_eq!(NaiveDate::from_yo(year, 1).unwrap().year_flags(), year_flags);
     }
 }
 
 #[test]
 fn test_weekday_with_yearflags() {
     for (year, year_flags, first_weekday) in YEAR_FLAGS {
-        let first_day_of_year = NaiveDate::from_yo_opt(year, 1).unwrap();
+        let first_day_of_year = NaiveDate::from_yo(year, 1).unwrap();
         dbg!(year);
         assert_eq!(first_day_of_year.year_flags(), year_flags);
         assert_eq!(first_day_of_year.weekday(), first_weekday);
 
         let mut prev = first_day_of_year.weekday();
         for ordinal in 2u32..=year_flags.ndays() {
-            let date = NaiveDate::from_yo_opt(year, ordinal).unwrap();
+            let date = NaiveDate::from_yo(year, ordinal).unwrap();
             let expected = prev.succ();
             assert_eq!(date.weekday(), expected);
             prev = expected;
@@ -806,7 +806,7 @@ fn test_isoweekdate_with_yearflags() {
 fn test_date_to_mdf_to_date() {
     for (year, year_flags, _) in YEAR_FLAGS {
         for ordinal in 1..=year_flags.ndays() {
-            let date = NaiveDate::from_yo_opt(year, ordinal).unwrap();
+            let date = NaiveDate::from_yo(year, ordinal).unwrap();
             assert_eq!(date, NaiveDate::from_mdf(date.year(), date.mdf()).unwrap());
         }
     }

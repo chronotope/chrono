@@ -112,8 +112,8 @@ pub trait Datelike: Sized {
     ///
     /// // Don't use `with_year` if you want the ordinal date to stay the same:
     /// assert_ne!(
-    ///     NaiveDate::from_yo_opt(2020, 100).unwrap().with_year(2023).unwrap(),
-    ///     NaiveDate::from_yo_opt(2023, 100).unwrap() // result is 2023-101
+    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023).unwrap(),
+    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
     /// );
     /// ```
     fn with_year(&self, year: i32) -> Option<Self>;
