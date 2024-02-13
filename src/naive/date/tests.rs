@@ -141,7 +141,7 @@ fn test_readme_doomsday() {
         let d117 = NaiveDate::from_ymd(y, 11, 7).unwrap();
 
         // "March 0"
-        let d30 = NaiveDate::from_ymd(y, 3, 1).unwrap().pred_opt().unwrap();
+        let d30 = NaiveDate::from_ymd(y, 3, 1).unwrap().pred().unwrap();
 
         let weekday = d30.weekday();
         let other_dates = [d4, d6, d8, d10, d12, d59, d95, d711, d117];
@@ -434,11 +434,11 @@ fn test_date_succ() {
 #[test]
 fn test_date_pred() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
-    assert_eq!(ymd(2016, 3, 1).pred_opt(), Some(ymd(2016, 2, 29)));
-    assert_eq!(ymd(2015, 1, 1).pred_opt(), Some(ymd(2014, 12, 31)));
-    assert_eq!(ymd(2014, 6, 1).pred_opt(), Some(ymd(2014, 5, 31)));
-    assert_eq!(ymd(2014, 5, 7).pred_opt(), Some(ymd(2014, 5, 6)));
-    assert_eq!(ymd(NaiveDate::MIN.year(), 1, 1).pred_opt(), None);
+    assert_eq!(ymd(2016, 3, 1).pred(), Some(ymd(2016, 2, 29)));
+    assert_eq!(ymd(2015, 1, 1).pred(), Some(ymd(2014, 12, 31)));
+    assert_eq!(ymd(2014, 6, 1).pred(), Some(ymd(2014, 5, 31)));
+    assert_eq!(ymd(2014, 5, 7).pred(), Some(ymd(2014, 5, 6)));
+    assert_eq!(ymd(NaiveDate::MIN.year(), 1, 1).pred(), None);
 }
 
 #[test]
