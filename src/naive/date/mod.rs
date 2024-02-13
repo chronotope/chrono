@@ -1398,10 +1398,11 @@ impl NaiveDate {
     /// Create a new `NaiveDate` from a raw year-ordinal-flags `i32`.
     ///
     /// In a valid value an ordinal is never `0`, and neither are the year flags. This method
-    /// doesn't do any validation; it only panics if the value is `0`.
+    /// doesn't do any validation.
     #[inline]
     const fn from_yof(yof: i32) -> NaiveDate {
-        NaiveDate { yof: expect!(NonZeroI32::new(yof), "invalid internal value") }
+        debug_assert!(yof != 0);
+        NaiveDate { yof: unsafe { NonZeroI32::new_unchecked(yof) } }
     }
 
     /// Get the raw year-ordinal-flags `i32`.
