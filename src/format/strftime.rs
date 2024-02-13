@@ -314,7 +314,7 @@ impl<'a> StrftimeItems<'a> {
     /// use chrono::NaiveDate;
     ///
     /// let fmt_items = StrftimeItems::new("%e %b %Y %k.%M").parse()?;
-    /// let datetime = NaiveDate::from_ymd_opt(2023, 7, 11).unwrap().and_hms_opt(9, 0, 0).unwrap();
+    /// let datetime = NaiveDate::from_ymd(2023, 7, 11).unwrap().and_hms_opt(9, 0, 0).unwrap();
     ///
     /// // Formatting
     /// assert_eq!(
@@ -364,7 +364,7 @@ impl<'a> StrftimeItems<'a> {
     /// }
     ///
     /// let fmt_items = format_items("%e %b %Y", "%k.%M")?;
-    /// let datetime = NaiveDate::from_ymd_opt(2023, 7, 11).unwrap().and_hms_opt(9, 0, 0).unwrap();
+    /// let datetime = NaiveDate::from_ymd(2023, 7, 11).unwrap().and_hms_opt(9, 0, 0).unwrap();
     ///
     /// assert_eq!(
     ///     datetime.format_with_items(fmt_items.as_slice().iter()).to_string(),
@@ -853,7 +853,7 @@ mod tests {
         let dt = FixedOffset::east(34200)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2001, 7, 8)
+                &NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
                     .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
                     .unwrap(),
@@ -993,7 +993,7 @@ mod tests {
             "dim 08 jui 2001 00:34:60 +09:30"
         );
 
-        let nd = NaiveDate::from_ymd_opt(2001, 7, 8).unwrap();
+        let nd = NaiveDate::from_ymd(2001, 7, 8).unwrap();
 
         // date specifiers
         assert_eq!(nd.format_localized("%b", Locale::de_DE).to_string(), "Jul");
@@ -1021,7 +1021,7 @@ mod tests {
         let dt = FixedOffset::east(34200)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2001, 7, 8)
+                &NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
                     .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
                     .unwrap(),

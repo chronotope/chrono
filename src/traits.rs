@@ -104,11 +104,11 @@ pub trait Datelike: Sized {
     /// use chrono::{NaiveDate, Datelike};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2020, 5, 13).unwrap().with_year(2023).unwrap(),
-    ///     NaiveDate::from_ymd_opt(2023, 5, 13).unwrap()
+    ///     NaiveDate::from_ymd(2020, 5, 13).unwrap().with_year(2023).unwrap(),
+    ///     NaiveDate::from_ymd(2023, 5, 13).unwrap()
     /// );
     /// // Resulting date 2023-02-29 does not exist:
-    /// assert!(NaiveDate::from_ymd_opt(2020, 2, 29).unwrap().with_year(2023).is_none());
+    /// assert!(NaiveDate::from_ymd(2020, 2, 29).unwrap().with_year(2023).is_none());
     ///
     /// // Don't use `with_year` if you want the ordinal date to stay the same:
     /// assert_ne!(
@@ -137,11 +137,11 @@ pub trait Datelike: Sized {
     /// use chrono::{NaiveDate, Datelike};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd_opt(2023, 5, 12).unwrap().with_month(9).unwrap(),
-    ///     NaiveDate::from_ymd_opt(2023, 9, 12).unwrap()
+    ///     NaiveDate::from_ymd(2023, 5, 12).unwrap().with_month(9).unwrap(),
+    ///     NaiveDate::from_ymd(2023, 9, 12).unwrap()
     /// );
     /// // Resulting date 2023-09-31 does not exist:
-    /// assert!(NaiveDate::from_ymd_opt(2023, 5, 31).unwrap().with_month(9).is_none());
+    /// assert!(NaiveDate::from_ymd(2023, 5, 31).unwrap().with_month(9).is_none());
     /// ```
     ///
     /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
@@ -151,15 +151,15 @@ pub trait Datelike: Sized {
     /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
     ///     date.with_year(year)?.with_month(month)
     /// }
-    /// let d = NaiveDate::from_ymd_opt(2020, 2, 29).unwrap();
+    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
     /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
     ///
     /// // Correct version:
     /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
-    ///     NaiveDate::from_ymd_opt(year, month, date.day())
+    ///     NaiveDate::from_ymd(year, month, date.day())
     /// }
-    /// let d = NaiveDate::from_ymd_opt(2020, 2, 29).unwrap();
-    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd_opt(2019, 1, 29));
+    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
+    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
     /// ```
     fn with_month(&self, month: u32) -> Option<Self>;
 
@@ -240,10 +240,10 @@ pub trait Datelike: Sized {
     /// ```
     /// use chrono::{NaiveDate, Datelike};
     ///
-    /// assert_eq!(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().num_days_from_ce(), 719_163);
-    /// assert_eq!(NaiveDate::from_ymd_opt(2, 1, 1).unwrap().num_days_from_ce(), 366);
-    /// assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().num_days_from_ce(), 1);
-    /// assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().num_days_from_ce(), -365);
+    /// assert_eq!(NaiveDate::from_ymd(1970, 1, 1).unwrap().num_days_from_ce(), 719_163);
+    /// assert_eq!(NaiveDate::from_ymd(2, 1, 1).unwrap().num_days_from_ce(), 366);
+    /// assert_eq!(NaiveDate::from_ymd(1, 1, 1).unwrap().num_days_from_ce(), 1);
+    /// assert_eq!(NaiveDate::from_ymd(0, 1, 1).unwrap().num_days_from_ce(), -365);
     /// ```
     fn num_days_from_ce(&self) -> i32 {
         // See test_num_days_from_ce_against_alternative_impl below for a more straightforward
@@ -370,7 +370,7 @@ mod tests {
         }
 
         for year in NaiveDate::MIN.year()..=NaiveDate::MAX.year() {
-            let jan1_year = NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+            let jan1_year = NaiveDate::from_ymd(year, 1, 1).unwrap();
             assert_eq!(
                 jan1_year.num_days_from_ce(),
                 num_days_from_ce(&jan1_year),

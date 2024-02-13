@@ -331,9 +331,8 @@ mod tests {
     #[test]
     #[cfg(windows)]
     fn test_lookup_with_dst_transitions() {
-        let ymdhms = |y, m, d, h, n, s| {
-            NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap()
-        };
+        let ymdhms =
+            |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
 
         #[track_caller]
         #[allow(clippy::too_many_arguments)]
@@ -347,7 +346,7 @@ mod tests {
             s: u32,
             result: LocalResult<FixedOffset>,
         ) {
-            let dt = NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+            let dt = NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
             assert_eq!(lookup_with_dst_transitions(transitions, dt), result);
         }
 

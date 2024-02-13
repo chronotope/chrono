@@ -77,9 +77,9 @@ mod tests;
 ///
 /// let t = NaiveTime::from_hms_milli(8, 59, 59, 1_000).unwrap();
 ///
-/// let dt1 = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_micro_opt(8, 59, 59, 1_000_000).unwrap();
+/// let dt1 = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_micro_opt(8, 59, 59, 1_000_000).unwrap();
 ///
-/// let dt2 = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap().and_local_timezone(Utc).unwrap();
+/// let dt2 = NaiveDate::from_ymd(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap().and_local_timezone(Utc).unwrap();
 /// # let _ = (t, dt1, dt2);
 /// ```
 ///
@@ -163,7 +163,7 @@ mod tests;
 /// ```
 /// use chrono::{Utc, NaiveDate};
 ///
-/// let dt = NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap().and_local_timezone(Utc).unwrap();
+/// let dt = NaiveDate::from_ymd(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap().and_local_timezone(Utc).unwrap();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ```
 ///
@@ -182,12 +182,12 @@ mod tests;
 ///
 /// let paramaribo_pre1945 = FixedOffset::east(-13236).unwrap(); // -03:40:36
 /// let leap_sec_2015 =
-///     NaiveDate::from_ymd_opt(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
+///     NaiveDate::from_ymd(2015, 6, 30).unwrap().and_hms_milli_opt(23, 59, 59, 1_000).unwrap();
 /// let dt1 = paramaribo_pre1945.from_utc_datetime(&leap_sec_2015);
 /// assert_eq!(format!("{:?}", dt1), "2015-06-30T20:19:24-03:40:36");
 /// assert_eq!(format!("{:?}", dt1.time()), "20:19:24");
 ///
-/// let next_sec = NaiveDate::from_ymd_opt(2015, 7, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+/// let next_sec = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 /// let dt2 = paramaribo_pre1945.from_utc_datetime(&next_sec);
 /// assert_eq!(format!("{:?}", dt2), "2015-06-30T20:19:24-03:40:36");
 /// assert_eq!(format!("{:?}", dt2.time()), "20:19:24");

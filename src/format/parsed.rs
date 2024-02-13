@@ -390,7 +390,7 @@ impl Parsed {
         let (verified, parsed_date) = match (given_year, given_isoyear, self) {
             (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
                 // year, month, day
-                let date = NaiveDate::from_ymd_opt(year, month, day).ok_or(OUT_OF_RANGE)?;
+                let date = NaiveDate::from_ymd(year, month, day).ok_or(OUT_OF_RANGE)?;
                 (verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
@@ -779,7 +779,7 @@ mod tests {
             )
         }
 
-        let ymd = |y, m, d| Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap());
+        let ymd = |y, m, d| Ok(NaiveDate::from_ymd(y, m, d).unwrap());
 
         // ymd: omission of fields
         assert_eq!(parse!(), Err(NOT_ENOUGH));
@@ -1023,10 +1023,10 @@ mod tests {
         }
 
         let ymdhms = |y, m, d, h, n, s| {
-            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap())
+            Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap())
         };
         let ymdhmsn = |y, m, d, h, n, s, nano| {
-            Ok(NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap())
+            Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap())
         };
 
         // omission of fields
@@ -1081,12 +1081,12 @@ mod tests {
 
         // more timestamps
         let max_days_from_year_1970 =
-            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-        let year_0_from_year_1970 = NaiveDate::from_ymd_opt(0, 1, 1)
+            NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1).unwrap());
+        let year_0_from_year_1970 = NaiveDate::from_ymd(0, 1, 1)
             .unwrap()
-            .signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+            .signed_duration_since(NaiveDate::from_ymd(1970, 1, 1).unwrap());
         let min_days_from_year_1970 =
-            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+            NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(1970, 1, 1).unwrap());
         assert_eq!(
             parse!(timestamp: min_days_from_year_1970.num_seconds()),
             ymdhms(NaiveDate::MIN.year(), 1, 1, 0, 0, 0)
@@ -1179,10 +1179,7 @@ mod tests {
             Ok(FixedOffset::east(off)
                 .unwrap()
                 .from_local_datetime(
-                    &NaiveDate::from_ymd_opt(y, m, d)
-                        .unwrap()
-                        .and_hms_nano_opt(h, n, s, nano)
-                        .unwrap(),
+                    &NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap(),
                 )
                 .unwrap())
         };
@@ -1230,7 +1227,7 @@ mod tests {
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
             Ok(Utc
                 .from_local_datetime(
-                    &NaiveDate::from_ymd_opt(2014, 12, 31)
+                    &NaiveDate::from_ymd(2014, 12, 31)
                         .unwrap()
                         .and_hms_nano_opt(4, 26, 40, 12_345_678)
                         .unwrap()
@@ -1256,7 +1253,7 @@ mod tests {
             Ok(FixedOffset::east(32400)
                 .unwrap()
                 .from_local_datetime(
-                    &NaiveDate::from_ymd_opt(2014, 12, 31)
+                    &NaiveDate::from_ymd(2014, 12, 31)
                         .unwrap()
                         .and_hms_nano_opt(13, 26, 40, 12_345_678)
                         .unwrap()
@@ -1293,9 +1290,9 @@ mod tests {
         parsed.year = Some(2002);
         parsed.week_from_mon = Some(22);
         parsed.weekday = Some(Weekday::Mon);
-        assert_eq!(NaiveDate::from_ymd_opt(2002, 6, 3).unwrap(), parsed.to_naive_date().unwrap());
+        assert_eq!(NaiveDate::from_ymd(2002, 6, 3).unwrap(), parsed.to_naive_date().unwrap());
 
         parsed.year = Some(2001);
-        assert_eq!(NaiveDate::from_ymd_opt(2001, 5, 28).unwrap(), parsed.to_naive_date().unwrap());
+        assert_eq!(NaiveDate::from_ymd(2001, 5, 28).unwrap(), parsed.to_naive_date().unwrap());
     }
 }
