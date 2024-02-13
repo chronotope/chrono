@@ -818,13 +818,13 @@ impl NaiveDate {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).unwrap().succ_opt(),
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).unwrap().succ(),
     ///            Some(NaiveDate::from_ymd(2015, 6, 4).unwrap()));
-    /// assert_eq!(NaiveDate::MAX.succ_opt(), None);
+    /// assert_eq!(NaiveDate::MAX.succ(), None);
     /// ```
     #[inline]
     #[must_use]
-    pub const fn succ_opt(&self) -> Option<NaiveDate> {
+    pub const fn succ(&self) -> Option<NaiveDate> {
         let new_ol = (self.yof() & OL_MASK) + (1 << 4);
         match new_ol <= MAX_OL {
             true => Some(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
@@ -1869,7 +1869,7 @@ impl Iterator for NaiveDateDaysIterator {
         // We return the current value, and have no way to return `NaiveDate::MAX`.
         let current = self.value;
         // This can't panic because current is < NaiveDate::MAX:
-        self.value = current.succ_opt()?;
+        self.value = current.succ()?;
         Some(current)
     }
 
