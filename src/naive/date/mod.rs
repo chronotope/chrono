@@ -149,10 +149,10 @@ impl NaiveDate {
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
     const fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
-        match mdf.ordinal() {
-            Some(ordinal) => NaiveDate::from_ordinal_and_flags(year, ordinal, mdf.year_flags()),
-            None => None, // Non-existing date
+        if year < MIN_YEAR || year > MAX_YEAR {
+            return None; // Out-of-range
         }
+        Some(NaiveDate::from_yof((year << 13) | try_opt!(mdf.ordinal_and_flags())))
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
