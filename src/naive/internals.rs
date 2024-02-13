@@ -249,19 +249,6 @@ impl Mdf {
         Mdf(((ol as u32 + OL_TO_MDL[ol as usize] as u32) << 3) | flags as u32)
     }
 
-    #[cfg(test)]
-    pub(super) const fn valid(&self) -> bool {
-        let Mdf(mdf) = *self;
-        let mdl = mdf >> 3;
-        if mdl <= MAX_MDL {
-            // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
-            MDL_TO_OL[mdl as usize] > 0
-        } else {
-            // Panicking here would be reasonable, but we are just going on with a safe value.
-            false
-        }
-    }
-
     /// Returns the month of this `Mdf`.
     #[inline]
     pub(super) const fn month(&self) -> u32 {
@@ -353,6 +340,12 @@ impl Mdf {
             XX => None,
             v => Some(self.0 as i32 - ((v as i32) << 3)),
         }
+    }
+
+    #[cfg(test)]
+    fn valid(&self) -> bool {
+        let mdl = self.0 >> 3;
+        MDL_TO_OL[mdl as usize] > 0
     }
 }
 
