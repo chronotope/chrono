@@ -327,7 +327,7 @@ impl Mdf {
         let mdl = self.0 >> 3;
         match MDL_TO_OL[mdl as usize] {
             XX => None,
-            v => Some((mdl - v as i32 as u32) >> 1),
+            v => Some((mdl - v as u8 as u32) >> 1),
         }
     }
 
