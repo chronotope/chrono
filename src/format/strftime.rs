@@ -855,7 +855,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
-                    .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+                    .and_hms_nano(0, 34, 59, 1_026_490_708)
                     .unwrap(),
             )
             .unwrap();
@@ -1023,7 +1023,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
-                    .and_hms_nano_opt(0, 34, 59, 1_026_490_708)
+                    .and_hms_nano(0, 34, 59, 1_026_490_708)
                     .unwrap(),
             )
             .unwrap();

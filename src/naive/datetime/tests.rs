@@ -345,7 +345,7 @@ fn test_datetime_from_str() {
 fn test_datetime_parse_from_str() {
     let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
     let ymdhmsn = |y, m, d, h, n, s, nano| {
-        NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap()
+        NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano(h, n, s, nano).unwrap()
     };
     assert_eq!(
         NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),

@@ -194,22 +194,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{Utc, NaiveDate};
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_nano(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), Some(1_000_000_444));
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), Some(1_000_000_000_000_000_555));
     ///
-    /// let dt = NaiveDate::from_ymd(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_192).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(1677, 9, 21).unwrap().and_hms_nano(0, 12, 43, 145_224_192).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), Some(-9_223_372_036_854_775_808));
     ///
-    /// let dt = NaiveDate::from_ymd(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_807).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2262, 4, 11).unwrap().and_hms_nano(23, 47, 16, 854_775_807).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), Some(9_223_372_036_854_775_807));
     ///
-    /// let dt = NaiveDate::from_ymd(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_191).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(1677, 9, 21).unwrap().and_hms_nano(0, 12, 43, 145_224_191).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), None);
     ///
-    /// let dt = NaiveDate::from_ymd(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_808).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2262, 4, 11).unwrap().and_hms_nano(23, 47, 16, 854_775_808).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), None);
     /// ```
     #[inline]

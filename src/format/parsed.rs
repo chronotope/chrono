@@ -1025,7 +1025,7 @@ mod tests {
         let ymdhms =
             |y, m, d, h, n, s| Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap());
         let ymdhmsn = |y, m, d, h, n, s, nano| {
-            Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap())
+            Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano(h, n, s, nano).unwrap())
         };
 
         // omission of fields
@@ -1178,7 +1178,7 @@ mod tests {
             Ok(FixedOffset::east(off)
                 .unwrap()
                 .from_local_datetime(
-                    &NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap(),
+                    &NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano(h, n, s, nano).unwrap(),
                 )
                 .unwrap())
         };
@@ -1228,7 +1228,7 @@ mod tests {
                 .from_local_datetime(
                     &NaiveDate::from_ymd(2014, 12, 31)
                         .unwrap()
-                        .and_hms_nano_opt(4, 26, 40, 12_345_678)
+                        .and_hms_nano(4, 26, 40, 12_345_678)
                         .unwrap()
                 )
                 .unwrap())
@@ -1254,7 +1254,7 @@ mod tests {
                 .from_local_datetime(
                     &NaiveDate::from_ymd(2014, 12, 31)
                         .unwrap()
-                        .and_hms_nano_opt(13, 26, 40, 12_345_678)
+                        .and_hms_nano(13, 26, 40, 12_345_678)
                         .unwrap()
                 )
                 .unwrap())
