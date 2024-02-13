@@ -656,7 +656,7 @@ pub mod ts_microseconds_option {
 ///     time: DateTime<Utc>
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap();
+/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -692,7 +692,7 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap(),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -781,7 +781,7 @@ pub mod ts_milliseconds {
 ///     time: Option<DateTime<Utc>>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap());
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -816,7 +816,7 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap()),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_local_timezone(Utc).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);

@@ -136,7 +136,7 @@
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
 //! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue)?.and_hms(9, 10, 11).unwrap().and_utc());
 //!
-//! let dt = NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli_opt(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
+//! let dt = NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
 //! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms_micro_opt(9, 10, 11, 12_000).unwrap().and_local_timezone(Utc).unwrap());
 //! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms_nano_opt(9, 10, 11, 12_000_000).unwrap().and_local_timezone(Utc).unwrap());
 //!
@@ -149,8 +149,8 @@
 //! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
-//! let local_dt = Local.from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap()).unwrap();
-//! let fixed_dt = FixedOffset::east(9 * 3600).unwrap().from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli_opt(18, 10, 11, 12).unwrap()).unwrap();
+//! let local_dt = Local.from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(9, 10, 11, 12).unwrap()).unwrap();
+//! let fixed_dt = FixedOffset::east(9 * 3600).unwrap().from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(18, 10, 11, 12).unwrap()).unwrap();
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
 //! # }

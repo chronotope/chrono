@@ -598,7 +598,7 @@ pub mod ts_microseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap();
+/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -633,7 +633,7 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap(),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -722,7 +722,7 @@ pub mod ts_milliseconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap());
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -757,7 +757,7 @@ pub mod ts_milliseconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli_opt(02, 04, 59, 918).unwrap()),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -1153,7 +1153,7 @@ mod tests {
     // it is not self-describing.
     #[test]
     fn test_serde_bincode() {
-        let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli_opt(9, 10, 48, 90).unwrap();
+        let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli(9, 10, 48, 90).unwrap();
         let encoded = serialize(&dt).unwrap();
         let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
         assert_eq!(dt, decoded);

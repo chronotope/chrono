@@ -694,15 +694,15 @@ impl NaiveDate {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_milli_opt(12, 34, 56,   789).is_ok());
-    /// assert!(d.and_hms_milli_opt(12, 34, 59, 1_789).is_ok()); // leap second
-    /// assert_eq!(d.and_hms_milli_opt(12, 34, 59, 2_789), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_milli_opt(12, 34, 60,   789), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_milli_opt(12, 60, 56,   789), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_milli_opt(24, 34, 56,   789), Err(Error::InvalidArgument));
+    /// assert!(d.and_hms_milli(12, 34, 56,   789).is_ok());
+    /// assert!(d.and_hms_milli(12, 34, 59, 1_789).is_ok()); // leap second
+    /// assert_eq!(d.and_hms_milli(12, 34, 59, 2_789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_milli(12, 34, 60,   789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_milli(12, 60, 56,   789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.and_hms_milli(24, 34, 56,   789), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    pub const fn and_hms_milli_opt(
+    pub const fn and_hms_milli(
         &self,
         hour: u32,
         min: u32,

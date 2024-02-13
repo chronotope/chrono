@@ -502,7 +502,7 @@ fn test_and_utc() {
 #[test]
 fn test_checked_add_offset() {
     let ymdhmsm = |y, m, d, h, mn, s, mi| {
-        Some(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi).unwrap())
+        Some(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli(h, mn, s, mi).unwrap())
     };
 
     let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
@@ -529,7 +529,7 @@ fn test_checked_add_offset() {
 #[test]
 fn test_checked_sub_offset() {
     let ymdhmsm = |y, m, d, h, mn, s, mi| {
-        Some(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi).unwrap())
+        Some(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli(h, mn, s, mi).unwrap())
     };
 
     let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
@@ -559,7 +559,7 @@ fn test_checked_sub_offset() {
 #[test]
 fn test_overflowing_add_offset() {
     let ymdhmsm = |y, m, d, h, mn, s, mi| {
-        NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli_opt(h, mn, s, mi).unwrap()
+        NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli(h, mn, s, mi).unwrap()
     };
     let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
     // regular date
