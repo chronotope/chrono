@@ -114,8 +114,8 @@ impl fmt::Debug for YearFlags {
 }
 
 // OL: (ordinal << 1) | leap year flag
-pub(super) const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
-pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
+const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
+const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
 // The next table are adjustment values to convert a date encoded as month-day-leapyear to
 // ordinal-leapyear. OL = MDL - adjustment.
