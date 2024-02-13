@@ -336,6 +336,24 @@ impl Mdf {
     pub(super) const fn year_flags(&self) -> YearFlags {
         YearFlags((self.0 & 0b1111) as u8)
     }
+
+    /// Returns the ordinal that corresponds to this `Mdf`, encoded as a value including year flags.
+    ///
+    /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
+    /// the `Mdl` turns out not to be a valid date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
+    /// given month.
+    #[inline]
+    pub(super) const fn ordinal_and_flags(&self) -> Option<i32> {
+        let mdl = self.0 >> 3;
+        match MDL_TO_OL[mdl as usize] {
+            XX => None,
+            v => Some(self.0 as i32 - ((v as i32) << 3)),
+        }
+    }
 }
 
 impl fmt::Debug for Mdf {
