@@ -345,11 +345,11 @@ impl NaiveDate {
     ///
     /// ```
     /// use chrono::{NaiveDate, Weekday};
-    /// assert_eq!(NaiveDate::from_weekday_of_month_opt(2017, 3, Weekday::Fri, 2),
+    /// assert_eq!(NaiveDate::from_weekday_of_month(2017, 3, Weekday::Fri, 2),
     ///            NaiveDate::from_ymd(2017, 3, 10))
     /// ```
     #[must_use]
-    pub const fn from_weekday_of_month_opt(
+    pub const fn from_weekday_of_month(
         year: i32,
         month: u32,
         weekday: Weekday,

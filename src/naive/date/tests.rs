@@ -300,8 +300,8 @@ fn test_date_from_num_days_from_ce() {
 }
 
 #[test]
-fn test_date_from_weekday_of_month_opt() {
-    let ymwd = NaiveDate::from_weekday_of_month_opt;
+fn test_date_from_weekday_of_month() {
+    let ymwd = NaiveDate::from_weekday_of_month;
     assert_eq!(ymwd(2018, 8, Weekday::Tue, 0), None);
     assert_eq!(ymwd(2018, 8, Weekday::Wed, 1), Some(NaiveDate::from_ymd(2018, 8, 1).unwrap()));
     assert_eq!(ymwd(2018, 8, Weekday::Thu, 1), Some(NaiveDate::from_ymd(2018, 8, 2).unwrap()));
