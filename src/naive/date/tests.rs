@@ -198,7 +198,7 @@ fn test_date_from_yo() {
 
 #[test]
 fn test_date_from_isoywd() {
-    let from_isoywd = NaiveDate::from_isoywd_opt;
+    let from_isoywd = NaiveDate::from_isoywd;
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 
     assert_eq!(from_isoywd(2004, 0, Weekday::Sun), None);
@@ -240,7 +240,7 @@ fn test_date_from_isoywd_and_iso_week() {
             ]
             .iter()
             {
-                let d = NaiveDate::from_isoywd_opt(year, week, weekday);
+                let d = NaiveDate::from_isoywd(year, week, weekday);
                 if let Some(d) = d {
                     assert_eq!(d.weekday(), weekday);
                     let w = d.iso_week();
@@ -257,7 +257,7 @@ fn test_date_from_isoywd_and_iso_week() {
                 let d = NaiveDate::from_ymd(year, month, day);
                 if let Some(d) = d {
                     let w = d.iso_week();
-                    let d_ = NaiveDate::from_isoywd_opt(w.year(), w.week(), d.weekday());
+                    let d_ = NaiveDate::from_isoywd(w.year(), w.week(), d.weekday());
                     assert_eq!(d, d_.unwrap());
                 }
             }
