@@ -696,7 +696,7 @@ impl NaiveDateTime {
     pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
         let (time, days) = self.time.overflowing_add_offset(rhs);
         let date = match days {
-            -1 => try_opt!(self.date.pred_opt()),
+            -1 => try_opt!(self.date.pred()),
             1 => try_opt!(self.date.succ()),
             _ => self.date,
         };
@@ -711,7 +711,7 @@ impl NaiveDateTime {
     pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
         let (time, days) = self.time.overflowing_sub_offset(rhs);
         let date = match days {
-            -1 => try_opt!(self.date.pred_opt()),
+            -1 => try_opt!(self.date.pred()),
             1 => try_opt!(self.date.succ()),
             _ => self.date,
         };
@@ -727,7 +727,7 @@ impl NaiveDateTime {
     pub(crate) fn overflowing_add_offset(self, rhs: FixedOffset) -> NaiveDateTime {
         let (time, days) = self.time.overflowing_add_offset(rhs);
         let date = match days {
-            -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
+            -1 => self.date.pred().unwrap_or(NaiveDate::BEFORE_MIN),
             1 => self.date.succ().unwrap_or(NaiveDate::AFTER_MAX),
             _ => self.date,
         };
@@ -744,7 +744,7 @@ impl NaiveDateTime {
     pub(crate) fn overflowing_sub_offset(self, rhs: FixedOffset) -> NaiveDateTime {
         let (time, days) = self.time.overflowing_sub_offset(rhs);
         let date = match days {
-            -1 => self.date.pred_opt().unwrap_or(NaiveDate::BEFORE_MIN),
+            -1 => self.date.pred().unwrap_or(NaiveDate::BEFORE_MIN),
             1 => self.date.succ().unwrap_or(NaiveDate::AFTER_MAX),
             _ => self.date,
         };

@@ -843,13 +843,13 @@ impl NaiveDate {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).unwrap().pred_opt(),
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3).unwrap().pred(),
     ///            Some(NaiveDate::from_ymd(2015, 6, 2).unwrap()));
-    /// assert_eq!(NaiveDate::MIN.pred_opt(), None);
+    /// assert_eq!(NaiveDate::MIN.pred(), None);
     /// ```
     #[inline]
     #[must_use]
-    pub const fn pred_opt(&self) -> Option<NaiveDate> {
+    pub const fn pred(&self) -> Option<NaiveDate> {
         let new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
         match new_shifted_ordinal > 0 {
             true => Some(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
@@ -1313,7 +1313,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).unwrap().day(), 14);
     /// ```
     ///
-    /// Combined with [`NaiveDate::pred_opt`](#method.pred_opt),
+    /// Combined with [`NaiveDate::pred`](#method.pred),
     /// one can determine the number of days in a particular month.
     /// (Note that this panics when `year` is out of range.)
     ///
@@ -1326,7 +1326,7 @@ impl Datelike for NaiveDate {
     ///     let d = NaiveDate::from_ymd(y, m, 1).unwrap();
     ///
     ///     // ...is preceded by the last day of the original month
-    ///     d.pred_opt().unwrap().day()
+    ///     d.pred().unwrap().day()
     /// }
     ///
     /// assert_eq!(ndays_in_month(2015, 8), 31);
@@ -1370,7 +1370,7 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(-308, 3, 14).unwrap().ordinal(), 74);
     /// ```
     ///
-    /// Combined with [`NaiveDate::pred_opt`](#method.pred_opt),
+    /// Combined with [`NaiveDate::pred`](#method.pred),
     /// one can determine the number of days in a particular year.
     /// (Note that this panics when `year` is out of range.)
     ///
@@ -1382,7 +1382,7 @@ impl Datelike for NaiveDate {
     ///     let d = NaiveDate::from_ymd(year + 1, 1, 1).unwrap();
     ///
     ///     // ...is preceded by the last day of the original year
-    ///     d.pred_opt().unwrap().ordinal()
+    ///     d.pred().unwrap().ordinal()
     /// }
     ///
     /// assert_eq!(ndays_in_year(2015), 365);
@@ -1885,7 +1885,7 @@ impl DoubleEndedIterator for NaiveDateDaysIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
         // We return the current value, and have no way to return `NaiveDate::MIN`.
         let current = self.value;
-        self.value = current.pred_opt()?;
+        self.value = current.pred()?;
         Some(current)
     }
 }
