@@ -470,7 +470,7 @@ impl Parsed {
 
             (_, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(weekday), .. }) => {
                 // ISO year, week, day of the week
-                let date = NaiveDate::from_isoywd_opt(isoyear, isoweek, weekday);
+                let date = NaiveDate::from_isoywd(isoyear, isoweek, weekday);
                 let date = date.ok_or(OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_ordinal(date), date)
             }
