@@ -169,11 +169,11 @@ fn system_time_from_naive_date_time(st: SYSTEMTIME, year: i32) -> Option<NaiveDa
             .map(|d| d.and_time(time));
     }
     let date = if let Some(date) =
-        NaiveDate::from_weekday_of_month_opt(year, st.wMonth as u32, day_of_week, st.wDay as u8)
+        NaiveDate::from_weekday_of_month(year, st.wMonth as u32, day_of_week, st.wDay as u8)
     {
         date
     } else if st.wDay == 5 {
-        NaiveDate::from_weekday_of_month_opt(year, st.wMonth as u32, day_of_week, 4)?
+        NaiveDate::from_weekday_of_month(year, st.wMonth as u32, day_of_week, 4)?
     } else {
         return None;
     };
