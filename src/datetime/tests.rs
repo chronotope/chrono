@@ -1228,6 +1228,18 @@ fn test_datetime_from_timestamp_millis() {
 
 #[test]
 #[cfg(feature = "clock")]
+fn test_datetime_before_windows_api_limits() {
+    // dt corresponds to `FILETIME = 147221225472` from issue 651.
+    // (https://github.com/chronotope/chrono/issues/651)
+    // This used to fail on Windows for timezones with an offset of -5:00 or greater.
+    // The API limits years to 1601..=30827.
+    let dt = NaiveDate::from_ymd_opt(1601, 1, 1).unwrap().and_hms_milli_opt(4, 5, 22, 122).unwrap();
+    let local_dt = Local.from_utc_datetime(&dt);
+    dbg!(local_dt);
+}
+
+#[test]
+#[cfg(feature = "clock")]
 fn test_years_elapsed() {
     const WEEKS_PER_YEAR: f32 = 52.1775;
 
@@ -1459,41 +1471,6 @@ fn test_core_duration_max() {
 
     let mut utc_dt = Utc.with_ymd_and_hms(2023, 8, 29, 11, 34, 12).unwrap();
     utc_dt += Duration::MAX;
-}
-
-#[test]
-#[cfg(all(target_os = "windows", feature = "clock"))]
-fn test_from_naive_date_time_windows() {
-    let min_year = NaiveDate::from_ymd_opt(1601, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
-
-    let max_year = NaiveDate::from_ymd_opt(30827, 12, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
-
-    let too_low_year =
-        NaiveDate::from_ymd_opt(1600, 12, 29).unwrap().and_hms_opt(23, 59, 59).unwrap();
-
-    let too_high_year = NaiveDate::from_ymd_opt(30829, 1, 3).unwrap().and_hms_opt(0, 0, 0).unwrap();
-
-    let _ = Local.from_utc_datetime(&min_year);
-    let _ = Local.from_utc_datetime(&max_year);
-
-    let _ = Local.from_local_datetime(&min_year);
-    let _ = Local.from_local_datetime(&max_year);
-
-    let local_too_low = Local.from_local_datetime(&too_low_year);
-    let local_too_high = Local.from_local_datetime(&too_high_year);
-
-    assert_eq!(local_too_low, LocalResult::None);
-    assert_eq!(local_too_high, LocalResult::None);
-
-    let err = std::panic::catch_unwind(|| {
-        Local.from_utc_datetime(&too_low_year);
-    });
-    assert!(err.is_err());
-
-    let err = std::panic::catch_unwind(|| {
-        Local.from_utc_datetime(&too_high_year);
-    });
-    assert!(err.is_err());
 }
 
 #[test]

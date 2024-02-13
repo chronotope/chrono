@@ -177,9 +177,6 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp = naive.timestamp_nanos().ok_or(RoundingError::TimestampExceedsLimit)?;
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
         if span == 0 {
             return Ok(original);
         }
@@ -216,9 +213,6 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp = naive.timestamp_nanos().ok_or(RoundingError::TimestampExceedsLimit)?;
-        if span > stamp.abs() {
-            return Err(RoundingError::DurationExceedsTimestamp);
-        }
         let delta_down = stamp % span;
         match delta_down.cmp(&0) {
             Ordering::Equal => Ok(original),
@@ -237,15 +231,7 @@ where
 pub enum RoundingError {
     /// Error when the TimeDelta exceeds the TimeDelta from or until the Unix epoch.
     ///
-    /// ``` rust
-    /// # use chrono::{DurationRound, TimeDelta, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.with_ymd_and_hms(1970, 12, 12, 0, 0, 0).unwrap();
-    ///
-    /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::days(365)),
-    ///     Err(RoundingError::DurationExceedsTimestamp),
-    /// );
-    /// ```
+    /// Note: this error is not produced anymore.
     DurationExceedsTimestamp,
 
     /// Error when `TimeDelta.num_nanoseconds` exceeds the limit.
@@ -764,5 +750,44 @@ mod tests {
         let dt = NaiveDateTime::from_timestamp(-2_621_440, 0).unwrap();
         let span = TimeDelta::nanoseconds(-9_223_372_036_854_771_421);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
+    }
+
+    #[test]
+    fn test_duration_trunc_close_to_epoch() {
+        let span = TimeDelta::minutes(15);
+
+        let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
+        assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1970-01-01 00:00:00");
+
+        let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 45).unwrap();
+        assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1969-12-31 23:45:00");
+    }
+
+    #[test]
+    fn test_duration_round_close_to_epoch() {
+        let span = TimeDelta::minutes(15);
+
+        let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 15).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+
+        let dt = NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 45).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+    }
+
+    #[test]
+    fn test_duration_round_close_to_min_max() {
+        let span = TimeDelta::nanoseconds(i64::MAX);
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MIN / 2 - 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1677-09-21 00:12:43.145224193");
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MIN / 2 + 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MAX / 2 + 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "2262-04-11 23:47:16.854775807");
+
+        let dt = NaiveDateTime::from_timestamp_nanos(i64::MAX / 2 - 1).unwrap();
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
     }
 }

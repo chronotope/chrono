@@ -6,7 +6,7 @@ env:
 
 on:
   push:
-    branches: [main, 0.4.x]
+    branches: [main, 0.5.x]
   pull_request:
 jobs:
   # Run code coverage using cargo-llvm-cov then upload to codecov.io
