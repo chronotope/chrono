@@ -459,7 +459,7 @@ fn test_datetime_rfc2822() {
     // timezone +05
     assert_eq!(
         edt.from_local_datetime(
-            &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap()
+            &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
         )
         .unwrap()
         .to_rfc2822(),
@@ -471,7 +471,7 @@ fn test_datetime_rfc2822() {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2015, 2, 18)
                     .unwrap()
-                    .and_hms_milli_opt(23, 59, 59, 1_000)
+                    .and_hms_milli(23, 59, 59, 1_000)
                     .unwrap()
             )
             .unwrap())
@@ -577,7 +577,7 @@ fn test_datetime_rfc3339() {
     // timezone +05
     assert_eq!(
         edt5.from_local_datetime(
-            &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli_opt(23, 16, 9, 150).unwrap()
+            &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
         )
         .unwrap()
         .to_rfc3339(),
@@ -683,10 +683,7 @@ fn test_datetime_from_str() {
         Ok(FixedOffset::east(0)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -694,10 +691,7 @@ fn test_datetime_from_str() {
         "2015-02-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
         Ok(Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -705,10 +699,7 @@ fn test_datetime_from_str() {
         "2015-02-18T23:16:9.15 UTC".parse::<DateTime<Utc>>(),
         Ok(Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -716,10 +707,7 @@ fn test_datetime_from_str() {
         "2015-02-18T23:16:9.15UTC".parse::<DateTime<Utc>>(),
         Ok(Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -727,10 +715,7 @@ fn test_datetime_from_str() {
         "2015-02-18T23:16:9.15Utc".parse::<DateTime<Utc>>(),
         Ok(Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -740,10 +725,7 @@ fn test_datetime_from_str() {
         Ok(FixedOffset::east(0)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -752,10 +734,7 @@ fn test_datetime_from_str() {
         Ok(FixedOffset::west(10 * 3600)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(13, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(13, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -765,10 +744,7 @@ fn test_datetime_from_str() {
         "2015-2-18T23:16:9.15Z".parse::<DateTime<Utc>>(),
         Ok(Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -776,10 +752,7 @@ fn test_datetime_from_str() {
         "2015-2-18T13:16:9.15-10:00".parse::<DateTime<Utc>>(),
         Ok(Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2015, 2, 18)
-                    .unwrap()
-                    .and_hms_milli_opt(23, 16, 9, 150)
-                    .unwrap()
+                &NaiveDate::from_ymd(2015, 2, 18).unwrap().and_hms_milli(23, 16, 9, 150).unwrap()
             )
             .unwrap())
     );
@@ -1214,7 +1187,7 @@ fn test_from_system_time() {
 #[test]
 fn test_datetime_from_timestamp_millis() {
     // 2000-01-12T01:02:03:004Z
-    let naive_dt = NaiveDate::from_ymd(2000, 1, 12).unwrap().and_hms_milli_opt(1, 2, 3, 4).unwrap();
+    let naive_dt = NaiveDate::from_ymd(2000, 1, 12).unwrap().and_hms_milli(1, 2, 3, 4).unwrap();
     let datetime_utc = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
     assert_eq!(
         datetime_utc,
@@ -1229,7 +1202,7 @@ fn test_datetime_before_windows_api_limits() {
     // (https://github.com/chronotope/chrono/issues/651)
     // This used to fail on Windows for timezones with an offset of -5:00 or greater.
     // The API limits years to 1601..=30827.
-    let dt = NaiveDate::from_ymd(1601, 1, 1).unwrap().and_hms_milli_opt(4, 5, 22, 122).unwrap();
+    let dt = NaiveDate::from_ymd(1601, 1, 1).unwrap().and_hms_milli(4, 5, 22, 122).unwrap();
     let local_dt = Local.from_utc_datetime(&dt);
     dbg!(local_dt);
 }

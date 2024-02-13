@@ -148,10 +148,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{Utc, NaiveDate};
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_milli(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_millis(), 1_444);
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_milli_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_milli(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
     /// ```
     #[inline]
@@ -757,7 +757,7 @@ impl DateTime<FixedOffset> {
     ///
     /// let dt = DateTime::parse_from_str(
     ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(FixedOffset::east(0).unwrap().from_local_datetime(&NaiveDate::from_ymd(1983, 4, 13).unwrap().and_hms_milli_opt(12, 9, 14, 274).unwrap()).unwrap()));
+    /// assert_eq!(dt, Ok(FixedOffset::east(0).unwrap().from_local_datetime(&NaiveDate::from_ymd(1983, 4, 13).unwrap().and_hms_milli(12, 9, 14, 274).unwrap()).unwrap()));
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
