@@ -29,7 +29,7 @@ fn test_datetime_from_timestamp_millis() {
     }
 
     // Test that the result of `from_timestamp_millis` compares equal to
-    // that of `from_timestamp_opt`.
+    // that of `from_timestamp`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().cloned() {
         assert_eq!(
@@ -67,7 +67,7 @@ fn test_datetime_from_timestamp_micros() {
     }
 
     // Test that the result of `from_timestamp_micros` compares equal to
-    // that of `from_timestamp_opt`.
+    // that of `from_timestamp`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().copied() {
         assert_eq!(
@@ -118,7 +118,7 @@ fn test_datetime_from_timestamp_nanos() {
     );
 
     // Test that the result of `from_timestamp_nanos` compares equal to
-    // that of `from_timestamp_opt`.
+    // that of `from_timestamp`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().copied() {
         assert_eq!(
