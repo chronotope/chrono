@@ -483,7 +483,7 @@ fn test_datetime_rfc2822() {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2015, 2, 18)
                     .unwrap()
-                    .and_hms_micro_opt(23, 59, 59, 1_234_567)
+                    .and_hms_micro(23, 59, 59, 1_234_567)
                     .unwrap()
             )
             .unwrap())
@@ -493,7 +493,7 @@ fn test_datetime_rfc2822() {
         edt.from_local_datetime(
             &NaiveDate::from_ymd(2015, 2, 18)
                 .unwrap()
-                .and_hms_micro_opt(23, 59, 59, 1_234_567)
+                .and_hms_micro(23, 59, 59, 1_234_567)
                 .unwrap()
         )
         .unwrap()

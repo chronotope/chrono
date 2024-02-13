@@ -257,7 +257,7 @@ impl NaiveDateTime {
     /// assert_eq!(parse_from_str("2015-09-05 23:56:04", "%Y-%m-%d %H:%M:%S"),
     ///            Ok(NaiveDate::from_ymd(2015, 9, 5).unwrap().and_hms(23, 56, 4).unwrap()));
     /// assert_eq!(parse_from_str("5sep2015pm012345.6789", "%d%b%Y%p%I%M%S%.f"),
-    ///            Ok(NaiveDate::from_ymd(2015, 9, 5).unwrap().and_hms_micro_opt(13, 23, 45, 678_900).unwrap()));
+    ///            Ok(NaiveDate::from_ymd(2015, 9, 5).unwrap().and_hms_micro(13, 23, 45, 678_900).unwrap()));
     /// ```
     ///
     /// Offset is ignored for the purpose of parsing.
@@ -442,10 +442,10 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_micro_opt(0, 0, 1, 444).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_micro(0, 0, 1, 444).unwrap();
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_micro_opt(1, 46, 40, 555).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_micro(1, 46, 40, 555).unwrap();
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
     /// ```
     #[inline]
