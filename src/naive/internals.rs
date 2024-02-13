@@ -120,7 +120,7 @@ pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 // The next table are adjustment values to convert a date encoded as month-day-leapyear to
 // ordinal-leapyear. OL = MDL - adjustment.
 // Dates that do not exist are encoded as `XX`.
-const XX: i8 = -128;
+const XX: i8 = 0;
 const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -255,7 +255,7 @@ impl Mdf {
         let mdl = mdf >> 3;
         if mdl <= MAX_MDL {
             // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
-            MDL_TO_OL[mdl as usize] >= 0
+            MDL_TO_OL[mdl as usize] > 0
         } else {
             // Panicking here would be reasonable, but we are just going on with a safe value.
             false
