@@ -1,17 +1,4 @@
-// This is a part of Chrono.
-// See README.md and LICENSE.txt for details.
-
-//! The internal implementation of the calendar and ordinal date.
-//!
-//! The current implementation is optimized for determining year, month, day and day of week.
-//! 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
-//! which are included in every packed `NaiveDate` instance.
-//! The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
-//! based on the moderately-sized lookup table (~1.5KB)
-//! and the packed representation is chosen for the efficient lookup.
-//! Every internal data structure does not validate its input,
-//! but the conversion keeps the valid value valid and the invalid value invalid
-//! so that the user-facing `NaiveDate` can validate the input as late as possible.
+//! Internal helper types for working with dates.
 
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
@@ -130,6 +117,9 @@ impl fmt::Debug for YearFlags {
 pub(super) const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
 pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
+// The next table are adjustment values to convert a date encoded as month-day-leapyear to
+// ordinal-leapyear. OL = MDL - adjustment.
+// Dates that do not exist are encoded as `XX`.
 const XX: i8 = -128;
 const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -218,17 +208,28 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 /// Month, day of month and year flags: `(month << 9) | (day << 4) | flags`
 /// `M_MMMD_DDDD_LFFF`
 ///
-/// The whole bits except for the least 3 bits are referred as `Mdl`
-/// (month, day of month and leap flag),
-/// which is an index to the `MDL_TO_OL` lookup table.
+/// The whole bits except for the least 3 bits are referred as `Mdl` (month, day of month, and leap
+/// year flag), which is an index to the `MDL_TO_OL` lookup table.
 ///
-/// The methods implemented on `Mdf` do not always return a valid value.
-/// Dates that can't exist, like February 30, can still be represented.
-/// Use `Mdl::valid` to check whether the date is valid.
+/// The conversion between the packed calendar date (`Mdf`) and the ordinal date (`NaiveDate`) is
+/// based on the moderately-sized lookup table (~1.5KB) and the packed representation is chosen for
+/// efficient lookup.
+///
+/// The methods of `Mdf` validate their inputs as late as possible. Dates that can't exist, like
+/// February 30, can still be represented. This allows the validation to be combined with the final
+/// table lookup, which is good for performance.
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub(super) struct Mdf(u32);
 
 impl Mdf {
+    /// Makes a new `Mdf` value from month, day and `YearFlags`.
+    ///
+    /// This method doesn't fully validate the range of the `month` and `day` parameters, only as
+    /// much as what can't be deferred until later. The year `flags` are trusted to be correct.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month > 12` or `day > 31`.
     #[inline]
     pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
         match month >= 1 && month <= 12 && day >= 1 && day <= 31 {
@@ -237,6 +238,10 @@ impl Mdf {
         }
     }
 
+    /// Makes a new `Mdf` value from an `i32` with an ordinal and a leap year flag, and year
+    /// `flags`.
+    ///
+    /// The `ol` is trusted to be valid, and the `flags` are trusted to match it.
     #[inline]
     pub(super) const fn from_ol(ol: i32, YearFlags(flags): YearFlags) -> Mdf {
         debug_assert!(ol > 1 && ol <= MAX_OL as i32);
@@ -257,12 +262,18 @@ impl Mdf {
         }
     }
 
+    /// Returns the month of this `Mdf`.
     #[inline]
     pub(super) const fn month(&self) -> u32 {
         let Mdf(mdf) = *self;
         mdf >> 9
     }
 
+    /// Replaces the month of this `Mdf`, keeping the day and flags.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month > 12`.
     #[inline]
     pub(super) const fn with_month(&self, month: u32) -> Option<Mdf> {
         if month > 12 {
@@ -273,12 +284,18 @@ impl Mdf {
         Some(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
     }
 
+    /// Returns the day of this `Mdf`.
     #[inline]
     pub(super) const fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
         (mdf >> 4) & 0b1_1111
     }
 
+    /// Replaces the day of this `Mdf`, keeping the month and flags.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `day > 31`.
     #[inline]
     pub(super) const fn with_day(&self, day: u32) -> Option<Mdf> {
         if day > 31 {
@@ -289,12 +306,22 @@ impl Mdf {
         Some(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
     }
 
+    /// Replaces the flags of this `Mdf`, keeping the month and day.
     #[inline]
     pub(super) const fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
         let Mdf(mdf) = *self;
         Mdf((mdf & !0b1111) | flags as u32)
     }
 
+    /// Returns the ordinal that corresponds to this `Mdf`.
+    ///
+    /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
+    /// the `Mdl` turns out not to be a valid date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
+    /// given month.
     #[inline]
     pub(super) const fn ordinal(&self) -> Option<u32> {
         let mdl = self.0 >> 3;
@@ -304,6 +331,7 @@ impl Mdf {
         }
     }
 
+    /// Returns the year flags of this `Mdf`.
     #[inline]
     pub(super) const fn year_flags(&self) -> YearFlags {
         YearFlags((self.0 & 0b1111) as u8)
