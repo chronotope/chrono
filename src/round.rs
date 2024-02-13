@@ -238,7 +238,7 @@ pub enum RoundingError {
     ///
     /// ``` rust
     /// # use chrono::{DurationRound, TimeDelta, RoundingError, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2260, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 1_75_500_000).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd(2260, 12, 31).unwrap().and_hms_nano(23, 59, 59, 1_75_500_000).unwrap().and_local_timezone(Utc).unwrap();
     ///
     /// assert_eq!(
     ///     dt.duration_round(TimeDelta::days(300 * 365)),
@@ -296,7 +296,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
-                    .and_hms_nano_opt(10, 5, 13, 84_660_684)
+                    .and_hms_nano(10, 5, 13, 84_660_684)
                     .unwrap(),
             )
             .unwrap();
@@ -319,7 +319,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
-                    .and_hms_nano_opt(10, 5, 27, 750_500_000)
+                    .and_hms_nano(10, 5, 27, 750_500_000)
                     .unwrap(),
             )
             .unwrap();
@@ -339,7 +339,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 1_750_500_000)
+                    .and_hms_nano(23, 59, 59, 1_750_500_000)
                     .unwrap(),
             )
             .unwrap();
@@ -360,7 +360,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
-                    .and_hms_nano_opt(10, 5, 13, 84_660_684)
+                    .and_hms_nano(10, 5, 13, 84_660_684)
                     .unwrap(),
             )
             .unwrap();
@@ -383,7 +383,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
-                    .and_hms_nano_opt(10, 5, 27, 750_500_000)
+                    .and_hms_nano(10, 5, 27, 750_500_000)
                     .unwrap(),
             )
             .unwrap();
@@ -403,7 +403,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 1_750_500_000)
+                    .and_hms_nano(23, 59, 59, 1_750_500_000)
                     .unwrap(),
             )
             .unwrap();
@@ -423,7 +423,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
             )
             .unwrap();
@@ -505,7 +505,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
             )
             .unwrap()
@@ -577,7 +577,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
             )
             .unwrap();
@@ -653,7 +653,7 @@ mod tests {
             .from_local_datetime(
                 &NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
+                    .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
             )
             .unwrap()

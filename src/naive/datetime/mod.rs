@@ -473,10 +473,10 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::{NaiveDate, NaiveDateTime};
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms_nano(0, 0, 1, 444).unwrap();
     /// assert_eq!(dt.timestamp_nanos(), Some(1_000_000_444));
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano(1, 46, 40, 555).unwrap();
     ///
     /// const A_BILLION: i64 = 1_000_000_000;
     /// let nanos = dt.timestamp_nanos().unwrap();
@@ -521,10 +521,10 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 123_456_789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_nano(9, 10, 11, 123_456_789).unwrap();
     /// assert_eq!(dt.timestamp_subsec_millis(), 123);
     ///
-    /// let dt = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_nano_opt(8, 59, 59, 1_234_567_890).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_nano(8, 59, 59, 1_234_567_890).unwrap();
     /// assert_eq!(dt.timestamp_subsec_millis(), 1_234);
     /// ```
     #[inline]
@@ -543,10 +543,10 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 123_456_789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_nano(9, 10, 11, 123_456_789).unwrap();
     /// assert_eq!(dt.timestamp_subsec_micros(), 123_456);
     ///
-    /// let dt = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_nano_opt(8, 59, 59, 1_234_567_890).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_nano(8, 59, 59, 1_234_567_890).unwrap();
     /// assert_eq!(dt.timestamp_subsec_micros(), 1_234_567);
     /// ```
     #[inline]
@@ -565,10 +565,10 @@ impl NaiveDateTime {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 123_456_789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_nano(9, 10, 11, 123_456_789).unwrap();
     /// assert_eq!(dt.timestamp_subsec_nanos(), 123_456_789);
     ///
-    /// let dt = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_nano_opt(8, 59, 59, 1_234_567_890).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_nano(8, 59, 59, 1_234_567_890).unwrap();
     /// assert_eq!(dt.timestamp_subsec_nanos(), 1_234_567_890);
     /// ```
     #[inline]
@@ -1556,9 +1556,9 @@ impl Timelike for NaiveDateTime {
     ///
     /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 59, 789).unwrap();
     /// assert_eq!(dt.with_nanosecond(333_333_333),
-    ///            Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 59, 333_333_333).unwrap()));
+    ///            Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano(12, 34, 59, 333_333_333).unwrap()));
     /// assert_eq!(dt.with_nanosecond(1_333_333_333), // leap second
-    ///            Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano_opt(12, 34, 59, 1_333_333_333).unwrap()));
+    ///            Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano(12, 34, 59, 1_333_333_333).unwrap()));
     /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
     /// ```
     #[inline]
@@ -2144,10 +2144,8 @@ where
         Some(r#""0000-01-01T00:00:60""#.into())
     );
     assert_eq!(
-        to_string(
-            &NaiveDate::from_ymd(-1, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap()
-        )
-        .ok(),
+        to_string(&NaiveDate::from_ymd(-1, 12, 31).unwrap().and_hms_nano(23, 59, 59, 7).unwrap())
+            .ok(),
         Some(r#""-0001-12-31T23:59:59.000000007""#.into())
     );
     assert_eq!(
@@ -2155,7 +2153,7 @@ where
         Some(r#""-262143-01-01T00:00:00""#.into())
     );
     assert_eq!(
-        to_string(&NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap()).ok(),
+        to_string(&NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999).unwrap()).ok(),
         Some(r#""+262142-12-31T23:59:60.999999999""#.into())
     );
 }
@@ -2188,7 +2186,7 @@ where
     );
     assert_eq!(
         from_str(r#""-0001-12-31T23:59:59.000000007""#).ok(),
-        Some(NaiveDate::from_ymd(-1, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 7).unwrap())
+        Some(NaiveDate::from_ymd(-1, 12, 31).unwrap().and_hms_nano(23, 59, 59, 7).unwrap())
     );
     assert_eq!(
         from_str(r#""-262143-01-01T00:00:00""#).ok(),
@@ -2196,11 +2194,11 @@ where
     );
     assert_eq!(
         from_str(r#""+262142-12-31T23:59:60.999999999""#).ok(),
-        Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
+        Some(NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999).unwrap())
     );
     assert_eq!(
         from_str(r#""+262142-12-31T23:59:60.9999999999997""#).ok(), // excess digits are ignored
-        Some(NaiveDate::MAX.and_hms_nano_opt(23, 59, 59, 1_999_999_999).unwrap())
+        Some(NaiveDate::MAX.and_hms_nano(23, 59, 59, 1_999_999_999).unwrap())
     );
 
     // bad formats

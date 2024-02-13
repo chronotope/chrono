@@ -653,10 +653,7 @@ fn test_rfc3339_opts() {
     let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     let dt = pst
         .from_local_datetime(
-            &NaiveDate::from_ymd(2018, 1, 11)
-                .unwrap()
-                .and_hms_nano_opt(10, 5, 13, 84_660_000)
-                .unwrap(),
+            &NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_nano(10, 5, 13, 84_660_000).unwrap(),
         )
         .unwrap();
     assert_eq!(dt.to_rfc3339_opts(Secs, false), "2018-01-11T10:05:13+08:00");
@@ -1092,7 +1089,7 @@ fn test_datetime_is_send_and_copy() {
 fn test_subsecond_part() {
     let datetime = Utc
         .from_local_datetime(
-            &NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_nano_opt(9, 10, 11, 1234567).unwrap(),
+            &NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_nano(9, 10, 11, 1234567).unwrap(),
         )
         .unwrap();
 
@@ -1118,21 +1115,21 @@ fn test_from_system_time() {
     assert_eq!(
         DateTime::<Utc>::try_from(UNIX_EPOCH + Duration::new(999_999_999, nanos)).unwrap(),
         Utc.from_local_datetime(
-            &NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 39, nanos).unwrap()
+            &NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano(1, 46, 39, nanos).unwrap()
         )
         .unwrap()
     );
     assert_eq!(
         DateTime::<Utc>::try_from(UNIX_EPOCH - Duration::new(999_999_999, nanos)).unwrap(),
         Utc.from_local_datetime(
-            &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 20, 1_000).unwrap()
+            &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano(22, 13, 20, 1_000).unwrap()
         )
         .unwrap()
     );
     assert_eq!(
         DateTime::<Utc>::try_from(UNIX_EPOCH - Duration::new(999_999_999, 0)).unwrap(),
         Utc.from_local_datetime(
-            &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano_opt(22, 13, 21, 0).unwrap()
+            &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano(22, 13, 21, 0).unwrap()
         )
         .unwrap()
     );
@@ -1142,10 +1139,7 @@ fn test_from_system_time() {
     assert_eq!(
         SystemTime::try_from(
             Utc.from_local_datetime(
-                &NaiveDate::from_ymd(2001, 9, 9)
-                    .unwrap()
-                    .and_hms_nano_opt(1, 46, 39, nanos)
-                    .unwrap()
+                &NaiveDate::from_ymd(2001, 9, 9).unwrap().and_hms_nano(1, 46, 39, nanos).unwrap()
             )
             .unwrap()
         )
@@ -1155,10 +1149,7 @@ fn test_from_system_time() {
     assert_eq!(
         SystemTime::try_from(
             Utc.from_local_datetime(
-                &NaiveDate::from_ymd(1938, 4, 24)
-                    .unwrap()
-                    .and_hms_nano_opt(22, 13, 20, 1_000)
-                    .unwrap()
+                &NaiveDate::from_ymd(1938, 4, 24).unwrap().and_hms_nano(22, 13, 20, 1_000).unwrap()
             )
             .unwrap()
         )

@@ -79,7 +79,7 @@ mod tests;
 ///
 /// let dt1 = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_micro(8, 59, 59, 1_000_000).unwrap();
 ///
-/// let dt2 = NaiveDate::from_ymd(2015, 6, 30).unwrap().and_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap().and_local_timezone(Utc).unwrap();
+/// let dt2 = NaiveDate::from_ymd(2015, 6, 30).unwrap().and_hms_nano(23, 59, 59, 1_000_000_000).unwrap().and_local_timezone(Utc).unwrap();
 /// # let _ = (t, dt1, dt2);
 /// ```
 ///
