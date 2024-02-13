@@ -852,7 +852,7 @@ pub mod ts_milliseconds_option {
 ///     time: NaiveDateTime
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap();
+/// let time = NaiveDate::from_ymd(2015, 5, 15).unwrap().and_hms(10, 0, 0).unwrap();
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -887,7 +887,7 @@ pub mod ts_seconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2015, 5, 15).unwrap().and_hms_opt(10, 0, 0).unwrap(),
+    ///     time: NaiveDate::from_ymd(2015, 5, 15).unwrap().and_hms(10, 0, 0).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
@@ -969,7 +969,7 @@ pub mod ts_seconds {
 ///     time: Option<NaiveDateTime>
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_opt(02, 04, 59).unwrap());
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms(02, 04, 59).unwrap());
 /// let my_s = S {
 ///     time: time.clone(),
 /// };
@@ -1004,7 +1004,7 @@ pub mod ts_seconds_option {
     /// }
     ///
     /// let my_s = S {
-    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_opt(02, 04, 59).unwrap()),
+    ///     time: Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms(02, 04, 59).unwrap()),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);

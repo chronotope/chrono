@@ -1022,9 +1022,8 @@ mod tests {
             ($($k:ident: $v:expr),*) => (parse!(offset = 0; $($k: $v),*))
         }
 
-        let ymdhms = |y, m, d, h, n, s| {
-            Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap())
-        };
+        let ymdhms =
+            |y, m, d, h, n, s| Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap());
         let ymdhmsn = |y, m, d, h, n, s, nano| {
             Ok(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap())
         };

@@ -187,7 +187,7 @@ mod tests;
 /// assert_eq!(format!("{:?}", dt1), "2015-06-30T20:19:24-03:40:36");
 /// assert_eq!(format!("{:?}", dt1.time()), "20:19:24");
 ///
-/// let next_sec = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+/// let next_sec = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms(0, 0, 0).unwrap();
 /// let dt2 = paramaribo_pre1945.from_utc_datetime(&next_sec);
 /// assert_eq!(format!("{:?}", dt2), "2015-06-30T20:19:24-03:40:36");
 /// assert_eq!(format!("{:?}", dt2.time()), "20:19:24");
