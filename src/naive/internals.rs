@@ -232,7 +232,7 @@ impl Mdf {
     /// Returns `None` if `month > 12` or `day > 31`.
     #[inline]
     pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
-        match month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+        match month <= 12 && day <= 31 {
             true => Some(Mdf((month << 9) | (day << 4) | flags as u32)),
             false => None,
         }
@@ -557,12 +557,9 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_returns_none() {
+    fn test_mdf_new_range() {
         let flags = YearFlags::from_year(2023);
-        assert!(Mdf::new(0, 1, flags).is_none());
         assert!(Mdf::new(13, 1, flags).is_none());
-        assert!(Mdf::new(1, 0, flags).is_none());
         assert!(Mdf::new(1, 32, flags).is_none());
-        assert!(Mdf::new(2, 31, flags).is_some());
     }
 }
