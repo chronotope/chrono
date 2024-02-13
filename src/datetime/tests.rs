@@ -1256,7 +1256,7 @@ fn test_years_elapsed() {
 
 #[test]
 fn test_datetime_add_assign() {
-    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
     let datetime = naivedatetime.and_utc();
     let mut datetime_add = datetime;
 
@@ -1279,7 +1279,7 @@ fn test_datetime_add_assign() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_add_assign_local() {
-    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
     let mut datetime_add = Local.from_utc_datetime(&naivedatetime);
@@ -1293,7 +1293,7 @@ fn test_datetime_add_assign_local() {
 
 #[test]
 fn test_datetime_sub_assign() {
-    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms_opt(12, 0, 0).unwrap();
+    let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms(12, 0, 0).unwrap();
     let datetime = naivedatetime.and_utc();
     let mut datetime_sub = datetime;
 
@@ -1436,7 +1436,7 @@ fn test_local_beyond_max_datetime() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_sub_assign_local() {
-    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let naivedatetime = NaiveDate::from_ymd(2022, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
     let mut datetime_sub = Local.from_utc_datetime(&naivedatetime);
@@ -1472,7 +1472,7 @@ fn test_core_duration_max() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_datetime_local_from_preserves_offset() {
-    let naivedatetime = NaiveDate::from_ymd(2023, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let naivedatetime = NaiveDate::from_ymd(2023, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
 
     let datetime = Local.from_utc_datetime(&naivedatetime);
     let offset = datetime.offset().fix();
@@ -1484,7 +1484,7 @@ fn test_datetime_local_from_preserves_offset() {
 
 #[test]
 fn test_datetime_fixed_offset() {
-    let naivedatetime = NaiveDate::from_ymd(2023, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let naivedatetime = NaiveDate::from_ymd(2023, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
 
     let datetime = Utc.from_utc_datetime(&naivedatetime);
     let fixed_utc = FixedOffset::east(0).unwrap();

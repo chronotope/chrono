@@ -129,12 +129,12 @@
 //! # fn doctest() -> Option<()> {
 //!
 //! let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap(); // `2014-07-08T09:10:11Z`
-//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms_opt(9, 10, 11).unwrap().and_local_timezone(Utc).unwrap());
+//! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms(9, 10, 11).unwrap().and_local_timezone(Utc).unwrap());
 //!
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
-//! assert_eq!(dt, NaiveDate::from_yo(2014, 189)?.and_hms_opt(9, 10, 11).unwrap().and_utc());
+//! assert_eq!(dt, NaiveDate::from_yo(2014, 189)?.and_hms(9, 10, 11).unwrap().and_utc());
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue)?.and_hms_opt(9, 10, 11).unwrap().and_utc());
+//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue)?.and_hms(9, 10, 11).unwrap().and_utc());
 //!
 //! let dt = NaiveDate::from_ymd(2014, 7, 8)?.and_hms_milli_opt(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
 //! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8)?.and_hms_micro_opt(9, 10, 11, 12_000).unwrap().and_local_timezone(Utc).unwrap());
@@ -142,7 +142,7 @@
 //!
 //! // dynamic verification
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33),
-//!            LocalResult::Single(NaiveDate::from_ymd(2014, 7, 8)?.and_hms_opt(21, 15, 33).unwrap().and_utc()));
+//!            LocalResult::Single(NaiveDate::from_ymd(2014, 7, 8)?.and_hms(21, 15, 33).unwrap().and_utc()));
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::None);
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::None);
 //!

@@ -131,8 +131,7 @@ fn test_datetime_from_timestamp_nanos() {
 #[test]
 fn test_datetime_from_timestamp() {
     let from_timestamp = |secs| NaiveDateTime::from_timestamp(secs, 0);
-    let ymdhms =
-        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
     assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
     assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
     assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
@@ -149,9 +148,9 @@ fn test_datetime_add() {
         rhs: TimeDelta,
         result: Option<(i32, u32, u32, u32, u32, u32)>,
     ) {
-        let lhs = NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+        let lhs = NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
         let sum = result.map(|(y, m, d, h, n, s)| {
-            NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap()
+            NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap()
         });
         assert_eq!(lhs.checked_add_signed(rhs), sum);
         assert_eq!(lhs.checked_sub_signed(-rhs), sum);
@@ -187,8 +186,7 @@ fn test_datetime_add() {
 
 #[test]
 fn test_datetime_sub() {
-    let ymdhms =
-        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
     let since = NaiveDateTime::signed_duration_since;
     assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), TimeDelta::zero());
     assert_eq!(
@@ -211,8 +209,7 @@ fn test_datetime_sub() {
 
 #[test]
 fn test_datetime_addassignment() {
-    let ymdhms =
-        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
     let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
     date += TimeDelta::minutes(10_000_000);
     assert_eq!(date, ymdhms(2035, 10, 6, 20, 50, 10));
@@ -222,8 +219,7 @@ fn test_datetime_addassignment() {
 
 #[test]
 fn test_datetime_subassignment() {
-    let ymdhms =
-        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
     let mut date = ymdhms(2016, 10, 1, 10, 10, 10);
     date -= TimeDelta::minutes(10_000_000);
     assert_eq!(date, ymdhms(1997, 9, 26, 23, 30, 10));
@@ -235,12 +231,12 @@ fn test_datetime_subassignment() {
 fn test_core_duration_ops() {
     use core::time::Duration;
 
-    let mut dt = NaiveDate::from_ymd(2023, 8, 29).unwrap().and_hms_opt(11, 34, 12).unwrap();
+    let mut dt = NaiveDate::from_ymd(2023, 8, 29).unwrap().and_hms(11, 34, 12).unwrap();
     let same = dt + Duration::ZERO;
     assert_eq!(dt, same);
 
     dt += Duration::new(3600, 0);
-    assert_eq!(dt, NaiveDate::from_ymd(2023, 8, 29).unwrap().and_hms_opt(12, 34, 12).unwrap());
+    assert_eq!(dt, NaiveDate::from_ymd(2023, 8, 29).unwrap().and_hms(12, 34, 12).unwrap());
 }
 
 #[test]
@@ -248,14 +244,14 @@ fn test_core_duration_ops() {
 fn test_core_duration_max() {
     use core::time::Duration;
 
-    let mut utc_dt = NaiveDate::from_ymd(2023, 8, 29).unwrap().and_hms_opt(11, 34, 12).unwrap();
+    let mut utc_dt = NaiveDate::from_ymd(2023, 8, 29).unwrap().and_hms(11, 34, 12).unwrap();
     utc_dt += Duration::MAX;
 }
 
 #[test]
 fn test_datetime_timestamp() {
     let to_timestamp = |y, m, d, h, n, s| {
-        NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap().timestamp()
+        NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap().timestamp()
     };
     assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
     assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
@@ -347,8 +343,7 @@ fn test_datetime_from_str() {
 
 #[test]
 fn test_datetime_parse_from_str() {
-    let ymdhms =
-        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap();
+    let ymdhms = |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
     let ymdhmsn = |y, m, d, h, n, s, nano| {
         NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano_opt(h, n, s, nano).unwrap()
     };
@@ -400,7 +395,7 @@ fn test_datetime_parse_from_str() {
 #[test]
 fn test_datetime_parse_from_str_with_spaces() {
     let parse_from_str = NaiveDateTime::parse_from_str;
-    let dt = NaiveDate::from_ymd(2013, 8, 9).unwrap().and_hms_opt(23, 54, 35).unwrap();
+    let dt = NaiveDate::from_ymd(2013, 8, 9).unwrap().and_hms(23, 54, 35).unwrap();
     // with varying spaces - should succeed
     assert_eq!(parse_from_str(" Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"), Ok(dt));
     assert_eq!(parse_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S "), Ok(dt));
@@ -445,7 +440,7 @@ fn test_datetime_parse_from_str_with_spaces() {
 #[test]
 fn test_datetime_add_sub_invariant() {
     // issue #37
-    let base = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+    let base = NaiveDate::from_ymd(2000, 1, 1).unwrap().and_hms(0, 0, 0).unwrap();
     let t = -946684799990000;
     let time = base + TimeDelta::microseconds(t);
     assert_eq!(t, time.signed_duration_since(base).num_microseconds().unwrap());
@@ -485,7 +480,7 @@ fn test_nanosecond_range() {
 
 #[test]
 fn test_and_local_timezone() {
-    let ndt = NaiveDate::from_ymd(2022, 6, 15).unwrap().and_hms_opt(18, 59, 36).unwrap();
+    let ndt = NaiveDate::from_ymd(2022, 6, 15).unwrap().and_hms(18, 59, 36).unwrap();
     let dt_utc = ndt.and_local_timezone(Utc).unwrap();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
@@ -498,7 +493,7 @@ fn test_and_local_timezone() {
 
 #[test]
 fn test_and_utc() {
-    let ndt = NaiveDate::from_ymd(2023, 1, 30).unwrap().and_hms_opt(19, 32, 33).unwrap();
+    let ndt = NaiveDate::from_ymd(2023, 1, 30).unwrap().and_hms(19, 32, 33).unwrap();
     let dt_utc = ndt.and_utc();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
