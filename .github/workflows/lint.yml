@@ -26,6 +26,9 @@ jobs:
           cargo clippy ${{ env.ALL_NON_EXCLUSIVE_FEATURES }} --all-targets --color=always \
             -- -D warnings
       - run: |
+          cargo clippy --target=x86_64-pc-windows-msvc --all-targets --color=always \
+            -- -D warnings
+      - run: |
           cargo clippy --manifest-path fuzz/Cargo.toml --color=always \
             -- -D warnings
       - run: |
