@@ -562,7 +562,6 @@ impl Parsed {
     /// - `IMPOSSIBLE` if any of the date fields conflict.
     /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete date.
     /// - `OUT_OF_RANGE`
-    ///   - if any of the date fields of `Parsed` are set to a value beyond their acceptable range.
     ///   - if the value would be outside the range of a [`NaiveDate`].
     ///   - if the date does not exist.
     pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
@@ -580,7 +579,7 @@ impl Parsed {
                 // check if present quotient and/or modulo is consistent to the full year.
                 // since the presence of those fields means a positive full year,
                 // we should filter a negative full year first.
-                (Some(y), q, r @ Some(0..=99)) | (Some(y), q, r @ None) => {
+                (Some(y), q, r) => {
                     if y < 0 {
                         return Err(IMPOSSIBLE);
                     }
@@ -595,21 +594,17 @@ impl Parsed {
 
                 // the full year is missing but we have quotient and modulo.
                 // reconstruct the full year. make sure that the result is always positive.
-                (None, Some(q), Some(r @ 0..=99)) => {
-                    if q < 0 {
-                        return Err(IMPOSSIBLE);
-                    }
+                (None, Some(q), Some(r)) => {
                     let y = q.checked_mul(100).and_then(|v| v.checked_add(r));
                     Ok(Some(y.ok_or(OUT_OF_RANGE)?))
                 }
 
                 // we only have modulo. try to interpret a modulo as a conventional two-digit year.
                 // note: we are affected by Rust issue #18060. avoid multiple range patterns.
-                (None, None, Some(r @ 0..=99)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
+                (None, None, Some(r)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
 
                 // otherwise it is an out-of-bound or insufficient condition.
                 (None, Some(_), None) => Err(NOT_ENOUGH),
-                (_, _, Some(_)) => Err(OUT_OF_RANGE),
             }
         }
 
@@ -719,43 +714,25 @@ impl Parsed {
     /// # Errors
     ///
     /// This method returns:
-    /// - `OUT_OF_RANGE` if any of the time fields of `Parsed` are set to a value beyond
-    ///   their acceptable range.
     /// - `NOT_ENOUGH` if an hour field is missing, if AM/PM is missing in a 12-hour clock,
     ///   if minutes are missing, or if seconds are missing while the nanosecond field is present.
     pub fn to_naive_time(&self) -> ParseResult<NaiveTime> {
-        let hour_div_12 = match self.hour_div_12 {
-            Some(v @ 0..=1) => v,
-            Some(_) => return Err(OUT_OF_RANGE),
-            None => return Err(NOT_ENOUGH),
-        };
-        let hour_mod_12 = match self.hour_mod_12 {
-            Some(v @ 0..=11) => v,
-            Some(_) => return Err(OUT_OF_RANGE),
-            None => return Err(NOT_ENOUGH),
-        };
+        let hour_div_12 = self.hour_div_12.ok_or(NOT_ENOUGH)?;
+        let hour_mod_12 = self.hour_mod_12.ok_or(NOT_ENOUGH)?;
         let hour = hour_div_12 * 12 + hour_mod_12;
+        let minute = self.minute.ok_or(NOT_ENOUGH)?;
 
-        let minute = match self.minute {
-            Some(v @ 0..=59) => v,
-            Some(_) => return Err(OUT_OF_RANGE),
-            None => return Err(NOT_ENOUGH),
+        // we allow omitting seconds or nanoseconds.
+        let (second, nano) = match (self.second, self.nanosecond) {
+            (Some(60), nano) => (59, 1_000_000_000 + nano.unwrap_or(0)),
+            (Some(sec), nano) => (sec, nano.unwrap_or(0)),
+            (None, Some(_)) => return Err(NOT_ENOUGH),
+            (None, None) => (0, 0),
         };
 
-        // we allow omitting seconds or nanoseconds, but they should be in the range.
-        let (second, mut nano) = match self.second.unwrap_or(0) {
-            v @ 0..=59 => (v, 0),
-            60 => (59, 1_000_000_000),
-            _ => return Err(OUT_OF_RANGE),
-        };
-        nano += match self.nanosecond {
-            Some(v @ 0..=999_999_999) if self.second.is_some() => v,
-            Some(0..=999_999_999) => return Err(NOT_ENOUGH), // second is missing
-            Some(_) => return Err(OUT_OF_RANGE),
-            None => 0,
-        };
-
-        NaiveTime::from_hms_nano(hour, minute, second, nano).map_err(|_| OUT_OF_RANGE)
+        // The `set_*` methods have already validated all our inputs are in range, so this can't
+        // fail.
+        Ok(NaiveTime::from_hms_nano(hour, minute, second, nano).unwrap())
     }
 
     /// Returns a parsed naive date and time out of given fields, except for the offset field.
@@ -773,8 +750,6 @@ impl Parsed {
     ///   the other fields.
     /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime.
     /// - `OUT_OF_RANGE`
-    ///   - if any of the date or time fields of `Parsed` are set to a value beyond their acceptable
-    ///     range.
     ///   - if the value would be outside the range of a [`NaiveDateTime`].
     ///   - if the date does not exist.
     pub fn to_naive_datetime_with_offset(&self, offset: i32) -> ParseResult<NaiveDateTime> {
@@ -798,14 +773,17 @@ impl Parsed {
             Ok(datetime)
         } else if let Some(timestamp) = self.timestamp {
             use super::ParseError as PE;
-            use super::ParseErrorKind::{Impossible, OutOfRange};
+            use super::ParseErrorKind;
 
-            // if date and time is problematic already, there is no point proceeding.
-            // we at least try to give a correct error though.
-            match (date, time) {
-                (Err(PE(OutOfRange)), _) | (_, Err(PE(OutOfRange))) => return Err(OUT_OF_RANGE),
-                (Err(PE(Impossible)), _) | (_, Err(PE(Impossible))) => return Err(IMPOSSIBLE),
-                (_, _) => {} // one of them is insufficient
+            // If the date fields are inconsistent, out of range, or if the date does not exist,
+            // there is no point proceeding.
+            //
+            // If the date or time fields are not enough it is not an error (which is the only error
+            // `to_naive_time` can return, so no need to check).
+            match date {
+                Err(PE(ParseErrorKind::NotEnough)) => {}
+                Err(e) => return Err(e),
+                _ => {}
             }
 
             // reconstruct date and time fields from timestamp
@@ -873,8 +851,6 @@ impl Parsed {
     /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime
     ///   including offset from UTC.
     /// - `OUT_OF_RANGE`
-    ///   - if any of the fields of `Parsed` are set to a value beyond their acceptable
-    ///   range.
     ///   - if the value would be outside the range of a [`NaiveDateTime`] or [`FixedOffset`].
     ///   - if the date does not exist.
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
@@ -917,7 +893,6 @@ impl Parsed {
     ///   due to for example DST) while there is no offset field or timestamp field set.
     /// - `OUT_OF_RANGE`
     ///   - if the value would be outside the range of a [`NaiveDateTime`] or [`FixedOffset`].
-    ///   - if any of the fields of `Parsed` are set to a value beyond their acceptable range.
     ///   - if the date does not exist.
     pub fn to_datetime_with_timezone<Tz: TimeZone>(&self, tz: &Tz) -> ParseResult<DateTime<Tz>> {
         // if we have `timestamp` specified, guess an offset from that.
@@ -1144,10 +1119,6 @@ fn resolve_week_date(
     weekday: Weekday,
     week_start_day: Weekday,
 ) -> ParseResult<NaiveDate> {
-    if week > 53 {
-        return Err(OUT_OF_RANGE);
-    }
-
     let first_day_of_year = NaiveDate::from_yo(year, 1).map_err(|_| OUT_OF_RANGE)?;
     // Ordinal of the day at which week 1 starts.
     let first_week_start = 1 + week_start_day.num_days_from(first_day_of_year.weekday()) as i32;
