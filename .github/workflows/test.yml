@@ -69,7 +69,7 @@ jobs:
   features_check:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -167,7 +167,7 @@ jobs:
     strategy:
       matrix:
         target:
-          - x86_64-sun-solaris
+          - x86_64-unknown-illumos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

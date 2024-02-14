@@ -1,48 +1,50 @@
-// This is a part of Chrono.
-// See README.md and LICENSE.txt for details.
-
-//! The internal implementation of the calendar and ordinal date.
-//!
-//! The current implementation is optimized for determining year, month, day and day of week.
-//! 4-bit `YearFlags` map to one of 14 possible classes of year in the Gregorian calendar,
-//! which are included in every packed `NaiveDate` instance.
-//! The conversion between the packed calendar date (`Mdf`) and the ordinal date (`Of`) is
-//! based on the moderately-sized lookup table (~1.5KB)
-//! and the packed representation is chosen for the efficient lookup.
-//! Every internal data structure does not validate its input,
-//! but the conversion keeps the valid value valid and the invalid value invalid
-//! so that the user-facing `NaiveDate` can validate the input as late as possible.
+//! Internal helper types for working with dates.
 
 #![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
 
 use core::fmt;
 
-/// The year flags (aka the dominical letter).
+/// Year flags (aka the dominical letter).
+///
+/// `YearFlags` are used as the last four bits of `NaiveDate`, `Mdf` and `IsoWeek`.
 ///
 /// There are 14 possible classes of year in the Gregorian calendar:
 /// common and leap years starting with Monday through Sunday.
-/// The `YearFlags` stores this information into 4 bits `abbb`,
-/// where `a` is `1` for the common year (simplifies the `Of` validation)
-/// and `bbb` is a non-zero `Weekday` (mapping `Mon` to 7) of the last day in the past year
-/// (simplifies the day of week calculation from the 1-based ordinal).
+///
+/// The `YearFlags` stores this information into 4 bits `LWWW`. `L` is the leap year flag, with `1`
+/// for the common year (this simplifies validating an ordinal in `NaiveDate`). `WWW` is a non-zero
+/// `Weekday` of the last day in the preceding year.
 #[allow(unreachable_pub)] // public as an alias for benchmarks only
 #[derive(PartialEq, Eq, Copy, Clone, Hash)]
 pub struct YearFlags(pub(super) u8);
 
-pub(super) const A: YearFlags = YearFlags(0o15);
-pub(super) const AG: YearFlags = YearFlags(0o05);
-pub(super) const B: YearFlags = YearFlags(0o14);
-pub(super) const BA: YearFlags = YearFlags(0o04);
-pub(super) const C: YearFlags = YearFlags(0o13);
-pub(super) const CB: YearFlags = YearFlags(0o03);
-pub(super) const D: YearFlags = YearFlags(0o12);
-pub(super) const DC: YearFlags = YearFlags(0o02);
-pub(super) const E: YearFlags = YearFlags(0o11);
-pub(super) const ED: YearFlags = YearFlags(0o01);
-pub(super) const F: YearFlags = YearFlags(0o17);
-pub(super) const FE: YearFlags = YearFlags(0o07);
-pub(super) const G: YearFlags = YearFlags(0o16);
-pub(super) const GF: YearFlags = YearFlags(0o06);
+// Weekday of the last day in the preceding year.
+// Allows for quick day of week calculation from the 1-based ordinal.
+const YEAR_STARTS_AFTER_MONDAY: u8 = 7; // non-zero to allow use with `NonZero*`.
+const YEAR_STARTS_AFTER_THUESDAY: u8 = 1;
+const YEAR_STARTS_AFTER_WEDNESDAY: u8 = 2;
+const YEAR_STARTS_AFTER_THURSDAY: u8 = 3;
+const YEAR_STARTS_AFTER_FRIDAY: u8 = 4;
+const YEAR_STARTS_AFTER_SATURDAY: u8 = 5;
+const YEAR_STARTS_AFTER_SUNDAY: u8 = 6;
+
+const COMMON_YEAR: u8 = 1 << 3;
+const LEAP_YEAR: u8 = 0 << 3;
+
+pub(super) const A: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub(super) const AG: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SATURDAY);
+pub(super) const B: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub(super) const BA: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_FRIDAY);
+pub(super) const C: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub(super) const CB: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THURSDAY);
+pub(super) const D: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub(super) const DC: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_WEDNESDAY);
+pub(super) const E: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_THUESDAY);
+pub(super) const ED: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_THUESDAY);
+pub(super) const F: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_MONDAY);
+pub(super) const FE: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_MONDAY);
+pub(super) const G: YearFlags = YearFlags(COMMON_YEAR | YEAR_STARTS_AFTER_SUNDAY);
+pub(super) const GF: YearFlags = YearFlags(LEAP_YEAR | YEAR_STARTS_AFTER_SUNDAY);
 
 const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
     BA, G, F, E, DC, B, A, G, FE, D, C, B, AG, F, E, D, CB, A, G, F, ED, C, B, A, GF, E, D, C, BA,
@@ -127,10 +129,13 @@ impl fmt::Debug for YearFlags {
 }
 
 // OL: (ordinal << 1) | leap year flag
-pub(super) const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
-pub(super) const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
+const MAX_OL: u32 = 366 << 1; // `(366 << 1) | 1` would be day 366 in a non-leap year
+const MAX_MDL: u32 = (12 << 6) | (31 << 1) | 1;
 
-const XX: i8 = -128;
+// The next table are adjustment values to convert a date encoded as month-day-leapyear to
+// ordinal-leapyear. OL = MDL - adjustment.
+// Dates that do not exist are encoded as `XX`.
+const XX: i8 = 0;
 const MDL_TO_OL: &[i8; MAX_MDL as usize + 1] = &[
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
     XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
@@ -218,25 +223,40 @@ const OL_TO_MDL: &[u8; MAX_OL as usize + 1] = &[
 /// Month, day of month and year flags: `(month << 9) | (day << 4) | flags`
 /// `M_MMMD_DDDD_LFFF`
 ///
-/// The whole bits except for the least 3 bits are referred as `Mdl`
-/// (month, day of month and leap flag),
-/// which is an index to the `MDL_TO_OL` lookup table.
+/// The whole bits except for the least 3 bits are referred as `Mdl` (month, day of month, and leap
+/// year flag), which is an index to the `MDL_TO_OL` lookup table.
 ///
-/// The methods implemented on `Mdf` do not always return a valid value.
-/// Dates that can't exist, like February 30, can still be represented.
-/// Use `Mdl::valid` to check whether the date is valid.
+/// The conversion between the packed calendar date (`Mdf`) and the ordinal date (`NaiveDate`) is
+/// based on the moderately-sized lookup table (~1.5KB) and the packed representation is chosen for
+/// efficient lookup.
+///
+/// The methods of `Mdf` validate their inputs as late as possible. Dates that can't exist, like
+/// February 30, can still be represented. This allows the validation to be combined with the final
+/// table lookup, which is good for performance.
 #[derive(PartialEq, PartialOrd, Copy, Clone)]
 pub(super) struct Mdf(u32);
 
 impl Mdf {
+    /// Makes a new `Mdf` value from month, day and `YearFlags`.
+    ///
+    /// This method doesn't fully validate the range of the `month` and `day` parameters, only as
+    /// much as what can't be deferred until later. The year `flags` are trusted to be correct.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month > 12` or `day > 31`.
     #[inline]
     pub(super) const fn new(month: u32, day: u32, YearFlags(flags): YearFlags) -> Option<Mdf> {
-        match month >= 1 && month <= 12 && day >= 1 && day <= 31 {
+        match month <= 12 && day <= 31 {
             true => Some(Mdf((month << 9) | (day << 4) | flags as u32)),
             false => None,
         }
     }
 
+    /// Makes a new `Mdf` value from an `i32` with an ordinal and a leap year flag, and year
+    /// `flags`.
+    ///
+    /// The `ol` is trusted to be valid, and the `flags` are trusted to match it.
     #[inline]
     pub(super) const fn from_ol(ol: i32, YearFlags(flags): YearFlags) -> Mdf {
         debug_assert!(ol > 1 && ol <= MAX_OL as i32);
@@ -244,25 +264,18 @@ impl Mdf {
         Mdf(((ol as u32 + OL_TO_MDL[ol as usize] as u32) << 3) | flags as u32)
     }
 
-    #[cfg(test)]
-    pub(super) const fn valid(&self) -> bool {
-        let Mdf(mdf) = *self;
-        let mdl = mdf >> 3;
-        if mdl <= MAX_MDL {
-            // Array is indexed from `[1..=MAX_MDL]`, with a `0` index having a meaningless value.
-            MDL_TO_OL[mdl as usize] >= 0
-        } else {
-            // Panicking here would be reasonable, but we are just going on with a safe value.
-            false
-        }
-    }
-
+    /// Returns the month of this `Mdf`.
     #[inline]
     pub(super) const fn month(&self) -> u32 {
         let Mdf(mdf) = *self;
         mdf >> 9
     }
 
+    /// Replaces the month of this `Mdf`, keeping the day and flags.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month > 12`.
     #[inline]
     pub(super) const fn with_month(&self, month: u32) -> Option<Mdf> {
         if month > 12 {
@@ -273,12 +286,18 @@ impl Mdf {
         Some(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
     }
 
+    /// Returns the day of this `Mdf`.
     #[inline]
     pub(super) const fn day(&self) -> u32 {
         let Mdf(mdf) = *self;
         (mdf >> 4) & 0b1_1111
     }
 
+    /// Replaces the day of this `Mdf`, keeping the month and flags.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `day > 31`.
     #[inline]
     pub(super) const fn with_day(&self, day: u32) -> Option<Mdf> {
         if day > 31 {
@@ -289,24 +308,59 @@ impl Mdf {
         Some(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
     }
 
+    /// Replaces the flags of this `Mdf`, keeping the month and day.
     #[inline]
     pub(super) const fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
         let Mdf(mdf) = *self;
         Mdf((mdf & !0b1111) | flags as u32)
     }
 
+    /// Returns the ordinal that corresponds to this `Mdf`.
+    ///
+    /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
+    /// the `Mdl` turns out not to be a valid date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
+    /// given month.
     #[inline]
     pub(super) const fn ordinal(&self) -> Option<u32> {
         let mdl = self.0 >> 3;
         match MDL_TO_OL[mdl as usize] {
             XX => None,
-            v => Some((mdl - v as i32 as u32) >> 1),
+            v => Some((mdl - v as u8 as u32) >> 1),
         }
     }
 
+    /// Returns the year flags of this `Mdf`.
     #[inline]
     pub(super) const fn year_flags(&self) -> YearFlags {
         YearFlags((self.0 & 0b1111) as u8)
+    }
+
+    /// Returns the ordinal that corresponds to this `Mdf`, encoded as a value including year flags.
+    ///
+    /// This does a table lookup to calculate the corresponding ordinal. It will return an error if
+    /// the `Mdl` turns out not to be a valid date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `month == 0` or `day == 0`, or if a the given day does not exist in the
+    /// given month.
+    #[inline]
+    pub(super) const fn ordinal_and_flags(&self) -> Option<i32> {
+        let mdl = self.0 >> 3;
+        match MDL_TO_OL[mdl as usize] {
+            XX => None,
+            v => Some(self.0 as i32 - ((v as i32) << 3)),
+        }
+    }
+
+    #[cfg(test)]
+    fn valid(&self) -> bool {
+        let mdl = self.0 >> 3;
+        MDL_TO_OL[mdl as usize] > 0
     }
 }
 
@@ -529,12 +583,9 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_returns_none() {
+    fn test_mdf_new_range() {
         let flags = YearFlags::from_year(2023);
-        assert!(Mdf::new(0, 1, flags).is_none());
         assert!(Mdf::new(13, 1, flags).is_none());
-        assert!(Mdf::new(1, 0, flags).is_none());
         assert!(Mdf::new(1, 32, flags).is_none());
-        assert!(Mdf::new(2, 31, flags).is_some());
     }
 }

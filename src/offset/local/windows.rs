@@ -103,7 +103,7 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<F
                 [Transition::new(dst_transition, tz_info.std_offset, tz_info.dst_offset)];
             lookup_with_dst_transitions(&transitions, *local)
         }
-        (None, None) => return LocalResult::Single(tz_info.std_offset),
+        (None, None) => LocalResult::Single(tz_info.std_offset),
     }
 }
 
