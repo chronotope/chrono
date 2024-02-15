@@ -758,6 +758,115 @@ impl Parsed {
         NaiveTime::from_hms_nano_opt(hour, minute, second, nano).ok_or(OUT_OF_RANGE)
     }
 
+    /// Returns a parsed date, time and offset out of the given fields.
+    ///
+    /// This method is able to determine the combined date and time from date and time fields or
+    /// from a single timestamp field. It checks all fields are consistent with each other.
+    ///
+    /// If there is not offset or timestamp given UTC is assumed.
+    ///
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - `IMPOSSIBLE`  if any of the date fields conflict, or if a timestamp conflicts with any of
+    ///   the other fields.
+    /// - `NOT_ENOUGH` if there are not enough fields set in `Parsed` for a complete datetime.
+    /// - `OUT_OF_RANGE`
+    ///   - if any of the date or time fields of `Parsed` are set to a value beyond their acceptable
+    ///     range.
+    ///   - if the value would be outside the range of a [`NaiveDateTime`].
+    ///   - if the date does not exist.
+    pub fn to_datetime_or_utc(&self) -> ParseResult<DateTime<FixedOffset>> {
+        let dt_result =
+            self.to_naive_date().and_then(|d| self.to_naive_time().map(|t| d.and_time(t)));
+        let offset = match self.offset {
+            Some(o) => Some(FixedOffset::east_opt(o).ok_or(OUT_OF_RANGE)?),
+            None => None,
+        };
+        match (dt_result, offset, self.timestamp) {
+            (Ok(dt), Some(o), None) => {
+                Ok(o.from_local_datetime(&dt).single().ok_or(OUT_OF_RANGE)?)
+            }
+            (Ok(dt), Some(offset), Some(timestamp)) => {
+                // Confirm that the datetime, offset and timestamp are consistent.
+                let datetime = offset.from_local_datetime(&dt).single().ok_or(OUT_OF_RANGE)?;
+                let calculated_timestamp = datetime.timestamp();
+                // If `datetime` represents a leap second, it might be off by one second.
+                if calculated_timestamp != timestamp
+                    && !(self.second == Some(60) && timestamp == calculated_timestamp + 1)
+                {
+                    return Err(IMPOSSIBLE);
+                }
+                Ok(datetime)
+            }
+            (Ok(dt), None, Some(timestamp)) => {
+                // Calculate offset and check it is reasonable.
+                let local_timestamp = dt.and_utc().timestamp();
+                let mut calculated_offset = local_timestamp
+                    .checked_sub(timestamp)
+                    .and_then(|o| i32::try_from(o).ok())
+                    .ok_or(OUT_OF_RANGE)?;
+                if self.second == Some(60) {
+                    // A Unix timestamp can't encode leap seconds, so it will either be the last
+                    // second before or after.
+                    // If `timestamp` is rounded to the second value after, our calculated offset
+                    // will not have a round number of minutes but be 1 second off.
+                    match calculated_offset.rem_euclid(60) {
+                        0 => {}
+                        59 => calculated_offset += 1,
+                        _ => {
+                            // The combination of leap second and fractional offset does not exist.
+                            return Err(IMPOSSIBLE);
+                        }
+                    }
+                }
+                let offset = FixedOffset::east_opt(calculated_offset).ok_or(OUT_OF_RANGE)?;
+                Ok(offset.from_local_datetime(&dt).single().ok_or(OUT_OF_RANGE)?)
+            }
+            (Err(_), o, Some(timestamp)) => {
+                // Check that any date and time fields we have are consistent with the timestamp.
+                let offset = o.unwrap_or(FixedOffset::east_opt(0).unwrap());
+                let mut dt = DateTime::from_timestamp(timestamp, self.nanosecond.unwrap_or(0))
+                    .ok_or(OUT_OF_RANGE)?;
+
+                if self.second == Some(60) {
+                    // A Unix timestamp can't encode leap seconds, so it will either be the last
+                    // second before or after.
+                    // If the value is after we adjust our timestamp-derived `local_dt` by 1 second,
+                    // to make the minute, hour, etc. fields match.
+                    dt = match dt.second() {
+                        59 => dt,
+                        0 => dt
+                            .checked_sub_signed(TimeDelta::try_seconds(1).unwrap())
+                            .ok_or(OUT_OF_RANGE)?,
+                        _ => return Err(IMPOSSIBLE),
+                    }
+                    .with_nanosecond(1_000_000_000 + dt.nanosecond())
+                    .unwrap();
+                }
+
+                // Fill year, ordinal, hour, minute and second fields from timestamp. This will be
+                // enough to check all date and time fields are consistent.
+                let mut parsed = self.clone();
+                let local_dt = dt.overflowing_naive_local();
+                parsed.set_year(i64::from(local_dt.year()))?;
+                parsed.set_ordinal(i64::from(local_dt.ordinal()))?;
+                parsed.set_hour(i64::from(local_dt.hour()))?;
+                parsed.set_minute(i64::from(local_dt.minute()))?;
+                parsed.set_second(i64::from(
+                    local_dt.second() + local_dt.nanosecond() / 1_000_000_000,
+                ))?;
+
+                // Validate other fields and return.
+                let _date = parsed.to_naive_date()?;
+                let _time = parsed.to_naive_time()?;
+                Ok(dt.with_timezone(&offset))
+            }
+            (Ok(dt), None, None) => Ok(dt.and_utc().into()),
+            (Err(e), _, _) => Err(e),
+        }
+    }
+
     /// Returns a parsed naive date and time out of given fields, except for the offset field.
     ///
     /// The offset is assumed to have a given value. It is not compared against the offset field set
@@ -898,19 +1007,9 @@ impl Parsed {
     ///   - if the value would be outside the range of a [`NaiveDateTime`] or [`FixedOffset`].
     ///   - if the date does not exist.
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
-        // If there is no explicit offset, consider a timestamp value as indication of a UTC value.
-        let offset = match (self.offset, self.timestamp) {
-            (Some(off), _) => off,
-            (None, Some(_)) => 0, // UNIX timestamp may assume 0 offset
-            (None, None) => return Err(NOT_ENOUGH),
-        };
-        let datetime = self.to_naive_datetime_with_offset(offset)?;
-        let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
-
-        match offset.from_local_datetime(&datetime) {
-            LocalResult::None => Err(IMPOSSIBLE),
-            LocalResult::Single(t) => Ok(t),
-            LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
+        match self.offset.is_some() || self.timestamp.is_some() {
+            true => self.to_datetime_or_utc(),
+            false => Err(NOT_ENOUGH),
         }
     }
 
@@ -940,46 +1039,19 @@ impl Parsed {
     ///   - if any of the fields of `Parsed` are set to a value beyond their acceptable range.
     ///   - if the date does not exist.
     pub fn to_datetime_with_timezone<Tz: TimeZone>(&self, tz: &Tz) -> ParseResult<DateTime<Tz>> {
-        // if we have `timestamp` specified, guess an offset from that.
-        let mut guessed_offset = 0;
-        if let Some(timestamp) = self.timestamp {
-            // make a naive `DateTime` from given timestamp and (if any) nanosecond.
-            // an empty `nanosecond` is always equal to zero, so missing nanosecond is fine.
-            let nanosecond = self.nanosecond.unwrap_or(0);
-            let dt =
-                DateTime::from_timestamp(timestamp, nanosecond).ok_or(OUT_OF_RANGE)?.naive_utc();
-            guessed_offset = tz.offset_from_utc_datetime(&dt).fix().local_minus_utc();
-        }
-
-        // checks if the given `DateTime` has a consistent `Offset` with given `self.offset`.
-        let check_offset = |dt: &DateTime<Tz>| {
-            if let Some(offset) = self.offset {
-                dt.offset().fix().local_minus_utc() == offset
-            } else {
-                true
+        let dt_fixedoffset = self.to_datetime_or_utc()?;
+        if self.offset.is_some() || self.timestamp.is_some() {
+            let datetime = dt_fixedoffset.with_timezone(tz);
+            match dt_fixedoffset.offset().fix() == datetime.offset().fix() {
+                true => Ok(datetime),
+                false => Err(IMPOSSIBLE),
             }
-        };
-
-        // `guessed_offset` should be correct when `self.timestamp` is given.
-        // it will be 0 otherwise, but this is fine as the algorithm ignores offset for that case.
-        let datetime = self.to_naive_datetime_with_offset(guessed_offset)?;
-        match tz.from_local_datetime(&datetime) {
-            LocalResult::None => Err(IMPOSSIBLE),
-            LocalResult::Single(t) => {
-                if check_offset(&t) {
-                    Ok(t)
-                } else {
-                    Err(IMPOSSIBLE)
-                }
-            }
-            LocalResult::Ambiguous(min, max) => {
-                // try to disambiguate two possible local dates by offset.
-                match (check_offset(&min), check_offset(&max)) {
-                    (false, false) => Err(IMPOSSIBLE),
-                    (false, true) => Ok(max),
-                    (true, false) => Ok(min),
-                    (true, true) => Err(NOT_ENOUGH),
-                }
+        } else {
+            let naive_local = dt_fixedoffset.overflowing_naive_local();
+            match tz.from_local_datetime(&naive_local) {
+                LocalResult::None => Err(IMPOSSIBLE),
+                LocalResult::Single(dt) => Ok(dt),
+                LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
             }
         }
     }
