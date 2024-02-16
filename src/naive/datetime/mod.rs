@@ -21,7 +21,7 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::time_delta::NANOS_PER_SEC;
 use crate::{
-    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
+    expect, ok, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
     Timelike, Weekday,
 };
 
@@ -1045,7 +1045,7 @@ impl NaiveDateTime {
 
     /// The Unix Epoch, 1970-01-01 00:00:00.
     pub const UNIX_EPOCH: Self =
-        expect!(NaiveDate::from_ymd(1970, 1, 1), "").and_time(NaiveTime::MIN);
+        expect!(ok!(NaiveDate::from_ymd(1970, 1, 1)), "").and_time(NaiveTime::MIN);
 }
 
 impl From<NaiveDate> for NaiveDateTime {

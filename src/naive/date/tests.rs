@@ -1,6 +1,6 @@
 use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
 use crate::naive::internals::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
-use crate::{Datelike, TimeDelta, Weekday};
+use crate::{Datelike, Error, TimeDelta, Weekday};
 
 // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,
 // we use a separate run-time test.
@@ -153,16 +153,16 @@ fn test_readme_doomsday() {
 fn test_date_from_ymd() {
     let from_ymd = NaiveDate::from_ymd;
 
-    assert!(from_ymd(2012, 0, 1).is_none());
-    assert!(from_ymd(2012, 1, 1).is_some());
-    assert!(from_ymd(2012, 2, 29).is_some());
-    assert!(from_ymd(2014, 2, 29).is_none());
-    assert!(from_ymd(2014, 3, 0).is_none());
-    assert!(from_ymd(2014, 3, 1).is_some());
-    assert!(from_ymd(2014, 3, 31).is_some());
-    assert!(from_ymd(2014, 3, 32).is_none());
-    assert!(from_ymd(2014, 12, 31).is_some());
-    assert!(from_ymd(2014, 13, 1).is_none());
+    assert_eq!(from_ymd(2012, 0, 1), Err(Error::InvalidArgument));
+    assert!(from_ymd(2012, 1, 1).is_ok());
+    assert!(from_ymd(2012, 2, 29).is_ok());
+    assert_eq!(from_ymd(2014, 2, 29), Err(Error::DoesNotExist));
+    assert_eq!(from_ymd(2014, 3, 0), Err(Error::InvalidArgument));
+    assert!(from_ymd(2014, 3, 1).is_ok());
+    assert!(from_ymd(2014, 3, 31).is_ok());
+    assert_eq!(from_ymd(2014, 3, 32), Err(Error::InvalidArgument));
+    assert!(from_ymd(2014, 12, 31).is_ok());
+    assert_eq!(from_ymd(2014, 13, 1), Err(Error::InvalidArgument));
 }
 
 #[test]
@@ -255,7 +255,7 @@ fn test_date_from_isoywd_and_iso_week() {
         for month in 1..13 {
             for day in 1..32 {
                 let d = NaiveDate::from_ymd(year, month, day);
-                if let Some(d) = d {
+                if let Ok(d) = d {
                     let w = d.iso_week();
                     let d_ = NaiveDate::from_isoywd(w.year(), w.week(), d.weekday());
                     assert_eq!(d, d_.unwrap());
@@ -664,13 +664,13 @@ fn test_date_parse_from_str() {
     assert!(NaiveDate::parse_from_str("2014", "%Y").is_err()); // insufficient
 
     assert_eq!(
-        NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),
-        NaiveDate::from_ymd(2020, 1, 12),
+        NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").unwrap(),
+        NaiveDate::from_ymd(2020, 1, 12).unwrap(),
     );
 
     assert_eq!(
-        NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").ok(),
-        NaiveDate::from_ymd(2019, 1, 13),
+        NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").unwrap(),
+        NaiveDate::from_ymd(2019, 1, 13).unwrap(),
     );
 }
 
@@ -691,12 +691,12 @@ fn test_weeks_from() {
     // tests per: https://github.com/chronotope/chrono/issues/961
     // these internally use `weeks_from` via the parsing infrastructure
     assert_eq!(
-        NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),
-        NaiveDate::from_ymd(2020, 1, 12),
+        NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").unwrap(),
+        NaiveDate::from_ymd(2020, 1, 12).unwrap(),
     );
     assert_eq!(
-        NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").ok(),
-        NaiveDate::from_ymd(2019, 1, 13),
+        NaiveDate::parse_from_str("2019-01-0", "%Y-%W-%w").unwrap(),
+        NaiveDate::from_ymd(2019, 1, 13).unwrap(),
     );
 
     // direct tests
@@ -721,7 +721,7 @@ fn test_weeks_from() {
         ] {
             assert_eq!(
                 NaiveDate::from_ymd(*y, 1, 1).map(|d| d.weeks_from(*day)),
-                Some(if day == starts_on { 1 } else { 0 })
+                Ok(if day == starts_on { 1 } else { 0 })
             );
 
             // last day must always be in week 52 or 53

@@ -166,6 +166,7 @@ fn system_time_from_naive_date_time(st: SYSTEMTIME, year: i32) -> Option<NaiveDa
     let day_of_week = Weekday::try_from(u8::try_from(st.wDayOfWeek).ok()?).ok()?.pred();
     if st.wYear != 0 {
         return NaiveDate::from_ymd(st.wYear as i32, st.wMonth as u32, st.wDay as u32)
+            .ok()
             .map(|d| d.and_time(time));
     }
     let date = if let Some(date) =

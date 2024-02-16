@@ -390,7 +390,7 @@ impl Parsed {
         let (verified, parsed_date) = match (given_year, given_isoyear, self) {
             (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
                 // year, month, day
-                let date = NaiveDate::from_ymd(year, month, day).ok_or(OUT_OF_RANGE)?;
+                let date = NaiveDate::from_ymd(year, month, day).map_err(|_| OUT_OF_RANGE)?;
                 (verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
