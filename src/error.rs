@@ -18,6 +18,13 @@ pub enum Error {
     ///
     /// An example is creating a `NaiveTime` with 25 as the hour value.
     InvalidArgument,
+
+    /// The result, or an intermediate value necessary for calculating a result, would be out of
+    /// range.
+    ///
+    /// An example is a date for the year 500.000, which is out of the range supported by chrono's
+    /// types.
+    OutOfRange,
 }
 
 impl fmt::Display for Error {
@@ -25,6 +32,7 @@ impl fmt::Display for Error {
         match self {
             Error::DoesNotExist => write!(f, "date or datetime does not exist"),
             Error::InvalidArgument => write!(f, "invalid parameter"),
+            Error::OutOfRange => write!(f, "date outside of the supported range"),
         }
     }
 }

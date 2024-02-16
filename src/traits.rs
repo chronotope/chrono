@@ -146,7 +146,7 @@ pub trait Datelike: Sized {
     ///
     /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
     /// ```
-    /// use chrono::{NaiveDate, Datelike};
+    /// use chrono::{Error, NaiveDate, Datelike};
     ///
     /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
     ///     date.with_year(year)?.with_month(month)
@@ -155,7 +155,7 @@ pub trait Datelike: Sized {
     /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
     ///
     /// // Correct version:
-    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
+    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
     ///     NaiveDate::from_ymd(year, month, date.day())
     /// }
     /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();

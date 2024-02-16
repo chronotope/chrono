@@ -141,11 +141,12 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` from year and packed month-day-flags.
     /// Does not check whether the flags are correct for the provided year.
-    const fn from_mdf(year: i32, mdf: Mdf) -> Option<NaiveDate> {
+    #[inline]
+    const fn from_mdf(year: i32, mdf: Mdf) -> Result<NaiveDate, Error> {
         if year < MIN_YEAR || year > MAX_YEAR {
-            return None; // Out-of-range
+            return Err(Error::OutOfRange);
         }
-        Some(NaiveDate::from_yof((year << 13) | try_opt!(ok!(mdf.ordinal_and_flags()))))
+        Ok(NaiveDate::from_yof((year << 13) | try_err!(mdf.ordinal_and_flags())))
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
@@ -153,34 +154,29 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The specified calendar day does not exist (for example 2023-04-31).
-    /// - The value for `month` or `day` is invalid.
-    /// - `year` is out of range for `NaiveDate`.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the specified calendar day does not exist (for example
+    ///   2023-04-31).
+    /// - [`Error::InvalidArgument`] if the value for `month` or `day` is invalid.
+    /// - [`Error::OutOfRange`] if `year` is out of range for a `NaiveDate`.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
     /// let from_ymd = NaiveDate::from_ymd;
     ///
-    /// assert!(from_ymd(2015, 3, 14).is_some());
-    /// assert!(from_ymd(2015, 0, 14).is_none());
-    /// assert!(from_ymd(2015, 2, 29).is_none());
-    /// assert!(from_ymd(-4, 2, 29).is_some()); // 5 BCE is a leap year
-    /// assert!(from_ymd(400000, 1, 1).is_none());
-    /// assert!(from_ymd(-400000, 1, 1).is_none());
+    /// assert!(from_ymd(2015, 3, 14).is_ok());
+    /// assert_eq!(from_ymd(2015, 0, 14), Err(Error::InvalidArgument));
+    /// assert_eq!(from_ymd(2015, 2, 29), Err(Error::DoesNotExist));
+    /// assert!(from_ymd(-4, 2, 29).is_ok()); // 5 BCE is a leap year
+    /// assert_eq!(from_ymd(400000, 1, 1), Err(Error::OutOfRange));
+    /// assert_eq!(from_ymd(-400000, 1, 1), Err(Error::OutOfRange));
     /// ```
-    #[must_use]
-    pub const fn from_ymd(year: i32, month: u32, day: u32) -> Option<NaiveDate> {
+    pub const fn from_ymd(year: i32, month: u32, day: u32) -> Result<NaiveDate, Error> {
         let flags = YearFlags::from_year(year);
-
-        if let Ok(mdf) = Mdf::new(month, day, flags) {
-            NaiveDate::from_mdf(year, mdf)
-        } else {
-            None
-        }
+        NaiveDate::from_mdf(year, try_err!(Mdf::new(month, day, flags)))
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -346,7 +342,7 @@ impl NaiveDate {
     /// ```
     /// use chrono::{NaiveDate, Weekday};
     /// assert_eq!(NaiveDate::from_weekday_of_month(2017, 3, Weekday::Fri, 2),
-    ///            NaiveDate::from_ymd(2017, 3, 10))
+    ///            NaiveDate::from_ymd(2017, 3, 10).ok())
     /// ```
     #[must_use]
     pub const fn from_weekday_of_month(
@@ -358,10 +354,10 @@ impl NaiveDate {
         if n == 0 {
             return None;
         }
-        let first = try_opt!(NaiveDate::from_ymd(year, month, 1)).weekday();
+        let first = try_opt!(ok!(NaiveDate::from_ymd(year, month, 1))).weekday();
         let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
         let day = (n - 1) as u32 * 7 + first_to_dow + 1;
-        NaiveDate::from_ymd(year, month, day)
+        ok!(NaiveDate::from_ymd(year, month, day))
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
@@ -546,7 +542,7 @@ impl NaiveDate {
             day = day_max;
         };
 
-        NaiveDate::from_mdf(year, try_opt!(ok!(Mdf::new(month as u32, day, flags))))
+        ok!(NaiveDate::from_mdf(year, try_opt!(ok!(Mdf::new(month as u32, day, flags)))))
     }
 
     /// Add a duration in [`Days`] to the date
@@ -853,7 +849,7 @@ impl NaiveDate {
         let new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
         match new_shifted_ordinal > 0 {
             true => Some(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
-            false => NaiveDate::from_ymd(self.year() - 1, 12, 31),
+            false => ok!(NaiveDate::from_ymd(self.year() - 1, 12, 31)),
         }
     }
 
@@ -1467,7 +1463,7 @@ impl Datelike for NaiveDate {
         let flags = YearFlags::from_year(year);
         let mdf = mdf.with_flags(flags);
 
-        NaiveDate::from_mdf(year, mdf)
+        ok!(NaiveDate::from_mdf(year, mdf))
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 1) changed.
@@ -2148,7 +2144,7 @@ where
 
     assert_eq!(from_str(r#""2016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8).unwrap()));
     assert_eq!(from_str(r#""2016-7-8""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8).unwrap()));
-    assert_eq!(from_str(r#""+002016-07-08""#).ok(), NaiveDate::from_ymd(2016, 7, 8));
+    assert_eq!(from_str(r#""+002016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8).unwrap()));
     assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1).unwrap()));
     assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1).unwrap()));
     assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31).unwrap()));
