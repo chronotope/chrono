@@ -21,8 +21,8 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::time_delta::NANOS_PER_SEC;
 use crate::{
-    expect, ok, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
-    Timelike, Weekday,
+    expect, ok, try_opt, DateTime, Datelike, Error, FixedOffset, LocalResult, Months, TimeDelta,
+    TimeZone, Timelike, Weekday,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -1238,7 +1238,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_year(-308), Some(NaiveDate::from_ymd(-308, 9, 25).unwrap().and_hms(12, 34, 56).unwrap()));
     /// ```
     #[inline]
-    fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
+    fn with_year(&self, year: i32) -> Result<NaiveDateTime, Error> {
         self.date.with_year(year).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1261,7 +1261,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_month(2), None); // no February 30
     /// ```
     #[inline]
-    fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
+    fn with_month(&self, month: u32) -> Result<NaiveDateTime, Error> {
         self.date.with_month(month).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1285,7 +1285,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_month0(1), None); // no February 30
     /// ```
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
+    fn with_month0(&self, month0: u32) -> Result<NaiveDateTime, Error> {
         self.date.with_month0(month0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1307,7 +1307,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_day(31), None); // no September 31
     /// ```
     #[inline]
-    fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
+    fn with_day(&self, day: u32) -> Result<NaiveDateTime, Error> {
         self.date.with_day(day).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1329,7 +1329,7 @@ impl Datelike for NaiveDateTime {
     /// assert_eq!(dt.with_day0(30), None); // no September 31
     /// ```
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
+    fn with_day0(&self, day0: u32) -> Result<NaiveDateTime, Error> {
         self.date.with_day0(day0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1359,7 +1359,7 @@ impl Datelike for NaiveDateTime {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap().and_hms(12, 34, 56).unwrap()));
     /// ```
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
+    fn with_ordinal(&self, ordinal: u32) -> Result<NaiveDateTime, Error> {
         self.date.with_ordinal(ordinal).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
@@ -1389,7 +1389,7 @@ impl Datelike for NaiveDateTime {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap().and_hms(12, 34, 56).unwrap()));
     /// ```
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<NaiveDateTime, Error> {
         self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 }
@@ -1484,7 +1484,7 @@ impl Timelike for NaiveDateTime {
     /// assert_eq!(dt.with_hour(24), None);
     /// ```
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
+    fn with_hour(&self, hour: u32) -> Result<NaiveDateTime, Error> {
         self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
     }
 
@@ -1507,7 +1507,7 @@ impl Timelike for NaiveDateTime {
     /// assert_eq!(dt.with_minute(60), None);
     /// ```
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
+    fn with_minute(&self, min: u32) -> Result<NaiveDateTime, Error> {
         self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
     }
 
@@ -1533,7 +1533,7 @@ impl Timelike for NaiveDateTime {
     /// assert_eq!(dt.with_second(60), None);
     /// ```
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
+    fn with_second(&self, sec: u32) -> Result<NaiveDateTime, Error> {
         self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
     }
 
@@ -1562,7 +1562,7 @@ impl Timelike for NaiveDateTime {
     /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
     /// ```
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
+    fn with_nanosecond(&self, nano: u32) -> Result<NaiveDateTime, Error> {
         self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
     }
 }

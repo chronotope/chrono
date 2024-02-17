@@ -29,7 +29,7 @@ use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::try_opt;
 #[cfg(any(feature = "clock", feature = "std"))]
 use crate::OutOfRange;
-use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
+use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -669,13 +669,19 @@ impl From<DateTime<Local>> for DateTime<FixedOffset> {
 }
 
 /// Maps the local datetime to other datetime with given conversion function.
-fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Option<DateTime<Tz>>
+fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Result<DateTime<Tz>, Error>
 where
-    F: FnMut(NaiveDateTime) -> Option<NaiveDateTime>,
+    F: FnMut(NaiveDateTime) -> Result<NaiveDateTime, Error>,
 {
-    f(dt.overflowing_naive_local())
-        .and_then(|datetime| dt.timezone().from_local_datetime(&datetime).single())
-        .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC && dt <= &DateTime::<Utc>::MAX_UTC)
+    let dt = f(dt.overflowing_naive_local()).and_then(|datetime| {
+        dt.timezone().from_local_datetime(&datetime).single().ok_or_else(|| Error::InvalidArgument)
+    })?;
+
+    if dt < DateTime::<Utc>::MIN_UTC || dt > DateTime::<Utc>::MAX_UTC {
+        return Err(Error::OutOfRange);
+    }
+
+    Ok(dt)
 }
 
 impl DateTime<FixedOffset> {
@@ -933,7 +939,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - When the `NaiveDateTime` would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
-    fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
+    fn with_year(&self, year: i32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_year(year))
     }
 
@@ -949,7 +955,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_month(&self, month: u32) -> Option<DateTime<Tz>> {
+    fn with_month(&self, month: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_month(month))
     }
 
@@ -965,7 +971,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<DateTime<Tz>> {
+    fn with_month0(&self, month0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_month0(month0))
     }
 
@@ -981,7 +987,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_day(&self, day: u32) -> Option<DateTime<Tz>> {
+    fn with_day(&self, day: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_day(day))
     }
 
@@ -997,7 +1003,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<DateTime<Tz>> {
+    fn with_day0(&self, day0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_day0(day0))
     }
 
@@ -1013,7 +1019,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Tz>> {
+    fn with_ordinal(&self, ordinal: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_ordinal(ordinal))
     }
 
@@ -1029,7 +1035,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
 }
@@ -1058,12 +1064,12 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
+    /// Returns `Err` if:
     /// - The value for `hour` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
+    fn with_hour(&self, hour: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_hour(hour))
     }
 
@@ -1073,11 +1079,12 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     ///
     /// # Errors
     ///
+    /// Returns `Err` if:
     /// - The value for `minute` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<DateTime<Tz>> {
+    fn with_minute(&self, min: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_minute(min))
     }
 
@@ -1090,18 +1097,18 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
+    /// Returns `Err` if:
     /// - The value for `second` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
+    fn with_second(&self, sec: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_second(sec))
     }
 
     /// Makes a new `DateTime` with nanoseconds since the whole non-leap second changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// Returns `Err` when the resulting `NaiveDateTime` would be invalid.
     /// As with the [`NaiveDateTime::nanosecond`] method,
     /// the input range can exceed 1,000,000,000 for leap seconds.
     ///
@@ -1111,7 +1118,7 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     ///
     /// Returns `None` if `nanosecond >= 2,000,000,000`.
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
+    fn with_nanosecond(&self, nano: u32) -> Result<DateTime<Tz>, Error> {
         map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
 }

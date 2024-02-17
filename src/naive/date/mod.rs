@@ -793,13 +793,13 @@ impl NaiveDate {
     ///
     /// Returns `None` when the resulting `NaiveDate` would be invalid.
     #[inline]
-    const fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
+    const fn with_mdf(&self, mdf: Mdf) -> Result<NaiveDate, Error> {
         debug_assert!(self.year_flags().0 == mdf.year_flags().0);
         match mdf.ordinal() {
             Ok(ordinal) => {
-                Some(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
+                Ok(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
             }
-            Err(_) => None, // Non-existing date
+            Err(e) => Err(e), // Non-existing date
         }
     }
 
@@ -1455,7 +1455,7 @@ impl Datelike for NaiveDate {
     /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2020).is_some());
     /// ```
     #[inline]
-    fn with_year(&self, year: i32) -> Option<NaiveDate> {
+    fn with_year(&self, year: i32) -> Result<NaiveDate, Error> {
         // we need to operate with `mdf` since we should keep the month and day number as is
         let mdf = self.mdf();
 
@@ -1463,7 +1463,7 @@ impl Datelike for NaiveDate {
         let flags = YearFlags::from_year(year);
         let mdf = mdf.with_flags(flags);
 
-        ok!(NaiveDate::from_mdf(year, mdf))
+        NaiveDate::from_mdf(year, mdf)
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 1) changed.
@@ -1483,8 +1483,8 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // no February 30
     /// ```
     #[inline]
-    fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month).ok()?)
+    fn with_month(&self, month: u32) -> Result<NaiveDate, Error> {
+        self.with_mdf(self.mdf().with_month(month)?)
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
@@ -1505,9 +1505,9 @@ impl Datelike for NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // no February 30
     /// ```
     #[inline]
-    fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        let month = month0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_month(month).ok()?)
+    fn with_month0(&self, month0: u32) -> Result<NaiveDate, Error> {
+        let month = month0.checked_add(1).ok_or(Error::InvalidArgument)?;
+        self.with_mdf(self.mdf().with_month(month)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1527,8 +1527,8 @@ impl Datelike for NaiveDate {
     ///            None); // no September 31
     /// ```
     #[inline]
-    fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day).ok()?)
+    fn with_day(&self, day: u32) -> Result<NaiveDate, Error> {
+        self.with_mdf(self.mdf().with_day(day)?)
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
@@ -1548,9 +1548,9 @@ impl Datelike for NaiveDate {
     ///            None); // no September 31
     /// ```
     #[inline]
-    fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        let day = day0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_day(day).ok()?)
+    fn with_day0(&self, day0: u32) -> Result<NaiveDate, Error> {
+        let day = day0.checked_add(1).ok_or(Error::InvalidArgument)?;
+        self.with_mdf(self.mdf().with_day(day)?)
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
@@ -1576,14 +1576,14 @@ impl Datelike for NaiveDate {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
     /// ```
     #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
+    fn with_ordinal(&self, ordinal: u32) -> Result<NaiveDate, Error> {
         if ordinal == 0 || ordinal > 366 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let yof = (self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32;
         match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate::from_yof(yof)),
-            false => None, // Does not exist: Ordinal 366 in a common year.
+            true => Ok(NaiveDate::from_yof(yof)),
+            false => Err(Error::DoesNotExist), // Does not exist: Ordinal 366 in a common year.
         }
     }
 
@@ -1610,8 +1610,8 @@ impl Datelike for NaiveDate {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
     /// ```
     #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
-        let ordinal = ordinal0.checked_add(1)?;
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<NaiveDate, Error> {
+        let ordinal = ordinal0.checked_add(1).ok_or(Error::InvalidArgument)?;
         self.with_ordinal(ordinal)
     }
 }

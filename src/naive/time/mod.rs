@@ -900,17 +900,18 @@ impl Timelike for NaiveTime {
     /// ```
     /// use chrono::{NaiveTime, Timelike};
     ///
-    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(dt.with_hour(7), Some(NaiveTime::from_hms_nano(7, 56, 4, 12_345_678).unwrap()));
-    /// assert_eq!(dt.with_hour(24), None);
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
+    /// assert_eq!(dt.with_hour(7), Ok(NaiveTime::from_hms_nano(7, 56, 4, 12_345_678)?));
+    /// assert_eq!(dt.with_hour(24), Err(Error::InvalidArgument));
+    /// Ok(())
     /// ```
     #[inline]
-    fn with_hour(&self, hour: u32) -> Option<NaiveTime> {
+    fn with_hour(&self, hour: u32) -> Result<NaiveTime, Error> {
         if hour >= 24 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let secs = hour * 3600 + self.secs % 3600;
-        Some(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the minute number changed.
@@ -929,12 +930,12 @@ impl Timelike for NaiveTime {
     /// assert_eq!(dt.with_minute(60), None);
     /// ```
     #[inline]
-    fn with_minute(&self, min: u32) -> Option<NaiveTime> {
+    fn with_minute(&self, min: u32) -> Result<NaiveTime, Error> {
         if min >= 60 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
-        Some(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the second number changed.
@@ -952,16 +953,16 @@ impl Timelike for NaiveTime {
     /// use chrono::{NaiveTime, Timelike};
     ///
     /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(dt.with_second(17), Some(NaiveTime::from_hms_nano(23, 56, 17, 12_345_678).unwrap()));
-    /// assert_eq!(dt.with_second(60), None);
+    /// assert_eq!(dt.with_second(17), Ok(NaiveTime::from_hms_nano(23, 56, 17, 12_345_678)));
+    /// assert_eq!(dt.with_second(60), Err(_));
     /// ```
     #[inline]
-    fn with_second(&self, sec: u32) -> Option<NaiveTime> {
+    fn with_second(&self, sec: u32) -> Result<NaiveTime, Error> {
         if sec >= 60 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let secs = self.secs / 60 * 60 + sec;
-        Some(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
@@ -996,11 +997,11 @@ impl Timelike for NaiveTime {
     /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
     /// ```
     #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
+    fn with_nanosecond(&self, nano: u32) -> Result<NaiveTime, Error> {
         if nano >= 2_000_000_000 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
-        Some(NaiveTime { frac: nano, ..*self })
+        Ok(NaiveTime { frac: nano, ..*self })
     }
 
     /// Returns the number of non-leap seconds past the last midnight.

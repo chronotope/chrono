@@ -1,4 +1,4 @@
-use crate::{IsoWeek, Weekday};
+use crate::{Error, IsoWeek, Weekday};
 
 /// The common set of methods for date component.
 ///
@@ -116,7 +116,7 @@ pub trait Datelike: Sized {
     ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
     /// );
     /// ```
-    fn with_year(&self, year: i32) -> Option<Self>;
+    fn with_year(&self, year: i32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 1) changed.
     ///
@@ -161,7 +161,7 @@ pub trait Datelike: Sized {
     /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
     /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
     /// ```
-    fn with_month(&self, month: u32) -> Option<Self>;
+    fn with_month(&self, month: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 0) changed.
     ///
@@ -175,7 +175,7 @@ pub trait Datelike: Sized {
     /// - The value for `month0` is out of range.
     ///
     /// [`DateTime<Tz>`]: crate::DateTime
-    fn with_month0(&self, month0: u32) -> Option<Self>;
+    fn with_month0(&self, month0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of month (starting from 1) changed.
     ///
@@ -189,7 +189,7 @@ pub trait Datelike: Sized {
     /// - The value for `day` is out of range.
     ///
     /// [`DateTime<Tz>`]: crate::DateTime
-    fn with_day(&self, day: u32) -> Option<Self>;
+    fn with_day(&self, day: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of month (starting from 0) changed.
     ///
@@ -203,7 +203,7 @@ pub trait Datelike: Sized {
     /// - The value for `day0` is out of range.
     ///
     /// [`DateTime<Tz>`]: crate::DateTime
-    fn with_day0(&self, day0: u32) -> Option<Self>;
+    fn with_day0(&self, day0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
     ///
@@ -217,7 +217,7 @@ pub trait Datelike: Sized {
     /// - The value for `ordinal` is out of range.
     ///
     /// [`DateTime<Tz>`]: crate::DateTime
-    fn with_ordinal(&self, ordinal: u32) -> Option<Self>;
+    fn with_ordinal(&self, ordinal: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 0) changed.
     ///
@@ -231,7 +231,7 @@ pub trait Datelike: Sized {
     /// - The value for `ordinal0` is out of range.
     ///
     /// [`DateTime<Tz>`]: crate::DateTime
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<Self>;
+    fn with_ordinal0(&self, ordinal0: u32) -> Result<Self, Error>;
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
     ///
@@ -293,27 +293,27 @@ pub trait Timelike: Sized {
 
     /// Makes a new value with the hour number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
-    fn with_hour(&self, hour: u32) -> Option<Self>;
+    /// Returns `Err` when the resulting value would be invalid.
+    fn with_hour(&self, hour: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the minute number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
-    fn with_minute(&self, min: u32) -> Option<Self>;
+    /// Returns `Err` when the resulting value would be invalid.
+    fn with_minute(&self, min: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the second number changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err` when the resulting value would be invalid.
     /// As with the [`second`](#tymethod.second) method,
     /// the input range is restricted to 0 through 59.
-    fn with_second(&self, sec: u32) -> Option<Self>;
+    fn with_second(&self, sec: u32) -> Result<Self, Error>;
 
     /// Makes a new value with nanoseconds since the whole non-leap second changed.
     ///
-    /// Returns `None` when the resulting value would be invalid.
+    /// Returns `Err` when the resulting value would be invalid.
     /// As with the [`nanosecond`](#tymethod.nanosecond) method,
     /// the input range can exceed 1,000,000,000 for leap seconds.
-    fn with_nanosecond(&self, nano: u32) -> Option<Self>;
+    fn with_nanosecond(&self, nano: u32) -> Result<Self, Error>;
 
     /// Returns the number of non-leap seconds past the last midnight.
     ///
