@@ -1434,7 +1434,7 @@ impl Datelike for NaiveDate {
     /// # Errors
     ///
     /// - Returns `Err(Error::DoesNotExist)` when the resulting date does not exist.
-    /// - Returns `Err(Error::OutOfRange)` when  year is out of range.
+    /// - Returns `Err(Error::OutOfRange)` when the year is out of the supported range.
     ///
     /// # Example
     ///
@@ -1483,17 +1483,17 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `month` is invalid.
+    /// - Returns `Err(Error::DoesNotExist)` when the resulting date does not exist.
+    /// - Returns `Err(Error::InvalidArgument)` when the month is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(10),
-    ///            Some(NaiveDate::from_ymd(2015, 10, 8).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(13), None); // no month 13
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // no February 30
+    /// # use chrono::{Error, NaiveDate, Datelike};
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_month(10), NaiveDate::from_ymd(2015, 10, 8));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_month(13), Err(Error::InvalidArgument)); // no month 13
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30)?.with_month(2), Err(Error::DoesNotExist)); // no February 30
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
     fn with_month(&self, month: u32) -> Result<NaiveDate, Error> {
@@ -1504,18 +1504,17 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `month0` is
-    /// invalid.
+    /// - Returns `Err(Error::DoesNotExist)` when the resulting date does not exist.
+    /// - Returns `Err(Error::InvalidArgument)` when the month invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(9),
-    ///            Some(NaiveDate::from_ymd(2015, 10, 8).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(12), None); // no month 13
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // no February 30
+    /// # use chrono::{Error, NaiveDate, Datelike};
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_month0(9), NaiveDate::from_ymd(2015, 10, 8));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_month0(12), Err(Error::InvalidArgument)); // no month 13
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30)?.with_month0(1), Err(Error::DoesNotExist)); // no February 30
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
     fn with_month0(&self, month0: u32) -> Result<NaiveDate, Error> {

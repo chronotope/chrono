@@ -88,48 +88,6 @@ pub trait Datelike: Sized {
     fn with_year(&self, year: i32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 1) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when:
-    ///
-    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
-    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
-    ///   transition such as from DST to standard time.
-    /// - The value for `month` is out of range.
-    ///
-    /// [`DateTime<Tz>`]: crate::DateTime
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2023, 5, 12).unwrap().with_month(9).unwrap(),
-    ///     NaiveDate::from_ymd(2023, 9, 12).unwrap()
-    /// );
-    /// // Resulting date 2023-09-31 does not exist:
-    /// assert!(NaiveDate::from_ymd(2023, 5, 31).unwrap().with_month(9).is_none());
-    /// ```
-    ///
-    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
-    /// ```
-    /// use chrono::{Error, NaiveDate, Datelike};
-    ///
-    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
-    ///     date.with_year(year)?.with_month(month)
-    /// }
-    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
-    /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
-    ///
-    /// // Correct version:
-    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
-    ///     NaiveDate::from_ymd(year, month, date.day())
-    /// }
-    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
-    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
-    /// ```
     fn with_month(&self, month: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 0) changed.
