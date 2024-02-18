@@ -1433,26 +1433,39 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or when the `NaiveDate` would be
-    /// out of range.
+    /// - Returns `Err(Error::DoesNotExist)` when the resulting date does not exist.
+    /// - Returns `Err(Error::OutOfRange)` when  year is out of range.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike};
+    /// # use chrono::{Datelike, Error, NaiveDate};
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(2016),
-    ///            Some(NaiveDate::from_ymd(2016, 9, 8).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(-308),
-    ///            Some(NaiveDate::from_ymd(-308, 9, 8).unwrap()));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_year(2016),
+    ///            NaiveDate::from_ymd(2016, 9, 8));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_year(-308),
+    ///            NaiveDate::from_ymd(-308, 9, 8));
+    /// # Ok::<(), Error>(())
     /// ```
     ///
-    /// A leap day (February 29) is a good example that this method can return `None`.
+    /// A leap day (February 29) in a non-leap year will return `Err(Error::DoesNotExist)`.
     ///
     /// ```
-    /// # use chrono::{NaiveDate, Datelike};
-    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2015).is_none());
-    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2020).is_some());
+    /// # use chrono::{Datelike, Error, NaiveDate};
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29)?.with_year(2015).is_err());
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29)?.with_year(2020).is_ok());
+    /// # Ok::<(), Error>(())
+    /// ```
+    /// 
+    /// Don't use `with_year` if you want the ordinal date to stay the same.
+    /// 
+    /// ```
+    /// # use chrono::{Datelike, Error, NaiveDate};
+    /// assert_ne!(
+    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023)?,
+    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
+    /// );
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
     fn with_year(&self, year: i32) -> Result<NaiveDate, Error> {

@@ -85,37 +85,6 @@ pub trait Datelike: Sized {
     /// This method assumes you want to work on the date as a year-month-day value. Don't use it if
     /// you want the ordinal to stay the same after changing the year, of if you want the week and
     /// weekday values to stay the same.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when:
-    ///
-    /// - The resulting date does not exist (February 29 in a non-leap year).
-    /// - The year is out of range for [`NaiveDate`].
-    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
-    ///   transition such as from DST to standard time.
-    ///
-    /// [`NaiveDate`]: crate::NaiveDate
-    /// [`DateTime<Tz>`]: crate::DateTime
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2020, 5, 13).unwrap().with_year(2023).unwrap(),
-    ///     NaiveDate::from_ymd(2023, 5, 13).unwrap()
-    /// );
-    /// // Resulting date 2023-02-29 does not exist:
-    /// assert!(NaiveDate::from_ymd(2020, 2, 29).unwrap().with_year(2023).is_none());
-    ///
-    /// // Don't use `with_year` if you want the ordinal date to stay the same:
-    /// assert_ne!(
-    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023).unwrap(),
-    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
-    /// );
-    /// ```
     fn with_year(&self, year: i32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 1) changed.
