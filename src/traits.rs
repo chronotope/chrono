@@ -91,45 +91,12 @@ pub trait Datelike: Sized {
     fn with_month(&self, month: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the month number (starting from 0) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when:
-    ///
-    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
-    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
-    ///   transition such as from DST to standard time.
-    /// - The value for `month0` is out of range.
-    ///
-    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_month0(&self, month0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of month (starting from 1) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when:
-    ///
-    /// - The resulting date does not exist (for example `day(31)` in April).
-    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
-    ///   transition such as from DST to standard time.
-    /// - The value for `day` is out of range.
-    ///
-    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_day(&self, day: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of month (starting from 0) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when:
-    ///
-    /// - The resulting date does not exist (for example `day0(30)` in April).
-    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
-    ///   transition such as from DST to standard time.
-    /// - The value for `day0` is out of range.
-    ///
-    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_day0(&self, day0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
