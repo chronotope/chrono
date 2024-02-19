@@ -1140,7 +1140,10 @@ impl NaiveDate {
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
         let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i64;
         let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i64;
-        TimeDelta::days((year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2))
+        let days = (year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2);
+        // The range of `TimeDelta` is ca. 585 million years, the range of `NaiveDate` ca. 525.000
+        // years.
+        expect!(TimeDelta::try_days(days), "always in range")
     }
 
     /// Returns the number of whole years from the given `base` until `self`.
