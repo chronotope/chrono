@@ -307,7 +307,7 @@ fn test_nanosecond_range() {
     // Far beyond range
     let maximum = "2262-04-11T23:47:16.854775804UTC";
     let parsed: DateTime<Utc> = maximum.parse().unwrap();
-    let beyond_max = parsed + TimeDelta::days(365);
+    let beyond_max = parsed + Days::new(365);
     assert!(beyond_max.timestamp_nanos_opt().is_none());
 }
 
@@ -1455,20 +1455,16 @@ fn test_datetime_before_windows_api_limits() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_years_elapsed() {
-    const WEEKS_PER_YEAR: f32 = 52.1775;
-
-    // This is always at least one year because 1 year = 52.1775 weeks.
-    let one_year_ago =
-        Utc::now().date_naive() - TimeDelta::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
-    // A bit more than 2 years.
-    let two_year_ago =
-        Utc::now().date_naive() - TimeDelta::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+    // A bit more than 1 year
+    let one_year_ago = Utc::now().date_naive() - Days::new(400);
+    // A bit more than 2 years
+    let two_year_ago = Utc::now().date_naive() - Days::new(750);
 
     assert_eq!(Utc::now().date_naive().years_since(one_year_ago), Some(1));
     assert_eq!(Utc::now().date_naive().years_since(two_year_ago), Some(2));
 
     // If the given DateTime is later than now, the function will always return 0.
-    let future = Utc::now().date_naive() + TimeDelta::weeks(12);
+    let future = Utc::now().date_naive() + Days(100);
     assert_eq!(Utc::now().date_naive().years_since(future), None);
 }
 
