@@ -2154,7 +2154,7 @@ impl Iterator for NaiveDateWeeksIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.value;
-        self.value = current.checked_add_signed(TimeDelta::weeks(1))?;
+        self.value = current.checked_add_days(Days::new(7))?;
         Some(current)
     }
 
@@ -2169,7 +2169,7 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
         let current = self.value;
-        self.value = current.checked_sub_signed(TimeDelta::weeks(1))?;
+        self.value = current.checked_sub_days(Days::new(7))?;
         Some(current)
     }
 }
