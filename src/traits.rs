@@ -100,17 +100,6 @@ pub trait Datelike: Sized {
     fn with_day0(&self, day0: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 1) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when:
-    ///
-    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
-    /// - In case of [`DateTime<Tz>`] if the resulting date and time fall within a timezone
-    ///   transition such as from DST to standard time.
-    /// - The value for `ordinal` is out of range.
-    ///
-    /// [`DateTime<Tz>`]: crate::DateTime
     fn with_ordinal(&self, ordinal: u32) -> Result<Self, Error>;
 
     /// Makes a new value with the day of year (starting from 0) changed.

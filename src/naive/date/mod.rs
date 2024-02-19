@@ -1575,23 +1575,24 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal` is
-    /// invalid.
+    /// - Returns `Err(Error::DoesNotExist)` when the resulting date does not exist.
+    /// - Returns `Err(Error::OutOfRange)` when the ordinal is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(366),
-    ///            None); // 2015 had only 365 days
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(366),
-    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
+    /// # use chrono::{Error, NaiveDate, Datelike};
+    /// // 60th day in 2015
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1)?.with_ordinal(60), NaiveDate::from_ymd(2015, 3, 1));
+    /// // 60th day in 2016
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal(60), NaiveDate::from_ymd(2016, 2, 29));
+    /// // 366th day in 2016 (leap year)
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal(366), NaiveDate::from_ymd(2016, 12, 31));
+    /// // 2015 had only 365 days (non leap year)
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1)?.with_ordinal(366), Err(Error::DoesNotExist)); 
+    /// // 367th day in 2016
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal(367), Err(Error::InvalidArgument)); 
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
     fn with_ordinal(&self, ordinal: u32) -> Result<NaiveDate, Error> {
@@ -1609,23 +1610,24 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal0` is
-    /// invalid.
+    /// - Returns `Err(Error::DoesNotExist)` when the resulting date does not exist.
+    /// - Returns `Err(Error::InvalidArgument)` when the ordinal is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal0(365),
-    ///            None); // 2015 had only 365 days
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal0(365),
-    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
+    /// # use chrono::{Error, NaiveDate, Datelike};
+    /// // 60th day in 2015
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1)?.with_ordinal0(59), NaiveDate::from_ymd(2015, 3, 1));
+    /// // 60th day in 2016
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal0(59), NaiveDate::from_ymd(2016, 2, 29));
+    /// // 366th day in 2016 (leap year)
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal0(365), NaiveDate::from_ymd(2016, 12, 31));
+    /// // 2015 had only 365 days (non leap year)
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1)?.with_ordinal0(365), Err(Error::DoesNotExist)); 
+    /// // 367th day in 2016
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1)?.with_ordinal0(366), Err(Error::InvalidArgument)); 
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
     fn with_ordinal0(&self, ordinal0: u32) -> Result<NaiveDate, Error> {
