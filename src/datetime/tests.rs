@@ -1500,8 +1500,8 @@ fn test_datetime_add_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_add += TimeDelta::days(1);
-        assert_eq!(datetime_add, datetime + TimeDelta::days(i))
+        datetime_add += TimeDelta::try_days(1).unwrap();
+        assert_eq!(datetime_add, datetime + TimeDelta::try_days(i).unwrap())
     }
 }
 
@@ -1709,8 +1709,8 @@ fn test_datetime_sub_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_sub -= TimeDelta::days(1);
-        assert_eq!(datetime_sub, datetime - TimeDelta::days(i))
+        datetime_sub -= TimeDelta::try_days(1).unwrap();
+        assert_eq!(datetime_sub, datetime - TimeDelta::try_days(i).unwrap())
     }
 }
 
