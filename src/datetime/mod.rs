@@ -673,15 +673,17 @@ fn map_local<Tz: TimeZone, F>(dt: &DateTime<Tz>, mut f: F) -> Result<DateTime<Tz
 where
     F: FnMut(NaiveDateTime) -> Result<NaiveDateTime, Error>,
 {
-    let dt = f(dt.overflowing_naive_local()).and_then(|datetime| {
-        dt.timezone().from_local_datetime(&datetime).single().ok_or_else(|| Error::InvalidArgument)
-    })?;
+    let naive_dt = f(dt.overflowing_naive_local())?;
+    let local_dt = match dt.timezone().from_local_datetime(&naive_dt) {
+        crate::LocalResult::Single(dt) => dt,
+        _ => return Err(Error::InvalidArgument),
+    };
 
-    if dt < DateTime::<Utc>::MIN_UTC || dt > DateTime::<Utc>::MAX_UTC {
+    if local_dt < DateTime::<Utc>::MIN_UTC || local_dt > DateTime::<Utc>::MAX_UTC {
         return Err(Error::OutOfRange);
     }
 
-    Ok(dt)
+    Ok(local_dt)
 }
 
 impl DateTime<FixedOffset> {
