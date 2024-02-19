@@ -3,7 +3,9 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
+use crate::{
+    Datelike, Days, Error, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday,
+};
 
 #[derive(Clone)]
 struct DstTester;
@@ -1343,37 +1345,37 @@ fn test_min_max_setters() {
     let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
 
     assert_eq!(beyond_min.with_year(2020).unwrap().year(), 2020);
-    assert_eq!(beyond_min.with_month(beyond_min.month()), Some(beyond_min));
-    assert_eq!(beyond_min.with_month(3), None);
-    assert_eq!(beyond_min.with_month0(beyond_min.month0()), Some(beyond_min));
-    assert_eq!(beyond_min.with_month0(3), None);
-    assert_eq!(beyond_min.with_day(beyond_min.day()), Some(beyond_min));
-    assert_eq!(beyond_min.with_day(15), None);
-    assert_eq!(beyond_min.with_day0(beyond_min.day0()), Some(beyond_min));
-    assert_eq!(beyond_min.with_day0(15), None);
-    assert_eq!(beyond_min.with_ordinal(beyond_min.ordinal()), Some(beyond_min));
-    assert_eq!(beyond_min.with_ordinal(200), None);
-    assert_eq!(beyond_min.with_ordinal0(beyond_min.ordinal0()), Some(beyond_min));
-    assert_eq!(beyond_min.with_ordinal0(200), None);
-    assert_eq!(beyond_min.with_hour(beyond_min.hour()), Some(beyond_min));
-    assert_eq!(beyond_min.with_hour(23), beyond_min.checked_add_signed(TimeDelta::hours(1)));
+    assert_eq!(beyond_min.with_month(beyond_min.month()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_month(3), Err(Error::OutOfRange));
+    assert_eq!(beyond_min.with_month0(beyond_min.month0()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_month0(3), Err(Error::OutOfRange));
+    assert_eq!(beyond_min.with_day(beyond_min.day()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_day(15), Err(Error::OutOfRange));
+    assert_eq!(beyond_min.with_day0(beyond_min.day0()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_day0(15), Err(Error::OutOfRange));
+    assert_eq!(beyond_min.with_ordinal(beyond_min.ordinal()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_ordinal(200), Err(Error::OutOfRange));
+    assert_eq!(beyond_min.with_ordinal0(beyond_min.ordinal0()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_ordinal0(200), Err(Error::OutOfRange));
+    assert_eq!(beyond_min.with_hour(beyond_min.hour()), Ok(beyond_min));
+    assert_eq!(beyond_min.with_hour(23), Ok(beyond_min.checked_add_signed(TimeDelta::hours(1)).unwrap()));
     assert_eq!(beyond_min.with_hour(5), None);
     assert_eq!(beyond_min.with_minute(0), Some(beyond_min));
     assert_eq!(beyond_min.with_second(0), Some(beyond_min));
     assert_eq!(beyond_min.with_nanosecond(0), Some(beyond_min));
 
     assert_eq!(beyond_max.with_year(2020).unwrap().year(), 2020);
-    assert_eq!(beyond_max.with_month(beyond_max.month()), Some(beyond_max));
+    assert_eq!(beyond_max.with_month(beyond_max.month()), Ok(beyond_max));
     assert_eq!(beyond_max.with_month(3), None);
-    assert_eq!(beyond_max.with_month0(beyond_max.month0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_month0(beyond_max.month0()), Ok(beyond_max));
     assert_eq!(beyond_max.with_month0(3), None);
-    assert_eq!(beyond_max.with_day(beyond_max.day()), Some(beyond_max));
+    assert_eq!(beyond_max.with_day(beyond_max.day()), Ok(beyond_max));
     assert_eq!(beyond_max.with_day(15), None);
-    assert_eq!(beyond_max.with_day0(beyond_max.day0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_day0(beyond_max.day0()), Ok(beyond_max));
     assert_eq!(beyond_max.with_day0(15), None);
-    assert_eq!(beyond_max.with_ordinal(beyond_max.ordinal()), Some(beyond_max));
+    assert_eq!(beyond_max.with_ordinal(beyond_max.ordinal()), Ok(beyond_max));
     assert_eq!(beyond_max.with_ordinal(200), None);
-    assert_eq!(beyond_max.with_ordinal0(beyond_max.ordinal0()), Some(beyond_max));
+    assert_eq!(beyond_max.with_ordinal0(beyond_max.ordinal0()), Ok(beyond_max));
     assert_eq!(beyond_max.with_ordinal0(200), None);
     assert_eq!(beyond_max.with_hour(beyond_max.hour()), Some(beyond_max));
     assert_eq!(beyond_max.with_hour(0), beyond_max.checked_sub_signed(TimeDelta::hours(1)));
