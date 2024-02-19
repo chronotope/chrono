@@ -34,14 +34,6 @@ pub(crate) mod serde;
 #[cfg(test)]
 mod tests;
 
-/// The tight upper bound guarantees that a time delta with `|TimeDelta| >= 2^MAX_SECS_BITS`
-/// will always overflow the addition with any date and time type.
-///
-/// So why is this needed? `TimeDelta::seconds(rhs)` may overflow, and we don't have
-/// an alternative returning `Option` or `Result`. Thus we need some early bound to avoid
-/// touching that call when we are already sure that it WILL overflow...
-const MAX_SECS_BITS: usize = 44;
-
 /// The minimum possible `NaiveDateTime`.
 #[deprecated(since = "0.4.20", note = "Use NaiveDateTime::MIN instead")]
 pub const MIN_DATETIME: NaiveDateTime = NaiveDateTime::MIN;
@@ -527,14 +519,9 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_add_signed(rhs);
-
-        // early checking to avoid overflow in TimeDelta::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
-        }
-
-        let date = try_opt!(self.date.checked_add_signed(TimeDelta::seconds(rhs)));
+        let (time, remainder) = self.time.overflowing_add_signed(rhs);
+        let remainder = try_opt!(TimeDelta::try_seconds(remainder));
+        let date = try_opt!(self.date.checked_add_signed(remainder));
         Some(NaiveDateTime { date, time })
     }
 
@@ -703,14 +690,9 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
-        let (time, rhs) = self.time.overflowing_sub_signed(rhs);
-
-        // early checking to avoid overflow in TimeDelta::seconds
-        if rhs <= (-1 << MAX_SECS_BITS) || rhs >= (1 << MAX_SECS_BITS) {
-            return None;
-        }
-
-        let date = try_opt!(self.date.checked_sub_signed(TimeDelta::seconds(rhs)));
+        let (time, remainder) = self.time.overflowing_sub_signed(rhs);
+        let remainder = try_opt!(TimeDelta::try_seconds(remainder));
+        let date = try_opt!(self.date.checked_sub_signed(remainder));
         Some(NaiveDateTime { date, time })
     }
 
