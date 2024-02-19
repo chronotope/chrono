@@ -243,7 +243,7 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
 ///
 /// - Padding-agnostic (for numeric items).
 ///   The [`Pad`](./enum.Pad.html) field is completely ignored,
-///   so one can prepend any number of zeroes before numbers.
+///   so one can prepend any number of whitespace then any number of zeroes before numbers.
 ///
 /// - (Still) obeying the intrinsic parsing width. This allows, for example, parsing `HHMMSS`.
 pub fn parse<'a, I, B>(parsed: &mut Parsed, s: &str, items: I) -> ParseResult<()>
@@ -328,37 +328,13 @@ where
                 s = &s[prefix.len()..];
             }
 
-            Item::Space(item_space) => {
-                for expect in item_space.chars() {
-                    let actual = match s.chars().next() {
-                        Some(c) => c,
-                        None => {
-                            return Err((s, TOO_SHORT));
-                        }
-                    };
-                    if expect != actual {
-                        return Err((s, INVALID));
-                    }
-                    // advance `s` forward 1 char
-                    s = scan::s_next(s);
-                }
+            Item::Space(_) => {
+                s = s.trim_start();
             }
 
             #[cfg(feature = "alloc")]
-            Item::OwnedSpace(ref item_space) => {
-                for expect in item_space.chars() {
-                    let actual = match s.chars().next() {
-                        Some(c) => c,
-                        None => {
-                            return Err((s, TOO_SHORT));
-                        }
-                    };
-                    if expect != actual {
-                        return Err((s, INVALID));
-                    }
-                    // advance `s` forward 1 char
-                    s = scan::s_next(s);
-                }
+            Item::OwnedSpace(_) => {
+                s = s.trim_start();
             }
 
             Item::Numeric(ref spec, ref _pad) => {
@@ -391,6 +367,7 @@ where
                     Internal(ref int) => match int._dummy {},
                 };
 
+                s = s.trim_start();
                 let v = if signed {
                     if s.starts_with('-') {
                         let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
@@ -483,9 +460,8 @@ where
                     | &TimezoneOffsetDoubleColon
                     | &TimezoneOffsetTripleColon
                     | &TimezoneOffset => {
-                        s = scan::trim1(s);
                         let offset = try_consume!(scan::timezone_offset(
-                            s,
+                            s.trim_start(),
                             scan::consume_colon_maybe,
                             false,
                             false,
@@ -495,9 +471,8 @@ where
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
-                        s = scan::trim1(s);
                         let offset = try_consume!(scan::timezone_offset(
-                            s,
+                            s.trim_start(),
                             scan::consume_colon_maybe,
                             true,
                             false,
@@ -508,9 +483,8 @@ where
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
                     }) => {
-                        s = scan::trim1(s);
                         let offset = try_consume!(scan::timezone_offset(
-                            s,
+                            s.trim_start(),
                             scan::consume_colon_maybe,
                             true,
                             true,
@@ -540,12 +514,13 @@ where
 
 /// Accepts a relaxed form of RFC3339.
 /// A space or a 'T' are accepted as the separator between the date and time
-/// parts.
+/// parts. Additional spaces are allowed between each component.
 ///
 /// ```
 /// # use chrono::{DateTime, offset::FixedOffset};
-/// "2000-01-02T03:04:05Z".parse::<DateTime<FixedOffset>>()?;
-/// "2000-01-02 03:04:05Z".parse::<DateTime<FixedOffset>>()?;
+/// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>()?;
+/// "2012-12-12 12:12:12Z".parse::<DateTime<FixedOffset>>()?;
+/// "2012-  12-12T12:  12:12Z".parse::<DateTime<FixedOffset>>()?;
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
 impl str::FromStr for DateTime<FixedOffset> {
@@ -640,31 +615,31 @@ mod tests {
         parses(" ", &[Space(" ")]);
         parses("  ", &[Space("  ")]);
         parses("   ", &[Space("   ")]);
-        check(" ", &[Space("")], Err(TOO_LONG));
-        check("  ", &[Space(" ")], Err(TOO_LONG));
-        check("   ", &[Space("  ")], Err(TOO_LONG));
-        check("    ", &[Space("  ")], Err(TOO_LONG));
-        check("", &[Space(" ")], Err(TOO_SHORT));
-        check(" ", &[Space("  ")], Err(TOO_SHORT));
-        check("  ", &[Space("   ")], Err(TOO_SHORT));
-        check("  ", &[Space("  "), Space("  ")], Err(TOO_SHORT));
-        check("   ", &[Space("  "), Space("  ")], Err(TOO_SHORT));
+        parses(" ", &[Space("")]);
+        parses("  ", &[Space(" ")]);
+        parses("   ", &[Space("  ")]);
+        parses("    ", &[Space("  ")]);
+        parses("", &[Space(" ")]);
+        parses(" ", &[Space("  ")]);
+        parses("  ", &[Space("   ")]);
+        parses("  ", &[Space("  "), Space("  ")]);
+        parses("   ", &[Space("  "), Space("  ")]);
         parses("  ", &[Space(" "), Space(" ")]);
         parses("   ", &[Space("  "), Space(" ")]);
         parses("   ", &[Space(" "), Space("  ")]);
         parses("   ", &[Space(" "), Space(" "), Space(" ")]);
-        check("\t", &[Space("")], Err(TOO_LONG));
-        check(" \n\r  \n", &[Space("")], Err(TOO_LONG));
+        parses("\t", &[Space("")]);
+        parses(" \n\r  \n", &[Space("")]);
         parses("\t", &[Space("\t")]);
-        check("\t", &[Space(" ")], Err(INVALID));
-        check(" ", &[Space("\t")], Err(INVALID));
+        parses("\t", &[Space(" ")]);
+        parses(" ", &[Space("\t")]);
         parses("\t\r", &[Space("\t\r")]);
         parses("\t\r ", &[Space("\t\r ")]);
         parses("\t \r", &[Space("\t \r")]);
         parses(" \t\r", &[Space(" \t\r")]);
         parses(" \n\r  \n", &[Space(" \n\r  \n")]);
-        check(" \t\n", &[Space(" \t")], Err(TOO_LONG));
-        check(" \n\t", &[Space(" \t\n")], Err(INVALID));
+        parses(" \t\n", &[Space(" \t")]);
+        parses(" \n\t", &[Space(" \t\n")]);
         parses("\u{2002}", &[Space("\u{2002}")]);
         // most unicode whitespace characters
         parses(
@@ -680,11 +655,11 @@ mod tests {
             ]
         );
         check("a", &[Space("")], Err(TOO_LONG));
-        check("a", &[Space(" ")], Err(INVALID));
-        // a Space containing a literal can match a literal, but this should not be done
-        parses("a", &[Space("a")]);
+        check("a", &[Space(" ")], Err(TOO_LONG));
+        // a Space containing a literal does not match a literal
+        check("a", &[Space("a")], Err(TOO_LONG));
         check("abc", &[Space("")], Err(TOO_LONG));
-        check("abc", &[Space(" ")], Err(INVALID));
+        check("abc", &[Space(" ")], Err(TOO_LONG));
         check(" abc", &[Space("")], Err(TOO_LONG));
         check(" abc", &[Space(" ")], Err(TOO_LONG));
 
@@ -731,7 +706,7 @@ mod tests {
         //
         check("x y", &[Literal("x"), Literal("y")], Err(INVALID));
         parses("xy", &[Literal("x"), Space(""), Literal("y")]);
-        check("x y", &[Literal("x"), Space(""), Literal("y")], Err(INVALID));
+        parses("x y", &[Literal("x"), Space(""), Literal("y")]);
         parses("x y", &[Literal("x"), Space(" "), Literal("y")]);
 
         // whitespaces + literals
@@ -764,7 +739,7 @@ mod tests {
         check("2015", &[num(Year)], parsed!(year: 2015));
         check("0000", &[num(Year)], parsed!(year: 0));
         check("9999", &[num(Year)], parsed!(year: 9999));
-        check(" \t987", &[num(Year)], Err(INVALID));
+        check(" \t987", &[num(Year)], parsed!(year: 987));
         check(" \t987", &[Space(" \t"), num(Year)], parsed!(year: 987));
         check(" \t987🤠", &[Space(" \t"), num(Year), Literal("🤠")], parsed!(year: 987));
         check("987🤠", &[num(Year), Literal("🤠")], parsed!(year: 987));
@@ -776,9 +751,9 @@ mod tests {
         check("12345", &[nums(Year), Literal("5")], parsed!(year: 1234));
         check("12345", &[num0(Year), Literal("5")], parsed!(year: 1234));
         check("12341234", &[num(Year), num(Year)], parsed!(year: 1234));
-        check("1234 1234", &[num(Year), num(Year)], Err(INVALID));
+        check("1234 1234", &[num(Year), num(Year)], parsed!(year: 1234));
         check("1234 1234", &[num(Year), Space(" "), num(Year)], parsed!(year: 1234));
-        check("1234 1235", &[num(Year), num(Year)], Err(INVALID));
+        check("1234 1235", &[num(Year), num(Year)], Err(IMPOSSIBLE));
         check("1234 1234", &[num(Year), Literal("x"), num(Year)], Err(INVALID));
         check("1234x1234", &[num(Year), Literal("x"), num(Year)], parsed!(year: 1234));
         check("1234 x 1234", &[num(Year), Literal("x"), num(Year)], Err(INVALID));
@@ -803,10 +778,10 @@ mod tests {
         check("-42195", &[num(Year)], parsed!(year: -42195));
         check("−42195", &[num(Year)], Err(INVALID)); // MINUS SIGN (U+2212)
         check("+42195", &[num(Year)], parsed!(year: 42195));
-        check("  -42195", &[num(Year)], Err(INVALID));
-        check(" +42195", &[num(Year)], Err(INVALID));
-        check("  -42195", &[num(Year)], Err(INVALID));
-        check("  +42195", &[num(Year)], Err(INVALID));
+        check("  -42195", &[num(Year)], parsed!(year: -42195));
+        check(" +42195", &[num(Year)], parsed!(year: 42195));
+        check("  -42195", &[num(Year)], parsed!(year: -42195));
+        check("  +42195", &[num(Year)], parsed!(year: 42195));
         check("-42195 ", &[num(Year)], Err(TOO_LONG));
         check("+42195 ", &[num(Year)], Err(TOO_LONG));
         check("  -   42", &[num(Year)], Err(INVALID));
@@ -823,7 +798,7 @@ mod tests {
         check("345", &[num(Ordinal)], parsed!(ordinal: 345));
         check("+345", &[num(Ordinal)], Err(INVALID));
         check("-345", &[num(Ordinal)], Err(INVALID));
-        check(" 345", &[num(Ordinal)], Err(INVALID));
+        check(" 345", &[num(Ordinal)], parsed!(ordinal: 345));
         check("−345", &[num(Ordinal)], Err(INVALID)); // MINUS SIGN (U+2212)
         check("345 ", &[num(Ordinal)], Err(TOO_LONG));
         check(" 345", &[Space(" "), num(Ordinal)], parsed!(ordinal: 345));
@@ -837,28 +812,27 @@ mod tests {
         check(" +345", &[Space(" "), num(Ordinal)], Err(INVALID));
         check(" -345", &[Space(" "), num(Ordinal)], Err(INVALID));
 
-        const S: Item = Space(" ");
         // various numeric fields
-        check("1234 5678", &[num(Year), S, num(IsoYear)], parsed!(year: 1234, isoyear: 5678));
-        check("1234 5678", &[num(Year), S, num(IsoYear)], parsed!(year: 1234, isoyear: 5678));
+        check("1234 5678", &[num(Year), num(IsoYear)], parsed!(year: 1234, isoyear: 5678));
+        check("1234 5678", &[num(Year), num(IsoYear)], parsed!(year: 1234, isoyear: 5678));
         check(
             "12 34 56 78",
-            &[num(YearDiv100), S, num(YearMod100), S, num(IsoYearDiv100), S, num(IsoYearMod100)],
+            &[num(YearDiv100), num(YearMod100), num(IsoYearDiv100), num(IsoYearMod100)],
             parsed!(year_div_100: 12, year_mod_100: 34, isoyear_div_100: 56, isoyear_mod_100: 78),
         );
         check(
-            "1 2 3 45",
-            &[num(Month), S, num(Day), S, num(WeekFromSun), S, num(NumDaysFromSun), num(IsoWeek)],
+            "1 2 3 4 5",
+            &[num(Month), num(Day), num(WeekFromSun), num(NumDaysFromSun), num(IsoWeek)],
             parsed!(month: 1, day: 2, week_from_sun: 3, weekday: Weekday::Thu, isoweek: 5),
         );
         check(
             "6 7 89 01",
-            &[num(WeekFromMon), S, num(WeekdayFromMon), S, num(Ordinal), S, num(Hour12)],
+            &[num(WeekFromMon), num(WeekdayFromMon), num(Ordinal), num(Hour12)],
             parsed!(week_from_mon: 6, weekday: Weekday::Sun, ordinal: 89, hour_mod_12: 1),
         );
         check(
             "23 45 6 78901234 567890123",
-            &[num(Hour), S, num(Minute), S, num(Second), S, num(Nanosecond), S, num(Timestamp)],
+            &[num(Hour), num(Minute), num(Second), num(Nanosecond), num(Timestamp)],
             parsed!(hour_div_12: 1, hour_mod_12: 11, minute: 45, second: 6, nanosecond: 78_901_234, timestamp: 567_890_123),
         );
     }
@@ -1089,9 +1063,9 @@ mod tests {
         check(" +12:34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
         check(" -12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
         check(" −12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
-        check("  +12:34", &[fixed(TimezoneOffset)], Err(INVALID));
-        check("  -12:34", &[fixed(TimezoneOffset)], Err(INVALID));
-        check("\t -12:34", &[fixed(TimezoneOffset)], Err(INVALID));
+        check("  +12:34", &[fixed(TimezoneOffset)], parsed!(offset: 45_240));
+        check("  -12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
+        check("\t -12:34", &[fixed(TimezoneOffset)], parsed!(offset: -45_240));
         check("-12: 34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("-12 :34", &[fixed(TimezoneOffset)], Err(INVALID));
         check("-12 : 34", &[fixed(TimezoneOffset)], Err(INVALID));
@@ -1205,7 +1179,7 @@ mod tests {
         check("+12:34 ", &[fixed(TimezoneOffsetColon)], Err(TOO_LONG));
         check(" +12:34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
         check("\t+12:34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
-        check("\t\t+12:34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
+        check("\t\t+12:34", &[fixed(TimezoneOffsetColon)], parsed!(offset: 45_240));
         check("12:34 ", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check(" 12:34", &[fixed(TimezoneOffsetColon)], Err(INVALID));
         check("", &[fixed(TimezoneOffsetColon)], Err(TOO_SHORT));

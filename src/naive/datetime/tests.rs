@@ -298,9 +298,9 @@ fn test_datetime_from_str() {
     // some invalid cases
     // since `ParseErrorKind` is private, all we can do is to check if there was an error
     let invalid = [
-        "",                                                         // empty
-        "x",                                                        // invalid / missing data
-        "15",                                                       // missing data
+        "",                              // empty
+        "x",                             // invalid / missing data
+        "15",                            // missing data
         "15:8:9",                        // looks like a time (invalid date)
         "15-8-9",                        // looks like a date (invalid)
         "Fri, 09 Aug 2013 23:54:35 GMT", // valid date, wrong format
@@ -315,27 +315,13 @@ fn test_datetime_from_str() {
         "2012-12-12T12:12:12 +00:00",    // unexpected timezone / trailing literal
         "2012-12-12T12:12:12 GMT",       // unexpected timezone / trailing literal
         "2012-123-12T12:12:12",          // invalid month
-        "2012 -12-12T12:12:12",          // space after year
-        "2012  -12-12T12:12:12",         // multi space after year
-        "2012- 12-12T12:12:12",          // space before month
-        "2012-  12-12T12:12:12",         // multi space before month
-        "2012-12-12 T12:12:12",          // space after day
-        "2012-12-12T 12:12:12",          // space after date-time divider
-        "2012-12-12T12 :12:12",          // space after hour
-        "2012-12-12T12  :12:12",         // multi space after hour
-        "2012-12-12T12: 12:12",          // space before minute
-        "2012-12-12T12:  12:12",         // multi space before minute
-        "2012-12-12T12 : 12:12",         // space around hour-minute divider
-        "2012-12-12T12:12:12 ",          // trailing space
-        " 2012-12-12T12:12:12",          // leading space
         "2012-12-12t12:12:12",           // bad divider 't'
         "2012-12-12 12:12:12",           // missing divider 'T'
         "2012-12-12T12:12:12Z",          // trailing char 'Z'
         "+ 82701-123-12T12:12:12",       // strange year, invalid month
         "+802701-123-12T12:12:12",       // out-of-bound year, invalid month
-        "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   ", // many spaces
     ];
-    for &s in invalid.iter() {
+    for &s in &invalid {
         eprintln!("test_datetime_from_str invalid {:?}", s);
         assert!(s.parse::<NaiveDateTime>().is_err());
     }
@@ -351,12 +337,8 @@ fn test_datetime_parse_from_str() {
         NaiveDateTime::parse_from_str("2014-5-7T12:34:56+09:30", "%Y-%m-%dT%H:%M:%S%z"),
         Ok(ymdhms(2014, 5, 7, 12, 34, 56))
     ); // ignore offset
-    assert!(
-        // intermixed whitespace
-        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S").is_err()
-    );
     assert_eq!(
-        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u %H%M%S"),
+        NaiveDateTime::parse_from_str("2015-W06-1 000000", "%G-W%V-%u%H%M%S"),
         Ok(ymdhms(2015, 2, 2, 0, 0, 0))
     );
     assert_eq!(
@@ -402,29 +384,18 @@ fn test_datetime_parse_from_str_with_spaces() {
     assert_eq!(parse_from_str(" Aug 09 2013  23:54:35 ", " %b %d %Y  %H:%M:%S "), Ok(dt));
     assert_eq!(parse_from_str("  Aug 09 2013 23:54:35", "  %b %d %Y %H:%M:%S"), Ok(dt));
     assert_eq!(parse_from_str("   Aug 09 2013 23:54:35", "   %b %d %Y %H:%M:%S"), Ok(dt));
-    assert_eq!(parse_from_str("\n\tAug 09 2013 23:54:35  ", "\n\t%b %d %Y %H:%M:%S  "), Ok(dt),);
+    assert_eq!(parse_from_str("\n\tAug 09 2013 23:54:35  ", "\n\t%b %d %Y %H:%M:%S  "), Ok(dt));
     assert_eq!(parse_from_str("\tAug 09 2013 23:54:35\t", "\t%b %d %Y %H:%M:%S\t"), Ok(dt));
     assert_eq!(parse_from_str("Aug  09 2013 23:54:35", "%b  %d %Y %H:%M:%S"), Ok(dt));
     assert_eq!(parse_from_str("Aug    09 2013 23:54:35", "%b    %d %Y %H:%M:%S"), Ok(dt));
     assert_eq!(parse_from_str("Aug  09 2013\t23:54:35", "%b  %d %Y\t%H:%M:%S"), Ok(dt));
     assert_eq!(parse_from_str("Aug  09 2013\t\t23:54:35", "%b  %d %Y\t\t%H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S\n"), Ok(dt));
+    assert_eq!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y\t%H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S "), Ok(dt));
+    assert_eq!(parse_from_str("Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S"), Ok(dt));
+    assert_eq!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n"), Ok(dt));
     // with varying spaces - should fail
-    // leading whitespace in format
-    assert!(parse_from_str("Aug 09 2013 23:54:35", " %b %d %Y %H:%M:%S").is_err());
-    // trailing whitespace in format
-    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
-    // extra mid-string whitespace in format
-    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y  %H:%M:%S").is_err());
-    // mismatched leading whitespace
-    assert!(parse_from_str("\tAug 09 2013 23:54:35", "\n%b %d %Y %H:%M:%S").is_err());
-    // mismatched trailing whitespace
-    assert!(parse_from_str("Aug 09 2013 23:54:35 ", "%b %d %Y %H:%M:%S\n").is_err());
-    // mismatched mid-string whitespace
-    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y\t%H:%M:%S").is_err());
-    // trailing whitespace in format
-    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S ").is_err());
-    // trailing whitespace (newline) in format
-    assert!(parse_from_str("Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S\n").is_err());
     // leading space in data
     assert!(parse_from_str(" Aug 09 2013 23:54:35", "%b %d %Y %H:%M:%S").is_err());
     // trailing space in data

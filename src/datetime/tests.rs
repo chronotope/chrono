@@ -770,6 +770,18 @@ fn test_parse_datetime_utc() {
         "2012-12-12 12:12:12Z",
         "2012-12-12t12:12:12Z",
         "2012-12-12T12:12:12Z",
+        "2012 -12-12T12:12:12Z",
+        "2012  -12-12T12:12:12Z",
+        "2012- 12-12T12:12:12Z",
+        "2012-  12-12T12:12:12Z",
+        "2012-12-12T 12:12:12Z",
+        "2012-12-12T12 :12:12Z",
+        "2012-12-12T12  :12:12Z",
+        "2012-12-12T12: 12:12Z",
+        "2012-12-12T12:  12:12Z",
+        "2012-12-12T12 : 12:12Z",
+        "2012-12-12T12:12:12Z ",
+        " 2012-12-12T12:12:12Z",
         "2015-02-18T23:16:09.153Z",
         "2015-2-18T23:16:09.153Z",
         "+2015-2-18T23:16:09.153Z",
@@ -814,38 +826,21 @@ fn test_parse_datetime_utc() {
         "+1441497364",                                               // valid datetime, wrong format
         "+1441497364Z",                                              // valid datetime, wrong format
         "2014/02/03 04:05:06Z",                                      // valid datetime, wrong format
-        "2001-02-03T04:05:0600:00",   // valid datetime, timezone too close
-        "2015-15-15T15:15:15Z",       // invalid datetime
-        "2012-12-12T12:12:12x",       // invalid timezone
-        "2012-123-12T12:12:12Z",      // invalid month
-        "2012-12-77T12:12:12Z",       // invalid day
-        "2012-12-12T26:12:12Z",       // invalid hour
-        "2012-12-12T12:61:12Z",       // invalid minute
-        "2012-12-12T12:12:62Z",       // invalid second
-        "2012-12-12 T12:12:12Z",      // space after date
-        "2012-12-12T12:12:12ZZ",      // trailing literal 'Z'
-        "+802701-12-12T12:12:12Z",    // invalid year (out of bounds)
-        "+ 2012-12-12T12:12:12Z",     // invalid space before year
-        "2012 -12-12T12:12:12Z",      // space after year
-        "2012  -12-12T12:12:12Z",     // multi space after year
-        "2012- 12-12T12:12:12Z",      // space after year divider
-        "2012-  12-12T12:12:12Z",     // multi space after year divider
-        "2012-12-12T 12:12:12Z",      // space after date-time divider
-        "2012-12-12T12 :12:12Z",      // space after hour
-        "2012-12-12T12  :12:12Z",     // multi space after hour
-        "2012-12-12T12: 12:12Z",      // space before minute
-        "2012-12-12T12:  12:12Z",     // multi space before minute
-        "2012-12-12T12 : 12:12Z",     // space space before and after hour-minute divider
-        " 2012-12-12T12:12:12Z",      // leading space
-        "2001-02-03T04:05:06-00 00",  // invalid timezone spacing
-        "2001-02-03T04:05:06-01: 00", // invalid timezone spacing
-        "2001-02-03T04:05:06-01 :00", // invalid timezone spacing
-        "2001-02-03T04:05:06-01 : 00", // invalid timezone spacing
-        "2001-02-03T04:05:06-01 :     00", // invalid timezone spacing
-        "2001-02-03T04:05:06-01 :    :00", // invalid timezone spacing
+        "2001-02-03T04:05:0600:00", // valid datetime, timezone too close
+        "2015-15-15T15:15:15Z",     // invalid datetime
+        "2012-12-12T12:12:12x",     // invalid timezone
+        "2012-123-12T12:12:12Z",    // invalid month
+        "2012-12-77T12:12:12Z",     // invalid day
+        "2012-12-12T26:12:12Z",     // invalid hour
+        "2012-12-12T12:61:12Z",     // invalid minute
+        "2012-12-12T12:12:62Z",     // invalid second
+        "2012-12-12 T12:12:12Z",    // space after date
+        "2012-12-12T12:12:12ZZ",    // trailing literal 'Z'
+        "+802701-12-12T12:12:12Z",  // invalid year (out of bounds)
+        "+ 2012-12-12T12:12:12Z",   // invalid space before year
         "  +82701  -  05  -  6  T  15  :  9  : 60.898989898989   Z", // valid datetime, wrong format
     ];
-    for &s in invalid.iter() {
+    for &s in &invalid {
         eprintln!("test_parse_datetime_utc invalid {:?}", s);
         assert!(s.parse::<DateTime<Utc>>().is_err());
     }
@@ -937,7 +932,7 @@ fn test_datetime_parse_from_str() {
     assert_eq!(parse("Aug 09 2013 23:54:35 -09:00 ", "%b %d %Y %H:%M:%S %z "), Ok(dt));
     // trailing newline after timezone
     assert!(parse("Aug 09 2013 23:54:35 -09:00\n", "%b %d %Y %H:%M:%S %z").is_err());
-    assert!(parse("Aug 09 2013 23:54:35 -09:00\n", "%b %d %Y %H:%M:%S %z ").is_err());
+    assert_eq!(parse("Aug 09 2013 23:54:35 -09:00\n", "%b %d %Y %H:%M:%S %z "), Ok(dt));
     // trailing colon
     assert!(parse("Aug 09 2013 23:54:35 -09:00:", "%b %d %Y %H:%M:%S %z").is_err());
     // trailing colon with space
@@ -1031,8 +1026,8 @@ fn test_datetime_parse_from_str() {
     assert!(parse("Aug 09 2013 23:54:35 -09: ", "%b %d %Y %H:%M:%S %#z ").is_err());
     assert_eq!(parse("Aug 09 2013 23:54:35+-09", "%b %d %Y %H:%M:%S+%#z"), Ok(dt));
     assert_eq!(parse("Aug 09 2013 23:54:35--09", "%b %d %Y %H:%M:%S-%#z"), Ok(dt));
-    assert!(parse("Aug 09 2013 -09:00 23:54:35", "%b %d %Y %#z%H:%M:%S").is_err());
-    assert!(parse("Aug 09 2013 -0900 23:54:35", "%b %d %Y %#z%H:%M:%S").is_err());
+    assert_eq!(parse("Aug 09 2013 -09:00 23:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
+    assert_eq!(parse("Aug 09 2013 -0900 23:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
     assert_eq!(parse("Aug 09 2013 -090023:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
     assert_eq!(parse("Aug 09 2013 -09:0023:54:35", "%b %d %Y %#z%H:%M:%S"), Ok(dt));
     // timezone with partial minutes adjacent hours

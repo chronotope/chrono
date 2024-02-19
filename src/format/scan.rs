@@ -192,15 +192,6 @@ pub(super) fn s_next(s: &str) -> &str {
     }
 }
 
-/// If the first `char` is whitespace then consume it and return `s`.
-/// Else return `s`.
-pub(super) fn trim1(s: &str) -> &str {
-    match s.chars().next() {
-        Some(c) if c.is_whitespace() => s_next(s),
-        Some(_) | None => s,
-    }
-}
-
 /// Consumes one colon char `:` if it is at the front of `s`.
 /// Always returns `Ok(s)`.
 pub(crate) fn consume_colon_maybe(mut s: &str) -> ParseResult<&str> {
@@ -389,7 +380,7 @@ enum CommentState {
 mod tests {
     use super::{
         comment_2822, consume_colon_maybe, nanosecond, nanosecond_fixed, s_next,
-        short_or_long_month0, short_or_long_weekday, space, timezone_offset_2822, trim1,
+        short_or_long_month0, short_or_long_weekday, space, timezone_offset_2822,
     };
     use crate::format::{INVALID, TOO_SHORT};
     use crate::Weekday;
@@ -488,20 +479,6 @@ mod tests {
         assert_eq!(s_next("a😾"), "😾");
         assert_eq!(s_next("😾bc"), "bc");
         assert_eq!(s_next("a😾c"), "😾c");
-    }
-
-    #[test]
-    fn test_trim1() {
-        assert_eq!(trim1(""), "");
-        assert_eq!(trim1(" "), "");
-        assert_eq!(trim1("\t"), "");
-        assert_eq!(trim1("\t\t"), "\t");
-        assert_eq!(trim1("  "), " ");
-        assert_eq!(trim1("a"), "a");
-        assert_eq!(trim1("a "), "a ");
-        assert_eq!(trim1("ab"), "ab");
-        assert_eq!(trim1("😼"), "😼");
-        assert_eq!(trim1("😼b"), "😼b");
     }
 
     #[test]
