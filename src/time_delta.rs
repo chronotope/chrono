@@ -616,6 +616,7 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 mod tests {
     use super::OutOfRangeError;
     use super::{TimeDelta, MAX, MIN};
+    use crate::expect;
     use core::time::Duration;
 
     #[test]
@@ -1188,7 +1189,7 @@ mod tests {
 
     #[test]
     fn test_duration_const() {
-        const ONE_WEEK: TimeDelta = TimeDelta::weeks(1);
+        const ONE_WEEK: TimeDelta = expect!(TimeDelta::try_weeks(1), "");
         const ONE_DAY: TimeDelta = TimeDelta::days(1);
         const ONE_HOUR: TimeDelta = TimeDelta::hours(1);
         const ONE_MINUTE: TimeDelta = TimeDelta::minutes(1);
