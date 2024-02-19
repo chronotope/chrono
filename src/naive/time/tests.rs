@@ -103,9 +103,9 @@ fn test_time_add() {
     check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 6, 1, 100));
     check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(86399), hmsm(3, 5, 58, 900)); // overwrap
     check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(-86399), hmsm(3, 6, 0, 900));
-    check!(hmsm(3, 5, 59, 900), TimeDelta::days(12345), hmsm(3, 5, 59, 900));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::days(1), hmsm(3, 5, 59, 300));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::days(-1), hmsm(3, 6, 0, 300));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_days(12345).unwrap(), hmsm(3, 5, 59, 900));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_days(1).unwrap(), hmsm(3, 5, 59, 300));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_days(-1).unwrap(), hmsm(3, 6, 0, 300));
 
     // regression tests for #37
     check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10));
@@ -131,11 +131,11 @@ fn test_time_overflowing_add() {
 
     // overflowing_add_signed with leap seconds may be counter-intuitive
     assert_eq!(
-        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::days(1)),
+        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::try_days(1).unwrap()),
         (hmsm(3, 4, 59, 678), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::days(-1)),
+        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::try_days(-1).unwrap()),
         (hmsm(3, 5, 0, 678), -86_400)
     );
 }
