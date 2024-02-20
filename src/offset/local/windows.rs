@@ -256,7 +256,7 @@ mod tests {
             if let Some(our_result) = Local.from_local_datetime(&date).earliest() {
                 assert_eq!(from_local_time(&date), our_result);
             }
-            date += TimeDelta::hours(1);
+            date += TimeDelta::try_hours(1).unwrap();
         }
     }
 }
