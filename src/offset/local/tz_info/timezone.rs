@@ -25,7 +25,6 @@ impl TimeZone {
     /// Returns local time zone.
     ///
     /// This method in not supported on non-UNIX platforms, and returns the UTC time zone instead.
-    ///
     pub(crate) fn local(env_tz: Option<&str>) -> Result<Self, Error> {
         match env_tz {
             Some(tz) => Self::from_posix_tz(tz),
