@@ -81,7 +81,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
     #[cfg_attr(feature = "clock", doc = "```rust")]
-    /// use chrono::{Local, DateTime};
+    /// use chrono::{DateTime, Local};
     ///
     /// let dt = Local::now();
     /// // Get components
@@ -166,7 +166,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// use chrono::prelude::*;
     ///
     /// let date: DateTime<Utc> = Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
-    /// let other: DateTime<FixedOffset> = FixedOffset::east_opt(23).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
+    /// let other: DateTime<FixedOffset> =
+    ///     FixedOffset::east_opt(23).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
     /// assert_eq!(date.date_naive(), other.date_naive());
     /// ```
     #[inline]
@@ -208,12 +209,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, NaiveDate};
+    /// use chrono::{NaiveDate, Utc};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_milli_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1)
+    ///     .unwrap()
+    ///     .and_hms_milli_opt(0, 0, 1, 444)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_millis(), 1_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_milli_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9)
+    ///     .unwrap()
+    ///     .and_hms_milli_opt(1, 46, 40, 555)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
     /// ```
     #[inline]
@@ -227,12 +238,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, NaiveDate};
+    /// use chrono::{NaiveDate, Utc};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_micro_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1)
+    ///     .unwrap()
+    ///     .and_hms_micro_opt(0, 0, 1, 444)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_micro_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9)
+    ///     .unwrap()
+    ///     .and_hms_micro_opt(1, 46, 40, 555)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
     /// ```
     #[inline]
@@ -271,24 +292,54 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, NaiveDate};
+    /// use chrono::{NaiveDate, Utc};
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_nano_opt(0, 0, 1, 444).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(1970, 1, 1)
+    ///     .unwrap()
+    ///     .and_hms_nano_opt(0, 0, 1, 444)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_444));
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9).unwrap().and_hms_nano_opt(1, 46, 40, 555).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(2001, 9, 9)
+    ///     .unwrap()
+    ///     .and_hms_nano_opt(1, 46, 40, 555)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), Some(1_000_000_000_000_000_555));
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_192).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21)
+    ///     .unwrap()
+    ///     .and_hms_nano_opt(0, 12, 43, 145_224_192)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), Some(-9_223_372_036_854_775_808));
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_807).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11)
+    ///     .unwrap()
+    ///     .and_hms_nano_opt(23, 47, 16, 854_775_807)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), Some(9_223_372_036_854_775_807));
     ///
-    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21).unwrap().and_hms_nano_opt(0, 12, 43, 145_224_191).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(1677, 9, 21)
+    ///     .unwrap()
+    ///     .and_hms_nano_opt(0, 12, 43, 145_224_191)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), None);
     ///
-    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11).unwrap().and_hms_nano_opt(23, 47, 16, 854_775_808).unwrap().and_local_timezone(Utc).unwrap();
+    /// let dt = NaiveDate::from_ymd_opt(2262, 4, 11)
+    ///     .unwrap()
+    ///     .and_hms_nano_opt(23, 47, 16, 854_775_808)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
     /// assert_eq!(dt.timestamp_nanos_opt(), None);
     /// ```
     #[inline]
@@ -566,18 +617,26 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// ```rust
     /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
-    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(18, 30, 9, 453_829).unwrap().and_local_timezone(Utc).unwrap();
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false),
-    ///            "2018-01-26T18:30:09.453+00:00");
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true),
-    ///            "2018-01-26T18:30:09.453Z");
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
-    ///            "2018-01-26T18:30:09Z");
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26)
+    ///     .unwrap()
+    ///     .and_hms_micro_opt(18, 30, 9, 453_829)
+    ///     .unwrap()
+    ///     .and_local_timezone(Utc)
+    ///     .unwrap();
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false), "2018-01-26T18:30:09.453+00:00");
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true), "2018-01-26T18:30:09.453Z");
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true), "2018-01-26T18:30:09Z");
     ///
     /// let pst = FixedOffset::east_opt(8 * 60 * 60).unwrap();
-    /// let dt = pst.from_local_datetime(&NaiveDate::from_ymd_opt(2018, 1, 26).unwrap().and_hms_micro_opt(10, 30, 9, 453_829).unwrap()).unwrap();
-    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true),
-    ///            "2018-01-26T10:30:09+08:00");
+    /// let dt = pst
+    ///     .from_local_datetime(
+    ///         &NaiveDate::from_ymd_opt(2018, 1, 26)
+    ///             .unwrap()
+    ///             .and_hms_micro_opt(10, 30, 9, 453_829)
+    ///             .unwrap(),
+    ///     )
+    ///     .unwrap();
+    /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true), "2018-01-26T10:30:09+08:00");
     /// ```
     #[cfg(feature = "alloc")]
     #[must_use]
@@ -619,7 +678,8 @@ impl DateTime<Utc> {
     /// ```
     /// use chrono::{DateTime, Utc};
     ///
-    /// let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp(1431648000, 0).expect("invalid timestamp");
+    /// let dt: DateTime<Utc> =
+    ///     DateTime::<Utc>::from_timestamp(1431648000, 0).expect("invalid timestamp");
     ///
     /// assert_eq!(dt.to_string(), "2015-05-15 00:00:00 UTC");
     /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
@@ -650,7 +710,8 @@ impl DateTime<Utc> {
     /// ```
     /// use chrono::{DateTime, Utc};
     ///
-    /// let dt: DateTime<Utc> = DateTime::<Utc>::from_timestamp_millis(947638923004).expect("invalid timestamp");
+    /// let dt: DateTime<Utc> =
+    ///     DateTime::<Utc>::from_timestamp_millis(947638923004).expect("invalid timestamp");
     ///
     /// assert_eq!(dt.to_string(), "2000-01-12 01:02:03.004 UTC");
     /// assert_eq!(DateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap(), dt);
@@ -837,11 +898,21 @@ impl DateTime<FixedOffset> {
     /// # Example
     ///
     /// ```rust
-    /// use chrono::{DateTime, FixedOffset, TimeZone, NaiveDate};
+    /// use chrono::{DateTime, FixedOffset, NaiveDate, TimeZone};
     ///
-    /// let dt = DateTime::parse_from_str(
-    ///     "1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
-    /// assert_eq!(dt, Ok(FixedOffset::east_opt(0).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(1983, 4, 13).unwrap().and_hms_milli_opt(12, 9, 14, 274).unwrap()).unwrap()));
+    /// let dt = DateTime::parse_from_str("1983 Apr 13 12:09:14.274 +0000", "%Y %b %d %H:%M:%S%.3f %z");
+    /// assert_eq!(
+    ///     dt,
+    ///     Ok(FixedOffset::east_opt(0)
+    ///         .unwrap()
+    ///         .from_local_datetime(
+    ///             &NaiveDate::from_ymd_opt(1983, 4, 13)
+    ///                 .unwrap()
+    ///                 .and_hms_milli_opt(12, 9, 14, 274)
+    ///                 .unwrap()
+    ///         )
+    ///         .unwrap())
+    /// );
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
@@ -867,10 +938,13 @@ impl DateTime<FixedOffset> {
     /// ```rust
     /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// let (datetime, remainder) = DateTime::parse_and_remainder(
-    ///     "2015-02-18 23:16:09 +0200 trailing text", "%Y-%m-%d %H:%M:%S %z").unwrap();
+    ///     "2015-02-18 23:16:09 +0200 trailing text",
+    ///     "%Y-%m-%d %H:%M:%S %z",
+    /// )
+    /// .unwrap();
     /// assert_eq!(
     ///     datetime,
-    ///     FixedOffset::east_opt(2*3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    ///     FixedOffset::east_opt(2 * 3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// assert_eq!(remainder, " trailing text");
     /// ```
@@ -1213,8 +1287,14 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// let earlier = Utc.with_ymd_and_hms(2015, 5, 15, 2, 0, 0).unwrap().with_timezone(&FixedOffset::west_opt(1 * 3600).unwrap());
-    /// let later   = Utc.with_ymd_and_hms(2015, 5, 15, 3, 0, 0).unwrap().with_timezone(&FixedOffset::west_opt(5 * 3600).unwrap());
+    /// let earlier = Utc
+    ///     .with_ymd_and_hms(2015, 5, 15, 2, 0, 0)
+    ///     .unwrap()
+    ///     .with_timezone(&FixedOffset::west_opt(1 * 3600).unwrap());
+    /// let later = Utc
+    ///     .with_ymd_and_hms(2015, 5, 15, 3, 0, 0)
+    ///     .unwrap()
+    ///     .with_timezone(&FixedOffset::west_opt(5 * 3600).unwrap());
     ///
     /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");
