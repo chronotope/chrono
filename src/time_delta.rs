@@ -108,7 +108,7 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of weeks.
     ///
-    /// Equivalent to `TimeDelta::seconds(weeks * 7 * 24 * 60 * 60)` with
+    /// Equivalent to `TimeDelta::try_seconds(weeks * 7 * 24 * 60 * 60)` with
     /// overflow checks.
     ///
     /// # Errors
@@ -135,7 +135,7 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of days.
     ///
-    /// Equivalent to `TimeDelta::seconds(days * 24 * 60 * 60)` with overflow
+    /// Equivalent to `TimeDelta::try_seconds(days * 24 * 60 * 60)` with overflow
     /// checks.
     ///
     /// # Errors
@@ -161,7 +161,7 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of hours.
     ///
-    /// Equivalent to `TimeDelta::seconds(hours * 60 * 60)` with overflow checks.
+    /// Equivalent to `TimeDelta::try_seconds(hours * 60 * 60)` with overflow checks.
     ///
     /// # Errors
     ///
@@ -186,7 +186,7 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of minutes.
     ///
-    /// Equivalent to `TimeDelta::seconds(minutes * 60)` with overflow checks.
+    /// Equivalent to `TimeDelta::try_seconds(minutes * 60)` with overflow checks.
     ///
     /// # Errors
     ///
