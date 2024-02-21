@@ -47,7 +47,7 @@ pub enum LocalResult<T> {
     Single(T),
     /// Given local time representation has multiple results and thus ambiguous.
     /// This can occur when, for example, the negative timezone transition.
-    Ambiguous(T /*min*/, T /*max*/),
+    Ambiguous(T /* min */, T /* max */),
 }
 
 impl<T> LocalResult<T> {
