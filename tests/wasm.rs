@@ -25,7 +25,7 @@ fn now() {
     let actual = NaiveDateTime::parse_from_str(&now, "%s").unwrap().and_utc();
     let diff = utc - actual;
     assert!(
-        diff < chrono::TimeDelta::minutes(5),
+        diff < chrono::TimeDelta::try_minutes(5).unwrap(),
         "expected {} - {} == {} < 5m (env var: {})",
         utc,
         actual,

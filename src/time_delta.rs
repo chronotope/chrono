@@ -639,7 +639,7 @@ mod tests {
         assert_eq!(-(days(3) + TimeDelta::seconds(70)), days(-4) + TimeDelta::seconds(86_400 - 70));
 
         let mut d = TimeDelta::default();
-        d += TimeDelta::minutes(1);
+        d += TimeDelta::try_minutes(1).unwrap();
         d -= TimeDelta::seconds(30);
         assert_eq!(d, TimeDelta::seconds(30));
     }
@@ -1201,7 +1201,7 @@ mod tests {
         const ONE_WEEK: TimeDelta = expect!(TimeDelta::try_weeks(1), "");
         const ONE_DAY: TimeDelta = expect!(TimeDelta::try_days(1), "");
         const ONE_HOUR: TimeDelta = expect!(TimeDelta::try_hours(1), "");
-        const ONE_MINUTE: TimeDelta = TimeDelta::minutes(1);
+        const ONE_MINUTE: TimeDelta = expect!(TimeDelta::try_minutes(1), "");
         const ONE_SECOND: TimeDelta = TimeDelta::seconds(1);
         const ONE_MILLI: TimeDelta = TimeDelta::milliseconds(1);
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
