@@ -580,12 +580,12 @@ fn test_datetime_offset() {
     let dt = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     assert_eq!(dt, edt.with_ymd_and_hms(2014, 5, 6, 3, 8, 9).unwrap());
     assert_eq!(
-        dt + TimeDelta::seconds(3600 + 60 + 1),
+        dt + TimeDelta::try_seconds(3600 + 60 + 1).unwrap(),
         Utc.with_ymd_and_hms(2014, 5, 6, 8, 9, 10).unwrap()
     );
     assert_eq!(
         dt.signed_duration_since(edt.with_ymd_and_hms(2014, 5, 6, 10, 11, 12).unwrap()),
-        TimeDelta::seconds(-7 * 3600 - 3 * 60 - 3)
+        TimeDelta::try_seconds(-7 * 3600 - 3 * 60 - 3).unwrap()
     );
 
     assert_eq!(*Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap().offset(), Utc);
@@ -1474,20 +1474,20 @@ fn test_datetime_add_assign() {
     let datetime = naivedatetime.and_utc();
     let mut datetime_add = datetime;
 
-    datetime_add += TimeDelta::seconds(60);
-    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
+    datetime_add += TimeDelta::try_seconds(60).unwrap();
+    assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 
     let timezone = FixedOffset::east_opt(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
+    assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 
     let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
+    assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 }
 
 #[test]

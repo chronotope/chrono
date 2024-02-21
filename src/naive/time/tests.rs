@@ -101,8 +101,8 @@ fn test_time_add() {
     check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(100), hmsm(3, 5, 59, 1_400));
     check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(800), hmsm(3, 6, 0, 100));
     check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 6, 1, 100));
-    check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(86399), hmsm(3, 5, 58, 900)); // overwrap
-    check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(-86399), hmsm(3, 6, 0, 900));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_seconds(86399).unwrap(), hmsm(3, 5, 58, 900)); // overwrap
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_seconds(-86399).unwrap(), hmsm(3, 6, 0, 900));
     check!(hmsm(3, 5, 59, 900), TimeDelta::try_days(12345).unwrap(), hmsm(3, 5, 59, 900));
     check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_days(1).unwrap(), hmsm(3, 5, 59, 300));
     check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_days(-1).unwrap(), hmsm(3, 6, 0, 300));
@@ -174,11 +174,11 @@ fn test_time_sub() {
 
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), TimeDelta::zero());
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::milliseconds(300));
-    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), TimeDelta::seconds(3600 + 60 + 1));
+    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), TimeDelta::try_seconds(3600 + 60 + 1).unwrap());
     check!(
         hmsm(3, 5, 7, 200),
         hmsm(2, 4, 6, 300),
-        TimeDelta::seconds(3600 + 60) + TimeDelta::milliseconds(900)
+        TimeDelta::try_seconds(3600 + 60).unwrap() + TimeDelta::milliseconds(900)
     );
 
     // treats the leap second as if it coincides with the prior non-leap second,
