@@ -1433,16 +1433,17 @@ impl NaiveDate {
     }
 
     /// The minimum possible `NaiveDate` (January 1, 262144 BCE).
-    pub const MIN: NaiveDate = NaiveDate::from_yof((MIN_YEAR << 13) | (1 << 4) | 0o12 /*D*/);
+    pub const MIN: NaiveDate = NaiveDate::from_yof((MIN_YEAR << 13) | (1 << 4) | 0o12 /* D */);
     /// The maximum possible `NaiveDate` (December 31, 262142 CE).
-    pub const MAX: NaiveDate = NaiveDate::from_yof((MAX_YEAR << 13) | (365 << 4) | 0o16 /*G*/);
+    pub const MAX: NaiveDate =
+        NaiveDate::from_yof((MAX_YEAR << 13) | (365 << 4) | 0o16 /* G */);
 
     /// One day before the minimum possible `NaiveDate` (December 31, 262145 BCE).
     pub(crate) const BEFORE_MIN: NaiveDate =
-        NaiveDate::from_yof(((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /*FE*/);
+        NaiveDate::from_yof(((MIN_YEAR - 1) << 13) | (366 << 4) | 0o07 /* FE */);
     /// One day after the maximum possible `NaiveDate` (January 1, 262143 CE).
     pub(crate) const AFTER_MAX: NaiveDate =
-        NaiveDate::from_yof(((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /*F*/);
+        NaiveDate::from_yof(((MAX_YEAR + 1) << 13) | (1 << 4) | 0o17 /* F */);
 }
 
 impl Datelike for NaiveDate {
