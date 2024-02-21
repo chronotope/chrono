@@ -670,6 +670,7 @@ mod tests {
         assert_eq!(TimeDelta::milliseconds(-999).num_seconds(), 0);
         assert_eq!(TimeDelta::milliseconds(-1001).num_seconds(), -1);
     }
+
     #[test]
     fn test_duration_seconds_max_allowed() {
         let duration = TimeDelta::seconds(i64::MAX / 1_000);
@@ -679,15 +680,18 @@ mod tests {
             i64::MAX as i128 / 1_000 * 1_000_000_000
         );
     }
+
     #[test]
     fn test_duration_seconds_max_overflow() {
         assert!(TimeDelta::try_seconds(i64::MAX / 1_000 + 1).is_none());
     }
+
     #[test]
     #[should_panic(expected = "TimeDelta::seconds out of bounds")]
     fn test_duration_seconds_max_overflow_panic() {
         let _ = TimeDelta::seconds(i64::MAX / 1_000 + 1);
     }
+
     #[test]
     fn test_duration_seconds_min_allowed() {
         let duration = TimeDelta::seconds(i64::MIN / 1_000); // Same as -i64::MAX / 1_000 due to rounding
@@ -697,10 +701,12 @@ mod tests {
             -i64::MAX as i128 / 1_000 * 1_000_000_000
         );
     }
+
     #[test]
     fn test_duration_seconds_min_underflow() {
         assert!(TimeDelta::try_seconds(-i64::MAX / 1_000 - 1).is_none());
     }
+
     #[test]
     #[should_panic(expected = "TimeDelta::seconds out of bounds")]
     fn test_duration_seconds_min_underflow_panic() {
@@ -717,6 +723,7 @@ mod tests {
         assert_eq!(TimeDelta::microseconds(-999).num_milliseconds(), 0);
         assert_eq!(TimeDelta::microseconds(-1001).num_milliseconds(), -1);
     }
+
     #[test]
     fn test_duration_milliseconds_max_allowed() {
         // The maximum number of milliseconds acceptable through the constructor is
@@ -728,6 +735,7 @@ mod tests {
             i64::MAX as i128 * 1_000_000
         );
     }
+
     #[test]
     fn test_duration_milliseconds_max_overflow() {
         // Here we ensure that trying to add one millisecond to the maximum storable
@@ -736,6 +744,7 @@ mod tests {
             .checked_add(&TimeDelta::milliseconds(1))
             .is_none());
     }
+
     #[test]
     fn test_duration_milliseconds_min_allowed() {
         // The minimum number of milliseconds acceptable through the constructor is
@@ -748,6 +757,7 @@ mod tests {
             -i64::MAX as i128 * 1_000_000
         );
     }
+
     #[test]
     fn test_duration_milliseconds_min_underflow() {
         // Here we ensure that trying to subtract one millisecond from the minimum
@@ -756,6 +766,7 @@ mod tests {
             .checked_sub(&TimeDelta::milliseconds(1))
             .is_none());
     }
+
     #[test]
     #[should_panic(expected = "TimeDelta::milliseconds out of bounds")]
     fn test_duration_milliseconds_min_underflow_panic() {
@@ -906,6 +917,7 @@ mod tests {
             i64::MAX as i128 * 1_000_000
         );
     }
+
     #[test]
     fn test_duration_nanoseconds_max_overflow() {
         // This test establishes that a TimeDelta can store more nanoseconds than are
@@ -922,6 +934,7 @@ mod tests {
             .checked_add(&TimeDelta::nanoseconds(1))
             .is_none());
     }
+
     #[test]
     fn test_duration_nanoseconds_min_allowed() {
         // The number of nanoseconds acceptable through the constructor is far fewer
@@ -943,6 +956,7 @@ mod tests {
             -i64::MAX as i128 * 1_000_000
         );
     }
+
     #[test]
     fn test_duration_nanoseconds_min_underflow() {
         // This test establishes that a TimeDelta can store more nanoseconds than are
@@ -971,6 +985,7 @@ mod tests {
         assert_eq!(MAX.num_microseconds(), None);
         assert_eq!(MAX.num_nanoseconds(), None);
     }
+
     #[test]
     fn test_min() {
         assert_eq!(
