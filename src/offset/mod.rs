@@ -44,7 +44,7 @@ pub enum LocalResult<T> {
     Single(T),
     /// Given local time representation has multiple results and thus ambiguous.
     /// This can occur when, for example, the negative timezone transition.
-    Ambiguous(T /*min*/, T /*max*/),
+    Ambiguous(T /* min */, T /* max */),
 }
 
 impl<T> LocalResult<T> {
@@ -152,7 +152,7 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone};
+    /// use chrono::{TimeZone, Utc};
     ///
     /// assert_eq!(Utc.timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
@@ -174,7 +174,7 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone, LocalResult};
+    /// use chrono::{LocalResult, TimeZone, Utc};
     /// match Utc.timestamp_millis(1431648000) {
     ///     LocalResult::Single(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     _ => panic!("Incorrect timestamp_millis"),
@@ -195,7 +195,7 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone};
+    /// use chrono::{TimeZone, Utc};
     ///
     /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
     /// ```
@@ -214,7 +214,7 @@ pub trait TimeZone: Sized + Clone {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Utc, TimeZone};
+    /// use chrono::{TimeZone, Utc};
     ///
     /// assert_eq!(Utc.timestamp_micros(1431648000000).unwrap().timestamp(), 1431648);
     /// ```

@@ -20,7 +20,6 @@ impl TransitionRule {
     /// Parse a POSIX TZ string containing a time zone description, as described in [the POSIX documentation of the `TZ` environment variable](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html).
     ///
     /// TZ string extensions from [RFC 8536](https://datatracker.ietf.org/doc/html/rfc8536#section-3.3.1) may be used.
-    ///
     pub(super) fn from_tz_string(
         tz_string: &[u8],
         use_string_extensions: bool,

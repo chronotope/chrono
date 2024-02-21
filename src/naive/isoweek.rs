@@ -62,7 +62,7 @@ impl IsoWeek {
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
+    /// use chrono::{Datelike, NaiveDate, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 1, Weekday::Mon).unwrap();
     /// assert_eq!(d.iso_week().year(), 2015);
@@ -89,7 +89,7 @@ impl IsoWeek {
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
+    /// use chrono::{Datelike, NaiveDate, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 15, Weekday::Mon).unwrap();
     /// assert_eq!(d.iso_week().week(), 15);
@@ -106,7 +106,7 @@ impl IsoWeek {
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Datelike, Weekday};
+    /// use chrono::{Datelike, NaiveDate, Weekday};
     ///
     /// let d = NaiveDate::from_isoywd(2015, 15, Weekday::Mon).unwrap();
     /// assert_eq!(d.iso_week().week0(), 14);
@@ -124,10 +124,10 @@ impl IsoWeek {
 /// # Example
 ///
 /// ```
-/// use chrono::{NaiveDate, Datelike};
+/// use chrono::{Datelike, NaiveDate};
 ///
-/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(2015,  9,  5).unwrap().iso_week()), "2015-W36");
-/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(   0,  1,  3).unwrap().iso_week()), "0000-W01");
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(2015, 9, 5).unwrap().iso_week()), "2015-W36");
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(0, 1, 3).unwrap().iso_week()), "0000-W01");
 /// assert_eq!(format!("{:?}", NaiveDate::from_ymd(9999, 12, 31).unwrap().iso_week()), "9999-W52");
 /// ```
 ///
@@ -135,8 +135,11 @@ impl IsoWeek {
 ///
 /// ```
 /// # use chrono::{NaiveDate, Datelike};
-/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(    0,  1,  2).unwrap().iso_week()),  "-0001-W52");
-/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(10000, 12, 31).unwrap().iso_week()), "+10000-W52");
+/// assert_eq!(format!("{:?}", NaiveDate::from_ymd(0, 1, 2).unwrap().iso_week()), "-0001-W52");
+/// assert_eq!(
+///     format!("{:?}", NaiveDate::from_ymd(10000, 12, 31).unwrap().iso_week()),
+///     "+10000-W52"
+/// );
 /// ```
 impl fmt::Debug for IsoWeek {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

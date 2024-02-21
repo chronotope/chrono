@@ -97,7 +97,7 @@ mod tz_info;
 /// # Example
 ///
 /// ```
-/// use chrono::{Local, DateTime, TimeZone};
+/// use chrono::{DateTime, Local, TimeZone};
 ///
 /// let dt1: DateTime<Local> = Local::now();
 /// let dt2: DateTime<Local> = Local.timestamp(0, 0).unwrap();
