@@ -53,10 +53,8 @@ impl FixedOffset {
     #[cfg_attr(feature = "std", doc = "```")]
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::east_opt(5 * hour)
-    ///     .unwrap()
-    ///     .with_ymd_and_hms(2016, 11, 08, 0, 0, 0)
-    ///     .unwrap();
+    /// let datetime =
+    ///     FixedOffset::east_opt(5 * hour).unwrap().with_ymd_and_hms(2016, 11, 08, 0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
     /// ```
     #[must_use]
@@ -89,10 +87,8 @@ impl FixedOffset {
     #[cfg_attr(feature = "std", doc = "```")]
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
-    /// let datetime = FixedOffset::west_opt(5 * hour)
-    ///     .unwrap()
-    ///     .with_ymd_and_hms(2016, 11, 08, 0, 0, 0)
-    ///     .unwrap();
+    /// let datetime =
+    ///     FixedOffset::west_opt(5 * hour).unwrap().with_ymd_and_hms(2016, 11, 08, 0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
     /// ```
     #[must_use]

@@ -33,7 +33,7 @@ use crate::{Date, DateTime};
 /// # Example
 ///
 /// ```
-/// use chrono::{TimeZone, NaiveDateTime, Utc};
+/// use chrono::{NaiveDateTime, TimeZone, Utc};
 ///
 /// let dt = Utc.from_utc_datetime(&NaiveDateTime::from_timestamp_opt(61, 0).unwrap());
 ///

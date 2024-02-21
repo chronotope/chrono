@@ -107,7 +107,7 @@
 #![cfg_attr(feature = "now", doc = "```rust")]
 //! use chrono::prelude::*;
 //!
-//! let utc: DateTime<Utc> = Utc::now();       // e.g. `2014-11-28T12:45:59.324310806Z`
+//! let utc: DateTime<Utc> = Utc::now(); // e.g. `2014-11-28T12:45:59.324310806Z`
 //! # let _ = utc;
 //! ```
 //!
@@ -125,34 +125,74 @@
 //!
 #![cfg_attr(not(feature = "now"), doc = "```ignore")]
 #![cfg_attr(feature = "now", doc = "```rust")]
-//! use chrono::prelude::*;
 //! use chrono::offset::LocalResult;
+//! use chrono::prelude::*;
 //!
 //! # fn doctest() -> Option<()> {
 //!
 //! let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap(); // `2014-07-08T09:10:11Z`
-//! assert_eq!(dt, NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_opt(9, 10, 11)?.and_local_timezone(Utc).unwrap());
+//! assert_eq!(
+//!     dt,
+//!     NaiveDate::from_ymd_opt(2014, 7, 8)?
+//!         .and_hms_opt(9, 10, 11)?
+//!         .and_local_timezone(Utc)
+//!         .unwrap()
+//! );
 //!
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
 //! assert_eq!(dt, NaiveDate::from_yo_opt(2014, 189)?.and_hms_opt(9, 10, 11)?.and_utc());
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, NaiveDate::from_isoywd_opt(2014, 28, Weekday::Tue)?.and_hms_opt(9, 10, 11)?.and_utc());
+//! assert_eq!(
+//!     dt,
+//!     NaiveDate::from_isoywd_opt(2014, 28, Weekday::Tue)?.and_hms_opt(9, 10, 11)?.and_utc()
+//! );
 //!
-//! let dt = NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_milli_opt(9, 10, 11, 12)?.and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
-//! assert_eq!(dt, NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_micro_opt(9, 10, 11, 12_000)?.and_local_timezone(Utc).unwrap());
-//! assert_eq!(dt, NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_nano_opt(9, 10, 11, 12_000_000)?.and_local_timezone(Utc).unwrap());
+//! let dt = NaiveDate::from_ymd_opt(2014, 7, 8)?
+//!     .and_hms_milli_opt(9, 10, 11, 12)?
+//!     .and_local_timezone(Utc)
+//!     .unwrap(); // `2014-07-08T09:10:11.012Z`
+//! assert_eq!(
+//!     dt,
+//!     NaiveDate::from_ymd_opt(2014, 7, 8)?
+//!         .and_hms_micro_opt(9, 10, 11, 12_000)?
+//!         .and_local_timezone(Utc)
+//!         .unwrap()
+//! );
+//! assert_eq!(
+//!     dt,
+//!     NaiveDate::from_ymd_opt(2014, 7, 8)?
+//!         .and_hms_nano_opt(9, 10, 11, 12_000_000)?
+//!         .and_local_timezone(Utc)
+//!         .unwrap()
+//! );
 //!
 //! // dynamic verification
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33),
-//!            LocalResult::Single(NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_opt(21, 15, 33)?.and_utc()));
+//! assert_eq!(
+//!     Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33),
+//!     LocalResult::Single(
+//!         NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_opt(21, 15, 33)?.and_utc()
+//!     )
+//! );
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::None);
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::None);
 //!
 //! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
-//! let local_dt = Local.from_local_datetime(&NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap()).unwrap();
-//! let fixed_dt = FixedOffset::east_opt(9 * 3600).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(18, 10, 11, 12).unwrap()).unwrap();
+//! let local_dt = Local
+//!     .from_local_datetime(
+//!         &NaiveDate::from_ymd_opt(2014, 7, 8).unwrap().and_hms_milli_opt(9, 10, 11, 12).unwrap(),
+//!     )
+//!     .unwrap();
+//! let fixed_dt = FixedOffset::east_opt(9 * 3600)
+//!     .unwrap()
+//!     .from_local_datetime(
+//!         &NaiveDate::from_ymd_opt(2014, 7, 8)
+//!             .unwrap()
+//!             .and_hms_milli_opt(18, 10, 11, 12)
+//!             .unwrap(),
+//!     )
+//!     .unwrap();
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
 //! # }
@@ -172,7 +212,15 @@
 //! use chrono::TimeDelta;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
-//! let dt = FixedOffset::east_opt(9*3600).unwrap().from_local_datetime(&NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(21, 45, 59, 324310806).unwrap()).unwrap();
+//! let dt = FixedOffset::east_opt(9 * 3600)
+//!     .unwrap()
+//!     .from_local_datetime(
+//!         &NaiveDate::from_ymd_opt(2014, 11, 28)
+//!             .unwrap()
+//!             .and_hms_nano_opt(21, 45, 59, 324310806)
+//!             .unwrap(),
+//!     )
+//!     .unwrap();
 //!
 //! // property accessors
 //! assert_eq!((dt.year(), dt.month(), dt.day()), (2014, 11, 28));
@@ -186,7 +234,15 @@
 //! // time zone accessor and manipulation
 //! assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 //! assert_eq!(dt.timezone(), FixedOffset::east_opt(9 * 3600).unwrap());
-//! assert_eq!(dt.with_timezone(&Utc), NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(12, 45, 59, 324310806).unwrap().and_local_timezone(Utc).unwrap());
+//! assert_eq!(
+//!     dt.with_timezone(&Utc),
+//!     NaiveDate::from_ymd_opt(2014, 11, 28)
+//!         .unwrap()
+//!         .and_hms_nano_opt(12, 45, 59, 324310806)
+//!         .unwrap()
+//!         .and_local_timezone(Utc)
+//!         .unwrap()
+//! );
 //!
 //! // a sample of property manipulations (validates dynamically)
 //! assert_eq!(dt.with_day(29).unwrap().weekday(), Weekday::Sat); // 2014-11-29 is Saturday
@@ -198,10 +254,14 @@
 //! let dt2 = Utc.with_ymd_and_hms(2014, 11, 14, 10, 9, 8).unwrap();
 //! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
 //! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
-//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + TimeDelta::seconds(1_000_000_000),
-//!            Utc.with_ymd_and_hms(2001, 9, 9, 1, 46, 40).unwrap());
-//! assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - TimeDelta::seconds(1_000_000_000),
-//!            Utc.with_ymd_and_hms(1938, 4, 24, 22, 13, 20).unwrap());
+//! assert_eq!(
+//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + TimeDelta::seconds(1_000_000_000),
+//!     Utc.with_ymd_and_hms(2001, 9, 9, 1, 46, 40).unwrap()
+//! );
+//! assert_eq!(
+//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - TimeDelta::seconds(1_000_000_000),
+//!     Utc.with_ymd_and_hms(1938, 4, 24, 22, 13, 20).unwrap()
+//! );
 //! ```
 //!
 //! ### Formatting and Parsing
@@ -236,7 +296,10 @@
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
-//! assert_eq!(dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(), "vendredi 28 novembre 2014, 12:00:09");
+//! assert_eq!(
+//!     dt.format_localized("%A %e %B %Y, %T", Locale::fr_BE).to_string(),
+//!     "vendredi 28 novembre 2014, 12:00:09"
+//! );
 //!
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
@@ -245,7 +308,12 @@
 //! assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 //!
 //! // Note that milli/nanoseconds are only printed if they are non-zero
-//! let dt_nano = NaiveDate::from_ymd_opt(2014, 11, 28).unwrap().and_hms_nano_opt(12, 0, 9, 1).unwrap().and_local_timezone(Utc).unwrap();
+//! let dt_nano = NaiveDate::from_ymd_opt(2014, 11, 28)
+//!     .unwrap()
+//!     .and_hms_nano_opt(12, 0, 9, 1)
+//!     .unwrap()
+//!     .and_local_timezone(Utc)
+//!     .unwrap();
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # }
 //! # #[cfg(not(all(feature = "unstable-locales", feature = "alloc")))]
@@ -280,7 +348,7 @@
 //! use chrono::prelude::*;
 //!
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
-//! let fixed_dt = dt.with_timezone(&FixedOffset::east_opt(9*3600).unwrap());
+//! let fixed_dt = dt.with_timezone(&FixedOffset::east_opt(9 * 3600).unwrap());
 //!
 //! // method 1
 //! assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<Utc>>(), Ok(dt.clone()));
@@ -288,10 +356,14 @@
 //! assert_eq!("2014-11-28T21:00:09+09:00".parse::<DateTime<FixedOffset>>(), Ok(fixed_dt.clone()));
 //!
 //! // method 2
-//! assert_eq!(DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
-//!            Ok(fixed_dt.clone()));
-//! assert_eq!(DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
-//!            Ok(fixed_dt.clone()));
+//! assert_eq!(
+//!     DateTime::parse_from_str("2014-11-28 21:00:09 +09:00", "%Y-%m-%d %H:%M:%S %z"),
+//!     Ok(fixed_dt.clone())
+//! );
+//! assert_eq!(
+//!     DateTime::parse_from_rfc2822("Fri, 28 Nov 2014 21:00:09 +0900"),
+//!     Ok(fixed_dt.clone())
+//! );
 //! assert_eq!(DateTime::parse_from_rfc3339("2014-11-28T21:00:09+09:00"), Ok(fixed_dt.clone()));
 //!
 //! // oops, the year is missing!
