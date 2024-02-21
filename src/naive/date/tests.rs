@@ -454,9 +454,9 @@ fn test_date_add() {
     }
 
     check((2014, 1, 1), TimeDelta::zero(), Some((2014, 1, 1)));
-    check((2014, 1, 1), TimeDelta::seconds(86399), Some((2014, 1, 1)));
+    check((2014, 1, 1), TimeDelta::try_seconds(86399).unwrap(), Some((2014, 1, 1)));
     // always round towards zero
-    check((2014, 1, 1), TimeDelta::seconds(-86399), Some((2014, 1, 1)));
+    check((2014, 1, 1), TimeDelta::try_seconds(-86399).unwrap(), Some((2014, 1, 1)));
     check((2014, 1, 1), TimeDelta::try_days(1).unwrap(), Some((2014, 1, 2)));
     check((2014, 1, 1), TimeDelta::try_days(-1).unwrap(), Some((2013, 12, 31)));
     check((2014, 1, 1), TimeDelta::try_days(364).unwrap(), Some((2014, 12, 31)));

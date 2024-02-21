@@ -15,13 +15,14 @@ fn test_datetime_add() {
         assert_eq!(lhs.checked_add_signed(rhs), sum);
         assert_eq!(lhs.checked_sub_signed(-rhs), sum);
     }
+    let seconds = |s| TimeDelta::try_seconds(s).unwrap();
 
-    check((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
-    check((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-(3600 + 60 + 1)), Some((2014, 5, 6, 6, 7, 8)));
-    check((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
-    check((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
-    check((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
-    check((2014, 5, 6, 7, 8, 9), TimeDelta::seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
+    check((2014, 5, 6, 7, 8, 9), seconds(-(3600 + 60 + 1)), Some((2014, 5, 6, 6, 7, 8)));
+    check((2014, 5, 6, 7, 8, 9), seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
+    check((2014, 5, 6, 7, 8, 9), seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
 
     // overflow check
     // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
@@ -31,16 +32,16 @@ fn test_datetime_add() {
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
     check(
         (0, 1, 1, 0, 0, 0),
-        max_days_from_year_0 + TimeDelta::seconds(86399),
+        max_days_from_year_0 + seconds(86399),
         Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
-    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + TimeDelta::seconds(86_400), None);
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + seconds(86_400), None);
     check((0, 1, 1, 0, 0, 0), TimeDelta::max_value(), None);
 
     let min_days_from_year_0 =
         NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(0, 1, 1).unwrap());
     check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
-    check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - TimeDelta::seconds(1), None);
+    check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - seconds(1), None);
     check((0, 1, 1, 0, 0, 0), TimeDelta::min_value(), None);
 }
 
@@ -52,19 +53,19 @@ fn test_datetime_sub() {
     assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), TimeDelta::zero());
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
-        TimeDelta::seconds(1)
+        TimeDelta::try_seconds(1).unwrap()
     );
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-        TimeDelta::seconds(-1)
+        TimeDelta::try_seconds(-1).unwrap()
     );
     assert_eq!(
         since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-        TimeDelta::seconds(86399)
+        TimeDelta::try_seconds(86399).unwrap()
     );
     assert_eq!(
         since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
-        TimeDelta::seconds(999_999_999)
+        TimeDelta::try_seconds(999_999_999).unwrap()
     );
 }
 
