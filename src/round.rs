@@ -127,7 +127,7 @@ pub trait DurationRound: Sized {
     ///     .and_local_timezone(Utc)
     ///     .unwrap();
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     dt.duration_round(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
@@ -149,7 +149,7 @@ pub trait DurationRound: Sized {
     ///     .and_local_timezone(Utc)
     ///     .unwrap();
     /// assert_eq!(
-    ///     dt.duration_trunc(TimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     dt.duration_trunc(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
@@ -464,7 +464,7 @@ mod tests {
         );
 
         assert_eq!(
-            dt.duration_round(TimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_round(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
             "2016-12-31 23:59:59.180 UTC"
         );
 
@@ -555,7 +555,7 @@ mod tests {
         );
 
         assert_eq!(
-            dt.duration_round(TimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_round(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
             "2016-12-31 23:59:59.180"
         );
 
@@ -627,7 +627,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            dt.duration_trunc(TimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
             "2016-12-31 23:59:59.170 UTC"
         );
 
@@ -712,7 +712,7 @@ mod tests {
             .naive_utc();
 
         assert_eq!(
-            dt.duration_trunc(TimeDelta::milliseconds(10)).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
             "2016-12-31 23:59:59.170"
         );
 
