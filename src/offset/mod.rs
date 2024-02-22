@@ -21,7 +21,7 @@
 use core::fmt;
 
 use crate::naive::{NaiveDate, NaiveDateTime};
-use crate::DateTime;
+use crate::{DateTime, Error};
 
 pub(crate) mod fixed;
 pub use self::fixed::FixedOffset;
@@ -262,6 +262,59 @@ pub trait TimeZone: Sized + Clone {
     #[allow(clippy::wrong_self_convention)]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
         DateTime::from_naive_utc_and_offset(*utc, self.offset_from_utc_datetime(utc))
+    }
+}
+
+
+/// Error type for time zone lookups.
+#[non_exhaustive]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum TzLookupError {
+    /// Unable to determine the local time zone of the os/platform.
+    TimeZoneUnknown,
+
+    /// Error returned by a platform API.
+    OsError(i32),
+
+    /// `TZ` environment variable set to an invalid value.
+    InvalidTzString,
+
+    /// Unable to locate an IANA time zone database.
+    NoTzdb,
+
+    /// The specified time zone is not found (in the database).
+    TimeZoneNotFound,
+
+    /// There is an error when reading/validating the time zone data.
+    InvalidTimeZoneData,
+
+    /// The result would be out of range.
+    OutOfRange,
+}
+
+impl fmt::Display for TzLookupError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TzLookupError::TimeZoneUnknown => write!(f, "unable to determine the local time zone"),
+            TzLookupError::OsError(code) => {
+                let io_error = std::io::Error::from_raw_os_error(*code);
+                fmt::Display::fmt(&io_error, f)
+            }
+            TzLookupError::InvalidTzString => write!(f, "`TZ` environment variable set to an invalid value"),
+            TzLookupError::NoTzdb => write!(f, "unable to locate an IANA time zone database"),
+            TzLookupError::TimeZoneNotFound => write!(f, "the specified time zone is not found"),
+            TzLookupError::InvalidTimeZoneData => write!(f, "error when reading/validating the time zone data"),
+            TzLookupError::OutOfRange => write!(f, "date or offset outside of the supported range"),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl std::error::Error for TzLookupError {}
+
+impl From<TzLookupError> for Error {
+    fn from(error: TzLookupError) -> Self {
+        Error::TzLookupFailure(error)
     }
 }
 
