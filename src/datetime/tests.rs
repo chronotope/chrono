@@ -301,7 +301,7 @@ fn test_nanosecond_range() {
     // Just beyond range
     let maximum = "2262-04-11T23:47:16.854775804UTC";
     let parsed: DateTime<Utc> = maximum.parse().unwrap();
-    let beyond_max = parsed + TimeDelta::milliseconds(300);
+    let beyond_max = parsed + TimeDelta::try_milliseconds(300).unwrap();
     assert!(beyond_max.timestamp_nanos_opt().is_none());
 
     // Far beyond range
