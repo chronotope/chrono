@@ -275,7 +275,7 @@ impl<'a> TimeZoneRef<'a> {
                         if local_leap_time <= transition_start {
                             return Ok(crate::LocalResult::Single(prev));
                         } else if local_leap_time < transition_end {
-                            return Ok(crate::LocalResult::None);
+                            return Ok(crate::LocalResult::InGap);
                         } else if local_leap_time == transition_end {
                             return Ok(crate::LocalResult::Single(after_ltt));
                         }

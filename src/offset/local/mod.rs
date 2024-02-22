@@ -235,7 +235,7 @@ fn lookup_with_dst_transitions(
                     } else if dt == wall_latest {
                         LocalResult::Single(t.offset_after)
                     } else {
-                        LocalResult::None
+                        LocalResult::InGap
                     }
                 }
             };

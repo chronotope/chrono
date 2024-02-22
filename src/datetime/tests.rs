@@ -80,7 +80,7 @@ impl TimeZone for DstTester {
         } else if *local >= local_to_summer_transition_start
             && *local < local_to_summer_transition_end
         {
-            LocalResult::None
+            LocalResult::InGap
         } else {
             panic!("Unexpected local time {}", local)
         }

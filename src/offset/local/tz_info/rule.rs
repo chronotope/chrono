@@ -264,7 +264,7 @@ impl AlternateTime {
                     } else if local_time > dst_start_transition_start
                         && local_time < dst_start_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(crate::LocalResult::InGap)
                     } else if local_time >= dst_start_transition_end
                         && local_time < dst_end_transition_end
                     {
@@ -292,7 +292,7 @@ impl AlternateTime {
                     } else if local_time >= dst_start_transition_start
                         && local_time < dst_start_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(crate::LocalResult::InGap)
                     } else {
                         Ok(crate::LocalResult::Single(self.dst))
                     }
@@ -317,7 +317,7 @@ impl AlternateTime {
                     } else if local_time >= dst_end_transition_start
                         && local_time < dst_end_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(crate::LocalResult::InGap)
                     } else {
                         Ok(crate::LocalResult::Single(self.std))
                     }
@@ -329,7 +329,7 @@ impl AlternateTime {
                     } else if local_time > dst_end_transition_start
                         && local_time < dst_end_transition_end
                     {
-                        Ok(crate::LocalResult::None)
+                        Ok(crate::LocalResult::InGap)
                     } else if local_time >= dst_end_transition_end
                         && local_time < dst_start_transition_end
                     {

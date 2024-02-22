@@ -35,43 +35,52 @@ pub(crate) mod utc;
 pub use self::utc::Utc;
 
 /// The conversion result from the local time to the timezone-aware datetime types.
-#[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
+#[derive(Clone, PartialEq, Debug, Copy, Eq)]
 pub enum LocalResult<T> {
-    /// Given local time representation is invalid.
-    /// This can occur when, for example, the positive timezone transition.
-    None,
     /// Given local time representation has a single unique result.
     Single(T),
+
     /// Given local time representation has multiple results and thus ambiguous.
     /// This can occur when, for example, the negative timezone transition.
     Ambiguous(T /* min */, T /* max */),
+
+    /// Given local time representation is invalid.
+    /// This can occur when, for example, the positive timezone transition.
+    InGap,
+
+    /// Error type
+    Error(TzLookupError),
 }
 
 impl<T> LocalResult<T> {
     /// Returns `Some` only when the conversion result is unique, or `None` otherwise.
     #[must_use]
-    pub fn single(self) -> Option<T> {
+    pub fn single(self) -> Result<T, Error> {
         match self {
-            LocalResult::Single(t) => Some(t),
-            _ => None,
+            LocalResult::Single(t) => Ok(t),
+            LocalResult::Ambiguous(_, _) => Err(Error::Ambiguous),
+            LocalResult::InGap => Err(Error::DoesNotExist),
+            LocalResult::Error(e) => Err(e.into()),
         }
     }
 
     /// Returns `Some` for the earliest possible conversion result, or `None` if none.
     #[must_use]
-    pub fn earliest(self) -> Option<T> {
+    pub fn earliest(self) -> Result<T, Error> {
         match self {
-            LocalResult::Single(t) | LocalResult::Ambiguous(t, _) => Some(t),
-            _ => None,
+            LocalResult::Single(t) | LocalResult::Ambiguous(t, _) => Ok(t),
+            LocalResult::InGap => Err(Error::DoesNotExist),
+            LocalResult::Error(e) => Err(e.into()),
         }
     }
 
     /// Returns `Some` for the latest possible conversion result, or `None` if none.
     #[must_use]
-    pub fn latest(self) -> Option<T> {
+    pub fn latest(self) -> Result<T, Error> {
         match self {
-            LocalResult::Single(t) | LocalResult::Ambiguous(_, t) => Some(t),
-            _ => None,
+            LocalResult::Single(t) | LocalResult::Ambiguous(_, t) => Ok(t),
+            LocalResult::InGap => Err(Error::DoesNotExist),
+            LocalResult::Error(e) => Err(e.into()),
         }
     }
 
@@ -79,9 +88,10 @@ impl<T> LocalResult<T> {
     #[must_use]
     pub fn map<U, F: FnMut(T) -> U>(self, mut f: F) -> LocalResult<U> {
         match self {
-            LocalResult::None => LocalResult::None,
             LocalResult::Single(v) => LocalResult::Single(f(v)),
             LocalResult::Ambiguous(min, max) => LocalResult::Ambiguous(f(min), f(max)),
+            LocalResult::InGap => LocalResult::InGap,
+            LocalResult::Error(e) => LocalResult::Error(e),
         }
     }
 }
@@ -92,11 +102,12 @@ impl<T: fmt::Debug> LocalResult<T> {
     #[track_caller]
     pub fn unwrap(self) -> T {
         match self {
-            LocalResult::None => panic!("No such local time"),
             LocalResult::Single(t) => t,
             LocalResult::Ambiguous(t1, t2) => {
                 panic!("Ambiguous local time, ranging from {:?} to {:?}", t1, t2)
             }
+            LocalResult::InGap => panic!("No such local time"),
+            LocalResult::Error(e) => panic!("{}", e),
         }
     }
 }
@@ -132,7 +143,7 @@ pub trait TimeZone: Sized + Clone {
     ) -> LocalResult<DateTime<Self>> {
         match NaiveDate::from_ymd(year, month, day).and_then(|d| d.and_hms(hour, min, sec)) {
             Ok(dt) => self.from_local_datetime(&dt),
-            Err(_) => LocalResult::None,
+            Err(_) => LocalResult::Error(TzLookupError::Other), // FIXME: change return type
         }
     }
 
@@ -159,7 +170,7 @@ pub trait TimeZone: Sized + Clone {
     fn timestamp(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp(secs, nsecs) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
-            None => LocalResult::None,
+            None => LocalResult::Error(TzLookupError::Other), // FIXME: change return type
         }
     }
 
@@ -183,7 +194,7 @@ pub trait TimeZone: Sized + Clone {
     fn timestamp_millis(&self, millis: i64) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp_millis(millis) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
-            None => LocalResult::None,
+            None => LocalResult::Error(TzLookupError::Other), // FIXME: change return type
         }
     }
 
@@ -221,7 +232,7 @@ pub trait TimeZone: Sized + Clone {
     fn timestamp_micros(&self, micros: i64) -> LocalResult<DateTime<Self>> {
         match NaiveDateTime::from_timestamp_micros(micros) {
             Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt)),
-            None => LocalResult::None,
+            None => LocalResult::Error(TzLookupError::Other), // FIXME: change return type
         }
     }
 
@@ -234,13 +245,11 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
     fn from_local_datetime(&self, local: &NaiveDateTime) -> LocalResult<DateTime<Self>> {
-        // Return `LocalResult::None` when the offset pushes a value out of range, instead of
-        // panicking.
         match self.offset_from_local_datetime(local) {
-            LocalResult::None => LocalResult::None,
+            LocalResult::InGap => LocalResult::InGap,
             LocalResult::Single(offset) => match local.checked_sub_offset(offset.fix()) {
                 Some(dt) => LocalResult::Single(DateTime::from_naive_utc_and_offset(dt, offset)),
-                None => LocalResult::None,
+                None => LocalResult::Error(TzLookupError::OutOfRange),
             },
             LocalResult::Ambiguous(o1, o2) => {
                 match (local.checked_sub_offset(o1.fix()), local.checked_sub_offset(o2.fix())) {
@@ -248,9 +257,10 @@ pub trait TimeZone: Sized + Clone {
                         DateTime::from_naive_utc_and_offset(d1, o1),
                         DateTime::from_naive_utc_and_offset(d2, o2),
                     ),
-                    _ => LocalResult::None,
+                    _ => LocalResult::Error(TzLookupError::OutOfRange),
                 }
             }
+            LocalResult::Error(e) => LocalResult::Error(e),
         }
     }
 
@@ -264,7 +274,6 @@ pub trait TimeZone: Sized + Clone {
         DateTime::from_naive_utc_and_offset(*utc, self.offset_from_utc_datetime(utc))
     }
 }
-
 
 /// Error type for time zone lookups.
 #[non_exhaustive]
@@ -290,6 +299,9 @@ pub enum TzLookupError {
 
     /// The result would be out of range.
     OutOfRange,
+
+    /// FIXME: temporary variant until the return type of some methods is changed to `Result`.
+    Other,
 }
 
 impl fmt::Display for TzLookupError {
@@ -300,11 +312,16 @@ impl fmt::Display for TzLookupError {
                 let io_error = std::io::Error::from_raw_os_error(*code);
                 fmt::Display::fmt(&io_error, f)
             }
-            TzLookupError::InvalidTzString => write!(f, "`TZ` environment variable set to an invalid value"),
+            TzLookupError::InvalidTzString => {
+                write!(f, "`TZ` environment variable set to an invalid value")
+            }
             TzLookupError::NoTzdb => write!(f, "unable to locate an IANA time zone database"),
             TzLookupError::TimeZoneNotFound => write!(f, "the specified time zone is not found"),
-            TzLookupError::InvalidTimeZoneData => write!(f, "error when reading/validating the time zone data"),
+            TzLookupError::InvalidTimeZoneData => {
+                write!(f, "error when reading/validating the time zone data")
+            }
             TzLookupError::OutOfRange => write!(f, "date or offset outside of the supported range"),
+            TzLookupError::Other => write!(f, "FIXME: temporary error type"),
         }
     }
 }
@@ -315,6 +332,13 @@ impl std::error::Error for TzLookupError {}
 impl From<TzLookupError> for Error {
     fn from(error: TzLookupError) -> Self {
         Error::TzLookupFailure(error)
+    }
+}
+
+impl TzLookupError {
+    /// TODO
+    pub fn last_os_error() -> Self {
+        TzLookupError::OsError(std::io::Error::last_os_error().raw_os_error().unwrap())
     }
 }
 
@@ -337,13 +361,13 @@ mod tests {
             if offset_hour >= 0 {
                 assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
             } else {
-                assert_eq!(local_max, LocalResult::None);
+                assert_eq!(local_max, LocalResult::Error(TzLookupError::OutOfRange));
             }
             let local_min = offset.from_local_datetime(&NaiveDateTime::MIN);
             if offset_hour <= 0 {
                 assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
             } else {
-                assert_eq!(local_min, LocalResult::None);
+                assert_eq!(local_min, LocalResult::Error(TzLookupError::OutOfRange));
             }
         }
     }

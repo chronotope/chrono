@@ -123,7 +123,7 @@
 //!
 #![cfg_attr(not(feature = "now"), doc = "```ignore")]
 #![cfg_attr(feature = "now", doc = "```rust")]
-//! use chrono::offset::LocalResult;
+//! use chrono::offset::{LocalResult, TzLookupError};
 //! use chrono::prelude::*;
 //!
 //! # fn doctest() -> Option<()> {
@@ -143,8 +143,8 @@
 //! // dynamic verification
 //! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33),
 //!            LocalResult::Single(NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms(21, 15, 33).unwrap().and_utc()));
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::None);
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::None);
+//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::Error(TzLookupError::Other));
+//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::Error(TzLookupError::Other));
 //!
 //! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.

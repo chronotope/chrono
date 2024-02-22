@@ -1,4 +1,5 @@
 use super::NaiveDateTime;
+use crate::offset::TzLookupError;
 use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, TimeDelta, Utc};
 
 #[test]
@@ -563,13 +564,13 @@ fn test_and_timezone_min_max_dates() {
         if offset_hour >= 0 {
             assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
         } else {
-            assert_eq!(local_max, LocalResult::None);
+            assert_eq!(local_max, LocalResult::Error(TzLookupError::OutOfRange));
         }
         let local_min = NaiveDateTime::MIN.and_local_timezone(offset);
         if offset_hour <= 0 {
             assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
         } else {
-            assert_eq!(local_min, LocalResult::None);
+            assert_eq!(local_min, LocalResult::Error(TzLookupError::OutOfRange));
         }
     }
 }

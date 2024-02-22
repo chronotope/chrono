@@ -40,9 +40,10 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
         chrono::LocalResult::Single(a) => {
             assert_eq!(format!("{}\n", a), date_command_str);
         }
-        chrono::LocalResult::None => {
+        chrono::LocalResult::InGap => {
             assert_eq!("", date_command_str);
         }
+        chrono::LocalResult::Error(e) => panic!("{}", e),
     }
 }
 

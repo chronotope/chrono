@@ -16,6 +16,7 @@ use std::ptr;
 use super::win_bindings::{GetTimeZoneInformationForYear, SYSTEMTIME, TIME_ZONE_INFORMATION};
 
 use crate::offset::local::{lookup_with_dst_transitions, Transition};
+use crate::offset::TzLookupError;
 use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Weekday};
 
 // We don't use `SystemTimeToTzSpecificLocalTime` because it doesn't support the same range of dates
@@ -30,8 +31,8 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<Fixed
     // using the rules for the year of the corresponding local time. But this matches what
     // `SystemTimeToTzSpecificLocalTime` is documented to do.
     let tz_info = match TzInfo::for_year(utc.year()) {
-        Some(tz_info) => tz_info,
-        None => return LocalResult::None,
+        Ok(tz_info) => tz_info,
+        Err(e) => return LocalResult::Error(e),
     };
     let offset = match (tz_info.std_transition, tz_info.dst_transition) {
         (Some(std_transition), Some(dst_transition)) => {
@@ -73,8 +74,8 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<Fixed
 // current year and compute it ourselves, like we do on Unix.
 pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
     let tz_info = match TzInfo::for_year(local.year()) {
-        Some(tz_info) => tz_info,
-        None => return LocalResult::None,
+        Ok(tz_info) => tz_info,
+        Err(e) => return LocalResult::Error(e),
     };
     // Create a sorted slice of transitions and use `lookup_with_dst_transitions`.
     match (tz_info.std_transition, tz_info.dst_transition) {
@@ -128,7 +129,7 @@ struct TzInfo {
 }
 
 impl TzInfo {
-    fn for_year(year: i32) -> Option<TzInfo> {
+    fn for_year(year: i32) -> Result<TzInfo, TzLookupError> {
         // The API limits years to 1601..=30827.
         // Working with timezones and daylight saving time this far into the past or future makes
         // little sense. But whatever is extrapolated for 1601 or 30827 is what can be extrapolated
@@ -137,13 +138,23 @@ impl TzInfo {
         let tz_info = unsafe {
             let mut tz_info = MaybeUninit::<TIME_ZONE_INFORMATION>::uninit();
             if GetTimeZoneInformationForYear(ref_year, ptr::null_mut(), tz_info.as_mut_ptr()) == 0 {
-                return None;
+                return Err(TzLookupError::last_os_error());
             }
             tz_info.assume_init()
         };
-        Some(TzInfo {
-            std_offset: FixedOffset::west((tz_info.Bias + tz_info.StandardBias) * 60)?,
-            dst_offset: FixedOffset::west((tz_info.Bias + tz_info.DaylightBias) * 60)?,
+        let std_offset = (tz_info.Bias)
+            .checked_add(tz_info.StandardBias)
+            .and_then(|o| o.checked_mul(60))
+            .and_then(FixedOffset::west)
+            .ok_or(TzLookupError::InvalidTimeZoneData)?;
+        let dst_offset = (tz_info.Bias)
+            .checked_add(tz_info.DaylightBias)
+            .and_then(|o| o.checked_mul(60))
+            .and_then(FixedOffset::west)
+            .ok_or(TzLookupError::InvalidTimeZoneData)?;
+        Ok(TzInfo {
+            std_offset,
+            dst_offset,
             std_transition: system_time_from_naive_date_time(tz_info.StandardDate, year),
             dst_transition: system_time_from_naive_date_time(tz_info.DaylightDate, year),
         })

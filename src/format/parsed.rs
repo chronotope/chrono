@@ -629,11 +629,7 @@ impl Parsed {
         let datetime = self.to_naive_datetime_with_offset(offset)?;
         let offset = FixedOffset::east(offset).ok_or(OUT_OF_RANGE)?;
 
-        match offset.from_local_datetime(&datetime) {
-            LocalResult::None => Err(IMPOSSIBLE),
-            LocalResult::Single(t) => Ok(t),
-            LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
-        }
+        Ok(offset.from_local_datetime(&datetime).single().unwrap())
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields,
@@ -670,7 +666,6 @@ impl Parsed {
         // it will be 0 otherwise, but this is fine as the algorithm ignores offset for that case.
         let datetime = self.to_naive_datetime_with_offset(guessed_offset)?;
         match tz.from_local_datetime(&datetime) {
-            LocalResult::None => Err(IMPOSSIBLE),
             LocalResult::Single(t) => {
                 if check_offset(&t) {
                     Ok(t)
@@ -687,6 +682,7 @@ impl Parsed {
                     (true, true) => Err(NOT_ENOUGH),
                 }
             }
+            LocalResult::InGap | LocalResult::Error(_) => Err(IMPOSSIBLE),
         }
     }
 }

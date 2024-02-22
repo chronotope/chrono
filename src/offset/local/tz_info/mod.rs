@@ -10,6 +10,8 @@ use std::{error, fmt, io};
 mod timezone;
 pub(crate) use timezone::TimeZone;
 
+use crate::offset::TzLookupError;
+
 mod parser;
 mod rule;
 
@@ -97,6 +99,29 @@ impl From<SystemTimeError> for Error {
 impl From<Utf8Error> for Error {
     fn from(error: Utf8Error) -> Self {
         Error::Utf8(error)
+    }
+}
+
+impl From<Error> for TzLookupError {
+    fn from(error: Error) -> TzLookupError {
+        match error {
+            Error::DateTime(_) => TzLookupError::InvalidTimeZoneData,
+            Error::FindLocalTimeType(_) => TzLookupError::InvalidTimeZoneData,
+            Error::LocalTimeType(_) => TzLookupError::InvalidTimeZoneData,
+            Error::InvalidSlice(_) => TzLookupError::InvalidTimeZoneData,
+            Error::InvalidTzString(_) => TzLookupError::InvalidTzString,
+            Error::InvalidTzFile(_) => TzLookupError::InvalidTimeZoneData,
+            Error::Io(_) => TzLookupError::InvalidTimeZoneData,
+            Error::OutOfRange(_) => TzLookupError::InvalidTimeZoneData,
+            Error::ParseInt(_) => TzLookupError::InvalidTimeZoneData,
+            Error::ProjectDateTime(_) => TzLookupError::InvalidTimeZoneData,
+            Error::SystemTime(_) => TzLookupError::InvalidTimeZoneData,
+            Error::TransitionRule(_) => TzLookupError::InvalidTimeZoneData,
+            Error::TimeZone(_) => TzLookupError::InvalidTimeZoneData,
+            Error::UnsupportedTzFile(_) => TzLookupError::InvalidTimeZoneData,
+            Error::UnsupportedTzString(_) => TzLookupError::InvalidTzString,
+            Error::Utf8(_) => TzLookupError::InvalidTimeZoneData,
+        }
     }
 }
 
