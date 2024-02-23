@@ -50,21 +50,31 @@ See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference.
 
 Default features:
 
-* `alloc`: Enable features that depend on allocation (primarily string formatting)
+* `alloc`: Enable features that depend on allocation (primarily string formatting).
 * `std`: Enables functionality that depends on the standard library. This is a superset of `alloc`
   and adds interoperation with standard library types and traits.
 * `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
-* `now`: Enables reading the system time (`now`)
+* `now`: Enables reading the system time (`now`).
 * `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 
 Optional features:
 
-* `serde`: Enable serialization/deserialization via serde.
-* `rkyv`: Enable serialization/deserialization via rkyv.
+* `serde`: Enable serialization/deserialization via [serde].
+* `rkyv`: Deprecated, use the `rkyv-*` features.
+* `rkyv-16`: Enable serialization/deserialization via [rkyv], using 16-bit integers for integral `*size` types.
+* `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
+* `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
+* `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
 * `rustc-serialize`: Enable serialization/deserialization via rustc-serialize (deprecated).
-* `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
+* `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
 * `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
   The implementation and API may change or even be removed in a patch release. Feedback welcome.
+* `oldtime`: This feature no longer has any effect; it used to offer compatibility with the `time` 0.1 crate.
+
+Note: The `rkyv{,-16,-32,-64}` features are mutually exclusive.
+
+[serde]: https://github.com/serde-rs/serde
+[rkyv]: https://github.com/rkyv/rkyv
 
 ## Rust version requirements
 
