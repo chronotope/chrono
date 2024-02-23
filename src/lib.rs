@@ -24,30 +24,35 @@
 //!
 //! Default features:
 //!
-//! - `alloc`: Enable features that depend on allocation (primarily string formatting)
+//! - `alloc`: Enable features that depend on allocation (primarily string formatting).
 //! - `std`: Enables functionality that depends on the standard library. This
 //!   is a superset of `alloc` and adds interoperation with standard library types
 //!   and traits.
-//! - `clock`: Enables reading the system time (`now`) that depends on the standard library for
-//! UNIX-like operating systems and the Windows API (`winapi`) for Windows.
+//! - `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
+//! - `now`: Enables reading the system time (`now`).
 //! - `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 //!
 //! Optional features:
 //!
-//! - [`serde`][]: Enable serialization/deserialization via serde.
-//! - `rkyv`: Enable serialization/deserialization via rkyv.
-//! - `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
+//! - `serde`: Enable serialization/deserialization via [serde].
+//! - `rkyv`: Deprecated, use the `rkyv-*` features.
+//! - `rkyv-16`: Enable serialization/deserialization via [rkyv], using 16-bit integers for integral `*size` types.
+//! - `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
+//! - `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
+//! - `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
+//! - `rustc-serialize`: Enable serialization/deserialization via rustc-serialize (deprecated).
+//! - `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
 //! - `unstable-locales`: Enable localization. This adds various methods with a
 //!   `_localized` suffix. The implementation and API may change or even be
 //!   removed in a patch release. Feedback welcome.
-//! - `oldtime`: this feature no langer has a function, but once offered compatibility with the
-//!   `time` 0.1 crate.
+//! - `oldtime`: This feature no longer has any effect; it used to offer compatibility with the `time` 0.1 crate.
 //!
-//! [`serde`]: https://github.com/serde-rs/serde
-//! [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
+//! Note: The `rkyv{,-16,-32,-64}` features are mutually exclusive.
 //!
-//! See the [cargo docs][] for examples of specifying features.
+//! See the [cargo docs] for examples of specifying features.
 //!
+//! [serde]: https://github.com/serde-rs/serde
+//! [rkyv]: https://github.com/rkyv/rkyv
 //! [cargo docs]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features
 //!
 //! ## Overview
