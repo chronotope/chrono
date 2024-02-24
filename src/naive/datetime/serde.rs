@@ -972,7 +972,11 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_opt(value as i64, 0).ok_or_else(|| invalid_ts(value))
+            if value > i64::MAX as u64 {
+                Err(invalid_ts(value))
+            } else {
+                NaiveDateTime::from_timestamp_opt(value as i64, 0).ok_or_else(|| invalid_ts(value))
+            }
         }
     }
 }
