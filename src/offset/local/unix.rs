@@ -9,10 +9,8 @@
 // except according to those terms.
 
 use std::cell::RefCell;
-use std::collections::hash_map;
 use std::env;
 use std::fs;
-use std::hash::Hasher;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -51,6 +49,10 @@ struct CachedTzInfo {
     zone: Option<TimeZone>,
     source: Source,
     last_checked: SystemTime,
+    tz_var: Option<TzEnvVar>,
+    tz_name: Option<String>,
+    path: Option<PathBuf>,
+    tzdb_dir: Option<PathBuf>,
 }
 
 impl CachedTzInfo {
@@ -79,26 +81,25 @@ impl CachedTzInfo {
         self.last_checked = now;
     }
 
-    /// Check if any of the `TZ` environment variable or `/etc/localtime` have changed.
+    /// Check if any of the environment variables or files have changed, or the name of the current
+    /// time zone as determined by the `iana_time_zone` crate.
     fn needs_update(&self) -> bool {
-        let env_tz = env::var("TZ").ok();
-        let env_ref = env_tz.as_deref();
-        let new_source = Source::new(env_ref);
-
-        match (&self.source, &new_source) {
-            (Source::Environment { hash: old_hash }, Source::Environment { hash })
-                if old_hash == hash =>
-            {
-                false
-            }
-            (Source::LocalTime, Source::LocalTime) => {
-                match fs::symlink_metadata("/etc/localtime").and_then(|m| m.modified()) {
-                    Ok(mtime) => mtime > self.last_checked,
-                    Err(_) => false,
-                }
-            }
-            _ => true,
+        if self.tz_env_var_changed() {
+            return true;
         }
+        if self.source == Source::TzEnvVar {
+            return false; // No need for further checks if the cached value came from the `TZ` var.
+        }
+        if self.symlink_changed() {
+            return true;
+        }
+        if self.source == Source::Localtime {
+            return false; // No need for further checks if the cached value came from the symlink.
+        }
+        if self.tz_name_changed() {
+            return true;
+        }
+        false
     }
 
     /// Try to get the current time zone data.
@@ -112,12 +113,14 @@ impl CachedTzInfo {
     /// - the global IANA time zone name in combination with the platform time zone database
     /// - fall back to UTC if all else fails
     fn read_tz_info(&mut self) {
-        self.source = Source::new(env::var("TZ").ok().as_deref());
-
         let tz_var = TzEnvVar::get();
-        if let Some(tz_var) = tz_var {
-            if self.read_from_tz_env(&tz_var).is_ok() {
-                return;
+        match tz_var {
+            None => self.tz_var = None,
+            Some(tz_var) => {
+                if self.read_from_tz_env(&tz_var).is_ok() {
+                    self.tz_var = Some(tz_var);
+                    return;
+                }
             }
         }
         #[cfg(not(target_os = "android"))]
@@ -128,6 +131,7 @@ impl CachedTzInfo {
             return;
         }
         self.zone = Some(TimeZone::utc());
+        self.source = Source::Utc;
     }
 
     /// Read the `TZ` environment variable or the TZif file that it points to.
@@ -135,17 +139,40 @@ impl CachedTzInfo {
         match tz_var {
             TzEnvVar::TzString(tz_string) => {
                 self.zone = Some(TimeZone::from_tz_string(tz_string).map_err(|_| ())?);
+                self.path = None;
             }
             TzEnvVar::Path(path) => {
                 let path = PathBuf::from(&path[1..]);
-                let tzif = fs::read(path).map_err(|_| ())?;
+                let tzif = fs::read(&path).map_err(|_| ())?;
                 self.zone = Some(TimeZone::from_tz_data(&tzif).map_err(|_| ())?);
+                self.path = Some(path);
             }
             TzEnvVar::TzName(tz_id) => self.read_tzif(&tz_id[1..])?,
             #[cfg(not(target_os = "android"))]
             TzEnvVar::LocaltimeSymlink => self.read_from_symlink()?,
         };
+        self.source = Source::TzEnvVar;
         Ok(())
+    }
+
+    /// Check if the `TZ` environment variable has changed, or the file it points to.
+    fn tz_env_var_changed(&self) -> bool {
+        let tz_var = TzEnvVar::get();
+        match (&self.tz_var, &tz_var) {
+            (None, None) => false,
+            (Some(TzEnvVar::TzString(a)), Some(TzEnvVar::TzString(b))) if a == b => false,
+            (Some(TzEnvVar::Path(a)), Some(TzEnvVar::Path(b))) if a == b => {
+                self.mtime_changed(self.path.as_deref())
+            }
+            (Some(TzEnvVar::TzName(a)), Some(TzEnvVar::TzName(b))) if a == b => {
+                self.mtime_changed(self.path.as_deref()) || self.tzdb_dir_changed()
+            }
+            #[cfg(not(target_os = "android"))]
+            (Some(TzEnvVar::LocaltimeSymlink), Some(TzEnvVar::LocaltimeSymlink)) => {
+                self.symlink_changed()
+            }
+            _ => true,
+        }
     }
 
     /// Read the Tzif file that `/etc/localtime` is symlinked to.
@@ -153,38 +180,55 @@ impl CachedTzInfo {
     fn read_from_symlink(&mut self) -> Result<(), ()> {
         let tzif = fs::read("/etc/localtime").map_err(|_| ())?;
         self.zone = Some(TimeZone::from_tz_data(&tzif).map_err(|_| ())?);
+        self.source = Source::Localtime;
         Ok(())
+    }
+
+    /// Check if the `/etc/localtime` symlink or its target has changed.
+    fn symlink_changed(&self) -> bool {
+        self.mtime_changed(Some(Path::new("/etc/localtime")))
     }
 
     /// Get the IANA time zone name of the system by whichever means the `iana_time_zone` crate gets
     /// it, and try to read the corresponding TZif data.
     fn read_with_tz_name(&mut self) -> Result<(), ()> {
         let tz_name = iana_time_zone::get_timezone().map_err(|_| ())?;
-        self.read_tzif(&tz_name)
+        self.read_tzif(&tz_name)?;
+        self.tz_name = Some(tz_name);
+        self.source = Source::TimeZoneName;
+        Ok(())
+    }
+
+    /// Check if the IANA time zone name has changed, or the file it points to.
+    fn tz_name_changed(&self) -> bool {
+        self.tz_name != iana_time_zone::get_timezone().ok()
+            || self.tzdb_dir_changed()
+            || self.mtime_changed(self.path.as_deref())
     }
 
     /// Try to read the TZif data for the specified time zone name.
     fn read_tzif(&mut self, tz_name: &str) -> Result<(), ()> {
-        let tzif = self.read_tzif_inner(tz_name)?;
+        let (tzif, path) = self.read_tzif_inner(tz_name)?;
         self.zone = Some(TimeZone::from_tz_data(&tzif).map_err(|_| ())?);
+        self.path = path;
         Ok(())
     }
 
     #[cfg(not(target_os = "android"))]
-    fn read_tzif_inner(&self, tz_name: &str) -> Result<Vec<u8>, ()> {
+    fn read_tzif_inner(&mut self, tz_name: &str) -> Result<(Vec<u8>, Option<PathBuf>), ()> {
         let path = self.tzdb_dir()?.join(tz_name);
-        let tzif = fs::read(path).map_err(|_| ())?;
-        Ok(tzif)
+        let tzif = fs::read(&path).map_err(|_| ())?;
+        Ok((tzif, Some(path)))
     }
     #[cfg(target_os = "android")]
-    fn read_tzif_inner(&self, tz_name: &str) -> Result<Vec<u8>, ()> {
+    fn read_tzif_inner(&mut self, tz_name: &str) -> Result<(Vec<u8>, Option<PathBuf>), ()> {
         let tzif = android_tzdata::find_tz_data(&tz_name).map_err(|_| ())?;
-        Ok(tzif)
+        Ok((tzif, None))
     }
 
     /// Get the location of the time zone database directory with TZif files.
     #[cfg(not(target_os = "android"))]
-    fn tzdb_dir(&self) -> Result<PathBuf, ()> {
+    fn tzdb_dir(&mut self) -> Result<PathBuf, ()> {
         // Possible system timezone directories
         const ZONE_INFO_DIRECTORIES: [&str; 4] =
             ["/usr/share/zoneinfo", "/share/zoneinfo", "/etc/zoneinfo", "/usr/share/lib/zoneinfo"];
@@ -199,13 +243,55 @@ impl CachedTzInfo {
             }
         }
 
+        // Use the cached value
+        if let Some(dir) = self.tzdb_dir.as_ref() {
+            return Ok(PathBuf::from(dir));
+        }
+
+        // No cached value yet, try the various possible system timezone directories.
         for dir in &ZONE_INFO_DIRECTORIES {
             let path = PathBuf::from(dir);
             if path.exists() {
+                self.tzdb_dir = Some(path.clone());
                 return Ok(path);
             }
         }
         Err(())
+    }
+
+    /// Check if the location that the `TZDIR` environment variable points to has changed.
+    fn tzdb_dir_changed(&self) -> bool {
+        #[cfg(not(target_os = "android"))]
+        if let Some(tz_dir) = env::var_os("TZDIR") {
+            if !tz_dir.is_empty()
+                && Some(tz_dir.as_os_str()) != self.tzdb_dir.as_ref().map(|d| d.as_os_str())
+            {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Returns `true` if the modification time of the TZif file or symlink is more recent then
+    /// `self.last_checked`.
+    ///
+    /// Also returns `true` if there was an error getting the modification time.
+    /// If the file is a symlink this method checks the symlink and the final target.
+    fn mtime_changed(&self, path: Option<&Path>) -> bool {
+        fn inner(path: &Path, last_checked: SystemTime) -> Result<bool, std::io::Error> {
+            let metadata = fs::symlink_metadata(path)?;
+            if metadata.modified()? > last_checked {
+                return Ok(true);
+            }
+            if metadata.is_symlink() && fs::metadata(path)?.modified()? > last_checked {
+                return Ok(true);
+            }
+            Ok(false)
+        }
+        match path {
+            Some(path) => inner(path, self.last_checked).unwrap_or(true),
+            None => false,
+        }
     }
 }
 
@@ -215,29 +301,21 @@ thread_local! {
             zone: None,
             source: Source::Uninitialized,
             last_checked: SystemTime::UNIX_EPOCH,
+            tz_var: None,
+            tz_name: None,
+            path: None,
+            tzdb_dir: None,
         }
     ) };
 }
 
 #[derive(PartialEq)]
 enum Source {
-    Environment { hash: u64 },
-    LocalTime,
+    TzEnvVar,
+    Localtime,
+    TimeZoneName,
+    Utc,
     Uninitialized,
-}
-
-impl Source {
-    fn new(env_tz: Option<&str>) -> Source {
-        match env_tz {
-            Some(tz) => {
-                let mut hasher = hash_map::DefaultHasher::new();
-                hasher.write(tz.as_bytes());
-                let hash = hasher.finish();
-                Source::Environment { hash }
-            }
-            None => Source::LocalTime,
-        }
-    }
 }
 
 /// Type of the `TZ` environment variable.
