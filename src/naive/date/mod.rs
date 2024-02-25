@@ -216,55 +216,58 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The specified week does not exist in that year (for example 2023 week 53).
-    /// - The value for `week` is invalid (for example: `0`, `60`).
-    /// - If the resulting date is out of range for `NaiveDate`.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if specified week does not exist in that year (for example 2023
+    ///    week 53).
+    /// - [`Error::InvalidArgument`] if the value for `week` is invalid (for example: `0`, `60`).
+    /// - [`Error::OutOfRange`] if the resulting date is out of range for `NaiveDate`.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, Weekday};
+    /// use chrono::{Error, NaiveDate, Weekday};
     ///
     /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     /// let from_isoywd = NaiveDate::from_isoywd;
     ///
-    /// assert_eq!(from_isoywd(2015, 0, Weekday::Sun), None);
-    /// assert_eq!(from_isoywd(2015, 10, Weekday::Sun), Some(from_ymd(2015, 3, 8)));
-    /// assert_eq!(from_isoywd(2015, 30, Weekday::Mon), Some(from_ymd(2015, 7, 20)));
-    /// assert_eq!(from_isoywd(2015, 60, Weekday::Mon), None);
+    /// assert_eq!(from_isoywd(2015, 0, Weekday::Sun), Err(Error::InvalidArgument));
+    /// assert_eq!(from_isoywd(2015, 10, Weekday::Sun), Ok(from_ymd(2015, 3, 8)));
+    /// assert_eq!(from_isoywd(2015, 30, Weekday::Mon), Ok(from_ymd(2015, 7, 20)));
+    /// assert_eq!(from_isoywd(2015, 60, Weekday::Mon), Err(Error::InvalidArgument));
     ///
-    /// assert_eq!(from_isoywd(400000, 10, Weekday::Fri), None);
-    /// assert_eq!(from_isoywd(-400000, 10, Weekday::Sat), None);
+    /// assert_eq!(from_isoywd(400000, 10, Weekday::Fri), Err(Error::OutOfRange));
+    /// assert_eq!(from_isoywd(-400000, 10, Weekday::Sat), Err(Error::OutOfRange));
     /// ```
     ///
     /// The year number of ISO week date may differ from that of the calendar date.
     ///
     /// ```
-    /// # use chrono::{NaiveDate, Weekday};
+    /// # use chrono::{Error, NaiveDate, Weekday};
     /// # let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     /// # let from_isoywd = NaiveDate::from_isoywd;
     /// //           Mo Tu We Th Fr Sa Su
     /// // 2014-W52  22 23 24 25 26 27 28    has 4+ days of new year,
     /// // 2015-W01  29 30 31  1  2  3  4 <- so this is the first week
-    /// assert_eq!(from_isoywd(2014, 52, Weekday::Sun), Some(from_ymd(2014, 12, 28)));
-    /// assert_eq!(from_isoywd(2014, 53, Weekday::Mon), None);
-    /// assert_eq!(from_isoywd(2015, 1, Weekday::Mon), Some(from_ymd(2014, 12, 29)));
+    /// assert_eq!(from_isoywd(2014, 52, Weekday::Sun), Ok(from_ymd(2014, 12, 28)));
+    /// assert_eq!(from_isoywd(2014, 53, Weekday::Mon), Err(Error::DoesNotExist));
+    /// assert_eq!(from_isoywd(2015, 1, Weekday::Mon), Ok(from_ymd(2014, 12, 29)));
     ///
     /// // 2015-W52  21 22 23 24 25 26 27    has 4+ days of old year,
     /// // 2015-W53  28 29 30 31  1  2  3 <- so this is the last week
     /// // 2016-W01   4  5  6  7  8  9 10
-    /// assert_eq!(from_isoywd(2015, 52, Weekday::Sun), Some(from_ymd(2015, 12, 27)));
-    /// assert_eq!(from_isoywd(2015, 53, Weekday::Sun), Some(from_ymd(2016, 1, 3)));
-    /// assert_eq!(from_isoywd(2015, 54, Weekday::Mon), None);
-    /// assert_eq!(from_isoywd(2016, 1, Weekday::Mon), Some(from_ymd(2016, 1, 4)));
+    /// assert_eq!(from_isoywd(2015, 52, Weekday::Sun), Ok(from_ymd(2015, 12, 27)));
+    /// assert_eq!(from_isoywd(2015, 53, Weekday::Sun), Ok(from_ymd(2016, 1, 3)));
+    /// assert_eq!(from_isoywd(2015, 54, Weekday::Mon), Err(Error::InvalidArgument));
+    /// assert_eq!(from_isoywd(2016, 1, Weekday::Mon), Ok(from_ymd(2016, 1, 4)));
     /// ```
-    #[must_use]
-    pub const fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> Option<NaiveDate> {
+    pub const fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> Result<NaiveDate, Error> {
         let flags = YearFlags::from_year(year);
         let nweeks = flags.nisoweeks();
         if week == 0 || week > nweeks {
-            return None;
+            return Err(match week == 0 || week > 53 {
+                true => Error::InvalidArgument,
+                false => Error::DoesNotExist,
+            });
         }
         // ordinal = week ordinal - delta
         let weekord = week * 7 + weekday as u32;
@@ -285,7 +288,7 @@ impl NaiveDate {
                 (year + 1, ordinal - ndays, nextflags)
             }
         };
-        ok!(NaiveDate::from_ordinal_and_flags(year, ordinal, flags))
+        NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
     }
 
     /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
