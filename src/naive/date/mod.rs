@@ -109,7 +109,7 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
         let year = u.int_in_range(MIN_YEAR..=MAX_YEAR)?;
         let max_days = YearFlags::from_year(year).ndays();
         let ord = u.int_in_range(1..=max_days)?;
-        NaiveDate::from_yo(year, ord).ok_or(arbitrary::Error::IncorrectFormat)
+        NaiveDate::from_yo(year, ord).map_err(|_| arbitrary::Error::IncorrectFormat)
     }
 }
 
@@ -124,18 +124,18 @@ impl NaiveDate {
         year: i32,
         ordinal: u32,
         flags: YearFlags,
-    ) -> Option<NaiveDate> {
+    ) -> Result<NaiveDate, Error> {
         if year < MIN_YEAR || year > MAX_YEAR {
-            return None; // Out-of-range
+            return Err(Error::OutOfRange);
         }
         if ordinal == 0 || ordinal > 366 {
-            return None; // Invalid
+            return Err(Error::InvalidArgument);
         }
         debug_assert!(YearFlags::from_year(year).0 == flags.0);
         let yof = (year << 13) | (ordinal << 4) as i32 | flags.0 as i32;
         match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate::from_yof(yof)),
-            false => None, // Does not exist: Ordinal 366 in a common year.
+            true => Ok(NaiveDate::from_yof(yof)),
+            false => Err(Error::DoesNotExist), // Ordinal 366 in a common year.
         }
     }
 
@@ -184,28 +184,28 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The specified ordinal day does not exist (for example 2023-366).
-    /// - The value for `ordinal` is invalid (for example: `0`, `400`).
-    /// - `year` is out of range for `NaiveDate`.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the specified ordinal day does not exist (for example
+    ///   2023-366).
+    /// - [`Error::InvalidArgument`] if the value for `ordinal` is invalid (for example: `0`, `400`).
+    /// - [`Error::OutOfRange`] if `year` is out of range for a `NaiveDate`.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
     /// let from_yo = NaiveDate::from_yo;
     ///
-    /// assert!(from_yo(2015, 100).is_some());
-    /// assert!(from_yo(2015, 0).is_none());
-    /// assert!(from_yo(2015, 365).is_some());
-    /// assert!(from_yo(2015, 366).is_none());
-    /// assert!(from_yo(-4, 366).is_some()); // 5 BCE is a leap year
-    /// assert!(from_yo(400000, 1).is_none());
-    /// assert!(from_yo(-400000, 1).is_none());
+    /// assert!(from_yo(2015, 100).is_ok());
+    /// assert_eq!(from_yo(2015, 0), Err(Error::InvalidArgument));
+    /// assert!(from_yo(2015, 365).is_ok());
+    /// assert_eq!(from_yo(2015, 366),  Err(Error::DoesNotExist));
+    /// assert!(from_yo(-4, 366).is_ok()); // 5 BCE is a leap year
+    /// assert_eq!(from_yo(400000, 1), Err(Error::OutOfRange));
+    /// assert_eq!(from_yo(-400000, 1), Err(Error::OutOfRange));
     /// ```
-    #[must_use]
-    pub const fn from_yo(year: i32, ordinal: u32) -> Option<NaiveDate> {
+    pub const fn from_yo(year: i32, ordinal: u32) -> Result<NaiveDate, Error> {
         let flags = YearFlags::from_year(year);
         NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
     }
@@ -285,7 +285,7 @@ impl NaiveDate {
                 (year + 1, ordinal - ndays, nextflags)
             }
         };
-        NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
+        ok!(NaiveDate::from_ordinal_and_flags(year, ordinal, flags))
     }
 
     /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
@@ -317,7 +317,11 @@ impl NaiveDate {
         let cycle = days.rem_euclid(146_097);
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
+        ok!(NaiveDate::from_ordinal_and_flags(
+            year_div_400 * 400 + year_mod_400 as i32,
+            ordinal,
+            flags
+        ))
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -625,7 +629,11 @@ impl NaiveDate {
 
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
+        ok!(NaiveDate::from_ordinal_and_flags(
+            year_div_400 * 400 + year_mod_400 as i32,
+            ordinal,
+            flags
+        ))
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -828,7 +836,7 @@ impl NaiveDate {
         let new_ol = (self.yof() & OL_MASK) + (1 << 4);
         match new_ol <= MAX_OL {
             true => Some(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
-            false => NaiveDate::from_yo(self.year() + 1, 1),
+            false => ok!(NaiveDate::from_yo(self.year() + 1, 1)),
         }
     }
 

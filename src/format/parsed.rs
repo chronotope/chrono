@@ -686,7 +686,7 @@ impl Parsed {
 
             (Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
                 // year, day of the year
-                let date = NaiveDate::from_yo(year, ordinal).ok_or(OUT_OF_RANGE)?;
+                let date = NaiveDate::from_yo(year, ordinal).map_err(|_| OUT_OF_RANGE)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
@@ -696,7 +696,7 @@ impl Parsed {
                 &Parsed { week_from_sun: Some(week_from_sun), weekday: Some(weekday), .. },
             ) => {
                 // year, week (starting at 1st Sunday), day of the week
-                let newyear = NaiveDate::from_yo(year, 1).ok_or(OUT_OF_RANGE)?;
+                let newyear = NaiveDate::from_yo(year, 1).map_err(|_| OUT_OF_RANGE)?;
                 let firstweek = match newyear.weekday() {
                     Weekday::Sun => 0,
                     Weekday::Mon => 6,
@@ -730,7 +730,7 @@ impl Parsed {
                 &Parsed { week_from_mon: Some(week_from_mon), weekday: Some(weekday), .. },
             ) => {
                 // year, week (starting at 1st Monday), day of the week
-                let newyear = NaiveDate::from_yo(year, 1).ok_or(OUT_OF_RANGE)?;
+                let newyear = NaiveDate::from_yo(year, 1).map_err(|_| OUT_OF_RANGE)?;
                 let firstweek = match newyear.weekday() {
                     Weekday::Sun => 1,
                     Weekday::Mon => 0,
