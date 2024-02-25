@@ -14,7 +14,7 @@ use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use crate::{DateTime, Error, FixedOffset, Weekday};
 
-fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
+fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> Result<&mut Parsed, Error> {
     p.set_weekday(match v {
         0 => Weekday::Sun,
         1 => Weekday::Mon,
@@ -23,11 +23,11 @@ fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<
         4 => Weekday::Thu,
         5 => Weekday::Fri,
         6 => Weekday::Sat,
-        _ => return Err(OUT_OF_RANGE),
+        _ => return Err(Error::InvalidArgument),
     })
 }
 
-fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
+fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> Result<&mut Parsed, Error> {
     p.set_weekday(match v {
         1 => Weekday::Mon,
         2 => Weekday::Tue,
@@ -36,7 +36,7 @@ fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<&m
         5 => Weekday::Fri,
         6 => Weekday::Sat,
         7 => Weekday::Sun,
-        _ => return Err(OUT_OF_RANGE),
+        _ => return Err(Error::InvalidArgument),
     })
 }
 
@@ -339,7 +339,7 @@ where
 
             Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
-                type Setter = fn(&mut Parsed, i64) -> ParseResult<&mut Parsed>;
+                type Setter = fn(&mut Parsed, i64) -> Result<&mut Parsed, Error>;
 
                 let (width, signed, set): (usize, bool, Setter) = match *spec {
                     Year => (4, true, Parsed::set_year),
