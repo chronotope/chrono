@@ -447,6 +447,14 @@ impl std::error::Error for ParseError {
     }
 }
 
+fn parse_error(error: Error, _remainder: &str) -> ParseError {
+    match error {
+        Error::Inconsistent => ParseError(ParseErrorKind::Impossible),
+        Error::OutOfRange => ParseError(ParseErrorKind::OutOfRange),
+        _ => panic!("`Parsed::set_*` should only return `Inconsistent` or `OutOfRange`"),
+    }
+}
+
 impl From<Error> for ParseError {
     fn from(error: Error) -> Self {
         match error {

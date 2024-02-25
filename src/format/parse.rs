@@ -9,8 +9,8 @@ use core::str;
 use core::usize;
 
 use super::scan;
+use super::{parse_error, ParseError, ParseResult};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
-use super::{ParseError, ParseResult};
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use crate::{DateTime, Error, FixedOffset, Weekday};
 
@@ -109,13 +109,15 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
             return Err(INVALID);
         }
         s = &s_[1..];
-        parsed.set_weekday(weekday)?;
+        parsed.set_weekday(weekday).map_err(|e| parse_error(e, s))?;
     }
 
     s = s.trim_start();
-    parsed.set_day(try_consume!(scan::number(s, 1, 2)))?;
+    parsed.set_day(try_consume!(scan::number(s, 1, 2))).map_err(|e| parse_error(e, s))?;
     s = scan::space(s)?; // mandatory
-    parsed.set_month(1 + i64::from(try_consume!(scan::short_month0(s))))?;
+    parsed
+        .set_month(1 + i64::from(try_consume!(scan::short_month0(s))))
+        .map_err(|e| parse_error(e, s))?;
     s = scan::space(s)?; // mandatory
 
     // distinguish two- and three-digit years from four-digit years
@@ -134,19 +136,21 @@ fn parse_rfc2822<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult<(&'a st
         } //  112 -> 2012,  009 -> 1909
         (_, _) => {} // 1987 -> 1987, 0654 -> 0654
     }
-    parsed.set_year(year)?;
+    parsed.set_year(year).map_err(|e| parse_error(e, s))?;
 
     s = scan::space(s)?; // mandatory
-    parsed.set_hour(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_hour(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
     s = scan::char(s.trim_start(), b':')?.trim_start(); // *S ":" *S
-    parsed.set_minute(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_minute(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
     if let Ok(s_) = scan::char(s.trim_start(), b':') {
         // [ ":" *S 2DIGIT ]
-        parsed.set_second(try_consume!(scan::number(s_, 2, 2)))?;
+        parsed.set_second(try_consume!(scan::number(s_, 2, 2))).map_err(|e| parse_error(e, s))?;
     }
 
     s = scan::space(s)?; // mandatory
-    parsed.set_offset(i64::from(try_consume!(scan::timezone_offset_2822(s))))?;
+    parsed
+        .set_offset(i64::from(try_consume!(scan::timezone_offset_2822(s))))
+        .map_err(|e| parse_error(e, s))?;
 
     // optional comments
     while let Ok((s_out, ())) = scan::comment_2822(s) {
@@ -194,11 +198,11 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     //
     // - For readability a full-date and a full-time may be separated by a space character.
 
-    parsed.set_year(try_consume!(scan::number(s, 4, 4)))?;
+    parsed.set_year(try_consume!(scan::number(s, 4, 4))).map_err(|e| parse_error(e, s))?;
     s = scan::char(s, b'-')?;
-    parsed.set_month(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_month(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
     s = scan::char(s, b'-')?;
-    parsed.set_day(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_day(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
 
     s = match s.as_bytes().first() {
         Some(&b't' | &b'T' | &b' ') => &s[1..],
@@ -206,14 +210,14 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
         None => return Err(TOO_SHORT),
     };
 
-    parsed.set_hour(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_hour(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
     s = scan::char(s, b':')?;
-    parsed.set_minute(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_minute(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
     s = scan::char(s, b':')?;
-    parsed.set_second(try_consume!(scan::number(s, 2, 2)))?;
+    parsed.set_second(try_consume!(scan::number(s, 2, 2))).map_err(|e| parse_error(e, s))?;
     if s.starts_with('.') {
         let nanosecond = try_consume!(scan::nanosecond(&s[1..]));
-        parsed.set_nanosecond(nanosecond)?;
+        parsed.set_nanosecond(nanosecond).map_err(|e| parse_error(e, s))?;
     }
 
     let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
@@ -225,7 +229,7 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
     if !(-MAX_RFC3339_OFFSET..=MAX_RFC3339_OFFSET).contains(&offset) {
         return Err(OUT_OF_RANGE);
     }
-    parsed.set_offset(i64::from(offset))?;
+    parsed.set_offset(i64::from(offset)).map_err(|e| parse_error(e, s))?;
 
     Ok((s, ()))
 }
@@ -381,7 +385,7 @@ where
                 } else {
                     try_consume!(scan::number(s, 1, width))
                 };
-                set(parsed, v)?;
+                set(parsed, v).map_err(|e| parse_error(e, s))?;
             }
 
             Item::Fixed(ref spec) => {
@@ -390,22 +394,22 @@ where
                 match spec {
                     &ShortMonthName => {
                         let month0 = try_consume!(scan::short_month0(s));
-                        parsed.set_month(i64::from(month0) + 1)?;
+                        parsed.set_month(i64::from(month0) + 1).map_err(|e| parse_error(e, s))?;
                     }
 
                     &LongMonthName => {
                         let month0 = try_consume!(scan::short_or_long_month0(s));
-                        parsed.set_month(i64::from(month0) + 1)?;
+                        parsed.set_month(i64::from(month0) + 1).map_err(|e| parse_error(e, s))?;
                     }
 
                     &ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
-                        parsed.set_weekday(weekday)?;
+                        parsed.set_weekday(weekday).map_err(|e| parse_error(e, s))?;
                     }
 
                     &LongWeekdayName => {
                         let weekday = try_consume!(scan::short_or_long_weekday(s));
-                        parsed.set_weekday(weekday)?;
+                        parsed.set_weekday(weekday).map_err(|e| parse_error(e, s))?;
                     }
 
                     &LowerAmPm | &UpperAmPm => {
@@ -417,14 +421,14 @@ where
                             (b'p', b'm') => true,
                             _ => return Err(INVALID),
                         };
-                        parsed.set_ampm(ampm)?;
+                        parsed.set_ampm(ampm).map_err(|e| parse_error(e, s))?;
                         s = &s[2..];
                     }
 
                     &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
-                            parsed.set_nanosecond(nano)?;
+                            parsed.set_nanosecond(nano).map_err(|e| parse_error(e, s))?;
                         }
                     }
 
@@ -433,7 +437,7 @@ where
                             return Err(TOO_SHORT);
                         }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 3));
-                        parsed.set_nanosecond(nano)?;
+                        parsed.set_nanosecond(nano).map_err(|e| parse_error(e, s))?;
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
@@ -441,7 +445,7 @@ where
                             return Err(TOO_SHORT);
                         }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 6));
-                        parsed.set_nanosecond(nano)?;
+                        parsed.set_nanosecond(nano).map_err(|e| parse_error(e, s))?;
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
@@ -449,7 +453,7 @@ where
                             return Err(TOO_SHORT);
                         }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 9));
-                        parsed.set_nanosecond(nano)?;
+                        parsed.set_nanosecond(nano).map_err(|e| parse_error(e, s))?;
                     }
 
                     &TimezoneName => {
@@ -467,7 +471,7 @@ where
                             false,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset))?;
+                        parsed.set_offset(i64::from(offset)).map_err(|e| parse_error(e, s))?;
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
@@ -478,7 +482,7 @@ where
                             false,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset))?;
+                        parsed.set_offset(i64::from(offset)).map_err(|e| parse_error(e, s))?;
                     }
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
@@ -490,7 +494,7 @@ where
                             true,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset))?;
+                        parsed.set_offset(i64::from(offset)).map_err(|e| parse_error(e, s))?;
                     }
 
                     &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
@@ -582,7 +586,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
     } else {
         scan::timezone_offset(s, scan::consume_colon_maybe, true, false, true)?
     };
-    parsed.set_offset(i64::from(offset))?;
+    parsed.set_offset(i64::from(offset)).map_err(|e| parse_error(e, s))?;
     Ok((s, ()))
 }
 
