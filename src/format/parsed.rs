@@ -7,7 +7,7 @@
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
-use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
+use crate::{DateTime, Datelike, Error, TimeDelta, Timelike, Weekday};
 
 /// A type to hold parsed fields of date and time that can check all fields are consistent.
 ///
@@ -72,7 +72,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///     .set_minute(26)?
 ///     .set_second(40)?
 ///     .set_offset(0)?;
-/// let dt = parsed.to_datetime()?;
+/// let dt = parsed.to_datetime().unwrap(); // FIXME: use ?
 /// assert_eq!(dt.to_rfc2822(), "Wed, 31 Dec 2014 04:26:40 +0000");
 ///
 /// let mut parsed = Parsed::new();
@@ -91,7 +91,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// if let Err(error) = result {
 ///     assert_eq!(error.kind(), ParseErrorKind::Impossible);
 /// }
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 ///
 /// The same using chrono's build-in parser for RFC 2822 (the [RFC2822 formatting item]) and
@@ -151,12 +151,12 @@ pub struct Parsed {
 /// Checks if `old` is either empty or has the same value as `new` (i.e. "consistent"),
 /// and if it is empty, set `old` to `new` as well.
 #[inline]
-fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<()> {
+fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> Result<(), Error> {
     if let Some(ref old) = *old {
         if *old == new {
             Ok(())
         } else {
-            Err(IMPOSSIBLE)
+            Err(Error::Inconsistent)
         }
     } else {
         *old = Some(new);
@@ -177,12 +177,12 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is outside the range of an `i32`.
+    /// Returns [`Error::OutOfRange`] if `value` is outside the range of an `i32`.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_year(&mut self, value: i64) -> ParseResult<&mut Parsed> {
-        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)?;
+    pub fn set_year(&mut self, value: i64) -> Result<&mut Parsed, Error> {
+        set_if_consistent(&mut self.year, i32::try_from(value).map_err(|_| Error::OutOfRange)?)?;
         Ok(self)
     }
 
@@ -190,13 +190,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is negative or if it is greater than `i32::MAX`.
+    /// Returns [`Error::OutOfRange`] if `value` is negative or if it is greater than `i32::MAX`.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_year_div_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_year_div_100(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=i32::MAX as i64).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.year_div_100, value as i32)?;
         Ok(self)
@@ -212,13 +212,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Return `OUT_OF_RANGE` if `value` is negative or if it is greater than 99.
+    /// Return [`Error::OutOfRange`] if `value` is negative or if it is greater than 99.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_year_mod_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_year_mod_100(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..100).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.year_mod_100, value as i32)?;
         Ok(self)
@@ -232,12 +232,12 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is outside the range of an `i32`.
+    /// Returns [`Error::OutOfRange`] if `value` is outside the range of an `i32`.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_isoyear(&mut self, value: i64) -> ParseResult<&mut Parsed> {
-        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)?;
+    pub fn set_isoyear(&mut self, value: i64) -> Result<&mut Parsed, Error> {
+        set_if_consistent(&mut self.isoyear, i32::try_from(value).map_err(|_| Error::OutOfRange)?)?;
         Ok(self)
     }
 
@@ -248,13 +248,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is negative or if it is greater than `i32::MAX`.
+    /// Returns [`Error::OutOfRange`] if `value` is negative or if it is greater than `i32::MAX`.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_isoyear_div_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_isoyear_div_100(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=i32::MAX as i64).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.isoyear_div_100, value as i32)?;
         Ok(self)
@@ -272,13 +272,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is negative or if it is greater than 99.
+    /// Returns [`Error::OutOfRange`] if `value` is negative or if it is greater than 99.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_isoyear_mod_100(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_isoyear_mod_100(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..100).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.isoyear_mod_100, value as i32)?;
         Ok(self)
@@ -288,13 +288,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 1-12.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 1-12.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_month(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_month(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(1..=12).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.month, value as u32)?;
         Ok(self)
@@ -306,13 +306,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 0-53.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 0-53.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_week_from_sun(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_week_from_sun(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=53).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.week_from_sun, value as u32)?;
         Ok(self)
@@ -324,13 +324,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 0-53.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 0-53.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_week_from_mon(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_week_from_mon(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=53).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.week_from_mon, value as u32)?;
         Ok(self)
@@ -342,13 +342,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 1-53.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 1-53.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_isoweek(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_isoweek(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(1..=53).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.isoweek, value as u32)?;
         Ok(self)
@@ -358,9 +358,9 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_weekday(&mut self, value: Weekday) -> ParseResult<&mut Parsed> {
+    pub fn set_weekday(&mut self, value: Weekday) -> Result<&mut Parsed, Error> {
         set_if_consistent(&mut self.weekday, value)?;
         Ok(self)
     }
@@ -369,13 +369,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 1-366.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 1-366.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_ordinal(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_ordinal(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(1..=366).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.ordinal, value as u32)?;
         Ok(self)
@@ -385,13 +385,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 1-31.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 1-31.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_day(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_day(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(1..=31).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.day, value as u32)?;
         Ok(self)
@@ -403,9 +403,9 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_ampm(&mut self, value: bool) -> ParseResult<&mut Parsed> {
+    pub fn set_ampm(&mut self, value: bool) -> Result<&mut Parsed, Error> {
         set_if_consistent(&mut self.hour_div_12, value as u32)?;
         Ok(self)
     }
@@ -417,13 +417,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 1-12.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 1-12.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_hour12(&mut self, mut value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_hour12(&mut self, mut value: i64) -> Result<&mut Parsed, Error> {
         if !(1..=12).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         if value == 12 {
             value = 0
@@ -438,14 +438,14 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// May return `OUT_OF_RANGE` if `value` is not in the range 0-23.
+    /// May return [`Error::OutOfRange`] if `value` is not in the range 0-23.
     /// Currently only checks the value is not out of range for a `u32`.
     ///
-    /// Returns `IMPOSSIBLE` one of the fields was already set to a different value.
+    /// Returns [`Error::Inconsistent`] one of the fields was already set to a different value.
     #[inline]
-    pub fn set_hour(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_hour(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=23).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.hour_div_12, value as u32 / 12)?;
         set_if_consistent(&mut self.hour_mod_12, value as u32 % 12)?;
@@ -456,13 +456,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 0-59.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 0-59.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_minute(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_minute(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=59).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.minute, value as u32)?;
         Ok(self)
@@ -474,13 +474,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 0-60.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 0-60.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_second(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_second(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=60).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.second, value as u32)?;
         Ok(self)
@@ -492,13 +492,13 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is not in the range 0-999,999,999.
+    /// Returns [`Error::OutOfRange`] if `value` is not in the range 0-999,999,999.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_nanosecond(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_nanosecond(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         if !(0..=999_999_999).contains(&value) {
-            return Err(OUT_OF_RANGE);
+            return Err(Error::OutOfRange);
         }
         set_if_consistent(&mut self.nanosecond, value as u32)?;
         Ok(self)
@@ -511,9 +511,9 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_timestamp(&mut self, value: i64) -> ParseResult<&mut Parsed> {
+    pub fn set_timestamp(&mut self, value: i64) -> Result<&mut Parsed, Error> {
         set_if_consistent(&mut self.timestamp, value)?;
         Ok(self)
     }
@@ -524,12 +524,12 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is ouside the range of an `i32`.
+    /// Returns [`Error::OutOfRange`] if `value` is ouside the range of an `i32`.
     ///
-    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    /// Returns [`Error::Inconsistent`] if this field was already set to a different value.
     #[inline]
-    pub fn set_offset(&mut self, value: i64) -> ParseResult<&mut Parsed> {
-        set_if_consistent(&mut self.offset, i32::try_from(value).map_err(|_| OUT_OF_RANGE)?)?;
+    pub fn set_offset(&mut self, value: i64) -> Result<&mut Parsed, Error> {
+        set_if_consistent(&mut self.offset, i32::try_from(value).map_err(|_| Error::OutOfRange)?)?;
         Ok(self)
     }
 
@@ -1018,12 +1018,12 @@ impl Parsed {
                 }
             // ...and we have the correct candidates for other fields.
             } else {
-                parsed.set_second(i64::from(datetime.second()))?;
+                parsed.set_second(i64::from(datetime.second())).map_err(|_| IMPOSSIBLE)?;
             }
-            parsed.set_year(i64::from(datetime.year()))?;
-            parsed.set_ordinal(i64::from(datetime.ordinal()))?; // more efficient than ymd
-            parsed.set_hour(i64::from(datetime.hour()))?;
-            parsed.set_minute(i64::from(datetime.minute()))?;
+            parsed.set_year(i64::from(datetime.year())).map_err(|_| IMPOSSIBLE)?;
+            parsed.set_ordinal(i64::from(datetime.ordinal())).map_err(|_| IMPOSSIBLE)?; // more efficient than ymd
+            parsed.set_hour(i64::from(datetime.hour())).map_err(|_| IMPOSSIBLE)?;
+            parsed.set_minute(i64::from(datetime.minute())).map_err(|_| IMPOSSIBLE)?;
 
             // validate other fields (e.g. week) and return
             let date = parsed.to_naive_date()?;
@@ -1157,6 +1157,7 @@ mod tests {
     use crate::naive::{NaiveDate, NaiveTime};
     use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::Datelike;
+    use crate::Error;
     use crate::Weekday::*;
 
     #[test]
@@ -1164,15 +1165,15 @@ mod tests {
         // year*, isoyear*
         let mut p = Parsed::new();
         assert!(p.set_year(1987).is_ok());
-        assert_eq!(p.set_year(1986), Err(IMPOSSIBLE));
-        assert_eq!(p.set_year(1988), Err(IMPOSSIBLE));
+        assert_eq!(p.set_year(1986), Err(Error::Inconsistent));
+        assert_eq!(p.set_year(1988), Err(Error::Inconsistent));
         assert!(p.set_year(1987).is_ok());
         assert!(p.set_year_div_100(20).is_ok()); // independent to `year`
-        assert_eq!(p.set_year_div_100(21), Err(IMPOSSIBLE));
-        assert_eq!(p.set_year_div_100(19), Err(IMPOSSIBLE));
+        assert_eq!(p.set_year_div_100(21), Err(Error::Inconsistent));
+        assert_eq!(p.set_year_div_100(19), Err(Error::Inconsistent));
         assert!(p.set_year_mod_100(37).is_ok()); // ditto
-        assert_eq!(p.set_year_mod_100(38), Err(IMPOSSIBLE));
-        assert_eq!(p.set_year_mod_100(36), Err(IMPOSSIBLE));
+        assert_eq!(p.set_year_mod_100(38), Err(Error::Inconsistent));
+        assert_eq!(p.set_year_mod_100(36), Err(Error::Inconsistent));
 
         let mut p = Parsed::new();
         assert!(p.set_year(0).is_ok());
@@ -1180,150 +1181,150 @@ mod tests {
         assert!(p.set_year_mod_100(0).is_ok());
 
         let mut p = Parsed::new();
-        assert_eq!(p.set_year_div_100(-1), Err(OUT_OF_RANGE));
-        assert_eq!(p.set_year_mod_100(-1), Err(OUT_OF_RANGE));
+        assert_eq!(p.set_year_div_100(-1), Err(Error::OutOfRange));
+        assert_eq!(p.set_year_mod_100(-1), Err(Error::OutOfRange));
         assert!(p.set_year(-1).is_ok());
-        assert_eq!(p.set_year(-2), Err(IMPOSSIBLE));
-        assert_eq!(p.set_year(0), Err(IMPOSSIBLE));
+        assert_eq!(p.set_year(-2), Err(Error::Inconsistent));
+        assert_eq!(p.set_year(0), Err(Error::Inconsistent));
 
         let mut p = Parsed::new();
-        assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(OUT_OF_RANGE));
+        assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(Error::OutOfRange));
         assert!(p.set_year_div_100(8).is_ok());
-        assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(OUT_OF_RANGE));
+        assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(Error::OutOfRange));
 
         // month, week*, isoweek, ordinal, day, minute, second, nanosecond, offset
         let mut p = Parsed::new();
         assert!(p.set_month(7).is_ok());
-        assert_eq!(p.set_month(1), Err(IMPOSSIBLE));
-        assert_eq!(p.set_month(6), Err(IMPOSSIBLE));
-        assert_eq!(p.set_month(8), Err(IMPOSSIBLE));
-        assert_eq!(p.set_month(12), Err(IMPOSSIBLE));
+        assert_eq!(p.set_month(1), Err(Error::Inconsistent));
+        assert_eq!(p.set_month(6), Err(Error::Inconsistent));
+        assert_eq!(p.set_month(8), Err(Error::Inconsistent));
+        assert_eq!(p.set_month(12), Err(Error::Inconsistent));
 
         let mut p = Parsed::new();
         assert!(p.set_month(8).is_ok());
-        assert_eq!(p.set_month(0x1_0000_0008), Err(OUT_OF_RANGE));
+        assert_eq!(p.set_month(0x1_0000_0008), Err(Error::OutOfRange));
 
         // hour
         let mut p = Parsed::new();
         assert!(p.set_hour(12).is_ok());
-        assert_eq!(p.set_hour(11), Err(IMPOSSIBLE));
-        assert_eq!(p.set_hour(13), Err(IMPOSSIBLE));
+        assert_eq!(p.set_hour(11), Err(Error::Inconsistent));
+        assert_eq!(p.set_hour(13), Err(Error::Inconsistent));
         assert!(p.set_hour(12).is_ok());
-        assert_eq!(p.set_ampm(false), Err(IMPOSSIBLE));
+        assert_eq!(p.set_ampm(false), Err(Error::Inconsistent));
         assert!(p.set_ampm(true).is_ok());
         assert!(p.set_hour12(12).is_ok());
-        assert_eq!(p.set_hour12(0), Err(OUT_OF_RANGE)); // requires canonical representation
-        assert_eq!(p.set_hour12(1), Err(IMPOSSIBLE));
-        assert_eq!(p.set_hour12(11), Err(IMPOSSIBLE));
+        assert_eq!(p.set_hour12(0), Err(Error::OutOfRange)); // requires canonical representation
+        assert_eq!(p.set_hour12(1), Err(Error::Inconsistent));
+        assert_eq!(p.set_hour12(11), Err(Error::Inconsistent));
 
         let mut p = Parsed::new();
         assert!(p.set_ampm(true).is_ok());
         assert!(p.set_hour12(7).is_ok());
-        assert_eq!(p.set_hour(7), Err(IMPOSSIBLE));
-        assert_eq!(p.set_hour(18), Err(IMPOSSIBLE));
+        assert_eq!(p.set_hour(7), Err(Error::Inconsistent));
+        assert_eq!(p.set_hour(18), Err(Error::Inconsistent));
         assert!(p.set_hour(19).is_ok());
 
         // timestamp
         let mut p = Parsed::new();
         assert!(p.set_timestamp(1_234_567_890).is_ok());
-        assert_eq!(p.set_timestamp(1_234_567_889), Err(IMPOSSIBLE));
-        assert_eq!(p.set_timestamp(1_234_567_891), Err(IMPOSSIBLE));
+        assert_eq!(p.set_timestamp(1_234_567_889), Err(Error::Inconsistent));
+        assert_eq!(p.set_timestamp(1_234_567_891), Err(Error::Inconsistent));
     }
 
     #[test]
     fn test_parsed_set_range() {
-        assert_eq!(Parsed::new().set_year(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_year(i32::MIN as i64 - 1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_year(i32::MIN as i64).is_ok());
         assert!(Parsed::new().set_year(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_year(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_year(i32::MAX as i64 + 1), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_year_div_100(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_year_div_100(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_year_div_100(0).is_ok());
         assert!(Parsed::new().set_year_div_100(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_year_div_100(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_year_div_100(i32::MAX as i64 + 1), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_year_mod_100(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_year_mod_100(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_year_mod_100(0).is_ok());
         assert!(Parsed::new().set_year_mod_100(99).is_ok());
-        assert_eq!(Parsed::new().set_year_mod_100(100), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_year_mod_100(100), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_isoyear(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoyear(i32::MIN as i64 - 1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_isoyear(i32::MIN as i64).is_ok());
         assert!(Parsed::new().set_isoyear(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_isoyear(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoyear(i32::MAX as i64 + 1), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_isoyear_div_100(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoyear_div_100(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_isoyear_div_100(0).is_ok());
         assert!(Parsed::new().set_isoyear_div_100(99).is_ok());
-        assert_eq!(Parsed::new().set_isoyear_div_100(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoyear_div_100(i32::MAX as i64 + 1), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_isoyear_mod_100(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoyear_mod_100(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_isoyear_mod_100(0).is_ok());
         assert!(Parsed::new().set_isoyear_mod_100(99).is_ok());
-        assert_eq!(Parsed::new().set_isoyear_mod_100(100), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoyear_mod_100(100), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_month(0), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_month(0), Err(Error::OutOfRange));
         assert!(Parsed::new().set_month(1).is_ok());
         assert!(Parsed::new().set_month(12).is_ok());
-        assert_eq!(Parsed::new().set_month(13), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_month(13), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_week_from_sun(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_week_from_sun(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_week_from_sun(0).is_ok());
         assert!(Parsed::new().set_week_from_sun(53).is_ok());
-        assert_eq!(Parsed::new().set_week_from_sun(54), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_week_from_sun(54), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_week_from_mon(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_week_from_mon(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_week_from_mon(0).is_ok());
         assert!(Parsed::new().set_week_from_mon(53).is_ok());
-        assert_eq!(Parsed::new().set_week_from_mon(54), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_week_from_mon(54), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_isoweek(0), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoweek(0), Err(Error::OutOfRange));
         assert!(Parsed::new().set_isoweek(1).is_ok());
         assert!(Parsed::new().set_isoweek(53).is_ok());
-        assert_eq!(Parsed::new().set_isoweek(54), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_isoweek(54), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_ordinal(0), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_ordinal(0), Err(Error::OutOfRange));
         assert!(Parsed::new().set_ordinal(1).is_ok());
         assert!(Parsed::new().set_ordinal(366).is_ok());
-        assert_eq!(Parsed::new().set_ordinal(367), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_ordinal(367), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_day(0), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_day(0), Err(Error::OutOfRange));
         assert!(Parsed::new().set_day(1).is_ok());
         assert!(Parsed::new().set_day(31).is_ok());
-        assert_eq!(Parsed::new().set_day(32), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_day(32), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_hour12(0), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_hour12(0), Err(Error::OutOfRange));
         assert!(Parsed::new().set_hour12(1).is_ok());
         assert!(Parsed::new().set_hour12(12).is_ok());
-        assert_eq!(Parsed::new().set_hour12(13), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_hour12(13), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_hour(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_hour(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_hour(0).is_ok());
         assert!(Parsed::new().set_hour(23).is_ok());
-        assert_eq!(Parsed::new().set_hour(24), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_hour(24), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_minute(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_minute(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_minute(0).is_ok());
         assert!(Parsed::new().set_minute(59).is_ok());
-        assert_eq!(Parsed::new().set_minute(60), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_minute(60), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_second(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_second(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_second(0).is_ok());
         assert!(Parsed::new().set_second(60).is_ok());
-        assert_eq!(Parsed::new().set_second(61), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_second(61), Err(Error::OutOfRange));
 
-        assert_eq!(Parsed::new().set_nanosecond(-1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_nanosecond(-1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_nanosecond(0).is_ok());
         assert!(Parsed::new().set_nanosecond(999_999_999).is_ok());
-        assert_eq!(Parsed::new().set_nanosecond(1_000_000_000), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_nanosecond(1_000_000_000), Err(Error::OutOfRange));
 
         assert!(Parsed::new().set_timestamp(i64::MIN).is_ok());
         assert!(Parsed::new().set_timestamp(i64::MAX).is_ok());
 
-        assert_eq!(Parsed::new().set_offset(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_offset(i32::MIN as i64 - 1), Err(Error::OutOfRange));
         assert!(Parsed::new().set_offset(i32::MIN as i64).is_ok());
         assert!(Parsed::new().set_offset(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_offset(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::new().set_offset(i32::MAX as i64 + 1), Err(Error::OutOfRange));
     }
 
     #[test]

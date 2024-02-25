@@ -34,10 +34,8 @@
 use alloc::boxed::Box;
 use core::fmt;
 use core::str::FromStr;
-#[cfg(feature = "std")]
-use std::error::Error;
 
-use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
+use crate::{Error, Month, ParseMonthError, ParseWeekdayError, Weekday};
 
 mod formatting;
 mod parsed;
@@ -442,10 +440,20 @@ impl fmt::Display for ParseError {
 }
 
 #[cfg(feature = "std")]
-impl Error for ParseError {
+impl std::error::Error for ParseError {
     #[allow(deprecated)]
     fn description(&self) -> &str {
         "parser error, see to_string() for details"
+    }
+}
+
+impl From<Error> for ParseError {
+    fn from(error: Error) -> Self {
+        match error {
+            Error::Inconsistent => ParseError(ParseErrorKind::Impossible),
+            Error::OutOfRange => ParseError(ParseErrorKind::OutOfRange),
+            _ => panic!("`Parsed::set_*` should only return `Inconsistent` or `OutOfRange`"),
+        }
     }
 }
 

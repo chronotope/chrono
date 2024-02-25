@@ -12,9 +12,9 @@ use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
 use super::{ParseError, ParseResult};
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
-use crate::{DateTime, FixedOffset, Weekday};
+use crate::{DateTime, Error, FixedOffset, Weekday};
 
-fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
+fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> Result<&mut Parsed, Error> {
     p.set_weekday(match v {
         0 => Weekday::Sun,
         1 => Weekday::Mon,
@@ -23,11 +23,11 @@ fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<
         4 => Weekday::Thu,
         5 => Weekday::Fri,
         6 => Weekday::Sat,
-        _ => return Err(OUT_OF_RANGE),
+        _ => return Err(Error::OutOfRange),
     })
 }
 
-fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
+fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> Result<&mut Parsed, Error> {
     p.set_weekday(match v {
         1 => Weekday::Mon,
         2 => Weekday::Tue,
@@ -36,7 +36,7 @@ fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<&m
         5 => Weekday::Fri,
         6 => Weekday::Sat,
         7 => Weekday::Sun,
-        _ => return Err(OUT_OF_RANGE),
+        _ => return Err(Error::OutOfRange),
     })
 }
 
@@ -339,7 +339,7 @@ where
 
             Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
-                type Setter = fn(&mut Parsed, i64) -> ParseResult<&mut Parsed>;
+                type Setter = fn(&mut Parsed, i64) -> Result<&mut Parsed, Error>;
 
                 let (width, signed, set): (usize, bool, Setter) = match *spec {
                     Year => (4, true, Parsed::set_year),
@@ -923,7 +923,7 @@ mod tests {
         let p = Parsed::new;
 
         // fixed: dot plus nanoseconds
-        check("", &[fixed(Nanosecond)], Ok(&mut p())); // no field set, but not an error
+        check::<Error>("", &[fixed(Nanosecond)], Ok(&mut p())); // no field set, but not an error
         check(".", &[fixed(Nanosecond)], Err(TOO_SHORT));
         check("4", &[fixed(Nanosecond)], Err(TOO_LONG)); // never consumes `4`
         check("4", &[fixed(Nanosecond), num(Second)], p().set_second(4));
@@ -1438,10 +1438,10 @@ mod tests {
         check("Y", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
 
         // TimezoneName
-        check("CEST", &[fixed(TimezoneName)], Ok(&mut p()));
-        check("cest", &[fixed(TimezoneName)], Ok(&mut p())); // lowercase
-        check("XXXXXXXX", &[fixed(TimezoneName)], Ok(&mut p())); // not a real timezone name
-        check("!!!!", &[fixed(TimezoneName)], Ok(&mut p())); // not a real timezone name!
+        check::<Error>("CEST", &[fixed(TimezoneName)], Ok(&mut p()));
+        check::<Error>("cest", &[fixed(TimezoneName)], Ok(&mut p())); // lowercase
+        check::<Error>("XXXXXXXX", &[fixed(TimezoneName)], Ok(&mut p())); // not a real timezone name
+        check::<Error>("!!!!", &[fixed(TimezoneName)], Ok(&mut p())); // not a real timezone name!
         check("CEST 5", &[fixed(TimezoneName), Literal(" "), num(Numeric::Day)], p().set_day(5));
         check("CEST ", &[fixed(TimezoneName)], Err(TOO_LONG));
         check(" CEST", &[fixed(TimezoneName)], Err(TOO_LONG));
@@ -1575,11 +1575,13 @@ mod tests {
     }
 
     #[track_caller]
-    fn check(s: &str, items: &[Item], expected: ParseResult<&mut Parsed>) {
+    fn check<E>(s: &str, items: &[Item], expected: Result<&mut Parsed, E>)
+        where ParseError: From<E>,
+    {
         let mut parsed = Parsed::new();
         let result = parse(&mut parsed, s, items.iter());
         let parsed = result.map(|_| parsed);
-        assert_eq!(parsed.as_ref(), expected.as_deref());
+        assert_eq!(parsed.as_ref(), expected.map_err(|e| e.into()).as_deref());
     }
 
     #[test]
