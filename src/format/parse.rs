@@ -250,7 +250,7 @@ where
     match parse_internal(parsed, s, items) {
         Ok("") => Ok(()),
         Ok(_) => Err(TOO_LONG), // if there are trailing chars it is an error
-        Err((_, e)) => Err(e),
+        Err(e) => Err(e),
     }
 }
 
@@ -277,14 +277,14 @@ where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
 {
-    parse_internal(parsed, s, items).map_err(|(_s, e)| e)
+    parse_internal(parsed, s, items)
 }
 
 fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
     items: I,
-) -> Result<&'b str, (&'b str, ParseError)>
+) -> Result<&'b str, ParseError>
 where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
@@ -296,7 +296,7 @@ where
                     s = s_;
                     v
                 }
-                Err(e) => return Err((s, e)),
+                Err(e) => return Err(e),
             }
         }};
     }
@@ -305,10 +305,10 @@ where
         match *item.borrow() {
             Item::Literal(prefix) => {
                 if s.len() < prefix.len() {
-                    return Err((s, TOO_SHORT));
+                    return Err(TOO_SHORT);
                 }
                 if !s.starts_with(prefix) {
-                    return Err((s, INVALID));
+                    return Err(INVALID);
                 }
                 s = &s[prefix.len()..];
             }
@@ -316,10 +316,10 @@ where
             #[cfg(feature = "alloc")]
             Item::OwnedLiteral(ref prefix) => {
                 if s.len() < prefix.len() {
-                    return Err((s, TOO_SHORT));
+                    return Err(TOO_SHORT);
                 }
                 if !s.starts_with(&prefix[..]) {
-                    return Err((s, INVALID));
+                    return Err(INVALID);
                 }
                 s = &s[prefix.len()..];
             }
@@ -367,7 +367,7 @@ where
                 let v = if signed {
                     if s.starts_with('-') {
                         let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
-                        0i64.checked_sub(v).ok_or((s, OUT_OF_RANGE))?
+                        0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
                     } else if s.starts_with('+') {
                         try_consume!(scan::number(&s[1..], 1, usize::MAX))
                     } else {
@@ -377,7 +377,7 @@ where
                 } else {
                     try_consume!(scan::number(s, 1, width))
                 };
-                set(parsed, v).map_err(|e| (s, e))?;
+                set(parsed, v)?;
             }
 
             Item::Fixed(ref spec) => {
@@ -386,66 +386,66 @@ where
                 match spec {
                     &ShortMonthName => {
                         let month0 = try_consume!(scan::short_month0(s));
-                        parsed.set_month(i64::from(month0) + 1).map_err(|e| (s, e))?;
+                        parsed.set_month(i64::from(month0) + 1)?;
                     }
 
                     &LongMonthName => {
                         let month0 = try_consume!(scan::short_or_long_month0(s));
-                        parsed.set_month(i64::from(month0) + 1).map_err(|e| (s, e))?;
+                        parsed.set_month(i64::from(month0) + 1)?;
                     }
 
                     &ShortWeekdayName => {
                         let weekday = try_consume!(scan::short_weekday(s));
-                        parsed.set_weekday(weekday).map_err(|e| (s, e))?;
+                        parsed.set_weekday(weekday)?;
                     }
 
                     &LongWeekdayName => {
                         let weekday = try_consume!(scan::short_or_long_weekday(s));
-                        parsed.set_weekday(weekday).map_err(|e| (s, e))?;
+                        parsed.set_weekday(weekday)?;
                     }
 
                     &LowerAmPm | &UpperAmPm => {
                         if s.len() < 2 {
-                            return Err((s, TOO_SHORT));
+                            return Err(TOO_SHORT);
                         }
                         let ampm = match (s.as_bytes()[0] | 32, s.as_bytes()[1] | 32) {
                             (b'a', b'm') => false,
                             (b'p', b'm') => true,
-                            _ => return Err((s, INVALID)),
+                            _ => return Err(INVALID),
                         };
-                        parsed.set_ampm(ampm).map_err(|e| (s, e))?;
+                        parsed.set_ampm(ampm)?;
                         s = &s[2..];
                     }
 
                     &Nanosecond | &Nanosecond3 | &Nanosecond6 | &Nanosecond9 => {
                         if s.starts_with('.') {
                             let nano = try_consume!(scan::nanosecond(&s[1..]));
-                            parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
+                            parsed.set_nanosecond(nano)?;
                         }
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
                         if s.len() < 3 {
-                            return Err((s, TOO_SHORT));
+                            return Err(TOO_SHORT);
                         }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 3));
-                        parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
+                        parsed.set_nanosecond(nano)?;
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
                         if s.len() < 6 {
-                            return Err((s, TOO_SHORT));
+                            return Err(TOO_SHORT);
                         }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 6));
-                        parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
+                        parsed.set_nanosecond(nano)?;
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
                         if s.len() < 9 {
-                            return Err((s, TOO_SHORT));
+                            return Err(TOO_SHORT);
                         }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 9));
-                        parsed.set_nanosecond(nano).map_err(|e| (s, e))?;
+                        parsed.set_nanosecond(nano)?;
                     }
 
                     &TimezoneName => {
@@ -463,7 +463,7 @@ where
                             false,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                        parsed.set_offset(i64::from(offset))?;
                     }
 
                     &TimezoneOffsetColonZ | &TimezoneOffsetZ => {
@@ -474,7 +474,7 @@ where
                             false,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                        parsed.set_offset(i64::from(offset))?;
                     }
                     &Internal(InternalFixed {
                         val: InternalInternal::TimezoneOffsetPermissive,
@@ -486,7 +486,7 @@ where
                             true,
                             true,
                         ));
-                        parsed.set_offset(i64::from(offset)).map_err(|e| (s, e))?;
+                        parsed.set_offset(i64::from(offset))?;
                     }
 
                     &RFC2822 => try_consume!(parse_rfc2822(parsed, s)),
@@ -501,7 +501,7 @@ where
             }
 
             Item::Error => {
-                return Err((s, BAD_FORMAT));
+                return Err(BAD_FORMAT);
             }
         }
     }
@@ -564,7 +564,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         Item::Space(""),
     ];
 
-    s = parse_internal(parsed, s, DATE_ITEMS.iter()).map_err(|(_s, e)| e)?;
+    s = parse_internal(parsed, s, DATE_ITEMS.iter())?;
 
     s = match s.as_bytes().first() {
         Some(&b't' | &b'T' | &b' ') => &s[1..],
@@ -572,7 +572,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
         None => return Err(TOO_SHORT),
     };
 
-    s = parse_internal(parsed, s, TIME_ITEMS.iter()).map_err(|(_s, e)| e)?;
+    s = parse_internal(parsed, s, TIME_ITEMS.iter())?;
     s = s.trim_start();
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
