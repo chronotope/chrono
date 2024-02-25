@@ -724,12 +724,12 @@ impl Parsed {
     /// - `OUT_OF_RANGE`
     ///   - if the value would be outside the range of a [`NaiveDate`].
     ///   - if the date does not exist.
-    pub fn to_naive_date(&self) -> ParseResult<NaiveDate> {
+    pub fn to_naive_date(&self) -> Result<NaiveDate, Error> {
         fn resolve_year(
             y: Option<i32>,
             q: Option<i32>,
             r: Option<i32>,
-        ) -> ParseResult<Option<i32>> {
+        ) -> Result<Option<i32>, Error> {
             match (y, q, r) {
                 // if there is no further information, simply return the given full year.
                 // this is a common case, so let's avoid division here.
@@ -741,14 +741,14 @@ impl Parsed {
                 // we should filter a negative full year first.
                 (Some(y), q, r) => {
                     if y < 0 {
-                        return Err(IMPOSSIBLE);
+                        return Err(Error::Inconsistent);
                     }
                     let q_ = y / 100;
                     let r_ = y % 100;
                     if q.unwrap_or(q_) == q_ && r.unwrap_or(r_) == r_ {
                         Ok(Some(y))
                     } else {
-                        Err(IMPOSSIBLE)
+                        Err(Error::Inconsistent)
                     }
                 }
 
@@ -756,7 +756,7 @@ impl Parsed {
                 // reconstruct the full year. make sure that the result is always positive.
                 (None, Some(q), Some(r)) => {
                     let y = q.checked_mul(100).and_then(|v| v.checked_add(r));
-                    Ok(Some(y.ok_or(OUT_OF_RANGE)?))
+                    Ok(Some(y.ok_or(Error::OutOfRange)?))
                 }
 
                 // we only have modulo. try to interpret a modulo as a conventional two-digit year.
@@ -764,7 +764,7 @@ impl Parsed {
                 (None, None, Some(r)) => Ok(Some(r + if r < 70 { 2000 } else { 1900 })),
 
                 // otherwise it is an out-of-bound or insufficient condition.
-                (None, Some(_), None) => Err(NOT_ENOUGH),
+                (None, Some(_), None) => Err(Error::Ambiguous),
             }
         }
 
@@ -822,13 +822,13 @@ impl Parsed {
         let (verified, parsed_date) = match (given_year, given_isoyear, self) {
             (Some(year), _, &Parsed { month: Some(month), day: Some(day), .. }) => {
                 // year, month, day
-                let date = NaiveDate::from_ymd(year, month, day).map_err(|_| OUT_OF_RANGE)?;
+                let date = NaiveDate::from_ymd(year, month, day)?;
                 (verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
             (Some(year), _, &Parsed { ordinal: Some(ordinal), .. }) => {
                 // year, day of the year
-                let date = NaiveDate::from_yo(year, ordinal).ok_or(OUT_OF_RANGE)?;
+                let date = NaiveDate::from_yo(year, ordinal).ok_or(Error::OutOfRange)?;
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
             }
 
@@ -838,7 +838,7 @@ impl Parsed {
                 &Parsed { week_from_sun: Some(week_from_sun), weekday: Some(weekday), .. },
             ) => {
                 // year, week (starting at 1st Sunday), day of the week
-                let newyear = NaiveDate::from_yo(year, 1).ok_or(OUT_OF_RANGE)?;
+                let newyear = NaiveDate::from_yo(year, 1).ok_or(Error::OutOfRange)?;
                 let firstweek = match newyear.weekday() {
                     Weekday::Sun => 0,
                     Weekday::Mon => 6,
@@ -855,9 +855,9 @@ impl Parsed {
                     + weekday.num_days_from_sunday() as i32;
                 let date = newyear
                     .checked_add_signed(TimeDelta::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
+                    .ok_or(Error::OutOfRange)?;
                 if date.year() != year {
-                    return Err(OUT_OF_RANGE);
+                    return Err(Error::DoesNotExist);
                 } // early exit for correct error
 
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
@@ -869,7 +869,7 @@ impl Parsed {
                 &Parsed { week_from_mon: Some(week_from_mon), weekday: Some(weekday), .. },
             ) => {
                 // year, week (starting at 1st Monday), day of the week
-                let newyear = NaiveDate::from_yo(year, 1).ok_or(OUT_OF_RANGE)?;
+                let newyear = NaiveDate::from_yo(year, 1).ok_or(Error::OutOfRange)?;
                 let firstweek = match newyear.weekday() {
                     Weekday::Sun => 1,
                     Weekday::Mon => 0,
@@ -886,9 +886,9 @@ impl Parsed {
                     + weekday.num_days_from_monday() as i32;
                 let date = newyear
                     .checked_add_signed(TimeDelta::days(i64::from(ndays)))
-                    .ok_or(OUT_OF_RANGE)?;
+                    .ok_or(Error::OutOfRange)?;
                 if date.year() != year {
-                    return Err(OUT_OF_RANGE);
+                    return Err(Error::DoesNotExist);
                 } // early exit for correct error
 
                 (verify_ymd(date) && verify_isoweekdate(date) && verify_ordinal(date), date)
@@ -896,18 +896,17 @@ impl Parsed {
 
             (_, Some(isoyear), &Parsed { isoweek: Some(isoweek), weekday: Some(weekday), .. }) => {
                 // ISO year, week, day of the week
-                let date = NaiveDate::from_isoywd(isoyear, isoweek, weekday);
-                let date = date.ok_or(OUT_OF_RANGE)?;
+                let date = NaiveDate::from_isoywd(isoyear, isoweek, weekday).ok_or(Error::OutOfRange)?;
                 (verify_ymd(date) && verify_ordinal(date), date)
             }
 
-            (_, _, _) => return Err(NOT_ENOUGH),
+            (_, _, _) => return Err(Error::Ambiguous),
         };
 
         if verified {
             Ok(parsed_date)
         } else {
-            Err(IMPOSSIBLE)
+            Err(Error::Inconsistent)
         }
     }
 
@@ -976,7 +975,7 @@ impl Parsed {
                 if given_timestamp != timestamp
                     && !(datetime.nanosecond() >= 1_000_000_000 && given_timestamp == timestamp + 1)
                 {
-                    return Err(IMPOSSIBLE);
+                    return Err(Error::Inconsistent);
                 }
             }
 
@@ -1014,16 +1013,16 @@ impl Parsed {
                         datetime -= TimeDelta::seconds(1);
                     }
                     // otherwise it is impossible.
-                    _ => return Err(IMPOSSIBLE),
+                    _ => return Err(Error::Inconsistent),
                 }
             // ...and we have the correct candidates for other fields.
             } else {
-                parsed.set_second(i64::from(datetime.second())).map_err(|_| IMPOSSIBLE)?;
+                parsed.set_second(i64::from(datetime.second()))?;
             }
-            parsed.set_year(i64::from(datetime.year())).map_err(|_| IMPOSSIBLE)?;
-            parsed.set_ordinal(i64::from(datetime.ordinal())).map_err(|_| IMPOSSIBLE)?; // more efficient than ymd
-            parsed.set_hour(i64::from(datetime.hour())).map_err(|_| IMPOSSIBLE)?;
-            parsed.set_minute(i64::from(datetime.minute())).map_err(|_| IMPOSSIBLE)?;
+            parsed.set_year(i64::from(datetime.year()))?;
+            parsed.set_ordinal(i64::from(datetime.ordinal()))?; // more efficient than ymd
+            parsed.set_hour(i64::from(datetime.hour()))?;
+            parsed.set_minute(i64::from(datetime.minute()))?;
 
             // validate other fields (e.g. week) and return
             let date = parsed.to_naive_date()?;

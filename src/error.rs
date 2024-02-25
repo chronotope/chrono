@@ -5,6 +5,12 @@ use core::fmt;
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Error {
+    /// There is not enough information to create a date/time.
+    ///
+    /// An example is parsing a string with not enough date/time fields, or the result of a
+    /// time that is ambiguous during a time zone transition (due to for example DST).
+    Ambiguous,
+
     /// A date or datetime does not exist.
     ///
     /// Examples are:
@@ -35,6 +41,7 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Error::Ambiguous => write!(f, "not enough information for a unique date and time"),
             Error::DoesNotExist => write!(f, "date or datetime does not exist"),
             Error::Inconsistent => {
                 write!(f, "some of the date or time components are not consistent with each other")
