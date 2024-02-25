@@ -140,7 +140,7 @@
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
 //! assert_eq!(dt, NaiveDate::from_yo(2014, 189).unwrap().and_hms(9, 10, 11).unwrap().and_utc());
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue)?.and_hms(9, 10, 11).unwrap().and_utc());
+//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue).unwrap().and_hms(9, 10, 11).unwrap().and_utc());
 //!
 //! let dt = NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(9, 10, 11, 12).unwrap().and_local_timezone(Utc).unwrap(); // `2014-07-08T09:10:11.012Z`
 //! assert_eq!(dt, NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_micro(9, 10, 11, 12_000).unwrap().and_local_timezone(Utc).unwrap());
