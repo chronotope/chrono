@@ -11,7 +11,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{LocalResult, Offset, TimeZone};
 use crate::format::{scan, OUT_OF_RANGE};
-use crate::{NaiveDateTime, ParseError};
+use crate::{Error, NaiveDateTime, ParseError};
 
 /// The time zone with fixed offset, from UTC-23:59:59 to UTC+23:59:59.
 ///
@@ -35,7 +35,9 @@ impl FixedOffset {
     /// Makes a new `FixedOffset` for the Eastern Hemisphere with given timezone difference.
     /// The negative `secs` means the Western Hemisphere.
     ///
-    /// Returns `None` on the out-of-bound `secs`.
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`] on the out-of-bound `secs`.
     ///
     /// # Example
     ///
@@ -49,19 +51,19 @@ impl FixedOffset {
     ///     .unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
     /// ```
-    #[must_use]
-    pub const fn east(secs: i32) -> Option<FixedOffset> {
-        if -86_400 < secs && secs < 86_400 {
-            Some(FixedOffset { local_minus_utc: secs })
-        } else {
-            None
+    pub const fn east(secs: i32) -> Result<FixedOffset, Error> {
+        match -86_400 < secs && secs < 86_400 {
+            true => Ok(FixedOffset { local_minus_utc: secs }),
+            false => Err(Error::OutOfRange),
         }
     }
 
     /// Makes a new `FixedOffset` for the Western Hemisphere with given timezone difference.
     /// The negative `secs` means the Eastern Hemisphere.
     ///
-    /// Returns `None` on the out-of-bound `secs`.
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`] on the out-of-bound `secs`.
     ///
     /// # Example
     ///
@@ -75,12 +77,10 @@ impl FixedOffset {
     ///     .unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
     /// ```
-    #[must_use]
-    pub const fn west(secs: i32) -> Option<FixedOffset> {
-        if -86_400 < secs && secs < 86_400 {
-            Some(FixedOffset { local_minus_utc: -secs })
-        } else {
-            None
+    pub const fn west(secs: i32) -> Result<FixedOffset, Error> {
+        match -86_400 < secs && secs < 86_400 {
+            true => Ok(FixedOffset { local_minus_utc: -secs }),
+            false => Err(Error::OutOfRange),
         }
     }
 
@@ -102,7 +102,7 @@ impl FromStr for FixedOffset {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (_, offset) = scan::timezone_offset(s, scan::consume_colon_maybe, false, false, true)?;
-        Self::east(offset).ok_or(OUT_OF_RANGE)
+        Self::east(offset).map_err(|_| OUT_OF_RANGE)
     }
 }
 
@@ -154,9 +154,7 @@ impl fmt::Display for FixedOffset {
 impl arbitrary::Arbitrary<'_> for FixedOffset {
     fn arbitrary(u: &mut arbitrary::Unstructured) -> arbitrary::Result<FixedOffset> {
         let secs = u.int_in_range(-86_399..=86_399)?;
-        let fixed_offset = FixedOffset::east(secs)
-            .expect("Could not generate a valid chrono::FixedOffset. It looks like implementation of Arbitrary for FixedOffset is erroneous.");
-        Ok(fixed_offset)
+        Ok(FixedOffset::east(secs).unwrap())
     }
 }
 

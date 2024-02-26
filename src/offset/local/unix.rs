@@ -156,8 +156,8 @@ impl Cache {
                 .offset();
 
             return match FixedOffset::east(offset) {
-                Some(offset) => LocalResult::Single(offset),
-                None => LocalResult::None,
+                Ok(offset) => LocalResult::Single(offset),
+                Err(_) => LocalResult::None,
             };
         }
 

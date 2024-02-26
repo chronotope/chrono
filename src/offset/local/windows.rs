@@ -142,8 +142,8 @@ impl TzInfo {
             tz_info.assume_init()
         };
         Some(TzInfo {
-            std_offset: FixedOffset::west((tz_info.Bias + tz_info.StandardBias) * 60)?,
-            dst_offset: FixedOffset::west((tz_info.Bias + tz_info.DaylightBias) * 60)?,
+            std_offset: FixedOffset::west((tz_info.Bias + tz_info.StandardBias) * 60).ok()?,
+            dst_offset: FixedOffset::west((tz_info.Bias + tz_info.DaylightBias) * 60).ok()?,
             std_transition: system_time_from_naive_date_time(tz_info.StandardDate, year),
             dst_transition: system_time_from_naive_date_time(tz_info.DaylightDate, year),
         })
