@@ -9,7 +9,6 @@
 // except according to those terms.
 
 use std::cmp::Ordering;
-use std::convert::TryFrom;
 use std::mem::MaybeUninit;
 use std::ptr;
 
@@ -144,39 +143,63 @@ impl TzInfo {
         Some(TzInfo {
             std_offset: FixedOffset::west_opt((tz_info.Bias + tz_info.StandardBias) * 60)?,
             dst_offset: FixedOffset::west_opt((tz_info.Bias + tz_info.DaylightBias) * 60)?,
-            std_transition: system_time_from_naive_date_time(tz_info.StandardDate, year),
-            dst_transition: system_time_from_naive_date_time(tz_info.DaylightDate, year),
+            std_transition: naive_date_time_from_system_time(tz_info.StandardDate, year).ok()?,
+            dst_transition: naive_date_time_from_system_time(tz_info.DaylightDate, year).ok()?,
         })
     }
 }
 
-fn system_time_from_naive_date_time(st: SYSTEMTIME, year: i32) -> Option<NaiveDateTime> {
+/// Resolve a `SYSTEMTIME` object to an `Option<NaiveDateTime>`.
+///
+/// A `SYSTEMTIME` within a `TIME_ZONE_INFORMATION` struct can be zero to indicate there is no
+/// transition.
+/// If it has year, month and day values it is a concrete date.
+/// If the year is missing the `SYSTEMTIME` is a rule, which this method resolves for the provided
+/// year. A rule has a month, weekday, and nth weekday of the month as components.
+///
+/// Returns `Err` if any of the values is invalid, which should never happen.
+fn naive_date_time_from_system_time(
+    st: SYSTEMTIME,
+    year: i32,
+) -> Result<Option<NaiveDateTime>, ()> {
     if st.wYear == 0 && st.wMonth == 0 {
-        return None; // No DST transitions for this year in this timezone.
+        return Ok(None);
     }
     let time = NaiveTime::from_hms_milli_opt(
         st.wHour as u32,
         st.wMinute as u32,
         st.wSecond as u32,
         st.wMilliseconds as u32,
-    )?;
-    // In Chrono's Weekday, Monday is 0 whereas in SYSTEMTIME Monday is 1 and Sunday is 0.
-    // Therefore we move back one day after converting the u16 value to a Weekday.
-    let day_of_week = Weekday::try_from(u8::try_from(st.wDayOfWeek).ok()?).ok()?.pred();
+    )
+    .ok_or(())?;
+
     if st.wYear != 0 {
-        return NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32)
-            .map(|d| d.and_time(time));
+        // We have a concrete date.
+        let date =
+            NaiveDate::from_ymd_opt(st.wYear as i32, st.wMonth as u32, st.wDay as u32).ok_or(())?;
+        return Ok(Some(date.and_time(time)));
     }
-    let date = if let Some(date) =
-        NaiveDate::from_weekday_of_month_opt(year, st.wMonth as u32, day_of_week, st.wDay as u8)
-    {
-        date
-    } else if st.wDay == 5 {
-        NaiveDate::from_weekday_of_month_opt(year, st.wMonth as u32, day_of_week, 4)?
-    } else {
-        return None;
+
+    // Resolve a rule with month, weekday, and nth weekday of the month to a date in the current
+    // year.
+    let weekday = match st.wDayOfWeek {
+        0 => Weekday::Sun,
+        1 => Weekday::Mon,
+        2 => Weekday::Tue,
+        3 => Weekday::Wed,
+        4 => Weekday::Thu,
+        5 => Weekday::Fri,
+        6 => Weekday::Sat,
+        _ => return Err(()),
     };
-    Some(date.and_time(time))
+    let nth_day = match st.wDay {
+        1..=5 => st.wDay as u8,
+        _ => return Err(()),
+    };
+    let date = NaiveDate::from_weekday_of_month_opt(year, st.wMonth as u32, weekday, nth_day)
+        .or_else(|| NaiveDate::from_weekday_of_month_opt(year, st.wMonth as u32, weekday, 4))
+        .ok_or(())?; // `st.wMonth` must be invalid
+    Ok(Some(date.and_time(time)))
 }
 
 #[cfg(test)]
