@@ -926,7 +926,7 @@ impl Parsed {
     /// - `OUT_OF_RANGE` if the offset is out of range for a `FixedOffset`.
     /// - `NOT_ENOUGH` if the offset field is not set.
     pub fn to_fixed_offset(&self) -> ParseResult<FixedOffset> {
-        FixedOffset::east(self.offset.ok_or(NOT_ENOUGH)?).ok_or(OUT_OF_RANGE)
+        FixedOffset::east(self.offset.ok_or(NOT_ENOUGH)?).map_err(|_| OUT_OF_RANGE)
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields.
@@ -955,7 +955,7 @@ impl Parsed {
             (None, None) => return Err(NOT_ENOUGH),
         };
         let datetime = self.to_naive_datetime_with_offset(offset)?;
-        let offset = FixedOffset::east(offset).ok_or(OUT_OF_RANGE)?;
+        let offset = FixedOffset::east(offset).map_err(|_| OUT_OF_RANGE)?;
 
         match offset.from_local_datetime(&datetime) {
             LocalResult::None => Err(IMPOSSIBLE),
