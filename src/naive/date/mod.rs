@@ -314,33 +314,29 @@ impl NaiveDate {
     pub const fn from_isoywd_opt(year: i32, week: u32, weekday: Weekday) -> Option<NaiveDate> {
         let flags = YearFlags::from_year(year);
         let nweeks = flags.nisoweeks();
-        if 1 <= week && week <= nweeks {
-            // ordinal = week ordinal - delta
-            let weekord = week * 7 + weekday as u32;
-            let delta = flags.isoweek_delta();
-            if weekord <= delta {
-                // ordinal < 1, previous year
-                let prevflags = YearFlags::from_year(year - 1);
-                NaiveDate::from_ordinal_and_flags(
-                    year - 1,
-                    weekord + prevflags.ndays() - delta,
-                    prevflags,
-                )
-            } else {
-                let ordinal = weekord - delta;
-                let ndays = flags.ndays();
-                if ordinal <= ndays {
-                    // this year
-                    NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
-                } else {
-                    // ordinal > ndays, next year
-                    let nextflags = YearFlags::from_year(year + 1);
-                    NaiveDate::from_ordinal_and_flags(year + 1, ordinal - ndays, nextflags)
-                }
-            }
-        } else {
-            None
+        if week == 0 || week > nweeks {
+            return None;
         }
+        // ordinal = week ordinal - delta
+        let weekord = week * 7 + weekday as u32;
+        let delta = flags.isoweek_delta();
+        let (year, ordinal, flags) = if weekord <= delta {
+            // ordinal < 1, previous year
+            let prevflags = YearFlags::from_year(year - 1);
+            (year - 1, weekord + prevflags.ndays() - delta, prevflags)
+        } else {
+            let ordinal = weekord - delta;
+            let ndays = flags.ndays();
+            if ordinal <= ndays {
+                // this year
+                (year, ordinal, flags)
+            } else {
+                // ordinal > ndays, next year
+                let nextflags = YearFlags::from_year(year + 1);
+                (year + 1, ordinal - ndays, nextflags)
+            }
+        };
+        NaiveDate::from_ordinal_and_flags(year, ordinal, flags)
     }
 
     /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
