@@ -629,7 +629,59 @@ pub use naive::__BenchYearFlags;
 /// [2]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
 pub mod serde {
+    use crate::offset::LocalResult;
+    use core::fmt;
+    use serde::de;
+
     pub use super::datetime::serde::*;
+
+    // lik? function to convert a LocalResult into a serde-ish Result
+    pub(crate) fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
+    where
+        E: de::Error,
+        V: fmt::Display,
+        T: fmt::Display,
+    {
+        match me {
+            LocalResult::None => Err(E::custom(ne_timestamp(ts))),
+            LocalResult::Ambiguous(min, max) => {
+                Err(E::custom(SerdeError::Ambiguous { timestamp: ts, min, max }))
+            }
+            LocalResult::Single(val) => Ok(val),
+        }
+    }
+
+    pub(crate) enum SerdeError<V: fmt::Display, D: fmt::Display> {
+        NonExistent { timestamp: V },
+        Ambiguous { timestamp: V, min: D, max: D },
+    }
+
+    /// Construct a [`SerdeError::NonExistent`]
+    pub(crate) fn ne_timestamp<T: fmt::Display>(ts: T) -> SerdeError<T, u8> {
+        SerdeError::NonExistent::<T, u8> { timestamp: ts }
+    }
+
+    impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "ChronoSerdeError({})", self)
+        }
+    }
+
+    // impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
+    impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                SerdeError::NonExistent { timestamp } => {
+                    write!(f, "value is not a legal timestamp: {}", timestamp)
+                }
+                SerdeError::Ambiguous { timestamp, min, max } => write!(
+                    f,
+                    "value is an ambiguous timestamp: {}, could be either of {}, {}",
+                    timestamp, min, max
+                ),
+            }
+        }
+    }
 }
 
 /// Zero-copy serialization/deserialization with rkyv.
