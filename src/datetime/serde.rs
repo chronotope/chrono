@@ -3,7 +3,6 @@ use serde::{de, ser};
 
 use super::DateTime;
 use crate::format::{write_rfc3339, SecondsFormat};
-use crate::naive::datetime::serde::serde_from;
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -148,10 +147,10 @@ pub mod ts_nanoseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use crate::offset::TimeZone;
-    use crate::{DateTime, Utc};
+    use crate::serde::serde_from;
+    use crate::{DateTime, TimeZone, Utc};
 
-    use super::{serde_from, NanoSecondsTimestampVisitor};
+    use super::NanoSecondsTimestampVisitor;
 
     /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
     ///
@@ -448,9 +447,10 @@ pub mod ts_microseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::{serde_from, MicroSecondsTimestampVisitor};
-    use crate::offset::TimeZone;
-    use crate::{DateTime, Utc};
+    use crate::serde::serde_from;
+    use crate::{DateTime, TimeZone, Utc};
+
+    use super::MicroSecondsTimestampVisitor;
 
     /// Serialize a UTC datetime into an integer number of microseconds since the epoch
     ///
@@ -726,9 +726,10 @@ pub mod ts_milliseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::{serde_from, MilliSecondsTimestampVisitor};
-    use crate::offset::TimeZone;
-    use crate::{DateTime, Utc};
+    use crate::serde::serde_from;
+    use crate::{DateTime, TimeZone, Utc};
+
+    use super::MilliSecondsTimestampVisitor;
 
     /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
     ///
@@ -1005,8 +1006,10 @@ pub mod ts_seconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::{serde_from, SecondsTimestampVisitor};
+    use crate::serde::serde_from;
     use crate::{DateTime, LocalResult, TimeZone, Utc};
+
+    use super::SecondsTimestampVisitor;
 
     /// Serialize a UTC datetime into an integer number of seconds since the epoch
     ///
