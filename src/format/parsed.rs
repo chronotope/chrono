@@ -125,89 +125,47 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 #[allow(clippy::manual_non_exhaustive)]
 #[derive(Clone, PartialEq, Eq, Debug, Default, Hash)]
 pub struct Parsed {
-    /// Year.
-    ///
-    /// This can be negative, unlike [`year_div_100`](#structfield.year_div_100)
-    /// and [`year_mod_100`](#structfield.year_mod_100) fields.
+    #[doc(hidden)]
     pub year: Option<i32>,
-
-    /// Year divided by 100. Implies that the year is >= 1 BCE when set.
-    ///
-    /// Due to the common usage, if this field is missing but
-    /// [`year_mod_100`](#structfield.year_mod_100) is present,
-    /// it is inferred to 19 when `year_mod_100 >= 70` and 20 otherwise.
+    #[doc(hidden)]
     pub year_div_100: Option<i32>,
-
-    /// Year modulo 100. Implies that the year is >= 1 BCE when set.
+    #[doc(hidden)]
     pub year_mod_100: Option<i32>,
-
-    /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date).
-    ///
-    /// This can be negative, unlike [`isoyear_div_100`](#structfield.isoyear_div_100) and
-    /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) fields.
+    #[doc(hidden)]
     pub isoyear: Option<i32>,
-
-    /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), divided by 100.
-    /// Implies that the year is >= 1 BCE when set.
-    ///
-    /// Due to the common usage, if this field is missing but
-    /// [`isoyear_mod_100`](#structfield.isoyear_mod_100) is present,
-    /// it is inferred to 19 when `isoyear_mod_100 >= 70` and 20 otherwise.
+    #[doc(hidden)]
     pub isoyear_div_100: Option<i32>,
-
-    /// Year in the [ISO week date](../naive/struct.NaiveDate.html#week-date), modulo 100.
-    /// Implies that the year is >= 1 BCE when set.
+    #[doc(hidden)]
     pub isoyear_mod_100: Option<i32>,
-
-    /// Month (1--12).
+    #[doc(hidden)]
     pub month: Option<u32>,
-
-    /// Week number, where the week 1 starts at the first Sunday of January
-    /// (0--53, 1--53 or 1--52 depending on the year).
+    #[doc(hidden)]
     pub week_from_sun: Option<u32>,
-
-    /// Week number, where the week 1 starts at the first Monday of January
-    /// (0--53, 1--53 or 1--52 depending on the year).
+    #[doc(hidden)]
     pub week_from_mon: Option<u32>,
-
-    /// [ISO week number](../naive/struct.NaiveDate.html#week-date)
-    /// (1--52 or 1--53 depending on the year).
+    #[doc(hidden)]
     pub isoweek: Option<u32>,
-
-    /// Day of the week.
+    #[doc(hidden)]
     pub weekday: Option<Weekday>,
-
-    /// Day of the year (1--365 or 1--366 depending on the year).
+    #[doc(hidden)]
     pub ordinal: Option<u32>,
-
-    /// Day of the month (1--28, 1--29, 1--30 or 1--31 depending on the month).
+    #[doc(hidden)]
     pub day: Option<u32>,
-
-    /// Hour number divided by 12 (0--1). 0 indicates AM and 1 indicates PM.
+    #[doc(hidden)]
     pub hour_div_12: Option<u32>,
-
-    /// Hour number modulo 12 (0--11).
+    #[doc(hidden)]
     pub hour_mod_12: Option<u32>,
-
-    /// Minute number (0--59).
+    #[doc(hidden)]
     pub minute: Option<u32>,
-
-    /// Second number (0--60, accounting for leap seconds).
+    #[doc(hidden)]
     pub second: Option<u32>,
-
-    /// The number of nanoseconds since the whole second (0--999,999,999).
+    #[doc(hidden)]
     pub nanosecond: Option<u32>,
-
-    /// The number of non-leap seconds since the midnight UTC on January 1, 1970.
-    ///
-    /// This can be off by one if [`second`](#structfield.second) is 60 (a leap second).
+    #[doc(hidden)]
     pub timestamp: Option<i64>,
-
-    /// Offset from the local time to UTC, in seconds.
+    #[doc(hidden)]
     pub offset: Option<i32>,
-
-    /// A dummy field to make this type not fully destructible (required for API stability).
-    // TODO: Change this to `#[non_exhaustive]` (on the enum) with the next breaking release.
+    #[doc(hidden)]
     _dummy: (),
 }
 
