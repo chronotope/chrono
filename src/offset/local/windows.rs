@@ -140,9 +140,17 @@ impl TzInfo {
             }
             tz_info.assume_init()
         };
+        let std_offset = (tz_info.Bias)
+            .checked_add(tz_info.StandardBias)
+            .and_then(|o| o.checked_mul(60))
+            .and_then(FixedOffset::west_opt)?;
+        let dst_offset = (tz_info.Bias)
+            .checked_add(tz_info.DaylightBias)
+            .and_then(|o| o.checked_mul(60))
+            .and_then(FixedOffset::west_opt)?;
         Some(TzInfo {
-            std_offset: FixedOffset::west_opt((tz_info.Bias + tz_info.StandardBias) * 60)?,
-            dst_offset: FixedOffset::west_opt((tz_info.Bias + tz_info.DaylightBias) * 60)?,
+            std_offset,
+            dst_offset,
             std_transition: naive_date_time_from_system_time(tz_info.StandardDate, year).ok()?,
             dst_transition: naive_date_time_from_system_time(tz_info.DaylightDate, year).ok()?,
         })
