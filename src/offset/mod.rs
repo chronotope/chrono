@@ -308,10 +308,7 @@ impl fmt::Display for TzLookupError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             TzLookupError::TimeZoneUnknown => write!(f, "unable to determine the local time zone"),
-            TzLookupError::OsError(code) => {
-                let io_error = std::io::Error::from_raw_os_error(*code);
-                fmt::Display::fmt(&io_error, f)
-            }
+            TzLookupError::OsError(code) => write!(f, "TODO"),
             TzLookupError::InvalidTzString => {
                 write!(f, "`TZ` environment variable set to an invalid value")
             }
@@ -327,7 +324,14 @@ impl fmt::Display for TzLookupError {
 }
 
 #[cfg(feature = "std")]
-impl std::error::Error for TzLookupError {}
+impl std::error::Error for TzLookupError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            MyError::OsError(code) => Some(std::io::Error::from_raw_os_error(*code)),
+            _ => None,
+        }
+    }
+}
 
 impl From<TzLookupError> for Error {
     fn from(error: TzLookupError) -> Self {
