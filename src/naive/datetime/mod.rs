@@ -238,7 +238,7 @@ impl NaiveDateTime {
         let date = NaiveDate::from_num_days_from_ce(try_opt!((days as i32).checked_add(719_163)));
         let time = NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs);
         match (date, time) {
-            (Some(date), Ok(time)) => Some(NaiveDateTime { date, time }),
+            (Ok(date), Ok(time)) => Some(NaiveDateTime { date, time }),
             (_, _) => None,
         }
     }
