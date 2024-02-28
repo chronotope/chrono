@@ -425,13 +425,13 @@ fn format_inner(
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
-    fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
-        let off = off.local_minus_utc();
+    fn format(&self, w: &mut impl Write, offset: FixedOffset) -> fmt::Result {
+        let off = offset.local_minus_utc();
         if self.allow_zulu && off == 0 {
             w.write_char('Z')?;
             return Ok(());
         }
-        let (sign, off) = if off < 0 { ('-', -off) } else { ('+', off) };
+        let (sign, off) = if off < 0 || offset.no_offset_info() { ('-', -off) } else { ('+', off) };
 
         let hours;
         let mut mins = 0;
