@@ -26,9 +26,9 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-use crate::try_opt;
 #[allow(deprecated)]
 use crate::Date;
+use crate::{expect, try_opt};
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
@@ -201,7 +201,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp(&self) -> i64 {
-        self.datetime.timestamp()
+        const UNIX_EPOCH_DAY: i64 = 719_163;
+        let gregorian_day = self.datetime.date().num_days_from_ce() as i64;
+        let seconds_from_midnight = self.datetime.time().num_seconds_from_midnight() as i64;
+        (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 
     /// Returns the number of non-leap-milliseconds since January 1, 1970 UTC.
@@ -230,7 +233,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_millis(&self) -> i64 {
-        self.datetime.timestamp_millis()
+        let as_ms = self.timestamp() * 1000;
+        as_ms + self.timestamp_subsec_millis() as i64
     }
 
     /// Returns the number of non-leap-microseconds since January 1, 1970 UTC.
@@ -259,7 +263,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_micros(&self) -> i64 {
-        self.datetime.timestamp_micros()
+        let as_us = self.timestamp() * 1_000_000;
+        as_us + self.timestamp_subsec_micros() as i64
     }
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
@@ -274,9 +279,11 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
-    #[allow(deprecated)]
     pub const fn timestamp_nanos(&self) -> i64 {
-        self.datetime.timestamp_nanos()
+        expect!(
+            self.timestamp_nanos_opt(),
+            "value can not be represented in a timestamp with nanosecond precision."
+        )
     }
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
@@ -345,7 +352,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
-        self.datetime.timestamp_nanos_opt()
+        let mut timestamp = self.timestamp();
+        let mut subsec_nanos = self.timestamp_subsec_nanos() as i64;
+        // `(timestamp * 1_000_000_000) + subsec_nanos` may create a temporary that underflows while
+        // the final value can be represented as an `i64`.
+        // As workaround we converting the negative case to:
+        // `((timestamp + 1) * 1_000_000_000) + (ns - 1_000_000_000)``
+        //
+        // Also see <https://github.com/chronotope/chrono/issues/1289>.
+        if timestamp < 0 {
+            subsec_nanos -= 1_000_000_000;
+            timestamp += 1;
+        }
+        try_opt!(timestamp.checked_mul(1_000_000_000)).checked_add(subsec_nanos)
     }
 
     /// Returns the number of milliseconds since the last second boundary.
@@ -354,7 +373,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_millis(&self) -> u32 {
-        self.datetime.timestamp_subsec_millis()
+        self.timestamp_subsec_nanos() / 1_000_000
     }
 
     /// Returns the number of microseconds since the last second boundary.
@@ -363,7 +382,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_micros(&self) -> u32 {
-        self.datetime.timestamp_subsec_micros()
+        self.timestamp_subsec_nanos() / 1_000
     }
 
     /// Returns the number of nanoseconds since the last second boundary
@@ -372,7 +391,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_nanos(&self) -> u32 {
-        self.datetime.timestamp_subsec_nanos()
+        self.datetime.time().nanosecond()
     }
 
     /// Retrieves an associated offset from UTC.

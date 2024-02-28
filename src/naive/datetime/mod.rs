@@ -454,10 +454,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp(&self) -> i64 {
-        const UNIX_EPOCH_DAY: i64 = 719_163;
-        let gregorian_day = self.date.num_days_from_ce() as i64;
-        let seconds_from_midnight = self.time.num_seconds_from_midnight() as i64;
-        (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
+        self.and_utc().timestamp()
     }
 
     /// Returns the number of non-leap *milliseconds* since midnight on January 1, 1970.
@@ -484,8 +481,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp_millis(&self) -> i64 {
-        let as_ms = self.timestamp() * 1000;
-        as_ms + self.timestamp_subsec_millis() as i64
+        self.and_utc().timestamp_millis()
     }
 
     /// Returns the number of non-leap *microseconds* since midnight on January 1, 1970.
@@ -508,8 +504,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp_micros(&self) -> i64 {
-        let as_us = self.timestamp() * 1_000_000;
-        as_us + self.timestamp_subsec_micros() as i64
+        self.and_utc().timestamp_micros()
     }
 
     /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
@@ -527,11 +522,9 @@ impl NaiveDateTime {
     #[deprecated(since = "0.4.31", note = "use `timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
+    #[allow(deprecated)]
     pub const fn timestamp_nanos(&self) -> i64 {
-        expect!(
-            self.timestamp_nanos_opt(),
-            "value can not be represented in a timestamp with nanosecond precision."
-        )
+        self.and_utc().timestamp_nanos()
     }
 
     /// Returns the number of non-leap *nanoseconds* since midnight on January 1, 1970.
@@ -568,26 +561,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
-        let mut timestamp = self.timestamp();
-        let mut timestamp_subsec_nanos = self.timestamp_subsec_nanos() as i64;
-
-        // subsec nanos are always non-negative, however the timestamp itself (both in seconds and in nanos) can be
-        // negative. Now i64::MIN is NOT dividable by 1_000_000_000, so
-        //
-        //   (timestamp * 1_000_000_000) + nanos
-        //
-        // may underflow (even when in theory we COULD represent the datetime as i64) because we add the non-negative
-        // nanos AFTER the multiplication. This is fixed by converting the negative case to
-        //
-        //   ((timestamp + 1) * 1_000_000_000) + (ns - 1_000_000_000)
-        //
-        // Also see <https://github.com/chronotope/chrono/issues/1289>.
-        if timestamp < 0 && timestamp_subsec_nanos > 0 {
-            timestamp_subsec_nanos -= 1_000_000_000;
-            timestamp += 1;
-        }
-
-        try_opt!(timestamp.checked_mul(1_000_000_000)).checked_add(timestamp_subsec_nanos)
+        self.and_utc().timestamp_nanos_opt()
     }
 
     /// Returns the number of milliseconds since the last whole non-leap second.
@@ -615,7 +589,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_millis(&self) -> u32 {
-        self.timestamp_subsec_nanos() / 1_000_000
+        self.and_utc().timestamp_subsec_millis()
     }
 
     /// Returns the number of microseconds since the last whole non-leap second.
@@ -643,7 +617,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_micros(&self) -> u32 {
-        self.timestamp_subsec_nanos() / 1_000
+        self.and_utc().timestamp_subsec_micros()
     }
 
     /// Returns the number of nanoseconds since the last whole non-leap second.
@@ -671,7 +645,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_nanos(&self) -> u32 {
-        self.time.nanosecond()
+        self.and_utc().timestamp_subsec_nanos()
     }
 
     /// Adds given `TimeDelta` to the current date and time.
