@@ -24,28 +24,34 @@
 //!
 //! Default features:
 //!
-//! - `alloc`: Enable features that depend on allocation (primarily string formatting)
+//! - `alloc`: Enable features that depend on allocation (primarily string formatting).
 //! - `std`: Enables functionality that depends on the standard library. This
 //!   is a superset of `alloc` and adds interoperation with standard library types
 //!   and traits.
-//! - `clock`: Enables reading the system time (`now`) that depends on the standard library for
-//! UNIX-like operating systems and the Windows API (`winapi`) for Windows.
+//! - `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
+//! - `now`: Enables reading the system time (`now`).
 //! - `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 //!
 //! Optional features:
 //!
-//! - [`serde`][]: Enable serialization/deserialization via serde.
-//! - `rkyv`: Enable serialization/deserialization via rkyv.
-//! - `arbitrary`: construct arbitrary instances of a type with the Arbitrary crate.
+//! - `serde`: Enable serialization/deserialization via [serde].
+//! - `rkyv`: Deprecated, use the `rkyv-*` features.
+//! - `rkyv-16`: Enable serialization/deserialization via [rkyv], using 16-bit integers for integral `*size` types.
+//! - `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
+//! - `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
+//! - `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
+//! - `rustc-serialize`: Enable serialization/deserialization via rustc-serialize (deprecated).
+//! - `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
 //! - `unstable-locales`: Enable localization. This adds various methods with a
 //!   `_localized` suffix. The implementation and API may change or even be
 //!   removed in a patch release. Feedback welcome.
 //!
-//! [`serde`]: https://github.com/serde-rs/serde
-//! [wasm-bindgen]: https://github.com/rustwasm/wasm-bindgen
+//! Note: The `rkyv{,-16,-32,-64}` features are mutually exclusive.
 //!
-//! See the [cargo docs][] for examples of specifying features.
+//! See the [cargo docs] for examples of specifying features.
 //!
+//! [serde]: https://github.com/serde-rs/serde
+//! [rkyv]: https://github.com/rkyv/rkyv
 //! [cargo docs]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features
 //!
 //! ## Overview
@@ -544,7 +550,33 @@ pub use naive::__BenchYearFlags;
 /// [2]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
 pub mod serde {
+    use core::fmt;
+    use serde::de;
+
     pub use super::datetime::serde::*;
+
+    /// Create a custom `de::Error` with `SerdeError::InvalidTimestamp`.
+    pub(crate) fn invalid_ts<E, T>(value: T) -> E
+    where
+        E: de::Error,
+        T: fmt::Display,
+    {
+        E::custom(SerdeError::InvalidTimestamp(value))
+    }
+
+    enum SerdeError<T: fmt::Display> {
+        InvalidTimestamp(T),
+    }
+
+    impl<T: fmt::Display> fmt::Display for SerdeError<T> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                SerdeError::InvalidTimestamp(ts) => {
+                    write!(f, "value is not a legal timestamp: {}", ts)
+                }
+            }
+        }
+    }
 }
 
 /// Zero-copy serialization/deserialization with rkyv.

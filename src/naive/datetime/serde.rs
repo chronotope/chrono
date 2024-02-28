@@ -2,7 +2,6 @@ use core::fmt;
 use serde::{de, ser};
 
 use super::NaiveDateTime;
-use crate::offset::LocalResult;
 
 /// Serialize a `NaiveDateTime` as an RFC 3339 string
 ///
@@ -81,7 +80,7 @@ pub mod ts_nanoseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
+    use crate::serde::invalid_ts;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of nanoseconds since the epoch
@@ -174,7 +173,7 @@ pub mod ts_nanoseconds {
                 value.div_euclid(1_000_000_000),
                 (value.rem_euclid(1_000_000_000)) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .ok_or_else(|| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -185,7 +184,7 @@ pub mod ts_nanoseconds {
                 (value / 1_000_000_000) as i64,
                 (value % 1_000_000_000) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .ok_or_else(|| invalid_ts(value))
         }
     }
 }
@@ -361,7 +360,7 @@ pub mod ts_microseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
+    use crate::serde::invalid_ts;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of microseconds since the epoch
@@ -437,8 +436,7 @@ pub mod ts_microseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_micros(value)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp_micros(value).ok_or_else(|| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -449,7 +447,7 @@ pub mod ts_microseconds {
                 (value / 1_000_000) as i64,
                 ((value % 1_000_000) * 1_000) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .ok_or_else(|| invalid_ts(value))
         }
     }
 }
@@ -614,7 +612,7 @@ pub mod ts_milliseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
+    use crate::serde::invalid_ts;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of milliseconds since the epoch
@@ -690,8 +688,7 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp_millis(value)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp_millis(value).ok_or_else(|| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -702,7 +699,7 @@ pub mod ts_milliseconds {
                 (value / 1000) as i64,
                 ((value % 1000) * 1_000_000) as u32,
             )
-            .ok_or_else(|| E::custom(ne_timestamp(value)))
+            .ok_or_else(|| invalid_ts(value))
         }
     }
 }
@@ -867,7 +864,7 @@ pub mod ts_seconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::ne_timestamp;
+    use crate::serde::invalid_ts;
     use crate::NaiveDateTime;
 
     /// Serialize a datetime into an integer number of seconds since the epoch
@@ -938,15 +935,18 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp(value, 0).ok_or_else(|| E::custom(ne_timestamp(value)))
+            NaiveDateTime::from_timestamp(value, 0).ok_or_else(|| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
         {
-            NaiveDateTime::from_timestamp(value as i64, 0)
-                .ok_or_else(|| E::custom(ne_timestamp(value)))
+            if value > i64::MAX as u64 {
+                Err(invalid_ts(value))
+            } else {
+                NaiveDateTime::from_timestamp(value as i64, 0).ok_or_else(|| invalid_ts(value))
+            }
         }
     }
 }
@@ -1073,54 +1073,6 @@ pub mod ts_seconds_option {
             E: de::Error,
         {
             Ok(None)
-        }
-    }
-}
-
-// lik? function to convert a LocalResult into a serde-ish Result
-pub(crate) fn serde_from<T, E, V>(me: LocalResult<T>, ts: &V) -> Result<T, E>
-where
-    E: de::Error,
-    V: fmt::Display,
-    T: fmt::Display,
-{
-    match me {
-        LocalResult::None => Err(E::custom(ne_timestamp(ts))),
-        LocalResult::Ambiguous(min, max) => {
-            Err(E::custom(SerdeError::Ambiguous { timestamp: ts, min, max }))
-        }
-        LocalResult::Single(val) => Ok(val),
-    }
-}
-
-enum SerdeError<V: fmt::Display, D: fmt::Display> {
-    NonExistent { timestamp: V },
-    Ambiguous { timestamp: V, min: D, max: D },
-}
-
-/// Construct a [`SerdeError::NonExistent`]
-fn ne_timestamp<T: fmt::Display>(ts: T) -> SerdeError<T, u8> {
-    SerdeError::NonExistent::<T, u8> { timestamp: ts }
-}
-
-impl<V: fmt::Display, D: fmt::Display> fmt::Debug for SerdeError<V, D> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ChronoSerdeError({})", self)
-    }
-}
-
-// impl<V: fmt::Display, D: fmt::Debug> core::error::Error for SerdeError<V, D> {}
-impl<V: fmt::Display, D: fmt::Display> fmt::Display for SerdeError<V, D> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            SerdeError::NonExistent { timestamp } => {
-                write!(f, "value is not a legal timestamp: {}", timestamp)
-            }
-            SerdeError::Ambiguous { timestamp, min, max } => write!(
-                f,
-                "value is an ambiguous timestamp: {}, could be either of {}, {}",
-                timestamp, min, max
-            ),
         }
     }
 }

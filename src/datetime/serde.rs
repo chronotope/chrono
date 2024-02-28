@@ -3,7 +3,6 @@ use serde::{de, ser};
 
 use super::DateTime;
 use crate::format::{write_rfc3339, SecondsFormat};
-use crate::naive::datetime::serde::serde_from;
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -132,10 +131,8 @@ pub mod ts_nanoseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use crate::offset::TimeZone;
+    use crate::serde::invalid_ts;
     use crate::{DateTime, Utc};
-
-    use super::serde_from;
 
     /// Serialize a UTC datetime into an integer number of nanoseconds since the epoch
     ///
@@ -226,13 +223,11 @@ pub mod ts_nanoseconds {
         where
             E: de::Error,
         {
-            serde_from(
-                Utc.timestamp(
-                    value.div_euclid(1_000_000_000),
-                    (value.rem_euclid(1_000_000_000)) as u32,
-                ),
-                &value,
+            DateTime::from_timestamp(
+                value.div_euclid(1_000_000_000),
+                (value.rem_euclid(1_000_000_000)) as u32,
             )
+            .ok_or_else(|| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in nanoseconds since the epoch
@@ -240,10 +235,8 @@ pub mod ts_nanoseconds {
         where
             E: de::Error,
         {
-            serde_from(
-                Utc.timestamp((value / 1_000_000_000) as i64, (value % 1_000_000_000) as u32),
-                &value,
-            )
+            DateTime::from_timestamp((value / 1_000_000_000) as i64, (value % 1_000_000_000) as u32)
+                .ok_or_else(|| invalid_ts(value))
         }
     }
 }
@@ -434,8 +427,7 @@ pub mod ts_microseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::serde_from;
-    use crate::offset::TimeZone;
+    use crate::serde::invalid_ts;
     use crate::{DateTime, Utc};
 
     /// Serialize a UTC datetime into an integer number of microseconds since the epoch
@@ -517,13 +509,11 @@ pub mod ts_microseconds {
         where
             E: de::Error,
         {
-            serde_from(
-                Utc.timestamp(
-                    value.div_euclid(1_000_000),
-                    (value.rem_euclid(1_000_000) * 1_000) as u32,
-                ),
-                &value,
+            DateTime::from_timestamp(
+                value.div_euclid(1_000_000),
+                (value.rem_euclid(1_000_000) * 1000) as u32,
             )
+            .ok_or_else(|| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in milliseconds since the epoch
@@ -531,10 +521,11 @@ pub mod ts_microseconds {
         where
             E: de::Error,
         {
-            serde_from(
-                Utc.timestamp((value / 1_000_000) as i64, ((value % 1_000_000) * 1_000) as u32),
-                &value,
+            DateTime::from_timestamp(
+                (value / 1_000_000) as i64,
+                ((value % 1_000_000) * 1_000) as u32,
             )
+            .ok_or_else(|| invalid_ts(value))
         }
     }
 }
@@ -714,8 +705,7 @@ pub mod ts_milliseconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::serde_from;
-    use crate::offset::TimeZone;
+    use crate::serde::invalid_ts;
     use crate::{DateTime, Utc};
 
     /// Serialize a UTC datetime into an integer number of milliseconds since the epoch
@@ -797,7 +787,7 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            serde_from(Utc.timestamp_millis(value), &value)
+            DateTime::from_timestamp_millis(value).ok_or_else(|| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in milliseconds since the epoch
@@ -805,10 +795,8 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            serde_from(
-                Utc.timestamp((value / 1000) as i64, ((value % 1000) * 1_000_000) as u32),
-                &value,
-            )
+            DateTime::from_timestamp((value / 1000) as i64, ((value % 1000) * 1_000_000) as u32)
+                .ok_or_else(|| invalid_ts(value))
         }
     }
 }
@@ -995,8 +983,8 @@ pub mod ts_seconds {
     use core::fmt;
     use serde::{de, ser};
 
-    use super::serde_from;
-    use crate::{DateTime, LocalResult, TimeZone, Utc};
+    use crate::serde::invalid_ts;
+    use crate::{DateTime, Utc};
 
     /// Serialize a UTC datetime into an integer number of seconds since the epoch
     ///
@@ -1067,7 +1055,7 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            serde_from(Utc.timestamp(value, 0), &value)
+            DateTime::from_timestamp(value, 0).ok_or_else(|| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in seconds since the epoch
@@ -1075,14 +1063,11 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            serde_from(
-                if value > i64::MAX as u64 {
-                    LocalResult::None
-                } else {
-                    Utc.timestamp(value as i64, 0)
-                },
-                &value,
-            )
+            if value > i64::MAX as u64 {
+                Err(invalid_ts(value))
+            } else {
+                DateTime::from_timestamp(value as i64, 0).ok_or_else(|| invalid_ts(value))
+            }
         }
     }
 }
