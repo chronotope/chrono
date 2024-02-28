@@ -296,35 +296,34 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the date is out of range.
+    /// Returns [`Error::OutOfRange`] if the date is out of range.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
-    ///
+    /// # use chrono::{Error, NaiveDate};
     /// let from_ndays = NaiveDate::from_num_days_from_ce;
-    /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
+    /// let from_ymd = NaiveDate::from_ymd;
     ///
-    /// assert_eq!(from_ndays(730_000), Some(from_ymd(1999, 9, 3)));
-    /// assert_eq!(from_ndays(1), Some(from_ymd(1, 1, 1)));
-    /// assert_eq!(from_ndays(0), Some(from_ymd(0, 12, 31)));
-    /// assert_eq!(from_ndays(-1), Some(from_ymd(0, 12, 30)));
-    /// assert_eq!(from_ndays(100_000_000), None);
-    /// assert_eq!(from_ndays(-100_000_000), None);
+    /// assert_eq!(from_ndays(730_000), from_ymd(1999, 9, 3));
+    /// assert_eq!(from_ndays(1), from_ymd(1, 1, 1));
+    /// assert_eq!(from_ndays(0), from_ymd(0, 12, 31));
+    /// assert_eq!(from_ndays(-1), from_ymd(0, 12, 30));
+    /// assert_eq!(from_ndays(100_000_000), Err(Error::OutOfRange));
+    /// assert_eq!(from_ndays(-100_000_000), Err(Error::OutOfRange));
+    /// # Ok::<(), Error>(())
     /// ```
-    #[must_use]
-    pub const fn from_num_days_from_ce(days: i32) -> Option<NaiveDate> {
-        let days = try_opt!(days.checked_add(365)); // make December 31, 1 BCE equal to day 0
+    pub const fn from_num_days_from_ce(days: i32) -> Result<NaiveDate, Error> {
+        // make December 31, 1 BCE equal to day 0
+        let days = match days.checked_add(365) {
+            Some(d) => d,
+            None => return Err(Error::OutOfRange),
+        };
         let year_div_400 = days.div_euclid(146_097);
         let cycle = days.rem_euclid(146_097);
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        ok!(NaiveDate::from_ordinal_and_flags(
-            year_div_400 * 400 + year_mod_400 as i32,
-            ordinal,
-            flags
-        ))
+        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week

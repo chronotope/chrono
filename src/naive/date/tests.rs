@@ -268,35 +268,35 @@ fn test_date_from_isoywd_and_iso_week() {
 #[test]
 fn test_date_from_num_days_from_ce() {
     let from_ndays_from_ce = NaiveDate::from_num_days_from_ce;
-    assert_eq!(from_ndays_from_ce(1), Some(NaiveDate::from_ymd(1, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(2), Some(NaiveDate::from_ymd(1, 1, 2).unwrap()));
-    assert_eq!(from_ndays_from_ce(31), Some(NaiveDate::from_ymd(1, 1, 31).unwrap()));
-    assert_eq!(from_ndays_from_ce(32), Some(NaiveDate::from_ymd(1, 2, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(59), Some(NaiveDate::from_ymd(1, 2, 28).unwrap()));
-    assert_eq!(from_ndays_from_ce(60), Some(NaiveDate::from_ymd(1, 3, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(365), Some(NaiveDate::from_ymd(1, 12, 31).unwrap()));
-    assert_eq!(from_ndays_from_ce(365 + 1), Some(NaiveDate::from_ymd(2, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(365 * 2 + 1), Some(NaiveDate::from_ymd(3, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(365 * 3 + 1), Some(NaiveDate::from_ymd(4, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(365 * 4 + 2), Some(NaiveDate::from_ymd(5, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(146097 + 1), Some(NaiveDate::from_ymd(401, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(146097 * 5 + 1), Some(NaiveDate::from_ymd(2001, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(719163), Some(NaiveDate::from_ymd(1970, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(0), Some(NaiveDate::from_ymd(0, 12, 31).unwrap())); // 1 BCE
-    assert_eq!(from_ndays_from_ce(-365), Some(NaiveDate::from_ymd(0, 1, 1).unwrap()));
-    assert_eq!(from_ndays_from_ce(-366), Some(NaiveDate::from_ymd(-1, 12, 31).unwrap())); // 2 BCE
+    assert_eq!(from_ndays_from_ce(1), NaiveDate::from_ymd(1, 1, 1));
+    assert_eq!(from_ndays_from_ce(2), NaiveDate::from_ymd(1, 1, 2));
+    assert_eq!(from_ndays_from_ce(31), NaiveDate::from_ymd(1, 1, 31));
+    assert_eq!(from_ndays_from_ce(32), NaiveDate::from_ymd(1, 2, 1));
+    assert_eq!(from_ndays_from_ce(59), NaiveDate::from_ymd(1, 2, 28));
+    assert_eq!(from_ndays_from_ce(60), NaiveDate::from_ymd(1, 3, 1));
+    assert_eq!(from_ndays_from_ce(365), NaiveDate::from_ymd(1, 12, 31));
+    assert_eq!(from_ndays_from_ce(365 + 1), NaiveDate::from_ymd(2, 1, 1));
+    assert_eq!(from_ndays_from_ce(365 * 2 + 1), NaiveDate::from_ymd(3, 1, 1));
+    assert_eq!(from_ndays_from_ce(365 * 3 + 1), NaiveDate::from_ymd(4, 1, 1));
+    assert_eq!(from_ndays_from_ce(365 * 4 + 2), NaiveDate::from_ymd(5, 1, 1));
+    assert_eq!(from_ndays_from_ce(146097 + 1), NaiveDate::from_ymd(401, 1, 1));
+    assert_eq!(from_ndays_from_ce(146097 * 5 + 1), NaiveDate::from_ymd(2001, 1, 1));
+    assert_eq!(from_ndays_from_ce(719163), NaiveDate::from_ymd(1970, 1, 1));
+    assert_eq!(from_ndays_from_ce(0), NaiveDate::from_ymd(0, 12, 31)); // 1 BCE
+    assert_eq!(from_ndays_from_ce(-365), NaiveDate::from_ymd(0, 1, 1));
+    assert_eq!(from_ndays_from_ce(-366), NaiveDate::from_ymd(-1, 12, 31)); // 2 BCE
 
     for days in (-9999..10001).map(|x| x * 100) {
-        assert_eq!(from_ndays_from_ce(days).map(|d| d.num_days_from_ce()), Some(days));
+        assert_eq!(from_ndays_from_ce(days).map(|d| d.num_days_from_ce()), Ok(days));
     }
 
-    assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce()), Some(NaiveDate::MIN));
-    assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce() - 1), None);
-    assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce()), Some(NaiveDate::MAX));
-    assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce() + 1), None);
+    assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce()), Ok(NaiveDate::MIN));
+    assert_eq!(from_ndays_from_ce(NaiveDate::MIN.num_days_from_ce() - 1), Err(Error::OutOfRange));
+    assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce()), Ok(NaiveDate::MAX));
+    assert_eq!(from_ndays_from_ce(NaiveDate::MAX.num_days_from_ce() + 1), Err(Error::OutOfRange));
 
-    assert_eq!(from_ndays_from_ce(i32::MIN), None);
-    assert_eq!(from_ndays_from_ce(i32::MAX), None);
+    assert_eq!(from_ndays_from_ce(i32::MIN), Err(Error::OutOfRange));
+    assert_eq!(from_ndays_from_ce(i32::MAX), Err(Error::OutOfRange));
 }
 
 #[test]
