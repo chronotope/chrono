@@ -2353,12 +2353,11 @@ impl str::FromStr for NaiveDateTime {
 /// ```rust
 /// use chrono::NaiveDateTime;
 ///
-/// let default_date = NaiveDateTime::default();
-/// assert_eq!(Some(default_date), NaiveDateTime::from_timestamp_opt(0, 0));
+/// assert_eq!(NaiveDateTime::default(), NaiveDateTime::UNIX_EPOCH);
 /// ```
 impl Default for NaiveDateTime {
     fn default() -> Self {
-        NaiveDateTime::from_timestamp_opt(0, 0).unwrap()
+        Self::UNIX_EPOCH
     }
 }
 
