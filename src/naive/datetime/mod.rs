@@ -130,8 +130,9 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
-        let datetime = NaiveDateTime::from_timestamp_opt(secs, nsecs);
-        expect!(datetime, "invalid or out-of-range datetime")
+        let datetime =
+            expect!(DateTime::from_timestamp(secs, nsecs), "invalid or out-of-range datetime");
+        datetime.naive_utc()
     }
 
     /// Creates a new [NaiveDateTime] from milliseconds since the UNIX epoch.
@@ -161,9 +162,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
-        let secs = millis.div_euclid(1000);
-        let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+        Some(try_opt!(DateTime::from_timestamp_millis(millis)).naive_utc())
     }
 
     /// Creates a new [NaiveDateTime] from microseconds since the UNIX epoch.
@@ -227,8 +226,7 @@ impl NaiveDateTime {
     pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
         let secs = nanos.div_euclid(NANOS_PER_SEC as i64);
         let nsecs = nanos.rem_euclid(NANOS_PER_SEC as i64) as u32;
-
-        NaiveDateTime::from_timestamp_opt(secs, nsecs)
+        Some(try_opt!(DateTime::from_timestamp(secs, nsecs)).naive_utc())
     }
 
     /// Makes a new `NaiveDateTime` corresponding to a UTC date and time,
@@ -264,18 +262,7 @@ impl NaiveDateTime {
     #[inline]
     #[must_use]
     pub const fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
-        let days = secs.div_euclid(86_400);
-        let secs = secs.rem_euclid(86_400);
-        if days < i32::MIN as i64 || days > i32::MAX as i64 {
-            return None;
-        }
-        let date =
-            NaiveDate::from_num_days_from_ce_opt(try_opt!((days as i32).checked_add(719_163)));
-        let time = NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs);
-        match (date, time) {
-            (Some(date), Some(time)) => Some(NaiveDateTime { date, time }),
-            (_, _) => None,
-        }
+        Some(try_opt!(DateTime::from_timestamp(secs, nsecs)).naive_utc())
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDateTime`.

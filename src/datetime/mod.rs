@@ -201,7 +201,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp(&self) -> i64 {
-        const UNIX_EPOCH_DAY: i64 = 719_163;
         let gregorian_day = self.datetime.date().num_days_from_ce() as i64;
         let seconds_from_midnight = self.datetime.time().num_seconds_from_midnight() as i64;
         (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
@@ -673,7 +672,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 }
 
 impl DateTime<Utc> {
-    /// Makes a new [`DateTime<Utc>`] from the number of non-leap seconds
+    /// Makes a new `DateTime<Utc>` from the number of non-leap seconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
@@ -695,10 +694,9 @@ impl DateTime<Utc> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{DateTime, Utc};
+    /// use chrono::DateTime;
     ///
-    /// let dt: DateTime<Utc> =
-    ///     DateTime::<Utc>::from_timestamp(1431648000, 0).expect("invalid timestamp");
+    /// let dt = DateTime::from_timestamp(1431648000, 0).expect("invalid timestamp");
     ///
     /// assert_eq!(dt.to_string(), "2015-05-15 00:00:00 UTC");
     /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
@@ -706,16 +704,20 @@ impl DateTime<Utc> {
     #[inline]
     #[must_use]
     pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
-        Some(DateTime {
-            datetime: try_opt!(NaiveDateTime::from_timestamp_opt(secs, nsecs)),
-            offset: Utc,
-        })
+        let days = secs.div_euclid(86_400) + UNIX_EPOCH_DAY;
+        let secs = secs.rem_euclid(86_400);
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        let date = try_opt!(NaiveDate::from_num_days_from_ce_opt(days as i32));
+        let time = try_opt!(NaiveTime::from_num_seconds_from_midnight_opt(secs as u32, nsecs));
+        Some(date.and_time(time).and_utc())
     }
 
-    /// Makes a new [`DateTime<Utc>`] from the number of non-leap milliseconds
+    /// Makes a new `DateTime<Utc>` from the number of non-leap milliseconds
     /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
     ///
-    /// This is guaranteed to round-trip with regard to [`timestamp_millis`](DateTime::timestamp_millis).
+    /// This is guaranteed to round-trip with [`timestamp_millis`](DateTime::timestamp_millis).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
     /// [`TimeZone::timestamp_millis_opt`] or [`DateTime::with_timezone`].
@@ -727,10 +729,9 @@ impl DateTime<Utc> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{DateTime, Utc};
+    /// use chrono::DateTime;
     ///
-    /// let dt: DateTime<Utc> =
-    ///     DateTime::<Utc>::from_timestamp_millis(947638923004).expect("invalid timestamp");
+    /// let dt = DateTime::from_timestamp_millis(947638923004).expect("invalid timestamp");
     ///
     /// assert_eq!(dt.to_string(), "2000-01-12 01:02:03.004 UTC");
     /// assert_eq!(DateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap(), dt);
@@ -738,7 +739,9 @@ impl DateTime<Utc> {
     #[inline]
     #[must_use]
     pub const fn from_timestamp_millis(millis: i64) -> Option<Self> {
-        Some(try_opt!(NaiveDateTime::from_timestamp_millis(millis)).and_utc())
+        let secs = millis.div_euclid(1000);
+        let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
+        Self::from_timestamp(secs, nsecs)
     }
 
     /// Creates a new `DateTime<Utc>` from the number of non-leap microseconds
@@ -1877,6 +1880,8 @@ where
         Ok(DateTime::from_naive_utc_and_offset(datetime, offset))
     }
 }
+
+const UNIX_EPOCH_DAY: i64 = 719_163;
 
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
