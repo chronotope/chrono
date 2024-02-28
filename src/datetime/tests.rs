@@ -124,6 +124,194 @@ impl TimeZone for DstTester {
 }
 
 #[test]
+fn test_datetime_from_timestamp_millis() {
+    let valid_map = [
+        (1662921288000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123, "2022-09-11 18:34:48.123000000"),
+        (1662921287890, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000, "1900-01-01 14:38:45.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_millis, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_millis(timestamp_millis).unwrap();
+        assert_eq!(timestamp_millis, datetime.timestamp_millis());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    let invalid = [i64::MAX, i64::MIN];
+
+    for timestamp_millis in invalid.iter().copied() {
+        let datetime = DateTime::from_timestamp_millis(timestamp_millis);
+        assert!(datetime.is_none());
+    }
+
+    // Test that the result of `from_timestamp_millis` compares equal to
+    // that of `from_timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().cloned() {
+        assert_eq!(DateTime::from_timestamp_millis(secs * 1000), DateTime::from_timestamp(secs, 0));
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp_micros() {
+    let valid_map = [
+        (1662921288000000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123456, "2022-09-11 18:34:48.123456000"),
+        (1662921287890000, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000000, "1900-01-01 14:38:45.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_micros, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_micros(timestamp_micros).unwrap();
+        assert_eq!(timestamp_micros, datetime.timestamp_micros());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    let invalid = [i64::MAX, i64::MIN];
+
+    for timestamp_micros in invalid.iter().copied() {
+        let datetime = DateTime::from_timestamp_micros(timestamp_micros);
+        assert!(datetime.is_none());
+    }
+
+    // Test that the result of `TimeZone::timestamp_micros` compares equal to
+    // that of `TimeZone::timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().copied() {
+        assert_eq!(
+            DateTime::from_timestamp_micros(secs * 1_000_000),
+            DateTime::from_timestamp(secs, 0)
+        );
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp_nanos() {
+    let valid_map = [
+        (1662921288000000000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123456000, "2022-09-11 18:34:48.123456000"),
+        (1662921288123456789, "2022-09-11 18:34:48.123456789"),
+        (1662921287890000000, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000000000, "1900-01-01 14:38:45.000000000"),
+        (-5337182663000000000, "1800-11-15 01:15:37.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000000000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000000000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000000000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_nanos, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_nanos(timestamp_nanos);
+        assert_eq!(timestamp_nanos, datetime.timestamp_nanos_opt().unwrap());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    const A_BILLION: i64 = 1_000_000_000;
+    // Maximum datetime in nanoseconds
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
+    assert_eq!(
+        Some(DateTime::from_timestamp_nanos(nanos)),
+        DateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    );
+    // Minimum datetime in nanoseconds
+    let minimum = "1677-09-21T00:12:44.000000000UTC";
+    let parsed: DateTime<Utc> = minimum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
+    assert_eq!(
+        Some(DateTime::from_timestamp_nanos(nanos)),
+        DateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    );
+
+    // Test that the result of `TimeZone::timestamp_nanos` compares equal to
+    // that of `TimeZone::timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().copied() {
+        assert_eq!(
+            Some(DateTime::from_timestamp_nanos(secs * 1_000_000_000)),
+            DateTime::from_timestamp(secs, 0)
+        );
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp() {
+    let from_timestamp = |secs| DateTime::from_timestamp(secs, 0);
+    let ymdhms = |y, m, d, h, n, s| {
+        NaiveDate::from_ymd_opt(y, m, d).unwrap().and_hms_opt(h, n, s).unwrap().and_utc()
+    };
+    assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
+    assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
+    assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
+    assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
+    assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
+    assert_eq!(from_timestamp(i64::MIN), None);
+    assert_eq!(from_timestamp(i64::MAX), None);
+}
+
+#[test]
+fn test_datetime_timestamp() {
+    let to_timestamp = |y, m, d, h, n, s| {
+        NaiveDate::from_ymd_opt(y, m, d)
+            .unwrap()
+            .and_hms_opt(h, n, s)
+            .unwrap()
+            .and_utc()
+            .timestamp()
+    };
+    assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
+    assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
+    assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
+    assert_eq!(to_timestamp(2001, 9, 9, 1, 46, 40), 1_000_000_000);
+    assert_eq!(to_timestamp(2038, 1, 19, 3, 14, 7), 0x7fffffff);
+}
+
+#[test]
+fn test_nanosecond_range() {
+    const A_BILLION: i64 = 1_000_000_000;
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
+    assert_eq!(
+        parsed,
+        DateTime::<Utc>::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
+
+    let minimum = "1677-09-21T00:12:44.000000000UTC";
+    let parsed: DateTime<Utc> = minimum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos_opt().unwrap();
+    assert_eq!(
+        parsed,
+        DateTime::<Utc>::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
+
+    // Just beyond range
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let beyond_max = parsed + TimeDelta::milliseconds(300);
+    assert!(beyond_max.timestamp_nanos_opt().is_none());
+
+    // Far beyond range
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let beyond_max = parsed + TimeDelta::days(365);
+    assert!(beyond_max.timestamp_nanos_opt().is_none());
+}
+
+#[test]
 fn test_datetime_add_days() {
     let est = FixedOffset::west_opt(5 * 60 * 60).unwrap();
     let kst = FixedOffset::east_opt(9 * 60 * 60).unwrap();
@@ -1250,18 +1438,6 @@ fn test_datetime_from_local() {
 
     assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
     assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
-}
-
-#[test]
-fn test_datetime_from_timestamp_millis() {
-    // 2000-01-12T01:02:03:004Z
-    let naive_dt =
-        NaiveDate::from_ymd_opt(2000, 1, 12).unwrap().and_hms_milli_opt(1, 2, 3, 4).unwrap();
-    let datetime_utc = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
-    assert_eq!(
-        datetime_utc,
-        DateTime::<Utc>::from_timestamp_millis(datetime_utc.timestamp_millis()).unwrap()
-    );
 }
 
 #[test]
