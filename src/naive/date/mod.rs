@@ -557,30 +557,26 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
     /// ```
-    /// # use chrono::{NaiveDate, Days};
+    /// # use chrono::{NaiveDate, Days, Error};
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20).unwrap().checked_add_days(Days::new(9)),
-    ///     Some(NaiveDate::from_ymd(2022, 3, 1).unwrap())
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_days(Days::new(9)),
+    ///     NaiveDate::from_ymd(2022, 3, 1)
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 7, 31).unwrap().checked_add_days(Days::new(2)),
-    ///     Some(NaiveDate::from_ymd(2022, 8, 2).unwrap())
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_days(Days::new(1000000000000)),
+    ///     Err(Error::OutOfRange)
     /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 7, 31).unwrap().checked_add_days(Days::new(1000000000000)),
-    ///     None
-    /// );
+    /// # Ok::<(), Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_add_days(self, days: Days) -> Option<Self> {
+    pub const fn checked_add_days(self, days: Days) -> Result<Self, Error> {
         match days.0 <= i32::MAX as u64 {
             true => self.add_days(days.0 as i32),
-            false => None,
+            false => Err(Error::OutOfRange),
         }
     }
 
@@ -588,58 +584,56 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
     /// ```
-    /// # use chrono::{NaiveDate, Days};
+    /// # use chrono::{NaiveDate, Days, Error};
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20).unwrap().checked_sub_days(Days::new(6)),
-    ///     Some(NaiveDate::from_ymd(2022, 2, 14).unwrap())
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_days(Days::new(6)),
+    ///     NaiveDate::from_ymd(2022, 2, 14)
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20).unwrap().checked_sub_days(Days::new(1000000000000)),
-    ///     None
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_days(Days::new(1000000000000)),
+    ///     Err(Error::OutOfRange)
     /// );
+    /// # Ok::<(), Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
+    pub const fn checked_sub_days(self, days: Days) -> Result<Self, Error> {
         match days.0 <= i32::MAX as u64 {
             true => self.add_days(-(days.0 as i32)),
-            false => None,
+            false => Err(Error::OutOfRange),
         }
     }
 
     /// Add a duration of `i32` days to the date.
-    pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
+    pub(crate) const fn add_days(self, days: i32) -> Result<Self, Error> {
         // Fast path if the result is within the same year.
         // Also `DateTime::checked_(add|sub)_days` relies on this path, because if the value remains
         // within the year it doesn't do a check if the year is in range.
         // This way `DateTime:checked_(add|sub)_days(Days::new(0))` can be a no-op on dates were the
         // local datetime is beyond `NaiveDate::{MIN, MAX}.
         const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
-        if let Some(ordinal) = ((self.yof() & ORDINAL_MASK) >> 4).checked_add(days) {
+        let ordinal =
+            try_ok_or!(((self.yof() & ORDINAL_MASK) >> 4).checked_add(days), Error::OutOfRange);
+        {
             if ordinal > 0 && ordinal <= (365 + self.leap_year() as i32) {
                 let year_and_flags = self.yof() & !ORDINAL_MASK;
-                return Some(NaiveDate::from_yof(year_and_flags | (ordinal << 4)));
+                return Ok(NaiveDate::from_yof(year_and_flags | (ordinal << 4)));
             }
         }
         // do the full check
         let year = self.year();
         let (mut year_div_400, year_mod_400) = div_mod_floor(year, 400);
         let cycle = yo_to_cycle(year_mod_400 as u32, self.ordinal());
-        let cycle = try_opt!((cycle as i32).checked_add(days));
+        let cycle = try_ok_or!((cycle as i32).checked_add(days), Error::OutOfRange);
         let (cycle_div_400y, cycle) = div_mod_floor(cycle, 146_097);
         year_div_400 += cycle_div_400y;
 
         let (year_mod_400, ordinal) = cycle_to_yo(cycle as u32);
         let flags = YearFlags::from_year_mod_400(year_mod_400 as i32);
-        ok!(NaiveDate::from_ordinal_and_flags(
-            year_div_400 * 400 + year_mod_400 as i32,
-            ordinal,
-            flags
-        ))
+        NaiveDate::from_ordinal_and_flags(year_div_400 * 400 + year_mod_400 as i32, ordinal, flags)
     }
 
     /// Makes a new `NaiveDateTime` from the current date and given `NaiveTime`.
@@ -903,7 +897,7 @@ impl NaiveDate {
         if days < i32::MIN as i64 || days > i32::MAX as i64 {
             return None;
         }
-        self.add_days(days as i32)
+        ok!(self.add_days(days as i32))
     }
 
     /// Subtracts the number of whole days in the given `TimeDelta` from the current date.
@@ -936,7 +930,7 @@ impl NaiveDate {
         if days < i32::MIN as i64 || days > i32::MAX as i64 {
             return None;
         }
-        self.add_days(days as i32)
+        ok!(self.add_days(days as i32))
     }
 
     /// Subtracts another `NaiveDate` from the current date.
@@ -1995,7 +1989,7 @@ impl Iterator for NaiveDateWeeksIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.value;
-        self.value = current.checked_add_days(Days::new(7))?;
+        self.value = current.checked_add_days(Days::new(7)).ok()?;
         Some(current)
     }
 
@@ -2010,7 +2004,7 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
         let current = self.value;
-        self.value = current.checked_sub_days(Days::new(7))?;
+        self.value = current.checked_sub_days(Days::new(7)).ok()?;
         Some(current)
     }
 }
