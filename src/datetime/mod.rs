@@ -28,8 +28,7 @@ use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 #[cfg(any(feature = "clock", feature = "std"))]
 use crate::OutOfRange;
-use crate::{try_err, try_ok_or};
-use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
+use crate::{try_err, try_ok_or, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -396,9 +395,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
         // does not validate the resulting date. This allows us to return `Some` even for an out of
         // range local datetime when adding `Days(0)`.
-        self.overflowing_naive_local()
-            .checked_add_days(days)
-            .and_then(|dt| self.timezone().from_local_datetime(&dt).single())
+        let naive = self.overflowing_naive_local().checked_add_days(days).ok()?;
+        self.timezone()
+            .from_local_datetime(&naive)
+            .single()
             .filter(|dt| dt <= &DateTime::<Utc>::MAX_UTC)
     }
 
@@ -416,9 +416,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
         // does not validate the resulting date. This allows us to return `Some` even for an out of
         // range local datetime when adding `Days(0)`.
-        self.overflowing_naive_local()
-            .checked_sub_days(days)
-            .and_then(|dt| self.timezone().from_local_datetime(&dt).single())
+        let naive = self.overflowing_naive_local().checked_sub_days(days).ok()?;
+        self.timezone()
+            .from_local_datetime(&naive)
+            .single()
             .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC)
     }
 

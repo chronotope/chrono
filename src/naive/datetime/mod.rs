@@ -529,18 +529,16 @@ impl NaiveDateTime {
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    #[must_use]
-    pub const fn checked_add_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: try_opt!(self.date.checked_add_days(days)), ..self })
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
+    pub const fn checked_add_days(self, days: Days) -> Result<Self, Error> {
+        Ok(Self { date: try_err!(self.date.checked_add_days(days)), ..self })
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `NaiveDateTime`
     ///
-    /// Returns `None` if the resulting date would be out of range.
-    #[must_use]
-    pub const fn checked_sub_days(self, days: Days) -> Option<Self> {
-        Some(Self { date: try_opt!(self.date.checked_sub_days(days)), ..self })
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
+    pub const fn checked_sub_days(self, days: Days) -> Result<Self, Error> {
+        Ok(Self { date: try_err!(self.date.checked_sub_days(days)), ..self })
     }
 
     /// Subtracts another `NaiveDateTime` from the current date and time.
