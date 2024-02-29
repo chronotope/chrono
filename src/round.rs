@@ -233,6 +233,9 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
+        if span == 0 {
+            return Ok(original);
+        }
         let delta_down = stamp % span;
         match delta_down.cmp(&0) {
             Ordering::Equal => Ok(original),
@@ -620,6 +623,11 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
+
+        assert_eq!(
+            dt.duration_trunc(TimeDelta::zero()).unwrap().to_string(),
+            "2016-12-31 23:59:59.175500 UTC"
+        );
 
         assert_eq!(
             dt.duration_trunc(TimeDelta::milliseconds(10)).unwrap().to_string(),
