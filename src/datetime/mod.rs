@@ -741,6 +741,78 @@ impl DateTime<Utc> {
         Some(try_opt!(NaiveDateTime::from_timestamp_millis(millis)).and_utc())
     }
 
+    /// Creates a new `DateTime<Utc>` from the number of non-leap microseconds
+    /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
+    ///
+    /// This is guaranteed to round-trip with [`timestamp_micros`](DateTime::timestamp_micros).
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_micros`] or [`DateTime::with_timezone`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the number of microseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::DateTime;
+    ///
+    /// let timestamp_micros: i64 = 1662921288000000; // Sun, 11 Sep 2022 18:34:48 UTC
+    /// let dt = DateTime::from_timestamp_micros(timestamp_micros);
+    /// assert!(dt.is_some());
+    /// assert_eq!(timestamp_micros, dt.expect("invalid timestamp").timestamp_micros());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_micros: i64 = -2208936075000000; // Mon, 1 Jan 1900 14:38:45 UTC
+    /// let dt = DateTime::from_timestamp_micros(timestamp_micros);
+    /// assert!(dt.is_some());
+    /// assert_eq!(timestamp_micros, dt.expect("invalid timestamp").timestamp_micros());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_micros(micros: i64) -> Option<Self> {
+        let secs = micros.div_euclid(1_000_000);
+        let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
+        Self::from_timestamp(secs, nsecs)
+    }
+
+    /// Creates a new [`DateTime<Utc>`] from the number of non-leap microseconds
+    /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
+    ///
+    /// This is guaranteed to round-trip with [`timestamp_nanos`](DateTime::timestamp_nanos).
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_nanos`] or [`DateTime::with_timezone`].
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. Because all values can
+    /// be represented as a `DateTime` this method never fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::DateTime;
+    ///
+    /// let timestamp_nanos: i64 = 1662921288_000_000_000; // Sun, 11 Sep 2022 18:34:48 UTC
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_nanos: i64 = -2208936075_000_000_000; // Mon, 1 Jan 1900 14:38:45 UTC
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos_opt().unwrap());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_nanos(nanos: i64) -> Self {
+        let secs = nanos.div_euclid(1_000_000_000);
+        let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
+        expect!(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
+    }
+
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
     pub const UNIX_EPOCH: Self = Self { datetime: NaiveDateTime::UNIX_EPOCH, offset: Utc };
 }
