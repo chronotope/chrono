@@ -18,7 +18,7 @@ name = "chrono"
 
 [features]
 # Don't forget to adjust `ALL_NON_EXCLUSIVE_FEATURES` in CI scripts when adding a feature or an optional dependency.
-default = ["clock", "std", "wasmbind"]
+default = ["clock", "std"]
 alloc = []
 libc = []
 winapi = ["windows-targets"]
