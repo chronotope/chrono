@@ -1103,7 +1103,7 @@ fn test_parse_from_str() {
         .is_err());
     assert_eq!(
         DateTime::parse_from_str("0", "%s").unwrap(),
-        NaiveDateTime::from_timestamp_opt(0, 0).unwrap().and_utc().fixed_offset()
+        DateTime::from_timestamp(0, 0).unwrap().fixed_offset()
     );
 
     assert_eq!(

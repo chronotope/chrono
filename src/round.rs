@@ -196,7 +196,8 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
+        let stamp =
+            naive.and_utc().timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
         if span == 0 {
             return Ok(original);
         }
@@ -232,7 +233,8 @@ where
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
-        let stamp = naive.timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
+        let stamp =
+            naive.and_utc().timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
         let delta_down = stamp % span;
         match delta_down.cmp(&0) {
             Ordering::Equal => Ok(original),
@@ -312,7 +314,7 @@ mod tests {
     use super::{DurationRound, RoundingError, SubsecRound, TimeDelta};
     use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::Timelike;
-    use crate::{NaiveDate, NaiveDateTime};
+    use crate::{DateTime, NaiveDate};
 
     #[test]
     fn test_round_subsecs() {
@@ -768,15 +770,15 @@ mod tests {
 
     #[test]
     fn issue1010() {
-        let dt = NaiveDateTime::from_timestamp_opt(-4_227_854_320, 678_774_288).unwrap();
+        let dt = DateTime::from_timestamp(-4_227_854_320, 678_774_288).unwrap();
         let span = TimeDelta::microseconds(-7_019_067_213_869_040);
         assert_eq!(dt.duration_trunc(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(320_041_586, 920_103_021).unwrap();
+        let dt = DateTime::from_timestamp(320_041_586, 920_103_021).unwrap();
         let span = TimeDelta::nanoseconds(-8_923_838_508_697_114_584);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
 
-        let dt = NaiveDateTime::from_timestamp_opt(-2_621_440, 0).unwrap();
+        let dt = DateTime::from_timestamp(-2_621_440, 0).unwrap();
         let span = TimeDelta::nanoseconds(-9_223_372_036_854_771_421);
         assert_eq!(dt.duration_round(span), Err(RoundingError::DurationExceedsLimit));
     }
@@ -807,16 +809,22 @@ mod tests {
     fn test_duration_round_close_to_min_max() {
         let span = TimeDelta::nanoseconds(i64::MAX);
 
-        let dt = NaiveDateTime::from_timestamp_nanos(i64::MIN / 2 - 1).unwrap();
-        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1677-09-21 00:12:43.145224193");
+        let dt = DateTime::from_timestamp_nanos(i64::MIN / 2 - 1);
+        assert_eq!(
+            dt.duration_round(span).unwrap().to_string(),
+            "1677-09-21 00:12:43.145224193 UTC"
+        );
 
-        let dt = NaiveDateTime::from_timestamp_nanos(i64::MIN / 2 + 1).unwrap();
-        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+        let dt = DateTime::from_timestamp_nanos(i64::MIN / 2 + 1);
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00 UTC");
 
-        let dt = NaiveDateTime::from_timestamp_nanos(i64::MAX / 2 + 1).unwrap();
-        assert_eq!(dt.duration_round(span).unwrap().to_string(), "2262-04-11 23:47:16.854775807");
+        let dt = DateTime::from_timestamp_nanos(i64::MAX / 2 + 1);
+        assert_eq!(
+            dt.duration_round(span).unwrap().to_string(),
+            "2262-04-11 23:47:16.854775807 UTC"
+        );
 
-        let dt = NaiveDateTime::from_timestamp_nanos(i64::MAX / 2 - 1).unwrap();
-        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
+        let dt = DateTime::from_timestamp_nanos(i64::MAX / 2 - 1);
+        assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00 UTC");
     }
 }

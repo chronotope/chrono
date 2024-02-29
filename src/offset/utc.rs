@@ -33,9 +33,9 @@ use crate::{Date, DateTime};
 /// # Example
 ///
 /// ```
-/// use chrono::{NaiveDateTime, TimeZone, Utc};
+/// use chrono::{DateTime, TimeZone, Utc};
 ///
-/// let dt = Utc.from_utc_datetime(&NaiveDateTime::from_timestamp_opt(61, 0).unwrap());
+/// let dt = DateTime::from_timestamp(61, 0).unwrap();
 ///
 /// assert_eq!(Utc.timestamp_opt(61, 0).unwrap(), dt);
 /// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
@@ -95,9 +95,7 @@ impl Utc {
     pub fn now() -> DateTime<Utc> {
         let now =
             SystemTime::now().duration_since(UNIX_EPOCH).expect("system time before Unix epoch");
-        let naive =
-            NaiveDateTime::from_timestamp_opt(now.as_secs() as i64, now.subsec_nanos()).unwrap();
-        Utc.from_utc_datetime(&naive)
+        DateTime::from_timestamp(now.as_secs() as i64, now.subsec_nanos()).unwrap()
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
