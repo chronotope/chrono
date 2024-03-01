@@ -748,8 +748,8 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[inline]
-    pub fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
-        self.date.with_year(year).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_year(year)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 1) changed.
@@ -778,8 +778,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_month(2), None); // No February 30
     /// ```
     #[inline]
-    pub fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
-        self.date.with_month(month).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_month(month)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 0) changed.
@@ -806,8 +806,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_month0(1), None); // No February 30
     /// ```
     #[inline]
-    pub fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
-        self.date.with_month0(month0).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_month0(month0)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 1) changed.
@@ -833,8 +833,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_day(31), None); // no September 31
     /// ```
     #[inline]
-    pub fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
-        self.date.with_day(day).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_day(&self, day: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_day(day)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 0) changed.
@@ -860,8 +860,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_day0(30), None); // no September 31
     /// ```
     #[inline]
-    pub fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
-        self.date.with_day0(day0).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_day0(&self, day0: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_day0(day0)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 1) changed.
@@ -897,8 +897,8 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[inline]
-    pub fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
-        self.date.with_ordinal(ordinal).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_ordinal(ordinal)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 0) changed.
@@ -934,8 +934,8 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[inline]
-    pub fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
-        self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
+    pub const fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_ordinal0(ordinal0)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the hour number changed.
@@ -960,8 +960,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_hour(24), None);
     /// ```
     #[inline]
-    pub fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
-        self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
+    pub const fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { time: try_opt!(self.time.with_hour(hour)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the minute number changed.
@@ -986,8 +986,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_minute(60), None);
     /// ```
     #[inline]
-    pub fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
-        self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
+    pub const fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { time: try_opt!(self.time.with_minute(min)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the second number changed.
@@ -1015,8 +1015,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_second(60), None);
     /// ```
     #[inline]
-    pub fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
-        self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
+    pub const fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { time: try_opt!(self.time.with_second(sec)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
@@ -1056,8 +1056,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
     /// ```
     #[inline]
-    pub fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
-        self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
+    pub const fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { time: try_opt!(self.time.with_nanosecond(nano)), ..*self })
     }
 
     /// The minimum possible `NaiveDateTime`.
