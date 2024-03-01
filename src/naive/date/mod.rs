@@ -1247,7 +1247,7 @@ impl NaiveDate {
     /// );
     /// ```
     #[inline]
-    pub fn with_year(&self, year: i32) -> Option<NaiveDate> {
+    pub const fn with_year(&self, year: i32) -> Option<NaiveDate> {
         // we need to operate with `mdf` since we should keep the month and day number as is
         let mdf = self.mdf();
 
@@ -1298,8 +1298,8 @@ impl NaiveDate {
     /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
     /// ```
     #[inline]
-    pub fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month).ok()?)
+    pub const fn with_month(&self, month: u32) -> Option<NaiveDate> {
+        self.with_mdf(try_opt!(ok!(self.mdf().with_month(month))))
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
@@ -1323,9 +1323,9 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // No Feb 30
     /// ```
     #[inline]
-    pub fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        let month = month0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_month(month).ok()?)
+    pub const fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
+        let month = try_opt!(month0.checked_add(1));
+        self.with_mdf(try_opt!(ok!(self.mdf().with_month(month))))
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1348,8 +1348,8 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(31), None); // no September 31
     /// ```
     #[inline]
-    pub fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day).ok()?)
+    pub const fn with_day(&self, day: u32) -> Option<NaiveDate> {
+        self.with_mdf(try_opt!(ok!(self.mdf().with_day(day))))
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
@@ -1372,9 +1372,9 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(30), None); // no September 31
     /// ```
     #[inline]
-    pub fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        let day = day0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_day(day).ok()?)
+    pub const fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
+        let day = try_opt!(day0.checked_add(1));
+        self.with_mdf(try_opt!(ok!(self.mdf().with_day(day))))
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
@@ -1401,7 +1401,7 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
     /// ```
     #[inline]
-    pub fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
+    pub const fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
         if ordinal == 0 || ordinal > 366 {
             return None;
         }
@@ -1436,8 +1436,8 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
     /// ```
     #[inline]
-    pub fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
-        let ordinal = ordinal0.checked_add(1)?;
+    pub const fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
+        let ordinal = try_opt!(ordinal0.checked_add(1));
         self.with_ordinal(ordinal)
     }
 
