@@ -1099,6 +1099,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
+    /// - The resulting date does not exist (February 29 in a non-leap year).
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
     /// - The resulting UTC datetime would be out of range.
@@ -1112,12 +1113,14 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
 
     /// Makes a new `DateTime` with the month number (starting from 1) changed.
     ///
+    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
+    ///
     /// See also the [`NaiveDate::with_month`] method.
     ///
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
     /// - The value for `month` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1133,7 +1136,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
     /// - The value for `month0` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1149,7 +1152,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `day(31)` in April).
     /// - The value for `day` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1165,7 +1168,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `day(30)` in April).
     /// - The value for `day0` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1181,7 +1184,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
     /// - The value for `ordinal` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1197,7 +1200,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
     /// - The value for `ordinal0` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.

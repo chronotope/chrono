@@ -1631,12 +1631,17 @@ impl Datelike for NaiveDate {
 
     /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
     ///
+    /// This method assumes you want to work on the date as a year-month-day value. Don't use it if
+    /// you want the ordinal to stay the same after changing the year, of if you want the week and
+    /// weekday values to stay the same.
+    ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or when the `NaiveDate` would be
-    /// out of range.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (February 29 in a non-leap year).
+    /// - The year is out of range for a `NaiveDate`.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
     /// use chrono::{Datelike, NaiveDate};
@@ -1651,12 +1656,22 @@ impl Datelike for NaiveDate {
     /// );
     /// ```
     ///
-    /// A leap day (February 29) is a good example that this method can return `None`.
+    /// A leap day (February 29) is a case where this method can return `None`.
     ///
     /// ```
     /// # use chrono::{NaiveDate, Datelike};
     /// assert!(NaiveDate::from_ymd_opt(2016, 2, 29).unwrap().with_year(2015).is_none());
     /// assert!(NaiveDate::from_ymd_opt(2016, 2, 29).unwrap().with_year(2020).is_some());
+    /// ```
+    ///
+    /// Don't use `with_year` if you want the ordinal date to stay the same:
+    ///
+    /// ```
+    /// # use chrono::{Datelike, NaiveDate};
+    /// assert_ne!(
+    ///     NaiveDate::from_yo_opt(2020, 100).unwrap().with_year(2023).unwrap(),
+    ///     NaiveDate::from_yo_opt(2023, 100).unwrap() // result is 2023-101
+    /// );
     /// ```
     #[inline]
     fn with_year(&self, year: i32) -> Option<NaiveDate> {
@@ -1674,9 +1689,11 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `month` is invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
+    /// - The value for `month` is invalid.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
     /// use chrono::{Datelike, NaiveDate};
@@ -1685,9 +1702,27 @@ impl Datelike for NaiveDate {
     ///     NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().with_month(10),
     ///     Some(NaiveDate::from_ymd_opt(2015, 10, 8).unwrap())
     /// );
-    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().with_month(13), None); // no month 13
-    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().with_month(2), None);
-    /// // no February 30
+    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().with_month(13), None); // No month 13
+    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().with_month(2), None); // No Feb 30
+    /// ```
+    ///
+    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
+    ///
+    /// ```
+    /// use chrono::{Datelike, NaiveDate};
+    ///
+    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
+    ///     date.with_year(year)?.with_month(month)
+    /// }
+    /// let d = NaiveDate::from_ymd_opt(2020, 2, 29).unwrap();
+    /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
+    ///
+    /// // Correct version:
+    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
+    ///     NaiveDate::from_ymd_opt(year, month, date.day())
+    /// }
+    /// let d = NaiveDate::from_ymd_opt(2020, 2, 29).unwrap();
+    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd_opt(2019, 1, 29));
     /// ```
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDate> {
@@ -1698,8 +1733,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `month0` is
-    /// invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
+    /// - The value for `month0` is invalid.
     ///
     /// # Example
     ///
@@ -1710,9 +1746,8 @@ impl Datelike for NaiveDate {
     ///     NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().with_month0(9),
     ///     Some(NaiveDate::from_ymd_opt(2015, 10, 8).unwrap())
     /// );
-    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().with_month0(12), None); // no month 13
-    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().with_month0(1), None);
-    /// // no February 30
+    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 8).unwrap().with_month0(12), None); // No month 12
+    /// assert_eq!(NaiveDate::from_ymd_opt(2015, 9, 30).unwrap().with_month0(1), None); // No Feb 30
     /// ```
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
@@ -1724,7 +1759,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `day` is invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `day(31)` in April).
+    /// - The value for `day` is invalid.
     ///
     /// # Example
     ///
@@ -1747,7 +1784,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `day0` is invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `day(30)` in April).
+    /// - The value for `day0` is invalid.
     ///
     /// # Example
     ///
@@ -1771,8 +1810,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal` is
-    /// invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
+    /// - The value for `ordinal` is invalid.
     ///
     /// # Example
     ///
@@ -1805,8 +1845,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal0` is
-    /// invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
+    /// - The value for `ordinal0` is invalid.
     ///
     /// # Example
     ///
