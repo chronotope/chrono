@@ -1193,6 +1193,245 @@ impl NaiveDate {
         self.yof() & (0b1000) == 0
     }
 
+    /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
+    ///
+    /// This method assumes you want to work on the date as a year-month-day value. Don't use it if
+    /// you want the ordinal to stay the same after changing the year, of if you want the week and
+    /// weekday values to stay the same.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (February 29 in a non-leap year).
+    /// - The year is out of range for a `NaiveDate`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(2016),
+    ///     Some(NaiveDate::from_ymd(2016, 9, 8).unwrap())
+    /// );
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(-308),
+    ///     Some(NaiveDate::from_ymd(-308, 9, 8).unwrap())
+    /// );
+    /// ```
+    ///
+    /// A leap day (February 29) is a case where this method can return `None`.
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2015).is_none());
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2020).is_some());
+    /// ```
+    ///
+    /// Don't use `with_year` if you want the ordinal date to stay the same:
+    ///
+    /// ```
+    /// # use chrono::NaiveDate;
+    /// assert_ne!(
+    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023).unwrap(),
+    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
+    /// );
+    /// ```
+    #[inline]
+    pub fn with_year(&self, year: i32) -> Option<NaiveDate> {
+        // we need to operate with `mdf` since we should keep the month and day number as is
+        let mdf = self.mdf();
+
+        // adjust the flags as needed
+        let flags = YearFlags::from_year(year);
+        let mdf = mdf.with_flags(flags);
+
+        ok!(NaiveDate::from_mdf(year, mdf))
+    }
+
+    /// Makes a new `NaiveDate` with the month number (starting from 1) changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
+    /// - The value for `month` is invalid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(10),
+    ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
+    /// );
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(13), None); // No month 13
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // No Feb 30
+    /// ```
+    ///
+    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
+    ///
+    /// ```
+    /// use chrono::{Datelike, Error, NaiveDate};
+    ///
+    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
+    ///     date.with_year(year)?.with_month(month)
+    /// }
+    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
+    /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
+    ///
+    /// // Correct version:
+    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
+    ///     NaiveDate::from_ymd(year, month, date.day())
+    /// }
+    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
+    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
+    /// ```
+    #[inline]
+    pub fn with_month(&self, month: u32) -> Option<NaiveDate> {
+        self.with_mdf(self.mdf().with_month(month).ok()?)
+    }
+
+    /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
+    /// - The value for `month0` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(9),
+    ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
+    /// );
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(12), None); // No month 12
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // No Feb 30
+    /// ```
+    #[inline]
+    pub fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
+        let month = month0.checked_add(1)?;
+        self.with_mdf(self.mdf().with_month(month).ok()?)
+    }
+
+    /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `day(31)` in April).
+    /// - The value for `day` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(30),
+    ///     Some(NaiveDate::from_ymd(2015, 9, 30).unwrap())
+    /// );
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(31), None); // no September 31
+    /// ```
+    #[inline]
+    pub fn with_day(&self, day: u32) -> Option<NaiveDate> {
+        self.with_mdf(self.mdf().with_day(day).ok()?)
+    }
+
+    /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `day(30)` in April).
+    /// - The value for `day0` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(29),
+    ///     Some(NaiveDate::from_ymd(2015, 9, 30).unwrap())
+    /// );
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(30), None); // no September 31
+    /// ```
+    #[inline]
+    pub fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
+        let day = day0.checked_add(1)?;
+        self.with_mdf(self.mdf().with_day(day).ok()?)
+    }
+
+    /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
+    /// - The value for `ordinal` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(60),
+    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(366),
+    ///            None); // 2015 had only 365 days
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(60),
+    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(366),
+    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
+    /// ```
+    #[inline]
+    pub fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
+        if ordinal == 0 || ordinal > 366 {
+            return None;
+        }
+        let yof = (self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32;
+        match yof & OL_MASK <= MAX_OL {
+            true => Some(NaiveDate::from_yof(yof)),
+            false => None, // Does not exist: Ordinal 366 in a common year.
+        }
+    }
+
+    /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
+    /// - The value for `ordinal0` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::NaiveDate;
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal0(59),
+    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal0(365),
+    ///            None); // 2015 had only 365 days
+    ///
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal0(59),
+    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
+    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal0(365),
+    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
+    /// ```
+    #[inline]
+    pub fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
+        let ordinal = ordinal0.checked_add(1)?;
+        self.with_ordinal(ordinal)
+    }
+
     // This duplicates `Datelike::year()`, because trait methods can't be const yet.
     #[inline]
     const fn year(&self) -> i32 {
@@ -1465,245 +1704,6 @@ impl Datelike for NaiveDate {
     #[inline]
     fn iso_week(&self) -> IsoWeek {
         IsoWeek::from_yof(self.year(), self.ordinal(), self.year_flags())
-    }
-
-    /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
-    ///
-    /// This method assumes you want to work on the date as a year-month-day value. Don't use it if
-    /// you want the ordinal to stay the same after changing the year, of if you want the week and
-    /// weekday values to stay the same.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (February 29 in a non-leap year).
-    /// - The year is out of range for a `NaiveDate`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{Datelike, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(2016),
-    ///     Some(NaiveDate::from_ymd(2016, 9, 8).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(-308),
-    ///     Some(NaiveDate::from_ymd(-308, 9, 8).unwrap())
-    /// );
-    /// ```
-    ///
-    /// A leap day (February 29) is a case where this method can return `None`.
-    ///
-    /// ```
-    /// # use chrono::{NaiveDate, Datelike};
-    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2015).is_none());
-    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2020).is_some());
-    /// ```
-    ///
-    /// Don't use `with_year` if you want the ordinal date to stay the same:
-    ///
-    /// ```
-    /// # use chrono::{Datelike, NaiveDate};
-    /// assert_ne!(
-    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023).unwrap(),
-    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
-    /// );
-    /// ```
-    #[inline]
-    fn with_year(&self, year: i32) -> Option<NaiveDate> {
-        // we need to operate with `mdf` since we should keep the month and day number as is
-        let mdf = self.mdf();
-
-        // adjust the flags as needed
-        let flags = YearFlags::from_year(year);
-        let mdf = mdf.with_flags(flags);
-
-        ok!(NaiveDate::from_mdf(year, mdf))
-    }
-
-    /// Makes a new `NaiveDate` with the month number (starting from 1) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
-    /// - The value for `month` is invalid.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use chrono::{Datelike, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(10),
-    ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(13), None); // No month 13
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // No Feb 30
-    /// ```
-    ///
-    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
-    ///
-    /// ```
-    /// use chrono::{Datelike, Error, NaiveDate};
-    ///
-    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
-    ///     date.with_year(year)?.with_month(month)
-    /// }
-    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
-    /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
-    ///
-    /// // Correct version:
-    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
-    ///     NaiveDate::from_ymd(year, month, date.day())
-    /// }
-    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
-    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
-    /// ```
-    #[inline]
-    fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_month(month).ok()?)
-    }
-
-    /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
-    /// - The value for `month0` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Datelike, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(9),
-    ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(12), None); // No month 12
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // No Feb 30
-    /// ```
-    #[inline]
-    fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        let month = month0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_month(month).ok()?)
-    }
-
-    /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `day(31)` in April).
-    /// - The value for `day` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Datelike, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(30),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 30).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(31), None); // no September 31
-    /// ```
-    #[inline]
-    fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(self.mdf().with_day(day).ok()?)
-    }
-
-    /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `day(30)` in April).
-    /// - The value for `day0` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{Datelike, NaiveDate};
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(29),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 30).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(30), None); // no September 31
-    /// ```
-    #[inline]
-    fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        let day = day0.checked_add(1)?;
-        self.with_mdf(self.mdf().with_day(day).ok()?)
-    }
-
-    /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
-    /// - The value for `ordinal` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(366),
-    ///            None); // 2015 had only 365 days
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(366),
-    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
-    /// ```
-    #[inline]
-    fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
-        if ordinal == 0 || ordinal > 366 {
-            return None;
-        }
-        let yof = (self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32;
-        match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate::from_yof(yof)),
-            false => None, // Does not exist: Ordinal 366 in a common year.
-        }
-    }
-
-    /// Makes a new `NaiveDate` with the day of year (starting from 0) changed.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
-    /// - The value for `ordinal0` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, Datelike};
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal0(365),
-    ///            None); // 2015 had only 365 days
-    ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal0(59),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal0(365),
-    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
-    /// ```
-    #[inline]
-    fn with_ordinal0(&self, ordinal0: u32) -> Option<NaiveDate> {
-        let ordinal = ordinal0.checked_add(1)?;
-        self.with_ordinal(ordinal)
     }
 }
 
