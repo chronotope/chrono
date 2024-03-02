@@ -15,6 +15,28 @@ use crate::Weekday;
 /// Any number that does not fit in `i64` is an error.
 #[inline]
 pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
+    let (s, n) = unsigned_number(s, min, max)?;
+    Ok((s, n.try_into().map_err(|_| OUT_OF_RANGE)?))
+}
+
+/// Tries to parse the negative number from `min` to `max` digits.
+///
+/// The absence of digits at all is an unconditional error.
+/// More than `max` digits are consumed up to the first `max` digits.
+/// Any number that does not fit in `i64` is an error.
+#[inline]
+pub(super) fn negative_number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
+    let (s, n) = unsigned_number(s, min, max)?;
+    let signed_neg = (n as i64).wrapping_neg();
+    if !signed_neg.is_negative() {
+        return Err(OUT_OF_RANGE);
+    }
+    Ok((s, signed_neg))
+}
+
+/// Tries to parse a number from `min` to `max` digits as an unsigned integer.
+#[inline]
+pub(super) fn unsigned_number(s: &str, min: usize, max: usize) -> ParseResult<(&str, u64)> {
     assert!(min <= max);
 
     // We are only interested in ascii numbers, so we can work with the `str` as bytes. We stop on
@@ -25,7 +47,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
         return Err(TOO_SHORT);
     }
 
-    let mut n = 0i64;
+    let mut n = 0u64;
     for (i, c) in bytes.iter().take(max).cloned().enumerate() {
         // cloned() = copied()
         if !c.is_ascii_digit() {
@@ -36,7 +58,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
             }
         }
 
-        n = match n.checked_mul(10).and_then(|n| n.checked_add((c - b'0') as i64)) {
+        n = match n.checked_mul(10).and_then(|n| n.checked_add((c - b'0') as u64)) {
             Some(n) => n,
             None => return Err(OUT_OF_RANGE),
         };
