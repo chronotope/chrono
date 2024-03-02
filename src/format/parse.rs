@@ -525,10 +525,7 @@ impl str::FromStr for DateTime<FixedOffset> {
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
-        let (s, _) = parse_rfc3339_relaxed(&mut parsed, s)?;
-        if !s.trim_start().is_empty() {
-            return Err(TOO_LONG);
-        }
+        parse(&mut parsed, s, [Item::Fixed(Fixed::RFC3339), Item::Space("")].iter())?;
         parsed.to_datetime()
     }
 }
