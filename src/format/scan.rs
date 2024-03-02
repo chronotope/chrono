@@ -215,34 +215,28 @@ where
         }
     }
 
-    const fn digits(s: &str) -> ParseResult<(u8, u8)> {
+    fn digits(s: &str) -> ParseResult<u8> {
         let b = s.as_bytes();
         if b.len() < 2 {
-            Err(TOO_SHORT)
-        } else {
-            Ok((b[0], b[1]))
+            return Err(TOO_SHORT);
+        }
+        match (b[0], b[1]) {
+            (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => Ok((h1 - b'0') * 10 + (h2 - b'0')),
+            _ => Err(INVALID),
         }
     }
     let negative = match s.chars().next() {
         Some('+') => {
-            // PLUS SIGN (U+2B)
             s = &s['+'.len_utf8()..];
-
             false
         }
         Some('-') => {
-            // HYPHEN-MINUS (U+2D)
             s = &s['-'.len_utf8()..];
-
             true
         }
-        Some('−') => {
+        Some('−') if allow_tz_minus_sign => {
             // MINUS SIGN (U+2212)
-            if !allow_tz_minus_sign {
-                return Err(INVALID);
-            }
             s = &s['−'.len_utf8()..];
-
             true
         }
         Some(_) => return Err(INVALID),
@@ -250,10 +244,7 @@ where
     };
 
     // hours (00--99)
-    let hours = match digits(s)? {
-        (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
-        _ => return Err(INVALID),
-    };
+    let hours = digits(s)? as i32;
     s = &s[2..];
 
     // colons (and possibly other separators)
@@ -261,21 +252,14 @@ where
 
     // minutes (00--59)
     // if the next two items are digits then we have to add minutes
-    let minutes = if let Ok(ds) = digits(s) {
-        match ds {
-            (m1 @ b'0'..=b'5', m2 @ b'0'..=b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
-            (b'6'..=b'9', b'0'..=b'9') => return Err(OUT_OF_RANGE),
-            _ => return Err(INVALID),
+    let minutes = match digits(s) {
+        Ok(m) if m >= 60 => return Err(OUT_OF_RANGE),
+        Ok(m) => {
+            s = &s[2..];
+            m as i32
         }
-    } else if allow_missing_minutes {
-        0
-    } else {
-        return Err(TOO_SHORT);
-    };
-    s = match s.len() {
-        len if len >= 2 => &s[2..],
-        0 => s,
-        _ => return Err(TOO_SHORT),
+        Err(_) if allow_missing_minutes => 0,
+        Err(e) => return Err(e),
     };
 
     let seconds = hours * 3600 + minutes * 60;
