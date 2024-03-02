@@ -364,7 +364,10 @@ fn parse_name<'a>(cursor: &mut Cursor<'a>) -> Result<&'a [u8], Error> {
 fn parse_offset(cursor: &mut Cursor) -> Result<i32, Error> {
     let (sign, hour, minute, second) = parse_signed_hhmmss(cursor)?;
 
-    if !(0..=24).contains(&hour) {
+    // POSIX allows offsets of up to 24:59:59.
+    // However in chrono we limit offsets to 23:59:59, which is already much more than the 14 hours
+    // largest offsets that see some real-world use.
+    if !(0..=23).contains(&hour) {
         return Err(Error::InvalidTzString("invalid offset hour"));
     }
     if !(0..=59).contains(&minute) {
