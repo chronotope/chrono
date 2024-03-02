@@ -357,7 +357,7 @@ where
                     Minute => (2, false, Parsed::set_minute),
                     Second => (2, false, Parsed::set_second),
                     Nanosecond => (9, false, Parsed::set_nanosecond),
-                    Timestamp => (usize::MAX, false, Parsed::set_timestamp),
+                    Timestamp => (usize::MAX, true, Parsed::set_timestamp),
 
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
@@ -366,8 +366,7 @@ where
                 s = s.trim_start();
                 let v = if signed {
                     if s.starts_with('-') {
-                        let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
-                        0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
+                        try_consume!(scan::negative_number(&s[1..], 1, usize::MAX))
                     } else if s.starts_with('+') {
                         try_consume!(scan::number(&s[1..], 1, usize::MAX))
                     } else {
@@ -765,6 +764,7 @@ mod tests {
         check("  +   42", &[Space("  "), num(Year)], Err(INVALID));
         check("-", &[num(Year)], Err(TOO_SHORT));
         check("+", &[num(Year)], Err(TOO_SHORT));
+        check("-9223372036854775808", &[num(Timestamp)], parsed!(timestamp: i64::MIN));
 
         // unsigned numeric
         check("345", &[num(Ordinal)], parsed!(ordinal: 345));

@@ -15,6 +15,16 @@ use crate::Weekday;
 /// Any number that does not fit in `i64` is an error.
 #[inline]
 pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
+    let (s, n) = negative_number(s, min, max)?;
+    Ok((s, n.checked_neg().ok_or(OUT_OF_RANGE)?))
+}
+
+/// Tries to parse a negative number from `min` to `max` digits.
+///
+/// This method parses a value as a negative integer, of wich the range is one larger than the range
+/// of positive integers. This is to allows us to parse `i64::MIN`.
+#[inline]
+pub(super) fn negative_number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
     assert!(min <= max);
 
     // We are only interested in ascii numbers, so we can work with the `str` as bytes. We stop on
@@ -36,7 +46,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
             }
         }
 
-        n = match n.checked_mul(10).and_then(|n| n.checked_add((c - b'0') as i64)) {
+        n = match n.checked_mul(10).and_then(|n| n.checked_sub((c - b'0') as i64)) {
             Some(n) => n,
             None => return Err(OUT_OF_RANGE),
         };
