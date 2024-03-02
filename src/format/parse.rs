@@ -1292,7 +1292,7 @@ mod tests {
         check("12345678", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+1", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
         check("+12", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 43_200));
-        check("+123", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
+        check("+123", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("+1234", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
         check("-1234", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240));
         check("−1234", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
@@ -1309,7 +1309,7 @@ mod tests {
         check("12:34:56", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+1:", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+12:", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 43_200));
-        check("+12:3", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_SHORT));
+        check("+12:3", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check("+12:34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: 45_240));
         check("-12:34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240));
         check("−12:34", &[internal_fixed(TimezoneOffsetPermissive)], parsed!(offset: -45_240)); // MINUS SIGN (U+2212)
@@ -1359,7 +1359,7 @@ mod tests {
         );
         check("🤠+12:34", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
         check("+12:34🤠", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
-        check("+12:🤠34", &[internal_fixed(TimezoneOffsetPermissive)], Err(INVALID));
+        check("+12:🤠34", &[internal_fixed(TimezoneOffsetPermissive)], Err(TOO_LONG));
         check(
             "+12:34🤠",
             &[internal_fixed(TimezoneOffsetPermissive), Literal("🤠")],
