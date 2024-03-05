@@ -424,25 +424,16 @@ where
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot }) => {
-                        if s.len() < 3 {
-                            return Err(TOO_SHORT);
-                        }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 3));
                         parsed.set_nanosecond(nano)?;
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot }) => {
-                        if s.len() < 6 {
-                            return Err(TOO_SHORT);
-                        }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 6));
                         parsed.set_nanosecond(nano)?;
                     }
 
                     &Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot }) => {
-                        if s.len() < 9 {
-                            return Err(TOO_SHORT);
-                        }
                         let nano = try_consume!(scan::nanosecond_fixed(s, 9));
                         parsed.set_nanosecond(nano)?;
                     }
