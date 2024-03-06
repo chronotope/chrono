@@ -820,7 +820,7 @@ impl Parsed {
                     59 => {}
                     // `datetime` is known to be off by one second.
                     0 => {
-                        datetime -= TimeDelta::try_seconds(1).unwrap();
+                        datetime -= TimeDelta::seconds(1).unwrap();
                     }
                     // otherwise it is impossible.
                     _ => return Err(IMPOSSIBLE),

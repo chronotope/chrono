@@ -15,7 +15,7 @@ fn test_datetime_add() {
         assert_eq!(lhs.checked_add_signed(rhs), sum);
         assert_eq!(lhs.checked_sub_signed(-rhs), sum);
     }
-    let seconds = |s| TimeDelta::try_seconds(s).unwrap();
+    let seconds = |s| TimeDelta::seconds(s).unwrap();
 
     check((2014, 5, 6, 7, 8, 9), seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
     check((2014, 5, 6, 7, 8, 9), seconds(-(3600 + 60 + 1)), Some((2014, 5, 6, 6, 7, 8)));
@@ -52,19 +52,19 @@ fn test_datetime_sub() {
     assert_eq!(since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 9)), TimeDelta::zero());
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 10), ymdhms(2014, 5, 6, 7, 8, 9)),
-        TimeDelta::try_seconds(1).unwrap()
+        TimeDelta::seconds(1).unwrap()
     );
     assert_eq!(
         since(ymdhms(2014, 5, 6, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-        TimeDelta::try_seconds(-1).unwrap()
+        TimeDelta::seconds(-1).unwrap()
     );
     assert_eq!(
         since(ymdhms(2014, 5, 7, 7, 8, 9), ymdhms(2014, 5, 6, 7, 8, 10)),
-        TimeDelta::try_seconds(86399).unwrap()
+        TimeDelta::seconds(86399).unwrap()
     );
     assert_eq!(
         since(ymdhms(2001, 9, 9, 1, 46, 39), ymdhms(1970, 1, 1, 0, 0, 0)),
-        TimeDelta::try_seconds(999_999_999).unwrap()
+        TimeDelta::seconds(999_999_999).unwrap()
     );
 }
 
