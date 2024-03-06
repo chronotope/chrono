@@ -26,7 +26,7 @@ const NANOS_PER_MICRO: i32 = 1000;
 /// The number of nanoseconds in a millisecond.
 const NANOS_PER_MILLI: i32 = 1_000_000;
 /// The number of nanoseconds in seconds.
-pub(crate) const NANOS_PER_SEC: i32 = 1_000_000_000;
+const NANOS_PER_SEC: i32 = 1_000_000_000;
 /// The number of microseconds per second.
 const MICROS_PER_SEC: i64 = 1_000_000;
 /// The number of milliseconds per second.
