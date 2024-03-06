@@ -26,9 +26,9 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
-use crate::try_opt;
 #[cfg(any(feature = "clock", feature = "std"))]
 use crate::OutOfRange;
+use crate::{expect, ok, try_opt};
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
@@ -139,7 +139,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp(&self) -> i64 {
-        self.datetime.timestamp()
+        let gregorian_day = self.datetime.date().num_days_from_ce() as i64;
+        let seconds_from_midnight = self.datetime.time().num_seconds_from_midnight() as i64;
+        (gregorian_day - UNIX_EPOCH_DAY) * 86_400 + seconds_from_midnight
     }
 
     /// Returns the number of non-leap-milliseconds since January 1, 1970 UTC.
@@ -168,7 +170,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_millis(&self) -> i64 {
-        self.datetime.timestamp_millis()
+        let as_ms = self.timestamp() * 1000;
+        as_ms + self.timestamp_subsec_millis() as i64
     }
 
     /// Returns the number of non-leap-microseconds since January 1, 1970 UTC.
@@ -197,7 +200,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_micros(&self) -> i64 {
-        self.datetime.timestamp_micros()
+        let as_us = self.timestamp() * 1_000_000;
+        as_us + self.timestamp_subsec_micros() as i64
     }
 
     /// Returns the number of non-leap-nanoseconds since January 1, 1970 UTC.
@@ -266,7 +270,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_nanos(&self) -> Option<i64> {
-        self.datetime.timestamp_nanos()
+        let mut timestamp = self.timestamp();
+        let mut subsec_nanos = self.timestamp_subsec_nanos() as i64;
+        // `(timestamp * 1_000_000_000) + subsec_nanos` may create a temporary that underflows while
+        // the final value can be represented as an `i64`.
+        // As workaround we converting the negative case to:
+        // `((timestamp + 1) * 1_000_000_000) + (ns - 1_000_000_000)``
+        //
+        // Also see <https://github.com/chronotope/chrono/issues/1289>.
+        if timestamp < 0 {
+            subsec_nanos -= 1_000_000_000;
+            timestamp += 1;
+        }
+        try_opt!(timestamp.checked_mul(1_000_000_000)).checked_add(subsec_nanos)
     }
 
     /// Returns the number of milliseconds since the last second boundary.
@@ -275,7 +291,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_millis(&self) -> u32 {
-        self.datetime.timestamp_subsec_millis()
+        self.timestamp_subsec_nanos() / 1_000_000
     }
 
     /// Returns the number of microseconds since the last second boundary.
@@ -284,7 +300,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_micros(&self) -> u32 {
-        self.datetime.timestamp_subsec_micros()
+        self.timestamp_subsec_nanos() / 1_000
     }
 
     /// Returns the number of nanoseconds since the last second boundary
@@ -293,7 +309,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_nanos(&self) -> u32 {
-        self.datetime.timestamp_subsec_nanos()
+        self.datetime.time().nanosecond()
     }
 
     /// Retrieves an associated offset from UTC.
@@ -357,13 +373,17 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `months` is zero).
     #[must_use]
-    pub fn checked_add_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
-            .checked_add_months(rhs)?
+    pub fn checked_add_months(self, months: Months) -> Option<DateTime<Tz>> {
+        // `NaiveDate::checked_add_months` has a fast path for `Months(0)` that does not validate
+        // the resulting date, with which we can return `Some` even for an out of range local
+        // datetime.
+        self.overflowing_naive_local()
+            .checked_add_months(months)?
             .and_local_timezone(Tz::from_offset(&self.offset))
             .single()
     }
@@ -390,13 +410,17 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `months` is zero).
     #[must_use]
-    pub fn checked_sub_months(self, rhs: Months) -> Option<DateTime<Tz>> {
-        self.naive_local()
-            .checked_sub_months(rhs)?
+    pub fn checked_sub_months(self, months: Months) -> Option<DateTime<Tz>> {
+        // `NaiveDate::checked_sub_months` has a fast path for `Months(0)` that does not validate
+        // the resulting date, with which we can return `Some` even for an out of range local
+        // datetime.
+        self.overflowing_naive_local()
+            .checked_sub_months(months)?
             .and_local_timezone(Tz::from_offset(&self.offset))
             .single()
     }
@@ -406,15 +430,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `days` is zero).
     #[must_use]
     pub fn checked_add_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_add_days(days)?
-            .and_local_timezone(TimeZone::from_offset(&self.offset))
-            .single()
+        if days == Days::new(0) {
+            return Some(self);
+        }
+        // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
+        // does not validate the resulting date. This allows us to return `Some` even for an out of
+        // range local datetime when adding `Days(0)`.
+        self.overflowing_naive_local()
+            .checked_add_days(days)
+            .and_then(|dt| self.timezone().from_local_datetime(&dt).single())
+            .filter(|dt| dt <= &DateTime::<Utc>::MAX_UTC)
     }
 
     /// Subtract a duration in [`Days`] from the date part of the `DateTime`.
@@ -422,15 +453,19 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date would be out of range.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless `days` is zero).
     #[must_use]
     pub fn checked_sub_days(self, days: Days) -> Option<Self> {
-        self.naive_local()
-            .checked_sub_days(days)?
-            .and_local_timezone(TimeZone::from_offset(&self.offset))
-            .single()
+        // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
+        // does not validate the resulting date. This allows us to return `Some` even for an out of
+        // range local datetime when adding `Days(0)`.
+        self.overflowing_naive_local()
+            .checked_sub_days(days)
+            .and_then(|dt| self.timezone().from_local_datetime(&dt).single())
+            .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC)
     }
 
     /// Subtracts another `DateTime` from the current date and time.
@@ -567,7 +602,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
 }
 
 impl DateTime<Utc> {
-    /// Makes a new [`DateTime<Utc>`] from the number of non-leap seconds
+    /// Makes a new `DateTime<Utc>` from the number of non-leap seconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp")
     /// and the number of nanoseconds since the last whole non-leap second.
     ///
@@ -589,10 +624,9 @@ impl DateTime<Utc> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{DateTime, Utc};
+    /// use chrono::DateTime;
     ///
-    /// let dt: DateTime<Utc> =
-    ///     DateTime::<Utc>::from_timestamp(1431648000, 0).expect("invalid timestamp");
+    /// let dt = DateTime::from_timestamp(1431648000, 0).expect("invalid timestamp");
     ///
     /// assert_eq!(dt.to_string(), "2015-05-15 00:00:00 UTC");
     /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
@@ -600,16 +634,20 @@ impl DateTime<Utc> {
     #[inline]
     #[must_use]
     pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
-        Some(DateTime {
-            datetime: try_opt!(NaiveDateTime::from_timestamp(secs, nsecs)),
-            offset: Utc,
-        })
+        let days = secs.div_euclid(86_400) + UNIX_EPOCH_DAY;
+        let secs = secs.rem_euclid(86_400);
+        if days < i32::MIN as i64 || days > i32::MAX as i64 {
+            return None;
+        }
+        let date = try_opt!(ok!(NaiveDate::from_num_days_from_ce(days as i32)));
+        let time = try_opt!(ok!(NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs)));
+        Some(date.and_time(time).and_utc())
     }
 
-    /// Makes a new [`DateTime<Utc>`] from the number of non-leap milliseconds
+    /// Makes a new `DateTime<Utc>` from the number of non-leap milliseconds
     /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
     ///
-    /// This is guaranteed to round-trip with regard to [`timestamp_millis`](DateTime::timestamp_millis).
+    /// This is guaranteed to round-trip with [`timestamp_millis`](DateTime::timestamp_millis).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
     /// [`TimeZone::timestamp_millis`] or [`DateTime::with_timezone`].
@@ -621,10 +659,9 @@ impl DateTime<Utc> {
     /// # Example
     ///
     /// ```
-    /// use chrono::{DateTime, Utc};
+    /// use chrono::DateTime;
     ///
-    /// let dt: DateTime<Utc> =
-    ///     DateTime::<Utc>::from_timestamp_millis(947638923004).expect("invalid timestamp");
+    /// let dt = DateTime::from_timestamp_millis(947638923004).expect("invalid timestamp");
     ///
     /// assert_eq!(dt.to_string(), "2000-01-12 01:02:03.004 UTC");
     /// assert_eq!(DateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap(), dt);
@@ -632,7 +669,81 @@ impl DateTime<Utc> {
     #[inline]
     #[must_use]
     pub const fn from_timestamp_millis(millis: i64) -> Option<Self> {
-        Some(try_opt!(NaiveDateTime::from_timestamp_millis(millis)).and_utc())
+        let secs = millis.div_euclid(1000);
+        let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
+        Self::from_timestamp(secs, nsecs)
+    }
+
+    /// Creates a new `DateTime<Utc>` from the number of non-leap microseconds
+    /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
+    ///
+    /// This is guaranteed to round-trip with [`timestamp_micros`](DateTime::timestamp_micros).
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_micros`] or [`DateTime::with_timezone`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the number of microseconds would be out of range for a `NaiveDateTime`
+    /// (more than ca. 262,000 years away from common era)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::DateTime;
+    ///
+    /// let timestamp_micros: i64 = 1662921288000000; // Sun, 11 Sep 2022 18:34:48 UTC
+    /// let dt = DateTime::from_timestamp_micros(timestamp_micros);
+    /// assert!(dt.is_some());
+    /// assert_eq!(timestamp_micros, dt.expect("invalid timestamp").timestamp_micros());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_micros: i64 = -2208936075000000; // Mon, 1 Jan 1900 14:38:45 UTC
+    /// let dt = DateTime::from_timestamp_micros(timestamp_micros);
+    /// assert!(dt.is_some());
+    /// assert_eq!(timestamp_micros, dt.expect("invalid timestamp").timestamp_micros());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_micros(micros: i64) -> Option<Self> {
+        let secs = micros.div_euclid(1_000_000);
+        let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
+        Self::from_timestamp(secs, nsecs)
+    }
+
+    /// Creates a new [`DateTime<Utc>`] from the number of non-leap microseconds
+    /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
+    ///
+    /// This is guaranteed to round-trip with [`timestamp_nanos`](DateTime::timestamp_nanos).
+    ///
+    /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
+    /// [`TimeZone::timestamp_nanos`] or [`DateTime::with_timezone`].
+    ///
+    /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
+    ///
+    /// An `i64` with nanosecond precision can span a range of ~584 years. Because all values can
+    /// be represented as a `DateTime` this method never fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::DateTime;
+    ///
+    /// let timestamp_nanos: i64 = 1662921288_000_000_000; // Sun, 11 Sep 2022 18:34:48 UTC
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos().unwrap());
+    ///
+    /// // Negative timestamps (before the UNIX epoch) are supported as well.
+    /// let timestamp_nanos: i64 = -2208936075_000_000_000; // Mon, 1 Jan 1900 14:38:45 UTC
+    /// let dt = DateTime::from_timestamp_nanos(timestamp_nanos);
+    /// assert_eq!(timestamp_nanos, dt.timestamp_nanos().unwrap());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn from_timestamp_nanos(nanos: i64) -> Self {
+        let secs = nanos.div_euclid(1_000_000_000);
+        let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
+        expect!(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
@@ -997,22 +1108,28 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
-    /// - When the `NaiveDateTime` would be out of range.
+    /// - The resulting date does not exist (February 29 in a non-leap year).
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
+    /// - The resulting UTC datetime would be out of range.
+    /// - The resulting local datetime would be out of range (unless the year remains the same).
     fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_year(year))
+        map_local(self, |dt| match dt.year() == year {
+            true => Some(dt),
+            false => dt.with_year(year),
+        })
     }
 
     /// Makes a new `DateTime` with the month number (starting from 1) changed.
+    ///
+    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
     ///
     /// See also the [`NaiveDate::with_month`] method.
     ///
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
     /// - The value for `month` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1028,7 +1145,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
     /// - The value for `month0` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1044,7 +1161,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `day(31)` in April).
     /// - The value for `day` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1060,7 +1177,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (for example `day(30)` in April).
     /// - The value for `day0` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1076,7 +1193,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
     /// - The value for `ordinal` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1092,7 +1209,7 @@ impl<Tz: TimeZone> Datelike for DateTime<Tz> {
     /// # Errors
     ///
     /// Returns `None` if:
-    /// - The resulting date does not exist.
+    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
     /// - The value for `ordinal0` is invalid.
     /// - The local time at the resulting date does not exist or is ambiguous, for example during a
     ///   daylight saving time transition.
@@ -1734,6 +1851,16 @@ where
         Ok(DateTime::from_naive_utc_and_offset(datetime, offset))
     }
 }
+
+/// Number of days between Januari 1, 1970 and December 31, 1 BCE which we define to be day 0.
+/// 4 full leap year cycles until December 31, 1600     4 * 146097 = 584388
+/// 1 day until January 1, 1601                                           1
+/// 369 years until Januari 1, 1970                      369 * 365 = 134685
+/// of which floor(369 / 4) are leap years          floor(369 / 4) =     92
+/// except for 1700, 1800 and 1900                                       -3 +
+///                                                                  --------
+///                                                                  719163
+const UNIX_EPOCH_DAY: i64 = 719_163;
 
 #[cfg(all(test, feature = "serde"))]
 fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)

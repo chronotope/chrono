@@ -151,7 +151,7 @@ impl Cache {
         if !local {
             let offset = self
                 .zone
-                .find_local_time_type(d.timestamp())
+                .find_local_time_type(d.and_utc().timestamp())
                 .expect("unable to select local time type")
                 .offset();
 
@@ -164,7 +164,7 @@ impl Cache {
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
         // the entire time was skipped in which case we will return LocalResult::None anyway.
         self.zone
-            .find_local_time_type_from_local(d.timestamp(), d.year())
+            .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
             .expect("unable to select local time type")
             .map(|o| FixedOffset::east(o.offset()).unwrap())
     }

@@ -250,7 +250,7 @@ mod tests {
     #[cfg(windows)]
     use crate::offset::local::{lookup_with_dst_transitions, Transition};
     use crate::offset::TimeZone;
-    use crate::{Datelike, TimeDelta, Utc};
+    use crate::{Datelike, Days, Utc};
     #[cfg(windows)]
     use crate::{FixedOffset, LocalResult, NaiveDate, NaiveDateTime};
 
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_past() {
-        let distant_past = Local::now() - TimeDelta::days(365 * 500);
+        let distant_past = Local::now() - Days::new(365 * 500);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
 
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn verify_correct_offsets_distant_future() {
-        let distant_future = Local::now() + TimeDelta::days(365 * 35000);
+        let distant_future = Local::now() + Days::new(365 * 35000);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
         let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
 

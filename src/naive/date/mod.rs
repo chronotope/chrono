@@ -35,7 +35,7 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{ok, try_err, try_opt};
+use crate::{expect, ok, try_err, try_opt};
 use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{Mdf, YearFlags};
@@ -200,7 +200,7 @@ impl NaiveDate {
     /// assert!(from_yo(2015, 100).is_ok());
     /// assert_eq!(from_yo(2015, 0), Err(Error::InvalidArgument));
     /// assert!(from_yo(2015, 365).is_ok());
-    /// assert_eq!(from_yo(2015, 366),  Err(Error::DoesNotExist));
+    /// assert_eq!(from_yo(2015, 366), Err(Error::DoesNotExist));
     /// assert!(from_yo(-4, 366).is_ok()); // 5 BCE is a leap year
     /// assert_eq!(from_yo(400000, 1), Err(Error::OutOfRange));
     /// assert_eq!(from_yo(-400000, 1), Err(Error::OutOfRange));
@@ -613,10 +613,14 @@ impl NaiveDate {
 
     /// Add a duration of `i32` days to the date.
     pub(crate) const fn add_days(self, days: i32) -> Option<Self> {
-        // fast path if the result is within the same year
+        // Fast path if the result is within the same year.
+        // Also `DateTime::checked_(add|sub)_days` relies on this path, because if the value remains
+        // within the year it doesn't do a check if the year is in range.
+        // This way `DateTime:checked_(add|sub)_days(Days::new(0))` can be a no-op on dates were the
+        // local datetime is beyond `NaiveDate::{MIN, MAX}.
         const ORDINAL_MASK: i32 = 0b1_1111_1111_0000;
         if let Some(ordinal) = ((self.yof() & ORDINAL_MASK) >> 4).checked_add(days) {
-            if ordinal > 0 && ordinal <= 365 {
+            if ordinal > 0 && ordinal <= (365 + self.leap_year() as i32) {
                 let year_and_flags = self.yof() & !ORDINAL_MASK;
                 return Some(NaiveDate::from_yof(year_and_flags | (ordinal << 4)));
             }
@@ -882,16 +886,16 @@ impl NaiveDate {
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5).unwrap();
     /// assert_eq!(
-    ///     d.checked_add_signed(TimeDelta::days(40)),
+    ///     d.checked_add_signed(TimeDelta::try_days(40).unwrap()),
     ///     Some(NaiveDate::from_ymd(2015, 10, 15).unwrap())
     /// );
     /// assert_eq!(
-    ///     d.checked_add_signed(TimeDelta::days(-40)),
+    ///     d.checked_add_signed(TimeDelta::try_days(-40).unwrap()),
     ///     Some(NaiveDate::from_ymd(2015, 7, 27).unwrap())
     /// );
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)), None);
-    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)), None);
+    /// assert_eq!(d.checked_add_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
+    /// assert_eq!(d.checked_add_signed(TimeDelta::try_days(-1_000_000_000).unwrap()), None);
+    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::try_days(1).unwrap()), None);
     /// ```
     #[must_use]
     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
@@ -915,16 +919,16 @@ impl NaiveDate {
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5).unwrap();
     /// assert_eq!(
-    ///     d.checked_sub_signed(TimeDelta::days(40)),
+    ///     d.checked_sub_signed(TimeDelta::try_days(40).unwrap()),
     ///     Some(NaiveDate::from_ymd(2015, 7, 27).unwrap())
     /// );
     /// assert_eq!(
-    ///     d.checked_sub_signed(TimeDelta::days(-40)),
+    ///     d.checked_sub_signed(TimeDelta::try_days(-40).unwrap()),
     ///     Some(NaiveDate::from_ymd(2015, 10, 15).unwrap())
     /// );
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)), None);
-    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)), None);
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::try_days(1_000_000_000).unwrap()), None);
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::try_days(-1_000_000_000).unwrap()), None);
+    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::try_days(1).unwrap()), None);
     /// ```
     #[must_use]
     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
@@ -950,12 +954,27 @@ impl NaiveDate {
     /// let since = NaiveDate::signed_duration_since;
     ///
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 1)), TimeDelta::zero());
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 12, 31)), TimeDelta::days(1));
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 2)), TimeDelta::days(-1));
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 9, 23)), TimeDelta::days(100));
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)), TimeDelta::days(365));
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)), TimeDelta::days(365 * 4 + 1));
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), TimeDelta::days(365 * 400 + 97));
+    /// assert_eq!(
+    ///     since(from_ymd(2014, 1, 1), from_ymd(2013, 12, 31)),
+    ///     TimeDelta::try_days(1).unwrap()
+    /// );
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 2)), TimeDelta::try_days(-1).unwrap());
+    /// assert_eq!(
+    ///     since(from_ymd(2014, 1, 1), from_ymd(2013, 9, 23)),
+    ///     TimeDelta::try_days(100).unwrap()
+    /// );
+    /// assert_eq!(
+    ///     since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)),
+    ///     TimeDelta::try_days(365).unwrap()
+    /// );
+    /// assert_eq!(
+    ///     since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)),
+    ///     TimeDelta::try_days(365 * 4 + 1).unwrap()
+    /// );
+    /// assert_eq!(
+    ///     since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)),
+    ///     TimeDelta::try_days(365 * 400 + 97).unwrap()
+    /// );
     /// ```
     #[must_use]
     pub const fn signed_duration_since(self, rhs: NaiveDate) -> TimeDelta {
@@ -965,7 +984,10 @@ impl NaiveDate {
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
         let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i64;
         let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i64;
-        TimeDelta::days((year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2))
+        let days = (year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2);
+        // The range of `TimeDelta` is ca. 585 million years, the range of `NaiveDate` ca. 525.000
+        // years.
+        expect!(TimeDelta::try_days(days), "always in range")
     }
 
     /// Returns the number of whole years from the given `base` until `self`.
@@ -1456,12 +1478,17 @@ impl Datelike for NaiveDate {
 
     /// Makes a new `NaiveDate` with the year number changed, while keeping the same month and day.
     ///
+    /// This method assumes you want to work on the date as a year-month-day value. Don't use it if
+    /// you want the ordinal to stay the same after changing the year, of if you want the week and
+    /// weekday values to stay the same.
+    ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or when the `NaiveDate` would be
-    /// out of range.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (February 29 in a non-leap year).
+    /// - The year is out of range for a `NaiveDate`.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
     /// use chrono::{Datelike, NaiveDate};
@@ -1476,12 +1503,22 @@ impl Datelike for NaiveDate {
     /// );
     /// ```
     ///
-    /// A leap day (February 29) is a good example that this method can return `None`.
+    /// A leap day (February 29) is a case where this method can return `None`.
     ///
     /// ```
     /// # use chrono::{NaiveDate, Datelike};
     /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2015).is_none());
     /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2020).is_some());
+    /// ```
+    ///
+    /// Don't use `with_year` if you want the ordinal date to stay the same:
+    ///
+    /// ```
+    /// # use chrono::{Datelike, NaiveDate};
+    /// assert_ne!(
+    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023).unwrap(),
+    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
+    /// );
     /// ```
     #[inline]
     fn with_year(&self, year: i32) -> Option<NaiveDate> {
@@ -1499,9 +1536,11 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `month` is invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
+    /// - The value for `month` is invalid.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
     /// use chrono::{Datelike, NaiveDate};
@@ -1510,8 +1549,27 @@ impl Datelike for NaiveDate {
     ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(10),
     ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
     /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(13), None); // no month 13
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // no February 30
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(13), None); // No month 13
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // No Feb 30
+    /// ```
+    ///
+    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
+    ///
+    /// ```
+    /// use chrono::{Datelike, Error, NaiveDate};
+    ///
+    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
+    ///     date.with_year(year)?.with_month(month)
+    /// }
+    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
+    /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
+    ///
+    /// // Correct version:
+    /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
+    ///     NaiveDate::from_ymd(year, month, date.day())
+    /// }
+    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
+    /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
     /// ```
     #[inline]
     fn with_month(&self, month: u32) -> Option<NaiveDate> {
@@ -1522,8 +1580,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `month0` is
-    /// invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
+    /// - The value for `month0` is invalid.
     ///
     /// # Example
     ///
@@ -1534,8 +1593,8 @@ impl Datelike for NaiveDate {
     ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(9),
     ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
     /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(12), None); // no month 13
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // no February 30
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(12), None); // No month 12
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // No Feb 30
     /// ```
     #[inline]
     fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
@@ -1547,7 +1606,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `day` is invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `day(31)` in April).
+    /// - The value for `day` is invalid.
     ///
     /// # Example
     ///
@@ -1569,7 +1630,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `day0` is invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (for example `day(30)` in April).
+    /// - The value for `day0` is invalid.
     ///
     /// # Example
     ///
@@ -1592,8 +1655,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal` is
-    /// invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
+    /// - The value for `ordinal` is invalid.
     ///
     /// # Example
     ///
@@ -1626,8 +1690,9 @@ impl Datelike for NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date does not exist, or if the value for `ordinal0` is
-    /// invalid.
+    /// Returns `None` if:
+    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
+    /// - The value for `ordinal0` is invalid.
     ///
     /// # Example
     ///
@@ -1669,13 +1734,22 @@ impl Datelike for NaiveDate {
 /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 ///
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::zero(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(86399), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(-86399), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(1), from_ymd(2014, 1, 2));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(-1), from_ymd(2013, 12, 31));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(364), from_ymd(2014, 12, 31));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(365 * 4 + 1), from_ymd(2018, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(365 * 400 + 97), from_ymd(2414, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::try_seconds(86399).unwrap(), from_ymd(2014, 1, 1));
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) + TimeDelta::try_seconds(-86399).unwrap(),
+///     from_ymd(2014, 1, 1)
+/// );
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::try_days(1).unwrap(), from_ymd(2014, 1, 2));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::try_days(-1).unwrap(), from_ymd(2013, 12, 31));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::try_days(364).unwrap(), from_ymd(2014, 12, 31));
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) + TimeDelta::try_days(365 * 4 + 1).unwrap(),
+///     from_ymd(2018, 1, 1)
+/// );
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) + TimeDelta::try_days(365 * 400 + 97).unwrap(),
+///     from_ymd(2414, 1, 1)
+/// );
 /// ```
 ///
 /// [`NaiveDate::checked_add_signed`]: crate::NaiveDate::checked_add_signed
@@ -1812,13 +1886,22 @@ impl Sub<Days> for NaiveDate {
 /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 ///
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::zero(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(86399), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(-86399), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(1), from_ymd(2013, 12, 31));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(-1), from_ymd(2014, 1, 2));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(364), from_ymd(2013, 1, 2));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(365 * 4 + 1), from_ymd(2010, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(365 * 400 + 97), from_ymd(1614, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::try_seconds(86399).unwrap(), from_ymd(2014, 1, 1));
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) - TimeDelta::try_seconds(-86399).unwrap(),
+///     from_ymd(2014, 1, 1)
+/// );
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::try_days(1).unwrap(), from_ymd(2013, 12, 31));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::try_days(-1).unwrap(), from_ymd(2014, 1, 2));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::try_days(364).unwrap(), from_ymd(2013, 1, 2));
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) - TimeDelta::try_days(365 * 4 + 1).unwrap(),
+///     from_ymd(2010, 1, 1)
+/// );
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) - TimeDelta::try_days(365 * 400 + 97).unwrap(),
+///     from_ymd(1614, 1, 1)
+/// );
 /// ```
 ///
 /// [`NaiveDate::checked_sub_signed`]: crate::NaiveDate::checked_sub_signed
@@ -1865,12 +1948,18 @@ impl SubAssign<TimeDelta> for NaiveDate {
 /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 ///
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1), TimeDelta::zero());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), TimeDelta::days(1));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2), TimeDelta::days(-1));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23), TimeDelta::days(100));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), TimeDelta::days(365));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1), TimeDelta::days(365 * 4 + 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1), TimeDelta::days(365 * 400 + 97));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), TimeDelta::try_days(1).unwrap());
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2), TimeDelta::try_days(-1).unwrap());
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23), TimeDelta::try_days(100).unwrap());
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), TimeDelta::try_days(365).unwrap());
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1),
+///     TimeDelta::try_days(365 * 4 + 1).unwrap()
+/// );
+/// assert_eq!(
+///     from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1),
+///     TimeDelta::try_days(365 * 400 + 97).unwrap()
+/// );
 /// ```
 impl Sub<NaiveDate> for NaiveDate {
     type Output = TimeDelta;
@@ -1934,7 +2023,7 @@ impl Iterator for NaiveDateWeeksIterator {
 
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.value;
-        self.value = current.checked_add_signed(TimeDelta::weeks(1))?;
+        self.value = current.checked_add_days(Days::new(7))?;
         Some(current)
     }
 
@@ -1949,7 +2038,7 @@ impl ExactSizeIterator for NaiveDateWeeksIterator {}
 impl DoubleEndedIterator for NaiveDateWeeksIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
         let current = self.value;
-        self.value = current.checked_sub_signed(TimeDelta::weeks(1))?;
+        self.value = current.checked_sub_days(Days::new(7))?;
         Some(current)
     }
 }

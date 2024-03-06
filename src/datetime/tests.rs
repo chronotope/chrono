@@ -49,7 +49,7 @@ impl TimeZone for DstTester {
             DstTester::TO_WINTER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() - TimeDelta::hours(1));
+        .and_time(DstTester::transition_start_local() - TimeDelta::try_hours(1).unwrap());
 
         let local_to_summer_transition_start = NaiveDate::from_ymd(
             local.year(),
@@ -65,7 +65,7 @@ impl TimeZone for DstTester {
             DstTester::TO_SUMMER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() + TimeDelta::hours(1));
+        .and_time(DstTester::transition_start_local() + TimeDelta::try_hours(1).unwrap());
 
         if *local < local_to_winter_transition_end || *local >= local_to_summer_transition_end {
             LocalResult::Single(DstTester::summer_offset())
@@ -113,6 +113,189 @@ impl TimeZone for DstTester {
             panic!("Unexpected utc time {}", utc)
         }
     }
+}
+
+#[test]
+fn test_datetime_from_timestamp_millis() {
+    let valid_map = [
+        (1662921288000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123, "2022-09-11 18:34:48.123000000"),
+        (1662921287890, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000, "1900-01-01 14:38:45.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_millis, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_millis(timestamp_millis).unwrap();
+        assert_eq!(timestamp_millis, datetime.timestamp_millis());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    let invalid = [i64::MAX, i64::MIN];
+
+    for timestamp_millis in invalid.iter().copied() {
+        let datetime = DateTime::from_timestamp_millis(timestamp_millis);
+        assert!(datetime.is_none());
+    }
+
+    // Test that the result of `from_timestamp_millis` compares equal to
+    // that of `from_timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().cloned() {
+        assert_eq!(DateTime::from_timestamp_millis(secs * 1000), DateTime::from_timestamp(secs, 0));
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp_micros() {
+    let valid_map = [
+        (1662921288000000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123456, "2022-09-11 18:34:48.123456000"),
+        (1662921287890000, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000000, "1900-01-01 14:38:45.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_micros, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_micros(timestamp_micros).unwrap();
+        assert_eq!(timestamp_micros, datetime.timestamp_micros());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    let invalid = [i64::MAX, i64::MIN];
+
+    for timestamp_micros in invalid.iter().copied() {
+        let datetime = DateTime::from_timestamp_micros(timestamp_micros);
+        assert!(datetime.is_none());
+    }
+
+    // Test that the result of `TimeZone::timestamp_micros` compares equal to
+    // that of `TimeZone::timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().copied() {
+        assert_eq!(
+            DateTime::from_timestamp_micros(secs * 1_000_000),
+            DateTime::from_timestamp(secs, 0)
+        );
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp_nanos() {
+    let valid_map = [
+        (1662921288000000000, "2022-09-11 18:34:48.000000000"),
+        (1662921288123456000, "2022-09-11 18:34:48.123456000"),
+        (1662921288123456789, "2022-09-11 18:34:48.123456789"),
+        (1662921287890000000, "2022-09-11 18:34:47.890000000"),
+        (-2208936075000000000, "1900-01-01 14:38:45.000000000"),
+        (-5337182663000000000, "1800-11-15 01:15:37.000000000"),
+        (0, "1970-01-01 00:00:00.000000000"),
+        (119731017000000000, "1973-10-17 18:36:57.000000000"),
+        (1234567890000000000, "2009-02-13 23:31:30.000000000"),
+        (2034061609000000000, "2034-06-16 09:06:49.000000000"),
+    ];
+
+    for (timestamp_nanos, _formatted) in valid_map.iter().copied() {
+        let datetime = DateTime::from_timestamp_nanos(timestamp_nanos);
+        assert_eq!(timestamp_nanos, datetime.timestamp_nanos().unwrap());
+        #[cfg(feature = "alloc")]
+        assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
+    }
+
+    const A_BILLION: i64 = 1_000_000_000;
+    // Maximum datetime in nanoseconds
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos().unwrap();
+    assert_eq!(
+        Some(DateTime::from_timestamp_nanos(nanos)),
+        DateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    );
+    // Minimum datetime in nanoseconds
+    let minimum = "1677-09-21T00:12:44.000000000UTC";
+    let parsed: DateTime<Utc> = minimum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos().unwrap();
+    assert_eq!(
+        Some(DateTime::from_timestamp_nanos(nanos)),
+        DateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
+    );
+
+    // Test that the result of `TimeZone::timestamp_nanos` compares equal to
+    // that of `TimeZone::timestamp_opt`.
+    let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
+    for secs in secs_test.iter().copied() {
+        assert_eq!(
+            Some(DateTime::from_timestamp_nanos(secs * 1_000_000_000)),
+            DateTime::from_timestamp(secs, 0)
+        );
+    }
+}
+
+#[test]
+fn test_datetime_from_timestamp() {
+    let from_timestamp = |secs| DateTime::from_timestamp(secs, 0);
+    let ymdhms = |y, m, d, h, n, s| {
+        NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap().and_utc()
+    };
+    assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
+    assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
+    assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
+    assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
+    assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
+    assert_eq!(from_timestamp(i64::MIN), None);
+    assert_eq!(from_timestamp(i64::MAX), None);
+}
+
+#[test]
+fn test_datetime_timestamp() {
+    let to_timestamp = |y, m, d, h, n, s| {
+        NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap().and_utc().timestamp()
+    };
+    assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
+    assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
+    assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 1), 1);
+    assert_eq!(to_timestamp(2001, 9, 9, 1, 46, 40), 1_000_000_000);
+    assert_eq!(to_timestamp(2038, 1, 19, 3, 14, 7), 0x7fffffff);
+}
+
+#[test]
+fn test_nanosecond_range() {
+    const A_BILLION: i64 = 1_000_000_000;
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos().unwrap();
+    assert_eq!(
+        parsed,
+        DateTime::<Utc>::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
+
+    let minimum = "1677-09-21T00:12:44.000000000UTC";
+    let parsed: DateTime<Utc> = minimum.parse().unwrap();
+    let nanos = parsed.timestamp_nanos().unwrap();
+    assert_eq!(
+        parsed,
+        DateTime::<Utc>::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32).unwrap()
+    );
+
+    // Just beyond range
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let beyond_max = parsed + TimeDelta::try_milliseconds(300).unwrap();
+    assert!(beyond_max.timestamp_nanos().is_none());
+
+    // Far beyond range
+    let maximum = "2262-04-11T23:47:16.854775804UTC";
+    let parsed: DateTime<Utc> = maximum.parse().unwrap();
+    let beyond_max = parsed + Days::new(365);
+    assert!(beyond_max.timestamp_nanos().is_none());
 }
 
 #[test]
@@ -384,12 +567,12 @@ fn test_datetime_offset() {
     let dt = Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     assert_eq!(dt, edt.with_ymd_and_hms(2014, 5, 6, 3, 8, 9).unwrap());
     assert_eq!(
-        dt + TimeDelta::seconds(3600 + 60 + 1),
+        dt + TimeDelta::try_seconds(3600 + 60 + 1).unwrap(),
         Utc.with_ymd_and_hms(2014, 5, 6, 8, 9, 10).unwrap()
     );
     assert_eq!(
         dt.signed_duration_since(edt.with_ymd_and_hms(2014, 5, 6, 10, 11, 12).unwrap()),
-        TimeDelta::seconds(-7 * 3600 - 3 * 60 - 3)
+        TimeDelta::try_seconds(-7 * 3600 - 3 * 60 - 3).unwrap()
     );
 
     assert_eq!(*Utc.with_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap().offset(), Utc);
@@ -860,7 +1043,7 @@ fn test_parse_from_str() {
         .is_err());
     assert_eq!(
         DateTime::parse_from_str("0", "%s").unwrap(),
-        NaiveDateTime::from_timestamp(0, 0).unwrap().and_utc()
+        DateTime::from_timestamp(0, 0).unwrap().fixed_offset()
     );
 
     assert_eq!(
@@ -1171,17 +1354,6 @@ fn test_from_system_time() {
 }
 
 #[test]
-fn test_datetime_from_timestamp_millis() {
-    // 2000-01-12T01:02:03:004Z
-    let naive_dt = NaiveDate::from_ymd(2000, 1, 12).unwrap().and_hms_milli(1, 2, 3, 4).unwrap();
-    let datetime_utc = DateTime::<Utc>::from_naive_utc_and_offset(naive_dt, Utc);
-    assert_eq!(
-        datetime_utc,
-        DateTime::<Utc>::from_timestamp_millis(datetime_utc.timestamp_millis()).unwrap()
-    );
-}
-
-#[test]
 #[cfg(feature = "clock")]
 fn test_datetime_before_windows_api_limits() {
     // dt corresponds to `FILETIME = 147221225472` from issue 651.
@@ -1196,20 +1368,16 @@ fn test_datetime_before_windows_api_limits() {
 #[test]
 #[cfg(feature = "clock")]
 fn test_years_elapsed() {
-    const WEEKS_PER_YEAR: f32 = 52.1775;
-
-    // This is always at least one year because 1 year = 52.1775 weeks.
-    let one_year_ago =
-        Utc::now().date_naive() - TimeDelta::weeks((WEEKS_PER_YEAR * 1.5).ceil() as i64);
-    // A bit more than 2 years.
-    let two_year_ago =
-        Utc::now().date_naive() - TimeDelta::weeks((WEEKS_PER_YEAR * 2.5).ceil() as i64);
+    // A bit more than 1 year
+    let one_year_ago = Utc::now().date_naive() - Days::new(400);
+    // A bit more than 2 years
+    let two_year_ago = Utc::now().date_naive() - Days::new(750);
 
     assert_eq!(Utc::now().date_naive().years_since(one_year_ago), Some(1));
     assert_eq!(Utc::now().date_naive().years_since(two_year_ago), Some(2));
 
     // If the given DateTime is later than now, the function will always return 0.
-    let future = Utc::now().date_naive() + TimeDelta::weeks(12);
+    let future = Utc::now().date_naive() + Days(100);
     assert_eq!(Utc::now().date_naive().years_since(future), None);
 }
 
@@ -1219,20 +1387,20 @@ fn test_datetime_add_assign() {
     let datetime = naivedatetime.and_utc();
     let mut datetime_add = datetime;
 
-    datetime_add += TimeDelta::seconds(60);
-    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
+    datetime_add += TimeDelta::try_seconds(60).unwrap();
+    assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 
     let timezone = FixedOffset::east(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
+    assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 
     let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_add = datetime_add.with_timezone(&timezone);
 
-    assert_eq!(datetime_add, datetime + TimeDelta::seconds(60));
+    assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 }
 
 #[test]
@@ -1245,8 +1413,8 @@ fn test_datetime_add_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_add += TimeDelta::days(1);
-        assert_eq!(datetime_add, datetime + TimeDelta::days(i))
+        datetime_add += TimeDelta::try_days(1).unwrap();
+        assert_eq!(datetime_add, datetime + TimeDelta::try_days(i).unwrap())
     }
 }
 
@@ -1256,20 +1424,20 @@ fn test_datetime_sub_assign() {
     let datetime = naivedatetime.and_utc();
     let mut datetime_sub = datetime;
 
-    datetime_sub -= TimeDelta::minutes(90);
-    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
+    datetime_sub -= TimeDelta::try_minutes(90).unwrap();
+    assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
 
     let timezone = FixedOffset::east(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
+    assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
 
     let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90));
+    assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
 }
 
 #[test]
@@ -1338,6 +1506,7 @@ fn test_min_max_setters() {
     let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
 
     assert_eq!(beyond_min.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_min.with_year(beyond_min.year()), Some(beyond_min));
     assert_eq!(beyond_min.with_month(beyond_min.month()), Some(beyond_min));
     assert_eq!(beyond_min.with_month(3), None);
     assert_eq!(beyond_min.with_month0(beyond_min.month0()), Some(beyond_min));
@@ -1351,13 +1520,17 @@ fn test_min_max_setters() {
     assert_eq!(beyond_min.with_ordinal0(beyond_min.ordinal0()), Some(beyond_min));
     assert_eq!(beyond_min.with_ordinal0(200), None);
     assert_eq!(beyond_min.with_hour(beyond_min.hour()), Some(beyond_min));
-    assert_eq!(beyond_min.with_hour(23), beyond_min.checked_add_signed(TimeDelta::hours(1)));
+    assert_eq!(
+        beyond_min.with_hour(23),
+        beyond_min.checked_add_signed(TimeDelta::try_hours(1).unwrap())
+    );
     assert_eq!(beyond_min.with_hour(5), None);
     assert_eq!(beyond_min.with_minute(0), Some(beyond_min));
     assert_eq!(beyond_min.with_second(0), Some(beyond_min));
     assert_eq!(beyond_min.with_nanosecond(0), Some(beyond_min));
 
     assert_eq!(beyond_max.with_year(2020).unwrap().year(), 2020);
+    assert_eq!(beyond_max.with_year(beyond_max.year()), Some(beyond_max));
     assert_eq!(beyond_max.with_month(beyond_max.month()), Some(beyond_max));
     assert_eq!(beyond_max.with_month(3), None);
     assert_eq!(beyond_max.with_month0(beyond_max.month0()), Some(beyond_max));
@@ -1371,11 +1544,64 @@ fn test_min_max_setters() {
     assert_eq!(beyond_max.with_ordinal0(beyond_max.ordinal0()), Some(beyond_max));
     assert_eq!(beyond_max.with_ordinal0(200), None);
     assert_eq!(beyond_max.with_hour(beyond_max.hour()), Some(beyond_max));
-    assert_eq!(beyond_max.with_hour(0), beyond_max.checked_sub_signed(TimeDelta::hours(1)));
+    assert_eq!(
+        beyond_max.with_hour(0),
+        beyond_max.checked_sub_signed(TimeDelta::try_hours(1).unwrap())
+    );
     assert_eq!(beyond_max.with_hour(5), None);
     assert_eq!(beyond_max.with_minute(beyond_max.minute()), Some(beyond_max));
     assert_eq!(beyond_max.with_second(beyond_max.second()), Some(beyond_max));
     assert_eq!(beyond_max.with_nanosecond(beyond_max.nanosecond()), Some(beyond_max));
+}
+
+#[test]
+fn test_min_max_add_days() {
+    let offset_min = FixedOffset::west(2 * 60 * 60).unwrap();
+    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let offset_max = FixedOffset::east(2 * 60 * 60).unwrap();
+    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+    let max_time = NaiveTime::from_hms_nano(23, 59, 59, 999_999_999).unwrap();
+
+    assert_eq!(beyond_min.checked_add_days(Days::new(0)), Some(beyond_min));
+    assert_eq!(
+        beyond_min.checked_add_days(Days::new(1)),
+        Some(offset_min.from_utc_datetime(&(NaiveDate::MIN + Days(1)).and_time(NaiveTime::MIN)))
+    );
+    assert_eq!(beyond_min.checked_sub_days(Days::new(0)), Some(beyond_min));
+    assert_eq!(beyond_min.checked_sub_days(Days::new(1)), None);
+
+    assert_eq!(beyond_max.checked_add_days(Days::new(0)), Some(beyond_max));
+    assert_eq!(beyond_max.checked_add_days(Days::new(1)), None);
+    assert_eq!(beyond_max.checked_sub_days(Days::new(0)), Some(beyond_max));
+    assert_eq!(
+        beyond_max.checked_sub_days(Days::new(1)),
+        Some(offset_max.from_utc_datetime(&(NaiveDate::MAX - Days(1)).and_time(max_time)))
+    );
+}
+
+#[test]
+fn test_min_max_add_months() {
+    let offset_min = FixedOffset::west(2 * 60 * 60).unwrap();
+    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let offset_max = FixedOffset::east(2 * 60 * 60).unwrap();
+    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+    let max_time = NaiveTime::from_hms_nano(23, 59, 59, 999_999_999).unwrap();
+
+    assert_eq!(beyond_min.checked_add_months(Months::new(0)), Some(beyond_min));
+    assert_eq!(
+        beyond_min.checked_add_months(Months::new(1)),
+        Some(offset_min.from_utc_datetime(&(NaiveDate::MIN + Months(1)).and_time(NaiveTime::MIN)))
+    );
+    assert_eq!(beyond_min.checked_sub_months(Months::new(0)), Some(beyond_min));
+    assert_eq!(beyond_min.checked_sub_months(Months::new(1)), None);
+
+    assert_eq!(beyond_max.checked_add_months(Months::new(0)), Some(beyond_max));
+    assert_eq!(beyond_max.checked_add_months(Months::new(1)), None);
+    assert_eq!(beyond_max.checked_sub_months(Months::new(0)), Some(beyond_max));
+    assert_eq!(
+        beyond_max.checked_sub_months(Months::new(1)),
+        Some(offset_max.from_utc_datetime(&(NaiveDate::MAX - Months(1)).and_time(max_time)))
+    );
 }
 
 #[test]
@@ -1402,8 +1628,8 @@ fn test_datetime_sub_assign_local() {
 
     // ensure we cross a DST transition
     for i in 1..=365 {
-        datetime_sub -= TimeDelta::days(1);
-        assert_eq!(datetime_sub, datetime - TimeDelta::days(i))
+        datetime_sub -= TimeDelta::try_days(1).unwrap();
+        assert_eq!(datetime_sub, datetime - TimeDelta::try_days(i).unwrap())
     }
 }
 

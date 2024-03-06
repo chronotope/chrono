@@ -94,22 +94,26 @@ fn test_time_add() {
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     check!(hmsm(3, 5, 59, 900), TimeDelta::zero(), hmsm(3, 5, 59, 900));
-    check!(hmsm(3, 5, 59, 900), TimeDelta::milliseconds(100), hmsm(3, 6, 0, 0));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(-1800), hmsm(3, 5, 58, 500));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(-800), hmsm(3, 5, 59, 500));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(-100), hmsm(3, 5, 59, 1_200));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(100), hmsm(3, 5, 59, 1_400));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(800), hmsm(3, 6, 0, 100));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::milliseconds(1800), hmsm(3, 6, 1, 100));
-    check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(86399), hmsm(3, 5, 58, 900)); // overwrap
-    check!(hmsm(3, 5, 59, 900), TimeDelta::seconds(-86399), hmsm(3, 6, 0, 900));
-    check!(hmsm(3, 5, 59, 900), TimeDelta::days(12345), hmsm(3, 5, 59, 900));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::days(1), hmsm(3, 5, 59, 300));
-    check!(hmsm(3, 5, 59, 1_300), TimeDelta::days(-1), hmsm(3, 6, 0, 300));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_milliseconds(100).unwrap(), hmsm(3, 6, 0, 0));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_milliseconds(-1800).unwrap(), hmsm(3, 5, 58, 500));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_milliseconds(-800).unwrap(), hmsm(3, 5, 59, 500));
+    check!(
+        hmsm(3, 5, 59, 1_300),
+        TimeDelta::try_milliseconds(-100).unwrap(),
+        hmsm(3, 5, 59, 1_200)
+    );
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_milliseconds(100).unwrap(), hmsm(3, 5, 59, 1_400));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_milliseconds(800).unwrap(), hmsm(3, 6, 0, 100));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_milliseconds(1800).unwrap(), hmsm(3, 6, 1, 100));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_seconds(86399).unwrap(), hmsm(3, 5, 58, 900)); // overwrap
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_seconds(-86399).unwrap(), hmsm(3, 6, 0, 900));
+    check!(hmsm(3, 5, 59, 900), TimeDelta::try_days(12345).unwrap(), hmsm(3, 5, 59, 900));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_days(1).unwrap(), hmsm(3, 5, 59, 300));
+    check!(hmsm(3, 5, 59, 1_300), TimeDelta::try_days(-1).unwrap(), hmsm(3, 6, 0, 300));
 
     // regression tests for #37
-    check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-990), hmsm(23, 59, 59, 10));
-    check!(hmsm(0, 0, 0, 0), TimeDelta::milliseconds(-9990), hmsm(23, 59, 50, 10));
+    check!(hmsm(0, 0, 0, 0), TimeDelta::try_milliseconds(-990).unwrap(), hmsm(23, 59, 59, 10));
+    check!(hmsm(0, 0, 0, 0), TimeDelta::try_milliseconds(-9990).unwrap(), hmsm(23, 59, 50, 10));
 }
 
 #[test]
@@ -117,25 +121,25 @@ fn test_time_overflowing_add() {
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(11)),
+        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::try_hours(11).unwrap()),
         (hmsm(14, 4, 5, 678), 0)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(23)),
+        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::try_hours(23).unwrap()),
         (hmsm(2, 4, 5, 678), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(-7)),
+        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::try_hours(-7).unwrap()),
         (hmsm(20, 4, 5, 678), -86_400)
     );
 
     // overflowing_add_signed with leap seconds may be counter-intuitive
     assert_eq!(
-        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::days(1)),
+        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::try_days(1).unwrap()),
         (hmsm(3, 4, 59, 678), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::days(-1)),
+        hmsm(3, 4, 59, 1_678).overflowing_add_signed(TimeDelta::try_days(-1).unwrap()),
         (hmsm(3, 5, 0, 678), -86_400)
     );
 }
@@ -144,9 +148,9 @@ fn test_time_overflowing_add() {
 fn test_time_addassignment() {
     let hms = |h, m, s| NaiveTime::from_hms(h, m, s).unwrap();
     let mut time = hms(12, 12, 12);
-    time += TimeDelta::hours(10);
+    time += TimeDelta::try_hours(10).unwrap();
     assert_eq!(time, hms(22, 12, 12));
-    time += TimeDelta::hours(10);
+    time += TimeDelta::try_hours(10).unwrap();
     assert_eq!(time, hms(8, 12, 12));
 }
 
@@ -154,9 +158,9 @@ fn test_time_addassignment() {
 fn test_time_subassignment() {
     let hms = |h, m, s| NaiveTime::from_hms(h, m, s).unwrap();
     let mut time = hms(12, 12, 12);
-    time -= TimeDelta::hours(10);
+    time -= TimeDelta::try_hours(10).unwrap();
     assert_eq!(time, hms(2, 12, 12));
-    time -= TimeDelta::hours(10);
+    time -= TimeDelta::try_hours(10).unwrap();
     assert_eq!(time, hms(16, 12, 12));
 }
 
@@ -173,24 +177,24 @@ fn test_time_sub() {
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 900), TimeDelta::zero());
-    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::milliseconds(300));
-    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), TimeDelta::seconds(3600 + 60 + 1));
+    check!(hmsm(3, 5, 7, 900), hmsm(3, 5, 7, 600), TimeDelta::try_milliseconds(300).unwrap());
+    check!(hmsm(3, 5, 7, 200), hmsm(2, 4, 6, 200), TimeDelta::try_seconds(3600 + 60 + 1).unwrap());
     check!(
         hmsm(3, 5, 7, 200),
         hmsm(2, 4, 6, 300),
-        TimeDelta::seconds(3600 + 60) + TimeDelta::milliseconds(900)
+        TimeDelta::try_seconds(3600 + 60).unwrap() + TimeDelta::try_milliseconds(900).unwrap()
     );
 
     // treats the leap second as if it coincides with the prior non-leap second,
     // as required by `time1 - time2 = duration` and `time2 - time1 = -duration` equivalence.
-    check!(hmsm(3, 6, 0, 200), hmsm(3, 5, 59, 1_800), TimeDelta::milliseconds(400));
-    //check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), TimeDelta::milliseconds(1400));
-    //check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), TimeDelta::milliseconds(1400));
+    check!(hmsm(3, 6, 0, 200), hmsm(3, 5, 59, 1_800), TimeDelta::try_milliseconds(400).unwrap());
+    //check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 1_800), TimeDelta::try_milliseconds(1400).unwrap());
+    //check!(hmsm(3, 5, 7, 1_200), hmsm(3, 5, 6, 800), TimeDelta::try_milliseconds(1400).unwrap());
 
     // additional equality: `time1 + duration = time2` is equivalent to
     // `time2 - time1 = duration` IF AND ONLY IF `time2` represents a non-leap second.
-    assert_eq!(hmsm(3, 5, 6, 800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
-    //assert_eq!(hmsm(3, 5, 6, 1_800) + TimeDelta::milliseconds(400), hmsm(3, 5, 7, 200));
+    assert_eq!(hmsm(3, 5, 6, 800) + TimeDelta::try_milliseconds(400).unwrap(), hmsm(3, 5, 7, 200));
+    //assert_eq!(hmsm(3, 5, 6, 1_800) + TimeDelta::try_milliseconds(400).unwrap(), hmsm(3, 5, 7, 200));
 }
 
 #[test]

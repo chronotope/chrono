@@ -1,6 +1,6 @@
 #![cfg(all(unix, feature = "clock", feature = "std"))]
 
-use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike};
+use chrono::{Datelike, Days, Local, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike};
 use std::{path, process, thread};
 
 fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
@@ -94,7 +94,7 @@ fn try_verify_against_date_command() {
             let end = NaiveDate::from_ymd(*year + 1, 1, 1).unwrap().and_time(NaiveTime::MIN);
             while date <= end {
                 verify_against_date_command_local(DATE_PATH, date);
-                date += chrono::TimeDelta::hours(1);
+                date += chrono::TimeDelta::try_hours(1).unwrap();
             }
         }));
     }
@@ -157,6 +157,6 @@ fn try_verify_against_date_command_format() {
     let mut date = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms(12, 11, 13).unwrap();
     while date.year() < 2008 {
         verify_against_date_command_format_local(DATE_PATH, date);
-        date += chrono::TimeDelta::days(55);
+        date = date + Days::new(55);
     }
 }
