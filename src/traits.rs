@@ -119,30 +119,6 @@ pub trait Timelike: Sized {
     /// the [leap second](./naive/struct.NaiveTime.html#leap-second-handling).
     fn nanosecond(&self) -> u32;
 
-    /// Makes a new value with the hour number changed.
-    ///
-    /// Returns `None` when the resulting value would be invalid.
-    fn with_hour(&self, hour: u32) -> Option<Self>;
-
-    /// Makes a new value with the minute number changed.
-    ///
-    /// Returns `None` when the resulting value would be invalid.
-    fn with_minute(&self, min: u32) -> Option<Self>;
-
-    /// Makes a new value with the second number changed.
-    ///
-    /// Returns `None` when the resulting value would be invalid.
-    /// As with the [`second`](#tymethod.second) method,
-    /// the input range is restricted to 0 through 59.
-    fn with_second(&self, sec: u32) -> Option<Self>;
-
-    /// Makes a new value with nanoseconds since the whole non-leap second changed.
-    ///
-    /// Returns `None` when the resulting value would be invalid.
-    /// As with the [`nanosecond`](#tymethod.nanosecond) method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
-    fn with_nanosecond(&self, nano: u32) -> Option<Self>;
-
     /// Returns the number of non-leap seconds past the last midnight.
     ///
     /// Every value in 00:00:00-23:59:59 maps to an integer in 0-86399.

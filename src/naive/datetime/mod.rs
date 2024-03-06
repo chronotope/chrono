@@ -1098,6 +1098,128 @@ impl NaiveDateTime {
         self.date.with_ordinal0(ordinal0).map(|d| NaiveDateTime { date: d, ..*self })
     }
 
+    /// Makes a new `NaiveDateTime` with the hour number changed.
+    ///
+    /// See also the [`NaiveTime::with_hour`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `hour` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime};
+    ///
+    /// let dt: NaiveDateTime =
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
+    /// assert_eq!(
+    ///     dt.with_hour(7),
+    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(7, 34, 56, 789).unwrap())
+    /// );
+    /// assert_eq!(dt.with_hour(24), None);
+    /// ```
+    #[inline]
+    pub fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
+        self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
+    }
+
+    /// Makes a new `NaiveDateTime` with the minute number changed.
+    ///
+    /// See also the [`NaiveTime::with_minute`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `minute` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime};
+    ///
+    /// let dt: NaiveDateTime =
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
+    /// assert_eq!(
+    ///     dt.with_minute(45),
+    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 45, 56, 789).unwrap())
+    /// );
+    /// assert_eq!(dt.with_minute(60), None);
+    /// ```
+    #[inline]
+    pub fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
+        self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
+    }
+
+    /// Makes a new `NaiveDateTime` with the second number changed.
+    ///
+    /// As with the [`second`](#method.second) method,
+    /// the input range is restricted to 0 through 59.
+    ///
+    /// See also the [`NaiveTime::with_second`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if the value for `second` is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime};
+    ///
+    /// let dt: NaiveDateTime =
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
+    /// assert_eq!(
+    ///     dt.with_second(17),
+    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 17, 789).unwrap())
+    /// );
+    /// assert_eq!(dt.with_second(60), None);
+    /// ```
+    #[inline]
+    pub fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
+        self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
+    }
+
+    /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// As with the [`NaiveDateTime::nanosecond`] method,
+    /// the input range can exceed 1,000,000,000 for leap seconds.
+    ///
+    /// See also the [`NaiveTime::with_nanosecond`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `nanosecond >= 2,000,000,000`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, NaiveDateTime};
+    ///
+    /// let dt: NaiveDateTime =
+    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 59, 789).unwrap();
+    /// assert_eq!(
+    ///     dt.with_nanosecond(333_333_333),
+    ///     Some(
+    ///         NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano(12, 34, 59, 333_333_333).unwrap()
+    ///     )
+    /// );
+    /// assert_eq!(
+    ///     dt.with_nanosecond(1_333_333_333), // leap second
+    ///     Some(
+    ///         NaiveDate::from_ymd(2015, 9, 8)
+    ///             .unwrap()
+    ///             .and_hms_nano(12, 34, 59, 1_333_333_333)
+    ///             .unwrap()
+    ///     )
+    /// );
+    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
+    /// ```
+    #[inline]
+    pub fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
+        self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
+    }
+
     /// The minimum possible `NaiveDateTime`.
     pub const MIN: Self = Self { date: NaiveDate::MIN, time: NaiveTime::MIN };
 
@@ -1353,128 +1475,6 @@ impl Timelike for NaiveDateTime {
     #[inline]
     fn nanosecond(&self) -> u32 {
         self.time.nanosecond()
-    }
-
-    /// Makes a new `NaiveDateTime` with the hour number changed.
-    ///
-    /// See also the [`NaiveTime::with_hour`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the value for `hour` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
-    ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
-    /// assert_eq!(
-    ///     dt.with_hour(7),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(7, 34, 56, 789).unwrap())
-    /// );
-    /// assert_eq!(dt.with_hour(24), None);
-    /// ```
-    #[inline]
-    fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
-        self.time.with_hour(hour).map(|t| NaiveDateTime { time: t, ..*self })
-    }
-
-    /// Makes a new `NaiveDateTime` with the minute number changed.
-    ///
-    /// See also the [`NaiveTime::with_minute`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the value for `minute` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
-    ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
-    /// assert_eq!(
-    ///     dt.with_minute(45),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 45, 56, 789).unwrap())
-    /// );
-    /// assert_eq!(dt.with_minute(60), None);
-    /// ```
-    #[inline]
-    fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
-        self.time.with_minute(min).map(|t| NaiveDateTime { time: t, ..*self })
-    }
-
-    /// Makes a new `NaiveDateTime` with the second number changed.
-    ///
-    /// As with the [`second`](#method.second) method,
-    /// the input range is restricted to 0 through 59.
-    ///
-    /// See also the [`NaiveTime::with_second`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if the value for `second` is invalid.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
-    ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
-    /// assert_eq!(
-    ///     dt.with_second(17),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 17, 789).unwrap())
-    /// );
-    /// assert_eq!(dt.with_second(60), None);
-    /// ```
-    #[inline]
-    fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
-        self.time.with_second(sec).map(|t| NaiveDateTime { time: t, ..*self })
-    }
-
-    /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
-    ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    /// As with the [`NaiveDateTime::nanosecond`] method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
-    ///
-    /// See also the [`NaiveTime::with_nanosecond`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if `nanosecond >= 2,000,000,000`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime, Timelike};
-    ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 59, 789).unwrap();
-    /// assert_eq!(
-    ///     dt.with_nanosecond(333_333_333),
-    ///     Some(
-    ///         NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano(12, 34, 59, 333_333_333).unwrap()
-    ///     )
-    /// );
-    /// assert_eq!(
-    ///     dt.with_nanosecond(1_333_333_333), // leap second
-    ///     Some(
-    ///         NaiveDate::from_ymd(2015, 9, 8)
-    ///             .unwrap()
-    ///             .and_hms_nano(12, 34, 59, 1_333_333_333)
-    ///             .unwrap()
-    ///     )
-    /// );
-    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
-    /// ```
-    #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
-        self.time.with_nanosecond(nano).map(|t| NaiveDateTime { time: t, ..*self })
     }
 }
 
