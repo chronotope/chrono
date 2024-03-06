@@ -828,7 +828,7 @@ impl NaiveTime {
     /// assert_eq!(dt.with_hour(24), None);
     /// ```
     #[inline]
-    pub fn with_hour(&self, hour: u32) -> Option<NaiveTime> {
+    pub const fn with_hour(&self, hour: u32) -> Option<NaiveTime> {
         if hour >= 24 {
             return None;
         }
@@ -852,7 +852,7 @@ impl NaiveTime {
     /// assert_eq!(dt.with_minute(60), None);
     /// ```
     #[inline]
-    pub fn with_minute(&self, min: u32) -> Option<NaiveTime> {
+    pub const fn with_minute(&self, min: u32) -> Option<NaiveTime> {
         if min >= 60 {
             return None;
         }
@@ -879,7 +879,7 @@ impl NaiveTime {
     /// assert_eq!(dt.with_second(60), None);
     /// ```
     #[inline]
-    pub fn with_second(&self, sec: u32) -> Option<NaiveTime> {
+    pub const fn with_second(&self, sec: u32) -> Option<NaiveTime> {
         if sec >= 60 {
             return None;
         }
@@ -921,7 +921,7 @@ impl NaiveTime {
     /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
     /// ```
     #[inline]
-    pub fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
+    pub const fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
         if nano >= 2_000_000_000 {
             return None;
         }
