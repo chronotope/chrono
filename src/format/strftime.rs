@@ -687,7 +687,7 @@ mod tests {
     use crate::format::{fixed, internal_fixed, num, num0, nums};
     use crate::format::{Fixed, InternalInternal, Numeric::*};
     #[cfg(feature = "alloc")]
-    use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Timelike, Utc};
+    use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Utc};
 
     #[test]
     fn test_strftime_items() {

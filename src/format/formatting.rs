@@ -609,7 +609,7 @@ mod tests {
     use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
     use crate::FixedOffset;
     #[cfg(feature = "alloc")]
-    use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
+    use crate::{NaiveDate, NaiveTime, TimeZone, Utc};
 
     #[test]
     #[cfg(feature = "alloc")]

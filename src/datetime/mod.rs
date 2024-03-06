@@ -717,6 +717,69 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
+
+    /// Makes a new `DateTime` with the hour number changed.
+    ///
+    /// See also the [`NaiveTime::with_hour`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The value for `hour` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
+    #[inline]
+    pub fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_hour(hour))
+    }
+
+    /// Makes a new `DateTime` with the minute number changed.
+    ///
+    /// See also the [`NaiveTime::with_minute`] method.
+    ///
+    /// # Errors
+    ///
+    /// - The value for `minute` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
+    #[inline]
+    pub fn with_minute(&self, min: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_minute(min))
+    }
+
+    /// Makes a new `DateTime` with the second number changed.
+    ///
+    /// As with the [`second`](#method.second) method,
+    /// the input range is restricted to 0 through 59.
+    ///
+    /// See also the [`NaiveTime::with_second`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if:
+    /// - The value for `second` is invalid.
+    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
+    ///   daylight saving time transition.
+    #[inline]
+    pub fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_second(sec))
+    }
+
+    /// Makes a new `DateTime` with nanoseconds since the whole non-leap second changed.
+    ///
+    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
+    /// As with the [`NaiveDateTime::nanosecond`] method,
+    /// the input range can exceed 1,000,000,000 for leap seconds.
+    ///
+    /// See also the [`NaiveTime::with_nanosecond`] method.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `nanosecond >= 2,000,000,000`.
+    #[inline]
+    pub fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
+        map_local(self, |datetime| datetime.with_nanosecond(nano))
+    }
 }
 
 impl DateTime<Utc> {
@@ -1235,69 +1298,6 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     #[inline]
     fn nanosecond(&self) -> u32 {
         self.overflowing_naive_local().nanosecond()
-    }
-
-    /// Makes a new `DateTime` with the hour number changed.
-    ///
-    /// See also the [`NaiveTime::with_hour`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The value for `hour` is invalid.
-    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
-    ///   daylight saving time transition.
-    #[inline]
-    fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_hour(hour))
-    }
-
-    /// Makes a new `DateTime` with the minute number changed.
-    ///
-    /// See also the [`NaiveTime::with_minute`] method.
-    ///
-    /// # Errors
-    ///
-    /// - The value for `minute` is invalid.
-    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
-    ///   daylight saving time transition.
-    #[inline]
-    fn with_minute(&self, min: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_minute(min))
-    }
-
-    /// Makes a new `DateTime` with the second number changed.
-    ///
-    /// As with the [`second`](#method.second) method,
-    /// the input range is restricted to 0 through 59.
-    ///
-    /// See also the [`NaiveTime::with_second`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The value for `second` is invalid.
-    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
-    ///   daylight saving time transition.
-    #[inline]
-    fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_second(sec))
-    }
-
-    /// Makes a new `DateTime` with nanoseconds since the whole non-leap second changed.
-    ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    /// As with the [`NaiveDateTime::nanosecond`] method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
-    ///
-    /// See also the [`NaiveTime::with_nanosecond`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if `nanosecond >= 2,000,000,000`.
-    #[inline]
-    fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
 }
 

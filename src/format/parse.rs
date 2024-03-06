@@ -589,7 +589,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
 #[cfg(test)]
 mod tests {
     use crate::format::*;
-    use crate::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Timelike, Utc};
+    use crate::{DateTime, FixedOffset, NaiveDateTime, TimeZone, Utc};
 
     macro_rules! parsed {
         ($($k:ident: $v:expr),*) => (#[allow(unused_mut)] {
