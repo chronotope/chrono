@@ -454,28 +454,24 @@ fn test_date_add() {
     check((2014, 1, 1), TimeDelta::try_seconds(86399).unwrap(), Some((2014, 1, 1)));
     // always round towards zero
     check((2014, 1, 1), TimeDelta::try_seconds(-86399).unwrap(), Some((2014, 1, 1)));
-    check((2014, 1, 1), TimeDelta::try_days(1).unwrap(), Some((2014, 1, 2)));
-    check((2014, 1, 1), TimeDelta::try_days(-1).unwrap(), Some((2013, 12, 31)));
-    check((2014, 1, 1), TimeDelta::try_days(364).unwrap(), Some((2014, 12, 31)));
-    check((2014, 1, 1), TimeDelta::try_days(365 * 4 + 1).unwrap(), Some((2018, 1, 1)));
-    check((2014, 1, 1), TimeDelta::try_days(365 * 400 + 97).unwrap(), Some((2414, 1, 1)));
+    check((2014, 1, 1), TimeDelta::days(1).unwrap(), Some((2014, 1, 2)));
+    check((2014, 1, 1), TimeDelta::days(-1).unwrap(), Some((2013, 12, 31)));
+    check((2014, 1, 1), TimeDelta::days(364).unwrap(), Some((2014, 12, 31)));
+    check((2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap(), Some((2018, 1, 1)));
+    check((2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap(), Some((2414, 1, 1)));
 
-    check((-7, 1, 1), TimeDelta::try_days(365 * 12 + 3).unwrap(), Some((5, 1, 1)));
+    check((-7, 1, 1), TimeDelta::days(365 * 12 + 3).unwrap(), Some((5, 1, 1)));
 
     // overflow check
     check(
         (0, 1, 1),
-        TimeDelta::try_days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap(),
+        TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap(),
         Some((MAX_YEAR, 12, 31)),
     );
-    check((0, 1, 1), TimeDelta::try_days(MAX_DAYS_FROM_YEAR_0 as i64 + 1).unwrap(), None);
+    check((0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1).unwrap(), None);
     check((0, 1, 1), TimeDelta::max_value(), None);
-    check(
-        (0, 1, 1),
-        TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap(),
-        Some((MIN_YEAR, 1, 1)),
-    );
-    check((0, 1, 1), TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64 - 1).unwrap(), None);
+    check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap(), Some((MIN_YEAR, 1, 1)));
+    check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1).unwrap(), None);
     check((0, 1, 1), TimeDelta::min_value(), None);
 }
 
@@ -489,14 +485,14 @@ fn test_date_sub() {
     }
 
     check((2014, 1, 1), (2014, 1, 1), TimeDelta::zero());
-    check((2014, 1, 2), (2014, 1, 1), TimeDelta::try_days(1).unwrap());
-    check((2014, 12, 31), (2014, 1, 1), TimeDelta::try_days(364).unwrap());
-    check((2015, 1, 3), (2014, 1, 1), TimeDelta::try_days(365 + 2).unwrap());
-    check((2018, 1, 1), (2014, 1, 1), TimeDelta::try_days(365 * 4 + 1).unwrap());
-    check((2414, 1, 1), (2014, 1, 1), TimeDelta::try_days(365 * 400 + 97).unwrap());
+    check((2014, 1, 2), (2014, 1, 1), TimeDelta::days(1).unwrap());
+    check((2014, 12, 31), (2014, 1, 1), TimeDelta::days(364).unwrap());
+    check((2015, 1, 3), (2014, 1, 1), TimeDelta::days(365 + 2).unwrap());
+    check((2018, 1, 1), (2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap());
+    check((2414, 1, 1), (2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap());
 
-    check((MAX_YEAR, 12, 31), (0, 1, 1), TimeDelta::try_days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap());
-    check((MIN_YEAR, 1, 1), (0, 1, 1), TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
+    check((MAX_YEAR, 12, 31), (0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap());
+    check((MIN_YEAR, 1, 1), (0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
 }
 
 #[test]
@@ -544,9 +540,9 @@ fn test_date_sub_days() {
 fn test_date_addassignment() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     let mut date = ymd(2016, 10, 1);
-    date += TimeDelta::try_days(10).unwrap();
+    date += TimeDelta::days(10).unwrap();
     assert_eq!(date, ymd(2016, 10, 11));
-    date += TimeDelta::try_days(30).unwrap();
+    date += TimeDelta::days(30).unwrap();
     assert_eq!(date, ymd(2016, 11, 10));
 }
 
@@ -554,9 +550,9 @@ fn test_date_addassignment() {
 fn test_date_subassignment() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     let mut date = ymd(2016, 10, 11);
-    date -= TimeDelta::try_days(10).unwrap();
+    date -= TimeDelta::days(10).unwrap();
     assert_eq!(date, ymd(2016, 10, 1));
-    date -= TimeDelta::try_days(2).unwrap();
+    date -= TimeDelta::days(2).unwrap();
     assert_eq!(date, ymd(2016, 9, 29));
 }
 
