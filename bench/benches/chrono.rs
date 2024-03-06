@@ -199,7 +199,7 @@ fn bench_format_manual(c: &mut Criterion) {
 
 fn bench_naivedate_add_signed(c: &mut Criterion) {
     let date = NaiveDate::from_ymd(2023, 7, 29).unwrap();
-    let extra = TimeDelta::days(25);
+    let extra = TimeDelta::days(25).unwrap();
     c.bench_function("bench_naivedate_add_signed", |b| {
         b.iter(|| black_box(date).checked_add_signed(extra).unwrap())
     });
