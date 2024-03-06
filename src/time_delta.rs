@@ -16,7 +16,7 @@ use core::{fmt, i64};
 #[cfg(feature = "std")]
 use std::error::Error;
 
-use crate::{expect, try_opt};
+use crate::try_opt;
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -94,21 +94,6 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of weeks.
     ///
-    /// Equivalent to `TimeDelta::seconds(weeks * 7 * 24 * 60 * 60)` with
-    /// overflow checks.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the duration is out of bounds.
-    #[inline]
-    #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_weeks` instead")]
-    pub const fn weeks(weeks: i64) -> TimeDelta {
-        expect!(TimeDelta::try_weeks(weeks), "TimeDelta::weeks out of bounds")
-    }
-
-    /// Makes a new `TimeDelta` with the given number of weeks.
-    ///
     /// Equivalent to `TimeDelta::try_seconds(weeks * 7 * 24 * 60 * 60)` with
     /// overflow checks.
     ///
@@ -118,21 +103,6 @@ impl TimeDelta {
     #[inline]
     pub const fn try_weeks(weeks: i64) -> Option<TimeDelta> {
         TimeDelta::try_seconds(try_opt!(weeks.checked_mul(SECS_PER_WEEK)))
-    }
-
-    /// Makes a new `TimeDelta` with the given number of days.
-    ///
-    /// Equivalent to `TimeDelta::seconds(days * 24 * 60 * 60)` with overflow
-    /// checks.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the `TimeDelta` would be out of bounds.
-    #[inline]
-    #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_days` instead")]
-    pub const fn days(days: i64) -> TimeDelta {
-        expect!(TimeDelta::try_days(days), "TimeDelta::days out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of days.
@@ -150,20 +120,6 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of hours.
     ///
-    /// Equivalent to `TimeDelta::seconds(hours * 60 * 60)` with overflow checks.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the `TimeDelta` would be out of bounds.
-    #[inline]
-    #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_hours` instead")]
-    pub const fn hours(hours: i64) -> TimeDelta {
-        expect!(TimeDelta::try_hours(hours), "TimeDelta::hours out of bounds")
-    }
-
-    /// Makes a new `TimeDelta` with the given number of hours.
-    ///
     /// Equivalent to `TimeDelta::try_seconds(hours * 60 * 60)` with overflow checks.
     ///
     /// # Errors
@@ -172,20 +128,6 @@ impl TimeDelta {
     #[inline]
     pub const fn try_hours(hours: i64) -> Option<TimeDelta> {
         TimeDelta::try_seconds(try_opt!(hours.checked_mul(SECS_PER_HOUR)))
-    }
-
-    /// Makes a new `TimeDelta` with the given number of minutes.
-    ///
-    /// Equivalent to `TimeDelta::seconds(minutes * 60)` with overflow checks.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the `TimeDelta` would be out of bounds.
-    #[inline]
-    #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_minutes` instead")]
-    pub const fn minutes(minutes: i64) -> TimeDelta {
-        expect!(TimeDelta::try_minutes(minutes), "TimeDelta::minutes out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of minutes.
@@ -202,19 +144,6 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of seconds.
     ///
-    /// # Panics
-    ///
-    /// Panics when `seconds` is more than `i64::MAX / 1_000` or less than `-i64::MAX / 1_000`
-    /// (in this context, this is the same as `i64::MIN / 1_000` due to rounding).
-    #[inline]
-    #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_seconds` instead")]
-    pub const fn seconds(seconds: i64) -> TimeDelta {
-        expect!(TimeDelta::try_seconds(seconds), "TimeDelta::seconds out of bounds")
-    }
-
-    /// Makes a new `TimeDelta` with the given number of seconds.
-    ///
     /// # Errors
     ///
     /// Returns `None` when `seconds` is more than `i64::MAX / 1_000` or less than
@@ -223,18 +152,6 @@ impl TimeDelta {
     #[inline]
     pub const fn try_seconds(seconds: i64) -> Option<TimeDelta> {
         TimeDelta::new(seconds, 0)
-    }
-
-    /// Makes a new `TimeDelta` with the given number of milliseconds.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the `TimeDelta` would be out of bounds, i.e. when `milliseconds` is more than
-    /// `i64::MAX` or less than `-i64::MAX`. Notably, this is not the same as `i64::MIN`.
-    #[inline]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_milliseconds` instead")]
-    pub const fn milliseconds(milliseconds: i64) -> TimeDelta {
-        expect!(TimeDelta::try_milliseconds(milliseconds), "TimeDelta::milliseconds out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of milliseconds.
@@ -688,13 +605,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
-    #[should_panic(expected = "TimeDelta::seconds out of bounds")]
-    fn test_duration_seconds_max_overflow_panic() {
-        let _ = TimeDelta::seconds(i64::MAX / 1_000 + 1);
-    }
-
-    #[test]
     fn test_duration_seconds_min_allowed() {
         let duration = TimeDelta::try_seconds(i64::MIN / 1_000).unwrap(); // Same as -i64::MAX / 1_000 due to rounding
         assert_eq!(duration.num_seconds(), i64::MIN / 1_000); // Same as -i64::MAX / 1_000 due to rounding
@@ -707,13 +617,6 @@ mod tests {
     #[test]
     fn test_duration_seconds_min_underflow() {
         assert!(TimeDelta::try_seconds(-i64::MAX / 1_000 - 1).is_none());
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    #[should_panic(expected = "TimeDelta::seconds out of bounds")]
-    fn test_duration_seconds_min_underflow_panic() {
-        let _ = TimeDelta::seconds(-i64::MAX / 1_000 - 1);
     }
 
     #[test]
@@ -770,17 +673,6 @@ mod tests {
             .unwrap()
             .checked_sub(&TimeDelta::try_milliseconds(1).unwrap())
             .is_none());
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    #[should_panic(expected = "TimeDelta::milliseconds out of bounds")]
-    fn test_duration_milliseconds_min_underflow_panic() {
-        // Here we ensure that trying to create a value one millisecond below the
-        // minimum storable value will fail. This test is necessary because the
-        // storable range is -i64::MAX, but the constructor type of i64 will allow
-        // i64::MIN, which is one value below.
-        let _ = TimeDelta::milliseconds(i64::MIN); // Same as -i64::MAX - 1
     }
 
     #[test]
