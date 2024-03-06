@@ -49,7 +49,7 @@ impl TimeZone for DstTester {
             DstTester::TO_WINTER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() - TimeDelta::try_hours(1).unwrap());
+        .and_time(DstTester::transition_start_local() - TimeDelta::hours(1).unwrap());
 
         let local_to_summer_transition_start = NaiveDate::from_ymd(
             local.year(),
@@ -65,7 +65,7 @@ impl TimeZone for DstTester {
             DstTester::TO_SUMMER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() + TimeDelta::try_hours(1).unwrap());
+        .and_time(DstTester::transition_start_local() + TimeDelta::hours(1).unwrap());
 
         if *local < local_to_winter_transition_end || *local >= local_to_summer_transition_end {
             LocalResult::Single(DstTester::summer_offset())
@@ -1522,7 +1522,7 @@ fn test_min_max_setters() {
     assert_eq!(beyond_min.with_hour(beyond_min.hour()), Some(beyond_min));
     assert_eq!(
         beyond_min.with_hour(23),
-        beyond_min.checked_add_signed(TimeDelta::try_hours(1).unwrap())
+        beyond_min.checked_add_signed(TimeDelta::hours(1).unwrap())
     );
     assert_eq!(beyond_min.with_hour(5), None);
     assert_eq!(beyond_min.with_minute(0), Some(beyond_min));
@@ -1546,7 +1546,7 @@ fn test_min_max_setters() {
     assert_eq!(beyond_max.with_hour(beyond_max.hour()), Some(beyond_max));
     assert_eq!(
         beyond_max.with_hour(0),
-        beyond_max.checked_sub_signed(TimeDelta::try_hours(1).unwrap())
+        beyond_max.checked_sub_signed(TimeDelta::hours(1).unwrap())
     );
     assert_eq!(beyond_max.with_hour(5), None);
     assert_eq!(beyond_max.with_minute(beyond_max.minute()), Some(beyond_max));
