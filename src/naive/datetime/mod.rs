@@ -135,7 +135,7 @@ impl NaiveDateTime {
     ///
     /// Returns `None` if the number of milliseconds would be out of range for a `NaiveDateTime`
     /// (more than ca. 262,000 years away from common era)
-    #[deprecated(since = "0.4.34", note = "use `DateTime::from_timestamp_millis` instead")]
+    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp_millis` instead")]
     #[inline]
     #[must_use]
     pub const fn from_timestamp_millis(millis: i64) -> Option<NaiveDateTime> {
@@ -150,7 +150,7 @@ impl NaiveDateTime {
     ///
     /// Returns `None` if the number of microseconds would be out of range for a `NaiveDateTime`
     /// (more than ca. 262,000 years away from common era)
-    #[deprecated(since = "0.4.34", note = "use `DateTime::from_timestamp_micros` instead")]
+    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp_micros` instead")]
     #[inline]
     #[must_use]
     pub const fn from_timestamp_micros(micros: i64) -> Option<NaiveDateTime> {
@@ -167,7 +167,7 @@ impl NaiveDateTime {
     ///
     /// Returns `None` if the number of nanoseconds would be out of range for a `NaiveDateTime`
     /// (more than ca. 262,000 years away from common era)
-    #[deprecated(since = "0.4.34", note = "use `DateTime::from_timestamp_nanos` instead")]
+    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp_nanos` instead")]
     #[inline]
     #[must_use]
     pub const fn from_timestamp_nanos(nanos: i64) -> Option<NaiveDateTime> {
@@ -190,7 +190,7 @@ impl NaiveDateTime {
     /// Returns `None` if the number of seconds would be out of range for a `NaiveDateTime` (more
     /// than ca. 262,000 years away from common era), and panics on an invalid nanosecond
     /// (2 seconds or more).
-    #[deprecated(since = "0.4.34", note = "use `DateTime::from_timestamp` instead")]
+    #[deprecated(since = "0.4.35", note = "use `DateTime::from_timestamp` instead")]
     #[inline]
     #[must_use]
     pub const fn from_timestamp_opt(secs: i64, nsecs: u32) -> Option<NaiveDateTime> {
@@ -352,7 +352,7 @@ impl NaiveDateTime {
     ///
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    #[deprecated(since = "0.4.34", note = "use `.and_utc().timestamp()` instead")]
+    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp()` instead")]
     #[inline]
     #[must_use]
     pub const fn timestamp(&self) -> i64 {
@@ -363,7 +363,7 @@ impl NaiveDateTime {
     ///
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    #[deprecated(since = "0.4.34", note = "use `.and_utc().timestamp_millis()` instead")]
+    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_millis()` instead")]
     #[inline]
     #[must_use]
     pub const fn timestamp_millis(&self) -> i64 {
@@ -374,7 +374,7 @@ impl NaiveDateTime {
     ///
     /// Note that this does *not* account for the timezone!
     /// The true "UNIX timestamp" would count seconds since the midnight *UTC* on the epoch.
-    #[deprecated(since = "0.4.34", note = "use `.and_utc().timestamp_micros()` instead")]
+    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_micros()` instead")]
     #[inline]
     #[must_use]
     pub const fn timestamp_micros(&self) -> i64 {
@@ -413,7 +413,7 @@ impl NaiveDateTime {
     ///
     /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
     /// and 2262-04-11T23:47:16.854775807.
-    #[deprecated(since = "0.4.34", note = "use `.and_utc().timestamp_nanos_opt()` instead")]
+    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_nanos_opt()` instead")]
     #[inline]
     #[must_use]
     pub const fn timestamp_nanos_opt(&self) -> Option<i64> {
@@ -424,7 +424,7 @@ impl NaiveDateTime {
     ///
     /// The return value ranges from 0 to 999,
     /// or for [leap seconds](./struct.NaiveTime.html#leap-second-handling), to 1,999.
-    #[deprecated(since = "0.4.34", note = "use `.and_utc().timestamp_subsec_millis()` instead")]
+    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_subsec_millis()` instead")]
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_millis(&self) -> u32 {
@@ -435,7 +435,7 @@ impl NaiveDateTime {
     ///
     /// The return value ranges from 0 to 999,999,
     /// or for [leap seconds](./struct.NaiveTime.html#leap-second-handling), to 1,999,999.
-    #[deprecated(since = "0.4.34", note = "use `.and_utc().timestamp_subsec_micros()` instead")]
+    #[deprecated(since = "0.4.35", note = "use `.and_utc().timestamp_subsec_micros()` instead")]
     #[inline]
     #[must_use]
     pub const fn timestamp_subsec_micros(&self) -> u32 {
@@ -446,6 +446,7 @@ impl NaiveDateTime {
     ///
     /// The return value ranges from 0 to 999,999,999,
     /// or for [leap seconds](./struct.NaiveTime.html#leap-second-handling), to 1,999,999,999.
+    #[deprecated(since = "0.4.36", note = "use `.and_utc().timestamp_subsec_nanos()` instead")]
     pub const fn timestamp_subsec_nanos(&self) -> u32 {
         self.and_utc().timestamp_subsec_nanos()
     }
