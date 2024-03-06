@@ -114,7 +114,7 @@ impl TimeDelta {
     ///
     /// Returns `None` when the `TimeDelta` would be out of bounds.
     #[inline]
-    pub const fn try_days(days: i64) -> Option<TimeDelta> {
+    pub const fn days(days: i64) -> Option<TimeDelta> {
         TimeDelta::try_seconds(try_opt!(days.checked_mul(SECS_PER_DAY)))
     }
 
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_duration() {
-        let days = |d| TimeDelta::try_days(d).unwrap();
+        let days = |d| TimeDelta::days(d).unwrap();
         let seconds = |s| TimeDelta::try_seconds(s).unwrap();
 
         assert!(seconds(1) != TimeDelta::zero());
@@ -568,14 +568,14 @@ mod tests {
     #[test]
     fn test_duration_num_days() {
         assert_eq!(TimeDelta::zero().num_days(), 0);
-        assert_eq!(TimeDelta::try_days(1).unwrap().num_days(), 1);
-        assert_eq!(TimeDelta::try_days(-1).unwrap().num_days(), -1);
+        assert_eq!(TimeDelta::days(1).unwrap().num_days(), 1);
+        assert_eq!(TimeDelta::days(-1).unwrap().num_days(), -1);
         assert_eq!(TimeDelta::try_seconds(86_399).unwrap().num_days(), 0);
         assert_eq!(TimeDelta::try_seconds(86_401).unwrap().num_days(), 1);
         assert_eq!(TimeDelta::try_seconds(-86_399).unwrap().num_days(), 0);
         assert_eq!(TimeDelta::try_seconds(-86_401).unwrap().num_days(), -1);
-        assert_eq!(TimeDelta::try_days(i32::MAX as i64).unwrap().num_days(), i32::MAX as i64);
-        assert_eq!(TimeDelta::try_days(i32::MIN as i64).unwrap().num_days(), i32::MIN as i64);
+        assert_eq!(TimeDelta::days(i32::MAX as i64).unwrap().num_days(), i32::MAX as i64);
+        assert_eq!(TimeDelta::days(i32::MIN as i64).unwrap().num_days(), i32::MIN as i64);
     }
 
     #[test]
@@ -688,19 +688,19 @@ mod tests {
         // overflow checks
         const MICROS_PER_DAY: i64 = 86_400_000_000;
         assert_eq!(
-            TimeDelta::try_days(i64::MAX / MICROS_PER_DAY).unwrap().num_microseconds(),
+            TimeDelta::days(i64::MAX / MICROS_PER_DAY).unwrap().num_microseconds(),
             Some(i64::MAX / MICROS_PER_DAY * MICROS_PER_DAY)
         );
         assert_eq!(
-            TimeDelta::try_days(-i64::MAX / MICROS_PER_DAY).unwrap().num_microseconds(),
+            TimeDelta::days(-i64::MAX / MICROS_PER_DAY).unwrap().num_microseconds(),
             Some(-i64::MAX / MICROS_PER_DAY * MICROS_PER_DAY)
         );
         assert_eq!(
-            TimeDelta::try_days(i64::MAX / MICROS_PER_DAY + 1).unwrap().num_microseconds(),
+            TimeDelta::days(i64::MAX / MICROS_PER_DAY + 1).unwrap().num_microseconds(),
             None
         );
         assert_eq!(
-            TimeDelta::try_days(-i64::MAX / MICROS_PER_DAY - 1).unwrap().num_microseconds(),
+            TimeDelta::days(-i64::MAX / MICROS_PER_DAY - 1).unwrap().num_microseconds(),
             None
         );
     }
@@ -792,21 +792,15 @@ mod tests {
         // overflow checks
         const NANOS_PER_DAY: i64 = 86_400_000_000_000;
         assert_eq!(
-            TimeDelta::try_days(i64::MAX / NANOS_PER_DAY).unwrap().num_nanoseconds(),
+            TimeDelta::days(i64::MAX / NANOS_PER_DAY).unwrap().num_nanoseconds(),
             Some(i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY)
         );
         assert_eq!(
-            TimeDelta::try_days(-i64::MAX / NANOS_PER_DAY).unwrap().num_nanoseconds(),
+            TimeDelta::days(-i64::MAX / NANOS_PER_DAY).unwrap().num_nanoseconds(),
             Some(-i64::MAX / NANOS_PER_DAY * NANOS_PER_DAY)
         );
-        assert_eq!(
-            TimeDelta::try_days(i64::MAX / NANOS_PER_DAY + 1).unwrap().num_nanoseconds(),
-            None
-        );
-        assert_eq!(
-            TimeDelta::try_days(-i64::MAX / NANOS_PER_DAY - 1).unwrap().num_nanoseconds(),
-            None
-        );
+        assert_eq!(TimeDelta::days(i64::MAX / NANOS_PER_DAY + 1).unwrap().num_nanoseconds(), None);
+        assert_eq!(TimeDelta::days(-i64::MAX / NANOS_PER_DAY - 1).unwrap().num_nanoseconds(), None);
     }
     #[test]
     fn test_duration_nanoseconds_max_allowed() {
@@ -992,11 +986,11 @@ mod tests {
         assert_eq!(
             (TimeDelta::nanoseconds(1)
                 + TimeDelta::try_seconds(1).unwrap()
-                + TimeDelta::try_days(1).unwrap())
+                + TimeDelta::days(1).unwrap())
                 * 3,
             TimeDelta::nanoseconds(3)
                 + TimeDelta::try_seconds(3).unwrap()
-                + TimeDelta::try_days(3).unwrap()
+                + TimeDelta::days(3).unwrap()
         );
         assert_eq!(
             TimeDelta::try_milliseconds(1500).unwrap() * -2,
@@ -1062,15 +1056,14 @@ mod tests {
     #[test]
     fn test_duration_fmt() {
         assert_eq!(TimeDelta::zero().to_string(), "P0D");
-        assert_eq!(TimeDelta::try_days(42).unwrap().to_string(), "PT3628800S");
-        assert_eq!(TimeDelta::try_days(-42).unwrap().to_string(), "-PT3628800S");
+        assert_eq!(TimeDelta::days(42).unwrap().to_string(), "PT3628800S");
+        assert_eq!(TimeDelta::days(-42).unwrap().to_string(), "-PT3628800S");
         assert_eq!(TimeDelta::try_seconds(42).unwrap().to_string(), "PT42S");
         assert_eq!(TimeDelta::try_milliseconds(42).unwrap().to_string(), "PT0.042S");
         assert_eq!(TimeDelta::microseconds(42).to_string(), "PT0.000042S");
         assert_eq!(TimeDelta::nanoseconds(42).to_string(), "PT0.000000042S");
         assert_eq!(
-            (TimeDelta::try_days(7).unwrap() + TimeDelta::try_milliseconds(6543).unwrap())
-                .to_string(),
+            (TimeDelta::days(7).unwrap() + TimeDelta::try_milliseconds(6543).unwrap()).to_string(),
             "PT604806.543S"
         );
         assert_eq!(TimeDelta::try_seconds(-86_401).unwrap().to_string(), "-PT86401S");
@@ -1080,7 +1073,7 @@ mod tests {
         assert_eq!(
             format!(
                 "{:30}",
-                TimeDelta::try_days(1).unwrap() + TimeDelta::try_milliseconds(2345).unwrap()
+                TimeDelta::days(1).unwrap() + TimeDelta::try_milliseconds(2345).unwrap()
             ),
             "PT86402.345S"
         );
@@ -1137,7 +1130,7 @@ mod tests {
     #[test]
     fn test_duration_const() {
         const ONE_WEEK: TimeDelta = expect!(TimeDelta::weeks(1), "");
-        const ONE_DAY: TimeDelta = expect!(TimeDelta::try_days(1), "");
+        const ONE_DAY: TimeDelta = expect!(TimeDelta::days(1), "");
         const ONE_HOUR: TimeDelta = expect!(TimeDelta::try_hours(1), "");
         const ONE_MINUTE: TimeDelta = expect!(TimeDelta::try_minutes(1), "");
         const ONE_SECOND: TimeDelta = expect!(TimeDelta::try_seconds(1), "");

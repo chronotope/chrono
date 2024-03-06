@@ -131,7 +131,7 @@ pub trait DurationRound: Sized {
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+    ///     dt.duration_round(TimeDelta::days(1).unwrap()).unwrap().to_string(),
     ///     "2018-01-12 00:00:00 UTC"
     /// );
     /// ```
@@ -153,7 +153,7 @@ pub trait DurationRound: Sized {
     ///     "2018-01-11 12:00:00.150 UTC"
     /// );
     /// assert_eq!(
-    ///     dt.duration_trunc(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+    ///     dt.duration_trunc(TimeDelta::days(1).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 00:00:00 UTC"
     /// );
     /// ```
@@ -268,7 +268,7 @@ pub enum RoundingError {
     ///     .unwrap();
     ///
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::try_days(300 * 365).unwrap()),
+    ///     dt.duration_round(TimeDelta::days(300 * 365).unwrap()),
     ///     Err(RoundingError::DurationExceedsLimit)
     /// );
     /// ```
@@ -281,7 +281,7 @@ pub enum RoundingError {
     /// let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0).unwrap();
     ///
     /// assert_eq!(
-    ///     dt.duration_round(TimeDelta::try_days(1).unwrap()),
+    ///     dt.duration_round(TimeDelta::days(1).unwrap()),
     ///     Err(RoundingError::TimestampExceedsLimit)
     /// );
     /// ```
@@ -502,14 +502,14 @@ mod tests {
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2012-12-13 00:00:00 UTC"
         );
 
         // timezone east
         let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
-            dt.duration_round(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
         );
         assert_eq!(
@@ -520,7 +520,7 @@ mod tests {
         // timezone west
         let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
-            dt.duration_round(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
         );
         assert_eq!(
@@ -587,7 +587,7 @@ mod tests {
             "2012-12-12 18:00:00"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2012-12-13 00:00:00"
         );
     }
@@ -650,14 +650,14 @@ mod tests {
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2012-12-12 00:00:00 UTC"
         );
 
         // timezone east
         let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
         );
         assert_eq!(
@@ -668,7 +668,7 @@ mod tests {
         // timezone west
         let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"
         );
         assert_eq!(
@@ -729,7 +729,7 @@ mod tests {
             "2012-12-12 18:00:00"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_days(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::days(1).unwrap()).unwrap().to_string(),
             "2012-12-12 00:00:00"
         );
     }
