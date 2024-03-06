@@ -1424,20 +1424,20 @@ fn test_datetime_sub_assign() {
     let datetime = naivedatetime.and_utc();
     let mut datetime_sub = datetime;
 
-    datetime_sub -= TimeDelta::try_minutes(90).unwrap();
-    assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
+    datetime_sub -= TimeDelta::minutes(90).unwrap();
+    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90).unwrap());
 
     let timezone = FixedOffset::east(60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
+    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90).unwrap());
 
     let timezone = FixedOffset::west(2 * 60 * 60).unwrap();
     let datetime = datetime.with_timezone(&timezone);
     let datetime_sub = datetime_sub.with_timezone(&timezone);
 
-    assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
+    assert_eq!(datetime_sub, datetime - TimeDelta::minutes(90).unwrap());
 }
 
 #[test]
