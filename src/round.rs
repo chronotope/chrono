@@ -513,7 +513,7 @@ mod tests {
             "2020-10-28 00:00:00 +01:00"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::try_weeks(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::weeks(1).unwrap()).unwrap().to_string(),
             "2020-10-29 00:00:00 +01:00"
         );
 
@@ -524,7 +524,7 @@ mod tests {
             "2020-10-28 00:00:00 -01:00"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::try_weeks(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::weeks(1).unwrap()).unwrap().to_string(),
             "2020-10-29 00:00:00 -01:00"
         );
     }
@@ -661,7 +661,7 @@ mod tests {
             "2020-10-27 00:00:00 +01:00"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_weeks(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::weeks(1).unwrap()).unwrap().to_string(),
             "2020-10-22 00:00:00 +01:00"
         );
 
@@ -672,7 +672,7 @@ mod tests {
             "2020-10-27 00:00:00 -01:00"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_weeks(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::weeks(1).unwrap()).unwrap().to_string(),
             "2020-10-22 00:00:00 -01:00"
         );
     }
