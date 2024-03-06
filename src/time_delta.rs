@@ -138,7 +138,7 @@ impl TimeDelta {
     ///
     /// Returns `None` when the `TimeDelta` would be out of bounds.
     #[inline]
-    pub const fn try_minutes(minutes: i64) -> Option<TimeDelta> {
+    pub const fn minutes(minutes: i64) -> Option<TimeDelta> {
         TimeDelta::try_seconds(try_opt!(minutes.checked_mul(SECS_PER_MINUTE)))
     }
 
@@ -560,7 +560,7 @@ mod tests {
         assert_eq!(-(days(3) + seconds(70)), days(-4) + seconds(86_400 - 70));
 
         let mut d = TimeDelta::default();
-        d += TimeDelta::try_minutes(1).unwrap();
+        d += TimeDelta::minutes(1).unwrap();
         d -= seconds(30);
         assert_eq!(d, seconds(30));
     }
@@ -1132,7 +1132,7 @@ mod tests {
         const ONE_WEEK: TimeDelta = expect!(TimeDelta::weeks(1), "");
         const ONE_DAY: TimeDelta = expect!(TimeDelta::days(1), "");
         const ONE_HOUR: TimeDelta = expect!(TimeDelta::hours(1), "");
-        const ONE_MINUTE: TimeDelta = expect!(TimeDelta::try_minutes(1), "");
+        const ONE_MINUTE: TimeDelta = expect!(TimeDelta::minutes(1), "");
         const ONE_SECOND: TimeDelta = expect!(TimeDelta::try_seconds(1), "");
         const ONE_MILLI: TimeDelta = expect!(TimeDelta::try_milliseconds(1), "");
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
