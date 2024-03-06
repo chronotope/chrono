@@ -498,7 +498,7 @@ mod tests {
             "2012-12-12 18:30:00 UTC"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::try_hours(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::hours(1).unwrap()).unwrap().to_string(),
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
@@ -583,7 +583,7 @@ mod tests {
             "2012-12-12 18:30:00"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::try_hours(1).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::hours(1).unwrap()).unwrap().to_string(),
             "2012-12-12 18:00:00"
         );
         assert_eq!(
@@ -646,7 +646,7 @@ mod tests {
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_hours(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::hours(1).unwrap()).unwrap().to_string(),
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
@@ -725,7 +725,7 @@ mod tests {
             "2012-12-12 18:00:00"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::try_hours(1).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::hours(1).unwrap()).unwrap().to_string(),
             "2012-12-12 18:00:00"
         );
         assert_eq!(

@@ -94,7 +94,7 @@ fn try_verify_against_date_command() {
             let end = NaiveDate::from_ymd(*year + 1, 1, 1).unwrap().and_time(NaiveTime::MIN);
             while date <= end {
                 verify_against_date_command_local(DATE_PATH, date);
-                date += chrono::TimeDelta::try_hours(1).unwrap();
+                date += chrono::TimeDelta::hours(1).unwrap();
             }
         }));
     }
