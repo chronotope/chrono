@@ -28,7 +28,7 @@ use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 #[cfg(any(feature = "clock", feature = "std"))]
 use crate::OutOfRange;
-use crate::{expect, ok, try_ok_or, try_opt};
+use crate::{ok, try_err, try_ok_or};
 use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
@@ -753,30 +753,33 @@ impl DateTime<Utc> {
     ///
     /// # Errors
     ///
-    /// Returns `None` on out-of-range number of seconds and/or
-    /// invalid nanosecond, otherwise returns `Some(DateTime {...})`.
+    /// This method returns:
+    /// - [`Error::OutOfRange`] if the timestamp is outside the range of a `DateTime`.
+    /// - [`Error::InvalidArgument`] if nanosecond >= 2,000,000,000.
+    /// - [`Error::DoesNotExist`] if the nanosecond part to represent a leap second is not on a
+    ///   minute boundary.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::DateTime;
     ///
-    /// let dt = DateTime::from_timestamp(1431648000, 0).expect("invalid timestamp");
+    /// let dt = DateTime::from_timestamp(1431648000, 0)?;
     ///
     /// assert_eq!(dt.to_string(), "2015-05-15 00:00:00 UTC");
-    /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos()).unwrap(), dt);
+    /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos())?, dt);
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_timestamp(secs: i64, nsecs: u32) -> Option<Self> {
+    pub const fn from_timestamp(secs: i64, nsecs: u32) -> Result<Self, Error> {
         let days = secs.div_euclid(86_400) + UNIX_EPOCH_DAY;
         let secs = secs.rem_euclid(86_400);
         if days < i32::MIN as i64 || days > i32::MAX as i64 {
-            return None;
+            return Err(Error::OutOfRange);
         }
-        let date = try_opt!(ok!(NaiveDate::from_num_days_from_ce(days as i32)));
-        let time = try_opt!(ok!(NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs)));
-        Some(date.and_time(time).and_utc())
+        let date = try_err!(NaiveDate::from_num_days_from_ce(days as i32));
+        let time = try_err!(NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs));
+        Ok(date.and_time(time).and_utc())
     }
 
     /// Makes a new `DateTime<Utc>` from the number of non-leap milliseconds
@@ -806,7 +809,7 @@ impl DateTime<Utc> {
     pub const fn from_timestamp_millis(millis: i64) -> Option<Self> {
         let secs = millis.div_euclid(1000);
         let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
-        Self::from_timestamp(secs, nsecs)
+        ok!(Self::from_timestamp(secs, nsecs))
     }
 
     /// Creates a new `DateTime<Utc>` from the number of non-leap microseconds
@@ -843,7 +846,7 @@ impl DateTime<Utc> {
     pub const fn from_timestamp_micros(micros: i64) -> Option<Self> {
         let secs = micros.div_euclid(1_000_000);
         let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
-        Self::from_timestamp(secs, nsecs)
+        ok!(Self::from_timestamp(secs, nsecs))
     }
 
     /// Creates a new [`DateTime<Utc>`] from the number of non-leap microseconds
@@ -878,7 +881,10 @@ impl DateTime<Utc> {
     pub const fn from_timestamp_nanos(nanos: i64) -> Self {
         let secs = nanos.div_euclid(1_000_000_000);
         let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
-        expect!(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
+        match Self::from_timestamp(secs, nsecs) {
+            Ok(dt) => dt,
+            Err(_) => panic!("timestamp in nanos is always in range"),
+        }
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
