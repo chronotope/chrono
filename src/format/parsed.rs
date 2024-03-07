@@ -7,7 +7,7 @@
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, MappedLocalTime, Offset, TimeZone};
-use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
+use crate::{DateTime, Datelike, Error, TimeDelta, Timelike, Weekday};
 
 /// A type to hold parsed fields of date and time that can check all fields are consistent.
 ///
@@ -59,8 +59,8 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///
 /// ```
 /// # #[cfg(feature = "alloc")] {
-/// use chrono::format::{ParseErrorKind, Parsed};
-/// use chrono::Weekday;
+/// use chrono::format::Parsed;
+/// use chrono::{Error, Weekday};
 ///
 /// let mut parsed = Parsed::default();
 /// parsed
@@ -85,12 +85,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///     .set_minute(26)?
 ///     .set_second(40)?
 ///     .set_offset(0)?;
-/// let result = parsed.to_datetime();
-///
-/// assert!(result.is_err());
-/// if let Err(error) = result {
-///     assert_eq!(error.kind(), ParseErrorKind::Impossible);
-/// }
+/// assert_eq!(parsed.to_datetime(), Err(Error::Inconsistent));
 /// # }
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
@@ -768,16 +763,13 @@ impl Parsed {
 
             Ok(datetime)
         } else if let Some(timestamp) = self.timestamp {
-            use super::ParseError as PE;
-            use super::ParseErrorKind;
-
             // If the date fields are inconsistent, out of range, or if the date does not exist,
             // there is no point proceeding.
             //
             // If the date or time fields are not enough it is not an error (which is the only error
             // `to_naive_time` can return, so no need to check).
             match date {
-                Err(PE(ParseErrorKind::NotEnough)) => {}
+                Err(Error::Ambiguous) => {}
                 Err(e) => return Err(e),
                 _ => {}
             }
