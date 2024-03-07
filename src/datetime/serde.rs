@@ -227,7 +227,7 @@ pub mod ts_nanoseconds {
                 value.div_euclid(1_000_000_000),
                 (value.rem_euclid(1_000_000_000)) as u32,
             )
-            .ok_or_else(|| invalid_ts(value))
+            .map_err(|_| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in nanoseconds since the epoch
@@ -236,7 +236,7 @@ pub mod ts_nanoseconds {
             E: de::Error,
         {
             DateTime::from_timestamp((value / 1_000_000_000) as i64, (value % 1_000_000_000) as u32)
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
     }
 }
@@ -513,7 +513,7 @@ pub mod ts_microseconds {
                 value.div_euclid(1_000_000),
                 (value.rem_euclid(1_000_000) * 1000) as u32,
             )
-            .ok_or_else(|| invalid_ts(value))
+            .map_err(|_| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in milliseconds since the epoch
@@ -525,7 +525,7 @@ pub mod ts_microseconds {
                 (value / 1_000_000) as i64,
                 ((value % 1_000_000) * 1_000) as u32,
             )
-            .ok_or_else(|| invalid_ts(value))
+            .map_err(|_| invalid_ts(value))
         }
     }
 }
@@ -787,7 +787,7 @@ pub mod ts_milliseconds {
         where
             E: de::Error,
         {
-            DateTime::from_timestamp_millis(value).ok_or_else(|| invalid_ts(value))
+            DateTime::from_timestamp_millis(value).map_err(|_| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in milliseconds since the epoch
@@ -796,7 +796,7 @@ pub mod ts_milliseconds {
             E: de::Error,
         {
             DateTime::from_timestamp((value / 1000) as i64, ((value % 1000) * 1_000_000) as u32)
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
     }
 }
@@ -1055,7 +1055,7 @@ pub mod ts_seconds {
         where
             E: de::Error,
         {
-            DateTime::from_timestamp(value, 0).ok_or_else(|| invalid_ts(value))
+            DateTime::from_timestamp(value, 0).map_err(|_| invalid_ts(value))
         }
 
         /// Deserialize a timestamp in seconds since the epoch
@@ -1066,7 +1066,7 @@ pub mod ts_seconds {
             if value > i64::MAX as u64 {
                 Err(invalid_ts(value))
             } else {
-                DateTime::from_timestamp(value as i64, 0).ok_or_else(|| invalid_ts(value))
+                DateTime::from_timestamp(value as i64, 0).map_err(|_| invalid_ts(value))
             }
         }
     }

@@ -176,7 +176,7 @@ pub mod ts_nanoseconds {
                 (value.rem_euclid(1_000_000_000)) as u32,
             )
             .map(|dt| dt.naive_utc())
-            .ok_or_else(|| invalid_ts(value))
+            .map_err(|_| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -185,7 +185,7 @@ pub mod ts_nanoseconds {
         {
             DateTime::from_timestamp((value / 1_000_000_000) as i64, (value % 1_000_000_000) as u32)
                 .map(|dt| dt.naive_utc())
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
     }
 }
@@ -447,7 +447,7 @@ pub mod ts_microseconds {
         {
             DateTime::from_timestamp_micros(value)
                 .map(|dt| dt.naive_utc())
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -459,7 +459,7 @@ pub mod ts_microseconds {
                 ((value % 1_000_000) * 1_000) as u32,
             )
             .map(|dt| dt.naive_utc())
-            .ok_or_else(|| invalid_ts(value))
+            .map_err(|_| invalid_ts(value))
         }
     }
 }
@@ -706,7 +706,7 @@ pub mod ts_milliseconds {
         {
             DateTime::from_timestamp_millis(value)
                 .map(|dt| dt.naive_utc())
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -715,7 +715,7 @@ pub mod ts_milliseconds {
         {
             DateTime::from_timestamp((value / 1000) as i64, ((value % 1000) * 1_000_000) as u32)
                 .map(|dt| dt.naive_utc())
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
     }
 }
@@ -956,7 +956,7 @@ pub mod ts_seconds {
         {
             DateTime::from_timestamp(value, 0)
                 .map(|dt| dt.naive_utc())
-                .ok_or_else(|| invalid_ts(value))
+                .map_err(|_| invalid_ts(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
@@ -968,7 +968,7 @@ pub mod ts_seconds {
             } else {
                 DateTime::from_timestamp(value as i64, 0)
                     .map(|dt| dt.naive_utc())
-                    .ok_or_else(|| invalid_ts(value))
+                    .map_err(|_| invalid_ts(value))
             }
         }
     }

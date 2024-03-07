@@ -158,8 +158,8 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     fn timestamp(&self, secs: i64, nsecs: u32) -> LocalResult<DateTime<Self>> {
         match DateTime::from_timestamp(secs, nsecs) {
-            Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt.naive_utc())),
-            None => LocalResult::None,
+            Ok(dt) => LocalResult::Single(self.from_utc_datetime(&dt.naive_utc())),
+            Err(_) => LocalResult::None,
         }
     }
 

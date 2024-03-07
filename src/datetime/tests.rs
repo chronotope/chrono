@@ -3,7 +3,9 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
+use crate::{
+    Datelike, Days, Error, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday,
+};
 
 #[derive(Clone)]
 struct DstTester;
@@ -146,7 +148,10 @@ fn test_datetime_from_timestamp_millis() {
     // that of `from_timestamp_opt`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().cloned() {
-        assert_eq!(DateTime::from_timestamp_millis(secs * 1000), DateTime::from_timestamp(secs, 0));
+        assert_eq!(
+            DateTime::from_timestamp_millis(secs * 1000),
+            DateTime::from_timestamp(secs, 0).ok()
+        );
     }
 }
 
@@ -183,7 +188,7 @@ fn test_datetime_from_timestamp_micros() {
     for secs in secs_test.iter().copied() {
         assert_eq!(
             DateTime::from_timestamp_micros(secs * 1_000_000),
-            DateTime::from_timestamp(secs, 0)
+            DateTime::from_timestamp(secs, 0).ok()
         );
     }
 }
@@ -216,7 +221,7 @@ fn test_datetime_from_timestamp_nanos() {
     let parsed: DateTime<Utc> = maximum.parse().unwrap();
     let nanos = parsed.timestamp_nanos().unwrap();
     assert_eq!(
-        Some(DateTime::from_timestamp_nanos(nanos)),
+        Ok(DateTime::from_timestamp_nanos(nanos)),
         DateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
     );
     // Minimum datetime in nanoseconds
@@ -224,7 +229,7 @@ fn test_datetime_from_timestamp_nanos() {
     let parsed: DateTime<Utc> = minimum.parse().unwrap();
     let nanos = parsed.timestamp_nanos().unwrap();
     assert_eq!(
-        Some(DateTime::from_timestamp_nanos(nanos)),
+        Ok(DateTime::from_timestamp_nanos(nanos)),
         DateTime::from_timestamp(nanos / A_BILLION, (nanos % A_BILLION) as u32)
     );
 
@@ -233,7 +238,7 @@ fn test_datetime_from_timestamp_nanos() {
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().copied() {
         assert_eq!(
-            Some(DateTime::from_timestamp_nanos(secs * 1_000_000_000)),
+            Ok(DateTime::from_timestamp_nanos(secs * 1_000_000_000)),
             DateTime::from_timestamp(secs, 0)
         );
     }
@@ -245,13 +250,13 @@ fn test_datetime_from_timestamp() {
     let ymdhms = |y, m, d, h, n, s| {
         NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap().and_utc()
     };
-    assert_eq!(from_timestamp(-1), Some(ymdhms(1969, 12, 31, 23, 59, 59)));
-    assert_eq!(from_timestamp(0), Some(ymdhms(1970, 1, 1, 0, 0, 0)));
-    assert_eq!(from_timestamp(1), Some(ymdhms(1970, 1, 1, 0, 0, 1)));
-    assert_eq!(from_timestamp(1_000_000_000), Some(ymdhms(2001, 9, 9, 1, 46, 40)));
-    assert_eq!(from_timestamp(0x7fffffff), Some(ymdhms(2038, 1, 19, 3, 14, 7)));
-    assert_eq!(from_timestamp(i64::MIN), None);
-    assert_eq!(from_timestamp(i64::MAX), None);
+    assert_eq!(from_timestamp(-1), Ok(ymdhms(1969, 12, 31, 23, 59, 59)));
+    assert_eq!(from_timestamp(0), Ok(ymdhms(1970, 1, 1, 0, 0, 0)));
+    assert_eq!(from_timestamp(1), Ok(ymdhms(1970, 1, 1, 0, 0, 1)));
+    assert_eq!(from_timestamp(1_000_000_000), Ok(ymdhms(2001, 9, 9, 1, 46, 40)));
+    assert_eq!(from_timestamp(0x7fffffff), Ok(ymdhms(2038, 1, 19, 3, 14, 7)));
+    assert_eq!(from_timestamp(i64::MIN), Err(Error::OutOfRange));
+    assert_eq!(from_timestamp(i64::MAX), Err(Error::OutOfRange));
 }
 
 #[test]
