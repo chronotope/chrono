@@ -15,7 +15,9 @@ use std::ptr;
 use super::win_bindings::{GetTimeZoneInformationForYear, SYSTEMTIME, TIME_ZONE_INFORMATION};
 
 use crate::offset::local::{lookup_with_dst_transitions, Transition};
-use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Weekday};
+use crate::{
+    Datelike, Error, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Weekday,
+};
 
 // We don't use `SystemTimeToTzSpecificLocalTime` because it doesn't support the same range of dates
 // as Chrono. Also it really isn't that difficult to work out the correct offset from the provided
@@ -204,9 +206,13 @@ fn naive_date_time_from_system_time(
         1..=5 => st.wDay as u8,
         _ => return Err(()),
     };
-    let date = NaiveDate::from_weekday_of_month(year, st.wMonth as u32, weekday, nth_day)
-        .or_else(|| NaiveDate::from_weekday_of_month(year, st.wMonth as u32, weekday, 4))
-        .ok_or(())?; // `st.wMonth` must be invalid
+    let date = match NaiveDate::from_weekday_of_month(year, st.wMonth as u32, weekday, nth_day) {
+        Ok(date) => date,
+        Err(Error::DoesNotExist) => {
+            NaiveDate::from_weekday_of_month(year, st.wMonth as u32, weekday, 4).unwrap()
+        }
+        Err(_) => return Err(()), // `st.wMonth` must be invalid
+    };
     Ok(Some(date.and_time(time)))
 }
 

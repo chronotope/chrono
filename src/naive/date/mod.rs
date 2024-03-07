@@ -334,34 +334,40 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The specified day does not exist in that month (for example the 5th Monday of Apr. 2023).
-    /// - The value for `month` or `n` is invalid.
-    /// - `year` is out of range for `NaiveDate`.
+    /// This methods returns:
+    /// - [`Error::DoesNotExist`] if the specified day does not exist in that month
+    ///   (for example the 5th Monday of Apr. 2023).
+    /// - [`Error::InvalidArgument`] if the value for `month` or `n` is invalid.
+    /// - [`Error::OutOfRange`] if `year` is out of range for `NaiveDate`.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{NaiveDate, Weekday};
+    ///
     /// assert_eq!(
     ///     NaiveDate::from_weekday_of_month(2017, 3, Weekday::Fri, 2),
-    ///     NaiveDate::from_ymd(2017, 3, 10).ok()
+    ///     NaiveDate::from_ymd(2017, 3, 10)
     /// )
     /// ```
-    #[must_use]
     pub const fn from_weekday_of_month(
         year: i32,
         month: u32,
         weekday: Weekday,
         n: u8,
-    ) -> Option<NaiveDate> {
-        if n == 0 {
-            return None;
+    ) -> Result<NaiveDate, Error> {
+        if n == 0 || n > 5 {
+            return Err(Error::InvalidArgument);
         }
-        let first = try_opt!(ok!(NaiveDate::from_ymd(year, month, 1))).weekday();
+        let first = try_err!(NaiveDate::from_ymd(year, month, 1)).weekday();
         let first_to_dow = (7 + weekday.number_from_monday() - first.number_from_monday()) % 7;
         let day = (n - 1) as u32 * 7 + first_to_dow + 1;
-        ok!(NaiveDate::from_ymd(year, month, day))
+        // `day` may be larger than 31. That makes it an `InvalidArgument` for `from_ymd`, while in
+        // this context it just means that day in week 5 does not exist.
+        match NaiveDate::from_ymd(year, month, day) {
+            Ok(d) => Ok(d),
+            Err(_) => Err(Error::DoesNotExist),
+        }
     }
 
     /// Parses a string with the specified format string and returns a new `NaiveDate`.
