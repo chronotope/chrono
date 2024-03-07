@@ -1162,7 +1162,7 @@ fn resolve_week_date(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
+    use super::super::{ParseError, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
     use super::Parsed;
     use crate::naive::{NaiveDate, NaiveTime};
     use crate::offset::{FixedOffset, TimeZone, Utc};
@@ -1793,16 +1793,24 @@ mod tests {
     }
 
     #[test]
-    fn issue_551() {
+    fn issue_551() -> Result<(), ParseError> {
         use crate::Weekday;
-        let mut parsed = Parsed::new();
-
-        parsed.year = Some(2002);
-        parsed.week_from_mon = Some(22);
-        parsed.weekday = Some(Weekday::Mon);
-        assert_eq!(NaiveDate::from_ymd(2002, 6, 3).unwrap(), parsed.to_naive_date().unwrap());
-
-        parsed.year = Some(2001);
-        assert_eq!(NaiveDate::from_ymd(2001, 5, 28).unwrap(), parsed.to_naive_date().unwrap());
+        assert_eq!(
+            NaiveDate::from_ymd(2002, 6, 3).unwrap(),
+            Parsed::new()
+                .set_year(2002)?
+                .set_week_from_mon(22)?
+                .set_weekday(Weekday::Mon)?
+                .to_naive_date()?
+        );
+        assert_eq!(
+            NaiveDate::from_ymd(2001, 5, 28).unwrap(),
+            Parsed::new()
+                .set_year(2001)?
+                .set_week_from_mon(22)?
+                .set_weekday(Weekday::Mon)?
+                .to_naive_date()?
+        );
+        Ok(())
     }
 }
