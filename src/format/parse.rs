@@ -527,7 +527,7 @@ impl str::FromStr for DateTime<FixedOffset> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let (s, _) = parse_rfc3339_relaxed(&mut parsed, s)?;
         if !s.trim_start().is_empty() {
             return Err(TOO_LONG);
@@ -722,7 +722,7 @@ mod tests {
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
 
-        let p = Parsed::new;
+        let p = Parsed::default;
 
         // numeric
         check("1987", &[num(Year)], p().set_year(1987));
@@ -849,7 +849,7 @@ mod tests {
         use crate::format::Fixed::*;
         use crate::format::Item::{Literal, Space};
 
-        let p = Parsed::new;
+        let p = Parsed::default;
 
         // fixed: month and weekday names
         check("apr", &[fixed(ShortMonthName)], p().set_month(4));
@@ -920,7 +920,7 @@ mod tests {
         use crate::format::Item::Literal;
         use crate::format::Numeric::Second;
 
-        let p = Parsed::new;
+        let p = Parsed::default;
 
         // fixed: dot plus nanoseconds
         check("", &[fixed(Nanosecond)], Ok(&mut p())); // no field set, but not an error
@@ -1020,7 +1020,7 @@ mod tests {
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
 
-        let p = Parsed::new;
+        let p = Parsed::default;
 
         // TimezoneOffset
         check("1", &[fixed(TimezoneOffset)], Err(INVALID));
@@ -1457,7 +1457,7 @@ mod tests {
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
 
-        let p = Parsed::new;
+        let p = Parsed::default;
 
         // some practical examples
         check(
@@ -1570,13 +1570,13 @@ mod tests {
 
     #[track_caller]
     fn parses(s: &str, items: &[Item]) {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         assert!(parse(&mut parsed, s, items.iter()).is_ok());
     }
 
     #[track_caller]
     fn check(s: &str, items: &[Item], expected: ParseResult<&mut Parsed>) {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let result = parse(&mut parsed, s, items.iter());
         let parsed = result.map(|_| parsed);
         assert_eq!(parsed.as_ref(), expected.as_deref());
@@ -1657,7 +1657,7 @@ mod tests {
         ];
 
         fn rfc2822_to_datetime(date: &str) -> ParseResult<DateTime<FixedOffset>> {
-            let mut parsed = Parsed::new();
+            let mut parsed = Parsed::default();
             parse(&mut parsed, date, [Item::Fixed(Fixed::RFC2822)].iter())?;
             parsed.to_datetime()
         }

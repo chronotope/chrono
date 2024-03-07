@@ -493,7 +493,7 @@ impl NaiveTime {
     /// assert!(parse_from_str("13:07 AM", "%H:%M %p").is_err());
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveTime> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_time()
     }
@@ -515,7 +515,7 @@ impl NaiveTime {
     /// assert_eq!(remainder, " trailing text");
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveTime, &'a str)> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_time().map(|t| (t, remainder))
     }
@@ -1530,7 +1530,7 @@ impl str::FromStr for NaiveTime {
         ];
         const TRAILING_WHITESPACE: [Item<'static>; 1] = [Item::Space("")];
 
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let s = parse_and_remainder(&mut parsed, s, HOUR_AND_MINUTE.iter())?;
         // Seconds are optional, don't fail if parsing them doesn't succeed.
         let s = parse_and_remainder(&mut parsed, s, SECOND_AND_NANOS.iter()).unwrap_or(s);

@@ -410,7 +410,7 @@ impl NaiveDate {
     /// assert!(parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDate> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_date()
     }
@@ -432,7 +432,7 @@ impl NaiveDate {
     /// assert_eq!(remainder, " trailing text");
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDate, &'a str)> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_date().map(|d| (d, remainder))
     }
@@ -2123,7 +2123,7 @@ impl str::FromStr for NaiveDate {
             Item::Space(""),
         ];
 
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, ITEMS.iter())?;
         parsed.to_naive_date()
     }
