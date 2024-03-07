@@ -1866,3 +1866,12 @@ fn nano_roundrip() {
         assert_eq!(nanos, nanos2);
     }
 }
+
+#[test]
+fn test_datetime_utc_is_copy_and_send() {
+    fn is_copy<T: Copy>(_: T) {}
+    fn is_send<T: Send>(_: T) {}
+
+    is_copy(DateTime::<Utc>::MIN_UTC);
+    is_send(DateTime::<Utc>::MIN_UTC);
+}
