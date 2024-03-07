@@ -62,7 +62,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// use chrono::format::{ParseErrorKind, Parsed};
 /// use chrono::Weekday;
 ///
-/// let mut parsed = Parsed::new();
+/// let mut parsed = Parsed::default();
 /// parsed
 ///     .set_weekday(Weekday::Wed)?
 ///     .set_day(31)?
@@ -75,7 +75,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// let dt = parsed.to_datetime()?;
 /// assert_eq!(dt.to_rfc2822(), "Wed, 31 Dec 2014 04:26:40 +0000");
 ///
-/// let mut parsed = Parsed::new();
+/// let mut parsed = Parsed::default();
 /// parsed
 ///     .set_weekday(Weekday::Thu)? // changed to the wrong day
 ///     .set_day(31)?
@@ -107,13 +107,13 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///
 /// let rfc_2822 = [Item::Fixed(Fixed::RFC2822)];
 ///
-/// let mut parsed = Parsed::new();
+/// let mut parsed = Parsed::default();
 /// parse(&mut parsed, "Wed, 31 Dec 2014 04:26:40 +0000", rfc_2822.iter())?;
 /// let dt = parsed.to_datetime()?;
 ///
 /// assert_eq!(dt.to_rfc2822(), "Wed, 31 Dec 2014 04:26:40 +0000");
 ///
-/// let mut parsed = Parsed::new();
+/// let mut parsed = Parsed::default();
 /// parse(&mut parsed, "Thu, 31 Dec 2014 04:26:40 +0000", rfc_2822.iter())?;
 /// let result = parsed.to_datetime();
 ///
@@ -165,12 +165,6 @@ fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<(
 }
 
 impl Parsed {
-    /// Returns the initial value of parsed parts.
-    #[must_use]
-    pub fn new() -> Parsed {
-        Parsed::default()
-    }
-
     /// Set the [`year`](Parsed::year) field to the given value.
     ///
     /// The value can be negative, unlike the [`year_div_100`](Parsed::year_div_100) and
@@ -1143,7 +1137,7 @@ mod tests {
     #[test]
     fn test_parsed_set_fields() {
         // year*, isoyear*
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_year(1987).is_ok());
         assert_eq!(p.set_year(1986), Err(IMPOSSIBLE));
         assert_eq!(p.set_year(1988), Err(IMPOSSIBLE));
@@ -1155,37 +1149,37 @@ mod tests {
         assert_eq!(p.set_year_mod_100(38), Err(IMPOSSIBLE));
         assert_eq!(p.set_year_mod_100(36), Err(IMPOSSIBLE));
 
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_year(0).is_ok());
         assert!(p.set_year_div_100(0).is_ok());
         assert!(p.set_year_mod_100(0).is_ok());
 
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert_eq!(p.set_year_div_100(-1), Err(OUT_OF_RANGE));
         assert_eq!(p.set_year_mod_100(-1), Err(OUT_OF_RANGE));
         assert!(p.set_year(-1).is_ok());
         assert_eq!(p.set_year(-2), Err(IMPOSSIBLE));
         assert_eq!(p.set_year(0), Err(IMPOSSIBLE));
 
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(OUT_OF_RANGE));
         assert!(p.set_year_div_100(8).is_ok());
         assert_eq!(p.set_year_div_100(0x1_0000_0008), Err(OUT_OF_RANGE));
 
         // month, week*, isoweek, ordinal, day, minute, second, nanosecond, offset
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_month(7).is_ok());
         assert_eq!(p.set_month(1), Err(IMPOSSIBLE));
         assert_eq!(p.set_month(6), Err(IMPOSSIBLE));
         assert_eq!(p.set_month(8), Err(IMPOSSIBLE));
         assert_eq!(p.set_month(12), Err(IMPOSSIBLE));
 
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_month(8).is_ok());
         assert_eq!(p.set_month(0x1_0000_0008), Err(OUT_OF_RANGE));
 
         // hour
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_hour(12).is_ok());
         assert_eq!(p.set_hour(11), Err(IMPOSSIBLE));
         assert_eq!(p.set_hour(13), Err(IMPOSSIBLE));
@@ -1197,7 +1191,7 @@ mod tests {
         assert_eq!(p.set_hour12(1), Err(IMPOSSIBLE));
         assert_eq!(p.set_hour12(11), Err(IMPOSSIBLE));
 
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_ampm(true).is_ok());
         assert!(p.set_hour12(7).is_ok());
         assert_eq!(p.set_hour(7), Err(IMPOSSIBLE));
@@ -1205,7 +1199,7 @@ mod tests {
         assert!(p.set_hour(19).is_ok());
 
         // timestamp
-        let mut p = Parsed::new();
+        let mut p = Parsed::default();
         assert!(p.set_timestamp(1_234_567_890).is_ok());
         assert_eq!(p.set_timestamp(1_234_567_889), Err(IMPOSSIBLE));
         assert_eq!(p.set_timestamp(1_234_567_891), Err(IMPOSSIBLE));
@@ -1213,105 +1207,105 @@ mod tests {
 
     #[test]
     fn test_parsed_set_range() {
-        assert_eq!(Parsed::new().set_year(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_year(i32::MIN as i64).is_ok());
-        assert!(Parsed::new().set_year(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_year(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_year(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_year(i32::MIN as i64).is_ok());
+        assert!(Parsed::default().set_year(i32::MAX as i64).is_ok());
+        assert_eq!(Parsed::default().set_year(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_year_div_100(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_year_div_100(0).is_ok());
-        assert!(Parsed::new().set_year_div_100(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_year_div_100(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_year_div_100(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_year_div_100(0).is_ok());
+        assert!(Parsed::default().set_year_div_100(i32::MAX as i64).is_ok());
+        assert_eq!(Parsed::default().set_year_div_100(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_year_mod_100(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_year_mod_100(0).is_ok());
-        assert!(Parsed::new().set_year_mod_100(99).is_ok());
-        assert_eq!(Parsed::new().set_year_mod_100(100), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_year_mod_100(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_year_mod_100(0).is_ok());
+        assert!(Parsed::default().set_year_mod_100(99).is_ok());
+        assert_eq!(Parsed::default().set_year_mod_100(100), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_isoyear(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_isoyear(i32::MIN as i64).is_ok());
-        assert!(Parsed::new().set_isoyear(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_isoyear(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_isoyear(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_isoyear(i32::MIN as i64).is_ok());
+        assert!(Parsed::default().set_isoyear(i32::MAX as i64).is_ok());
+        assert_eq!(Parsed::default().set_isoyear(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_isoyear_div_100(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_isoyear_div_100(0).is_ok());
-        assert!(Parsed::new().set_isoyear_div_100(99).is_ok());
-        assert_eq!(Parsed::new().set_isoyear_div_100(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_isoyear_div_100(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_isoyear_div_100(0).is_ok());
+        assert!(Parsed::default().set_isoyear_div_100(99).is_ok());
+        assert_eq!(Parsed::default().set_isoyear_div_100(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_isoyear_mod_100(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_isoyear_mod_100(0).is_ok());
-        assert!(Parsed::new().set_isoyear_mod_100(99).is_ok());
-        assert_eq!(Parsed::new().set_isoyear_mod_100(100), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_isoyear_mod_100(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_isoyear_mod_100(0).is_ok());
+        assert!(Parsed::default().set_isoyear_mod_100(99).is_ok());
+        assert_eq!(Parsed::default().set_isoyear_mod_100(100), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_month(0), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_month(1).is_ok());
-        assert!(Parsed::new().set_month(12).is_ok());
-        assert_eq!(Parsed::new().set_month(13), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_month(0), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_month(1).is_ok());
+        assert!(Parsed::default().set_month(12).is_ok());
+        assert_eq!(Parsed::default().set_month(13), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_week_from_sun(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_week_from_sun(0).is_ok());
-        assert!(Parsed::new().set_week_from_sun(53).is_ok());
-        assert_eq!(Parsed::new().set_week_from_sun(54), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_week_from_sun(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_week_from_sun(0).is_ok());
+        assert!(Parsed::default().set_week_from_sun(53).is_ok());
+        assert_eq!(Parsed::default().set_week_from_sun(54), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_week_from_mon(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_week_from_mon(0).is_ok());
-        assert!(Parsed::new().set_week_from_mon(53).is_ok());
-        assert_eq!(Parsed::new().set_week_from_mon(54), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_week_from_mon(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_week_from_mon(0).is_ok());
+        assert!(Parsed::default().set_week_from_mon(53).is_ok());
+        assert_eq!(Parsed::default().set_week_from_mon(54), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_isoweek(0), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_isoweek(1).is_ok());
-        assert!(Parsed::new().set_isoweek(53).is_ok());
-        assert_eq!(Parsed::new().set_isoweek(54), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_isoweek(0), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_isoweek(1).is_ok());
+        assert!(Parsed::default().set_isoweek(53).is_ok());
+        assert_eq!(Parsed::default().set_isoweek(54), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_ordinal(0), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_ordinal(1).is_ok());
-        assert!(Parsed::new().set_ordinal(366).is_ok());
-        assert_eq!(Parsed::new().set_ordinal(367), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_ordinal(0), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_ordinal(1).is_ok());
+        assert!(Parsed::default().set_ordinal(366).is_ok());
+        assert_eq!(Parsed::default().set_ordinal(367), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_day(0), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_day(1).is_ok());
-        assert!(Parsed::new().set_day(31).is_ok());
-        assert_eq!(Parsed::new().set_day(32), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_day(0), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_day(1).is_ok());
+        assert!(Parsed::default().set_day(31).is_ok());
+        assert_eq!(Parsed::default().set_day(32), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_hour12(0), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_hour12(1).is_ok());
-        assert!(Parsed::new().set_hour12(12).is_ok());
-        assert_eq!(Parsed::new().set_hour12(13), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_hour12(0), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_hour12(1).is_ok());
+        assert!(Parsed::default().set_hour12(12).is_ok());
+        assert_eq!(Parsed::default().set_hour12(13), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_hour(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_hour(0).is_ok());
-        assert!(Parsed::new().set_hour(23).is_ok());
-        assert_eq!(Parsed::new().set_hour(24), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_hour(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_hour(0).is_ok());
+        assert!(Parsed::default().set_hour(23).is_ok());
+        assert_eq!(Parsed::default().set_hour(24), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_minute(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_minute(0).is_ok());
-        assert!(Parsed::new().set_minute(59).is_ok());
-        assert_eq!(Parsed::new().set_minute(60), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_minute(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_minute(0).is_ok());
+        assert!(Parsed::default().set_minute(59).is_ok());
+        assert_eq!(Parsed::default().set_minute(60), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_second(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_second(0).is_ok());
-        assert!(Parsed::new().set_second(60).is_ok());
-        assert_eq!(Parsed::new().set_second(61), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_second(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_second(0).is_ok());
+        assert!(Parsed::default().set_second(60).is_ok());
+        assert_eq!(Parsed::default().set_second(61), Err(OUT_OF_RANGE));
 
-        assert_eq!(Parsed::new().set_nanosecond(-1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_nanosecond(0).is_ok());
-        assert!(Parsed::new().set_nanosecond(999_999_999).is_ok());
-        assert_eq!(Parsed::new().set_nanosecond(1_000_000_000), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_nanosecond(-1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_nanosecond(0).is_ok());
+        assert!(Parsed::default().set_nanosecond(999_999_999).is_ok());
+        assert_eq!(Parsed::default().set_nanosecond(1_000_000_000), Err(OUT_OF_RANGE));
 
-        assert!(Parsed::new().set_timestamp(i64::MIN).is_ok());
-        assert!(Parsed::new().set_timestamp(i64::MAX).is_ok());
+        assert!(Parsed::default().set_timestamp(i64::MIN).is_ok());
+        assert!(Parsed::default().set_timestamp(i64::MAX).is_ok());
 
-        assert_eq!(Parsed::new().set_offset(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
-        assert!(Parsed::new().set_offset(i32::MIN as i64).is_ok());
-        assert!(Parsed::new().set_offset(i32::MAX as i64).is_ok());
-        assert_eq!(Parsed::new().set_offset(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
+        assert_eq!(Parsed::default().set_offset(i32::MIN as i64 - 1), Err(OUT_OF_RANGE));
+        assert!(Parsed::default().set_offset(i32::MIN as i64).is_ok());
+        assert!(Parsed::default().set_offset(i32::MAX as i64).is_ok());
+        assert_eq!(Parsed::default().set_offset(i32::MAX as i64 + 1), Err(OUT_OF_RANGE));
     }
 
     #[test]
     fn test_parsed_to_naive_date() {
         macro_rules! parse {
             ($($k:ident: $v:expr),*) => (
-                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_naive_date()
+                Parsed { $($k: Some($v),)* ..Parsed::default() }.to_naive_date()
             )
         }
 
@@ -1465,7 +1459,7 @@ mod tests {
     fn test_parsed_to_naive_time() {
         macro_rules! parse {
             ($($k:ident: $v:expr),*) => (
-                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_naive_time()
+                Parsed { $($k: Some($v),)* ..Parsed::default() }.to_naive_time()
             )
         }
 
@@ -1506,7 +1500,7 @@ mod tests {
     fn test_parsed_to_naive_datetime_with_offset() {
         macro_rules! parse {
             (offset = $offset:expr; $($k:ident: $v:expr),*) => (
-                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_naive_datetime_with_offset($offset)
+                Parsed { $($k: Some($v),)* ..Parsed::default() }.to_naive_datetime_with_offset($offset)
             );
             ($($k:ident: $v:expr),*) => (parse!(offset = 0; $($k: $v),*))
         }
@@ -1652,7 +1646,7 @@ mod tests {
     fn test_parsed_to_datetime() {
         macro_rules! parse {
             ($($k:ident: $v:expr),*) => (
-                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime()
+                Parsed { $($k: Some($v),)* ..Parsed::default() }.to_datetime()
             )
         }
 
@@ -1697,7 +1691,7 @@ mod tests {
     fn test_parsed_to_datetime_with_timezone() {
         macro_rules! parse {
             ($tz:expr; $($k:ident: $v:expr),*) => (
-                Parsed { $($k: Some($v),)* ..Parsed::new() }.to_datetime_with_timezone(&$tz)
+                Parsed { $($k: Some($v),)* ..Parsed::default() }.to_datetime_with_timezone(&$tz)
             )
         }
 
@@ -1768,7 +1762,7 @@ mod tests {
         use crate::Weekday;
         assert_eq!(
             NaiveDate::from_ymd(2002, 6, 3).unwrap(),
-            Parsed::new()
+            Parsed::default()
                 .set_year(2002)?
                 .set_week_from_mon(22)?
                 .set_weekday(Weekday::Mon)?
@@ -1776,7 +1770,7 @@ mod tests {
         );
         assert_eq!(
             NaiveDate::from_ymd(2001, 5, 28).unwrap(),
-            Parsed::new()
+            Parsed::default()
                 .set_year(2001)?
                 .set_week_from_mon(22)?
                 .set_weekday(Weekday::Mon)?

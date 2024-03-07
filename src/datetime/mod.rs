@@ -882,7 +882,7 @@ impl DateTime<FixedOffset> {
     /// ```
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         const ITEMS: &[Item<'static>] = &[Item::Fixed(Fixed::RFC2822)];
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, ITEMS.iter())?;
         parsed.to_datetime()
     }
@@ -901,7 +901,7 @@ impl DateTime<FixedOffset> {
     /// also simultaneously valid RFC 3339 values, but not all RFC 3339 values are valid ISO 8601
     /// values (or the other way around).
     pub fn parse_from_rfc3339(s: &str) -> ParseResult<DateTime<FixedOffset>> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let (s, _) = parse_rfc3339(&mut parsed, s)?;
         if !s.is_empty() {
             return Err(TOO_LONG);
@@ -936,7 +936,7 @@ impl DateTime<FixedOffset> {
     /// );
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime()
     }
@@ -973,7 +973,7 @@ impl DateTime<FixedOffset> {
         s: &'a str,
         fmt: &str,
     ) -> ParseResult<(DateTime<FixedOffset>, &'a str)> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime().map(|d| (d, remainder))
     }

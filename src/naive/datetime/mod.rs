@@ -244,7 +244,7 @@ impl NaiveDateTime {
     /// assert!(parse_from_str("+10000-09-09 01:46:39", fmt).is_ok());
     /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<NaiveDateTime> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_datetime_with_offset(0) // no offset adjustment
     }
@@ -269,7 +269,7 @@ impl NaiveDateTime {
     /// assert_eq!(remainder, " trailing text");
     /// ```
     pub fn parse_and_remainder<'a>(s: &'a str, fmt: &str) -> ParseResult<(NaiveDateTime, &'a str)> {
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_naive_datetime_with_offset(0).map(|d| (d, remainder)) // no offset adjustment
     }
@@ -2029,7 +2029,7 @@ impl str::FromStr for NaiveDateTime {
             Item::Space(""),
         ];
 
-        let mut parsed = Parsed::new();
+        let mut parsed = Parsed::default();
         parse(&mut parsed, s, ITEMS.iter())?;
         parsed.to_naive_datetime_with_offset(0)
     }
