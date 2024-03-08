@@ -657,6 +657,18 @@ macro_rules! expect {
     };
 }
 
+/// Workaround because `.ok_or()?` is not (yet) available in const context.
+#[macro_export]
+#[doc(hidden)]
+macro_rules! try_ok_or {
+    ($e:expr, $m:expr) => {
+        match $e {
+            Some(v) => v,
+            None => return Err($m),
+        }
+    };
+}
+
 /// Workaround because `.ok()` is not (yet) available in const context.
 ///
 /// FIXME: This is a temporary macro, intended to be used while we convert our API from returning

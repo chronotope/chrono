@@ -12,13 +12,13 @@ use core::{fmt, str};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::expect;
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
     parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
     Parsed, StrftimeItems,
 };
+use crate::{expect, try_ok_or};
 use crate::{Error, FixedOffset, TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
@@ -300,10 +300,8 @@ impl NaiveTime {
         sec: u32,
         milli: u32,
     ) -> Result<NaiveTime, Error> {
-        match milli.checked_mul(1_000_000) {
-            Some(nano) => NaiveTime::from_hms_nano(hour, min, sec, nano),
-            None => Err(Error::InvalidArgument),
-        }
+        let nano = try_ok_or!(milli.checked_mul(1_000_000), Error::InvalidArgument);
+        NaiveTime::from_hms_nano(hour, min, sec, nano)
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
@@ -341,10 +339,8 @@ impl NaiveTime {
         sec: u32,
         micro: u32,
     ) -> Result<NaiveTime, Error> {
-        match micro.checked_mul(1_000) {
-            Some(nano) => NaiveTime::from_hms_nano(hour, min, sec, nano),
-            None => Err(Error::InvalidArgument),
-        }
+        let nano = try_ok_or!(micro.checked_mul(1_000), Error::InvalidArgument);
+        NaiveTime::from_hms_nano(hour, min, sec, nano)
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
