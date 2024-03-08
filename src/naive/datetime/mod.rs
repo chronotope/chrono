@@ -1016,7 +1016,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub const fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(self.time.with_second(sec)), ..*self })
+        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_second(sec))), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
