@@ -457,7 +457,7 @@ impl Error for ParseError {
 
 // to be used in this module and submodules
 pub(crate) const OUT_OF_RANGE: ParseError = ParseError(ParseErrorKind::OutOfRange);
-const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
+pub(crate) const IMPOSSIBLE: ParseError = ParseError(ParseErrorKind::Impossible);
 const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
 const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);

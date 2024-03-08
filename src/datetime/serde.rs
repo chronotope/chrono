@@ -92,7 +92,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Utc> {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Utc))
+        deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.to_utc())
     }
 }
 
@@ -109,7 +109,10 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_str(DateTimeVisitor).map(|dt| dt.with_timezone(&Local))
+        deserializer.deserialize_str(DateTimeVisitor).and_then(|dt| {
+            dt.with_timezone_opt(&Local)
+                .ok_or(de::Error::custom("unable to get the system time zone offset"))
+        })
     }
 }
 
@@ -788,7 +791,7 @@ pub mod ts_milliseconds {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))
+        d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.to_utc())
     }
 
     impl<'de> de::Visitor<'de> for MilliSecondsTimestampVisitor {
@@ -932,7 +935,7 @@ pub mod ts_milliseconds_option {
         D: de::Deserializer<'de>,
     {
         d.deserialize_option(OptionMilliSecondsTimestampVisitor)
-            .map(|opt| opt.map(|dt| dt.with_timezone(&Utc)))
+            .map(|opt| opt.map(|dt| dt.to_utc()))
     }
 
     struct OptionMilliSecondsTimestampVisitor;

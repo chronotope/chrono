@@ -156,7 +156,7 @@ impl Local {
     /// let now_with_offset = Local::now().with_timezone(&offset);
     /// ```
     pub fn now() -> DateTime<Local> {
-        Utc::now().with_timezone(&Local)
+        Utc::now().with_timezone_opt(&Local).expect("unable to get the system time zone offset")
     }
 }
 
@@ -184,7 +184,11 @@ impl TimeZone for Local {
     }
 
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
-        inner::offset_from_utc_datetime(utc).unwrap()
+        self.offset_from_utc_datetime_opt(utc).expect("time zone lookup for UTC value failed")
+    }
+
+    fn offset_from_utc_datetime_opt(&self, utc: &NaiveDateTime) -> Option<FixedOffset> {
+        inner::offset_from_utc_datetime(utc)
     }
 }
 

@@ -426,8 +426,10 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.timestamp_opt(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
     fn timestamp_opt(&self, secs: i64, nsecs: u32) -> MappedLocalTime<DateTime<Self>> {
-        match DateTime::from_timestamp(secs, nsecs) {
-            Some(dt) => MappedLocalTime::Single(self.from_utc_datetime(&dt.naive_utc())),
+        match DateTime::from_timestamp(secs, nsecs)
+            .and_then(|dt| self.from_utc_datetime_opt(&dt.naive_utc()))
+        {
+            Some(dt) => MappedLocalTime::Single(dt),
             None => MappedLocalTime::None,
         }
     }
@@ -460,8 +462,10 @@ pub trait TimeZone: Sized + Clone {
     /// };
     /// ```
     fn timestamp_millis_opt(&self, millis: i64) -> MappedLocalTime<DateTime<Self>> {
-        match DateTime::from_timestamp_millis(millis) {
-            Some(dt) => MappedLocalTime::Single(self.from_utc_datetime(&dt.naive_utc())),
+        match DateTime::from_timestamp_millis(millis)
+            .and_then(|dt| self.from_utc_datetime_opt(&dt.naive_utc()))
+        {
+            Some(dt) => MappedLocalTime::Single(dt),
             None => MappedLocalTime::None,
         }
     }
@@ -479,7 +483,8 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
     /// ```
     fn timestamp_nanos(&self, nanos: i64) -> DateTime<Self> {
-        self.from_utc_datetime(&DateTime::from_timestamp_nanos(nanos).naive_utc())
+        self.from_utc_datetime_opt(&DateTime::from_timestamp_nanos(nanos).naive_utc())
+            .expect("time zone lookup for UTC value failed")
     }
 
     /// Makes a new `DateTime` from the number of non-leap microseconds
@@ -493,8 +498,10 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.timestamp_micros(1431648000000).unwrap().timestamp(), 1431648);
     /// ```
     fn timestamp_micros(&self, micros: i64) -> MappedLocalTime<DateTime<Self>> {
-        match DateTime::from_timestamp_micros(micros) {
-            Some(dt) => MappedLocalTime::Single(self.from_utc_datetime(&dt.naive_utc())),
+        match DateTime::from_timestamp_micros(micros)
+            .and_then(|dt| self.from_utc_datetime_opt(&dt.naive_utc()))
+        {
+            Some(dt) => MappedLocalTime::Single(dt),
             None => MappedLocalTime::None,
         }
     }

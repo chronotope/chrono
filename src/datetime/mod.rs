@@ -408,12 +408,13 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Changes the associated time zone.
+    ///
     /// The returned `DateTime` references the same instant of time from the perspective of the
     /// provided time zone.
     #[inline]
     #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
-        tz.from_utc_datetime(&self.datetime)
+        tz.from_utc_datetime_opt(&self.datetime).expect("time zone lookup for UTC value failed")
     }
 
     /// Changes the associated time zone.
@@ -436,7 +437,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn fixed_offset(&self) -> DateTime<FixedOffset> {
-        self.with_timezone(&self.offset().fix())
+        DateTime { datetime: self.datetime, offset: self.offset().fix() }
     }
 
     /// Turn this `DateTime` into a `DateTime<Utc>`, dropping the offset and associated timezone
@@ -457,7 +458,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs)?;
         let tz = self.timezone();
-        Some(tz.from_utc_datetime(&datetime))
+        tz.from_utc_datetime_opt(&datetime)
     }
 
     /// Adds given `Months` to the current date and time.
@@ -494,7 +495,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs)?;
         let tz = self.timezone();
-        Some(tz.from_utc_datetime(&datetime))
+        tz.from_utc_datetime_opt(&datetime)
     }
 
     /// Subtracts given `Months` from the current date and time.
@@ -856,31 +857,30 @@ impl DateTime<Utc> {
 
 impl Default for DateTime<Utc> {
     fn default() -> Self {
-        Utc.from_utc_datetime(&NaiveDateTime::default())
+        NaiveDateTime::default().and_utc()
     }
 }
 
 #[cfg(feature = "clock")]
 impl Default for DateTime<Local> {
     fn default() -> Self {
-        Local.from_utc_datetime(&NaiveDateTime::default())
+        DateTime::<Utc>::default()
+            .with_timezone_opt(&Local)
+            .expect("unable to get the system time zone offset")
     }
 }
 
 impl Default for DateTime<FixedOffset> {
     fn default() -> Self {
-        FixedOffset::west_opt(0).unwrap().from_utc_datetime(&NaiveDateTime::default())
+        DateTime::<Utc>::default().into()
     }
 }
 
 /// Convert a `DateTime<Utc>` instance into a `DateTime<FixedOffset>` instance.
 impl From<DateTime<Utc>> for DateTime<FixedOffset> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<FixedOffset>` instance.
-    ///
-    /// Conversion is done via [`DateTime::with_timezone`]. Note that the converted value returned by
-    /// this will be created with a fixed timezone offset of 0.
     fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&FixedOffset::east_opt(0).unwrap())
+        src.fixed_offset()
     }
 }
 
@@ -889,20 +889,18 @@ impl From<DateTime<Utc>> for DateTime<FixedOffset> {
 impl From<DateTime<Utc>> for DateTime<Local> {
     /// Convert this `DateTime<Utc>` instance into a `DateTime<Local>` instance.
     ///
-    /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in timezones.
+    /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in
+    /// timezones.
     fn from(src: DateTime<Utc>) -> Self {
-        src.with_timezone(&Local)
+        src.with_timezone_opt(&Local).expect("unable to get the system time zone offset")
     }
 }
 
 /// Convert a `DateTime<FixedOffset>` instance into a `DateTime<Utc>` instance.
 impl From<DateTime<FixedOffset>> for DateTime<Utc> {
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Utc>` instance.
-    ///
-    /// Conversion is performed via [`DateTime::with_timezone`], accounting for the timezone
-    /// difference.
     fn from(src: DateTime<FixedOffset>) -> Self {
-        src.with_timezone(&Utc)
+        src.to_utc()
     }
 }
 
@@ -911,10 +909,10 @@ impl From<DateTime<FixedOffset>> for DateTime<Utc> {
 impl From<DateTime<FixedOffset>> for DateTime<Local> {
     /// Convert this `DateTime<FixedOffset>` instance into a `DateTime<Local>` instance.
     ///
-    /// Conversion is performed via [`DateTime::with_timezone`]. Returns the equivalent value in local
-    /// time.
+    /// Conversion is performed via [`DateTime::with_timezone`]. Returns the equivalent value in
+    /// local time.
     fn from(src: DateTime<FixedOffset>) -> Self {
-        src.with_timezone(&Local)
+        src.with_timezone_opt(&Local).expect("unable to get the system time zone offset")
     }
 }
 
@@ -926,7 +924,7 @@ impl From<DateTime<Local>> for DateTime<Utc> {
     /// Conversion is performed via [`DateTime::with_timezone`], accounting for the difference in
     /// timezones.
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&Utc)
+        src.to_utc()
     }
 }
 
@@ -937,7 +935,7 @@ impl From<DateTime<Local>> for DateTime<FixedOffset> {
     ///
     /// Conversion is performed via [`DateTime::with_timezone`].
     fn from(src: DateTime<Local>) -> Self {
-        src.with_timezone(&src.offset().fix())
+        src.fixed_offset()
     }
 }
 
@@ -1504,7 +1502,7 @@ impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
         let datetime =
             self.datetime.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed");
         let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime);
+        *self = tz.from_utc_datetime_opt(&datetime).expect("time zone lookup for UTC value failed");
     }
 }
 
@@ -1624,7 +1622,7 @@ impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
         let datetime =
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed");
         let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime)
+        *self = tz.from_utc_datetime_opt(&datetime).expect("time zone lookup for UTC value failed")
     }
 }
 
@@ -1798,7 +1796,7 @@ impl str::FromStr for DateTime<Utc> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<Utc>> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Utc))
+        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.to_utc())
     }
 }
 
@@ -1820,7 +1818,9 @@ impl str::FromStr for DateTime<Local> {
     type Err = ParseError;
 
     fn from_str(s: &str) -> ParseResult<DateTime<Local>> {
-        s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Local))
+        s.parse::<DateTime<FixedOffset>>()?
+            .with_timezone_opt(&Local)
+            .ok_or(crate::format::IMPOSSIBLE)
     }
 }
 
@@ -1847,7 +1847,9 @@ impl From<SystemTime> for DateTime<Utc> {
 #[cfg(feature = "clock")]
 impl From<SystemTime> for DateTime<Local> {
     fn from(t: SystemTime) -> DateTime<Local> {
-        DateTime::<Utc>::from(t).with_timezone(&Local)
+        DateTime::<Utc>::from(t)
+            .with_timezone_opt(&Local)
+            .expect("unable to get the system time zone offset")
     }
 }
 
