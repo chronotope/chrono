@@ -1027,6 +1027,16 @@ impl DateTime<FixedOffset> {
     ///         .unwrap())
     /// );
     /// ```
+    ///
+    /// All parsed fields should be consistent to each other, otherwise it's an error.
+    ///
+    /// ```
+    /// # use chrono::DateTime;
+    /// # let parse_from_str = DateTime::parse_from_str;
+    /// let fmt = "%Y-%m-%d %H:%M:%S %z = timestamp %s";
+    /// assert!(parse_from_str("2001-09-09 01:46:39 +00:00 = timestamp 999999999", fmt).is_ok());
+    /// assert!(parse_from_str("1970-01-01 00:00:00 +00:00 = timestamp 1", fmt).is_err());
+    /// ```
     pub fn parse_from_str(s: &str, fmt: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::new();
         parse(&mut parsed, s, StrftimeItems::new(fmt))?;
