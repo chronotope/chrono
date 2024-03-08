@@ -732,7 +732,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns `None` if `nanosecond >= 2,000,000,000`.
     #[inline]
     pub fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_nanosecond(nano))
+        map_local(self, |datetime| datetime.with_nanosecond(nano).ok())
     }
 }
 
