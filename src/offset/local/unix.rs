@@ -14,8 +14,8 @@ use super::tz_info::TimeZone;
 use super::{FixedOffset, NaiveDateTime};
 use crate::{Datelike, MappedLocalTime};
 
-pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
-    offset(utc, false)
+pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> Option<FixedOffset> {
+    offset(utc, false).single()
 }
 
 pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {

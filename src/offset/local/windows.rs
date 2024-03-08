@@ -24,14 +24,11 @@ use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDate, NaiveDateTime, Na
 // This method uses `overflowing_sub_offset` because it is no problem if the transition time in UTC
 // falls a couple of hours inside the buffer space around the `NaiveDateTime` range (although it is
 // very theoretical to have a transition at midnight around `NaiveDate::(MIN|MAX)`.
-pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> Option<FixedOffset> {
     // Using a `TzInfo` based on the year of an UTC datetime is technically wrong, we should be
     // using the rules for the year of the corresponding local time. But this matches what
     // `SystemTimeToTzSpecificLocalTime` is documented to do.
-    let tz_info = match TzInfo::for_year(utc.year()) {
-        Some(tz_info) => tz_info,
-        None => return MappedLocalTime::None,
-    };
+    let tz_info = TzInfo::for_year(utc.year())?;
     let offset = match (tz_info.std_transition, tz_info.dst_transition) {
         (Some(std_transition), Some(dst_transition)) => {
             let std_transition_utc = std_transition.overflowing_sub_offset(tz_info.dst_offset);
@@ -64,7 +61,7 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<F
         }
         (None, None) => tz_info.std_offset,
     };
-    MappedLocalTime::Single(offset)
+    Some(offset)
 }
 
 // We don't use `TzSpecificLocalTimeToSystemTime` because it doesn't let us choose how to handle

@@ -40,10 +40,8 @@ mod win_bindings;
 mod inner {
     use crate::{FixedOffset, MappedLocalTime, NaiveDateTime};
 
-    pub(super) fn offset_from_utc_datetime(
-        _utc_time: &NaiveDateTime,
-    ) -> MappedLocalTime<FixedOffset> {
-        MappedLocalTime::Single(FixedOffset::east_opt(0).unwrap())
+    pub(super) fn offset_from_utc_datetime(_utc_time: &NaiveDateTime) -> Option<FixedOffset> {
+        Some(FixedOffset::east_opt(0).unwrap())
     }
 
     pub(super) fn offset_from_local_datetime(
@@ -61,9 +59,9 @@ mod inner {
 mod inner {
     use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDateTime, Timelike};
 
-    pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+    pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> Option<FixedOffset> {
         let offset = js_sys::Date::from(utc.and_utc()).get_timezone_offset();
-        MappedLocalTime::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
+        Some(FixedOffset::west_opt((offset as i32) * 60).unwrap())
     }
 
     pub(super) fn offset_from_local_datetime(
