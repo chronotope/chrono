@@ -1057,7 +1057,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub const fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(self.time.with_nanosecond(nano)), ..*self })
+        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_nanosecond(nano))), ..*self })
     }
 
     /// The minimum possible `NaiveDateTime`.

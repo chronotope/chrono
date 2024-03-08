@@ -893,19 +893,20 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `nanosecond >= 2,000,000,000`.
+    /// Returns [`Error::InvalidArgument`] if `nanosecond >= 2,000,000,000`.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap();
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
     /// assert_eq!(
     ///     dt.with_nanosecond(333_333_333),
-    ///     Some(NaiveTime::from_hms_nano(23, 56, 4, 333_333_333).unwrap())
+    ///     NaiveTime::from_hms_nano(23, 56, 4, 333_333_333)
     /// );
-    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
+    /// assert_eq!(dt.with_nanosecond(2_000_000_000), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     ///
     /// Leap seconds can theoretically follow *any* whole second.
@@ -915,16 +916,17 @@ impl NaiveTime {
     ///
     /// ```
     /// # use chrono::{NaiveTime, Timelike};
-    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap();
-    /// let strange_leap_second = dt.with_nanosecond(1_333_333_333).unwrap();
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
+    /// let strange_leap_second = dt.with_nanosecond(1_333_333_333)?;
     /// assert_eq!(strange_leap_second.nanosecond(), 1_333_333_333);
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_nanosecond(&self, nano: u32) -> Option<NaiveTime> {
+    pub const fn with_nanosecond(&self, nano: u32) -> Result<NaiveTime, Error> {
         if nano >= 2_000_000_000 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
-        Some(NaiveTime { frac: nano, ..*self })
+        Ok(NaiveTime { frac: nano, ..*self })
     }
 
     /// Returns a triple of the hour, minute and second numbers.
