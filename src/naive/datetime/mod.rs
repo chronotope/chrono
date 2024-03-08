@@ -996,24 +996,24 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the value for `second` is invalid.
+    /// Returns [`Error::InvalidArgument`] if the value for `second` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
     /// assert_eq!(
     ///     dt.with_second(17),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 17, 789).unwrap())
+    ///     NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 17, 789)
     /// );
-    /// assert_eq!(dt.with_second(60), None);
+    /// assert_eq!(dt.with_second(60), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_second(&self, sec: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_second(sec))), ..*self })
+    pub const fn with_second(&self, sec: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_second(sec)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.

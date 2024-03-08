@@ -716,7 +716,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[inline]
     pub fn with_second(&self, sec: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_second(sec))
+        map_local(self, |datetime| datetime.with_second(sec).ok())
     }
 
     /// Makes a new `DateTime` with nanoseconds since the whole non-leap second changed.
