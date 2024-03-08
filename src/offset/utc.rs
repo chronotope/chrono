@@ -84,7 +84,7 @@ impl Utc {
     ///
     /// // Current time in some timezone (let's use +05:00)
     /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
-    /// let now_with_offset = Utc::now().with_timezone(&offset);
+    /// let now_with_offset = Utc::now().with_timezone_opt(&offset).unwrap();
     /// ```
     #[cfg(not(all(
         target_arch = "wasm32",

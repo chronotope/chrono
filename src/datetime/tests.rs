@@ -633,8 +633,8 @@ fn test_datetime_date_and_time() {
 #[cfg(feature = "clock")]
 fn test_datetime_with_timezone() {
     let local_now = Local::now();
-    let utc_now = local_now.with_timezone(&Utc);
-    let local_now2 = utc_now.with_timezone(&Local);
+    let utc_now = local_now.with_timezone_opt(&Utc).unwrap();
+    let local_now2 = utc_now.with_timezone_opt(&Local).unwrap();
     assert_eq!(local_now, local_now2);
 }
 
@@ -1294,10 +1294,10 @@ fn test_to_string_round_trip() {
     let dt = Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
     let _dt: DateTime<Utc> = dt.to_string().parse().unwrap();
 
-    let ndt_fixed = dt.with_timezone(&FixedOffset::east_opt(3600).unwrap());
+    let ndt_fixed = dt.with_timezone_opt(&FixedOffset::east_opt(3600).unwrap()).unwrap();
     let _dt: DateTime<FixedOffset> = ndt_fixed.to_string().parse().unwrap();
 
-    let ndt_fixed = dt.with_timezone(&FixedOffset::east_opt(0).unwrap());
+    let ndt_fixed = dt.with_timezone_opt(&FixedOffset::east_opt(0).unwrap()).unwrap();
     let _dt: DateTime<FixedOffset> = ndt_fixed.to_string().parse().unwrap();
 }
 
@@ -1313,7 +1313,7 @@ fn test_to_string_round_trip_with_local() {
 fn test_datetime_format_with_local() {
     // if we are not around the year boundary, local and UTC date should have the same year
     let dt = Local::now().with_month(5).unwrap();
-    assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&Utc).format("%Y").to_string());
+    assert_eq!(dt.format("%Y").to_string(), dt.to_utc().format("%Y").to_string());
 }
 
 #[test]
@@ -1404,14 +1404,14 @@ fn test_from_system_time() {
     // DateTime<any tz> -> SystemTime (via `with_timezone`)
     #[cfg(feature = "clock")]
     {
-        assert_eq!(SystemTime::from(epoch.with_timezone(&Local)), UNIX_EPOCH);
+        assert_eq!(SystemTime::from(epoch.with_timezone_opt(&Local).unwrap()), UNIX_EPOCH);
     }
     assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::east_opt(32400).unwrap())),
+        SystemTime::from(epoch.with_timezone_opt(&FixedOffset::east_opt(32400).unwrap()).unwrap()),
         UNIX_EPOCH
     );
     assert_eq!(
-        SystemTime::from(epoch.with_timezone(&FixedOffset::west_opt(28800).unwrap())),
+        SystemTime::from(epoch.with_timezone_opt(&FixedOffset::west_opt(28800).unwrap()).unwrap()),
         UNIX_EPOCH
     );
 }
@@ -1436,8 +1436,8 @@ fn test_datetime_from_local() {
         NaiveDate::from_ymd_opt(2000, 1, 11).unwrap().and_hms_opt(19, 0, 0).unwrap();
     let datetime_west = DateTime::<FixedOffset>::from_local(naivedatetime_west, timezone_west);
 
-    assert_eq!(datetime_east, datetime_utc.with_timezone(&timezone_east));
-    assert_eq!(datetime_west, datetime_utc.with_timezone(&timezone_west));
+    assert_eq!(datetime_east, datetime_utc.with_timezone_opt(&timezone_east).unwrap());
+    assert_eq!(datetime_west, datetime_utc.with_timezone_opt(&timezone_west).unwrap());
 }
 
 #[test]
@@ -1448,7 +1448,7 @@ fn test_datetime_before_windows_api_limits() {
     // This used to fail on Windows for timezones with an offset of -5:00 or greater.
     // The API limits years to 1601..=30827.
     let dt = NaiveDate::from_ymd_opt(1601, 1, 1).unwrap().and_hms_milli_opt(4, 5, 22, 122).unwrap();
-    let local_dt = Local.from_utc_datetime(&dt);
+    let local_dt = Local.from_utc_datetime_opt(&dt).unwrap();
     dbg!(local_dt);
 }
 
@@ -1478,14 +1478,14 @@ fn test_datetime_add_assign() {
     assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 
     let timezone = FixedOffset::east_opt(60 * 60).unwrap();
-    let datetime = datetime.with_timezone(&timezone);
-    let datetime_add = datetime_add.with_timezone(&timezone);
+    let datetime = datetime.with_timezone_opt(&timezone).unwrap();
+    let datetime_add = datetime_add.with_timezone_opt(&timezone).unwrap();
 
     assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 
     let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-    let datetime = datetime.with_timezone(&timezone);
-    let datetime_add = datetime_add.with_timezone(&timezone);
+    let datetime = datetime.with_timezone_opt(&timezone).unwrap();
+    let datetime_add = datetime_add.with_timezone_opt(&timezone).unwrap();
 
     assert_eq!(datetime_add, datetime + TimeDelta::try_seconds(60).unwrap());
 }
@@ -1495,8 +1495,8 @@ fn test_datetime_add_assign() {
 fn test_datetime_add_assign_local() {
     let naivedatetime = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
-    let datetime = Local.from_utc_datetime(&naivedatetime);
-    let mut datetime_add = Local.from_utc_datetime(&naivedatetime);
+    let datetime = Local.from_utc_datetime_opt(&naivedatetime).unwrap();
+    let mut datetime_add = Local.from_utc_datetime_opt(&naivedatetime).unwrap();
 
     // ensure we cross a DST transition
     for i in 1..=365 {
@@ -1515,14 +1515,14 @@ fn test_datetime_sub_assign() {
     assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
 
     let timezone = FixedOffset::east_opt(60 * 60).unwrap();
-    let datetime = datetime.with_timezone(&timezone);
-    let datetime_sub = datetime_sub.with_timezone(&timezone);
+    let datetime = datetime.with_timezone_opt(&timezone).unwrap();
+    let datetime_sub = datetime_sub.with_timezone_opt(&timezone).unwrap();
 
     assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
 
     let timezone = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-    let datetime = datetime.with_timezone(&timezone);
-    let datetime_sub = datetime_sub.with_timezone(&timezone);
+    let datetime = datetime.with_timezone_opt(&timezone).unwrap();
+    let datetime_sub = datetime_sub.with_timezone_opt(&timezone).unwrap();
 
     assert_eq!(datetime_sub, datetime - TimeDelta::try_minutes(90).unwrap());
 }
@@ -1530,9 +1530,9 @@ fn test_datetime_sub_assign() {
 #[test]
 fn test_min_max_getters() {
     let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let beyond_min = offset_min.from_utc_datetime_opt(&NaiveDateTime::MIN).unwrap();
     let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
-    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+    let beyond_max = offset_max.from_utc_datetime_opt(&NaiveDateTime::MAX).unwrap();
 
     assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
     // RFC 2822 doesn't support years with more than 4 digits.
@@ -1588,9 +1588,9 @@ fn test_min_max_getters() {
 #[test]
 fn test_min_max_setters() {
     let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let beyond_min = offset_min.from_utc_datetime_opt(&NaiveDateTime::MIN).unwrap();
     let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
-    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+    let beyond_max = offset_max.from_utc_datetime_opt(&NaiveDateTime::MAX).unwrap();
 
     assert_eq!(beyond_min.with_year(2020).unwrap().year(), 2020);
     assert_eq!(beyond_min.with_year(beyond_min.year()), Some(beyond_min));
@@ -1644,15 +1644,15 @@ fn test_min_max_setters() {
 #[test]
 fn test_min_max_add_days() {
     let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let beyond_min = offset_min.from_utc_datetime_opt(&NaiveDateTime::MIN).unwrap();
     let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
-    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+    let beyond_max = offset_max.from_utc_datetime_opt(&NaiveDateTime::MAX).unwrap();
     let max_time = NaiveTime::from_hms_nano_opt(23, 59, 59, 999_999_999).unwrap();
 
     assert_eq!(beyond_min.checked_add_days(Days::new(0)), Some(beyond_min));
     assert_eq!(
         beyond_min.checked_add_days(Days::new(1)),
-        Some(offset_min.from_utc_datetime(&(NaiveDate::MIN + Days(1)).and_time(NaiveTime::MIN)))
+        offset_min.from_utc_datetime_opt(&(NaiveDate::MIN + Days(1)).and_time(NaiveTime::MIN))
     );
     assert_eq!(beyond_min.checked_sub_days(Days::new(0)), Some(beyond_min));
     assert_eq!(beyond_min.checked_sub_days(Days::new(1)), None);
@@ -1662,22 +1662,22 @@ fn test_min_max_add_days() {
     assert_eq!(beyond_max.checked_sub_days(Days::new(0)), Some(beyond_max));
     assert_eq!(
         beyond_max.checked_sub_days(Days::new(1)),
-        Some(offset_max.from_utc_datetime(&(NaiveDate::MAX - Days(1)).and_time(max_time)))
+        offset_max.from_utc_datetime_opt(&(NaiveDate::MAX - Days(1)).and_time(max_time))
     );
 }
 
 #[test]
 fn test_min_max_add_months() {
     let offset_min = FixedOffset::west_opt(2 * 60 * 60).unwrap();
-    let beyond_min = offset_min.from_utc_datetime(&NaiveDateTime::MIN);
+    let beyond_min = offset_min.from_utc_datetime_opt(&NaiveDateTime::MIN).unwrap();
     let offset_max = FixedOffset::east_opt(2 * 60 * 60).unwrap();
-    let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
+    let beyond_max = offset_max.from_utc_datetime_opt(&NaiveDateTime::MAX).unwrap();
     let max_time = NaiveTime::from_hms_nano_opt(23, 59, 59, 999_999_999).unwrap();
 
     assert_eq!(beyond_min.checked_add_months(Months::new(0)), Some(beyond_min));
     assert_eq!(
         beyond_min.checked_add_months(Months::new(1)),
-        Some(offset_min.from_utc_datetime(&(NaiveDate::MIN + Months(1)).and_time(NaiveTime::MIN)))
+        offset_min.from_utc_datetime_opt(&(NaiveDate::MIN + Months(1)).and_time(NaiveTime::MIN))
     );
     assert_eq!(beyond_min.checked_sub_months(Months::new(0)), Some(beyond_min));
     assert_eq!(beyond_min.checked_sub_months(Months::new(1)), None);
@@ -1687,21 +1687,27 @@ fn test_min_max_add_months() {
     assert_eq!(beyond_max.checked_sub_months(Months::new(0)), Some(beyond_max));
     assert_eq!(
         beyond_max.checked_sub_months(Months::new(1)),
-        Some(offset_max.from_utc_datetime(&(NaiveDate::MAX - Months(1)).and_time(max_time)))
+        offset_max.from_utc_datetime_opt(&(NaiveDate::MAX - Months(1)).and_time(max_time))
     );
 }
 
 #[test]
 #[should_panic]
 fn test_local_beyond_min_datetime() {
-    let min = FixedOffset::west_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MIN);
+    let min = FixedOffset::west_opt(2 * 60 * 60)
+        .unwrap()
+        .from_utc_datetime_opt(&NaiveDateTime::MIN)
+        .unwrap();
     let _ = min.naive_local();
 }
 
 #[test]
 #[should_panic]
 fn test_local_beyond_max_datetime() {
-    let max = FixedOffset::east_opt(2 * 60 * 60).unwrap().from_utc_datetime(&NaiveDateTime::MAX);
+    let max = FixedOffset::east_opt(2 * 60 * 60)
+        .unwrap()
+        .from_utc_datetime_opt(&NaiveDateTime::MAX)
+        .unwrap();
     let _ = max.naive_local();
 }
 
@@ -1710,8 +1716,8 @@ fn test_local_beyond_max_datetime() {
 fn test_datetime_sub_assign_local() {
     let naivedatetime = NaiveDate::from_ymd_opt(2022, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
-    let datetime = Local.from_utc_datetime(&naivedatetime);
-    let mut datetime_sub = Local.from_utc_datetime(&naivedatetime);
+    let datetime = Local.from_utc_datetime_opt(&naivedatetime).unwrap();
+    let mut datetime_sub = Local.from_utc_datetime_opt(&naivedatetime).unwrap();
 
     // ensure we cross a DST transition
     for i in 1..=365 {
@@ -1746,7 +1752,7 @@ fn test_core_duration_max() {
 fn test_datetime_local_from_preserves_offset() {
     let naivedatetime = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
-    let datetime = Local.from_utc_datetime(&naivedatetime);
+    let datetime = Local.from_utc_datetime_opt(&naivedatetime).unwrap();
     let offset = datetime.offset().fix();
 
     let datetime_fixed: DateTime<FixedOffset> = datetime.into();
@@ -1758,7 +1764,7 @@ fn test_datetime_local_from_preserves_offset() {
 fn test_datetime_fixed_offset() {
     let naivedatetime = NaiveDate::from_ymd_opt(2023, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
 
-    let datetime = Utc.from_utc_datetime(&naivedatetime);
+    let datetime = Utc.from_utc_datetime_opt(&naivedatetime).unwrap();
     let fixed_utc = FixedOffset::east_opt(0).unwrap();
     assert_eq!(datetime.fixed_offset(), fixed_utc.from_local_datetime(&naivedatetime).unwrap());
 

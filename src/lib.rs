@@ -101,7 +101,7 @@
 //!
 //! `DateTime`s with different `TimeZone` types are distinct and do not mix,
 //! but can be converted to each other using
-//! the [`DateTime::with_timezone`](./struct.DateTime.html#method.with_timezone) method.
+//! the [`DateTime::with_timezone_opt`](DateTime::with_timezone_opt) method.
 //!
 //! You can get the current date and time in the UTC time zone
 //! ([`Utc::now()`](./offset/struct.Utc.html#method.now))
@@ -240,7 +240,7 @@
 //! assert_eq!(dt.offset().fix().local_minus_utc(), 9 * 3600);
 //! assert_eq!(dt.timezone(), FixedOffset::east_opt(9 * 3600).unwrap());
 //! assert_eq!(
-//!     dt.with_timezone(&Utc),
+//!     dt.with_timezone_opt(&Utc).unwrap(),
 //!     NaiveDate::from_ymd_opt(2014, 11, 28)
 //!         .unwrap()
 //!         .and_hms_nano_opt(12, 45, 59, 324310806)
@@ -349,7 +349,7 @@
 //! use chrono::prelude::*;
 //!
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
-//! let fixed_dt = dt.with_timezone(&FixedOffset::east_opt(9 * 3600).unwrap());
+//! let fixed_dt = dt.with_timezone_opt(&FixedOffset::east_opt(9 * 3600).unwrap()).unwrap();
 //!
 //! // method 1
 //! assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<Utc>>(), Ok(dt.clone()));

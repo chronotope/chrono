@@ -922,20 +922,17 @@ mod tests {
         assert_eq!(dt.format("%c").to_string(), "Sun Jul  8 00:34:60 2001");
         assert_eq!(dt.format("%+").to_string(), "2001-07-08T00:34:60.026490708+09:30");
 
+        assert_eq!(dt.to_utc().format("%+").to_string(), "2001-07-07T15:04:60.026490708+00:00");
         assert_eq!(
-            dt.with_timezone(&Utc).format("%+").to_string(),
-            "2001-07-07T15:04:60.026490708+00:00"
-        );
-        assert_eq!(
-            dt.with_timezone(&Utc),
+            dt.to_utc(),
             DateTime::parse_from_str("2001-07-07T15:04:60.026490708Z", "%+").unwrap()
         );
         assert_eq!(
-            dt.with_timezone(&Utc),
+            dt.to_utc(),
             DateTime::parse_from_str("2001-07-07T15:04:60.026490708UTC", "%+").unwrap()
         );
         assert_eq!(
-            dt.with_timezone(&Utc),
+            dt.to_utc(),
             DateTime::parse_from_str("2001-07-07t15:04:60.026490708utc", "%+").unwrap()
         );
 

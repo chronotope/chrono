@@ -1418,11 +1418,13 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// let earlier = Utc
     ///     .with_ymd_and_hms(2015, 5, 15, 2, 0, 0)
     ///     .unwrap()
-    ///     .with_timezone(&FixedOffset::west_opt(1 * 3600).unwrap());
+    ///     .with_timezone_opt(&FixedOffset::west_opt(1 * 3600).unwrap())
+    ///     .unwrap();
     /// let later = Utc
     ///     .with_ymd_and_hms(2015, 5, 15, 3, 0, 0)
     ///     .unwrap()
-    ///     .with_timezone(&FixedOffset::west_opt(5 * 3600).unwrap());
+    ///     .with_timezone_opt(&FixedOffset::west_opt(5 * 3600).unwrap())
+    ///     .unwrap();
     ///
     /// assert_eq!(earlier.to_string(), "2015-05-15 01:00:00 -01:00");
     /// assert_eq!(later.to_string(), "2015-05-14 22:00:00 -05:00");

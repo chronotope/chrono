@@ -642,9 +642,9 @@ mod tests {
             dbg!(offset_hour);
             let offset = FixedOffset::east_opt(offset_hour * 60 * 60).unwrap();
 
-            let local_max = offset.from_utc_datetime(&NaiveDateTime::MAX);
+            let local_max = offset.from_utc_datetime_opt(&NaiveDateTime::MAX).unwrap();
             assert_eq!(local_max.naive_utc(), NaiveDateTime::MAX);
-            let local_min = offset.from_utc_datetime(&NaiveDateTime::MIN);
+            let local_min = offset.from_utc_datetime_opt(&NaiveDateTime::MIN).unwrap();
             assert_eq!(local_min.naive_utc(), NaiveDateTime::MIN);
 
             let local_max = offset.from_local_datetime(&NaiveDateTime::MAX);

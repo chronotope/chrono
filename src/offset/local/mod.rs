@@ -153,7 +153,7 @@ impl Local {
     /// // Current time in some timezone (let's use +05:00)
     /// // Note that it is usually more efficient to use `Utc::now` for this use case.
     /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
-    /// let now_with_offset = Local::now().with_timezone(&offset);
+    /// let now_with_offset = Local::now().with_timezone_opt(&offset).unwrap();
     /// ```
     pub fn now() -> DateTime<Local> {
         Utc::now().with_timezone_opt(&Local).expect("unable to get the system time zone offset")
@@ -287,7 +287,7 @@ mod tests {
     fn verify_correct_offsets() {
         let now = Local::now();
         let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
-        let from_utc = Local.from_utc_datetime(&now.naive_utc());
+        let from_utc = Local.from_utc_datetime_opt(&now.naive_utc()).unwrap();
 
         assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
@@ -300,7 +300,7 @@ mod tests {
     fn verify_correct_offsets_distant_past() {
         let distant_past = Local::now() - Days::new(365 * 500);
         let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
-        let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
+        let from_utc = Local.from_utc_datetime_opt(&distant_past.naive_utc()).unwrap();
 
         assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
@@ -313,7 +313,7 @@ mod tests {
     fn verify_correct_offsets_distant_future() {
         let distant_future = Local::now() + Days::new(365 * 35000);
         let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
-        let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
+        let from_utc = Local.from_utc_datetime_opt(&distant_future.naive_utc()).unwrap();
 
         assert_eq!(
             distant_future.offset().local_minus_utc(),
