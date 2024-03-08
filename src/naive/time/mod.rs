@@ -816,24 +816,25 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the value for `hour` is invalid.
+    /// Returns [`Error::InvalidArgument`] if the value for `hour` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(dt.with_hour(7), Some(NaiveTime::from_hms_nano(7, 56, 4, 12_345_678).unwrap()));
-    /// assert_eq!(dt.with_hour(24), None);
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
+    /// assert_eq!(dt.with_hour(7), NaiveTime::from_hms_nano(7, 56, 4, 12_345_678));
+    /// assert_eq!(dt.with_hour(24), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_hour(&self, hour: u32) -> Option<NaiveTime> {
+    pub const fn with_hour(&self, hour: u32) -> Result<NaiveTime, Error> {
         if hour >= 24 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let secs = hour * 3600 + self.secs % 3600;
-        Some(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with the minute number changed.
