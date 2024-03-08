@@ -730,7 +730,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[inline]
     pub fn with_hour(&self, hour: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_hour(hour))
+        map_local(self, |datetime| datetime.with_hour(hour).ok())
     }
 
     /// Makes a new `DateTime` with the minute number changed.
