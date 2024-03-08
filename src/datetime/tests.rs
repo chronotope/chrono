@@ -176,7 +176,7 @@ fn test_datetime_from_timestamp_micros() {
 
     for timestamp_micros in invalid.iter().copied() {
         let datetime = DateTime::from_timestamp_micros(timestamp_micros);
-        assert!(datetime.is_none());
+        assert_eq!(datetime, Err(Error::OutOfRange));
     }
 
     // Test that the result of `TimeZone::timestamp_micros` compares equal to
@@ -185,7 +185,7 @@ fn test_datetime_from_timestamp_micros() {
     for secs in secs_test.iter().copied() {
         assert_eq!(
             DateTime::from_timestamp_micros(secs * 1_000_000),
-            DateTime::from_timestamp(secs, 0).ok()
+            DateTime::from_timestamp(secs, 0)
         );
     }
 }

@@ -28,7 +28,7 @@ use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 #[cfg(any(feature = "clock", feature = "std"))]
 use crate::OutOfRange;
-use crate::{ok, try_err, try_ok_or};
+use crate::{try_err, try_ok_or};
 use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
@@ -823,8 +823,8 @@ impl DateTime<Utc> {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the number of microseconds would be out of range for a `NaiveDateTime`
-    /// (more than ca. 262,000 years away from common era)
+    /// Returns [`Error::OutOfRange`] if the timestamp in microseconds is outside the range of a
+    /// `DateTime` (more than ca. 262,000 years away from common era).
     ///
     /// # Example
     ///
@@ -832,22 +832,20 @@ impl DateTime<Utc> {
     /// use chrono::DateTime;
     ///
     /// let timestamp_micros: i64 = 1662921288000000; // Sun, 11 Sep 2022 18:34:48 UTC
-    /// let dt = DateTime::from_timestamp_micros(timestamp_micros);
-    /// assert!(dt.is_some());
-    /// assert_eq!(timestamp_micros, dt.expect("invalid timestamp").timestamp_micros());
+    /// let dt = DateTime::from_timestamp_micros(timestamp_micros)?;
+    /// assert_eq!(timestamp_micros, dt.timestamp_micros());
     ///
     /// // Negative timestamps (before the UNIX epoch) are supported as well.
     /// let timestamp_micros: i64 = -2208936075000000; // Mon, 1 Jan 1900 14:38:45 UTC
-    /// let dt = DateTime::from_timestamp_micros(timestamp_micros);
-    /// assert!(dt.is_some());
-    /// assert_eq!(timestamp_micros, dt.expect("invalid timestamp").timestamp_micros());
+    /// let dt = DateTime::from_timestamp_micros(timestamp_micros)?;
+    /// assert_eq!(timestamp_micros, dt.timestamp_micros());
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_timestamp_micros(micros: i64) -> Option<Self> {
+    pub const fn from_timestamp_micros(micros: i64) -> Result<Self, Error> {
         let secs = micros.div_euclid(1_000_000);
         let nsecs = micros.rem_euclid(1_000_000) as u32 * 1000;
-        ok!(Self::from_timestamp(secs, nsecs))
+        Self::from_timestamp(secs, nsecs)
     }
 
     /// Creates a new [`DateTime<Utc>`] from the number of non-leap microseconds

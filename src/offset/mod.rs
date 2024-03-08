@@ -215,8 +215,8 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     fn timestamp_micros(&self, micros: i64) -> LocalResult<DateTime<Self>> {
         match DateTime::from_timestamp_micros(micros) {
-            Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt.naive_utc())),
-            None => LocalResult::None,
+            Ok(dt) => LocalResult::Single(self.from_utc_datetime(&dt.naive_utc())),
+            Err(_) => LocalResult::None,
         }
     }
 
