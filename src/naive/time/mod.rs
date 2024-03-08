@@ -869,24 +869,25 @@ impl NaiveTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the value for `second` is invalid.
+    /// Returns [`Error::InvalidArgument`] if the value for `second` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveTime;
+    /// use chrono::{Error, NaiveTime};
     ///
-    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678).unwrap();
-    /// assert_eq!(dt.with_second(17), Some(NaiveTime::from_hms_nano(23, 56, 17, 12_345_678).unwrap()));
-    /// assert_eq!(dt.with_second(60), None);
+    /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
+    /// assert_eq!(dt.with_second(17), NaiveTime::from_hms_nano(23, 56, 17, 12_345_678));
+    /// assert_eq!(dt.with_second(60), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_second(&self, sec: u32) -> Option<NaiveTime> {
+    pub const fn with_second(&self, sec: u32) -> Result<NaiveTime, Error> {
         if sec >= 60 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let secs = self.secs / 60 * 60 + sec;
-        Some(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..*self })
     }
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
