@@ -970,8 +970,10 @@ impl Parsed {
 
     /// Returns a parsed naive date and time out of given fields.
     ///
-    /// The offset field will be ignored. If there is a timestamp field set, all other date and time
-    /// fields must be in UTC.
+    /// If there are not enough date and time fields set for a complete `NaiveDateTime`, the date
+    /// and time are derived from the timestamp if present:
+    /// - If the offset field is set the local date and time will be calculated.
+    /// - Otherwise the offset is assumed to be `0`, returning a `NaiveDateTime` in UTC.
     ///
     /// # Errors
     ///
@@ -985,7 +987,7 @@ impl Parsed {
     ///   - if the value would be outside the range of a [`NaiveDateTime`].
     ///   - if the date does not exist.
     pub fn to_naive_datetime(&self) -> ParseResult<NaiveDateTime> {
-        self.to_naive_datetime_with_offset(0)
+        self.to_datetime_or_utc().map(|dt| dt.naive_local())
     }
 
     /// Returns a parsed timezone-aware date and time out of given fields.
