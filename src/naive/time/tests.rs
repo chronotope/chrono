@@ -63,14 +63,17 @@ fn test_time_hms() {
     assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().minute(), 5);
     assert_eq!(
         NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(0),
-        Some(NaiveTime::from_hms(3, 0, 7).unwrap())
+        Ok(NaiveTime::from_hms(3, 0, 7).unwrap())
     );
     assert_eq!(
         NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(59),
-        Some(NaiveTime::from_hms(3, 59, 7).unwrap())
+        Ok(NaiveTime::from_hms(3, 59, 7).unwrap())
     );
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(60), None);
-    assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(u32::MAX), None);
+    assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(60), Err(Error::InvalidArgument));
+    assert_eq!(
+        NaiveTime::from_hms(3, 5, 7).unwrap().with_minute(u32::MAX),
+        Err(Error::InvalidArgument)
+    );
 
     assert_eq!(NaiveTime::from_hms(3, 5, 7).unwrap().second(), 7);
     assert_eq!(

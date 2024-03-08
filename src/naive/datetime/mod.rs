@@ -987,7 +987,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub const fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(self.time.with_minute(min)), ..*self })
+        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_minute(min))), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the second number changed.
