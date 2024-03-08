@@ -174,9 +174,9 @@ pub mod ts_nanoseconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.timestamp_nanos().ok_or(ser::Error::custom(
-            "value out of range for a timestamp with nanosecond precision",
-        ))?)
+        serializer.serialize_i64(dt.timestamp_nanos().map_err(|_| {
+            ser::Error::custom("value out of range for a timestamp with nanosecond precision")
+        })?)
     }
 
     /// Deserialize a [`DateTime`] from a nanosecond timestamp
@@ -324,9 +324,9 @@ pub mod ts_nanoseconds_option {
         S: ser::Serializer,
     {
         match *opt {
-            Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos().ok_or(
-                ser::Error::custom("value out of range for a timestamp with nanosecond precision"),
-            )?),
+            Some(ref dt) => serializer.serialize_some(&dt.timestamp_nanos().map_err(|_| {
+                ser::Error::custom("value out of range for a timestamp with nanosecond precision")
+            })?),
             None => serializer.serialize_none(),
         }
     }
