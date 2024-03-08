@@ -20,8 +20,8 @@ use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::{
-    expect, ok, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
-    Timelike, Weekday,
+    expect, ok, try_err, try_opt, DateTime, Datelike, Error, FixedOffset, LocalResult, Months,
+    TimeDelta, TimeZone, Timelike, Weekday,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -944,24 +944,21 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the value for `hour` is invalid.
+    /// Returns [`Error::InvalidArgument`] if the value for `hour` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
-    /// assert_eq!(
-    ///     dt.with_hour(7),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(7, 34, 56, 789).unwrap())
-    /// );
-    /// assert_eq!(dt.with_hour(24), None);
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
+    /// assert_eq!(dt.with_hour(7), NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(7, 34, 56, 789));
+    /// assert_eq!(dt.with_hour(24), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_hour(&self, hour: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_hour(hour))), ..*self })
+    pub const fn with_hour(&self, hour: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_hour(hour)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the minute number changed.
