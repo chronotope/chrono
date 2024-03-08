@@ -28,8 +28,8 @@ use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 #[cfg(any(feature = "clock", feature = "std"))]
 use crate::OutOfRange;
-use crate::{expect, ok, try_opt};
-use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
+use crate::{expect, ok, try_ok_or, try_opt};
+use crate::{Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -209,7 +209,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Errors
     ///
     /// An `i64` with nanosecond precision can span a range of ~584 years. This function returns
-    /// `None` on an out of range `DateTime`.
+    /// [`Error::OutOfRange`] on an out of range `DateTime`.
     ///
     /// The dates that can be represented as nanoseconds are between 1677-09-21T00:12:43.145224192
     /// and 2262-04-11T23:47:16.854775807.
@@ -268,8 +268,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// assert_eq!(dt.timestamp_nanos(), None);
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn timestamp_nanos(&self) -> Option<i64> {
+    pub const fn timestamp_nanos(&self) -> Result<i64, Error> {
         let mut timestamp = self.timestamp();
         let mut subsec_nanos = self.timestamp_subsec_nanos() as i64;
         // `(timestamp * 1_000_000_000) + subsec_nanos` may create a temporary that underflows while
@@ -282,7 +281,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
             subsec_nanos -= 1_000_000_000;
             timestamp += 1;
         }
-        try_opt!(timestamp.checked_mul(1_000_000_000)).checked_add(subsec_nanos)
+        let ts = try_ok_or!(timestamp.checked_mul(1_000_000_000), Error::OutOfRange);
+        Ok(try_ok_or!(ts.checked_add(subsec_nanos), Error::OutOfRange))
     }
 
     /// Returns the number of milliseconds since the last second boundary.

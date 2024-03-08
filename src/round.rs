@@ -197,7 +197,7 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp =
-            naive.and_utc().timestamp_nanos().ok_or(RoundingError::TimestampExceedsLimit)?;
+            naive.and_utc().timestamp_nanos().map_err(|_| RoundingError::TimestampExceedsLimit)?;
         if span == 0 {
             return Ok(original);
         }
@@ -234,7 +234,7 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp =
-            naive.and_utc().timestamp_nanos().ok_or(RoundingError::TimestampExceedsLimit)?;
+            naive.and_utc().timestamp_nanos().map_err(|_| RoundingError::TimestampExceedsLimit)?;
         let delta_down = stamp % span;
         match delta_down.cmp(&0) {
             Ordering::Equal => Ok(original),

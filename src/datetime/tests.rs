@@ -289,13 +289,13 @@ fn test_nanosecond_range() {
     let maximum = "2262-04-11T23:47:16.854775804UTC";
     let parsed: DateTime<Utc> = maximum.parse().unwrap();
     let beyond_max = parsed + TimeDelta::milliseconds(300).unwrap();
-    assert!(beyond_max.timestamp_nanos().is_none());
+    assert_eq!(beyond_max.timestamp_nanos(), Err(Error::OutOfRange));
 
     // Far beyond range
     let maximum = "2262-04-11T23:47:16.854775804UTC";
     let parsed: DateTime<Utc> = maximum.parse().unwrap();
     let beyond_max = parsed + Days::new(365);
-    assert!(beyond_max.timestamp_nanos().is_none());
+    assert_eq!(beyond_max.timestamp_nanos(), Err(Error::OutOfRange));
 }
 
 #[test]
