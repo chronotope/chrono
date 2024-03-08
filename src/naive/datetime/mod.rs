@@ -1026,35 +1026,28 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `nanosecond >= 2,000,000,000`.
+    /// Returns [`Error::InvalidArgument`] if `nanosecond >= 2,000,000,000`.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 59, 789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 59, 789)?;
     /// assert_eq!(
     ///     dt.with_nanosecond(333_333_333),
-    ///     Some(
-    ///         NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_nano(12, 34, 59, 333_333_333).unwrap()
-    ///     )
+    ///     NaiveDate::from_ymd(2015, 9, 8)?.and_hms_nano(12, 34, 59, 333_333_333)
     /// );
     /// assert_eq!(
     ///     dt.with_nanosecond(1_333_333_333), // leap second
-    ///     Some(
-    ///         NaiveDate::from_ymd(2015, 9, 8)
-    ///             .unwrap()
-    ///             .and_hms_nano(12, 34, 59, 1_333_333_333)
-    ///             .unwrap()
-    ///     )
+    ///     NaiveDate::from_ymd(2015, 9, 8)?.and_hms_nano(12, 34, 59, 1_333_333_333)
     /// );
-    /// assert_eq!(dt.with_nanosecond(2_000_000_000), None);
+    /// assert_eq!(dt.with_nanosecond(2_000_000_000), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_nanosecond(&self, nano: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_nanosecond(nano))), ..*self })
+    pub const fn with_nanosecond(&self, nano: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_nanosecond(nano)), ..*self })
     }
 
     /// The minimum possible `NaiveDateTime`.
