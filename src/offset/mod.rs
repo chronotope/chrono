@@ -182,8 +182,8 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     fn timestamp_millis(&self, millis: i64) -> LocalResult<DateTime<Self>> {
         match DateTime::from_timestamp_millis(millis) {
-            Some(dt) => LocalResult::Single(self.from_utc_datetime(&dt.naive_utc())),
-            None => LocalResult::None,
+            Ok(dt) => LocalResult::Single(self.from_utc_datetime(&dt.naive_utc())),
+            Err(_) => LocalResult::None,
         }
     }
 
