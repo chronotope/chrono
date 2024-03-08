@@ -792,24 +792,25 @@ impl DateTime<Utc> {
     ///
     /// # Errors
     ///
-    /// Returns `None` on out-of-range number of milliseconds, otherwise returns `Some(DateTime {...})`.
+    /// Returns [`Error::OutOfRange`] if the timestamp in milliseconds is outside the range of a
+    /// `DateTime` (more than ca. 262,000 years away from common era).
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::DateTime;
     ///
-    /// let dt = DateTime::from_timestamp_millis(947638923004).expect("invalid timestamp");
+    /// let dt = DateTime::from_timestamp_millis(947638923004)?;
     ///
     /// assert_eq!(dt.to_string(), "2000-01-12 01:02:03.004 UTC");
-    /// assert_eq!(DateTime::from_timestamp_millis(dt.timestamp_millis()).unwrap(), dt);
+    /// assert_eq!(DateTime::from_timestamp_millis(dt.timestamp_millis())?, dt);
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn from_timestamp_millis(millis: i64) -> Option<Self> {
+    pub const fn from_timestamp_millis(millis: i64) -> Result<Self, Error> {
         let secs = millis.div_euclid(1000);
         let nsecs = millis.rem_euclid(1000) as u32 * 1_000_000;
-        ok!(Self::from_timestamp(secs, nsecs))
+        Self::from_timestamp(secs, nsecs)
     }
 
     /// Creates a new `DateTime<Utc>` from the number of non-leap microseconds

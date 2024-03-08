@@ -141,17 +141,14 @@ fn test_datetime_from_timestamp_millis() {
 
     for timestamp_millis in invalid.iter().copied() {
         let datetime = DateTime::from_timestamp_millis(timestamp_millis);
-        assert!(datetime.is_none());
+        assert_eq!(datetime, Err(Error::OutOfRange));
     }
 
     // Test that the result of `from_timestamp_millis` compares equal to
     // that of `from_timestamp_opt`.
     let secs_test = [0, 1, 2, 1000, 1234, 12345678, -1, -2, -1000, -12345678];
     for secs in secs_test.iter().cloned() {
-        assert_eq!(
-            DateTime::from_timestamp_millis(secs * 1000),
-            DateTime::from_timestamp(secs, 0).ok()
-        );
+        assert_eq!(DateTime::from_timestamp_millis(secs * 1000), DateTime::from_timestamp(secs, 0));
     }
 }
 
