@@ -967,24 +967,24 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the value for `minute` is invalid.
+    /// Returns [`Error::InvalidArgument`] if the value for `minute` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// let dt: NaiveDateTime =
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 34, 56, 789).unwrap();
+    /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
     /// assert_eq!(
     ///     dt.with_minute(45),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms_milli(12, 45, 56, 789).unwrap())
+    ///     NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 45, 56, 789)
     /// );
-    /// assert_eq!(dt.with_minute(60), None);
+    /// assert_eq!(dt.with_minute(60), Err(Error::InvalidArgument));
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_minute(&self, min: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { time: try_opt!(ok!(self.time.with_minute(min))), ..*self })
+    pub const fn with_minute(&self, min: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_minute(min)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the second number changed.
