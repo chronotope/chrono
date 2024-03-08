@@ -416,6 +416,21 @@ impl<Tz: TimeZone> DateTime<Tz> {
         tz.from_utc_datetime(&self.datetime)
     }
 
+    /// Changes the associated time zone.
+    ///
+    /// The returned `DateTime` references the same instant of time from the perspective of the
+    /// provided time zone.
+    ///
+    /// # Errors
+    ///
+    /// In theory every instant of time should exist in every time zone. Still errors may originate
+    /// from for example an OS API, in which case this method returns `None`.
+    #[inline]
+    #[must_use]
+    pub fn with_timezone_opt<Tz2: TimeZone>(&self, tz: &Tz2) -> Option<DateTime<Tz2>> {
+        tz.from_utc_datetime_opt(&self.datetime)
+    }
+
     /// Fix the offset from UTC to its current value, dropping the associated timezone information.
     /// This it useful for converting a generic `DateTime<Tz: Timezone>` to `DateTime<FixedOffset>`.
     #[inline]

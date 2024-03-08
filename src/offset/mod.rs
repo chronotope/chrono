@@ -572,8 +572,25 @@ pub trait TimeZone: Sized + Clone {
     /// Creates the offset for given UTC `NaiveDate`. This cannot fail.
     fn offset_from_utc_date(&self, utc: &NaiveDate) -> Self::Offset;
 
-    /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.
+    /// Creates the offset for given UTC `NaiveDateTime`.
+    ///
+    /// # Panics
+    ///
+    /// In theory UTC is continuous and every instant of time should map to one local date and time.
+    /// Still errors may originate from for example an OS API, in which case this method may panic
+    /// or return invalid results.
     fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset;
+
+    /// Creates the offset for given UTC `NaiveDateTime`.
+    ///
+    /// # Errors
+    ///
+    /// In theory UTC is continuous and every instant of time should map to one local date and time.
+    /// Still errors may originate from for example an OS API, in which case this method returns
+    /// `None`.
+    fn offset_from_utc_datetime_opt(&self, utc: &NaiveDateTime) -> Option<Self::Offset> {
+        Some(self.offset_from_utc_datetime(utc))
+    }
 
     /// Converts the UTC `NaiveDate` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
@@ -585,10 +602,26 @@ pub trait TimeZone: Sized + Clone {
     }
 
     /// Converts the UTC `NaiveDateTime` to the local time.
-    /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
+    ///
+    /// # Panics
+    ///
+    /// In theory UTC is continuous and every instant of time should exist in every time zone. Still
+    /// errors may originate from for example an OS API, in which case this method may panic
+    /// or return invalid results.
     #[allow(clippy::wrong_self_convention)]
     fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
         DateTime::from_naive_utc_and_offset(*utc, self.offset_from_utc_datetime(utc))
+    }
+
+    /// Converts the UTC `NaiveDateTime` to the local time.
+    ///
+    /// # Errors
+    ///
+    /// In theory UTC is continuous and every instant of time should exist in every time zone. Still
+    /// errors may originate from for example an OS API, in which case this method returns `None`.
+    #[allow(clippy::wrong_self_convention)]
+    fn from_utc_datetime_opt(&self, utc: &NaiveDateTime) -> Option<DateTime<Self>> {
+        Some(DateTime::from_naive_utc_and_offset(*utc, self.offset_from_utc_datetime_opt(utc)?))
     }
 }
 
