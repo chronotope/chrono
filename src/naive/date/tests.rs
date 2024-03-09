@@ -483,23 +483,22 @@ fn test_date_add() {
 }
 
 #[test]
-fn test_date_sub() {
-    fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: TimeDelta) {
-        let lhs = NaiveDate::from_ymd_opt(y1, m1, d1).unwrap();
-        let rhs = NaiveDate::from_ymd_opt(y2, m2, d2).unwrap();
-        assert_eq!(lhs.signed_duration_since(rhs), diff);
-        assert_eq!(rhs.signed_duration_since(lhs), -diff);
+fn test_date_signed_duration_since() {
+    fn check(lhs: Option<NaiveDate>, rhs: Option<NaiveDate>, delta: TimeDelta) {
+        assert_eq!(lhs.unwrap().signed_duration_since(rhs.unwrap()), delta);
+        assert_eq!(rhs.unwrap().signed_duration_since(lhs.unwrap()), -delta);
     }
+    let ymd = NaiveDate::from_ymd_opt;
 
-    check((2014, 1, 1), (2014, 1, 1), TimeDelta::zero());
-    check((2014, 1, 2), (2014, 1, 1), TimeDelta::try_days(1).unwrap());
-    check((2014, 12, 31), (2014, 1, 1), TimeDelta::try_days(364).unwrap());
-    check((2015, 1, 3), (2014, 1, 1), TimeDelta::try_days(365 + 2).unwrap());
-    check((2018, 1, 1), (2014, 1, 1), TimeDelta::try_days(365 * 4 + 1).unwrap());
-    check((2414, 1, 1), (2014, 1, 1), TimeDelta::try_days(365 * 400 + 97).unwrap());
+    check(ymd(2014, 1, 1), ymd(2014, 1, 1), TimeDelta::zero());
+    check(ymd(2014, 1, 2), ymd(2014, 1, 1), TimeDelta::try_days(1).unwrap());
+    check(ymd(2014, 12, 31), ymd(2014, 1, 1), TimeDelta::try_days(364).unwrap());
+    check(ymd(2015, 1, 3), ymd(2014, 1, 1), TimeDelta::try_days(365 + 2).unwrap());
+    check(ymd(2018, 1, 1), ymd(2014, 1, 1), TimeDelta::try_days(365 * 4 + 1).unwrap());
+    check(ymd(2414, 1, 1), ymd(2014, 1, 1), TimeDelta::try_days(365 * 400 + 97).unwrap());
 
-    check((MAX_YEAR, 12, 31), (0, 1, 1), TimeDelta::try_days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap());
-    check((MIN_YEAR, 1, 1), (0, 1, 1), TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
+    check(ymd(MAX_YEAR, 12, 31), ymd(0, 1, 1), TimeDelta::try_days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap());
+    check(ymd(MIN_YEAR, 1, 1), ymd(0, 1, 1), TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
 }
 
 #[test]
