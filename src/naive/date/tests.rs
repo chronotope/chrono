@@ -367,14 +367,14 @@ fn test_date_weekday() {
 #[test]
 fn test_date_with_fields() {
     let d = NaiveDate::from_ymd(2000, 2, 29).unwrap();
-    assert_eq!(d.with_year(-400), Some(NaiveDate::from_ymd(-400, 2, 29).unwrap()));
-    assert_eq!(d.with_year(-100), None);
-    assert_eq!(d.with_year(1600), Some(NaiveDate::from_ymd(1600, 2, 29).unwrap()));
-    assert_eq!(d.with_year(1900), None);
-    assert_eq!(d.with_year(2000), Some(NaiveDate::from_ymd(2000, 2, 29).unwrap()));
-    assert_eq!(d.with_year(2001), None);
-    assert_eq!(d.with_year(2004), Some(NaiveDate::from_ymd(2004, 2, 29).unwrap()));
-    assert_eq!(d.with_year(i32::MAX), None);
+    assert_eq!(d.with_year(-400), NaiveDate::from_ymd(-400, 2, 29));
+    assert_eq!(d.with_year(-100), Err(Error::DoesNotExist));
+    assert_eq!(d.with_year(1600), NaiveDate::from_ymd(1600, 2, 29));
+    assert_eq!(d.with_year(1900), Err(Error::DoesNotExist));
+    assert_eq!(d.with_year(2000), NaiveDate::from_ymd(2000, 2, 29));
+    assert_eq!(d.with_year(2001), Err(Error::DoesNotExist));
+    assert_eq!(d.with_year(2004), NaiveDate::from_ymd(2004, 2, 29));
+    assert_eq!(d.with_year(i32::MAX), Err(Error::OutOfRange));
 
     let d = NaiveDate::from_ymd(2000, 4, 30).unwrap();
     assert_eq!(d.with_month(0), None);

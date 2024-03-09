@@ -728,28 +728,22 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (February 29 in a non-leap year).
-    /// - The year is out of range for a `NaiveDate`.
+    /// Returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist.
+    /// - [`Error::OutOfRange`] if `year` is out of range for a `NaiveDate`.
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
-    ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25).unwrap().and_hms(12, 34, 56).unwrap();
-    /// assert_eq!(
-    ///     dt.with_year(2016),
-    ///     Some(NaiveDate::from_ymd(2016, 9, 25).unwrap().and_hms(12, 34, 56).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     dt.with_year(-308),
-    ///     Some(NaiveDate::from_ymd(-308, 9, 25).unwrap().and_hms(12, 34, 56).unwrap())
-    /// );
+    /// # use chrono::{NaiveDate, NaiveDateTime, Error};
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 25)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_year(2016), NaiveDate::from_ymd(2016, 9, 25)?.and_hms(12, 34, 56));
+    /// assert_eq!(dt.with_year(-308), NaiveDate::from_ymd(-308, 9, 25)?.and_hms(12, 34, 56));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_year(&self, year: i32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { date: try_opt!(self.date.with_year(year)), ..*self })
+    pub const fn with_year(&self, year: i32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { date: try_err!(self.date.with_year(year)), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 1) changed.

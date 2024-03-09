@@ -570,7 +570,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn with_year(&self, year: i32) -> Option<DateTime<Tz>> {
         map_local(self, |dt| match dt.year() == year {
             true => Some(dt),
-            false => dt.with_year(year),
+            false => dt.with_year(year).ok(),
         })
     }
 

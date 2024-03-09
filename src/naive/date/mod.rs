@@ -1201,44 +1201,39 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (February 29 in a non-leap year).
-    /// - The year is out of range for a `NaiveDate`.
+    /// Returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist.
+    /// - [`Error::OutOfRange`] if `year` is out of range for a `NaiveDate`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(2016),
-    ///     Some(NaiveDate::from_ymd(2016, 9, 8).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_year(-308),
-    ///     Some(NaiveDate::from_ymd(-308, 9, 8).unwrap())
-    /// );
+    /// # use chrono::{NaiveDate, Error};
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_year(2016), NaiveDate::from_ymd(2016, 9, 8));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8)?.with_year(-308), NaiveDate::from_ymd(-308, 9, 8));
+    /// # Ok::<(), Error>(())
     /// ```
     ///
-    /// A leap day (February 29) is a case where this method can return `None`.
+    /// A leap day (February 29) in a non-leap year will return [`Err(Error::DoesNotExist)`].
     ///
     /// ```
-    /// # use chrono::NaiveDate;
-    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2015).is_none());
-    /// assert!(NaiveDate::from_ymd(2016, 2, 29).unwrap().with_year(2020).is_some());
+    /// # use chrono::{NaiveDate, Error};
+    /// assert_eq!(NaiveDate::from_ymd(2016, 2, 29)?.with_year(2015), Err(Error::DoesNotExist));
+    /// assert!(NaiveDate::from_ymd(2016, 2, 29)?.with_year(2020).is_ok());
+    /// # Ok::<(), Error>(())
     /// ```
     ///
-    /// Don't use `with_year` if you want the ordinal date to stay the same:
+    /// Don't use `with_year` if you want the ordinal date to stay the same.
     ///
     /// ```
-    /// # use chrono::NaiveDate;
-    /// assert_ne!(
-    ///     NaiveDate::from_yo(2020, 100).unwrap().with_year(2023).unwrap(),
-    ///     NaiveDate::from_yo(2023, 100).unwrap() // result is 2023-101
-    /// );
+    /// # use chrono::{NaiveDate, Error};
+    /// let date = NaiveDate::from_yo(2020, 100)?.with_year(2023);
+    /// assert_ne!(date, NaiveDate::from_yo(2023, 100));
+    /// assert_eq!(date, NaiveDate::from_yo(2023, 99));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_year(&self, year: i32) -> Option<NaiveDate> {
+    pub const fn with_year(&self, year: i32) -> Result<NaiveDate, Error> {
         // we need to operate with `mdf` since we should keep the month and day number as is
         let mdf = self.mdf();
 
@@ -1246,7 +1241,7 @@ impl NaiveDate {
         let flags = YearFlags::from_year(year);
         let mdf = mdf.with_flags(flags);
 
-        ok!(NaiveDate::from_mdf(year, mdf))
+        NaiveDate::from_mdf(year, mdf)
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 1) changed.
@@ -1276,7 +1271,7 @@ impl NaiveDate {
     /// use chrono::{Datelike, Error, NaiveDate};
     ///
     /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
-    ///     date.with_year(year)?.with_month(month)
+    ///     date.with_year(year).ok()?.with_month(month)
     /// }
     /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
     /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
