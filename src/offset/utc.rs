@@ -17,7 +17,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{FixedOffset, LocalResult, Offset, TimeZone};
+use super::{FixedOffset, MappedLocalTime, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
 #[cfg(feature = "now")]
 #[allow(deprecated)]
@@ -118,11 +118,11 @@ impl TimeZone for Utc {
         Utc
     }
 
-    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<Utc> {
-        LocalResult::Single(Utc)
+    fn offset_from_local_date(&self, _local: &NaiveDate) -> MappedLocalTime<Utc> {
+        MappedLocalTime::Single(Utc)
     }
-    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<Utc> {
-        LocalResult::Single(Utc)
+    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> MappedLocalTime<Utc> {
+        MappedLocalTime::Single(Utc)
     }
 
     fn offset_from_utc_date(&self, _utc: &NaiveDate) -> Utc {

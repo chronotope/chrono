@@ -6,7 +6,7 @@
 
 use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
-use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone};
+use crate::offset::{FixedOffset, MappedLocalTime, Offset, TimeZone};
 use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 
 /// A type to hold parsed fields of date and time that can check all fields are consistent.
@@ -888,9 +888,9 @@ impl Parsed {
         let offset = FixedOffset::east_opt(offset).ok_or(OUT_OF_RANGE)?;
 
         match offset.from_local_datetime(&datetime) {
-            LocalResult::None => Err(IMPOSSIBLE),
-            LocalResult::Single(t) => Ok(t),
-            LocalResult::Ambiguous(..) => Err(NOT_ENOUGH),
+            MappedLocalTime::None => Err(IMPOSSIBLE),
+            MappedLocalTime::Single(t) => Ok(t),
+            MappedLocalTime::Ambiguous(..) => Err(NOT_ENOUGH),
         }
     }
 
@@ -944,15 +944,15 @@ impl Parsed {
         // it will be 0 otherwise, but this is fine as the algorithm ignores offset for that case.
         let datetime = self.to_naive_datetime_with_offset(guessed_offset)?;
         match tz.from_local_datetime(&datetime) {
-            LocalResult::None => Err(IMPOSSIBLE),
-            LocalResult::Single(t) => {
+            MappedLocalTime::None => Err(IMPOSSIBLE),
+            MappedLocalTime::Single(t) => {
                 if check_offset(&t) {
                     Ok(t)
                 } else {
                     Err(IMPOSSIBLE)
                 }
             }
-            LocalResult::Ambiguous(min, max) => {
+            MappedLocalTime::Ambiguous(min, max) => {
                 // try to disambiguate two possible local dates by offset.
                 match (check_offset(&min), check_offset(&max)) {
                     (false, false) => Err(IMPOSSIBLE),

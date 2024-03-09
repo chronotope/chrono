@@ -3,7 +3,7 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
-use crate::{Datelike, Days, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
+use crate::{Datelike, Days, MappedLocalTime, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
 
 #[derive(Clone)]
 struct DstTester;
@@ -31,14 +31,14 @@ impl TimeZone for DstTester {
         DstTester
     }
 
-    fn offset_from_local_date(&self, _: &NaiveDate) -> crate::LocalResult<Self::Offset> {
+    fn offset_from_local_date(&self, _: &NaiveDate) -> crate::MappedLocalTime<Self::Offset> {
         unimplemented!()
     }
 
     fn offset_from_local_datetime(
         &self,
         local: &NaiveDateTime,
-    ) -> crate::LocalResult<Self::Offset> {
+    ) -> crate::MappedLocalTime<Self::Offset> {
         let local_to_winter_transition_start = NaiveDate::from_ymd_opt(
             local.year(),
             DstTester::TO_WINTER_MONTH_DAY.0,
@@ -72,19 +72,19 @@ impl TimeZone for DstTester {
         .and_time(DstTester::transition_start_local() + TimeDelta::try_hours(1).unwrap());
 
         if *local < local_to_winter_transition_end || *local >= local_to_summer_transition_end {
-            LocalResult::Single(DstTester::summer_offset())
+            MappedLocalTime::Single(DstTester::summer_offset())
         } else if *local >= local_to_winter_transition_start
             && *local < local_to_summer_transition_start
         {
-            LocalResult::Single(DstTester::winter_offset())
+            MappedLocalTime::Single(DstTester::winter_offset())
         } else if *local >= local_to_winter_transition_end
             && *local < local_to_winter_transition_start
         {
-            LocalResult::Ambiguous(DstTester::winter_offset(), DstTester::summer_offset())
+            MappedLocalTime::Ambiguous(DstTester::winter_offset(), DstTester::summer_offset())
         } else if *local >= local_to_summer_transition_start
             && *local < local_to_summer_transition_end
         {
-            LocalResult::None
+            MappedLocalTime::None
         } else {
             panic!("Unexpected local time {}", local)
         }

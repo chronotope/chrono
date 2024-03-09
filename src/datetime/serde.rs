@@ -1251,7 +1251,7 @@ mod tests {
 
     #[test]
     fn test_serde_no_offset_debug() {
-        use crate::{LocalResult, NaiveDate, NaiveDateTime, Offset};
+        use crate::{MappedLocalTime, NaiveDate, NaiveDateTime, Offset};
         use core::fmt::Debug;
 
         #[derive(Clone)]
@@ -1266,14 +1266,14 @@ mod tests {
             fn from_offset(_state: &TestTimeZone) -> TestTimeZone {
                 TestTimeZone
             }
-            fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<TestTimeZone> {
-                LocalResult::Single(TestTimeZone)
+            fn offset_from_local_date(&self, _local: &NaiveDate) -> MappedLocalTime<TestTimeZone> {
+                MappedLocalTime::Single(TestTimeZone)
             }
             fn offset_from_local_datetime(
                 &self,
                 _local: &NaiveDateTime,
-            ) -> LocalResult<TestTimeZone> {
-                LocalResult::Single(TestTimeZone)
+            ) -> MappedLocalTime<TestTimeZone> {
+                MappedLocalTime::Single(TestTimeZone)
             }
             fn offset_from_utc_date(&self, _utc: &NaiveDate) -> TestTimeZone {
                 TestTimeZone

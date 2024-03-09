@@ -1,5 +1,5 @@
 use super::NaiveDateTime;
-use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, TimeDelta, Utc};
+use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDate, TimeDelta, Utc};
 
 #[test]
 fn test_datetime_add() {
@@ -385,13 +385,13 @@ fn test_and_timezone_min_max_dates() {
         if offset_hour >= 0 {
             assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
         } else {
-            assert_eq!(local_max, LocalResult::None);
+            assert_eq!(local_max, MappedLocalTime::None);
         }
         let local_min = NaiveDateTime::MIN.and_local_timezone(offset);
         if offset_hour <= 0 {
             assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
         } else {
-            assert_eq!(local_min, LocalResult::None);
+            assert_eq!(local_min, MappedLocalTime::None);
         }
     }
 }

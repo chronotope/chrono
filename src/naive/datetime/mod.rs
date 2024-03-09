@@ -21,7 +21,7 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::time_delta::NANOS_PER_SEC;
 use crate::{
-    expect, try_opt, DateTime, Datelike, FixedOffset, LocalResult, Months, TimeDelta, TimeZone,
+    expect, try_opt, DateTime, Datelike, FixedOffset, MappedLocalTime, Months, TimeDelta, TimeZone,
     Timelike, Weekday,
 };
 #[cfg(feature = "rustc-serialize")]
@@ -929,7 +929,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timezone(), tz);
     /// ```
     #[must_use]
-    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> LocalResult<DateTime<Tz>> {
+    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
         tz.from_local_datetime(self)
     }
 
