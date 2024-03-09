@@ -9,7 +9,7 @@ use core::str::FromStr;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use super::{LocalResult, Offset, TimeZone};
+use super::{MappedLocalTime, Offset, TimeZone};
 use crate::format::{scan, ParseError, OUT_OF_RANGE};
 use crate::naive::{NaiveDate, NaiveDateTime};
 
@@ -129,11 +129,11 @@ impl TimeZone for FixedOffset {
         *offset
     }
 
-    fn offset_from_local_date(&self, _local: &NaiveDate) -> LocalResult<FixedOffset> {
-        LocalResult::Single(*self)
+    fn offset_from_local_date(&self, _local: &NaiveDate) -> MappedLocalTime<FixedOffset> {
+        MappedLocalTime::Single(*self)
     }
-    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> LocalResult<FixedOffset> {
-        LocalResult::Single(*self)
+    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+        MappedLocalTime::Single(*self)
     }
 
     fn offset_from_utc_date(&self, _utc: &NaiveDate) -> FixedOffset {

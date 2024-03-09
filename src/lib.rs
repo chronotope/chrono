@@ -7,7 +7,7 @@
 //! * The [`DateTime`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) type is timezone-aware
 //!   by default, with separate timezone-naive types.
 //! * Operations that may produce an invalid or ambiguous date and time return `Option` or
-//!   [`LocalResult`](https://docs.rs/chrono/latest/chrono/offset/enum.LocalResult.html).
+//!   [`MappedLocalTime`](https://docs.rs/chrono/latest/chrono/offset/enum.MappedLocalTime.html).
 //! * Configurable parsing and formatting with a `strftime` inspired date and time formatting syntax.
 //! * The [`Local`](https://docs.rs/chrono/latest/chrono/offset/struct.Local.html) timezone works with
 //!   the current timezone of the OS.
@@ -130,7 +130,7 @@
 //!
 #![cfg_attr(not(feature = "now"), doc = "```ignore")]
 #![cfg_attr(feature = "now", doc = "```rust")]
-//! use chrono::offset::LocalResult;
+//! use chrono::offset::MappedLocalTime;
 //! use chrono::prelude::*;
 //!
 //! # fn doctest() -> Option<()> {
@@ -174,12 +174,12 @@
 //! // dynamic verification
 //! assert_eq!(
 //!     Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33),
-//!     LocalResult::Single(
+//!     MappedLocalTime::Single(
 //!         NaiveDate::from_ymd_opt(2014, 7, 8)?.and_hms_opt(21, 15, 33)?.and_utc()
 //!     )
 //! );
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), LocalResult::None);
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), LocalResult::None);
+//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), MappedLocalTime::None);
+//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), MappedLocalTime::None);
 //!
 //! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
@@ -590,9 +590,9 @@ pub mod offset;
 #[cfg(feature = "clock")]
 #[doc(inline)]
 pub use offset::Local;
-pub use offset::LocalResult;
 #[doc(inline)]
 pub use offset::{FixedOffset, Offset, TimeZone, Utc};
+pub use offset::{LocalResult, MappedLocalTime};
 
 pub mod round;
 pub use round::{DurationRound, RoundingError, SubsecRound};
