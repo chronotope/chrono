@@ -37,21 +37,47 @@ pub use self::local::Local;
 pub(crate) mod utc;
 pub use self::utc::Utc;
 
-/// The conversion result from the local time to the timezone-aware datetime types.
+/// The result of mapping a local time to a concrete instant in a given time zone.
+///
+/// The calculation to go from a local time (wall clock time) to an instant in UTC can end up in
+/// three cases:
+/// * A single, simple result.
+/// * An ambiguous result when the clock is turned backwards during a transition due to for example
+///   DST.
+/// * No result when the clock is turned forwards during a transition due to for example DST.
+///
+/// When the clock is turned backwards it creates a _fold_ in local time, during which the local
+/// time is _ambiguous_. When the clock is turned forwards it creates a _gap_ in local time, during
+/// which the local time is _missing_, or does not exist.
+///
+/// Chrono does not return a default choice or invalid data during time zone transitions, but has
+/// the `MappedLocalTime` type to help deal with the result correctly.
+///
+/// The type of `T` is usually a [`DateTime`] but may also be only an offset.
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
 pub enum MappedLocalTime<T> {
-    /// Given local time representation is invalid.
-    /// This can occur when, for example, the positive timezone transition.
-    None,
-    /// Given local time representation has a single unique result.
+    /// The local time maps to a single unique result.
     Single(T),
-    /// Given local time representation has multiple results and thus ambiguous.
-    /// This can occur when, for example, the negative timezone transition.
-    Ambiguous(T /* min */, T /* max */),
+
+    /// The local time is _ambiguous_ because there is a _fold_ in the local time.
+    ///
+    /// This variant contains the two possible results, in the order `(earliest, latest)`.
+    Ambiguous(T, T),
+
+    /// The local time does not exist because there is a _gap_ in the local time.
+    ///
+    /// This variant may also be returned if there was an error while resolving the local time,
+    /// caused by for example missing time zone data files, an error in an OS API, or overflow.
+    None,
 }
 
 impl<T> MappedLocalTime<T> {
-    /// Returns `Some` only when the conversion result is unique, or `None` otherwise.
+    /// Returns `Some` if the time zone mapping has a single result.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if local time falls in a _fold_ or _gap_ in the local time, or if there was
+    /// an error.
     #[must_use]
     pub fn single(self) -> Option<T> {
         match self {
@@ -60,7 +86,11 @@ impl<T> MappedLocalTime<T> {
         }
     }
 
-    /// Returns `Some` for the earliest possible conversion result, or `None` if none.
+    /// Returns the earliest possible result of a the time zone mapping.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if local time falls in a _gap_ in the local time, or if there was an error.
     #[must_use]
     pub fn earliest(self) -> Option<T> {
         match self {
@@ -69,7 +99,11 @@ impl<T> MappedLocalTime<T> {
         }
     }
 
-    /// Returns `Some` for the latest possible conversion result, or `None` if none.
+    /// Returns the latest possible result of a the time zone mapping.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if local time falls in a _gap_ in the local time, or if there was an error.
     #[must_use]
     pub fn latest(self) -> Option<T> {
         match self {
@@ -192,7 +226,16 @@ impl<Tz: TimeZone> MappedLocalTime<Date<Tz>> {
 }
 
 impl<T: fmt::Debug> MappedLocalTime<T> {
-    /// Returns the single unique conversion result, or panics accordingly.
+    /// Returns a single unique conversion result or panics.
+    ///
+    /// `unwrap()` is best combined with time zone types where the mapping can never fail like
+    /// [`Utc`] and [`FixedOffset`]. Note that for [`FixedOffset`] there is a rare case where a
+    /// resulting [`DateTime`] can be out of range.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the local time falls within a _fold_ or a _gap_ in the local time, and on any
+    /// error that may have been returned by the type implementing [`TimeZone`].
     #[must_use]
     #[track_caller]
     pub fn unwrap(self) -> T {
