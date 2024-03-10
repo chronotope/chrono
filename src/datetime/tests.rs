@@ -772,8 +772,8 @@ fn test_datetime_rfc3339() {
 
     // timezone 0
     assert_eq!(
-        Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc3339(),
-        "2015-02-18T23:16:09+00:00"
+        Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().try_to_rfc3339().as_deref(),
+        Some("2015-02-18T23:16:09+00:00")
     );
     // timezone +05
     assert_eq!(
@@ -784,18 +784,18 @@ fn test_datetime_rfc3339() {
                 .unwrap()
         )
         .unwrap()
-        .to_rfc3339(),
-        "2015-02-18T23:16:09.150+05:00"
+        .try_to_rfc3339()
+        .as_deref(),
+        Some("2015-02-18T23:16:09.150+05:00")
     );
 
-    assert_eq!(ymdhms_utc(2015, 2, 18, 23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
     assert_eq!(
-        ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).to_rfc3339(),
-        "2015-02-18T23:16:09.150+05:00"
+        ymdhms_utc(2015, 2, 18, 23, 16, 9).try_to_rfc3339().as_deref(),
+        Some("2015-02-18T23:16:09+00:00")
     );
     assert_eq!(
-        ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
-        "2015-02-18T23:59:60.234567+05:00"
+        ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).try_to_rfc3339().as_deref(),
+        Some("2015-02-18T23:59:60.234567+05:00")
     );
     assert_eq!(
         DateTime::parse_from_rfc3339("2015-02-18T23:59:59.123+05:00"),
@@ -815,12 +815,12 @@ fn test_datetime_rfc3339() {
     );
 
     assert_eq!(
-        ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc3339(),
-        "2015-02-18T23:59:60.234567+05:00"
+        ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567).try_to_rfc3339().as_deref(),
+        Some("2015-02-18T23:59:60.234567+05:00")
     );
     assert_eq!(
-        ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).to_rfc3339(),
-        "2015-02-18T23:16:09.150+05:00"
+        ymdhms_milli(&edt5, 2015, 2, 18, 23, 16, 9, 150).try_to_rfc3339().as_deref(),
+        Some("2015-02-18T23:16:09.150+05:00")
     );
     assert_eq!(
         DateTime::parse_from_rfc3339("2015-02-18T00:00:00.234567+05:00"),
@@ -834,7 +834,10 @@ fn test_datetime_rfc3339() {
         DateTime::parse_from_rfc3339("2015-02-18 23:59:60.234567+05:00"),
         Ok(ymdhms_micro(&edt5, 2015, 2, 18, 23, 59, 59, 1_234_567))
     );
-    assert_eq!(ymdhms_utc(2015, 2, 18, 23, 16, 9).to_rfc3339(), "2015-02-18T23:16:09+00:00");
+    assert_eq!(
+        ymdhms_utc(2015, 2, 18, 23, 16, 9).try_to_rfc3339().as_deref(),
+        Some("2015-02-18T23:16:09+00:00")
+    );
 
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:59:60.234567 +05:00").is_err());
     assert!(DateTime::parse_from_rfc3339("2015-02-18T23:059:60.234567+05:00").is_err());
@@ -1538,7 +1541,9 @@ fn test_min_max_getters() {
     // RFC 2822 doesn't support years with more than 4 digits.
     // assert_eq!(beyond_min.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
-    assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
+    assert_eq!(beyond_min.try_to_rfc3339(), None); // doesn't support years with more than 4 digits.
+    #[cfg(feature = "alloc")]
+    assert_eq!(beyond_min.to_iso8601(), "-262144-12-31T22:00:00-02:00");
     #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_min.format("%Y-%m-%dT%H:%M:%S%:z").to_string(),
@@ -1563,7 +1568,9 @@ fn test_min_max_getters() {
     // RFC 2822 doesn't support years with more than 4 digits.
     // assert_eq!(beyond_max.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
-    assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
+    assert_eq!(beyond_max.try_to_rfc3339(), None); // doesn't support years with more than 4 digits.
+    #[cfg(feature = "alloc")]
+    assert_eq!(beyond_max.to_iso8601(), "+262143-01-01T01:59:59.999999999+02:00");
     #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_max.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string(),
