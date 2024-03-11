@@ -35,7 +35,7 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{expect, ok, try_err, try_opt};
+use crate::{expect, ok, try_err, try_ok_or, try_opt};
 use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{Mdf, YearFlags};
@@ -1248,70 +1248,71 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `month(4)` when day of the month is 31).
-    /// - The value for `month` is invalid.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist (for example `month(4)` when
+    ///   day of the month is 31).
+    /// - [`Error::InvalidArgument`] if the value for `month` is invalid.
     ///
     /// # Examples
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(10),
-    ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month(13), None); // No month 13
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month(2), None); // No Feb 30
+    /// let date = NaiveDate::from_ymd(2015, 9, 30)?;
+    /// assert_eq!(date.with_month(7), NaiveDate::from_ymd(2015, 7, 30));
+    /// assert_eq!(date.with_month(13), Err(Error::InvalidArgument)); // No month 13
+    /// assert_eq!(date.with_month(2), Err(Error::DoesNotExist)); // No February 30
+    /// # Ok::<(), Error>(())
     /// ```
     ///
-    /// Don't combine multiple `Datelike::with_*` methods. The intermediate value may not exist.
+    /// Don't combine multiple `NaiveDate::with_*` methods. The intermediate value may not exist.
     ///
     /// ```
     /// use chrono::{Datelike, Error, NaiveDate};
     ///
-    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Option<NaiveDate> {
-    ///     date.with_year(year).ok()?.with_month(month)
+    /// fn with_year_month(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
+    ///     date.with_year(year)?.with_month(month)
     /// }
-    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
-    /// assert!(with_year_month(d, 2019, 1).is_none()); // fails because of invalid intermediate value
+    /// let d = NaiveDate::from_ymd(2020, 2, 29)?;
+    /// assert!(with_year_month(d, 2019, 1).is_err()); // fails because of invalid intermediate value
     ///
     /// // Correct version:
     /// fn with_year_month_fixed(date: NaiveDate, year: i32, month: u32) -> Result<NaiveDate, Error> {
     ///     NaiveDate::from_ymd(year, month, date.day())
     /// }
-    /// let d = NaiveDate::from_ymd(2020, 2, 29).unwrap();
+    /// let d = NaiveDate::from_ymd(2020, 2, 29)?;
     /// assert_eq!(with_year_month_fixed(d, 2019, 1), NaiveDate::from_ymd(2019, 1, 29));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_month(month)))))
+    pub const fn with_month(&self, month: u32) -> Result<NaiveDate, Error> {
+        self.with_mdf(try_err!(self.mdf().with_month(month)))
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
-    /// - The value for `month0` is invalid.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist (for example `month0(3)` when
+    ///   day of the month is 31).
+    /// - [`Error::InvalidArgument`] if the value for `month0` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(9),
-    ///     Some(NaiveDate::from_ymd(2015, 10, 8).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_month0(12), None); // No month 12
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 30).unwrap().with_month0(1), None); // No Feb 30
+    /// let date = NaiveDate::from_ymd(2015, 9, 30)?;
+    /// assert_eq!(date.with_month0(9), NaiveDate::from_ymd(2015, 10, 30));
+    /// assert_eq!(date.with_month0(12), Err(Error::InvalidArgument)); // No month 13
+    /// assert_eq!(date.with_month0(1), Err(Error::DoesNotExist)); // No February 30
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
-        let month = try_opt!(month0.checked_add(1));
-        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_month(month)))))
+    pub const fn with_month0(&self, month0: u32) -> Result<NaiveDate, Error> {
+        let month = try_ok_or!(month0.checked_add(1), Error::InvalidArgument);
+        self.with_mdf(try_err!(self.mdf().with_month(month)))
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
