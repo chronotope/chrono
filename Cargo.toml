@@ -53,7 +53,7 @@ js-sys = { version = "0.3", optional = true }       # contains FFI bindings for 
 windows-targets = { version = "0.52", optional = true }
 
 [target.'cfg(windows)'.dev-dependencies]
-windows-bindgen = { version = "0.54" } # The MSRV of its windows-metatada 0.54 dependency is 1.70
+windows-bindgen = { version = "0.55" } # The MSRV of its windows-metatada dependency is 1.70
 
 [target.'cfg(unix)'.dependencies]
 iana-time-zone = { version = "0.1.45", optional = true, features = ["fallback"] }
