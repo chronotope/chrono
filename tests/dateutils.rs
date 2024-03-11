@@ -28,8 +28,8 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     //     assert_eq!("", date_command_str);
     // }
 
-    // This is used while a decision is made wheter the `date` output needs to
-    // be exactly matched, or whether LocalResult::Ambigious should be handled
+    // This is used while a decision is made whether the `date` output needs to
+    // be exactly matched, or whether LocalResult::Ambiguous should be handled
     // differently
 
     let date = NaiveDate::from_ymd_opt(dt.year(), dt.month(), dt.day()).unwrap();
