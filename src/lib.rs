@@ -173,7 +173,6 @@
 //!
 //! ```rust
 //! use chrono::prelude::*;
-//! use chrono::TimeDelta;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
 //! let dt = FixedOffset::east(9*3600).unwrap().from_local_datetime(&NaiveDate::from_ymd(2014, 11, 28).unwrap().and_hms_nano(21, 45, 59, 324310806).unwrap()).unwrap();
@@ -234,9 +233,10 @@
 //! ```rust
 //! # #[allow(unused_imports)]
 //! use chrono::prelude::*;
-//!
 //! # #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 //! # fn test() {
+//! use chrono::Locale;
+//!
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
@@ -478,15 +478,16 @@ use core::fmt;
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
+    // Common date/time types
+    pub use crate::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeDelta, Weekday};
+
+    // Offset types
     #[cfg(feature = "clock")]
     pub use crate::Local;
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-    pub use crate::Locale;
-    pub use crate::SubsecRound;
-    pub use crate::{DateTime, SecondsFormat};
-    pub use crate::{Datelike, Month, Timelike, Weekday};
     pub use crate::{FixedOffset, Utc};
-    pub use crate::{NaiveDate, NaiveDateTime, NaiveTime};
+
+    // Bring trait methods in scope
+    pub use crate::{Datelike, Timelike};
     pub use crate::{Offset, TimeZone};
 }
 

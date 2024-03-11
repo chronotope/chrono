@@ -6,7 +6,7 @@ use chrono::format::StrftimeItems;
 use chrono::prelude::*;
 #[cfg(feature = "unstable-locales")]
 use chrono::Locale;
-use chrono::{DateTime, FixedOffset, Local, TimeDelta, Utc, __BenchYearFlags};
+use chrono::{DateTime, FixedOffset, Local, SecondsFormat, TimeDelta, Utc, __BenchYearFlags};
 
 fn bench_date_from_ymd(c: &mut Criterion) {
     c.bench_function("bench_date_from_ymd", |b| {
