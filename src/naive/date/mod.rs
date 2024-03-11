@@ -807,16 +807,16 @@ impl NaiveDate {
 
     /// Makes a new `NaiveDate` with the packed month-day-flags changed.
     ///
-    /// Returns `None` when the resulting `NaiveDate` would be invalid.
+    /// # Errors
+    ///
+    /// This method returns:
+    /// - [`Error::InvalidArgument`] if the `mdf` was created with `month == 0` or `day == 0`.
+    /// - [`Error::DoesNotExist`] if the given day does not exist in the given month.
     #[inline]
-    const fn with_mdf(&self, mdf: Mdf) -> Option<NaiveDate> {
+    const fn with_mdf(&self, mdf: Mdf) -> Result<NaiveDate, Error> {
         debug_assert!(self.year_flags().0 == mdf.year_flags().0);
-        match mdf.ordinal() {
-            Ok(ordinal) => {
-                Some(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
-            }
-            Err(_) => None, // Non-existing date
-        }
+        let ordinal = try_err!(mdf.ordinal());
+        Ok(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
@@ -1285,7 +1285,7 @@ impl NaiveDate {
     /// ```
     #[inline]
     pub const fn with_month(&self, month: u32) -> Option<NaiveDate> {
-        self.with_mdf(try_opt!(ok!(self.mdf().with_month(month))))
+        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_month(month)))))
     }
 
     /// Makes a new `NaiveDate` with the month number (starting from 0) changed.
@@ -1311,7 +1311,7 @@ impl NaiveDate {
     #[inline]
     pub const fn with_month0(&self, month0: u32) -> Option<NaiveDate> {
         let month = try_opt!(month0.checked_add(1));
-        self.with_mdf(try_opt!(ok!(self.mdf().with_month(month))))
+        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_month(month)))))
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 1) changed.
@@ -1335,7 +1335,7 @@ impl NaiveDate {
     /// ```
     #[inline]
     pub const fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        self.with_mdf(try_opt!(ok!(self.mdf().with_day(day))))
+        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_day(day)))))
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
@@ -1360,7 +1360,7 @@ impl NaiveDate {
     #[inline]
     pub const fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
         let day = try_opt!(day0.checked_add(1));
-        self.with_mdf(try_opt!(ok!(self.mdf().with_day(day))))
+        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_day(day)))))
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
