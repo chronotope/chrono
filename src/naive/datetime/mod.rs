@@ -773,7 +773,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub const fn with_month(&self, month: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { date: try_opt!(self.date.with_month(month)), ..*self })
+        Some(NaiveDateTime { date: try_opt!(ok!(self.date.with_month(month))), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 0) changed.
@@ -801,7 +801,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub const fn with_month0(&self, month0: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { date: try_opt!(self.date.with_month0(month0)), ..*self })
+        Some(NaiveDateTime { date: try_opt!(ok!(self.date.with_month0(month0))), ..*self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 1) changed.

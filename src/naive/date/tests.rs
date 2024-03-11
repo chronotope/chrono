@@ -377,14 +377,14 @@ fn test_date_with_fields() {
     assert_eq!(d.with_year(i32::MAX), Err(Error::OutOfRange));
 
     let d = NaiveDate::from_ymd(2000, 4, 30).unwrap();
-    assert_eq!(d.with_month(0), None);
-    assert_eq!(d.with_month(1), Some(NaiveDate::from_ymd(2000, 1, 30).unwrap()));
-    assert_eq!(d.with_month(2), None);
-    assert_eq!(d.with_month(3), Some(NaiveDate::from_ymd(2000, 3, 30).unwrap()));
-    assert_eq!(d.with_month(4), Some(NaiveDate::from_ymd(2000, 4, 30).unwrap()));
-    assert_eq!(d.with_month(12), Some(NaiveDate::from_ymd(2000, 12, 30).unwrap()));
-    assert_eq!(d.with_month(13), None);
-    assert_eq!(d.with_month(u32::MAX), None);
+    assert_eq!(d.with_month(0), Err(Error::InvalidArgument));
+    assert_eq!(d.with_month(1), NaiveDate::from_ymd(2000, 1, 30));
+    assert_eq!(d.with_month(2), Err(Error::DoesNotExist));
+    assert_eq!(d.with_month(3), NaiveDate::from_ymd(2000, 3, 30));
+    assert_eq!(d.with_month(4), NaiveDate::from_ymd(2000, 4, 30));
+    assert_eq!(d.with_month(12), NaiveDate::from_ymd(2000, 12, 30));
+    assert_eq!(d.with_month(13), Err(Error::InvalidArgument));
+    assert_eq!(d.with_month(u32::MAX), Err(Error::InvalidArgument));
 
     let d = NaiveDate::from_ymd(2000, 2, 8).unwrap();
     assert_eq!(d.with_day(0), None);
@@ -750,7 +750,7 @@ fn test_weeks_from() {
 #[test]
 fn test_with_0_overflow() {
     let dt = NaiveDate::from_ymd(2023, 4, 18).unwrap();
-    assert!(dt.with_month0(4294967295).is_none());
+    assert_eq!(dt.with_month0(u32::MAX), Err(Error::InvalidArgument));
     assert!(dt.with_day0(4294967295).is_none());
     assert!(dt.with_ordinal0(4294967295).is_none());
 }
