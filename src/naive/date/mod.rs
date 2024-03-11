@@ -1319,49 +1319,49 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `day(31)` in April).
-    /// - The value for `day` is invalid.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist (for example `day(31)` in
+    ///   April).
+    /// - [`Error::InvalidArgument`] if the value for `day` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(30),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 30).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day(31), None); // no September 31
+    /// let date = NaiveDate::from_ymd(2015, 9, 8)?;
+    /// assert_eq!(date.with_day(30), NaiveDate::from_ymd(2015, 9, 30));
+    /// assert_eq!(date.with_day(31), Err(Error::DoesNotExist)); // No September 31
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_day(&self, day: u32) -> Option<NaiveDate> {
-        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_day(day)))))
+    pub const fn with_day(&self, day: u32) -> Result<NaiveDate, Error> {
+        self.with_mdf(try_err!(self.mdf().with_day(day)))
     }
 
     /// Makes a new `NaiveDate` with the day of month (starting from 0) changed.
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `day(30)` in April).
-    /// - The value for `day0` is invalid.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist (for example `day0(30)` in
+    ///   April).
+    /// - [`Error::InvalidArgument`] if the value for `day0` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(29),
-    ///     Some(NaiveDate::from_ymd(2015, 9, 30).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::from_ymd(2015, 9, 8).unwrap().with_day0(30), None); // no September 31
+    /// let date = NaiveDate::from_ymd(2015, 9, 8)?;
+    /// assert_eq!(date.with_day0(29), NaiveDate::from_ymd(2015, 9, 30));
+    /// assert_eq!(date.with_day0(30), Err(Error::DoesNotExist)); // No September 31
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_day0(&self, day0: u32) -> Option<NaiveDate> {
-        let day = try_opt!(day0.checked_add(1));
-        ok!(self.with_mdf(try_opt!(ok!(self.mdf().with_day(day)))))
+    pub const fn with_day0(&self, day0: u32) -> Result<NaiveDate, Error> {
+        let day = try_ok_or!(day0.checked_add(1), Error::InvalidArgument);
+        self.with_mdf(try_err!(self.mdf().with_day(day)))
     }
 
     /// Makes a new `NaiveDate` with the day of year (starting from 1) changed.
