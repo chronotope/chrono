@@ -29,7 +29,7 @@ fn offset(d: &NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
 }
 
 // we have to store the `Cache` in an option as it can't
-// be initalized in a static context.
+// be initialized in a static context.
 thread_local! {
     static TZ_INFO: RefCell<Option<Cache>> = Default::default();
 }

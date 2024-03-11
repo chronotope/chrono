@@ -273,7 +273,7 @@ mod tests {
                 SystemTimeToFileTime(st, init.as_mut_ptr());
             }
             // SystemTimeToFileTime must have succeeded at this point, so we can assume the value is
-            // initalized.
+            // initialized.
             let filetime = unsafe { init.assume_init() };
             let bit_shift =
                 ((filetime.dwHighDateTime as u64) << 32) | (filetime.dwLowDateTime as u64);
