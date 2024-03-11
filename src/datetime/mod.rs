@@ -3,7 +3,7 @@
 
 //! ISO 8601 date and time with time zone.
 
-#[cfg(all(not(feature = "std"), feature = "alloc"))]
+#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::string::String;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
@@ -46,7 +46,7 @@ mod tests;
 /// There are some constructors implemented here (the `from_*` methods), but
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
@@ -1259,10 +1259,6 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
         self.overflowing_naive_local().nanosecond()
     }
 }
-
-// we need them as automatic impls cannot handle associated types
-impl<Tz: TimeZone> Copy for DateTime<Tz> where <Tz as TimeZone>::Offset: Copy {}
-unsafe impl<Tz: TimeZone> Send for DateTime<Tz> where <Tz as TimeZone>::Offset: Send {}
 
 impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<DateTime<Tz2>> for DateTime<Tz> {
     fn eq(&self, other: &DateTime<Tz2>) -> bool {

@@ -165,7 +165,7 @@ use super::{locales, Locale};
 use super::{Fixed, InternalInternal, Item, Numeric, Pad};
 #[cfg(any(feature = "alloc", feature = "std"))]
 use super::{ParseError, BAD_FORMAT};
-#[cfg(feature = "alloc")]
+#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::vec::Vec;
 
 /// Parsing iterator for `strftime`-like format strings.

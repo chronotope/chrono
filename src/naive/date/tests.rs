@@ -442,98 +442,102 @@ fn test_date_pred() {
 }
 
 #[test]
-fn test_date_add() {
-    fn check((y1, m1, d1): (i32, u32, u32), rhs: TimeDelta, ymd: Option<(i32, u32, u32)>) {
-        let lhs = NaiveDate::from_ymd(y1, m1, d1).unwrap();
-        let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd(y, m, d).unwrap());
-        assert_eq!(lhs.checked_add_signed(rhs), sum);
-        assert_eq!(lhs.checked_sub_signed(-rhs), sum);
+fn test_date_checked_add_signed() {
+    fn check(lhs: Option<NaiveDate>, delta: TimeDelta, rhs: Option<NaiveDate>) {
+        assert_eq!(lhs.unwrap().checked_add_signed(delta), rhs);
+        assert_eq!(lhs.unwrap().checked_sub_signed(-delta), rhs);
     }
+    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
 
-    check((2014, 1, 1), TimeDelta::zero(), Some((2014, 1, 1)));
-    check((2014, 1, 1), TimeDelta::seconds(86399).unwrap(), Some((2014, 1, 1)));
+    check(ymd(2014, 1, 1), TimeDelta::zero(), ymd(2014, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::seconds(86399).unwrap(), ymd(2014, 1, 1));
     // always round towards zero
-    check((2014, 1, 1), TimeDelta::seconds(-86399).unwrap(), Some((2014, 1, 1)));
-    check((2014, 1, 1), TimeDelta::days(1).unwrap(), Some((2014, 1, 2)));
-    check((2014, 1, 1), TimeDelta::days(-1).unwrap(), Some((2013, 12, 31)));
-    check((2014, 1, 1), TimeDelta::days(364).unwrap(), Some((2014, 12, 31)));
-    check((2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap(), Some((2018, 1, 1)));
-    check((2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap(), Some((2414, 1, 1)));
+    check(ymd(2014, 1, 1), TimeDelta::seconds(-86399).unwrap(), ymd(2014, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::days(1).unwrap(), ymd(2014, 1, 2));
+    check(ymd(2014, 1, 1), TimeDelta::days(-1).unwrap(), ymd(2013, 12, 31));
+    check(ymd(2014, 1, 1), TimeDelta::days(364).unwrap(), ymd(2014, 12, 31));
+    check(ymd(2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap(), ymd(2018, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap(), ymd(2414, 1, 1));
 
-    check((-7, 1, 1), TimeDelta::days(365 * 12 + 3).unwrap(), Some((5, 1, 1)));
+    check(ymd(-7, 1, 1), TimeDelta::days(365 * 12 + 3).unwrap(), ymd(5, 1, 1));
 
     // overflow check
     check(
-        (0, 1, 1),
+        ymd(0, 1, 1),
         TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap(),
-        Some((MAX_YEAR, 12, 31)),
+        ymd(MAX_YEAR, 12, 31),
     );
-    check((0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1).unwrap(), None);
-    check((0, 1, 1), TimeDelta::max_value(), None);
-    check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap(), Some((MIN_YEAR, 1, 1)));
-    check((0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1).unwrap(), None);
-    check((0, 1, 1), TimeDelta::min_value(), None);
+    check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1).unwrap(), None);
+    check(ymd(0, 1, 1), TimeDelta::max_value(), None);
+    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap(), ymd(MIN_YEAR, 1, 1));
+    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1).unwrap(), None);
+    check(ymd(0, 1, 1), TimeDelta::min_value(), None);
 }
 
 #[test]
-fn test_date_sub() {
-    fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: TimeDelta) {
-        let lhs = NaiveDate::from_ymd(y1, m1, d1).unwrap();
-        let rhs = NaiveDate::from_ymd(y2, m2, d2).unwrap();
-        assert_eq!(lhs.signed_duration_since(rhs), diff);
-        assert_eq!(rhs.signed_duration_since(lhs), -diff);
+fn test_date_signed_duration_since() {
+    fn check(lhs: Option<NaiveDate>, rhs: Option<NaiveDate>, delta: TimeDelta) {
+        assert_eq!(lhs.unwrap().signed_duration_since(rhs.unwrap()), delta);
+        assert_eq!(rhs.unwrap().signed_duration_since(lhs.unwrap()), -delta);
     }
+    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
 
-    check((2014, 1, 1), (2014, 1, 1), TimeDelta::zero());
-    check((2014, 1, 2), (2014, 1, 1), TimeDelta::days(1).unwrap());
-    check((2014, 12, 31), (2014, 1, 1), TimeDelta::days(364).unwrap());
-    check((2015, 1, 3), (2014, 1, 1), TimeDelta::days(365 + 2).unwrap());
-    check((2018, 1, 1), (2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap());
-    check((2414, 1, 1), (2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap());
+    check(ymd(2014, 1, 1), ymd(2014, 1, 1), TimeDelta::zero());
+    check(ymd(2014, 1, 2), ymd(2014, 1, 1), TimeDelta::days(1).unwrap());
+    check(ymd(2014, 12, 31), ymd(2014, 1, 1), TimeDelta::days(364).unwrap());
+    check(ymd(2015, 1, 3), ymd(2014, 1, 1), TimeDelta::days(365 + 2).unwrap());
+    check(ymd(2018, 1, 1), ymd(2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap());
+    check(ymd(2414, 1, 1), ymd(2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap());
 
-    check((MAX_YEAR, 12, 31), (0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap());
-    check((MIN_YEAR, 1, 1), (0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
+    check(
+        ymd(MAX_YEAR, 12, 31),
+        ymd(0, 1, 1),
+        TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap(),
+    );
+    check(ymd(MIN_YEAR, 1, 1), ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
 }
 
 #[test]
 fn test_date_add_days() {
-    fn check((y1, m1, d1): (i32, u32, u32), rhs: Days, ymd: Option<(i32, u32, u32)>) {
-        let lhs = NaiveDate::from_ymd(y1, m1, d1).unwrap();
-        let sum = ymd.map(|(y, m, d)| NaiveDate::from_ymd(y, m, d).unwrap());
-        assert_eq!(lhs.checked_add_days(rhs), sum);
+    fn check(lhs: Option<NaiveDate>, days: Days, rhs: Option<NaiveDate>) {
+        assert_eq!(lhs.unwrap().checked_add_days(days), rhs);
     }
+    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
 
-    check((2014, 1, 1), Days::new(0), Some((2014, 1, 1)));
+    check(ymd(2014, 1, 1), Days::new(0), ymd(2014, 1, 1));
     // always round towards zero
-    check((2014, 1, 1), Days::new(1), Some((2014, 1, 2)));
-    check((2014, 1, 1), Days::new(364), Some((2014, 12, 31)));
-    check((2014, 1, 1), Days::new(365 * 4 + 1), Some((2018, 1, 1)));
-    check((2014, 1, 1), Days::new(365 * 400 + 97), Some((2414, 1, 1)));
+    check(ymd(2014, 1, 1), Days::new(1), ymd(2014, 1, 2));
+    check(ymd(2014, 1, 1), Days::new(364), ymd(2014, 12, 31));
+    check(ymd(2014, 1, 1), Days::new(365 * 4 + 1), ymd(2018, 1, 1));
+    check(ymd(2014, 1, 1), Days::new(365 * 400 + 97), ymd(2414, 1, 1));
 
-    check((-7, 1, 1), Days::new(365 * 12 + 3), Some((5, 1, 1)));
+    check(ymd(-7, 1, 1), Days::new(365 * 12 + 3), ymd(5, 1, 1));
 
     // overflow check
-    check((0, 1, 1), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()), Some((MAX_YEAR, 12, 31)));
-    check((0, 1, 1), Days::new(u64::try_from(MAX_DAYS_FROM_YEAR_0).unwrap() + 1), None);
+    check(ymd(0, 1, 1), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()), ymd(MAX_YEAR, 12, 31));
+    check(ymd(0, 1, 1), Days::new(u64::try_from(MAX_DAYS_FROM_YEAR_0).unwrap() + 1), None);
 }
 
 #[test]
 fn test_date_sub_days() {
-    fn check((y1, m1, d1): (i32, u32, u32), (y2, m2, d2): (i32, u32, u32), diff: Days) {
-        let lhs = NaiveDate::from_ymd(y1, m1, d1).unwrap();
-        let rhs = NaiveDate::from_ymd(y2, m2, d2).unwrap();
-        assert_eq!(lhs - diff, rhs);
+    fn check(lhs: Option<NaiveDate>, days: Days, rhs: Option<NaiveDate>) {
+        assert_eq!(lhs.unwrap().checked_sub_days(days), rhs);
     }
+    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
 
-    check((2014, 1, 1), (2014, 1, 1), Days::new(0));
-    check((2014, 1, 2), (2014, 1, 1), Days::new(1));
-    check((2014, 12, 31), (2014, 1, 1), Days::new(364));
-    check((2015, 1, 3), (2014, 1, 1), Days::new(365 + 2));
-    check((2018, 1, 1), (2014, 1, 1), Days::new(365 * 4 + 1));
-    check((2414, 1, 1), (2014, 1, 1), Days::new(365 * 400 + 97));
+    check(ymd(2014, 1, 1), Days::new(0), ymd(2014, 1, 1));
+    check(ymd(2014, 1, 2), Days::new(1), ymd(2014, 1, 1));
+    check(ymd(2014, 12, 31), Days::new(364), ymd(2014, 1, 1));
+    check(ymd(2015, 1, 3), Days::new(365 + 2), ymd(2014, 1, 1));
+    check(ymd(2018, 1, 1), Days::new(365 * 4 + 1), ymd(2014, 1, 1));
+    check(ymd(2414, 1, 1), Days::new(365 * 400 + 97), ymd(2014, 1, 1));
 
-    check((MAX_YEAR, 12, 31), (0, 1, 1), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()));
-    check((0, 1, 1), (MIN_YEAR, 1, 1), Days::new((-MIN_DAYS_FROM_YEAR_0).try_into().unwrap()));
+    check(ymd(MAX_YEAR, 12, 31), Days::new(MAX_DAYS_FROM_YEAR_0.try_into().unwrap()), ymd(0, 1, 1));
+    check(
+        ymd(0, 1, 1),
+        Days::new((-MIN_DAYS_FROM_YEAR_0).try_into().unwrap()),
+        ymd(MIN_YEAR, 1, 1),
+    );
 }
 
 #[test]

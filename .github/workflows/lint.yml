@@ -29,10 +29,10 @@ jobs:
           cargo clippy --target=x86_64-pc-windows-msvc --all-targets --color=always \
             -- -D warnings
       - run: |
-          cargo clippy --manifest-path fuzz/Cargo.toml --color=always \
+          cargo clippy --manifest-path fuzz/Cargo.toml --all-targets --color=always \
             -- -D warnings
       - run: |
-          cargo clippy --manifest-path bench/Cargo.toml --color=always \
+          cargo clippy --manifest-path bench/Cargo.toml --all-targets --color=always \
             -- -D warnings
         env:
           RUSTFLAGS: "-Dwarnings"

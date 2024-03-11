@@ -30,7 +30,7 @@
 //! # Ok::<(), chrono::ParseError>(())
 //! ```
 
-#[cfg(all(not(feature = "std"), feature = "alloc"))]
+#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::boxed::Box;
 use core::fmt;
 use core::str::FromStr;

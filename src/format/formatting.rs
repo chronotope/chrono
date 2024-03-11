@@ -3,7 +3,7 @@
 
 //! Date and time formatting routines.
 
-#[cfg(all(not(feature = "std"), feature = "alloc"))]
+#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::string::{String, ToString};
 #[cfg(feature = "alloc")]
 use core::borrow::Borrow;
@@ -20,8 +20,6 @@ use crate::{NaiveDate, NaiveTime, Weekday};
 
 #[cfg(feature = "alloc")]
 use super::locales;
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-use super::Locale;
 #[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
 use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
 #[cfg(feature = "alloc")]
