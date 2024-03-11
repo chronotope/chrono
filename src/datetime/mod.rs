@@ -621,7 +621,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[inline]
     pub fn with_day(&self, day: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_day(day))
+        map_local(self, |datetime| datetime.with_day(day).ok())
     }
 
     /// Makes a new `DateTime` with the day of month (starting from 0) changed.
@@ -637,7 +637,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[inline]
     pub fn with_day0(&self, day0: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_day0(day0))
+        map_local(self, |datetime| datetime.with_day0(day0).ok())
     }
 
     /// Makes a new `DateTime` with the day of year (starting from 1) changed.
