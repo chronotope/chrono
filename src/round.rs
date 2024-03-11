@@ -6,7 +6,6 @@
 use crate::{DateTime, NaiveDateTime, TimeDelta, TimeZone, Timelike};
 use core::cmp::Ordering;
 use core::fmt;
-use core::marker::Sized;
 use core::ops::{Add, Sub};
 
 /// Extension trait for subsecond rounding or truncation to a maximum number

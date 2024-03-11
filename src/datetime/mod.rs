@@ -3,7 +3,7 @@
 
 //! ISO 8601 date and time with time zone.
 
-#[cfg(all(not(feature = "std"), feature = "alloc"))]
+#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::string::String;
 use core::borrow::Borrow;
 use core::cmp::Ordering;
