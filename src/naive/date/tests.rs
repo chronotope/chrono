@@ -422,23 +422,25 @@ fn test_date_num_days_from_ce() {
 }
 
 #[test]
-fn test_date_succ() {
-    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
-    assert_eq!(ymd(2014, 5, 6).succ(), Some(ymd(2014, 5, 7)));
-    assert_eq!(ymd(2014, 5, 31).succ(), Some(ymd(2014, 6, 1)));
-    assert_eq!(ymd(2014, 12, 31).succ(), Some(ymd(2015, 1, 1)));
-    assert_eq!(ymd(2016, 2, 28).succ(), Some(ymd(2016, 2, 29)));
-    assert_eq!(ymd(NaiveDate::MAX.year(), 12, 31).succ(), None);
+fn test_date_succ() -> Result<(), Error> {
+    let ymd = NaiveDate::from_ymd;
+    assert_eq!(ymd(2014, 5, 6)?.succ(), ymd(2014, 5, 7));
+    assert_eq!(ymd(2014, 5, 31)?.succ(), ymd(2014, 6, 1));
+    assert_eq!(ymd(2014, 12, 31)?.succ(), ymd(2015, 1, 1));
+    assert_eq!(ymd(2016, 2, 28)?.succ(), ymd(2016, 2, 29));
+    assert_eq!(ymd(NaiveDate::MAX.year(), 12, 31)?.succ(), Err(Error::OutOfRange));
+    Ok(())
 }
 
 #[test]
-fn test_date_pred() {
-    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
-    assert_eq!(ymd(2016, 3, 1).pred(), Some(ymd(2016, 2, 29)));
-    assert_eq!(ymd(2015, 1, 1).pred(), Some(ymd(2014, 12, 31)));
-    assert_eq!(ymd(2014, 6, 1).pred(), Some(ymd(2014, 5, 31)));
-    assert_eq!(ymd(2014, 5, 7).pred(), Some(ymd(2014, 5, 6)));
-    assert_eq!(ymd(NaiveDate::MIN.year(), 1, 1).pred(), None);
+fn test_date_pred() -> Result<(), Error> {
+    let ymd = NaiveDate::from_ymd;
+    assert_eq!(ymd(2016, 3, 1)?.pred(), ymd(2016, 2, 29));
+    assert_eq!(ymd(2015, 1, 1)?.pred(), ymd(2014, 12, 31));
+    assert_eq!(ymd(2014, 6, 1)?.pred(), ymd(2014, 5, 31));
+    assert_eq!(ymd(2014, 5, 7)?.pred(), ymd(2014, 5, 6));
+    assert_eq!(ymd(NaiveDate::MIN.year(), 1, 1)?.pred(), Err(Error::OutOfRange));
+    Ok(())
 }
 
 #[test]
