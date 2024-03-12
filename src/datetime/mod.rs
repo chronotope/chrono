@@ -25,7 +25,7 @@ use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat, SecondsFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
+use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 #[allow(deprecated)]
 use crate::Date;
 use crate::{expect, try_opt};
@@ -682,6 +682,31 @@ impl<Tz: TimeZone> DateTime<Tz> {
         write_rfc3339(&mut result, self.naive_local(), self.offset.fix(), secform, use_z)
             .expect("writing rfc3339 datetime to string should never fail");
         result
+    }
+
+    /// Set the time to a new fixed time on the existing date.
+    ///
+    /// # Errors
+    ///
+    /// Returns `LocalResult::None` if the datetime is at the edge of the representable range for a
+    /// `DateTime`, and `with_time` would push the value in UTC out of range.
+    ///
+    /// # Example
+    ///
+    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
+    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// use chrono::{Local, NaiveTime};
+    ///
+    /// let noon = NaiveTime::from_hms_opt(12, 0, 0).unwrap();
+    /// let today_noon = Local::now().with_time(noon);
+    /// let today_midnight = Local::now().with_time(NaiveTime::MIN);
+    ///
+    /// assert_eq!(today_noon.single().unwrap().time(), noon);
+    /// assert_eq!(today_midnight.single().unwrap().time(), NaiveTime::MIN);
+    /// ```
+    #[must_use]
+    pub fn with_time(&self, time: NaiveTime) -> LocalResult<Self> {
+        self.timezone().from_local_datetime(&self.overflowing_naive_local().date().and_time(time))
     }
 
     /// The minimum possible `DateTime<Utc>`.
