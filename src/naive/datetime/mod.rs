@@ -359,8 +359,8 @@ impl NaiveDateTime {
     pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
         let (time, days) = self.time.overflowing_add_offset(rhs);
         let date = match days {
-            -1 => try_opt!(self.date.pred()),
-            1 => try_opt!(self.date.succ()),
+            -1 => try_opt!(ok!(self.date.pred())),
+            1 => try_opt!(ok!(self.date.succ())),
             _ => self.date,
         };
         Some(NaiveDateTime { date, time })
@@ -374,8 +374,8 @@ impl NaiveDateTime {
     pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
         let (time, days) = self.time.overflowing_sub_offset(rhs);
         let date = match days {
-            -1 => try_opt!(self.date.pred()),
-            1 => try_opt!(self.date.succ()),
+            -1 => try_opt!(ok!(self.date.pred())),
+            1 => try_opt!(ok!(self.date.succ())),
             _ => self.date,
         };
         Some(NaiveDateTime { date, time })

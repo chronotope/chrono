@@ -823,26 +823,22 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` when `self` is the last representable date.
+    /// Returns [`Error::OutOfRange`] when `self` is the last representable date.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 6, 3).unwrap().succ(),
-    ///     Some(NaiveDate::from_ymd(2015, 6, 4).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::MAX.succ(), None);
+    /// # use chrono::{NaiveDate, Error};
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3)?.succ(), NaiveDate::from_ymd(2015, 6, 4));
+    /// assert_eq!(NaiveDate::MAX.succ(), Err(Error::OutOfRange));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn succ(&self) -> Option<NaiveDate> {
+    pub const fn succ(&self) -> Result<NaiveDate, Error> {
         let new_ol = (self.yof() & OL_MASK) + (1 << 4);
         match new_ol <= MAX_OL {
-            true => Some(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
-            false => ok!(NaiveDate::from_yo(self.year() + 1, 1)),
+            true => Ok(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
+            false => NaiveDate::from_yo(self.year() + 1, 1),
         }
     }
 
@@ -850,26 +846,22 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` when `self` is the first representable date.
+    /// Returns [`Error::OutOfRange`] when `self` is the first representable date.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
-    ///
-    /// assert_eq!(
-    ///     NaiveDate::from_ymd(2015, 6, 3).unwrap().pred(),
-    ///     Some(NaiveDate::from_ymd(2015, 6, 2).unwrap())
-    /// );
-    /// assert_eq!(NaiveDate::MIN.pred(), None);
+    /// # use chrono::{NaiveDate, Error};
+    /// assert_eq!(NaiveDate::from_ymd(2015, 6, 3)?.pred(), NaiveDate::from_ymd(2015, 6, 2));
+    /// assert_eq!(NaiveDate::MIN.pred(), Err(Error::OutOfRange));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    #[must_use]
-    pub const fn pred(&self) -> Option<NaiveDate> {
+    pub const fn pred(&self) -> Result<NaiveDate, Error> {
         let new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
         match new_shifted_ordinal > 0 {
-            true => Some(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
-            false => ok!(NaiveDate::from_ymd(self.year() - 1, 12, 31)),
+            true => Ok(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
+            false => NaiveDate::from_ymd(self.year() - 1, 12, 31),
         }
     }
 
@@ -1961,7 +1953,7 @@ impl Iterator for NaiveDateDaysIterator {
         // We return the current value, and have no way to return `NaiveDate::MAX`.
         let current = self.value;
         // This can't panic because current is < NaiveDate::MAX:
-        self.value = current.succ()?;
+        self.value = current.succ().ok()?;
         Some(current)
     }
 
@@ -1977,7 +1969,7 @@ impl DoubleEndedIterator for NaiveDateDaysIterator {
     fn next_back(&mut self) -> Option<Self::Item> {
         // We return the current value, and have no way to return `NaiveDate::MIN`.
         let current = self.value;
-        self.value = current.pred()?;
+        self.value = current.pred().ok()?;
         Some(current)
     }
 }
