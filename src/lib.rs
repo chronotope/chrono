@@ -511,7 +511,7 @@ pub mod format;
 /// L10n locales.
 #[cfg(feature = "unstable-locales")]
 pub use format::Locale;
-pub use format::{ParseError, ParseResult, SecondsFormat};
+pub use format::{ParseResult, SecondsFormat};
 
 pub mod naive;
 #[doc(inline)]

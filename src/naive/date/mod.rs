@@ -30,8 +30,8 @@ use pure_rust_locales::Locale;
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseResult, Parsed,
+    StrftimeItems,
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
@@ -1962,7 +1962,7 @@ impl fmt::Display for NaiveDate {
 /// assert!("foo".parse::<NaiveDate>().is_err());
 /// ```
 impl str::FromStr for NaiveDate {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<NaiveDate> {
         const ITEMS: &[Item<'static>] = &[

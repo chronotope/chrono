@@ -28,7 +28,7 @@
 //! let parsed = NaiveDateTime::parse_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?.in_utc();
 //! assert_eq!(parsed, date_time);
 //! # }
-//! # Ok::<(), chrono::ParseError>(())
+//! # Ok::<(), chrono::Error>(())
 //! ```
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
@@ -379,11 +379,8 @@ impl<'a> Item<'a> {
     }
 }
 
-/// An error from the `parse` function.
-pub type ParseError = Error;
-
-/// Same as `Result<T, ParseError>`.
-pub type ParseResult<T> = Result<T, ParseError>;
+/// Same as `Result<T, Error>`.
+pub type ParseResult<T> = Result<T, Error>;
 
 // to be used in this module and submodules
 pub(crate) const OUT_OF_RANGE: Error = Error::InvalidArgument;

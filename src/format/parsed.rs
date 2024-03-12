@@ -87,7 +87,7 @@ use crate::{DateTime, Datelike, Error, TimeDelta, Timelike, Weekday};
 ///     .set_offset(0)?;
 /// assert_eq!(parsed.to_datetime(), Err(Error::Inconsistent));
 /// # }
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 ///
 /// The same using chrono's build-in parser for RFC 2822 (the [RFC2822 formatting item]) and
@@ -119,7 +119,7 @@ use crate::{DateTime, Datelike, Error, TimeDelta, Timelike, Weekday};
 ///     assert_eq!(parsed.weekday(), Some(Weekday::Thu));
 /// }
 /// # }
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 #[derive(Clone, PartialEq, Eq, Debug, Default, Hash)]
 pub struct Parsed {
@@ -1123,12 +1123,12 @@ fn resolve_week_date(
 
 #[cfg(test)]
 mod tests {
-    use super::super::{ParseError, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
+    use super::super::{IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
     use super::Parsed;
     use crate::naive::{NaiveDate, NaiveTime};
     use crate::offset::{FixedOffset, TimeZone, Utc};
-    use crate::Datelike;
     use crate::Weekday::*;
+    use crate::{Datelike, Error};
 
     #[test]
     fn test_parsed_set_fields() {
@@ -1751,7 +1751,7 @@ mod tests {
     }
 
     #[test]
-    fn issue_551() -> Result<(), ParseError> {
+    fn issue_551() -> Result<(), Error> {
         use crate::Weekday;
         assert_eq!(
             NaiveDate::from_ymd(2002, 6, 3).unwrap(),

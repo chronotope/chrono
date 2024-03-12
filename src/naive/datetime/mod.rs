@@ -15,7 +15,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
-use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
+use crate::format::{parse, parse_and_remainder, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
@@ -1710,7 +1710,7 @@ impl fmt::Display for NaiveDateTime {
 /// assert!("foo".parse::<NaiveDateTime>().is_err());
 /// ```
 impl str::FromStr for NaiveDateTime {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<NaiveDateTime> {
         const ITEMS: &[Item<'static>] = &[

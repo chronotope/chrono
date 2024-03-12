@@ -9,10 +9,10 @@ use core::str;
 use core::usize;
 
 use super::scan;
+use super::ParseResult;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
-use super::{ParseError, ParseResult};
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
-use crate::{DateTime, FixedOffset, Weekday};
+use crate::{DateTime, Error, FixedOffset, Weekday};
 
 fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
     p.set_weekday(match v {
@@ -288,7 +288,7 @@ fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
     items: I,
-) -> Result<&'b str, ParseError>
+) -> Result<&'b str, Error>
 where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
@@ -521,10 +521,10 @@ where
 /// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>()?;
 /// "2012-12-12 12:12:12Z".parse::<DateTime<FixedOffset>>()?;
 /// "2012-  12-12T12:  12:12Z".parse::<DateTime<FixedOffset>>()?;
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 impl str::FromStr for DateTime<FixedOffset> {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::default();
@@ -718,7 +718,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_numeric() -> Result<(), ParseError> {
+    fn test_parse_numeric() -> Result<(), Error> {
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
 
@@ -845,7 +845,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_fixed() -> Result<(), ParseError> {
+    fn test_parse_fixed() -> Result<(), Error> {
         use crate::format::Fixed::*;
         use crate::format::Item::{Literal, Space};
 
@@ -914,7 +914,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_fixed_nanosecond() -> Result<(), ParseError> {
+    fn test_parse_fixed_nanosecond() -> Result<(), Error> {
         use crate::format::Fixed::Nanosecond;
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
@@ -1015,7 +1015,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_fixed_timezone_offset() -> Result<(), ParseError> {
+    fn test_parse_fixed_timezone_offset() -> Result<(), Error> {
         use crate::format::Fixed::*;
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
@@ -1452,7 +1452,7 @@ mod tests {
 
     #[test]
     #[rustfmt::skip]
-    fn test_parse_practical_examples() -> Result<(), ParseError> {
+    fn test_parse_practical_examples() -> Result<(), Error> {
         use crate::format::InternalInternal::*;
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
