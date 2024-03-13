@@ -1,48 +1,50 @@
 use super::NaiveDateTime;
-use crate::{Datelike, FixedOffset, LocalResult, NaiveDate, TimeDelta, Utc};
+use crate::{Datelike, Error, FixedOffset, LocalResult, NaiveDate, TimeDelta, Utc};
 
 #[test]
-fn test_datetime_add() {
+fn test_datetime_add() -> Result<(), Error> {
     fn check(
         (y, m, d, h, n, s): (i32, u32, u32, u32, u32, u32),
         rhs: TimeDelta,
-        result: Option<(i32, u32, u32, u32, u32, u32)>,
-    ) {
-        let lhs = NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
-        let sum = result.map(|(y, m, d, h, n, s)| {
-            NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap()
-        });
+        result: Result<(i32, u32, u32, u32, u32, u32), Error>,
+    ) -> Result<(), Error> {
+        let lhs = NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s)?;
+        let sum = match result {
+            Ok((y, m, d, h, n, s)) => NaiveDate::from_ymd(y, m, d)?.and_hms(h, n, s),
+            Err(e) => Err(e),
+        };
         assert_eq!(lhs.checked_add_signed(rhs), sum);
         assert_eq!(lhs.checked_sub_signed(-rhs), sum);
+        Ok(())
     }
     let seconds = TimeDelta::seconds;
 
-    check((2014, 5, 6, 7, 8, 9), seconds(3600 + 60 + 1), Some((2014, 5, 6, 8, 9, 10)));
-    check((2014, 5, 6, 7, 8, 9), seconds(-(3600 + 60 + 1)), Some((2014, 5, 6, 6, 7, 8)));
-    check((2014, 5, 6, 7, 8, 9), seconds(86399), Some((2014, 5, 7, 7, 8, 8)));
-    check((2014, 5, 6, 7, 8, 9), seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
-    check((2014, 5, 6, 7, 8, 9), seconds(-86_400 * 10), Some((2014, 4, 26, 7, 8, 9)));
-    check((2014, 5, 6, 7, 8, 9), seconds(86_400 * 10), Some((2014, 5, 16, 7, 8, 9)));
+    check((2014, 5, 6, 7, 8, 9), seconds(3600 + 60 + 1), Ok((2014, 5, 6, 8, 9, 10)))?;
+    check((2014, 5, 6, 7, 8, 9), seconds(-(3600 + 60 + 1)), Ok((2014, 5, 6, 6, 7, 8)))?;
+    check((2014, 5, 6, 7, 8, 9), seconds(86399), Ok((2014, 5, 7, 7, 8, 8)))?;
+    check((2014, 5, 6, 7, 8, 9), seconds(86_400 * 10), Ok((2014, 5, 16, 7, 8, 9)))?;
+    check((2014, 5, 6, 7, 8, 9), seconds(-86_400 * 10), Ok((2014, 4, 26, 7, 8, 9)))?;
+    check((2014, 5, 6, 7, 8, 9), seconds(86_400 * 10), Ok((2014, 5, 16, 7, 8, 9)))?;
 
     // overflow check
     // assumes that we have correct values for MAX/MIN_DAYS_FROM_YEAR_0 from `naive::date`.
     // (they are private constants, but the equivalence is tested in that module.)
-    let max_days_from_year_0 =
-        NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(0, 1, 1).unwrap());
-    check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Some((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)));
+    let max_days_from_year_0 = NaiveDate::MAX.signed_duration_since(NaiveDate::from_ymd(0, 1, 1)?);
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0, Ok((NaiveDate::MAX.year(), 12, 31, 0, 0, 0)))?;
     check(
         (0, 1, 1, 0, 0, 0),
         max_days_from_year_0 + seconds(86399),
-        Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
-    );
-    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + seconds(86_400), None);
-    check((0, 1, 1, 0, 0, 0), TimeDelta::max_value(), None);
+        Ok((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
+    )?;
+    check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + seconds(86_400), Err(Error::OutOfRange))?;
+    check((0, 1, 1, 0, 0, 0), TimeDelta::max_value(), Err(Error::OutOfRange))?;
 
     let min_days_from_year_0 =
         NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd(0, 1, 1).unwrap());
-    check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
-    check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - seconds(1), None);
-    check((0, 1, 1, 0, 0, 0), TimeDelta::min_value(), None);
+    check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Ok((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)))?;
+    check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - seconds(1), Err(Error::OutOfRange))?;
+    check((0, 1, 1, 0, 0, 0), TimeDelta::min_value(), Err(Error::OutOfRange))?;
+    Ok(())
 }
 
 #[test]
