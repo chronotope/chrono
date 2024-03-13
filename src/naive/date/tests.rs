@@ -447,11 +447,11 @@ fn test_date_pred() -> Result<(), Error> {
 
 #[test]
 fn test_date_checked_add_signed() {
-    fn check(lhs: Option<NaiveDate>, delta: TimeDelta, rhs: Option<NaiveDate>) {
+    fn check(lhs: Result<NaiveDate, Error>, delta: TimeDelta, rhs: Result<NaiveDate, Error>) {
         assert_eq!(lhs.unwrap().checked_add_signed(delta), rhs);
         assert_eq!(lhs.unwrap().checked_sub_signed(-delta), rhs);
     }
-    let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
+    let ymd = NaiveDate::from_ymd;
 
     check(ymd(2014, 1, 1), TimeDelta::zero(), ymd(2014, 1, 1));
     check(ymd(2014, 1, 1), TimeDelta::seconds(86399), ymd(2014, 1, 1));
@@ -467,11 +467,11 @@ fn test_date_checked_add_signed() {
 
     // overflow check
     check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0), ymd(MAX_YEAR, 12, 31));
-    check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 + 1), None);
-    check(ymd(0, 1, 1), TimeDelta::max_value(), None);
+    check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 + 1), Err(Error::OutOfRange));
+    check(ymd(0, 1, 1), TimeDelta::max_value(), Err(Error::OutOfRange));
     check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0), ymd(MIN_YEAR, 1, 1));
-    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 - 1), None);
-    check(ymd(0, 1, 1), TimeDelta::min_value(), None);
+    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 - 1), Err(Error::OutOfRange));
+    check(ymd(0, 1, 1), TimeDelta::min_value(), Err(Error::OutOfRange));
 }
 
 #[test]
