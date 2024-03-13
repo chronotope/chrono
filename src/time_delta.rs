@@ -16,7 +16,7 @@ use core::{fmt, i64};
 #[cfg(feature = "std")]
 use std::error::Error;
 
-use crate::try_opt;
+use crate::{expect, try_opt};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -94,15 +94,10 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of weeks.
     ///
-    /// Equivalent to `TimeDelta::seconds(weeks * 7 * 24 * 60 * 60)` with
-    /// overflow checks.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when the `TimeDelta` would be out of bounds.
+    /// Equivalent to `TimeDelta::new(weeks as i64 * 7 * 24 * 60 * 60).unwrap()`.
     #[inline]
-    pub const fn weeks(weeks: i64) -> Option<TimeDelta> {
-        TimeDelta::seconds(try_opt!(weeks.checked_mul(SECS_PER_WEEK)))
+    pub const fn weeks(weeks: i32) -> TimeDelta {
+        expect!(TimeDelta::new(weeks as i64 * SECS_PER_WEEK, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of days.
@@ -541,6 +536,17 @@ mod tests {
     use super::{TimeDelta, MAX, MIN};
     use crate::expect;
     use core::time::Duration;
+
+    #[test]
+    fn test_timedelta_max_value() {
+        const MAX: TimeDelta = TimeDelta::max_value();
+        dbg!(MAX.num_weeks());
+        assert!(MAX.num_weeks() > i32::MAX as i64);
+        dbg!(MAX.num_days());
+        assert!(MAX.num_days() > i32::MAX as i64);
+        dbg!(MAX.num_hours());
+        assert!(MAX.num_hours() > i32::MAX as i64);
+    }
 
     #[test]
     fn test_duration() {
@@ -1108,7 +1114,7 @@ mod tests {
 
     #[test]
     fn test_duration_const() {
-        const ONE_WEEK: TimeDelta = expect!(TimeDelta::weeks(1), "");
+        const ONE_WEEK: TimeDelta = TimeDelta::weeks(1);
         const ONE_DAY: TimeDelta = expect!(TimeDelta::days(1), "");
         const ONE_HOUR: TimeDelta = expect!(TimeDelta::hours(1), "");
         const ONE_MINUTE: TimeDelta = expect!(TimeDelta::minutes(1), "");
