@@ -290,12 +290,12 @@ fn test_and_utc() {
 }
 
 #[test]
-fn test_checked_add_offset() {
+fn test_checked_add_offset() -> Result<(), Error> {
     let ymdhmsm = |y, m, d, h, mn, s, mi| {
-        Some(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli(h, mn, s, mi).unwrap())
+        NaiveDate::from_ymd(y, m, d).and_then(|d| d.and_hms_milli(h, mn, s, mi))
     };
 
-    let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
+    let positive_offset = FixedOffset::east(2 * 60 * 60)?;
     // regular date
     let dt = ymdhmsm(2023, 5, 5, 20, 10, 0, 0).unwrap();
     assert_eq!(dt.checked_add_offset(positive_offset), ymdhmsm(2023, 5, 5, 22, 10, 0, 0));
@@ -303,7 +303,7 @@ fn test_checked_add_offset() {
     let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
     assert_eq!(dt.checked_add_offset(positive_offset), ymdhmsm(2023, 7, 1, 1, 59, 59, 1_000));
     // out of range
-    assert!(NaiveDateTime::MAX.checked_add_offset(positive_offset).is_none());
+    assert_eq!(NaiveDateTime::MAX.checked_add_offset(positive_offset), Err(Error::OutOfRange));
 
     let negative_offset = FixedOffset::west(2 * 60 * 60).unwrap();
     // regular date
@@ -313,13 +313,16 @@ fn test_checked_add_offset() {
     let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
     assert_eq!(dt.checked_add_offset(negative_offset), ymdhmsm(2023, 6, 30, 21, 59, 59, 1_000));
     // out of range
-    assert!(NaiveDateTime::MIN.checked_add_offset(negative_offset).is_none());
+    assert_eq!(NaiveDateTime::MIN.checked_add_offset(negative_offset), Err(Error::OutOfRange));
+
+    assert_eq!(dt.checked_add_offset(positive_offset), Ok(dt + positive_offset));
+    Ok(())
 }
 
 #[test]
-fn test_checked_sub_offset() {
+fn test_checked_sub_offset() -> Result<(), Error> {
     let ymdhmsm = |y, m, d, h, mn, s, mi| {
-        Some(NaiveDate::from_ymd(y, m, d).unwrap().and_hms_milli(h, mn, s, mi).unwrap())
+        NaiveDate::from_ymd(y, m, d).and_then(|d| d.and_hms_milli(h, mn, s, mi))
     };
 
     let positive_offset = FixedOffset::east(2 * 60 * 60).unwrap();
@@ -330,7 +333,7 @@ fn test_checked_sub_offset() {
     let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
     assert_eq!(dt.checked_sub_offset(positive_offset), ymdhmsm(2023, 6, 30, 21, 59, 59, 1_000));
     // out of range
-    assert!(NaiveDateTime::MIN.checked_sub_offset(positive_offset).is_none());
+    assert_eq!(NaiveDateTime::MIN.checked_sub_offset(positive_offset), Err(Error::OutOfRange));
 
     let negative_offset = FixedOffset::west(2 * 60 * 60).unwrap();
     // regular date
@@ -340,10 +343,10 @@ fn test_checked_sub_offset() {
     let dt = ymdhmsm(2023, 6, 30, 23, 59, 59, 1_000).unwrap();
     assert_eq!(dt.checked_sub_offset(negative_offset), ymdhmsm(2023, 7, 1, 1, 59, 59, 1_000));
     // out of range
-    assert!(NaiveDateTime::MAX.checked_sub_offset(negative_offset).is_none());
+    assert_eq!(NaiveDateTime::MAX.checked_sub_offset(negative_offset), Err(Error::OutOfRange));
 
-    assert_eq!(dt.checked_add_offset(positive_offset), Some(dt + positive_offset));
-    assert_eq!(dt.checked_sub_offset(positive_offset), Some(dt - positive_offset));
+    assert_eq!(dt.checked_sub_offset(positive_offset), Ok(dt - positive_offset));
+    Ok(())
 }
 
 #[test]

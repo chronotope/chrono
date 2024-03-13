@@ -351,34 +351,41 @@ impl NaiveDateTime {
     }
 
     /// Adds given `FixedOffset` to the current datetime.
-    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
     ///
     /// This method is similar to [`checked_add_signed`](#method.checked_add_offset), but preserves
     /// leap seconds.
-    #[must_use]
-    pub const fn checked_add_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`] if the result would be outside the valid range for
+    /// [`NaiveDateTime`].
+    pub const fn checked_add_offset(self, rhs: FixedOffset) -> Result<NaiveDateTime, Error> {
         let (time, days) = self.time.overflowing_add_offset(rhs);
         let date = match days {
-            -1 => try_opt!(ok!(self.date.pred())),
-            1 => try_opt!(ok!(self.date.succ())),
+            -1 => try_err!(self.date.pred()),
+            1 => try_err!(self.date.succ()),
             _ => self.date,
         };
-        Some(NaiveDateTime { date, time })
+        Ok(NaiveDateTime { date, time })
     }
 
     /// Subtracts given `FixedOffset` from the current datetime.
-    /// Returns `None` if the result would be outside the valid range for [`NaiveDateTime`].
     ///
     /// This method is similar to [`checked_sub_signed`](#method.checked_sub_signed), but preserves
     /// leap seconds.
-    pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Option<NaiveDateTime> {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`] if the result would be outside the valid range for
+    /// [`NaiveDateTime`].
+    pub const fn checked_sub_offset(self, rhs: FixedOffset) -> Result<NaiveDateTime, Error> {
         let (time, days) = self.time.overflowing_sub_offset(rhs);
         let date = match days {
-            -1 => try_opt!(ok!(self.date.pred())),
-            1 => try_opt!(ok!(self.date.succ())),
+            -1 => try_err!(self.date.pred()),
+            1 => try_err!(self.date.succ()),
             _ => self.date,
         };
-        Some(NaiveDateTime { date, time })
+        Ok(NaiveDateTime { date, time })
     }
 
     /// Adds given `FixedOffset` to the current datetime.
