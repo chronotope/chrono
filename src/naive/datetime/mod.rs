@@ -304,7 +304,7 @@ impl NaiveDateTime {
     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
         let (time, remainder) = self.time.overflowing_add_signed(rhs);
         let remainder = try_opt!(TimeDelta::new(remainder, 0));
-        let date = try_opt!(self.date.checked_add_signed(remainder));
+        let date = try_opt!(ok!(self.date.checked_add_signed(remainder)));
         Some(NaiveDateTime { date, time })
     }
 
@@ -475,7 +475,7 @@ impl NaiveDateTime {
     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDateTime> {
         let (time, remainder) = self.time.overflowing_sub_signed(rhs);
         let remainder = try_opt!(TimeDelta::new(remainder, 0));
-        let date = try_opt!(self.date.checked_sub_signed(remainder));
+        let date = try_opt!(ok!(self.date.checked_sub_signed(remainder)));
         Some(NaiveDateTime { date, time })
     }
 

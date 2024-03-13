@@ -869,66 +869,53 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, TimeDelta};
+    /// use chrono::{Error, NaiveDate, TimeDelta};
     ///
-    /// let d = NaiveDate::from_ymd(2015, 9, 5).unwrap();
-    /// assert_eq!(
-    ///     d.checked_add_signed(TimeDelta::days(40)),
-    ///     Some(NaiveDate::from_ymd(2015, 10, 15).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     d.checked_add_signed(TimeDelta::days(-40)),
-    ///     Some(NaiveDate::from_ymd(2015, 7, 27).unwrap())
-    /// );
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)), None);
-    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)), None);
+    /// let d = NaiveDate::from_ymd(2015, 9, 5)?;
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(40)), NaiveDate::from_ymd(2015, 10, 15));
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-40)), NaiveDate::from_ymd(2015, 7, 27));
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(1_000_000_000)), Err(Error::OutOfRange));
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)), Err(Error::OutOfRange));
+    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)), Err(Error::OutOfRange));
+    /// # Ok::<(), Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
+    pub const fn checked_add_signed(self, rhs: TimeDelta) -> Result<NaiveDate, Error> {
         let days = rhs.num_days();
         if days < i32::MIN as i64 || days > i32::MAX as i64 {
-            return None;
+            return Err(Error::OutOfRange);
         }
-        ok!(self.add_days(days as i32))
+        self.add_days(days as i32)
     }
 
     /// Subtracts the number of whole days in the given `TimeDelta` from the current date.
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, TimeDelta};
+    /// use chrono::{Error, NaiveDate, TimeDelta};
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5).unwrap();
-    /// assert_eq!(
-    ///     d.checked_sub_signed(TimeDelta::days(40)),
-    ///     Some(NaiveDate::from_ymd(2015, 7, 27).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     d.checked_sub_signed(TimeDelta::days(-40)),
-    ///     Some(NaiveDate::from_ymd(2015, 10, 15).unwrap())
-    /// );
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)), None);
-    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)), None);
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(40)), NaiveDate::from_ymd(2015, 7, 27));
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-40)), NaiveDate::from_ymd(2015, 10, 15));
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)), Err(Error::OutOfRange));
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)), Err(Error::OutOfRange));
+    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)), Err(Error::OutOfRange));
     /// ```
-    #[must_use]
-    pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
+    pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Result<NaiveDate, Error> {
         let days = -rhs.num_days();
         if days < i32::MIN as i64 || days > i32::MAX as i64 {
-            return None;
+            return Err(Error::OutOfRange);
         }
-        ok!(self.add_days(days as i32))
+        self.add_days(days as i32)
     }
 
     /// Subtracts another `NaiveDate` from the current date.
