@@ -280,7 +280,7 @@ impl NaiveDateTime {
     /// ```
     /// # use chrono::{TimeDelta, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::days(1_000_000_000).unwrap()), None);
+    /// assert_eq!(hms(3, 5, 7).checked_add_signed(TimeDelta::days(1_000_000_000)), None);
     /// ```
     ///
     /// Leap seconds are handled,
@@ -303,7 +303,7 @@ impl NaiveDateTime {
     ///            Some(hmsm(3, 6, 9, 300)));
     /// assert_eq!(leap.checked_add_signed(TimeDelta::seconds(-10).unwrap()),
     ///            Some(hmsm(3, 5, 50, 300)));
-    /// assert_eq!(leap.checked_add_signed(TimeDelta::days(1).unwrap()),
+    /// assert_eq!(leap.checked_add_signed(TimeDelta::days(1)),
     ///            Some(from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300).unwrap()));
     /// ```
     #[must_use]
@@ -461,7 +461,7 @@ impl NaiveDateTime {
     /// ```
     /// # use chrono::{TimeDelta, NaiveDate};
     /// # let hms = |h, m, s| NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms(h, m, s).unwrap();
-    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::days(1_000_000_000).unwrap()), None);
+    /// assert_eq!(hms(3, 5, 7).checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
     /// ```
     ///
     /// Leap seconds are handled,
@@ -480,7 +480,7 @@ impl NaiveDateTime {
     ///            Some(hmsm(3, 5, 59, 800)));
     /// assert_eq!(leap.checked_sub_signed(TimeDelta::seconds(60).unwrap()),
     ///            Some(hmsm(3, 5, 0, 300)));
-    /// assert_eq!(leap.checked_sub_signed(TimeDelta::days(1).unwrap()),
+    /// assert_eq!(leap.checked_sub_signed(TimeDelta::days(1)),
     ///            Some(from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300).unwrap()));
     /// ```
     #[must_use]
@@ -1318,10 +1318,7 @@ impl Timelike for NaiveDateTime {
 ///     hms(3, 5, 7) + TimeDelta::seconds(86_400).unwrap(),
 ///     from_ymd(2016, 7, 9).and_hms(3, 5, 7).unwrap()
 /// );
-/// assert_eq!(
-///     hms(3, 5, 7) + TimeDelta::days(365).unwrap(),
-///     from_ymd(2017, 7, 8).and_hms(3, 5, 7).unwrap()
-/// );
+/// assert_eq!(hms(3, 5, 7) + TimeDelta::days(365), from_ymd(2017, 7, 8).and_hms(3, 5, 7).unwrap());
 ///
 /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli).unwrap();
 /// assert_eq!(hmsm(3, 5, 7, 980) + TimeDelta::milliseconds(450).unwrap(), hmsm(3, 5, 8, 430));
@@ -1341,7 +1338,7 @@ impl Timelike for NaiveDateTime {
 /// assert_eq!(leap + TimeDelta::milliseconds(800).unwrap(), hmsm(3, 6, 0, 100));
 /// assert_eq!(leap + TimeDelta::seconds(10).unwrap(), hmsm(3, 6, 9, 300));
 /// assert_eq!(leap + TimeDelta::seconds(-10).unwrap(), hmsm(3, 5, 50, 300));
-/// assert_eq!(leap + TimeDelta::days(1).unwrap(),
+/// assert_eq!(leap + TimeDelta::days(1),
 ///            from_ymd(2016, 7, 9).and_hms_milli(3, 5, 59, 300).unwrap());
 /// ```
 ///
@@ -1503,10 +1500,7 @@ impl Add<Months> for NaiveDateTime {
 ///     hms(3, 5, 7) - TimeDelta::seconds(86_400).unwrap(),
 ///     from_ymd(2016, 7, 7).and_hms(3, 5, 7).unwrap()
 /// );
-/// assert_eq!(
-///     hms(3, 5, 7) - TimeDelta::days(365).unwrap(),
-///     from_ymd(2015, 7, 9).and_hms(3, 5, 7).unwrap()
-/// );
+/// assert_eq!(hms(3, 5, 7) - TimeDelta::days(365), from_ymd(2015, 7, 9).and_hms(3, 5, 7).unwrap());
 ///
 /// let hmsm = |h, m, s, milli| d.and_hms_milli(h, m, s, milli).unwrap();
 /// assert_eq!(hmsm(3, 5, 7, 450) - TimeDelta::milliseconds(670).unwrap(), hmsm(3, 5, 6, 780));
@@ -1524,7 +1518,7 @@ impl Add<Months> for NaiveDateTime {
 /// assert_eq!(leap - TimeDelta::milliseconds(200).unwrap(), hmsm(3, 5, 59, 1_100));
 /// assert_eq!(leap - TimeDelta::milliseconds(500).unwrap(), hmsm(3, 5, 59, 800));
 /// assert_eq!(leap - TimeDelta::seconds(60).unwrap(), hmsm(3, 5, 0, 300));
-/// assert_eq!(leap - TimeDelta::days(1).unwrap(),
+/// assert_eq!(leap - TimeDelta::days(1),
 ///            from_ymd(2016, 7, 7).and_hms_milli(3, 6, 0, 300).unwrap());
 /// ```
 ///
