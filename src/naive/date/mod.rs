@@ -35,7 +35,7 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{expect, ok, try_err, try_ok_or, try_opt};
+use crate::{ok, try_err, try_ok_or, try_opt};
 use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{Mdf, YearFlags};
@@ -872,16 +872,16 @@ impl NaiveDate {
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5).unwrap();
     /// assert_eq!(
-    ///     d.checked_add_signed(TimeDelta::days(40).unwrap()),
+    ///     d.checked_add_signed(TimeDelta::days(40)),
     ///     Some(NaiveDate::from_ymd(2015, 10, 15).unwrap())
     /// );
     /// assert_eq!(
-    ///     d.checked_add_signed(TimeDelta::days(-40).unwrap()),
+    ///     d.checked_add_signed(TimeDelta::days(-40)),
     ///     Some(NaiveDate::from_ymd(2015, 7, 27).unwrap())
     /// );
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(1_000_000_000).unwrap()), None);
-    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-1_000_000_000).unwrap()), None);
-    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1).unwrap()), None);
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(1_000_000_000)), None);
+    /// assert_eq!(d.checked_add_signed(TimeDelta::days(-1_000_000_000)), None);
+    /// assert_eq!(NaiveDate::MAX.checked_add_signed(TimeDelta::days(1)), None);
     /// ```
     #[must_use]
     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
@@ -905,16 +905,16 @@ impl NaiveDate {
     ///
     /// let d = NaiveDate::from_ymd(2015, 9, 5).unwrap();
     /// assert_eq!(
-    ///     d.checked_sub_signed(TimeDelta::days(40).unwrap()),
+    ///     d.checked_sub_signed(TimeDelta::days(40)),
     ///     Some(NaiveDate::from_ymd(2015, 7, 27).unwrap())
     /// );
     /// assert_eq!(
-    ///     d.checked_sub_signed(TimeDelta::days(-40).unwrap()),
+    ///     d.checked_sub_signed(TimeDelta::days(-40)),
     ///     Some(NaiveDate::from_ymd(2015, 10, 15).unwrap())
     /// );
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(1_000_000_000).unwrap()), None);
-    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000).unwrap()), None);
-    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1).unwrap()), None);
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(1_000_000_000)), None);
+    /// assert_eq!(d.checked_sub_signed(TimeDelta::days(-1_000_000_000)), None);
+    /// assert_eq!(NaiveDate::MIN.checked_sub_signed(TimeDelta::days(1)), None);
     /// ```
     #[must_use]
     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Option<NaiveDate> {
@@ -940,18 +940,12 @@ impl NaiveDate {
     /// let since = NaiveDate::signed_duration_since;
     ///
     /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 1)), TimeDelta::zero());
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 12, 31)), TimeDelta::days(1).unwrap());
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 2)), TimeDelta::days(-1).unwrap());
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 9, 23)), TimeDelta::days(100).unwrap());
-    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)), TimeDelta::days(365).unwrap());
-    /// assert_eq!(
-    ///     since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)),
-    ///     TimeDelta::days(365 * 4 + 1).unwrap()
-    /// );
-    /// assert_eq!(
-    ///     since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)),
-    ///     TimeDelta::days(365 * 400 + 97).unwrap()
-    /// );
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 12, 31)), TimeDelta::days(1));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2014, 1, 2)), TimeDelta::days(-1));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 9, 23)), TimeDelta::days(100));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2013, 1, 1)), TimeDelta::days(365));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(2010, 1, 1)), TimeDelta::days(365 * 4 + 1));
+    /// assert_eq!(since(from_ymd(2014, 1, 1), from_ymd(1614, 1, 1)), TimeDelta::days(365 * 400 + 97));
     /// ```
     #[must_use]
     pub const fn signed_duration_since(self, rhs: NaiveDate) -> TimeDelta {
@@ -959,12 +953,10 @@ impl NaiveDate {
         let year2 = rhs.year();
         let (year1_div_400, year1_mod_400) = div_mod_floor(year1, 400);
         let (year2_div_400, year2_mod_400) = div_mod_floor(year2, 400);
-        let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i64;
-        let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i64;
-        let days = (year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2);
-        // The range of `TimeDelta` is ca. 585 million years, the range of `NaiveDate` ca. 525.000
-        // years.
-        expect!(TimeDelta::days(days), "always in range")
+        let cycle1 = yo_to_cycle(year1_mod_400 as u32, self.ordinal()) as i32;
+        let cycle2 = yo_to_cycle(year2_mod_400 as u32, rhs.ordinal()) as i32;
+        let days = (year1_div_400 - year2_div_400) * 146_097 + (cycle1 - cycle2);
+        TimeDelta::days(days)
     }
 
     /// Returns the number of whole years from the given `base` until `self`.
@@ -1709,14 +1701,11 @@ impl Datelike for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::zero(), from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(86399).unwrap(), from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(-86399).unwrap(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(1).unwrap(), from_ymd(2014, 1, 2));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(-1).unwrap(), from_ymd(2013, 12, 31));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(364).unwrap(), from_ymd(2014, 12, 31));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(365 * 4 + 1).unwrap(), from_ymd(2018, 1, 1));
-/// assert_eq!(
-///     from_ymd(2014, 1, 1) + TimeDelta::days(365 * 400 + 97).unwrap(),
-///     from_ymd(2414, 1, 1)
-/// );
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(1), from_ymd(2014, 1, 2));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(-1), from_ymd(2013, 12, 31));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(364), from_ymd(2014, 12, 31));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(365 * 4 + 1), from_ymd(2018, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(365 * 400 + 97), from_ymd(2414, 1, 1));
 /// ```
 ///
 /// [`NaiveDate::checked_add_signed`]: crate::NaiveDate::checked_add_signed
@@ -1855,14 +1844,11 @@ impl Sub<Days> for NaiveDate {
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::zero(), from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(86399).unwrap(), from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(-86399).unwrap(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(1).unwrap(), from_ymd(2013, 12, 31));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(-1).unwrap(), from_ymd(2014, 1, 2));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(364).unwrap(), from_ymd(2013, 1, 2));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(365 * 4 + 1).unwrap(), from_ymd(2010, 1, 1));
-/// assert_eq!(
-///     from_ymd(2014, 1, 1) - TimeDelta::days(365 * 400 + 97).unwrap(),
-///     from_ymd(1614, 1, 1)
-/// );
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(1), from_ymd(2013, 12, 31));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(-1), from_ymd(2014, 1, 2));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(364), from_ymd(2013, 1, 2));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(365 * 4 + 1), from_ymd(2010, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(365 * 400 + 97), from_ymd(1614, 1, 1));
 /// ```
 ///
 /// [`NaiveDate::checked_sub_signed`]: crate::NaiveDate::checked_sub_signed
@@ -1909,15 +1895,12 @@ impl SubAssign<TimeDelta> for NaiveDate {
 /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 ///
 /// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 1), TimeDelta::zero());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), TimeDelta::days(1).unwrap());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2), TimeDelta::days(-1).unwrap());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23), TimeDelta::days(100).unwrap());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), TimeDelta::days(365).unwrap());
-/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap());
-/// assert_eq!(
-///     from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1),
-///     TimeDelta::days(365 * 400 + 97).unwrap()
-/// );
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 12, 31), TimeDelta::days(1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2014, 1, 2), TimeDelta::days(-1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 9, 23), TimeDelta::days(100));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2013, 1, 1), TimeDelta::days(365));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(2010, 1, 1), TimeDelta::days(365 * 4 + 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - from_ymd(1614, 1, 1), TimeDelta::days(365 * 400 + 97));
 /// ```
 impl Sub<NaiveDate> for NaiveDate {
     type Output = TimeDelta;

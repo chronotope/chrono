@@ -455,24 +455,20 @@ fn test_date_checked_add_signed() {
     check(ymd(2014, 1, 1), TimeDelta::seconds(86399).unwrap(), ymd(2014, 1, 1));
     // always round towards zero
     check(ymd(2014, 1, 1), TimeDelta::seconds(-86399).unwrap(), ymd(2014, 1, 1));
-    check(ymd(2014, 1, 1), TimeDelta::days(1).unwrap(), ymd(2014, 1, 2));
-    check(ymd(2014, 1, 1), TimeDelta::days(-1).unwrap(), ymd(2013, 12, 31));
-    check(ymd(2014, 1, 1), TimeDelta::days(364).unwrap(), ymd(2014, 12, 31));
-    check(ymd(2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap(), ymd(2018, 1, 1));
-    check(ymd(2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap(), ymd(2414, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::days(1), ymd(2014, 1, 2));
+    check(ymd(2014, 1, 1), TimeDelta::days(-1), ymd(2013, 12, 31));
+    check(ymd(2014, 1, 1), TimeDelta::days(364), ymd(2014, 12, 31));
+    check(ymd(2014, 1, 1), TimeDelta::days(365 * 4 + 1), ymd(2018, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::days(365 * 400 + 97), ymd(2414, 1, 1));
 
-    check(ymd(-7, 1, 1), TimeDelta::days(365 * 12 + 3).unwrap(), ymd(5, 1, 1));
+    check(ymd(-7, 1, 1), TimeDelta::days(365 * 12 + 3), ymd(5, 1, 1));
 
     // overflow check
-    check(
-        ymd(0, 1, 1),
-        TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap(),
-        ymd(MAX_YEAR, 12, 31),
-    );
-    check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64 + 1).unwrap(), None);
+    check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0), ymd(MAX_YEAR, 12, 31));
+    check(ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0 + 1), None);
     check(ymd(0, 1, 1), TimeDelta::max_value(), None);
-    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap(), ymd(MIN_YEAR, 1, 1));
-    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64 - 1).unwrap(), None);
+    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0), ymd(MIN_YEAR, 1, 1));
+    check(ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 - 1), None);
     check(ymd(0, 1, 1), TimeDelta::min_value(), None);
 }
 
@@ -485,18 +481,14 @@ fn test_date_signed_duration_since() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
 
     check(ymd(2014, 1, 1), ymd(2014, 1, 1), TimeDelta::zero());
-    check(ymd(2014, 1, 2), ymd(2014, 1, 1), TimeDelta::days(1).unwrap());
-    check(ymd(2014, 12, 31), ymd(2014, 1, 1), TimeDelta::days(364).unwrap());
-    check(ymd(2015, 1, 3), ymd(2014, 1, 1), TimeDelta::days(365 + 2).unwrap());
-    check(ymd(2018, 1, 1), ymd(2014, 1, 1), TimeDelta::days(365 * 4 + 1).unwrap());
-    check(ymd(2414, 1, 1), ymd(2014, 1, 1), TimeDelta::days(365 * 400 + 97).unwrap());
+    check(ymd(2014, 1, 2), ymd(2014, 1, 1), TimeDelta::days(1));
+    check(ymd(2014, 12, 31), ymd(2014, 1, 1), TimeDelta::days(364));
+    check(ymd(2015, 1, 3), ymd(2014, 1, 1), TimeDelta::days(365 + 2));
+    check(ymd(2018, 1, 1), ymd(2014, 1, 1), TimeDelta::days(365 * 4 + 1));
+    check(ymd(2414, 1, 1), ymd(2014, 1, 1), TimeDelta::days(365 * 400 + 97));
 
-    check(
-        ymd(MAX_YEAR, 12, 31),
-        ymd(0, 1, 1),
-        TimeDelta::days(MAX_DAYS_FROM_YEAR_0 as i64).unwrap(),
-    );
-    check(ymd(MIN_YEAR, 1, 1), ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap());
+    check(ymd(MAX_YEAR, 12, 31), ymd(0, 1, 1), TimeDelta::days(MAX_DAYS_FROM_YEAR_0));
+    check(ymd(MIN_YEAR, 1, 1), ymd(0, 1, 1), TimeDelta::days(MIN_DAYS_FROM_YEAR_0));
 }
 
 #[test]
@@ -542,9 +534,9 @@ fn test_date_sub_days() {
 fn test_date_addassignment() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     let mut date = ymd(2016, 10, 1);
-    date += TimeDelta::days(10).unwrap();
+    date += TimeDelta::days(10);
     assert_eq!(date, ymd(2016, 10, 11));
-    date += TimeDelta::days(30).unwrap();
+    date += TimeDelta::days(30);
     assert_eq!(date, ymd(2016, 11, 10));
 }
 
@@ -552,9 +544,9 @@ fn test_date_addassignment() {
 fn test_date_subassignment() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
     let mut date = ymd(2016, 10, 11);
-    date -= TimeDelta::days(10).unwrap();
+    date -= TimeDelta::days(10);
     assert_eq!(date, ymd(2016, 10, 1));
-    date -= TimeDelta::days(2).unwrap();
+    date -= TimeDelta::days(2);
     assert_eq!(date, ymd(2016, 9, 29));
 }
 
