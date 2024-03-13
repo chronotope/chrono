@@ -312,7 +312,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
-        let datetime = self.datetime.checked_add_signed(rhs)?;
+        let datetime = self.datetime.checked_add_signed(rhs).ok()?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
@@ -349,7 +349,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
-        let datetime = self.datetime.checked_sub_signed(rhs)?;
+        let datetime = self.datetime.checked_sub_signed(rhs).ok()?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(&datetime))
     }
