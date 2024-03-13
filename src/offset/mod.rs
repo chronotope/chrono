@@ -234,12 +234,12 @@ pub trait TimeZone: Sized + Clone {
         match self.offset_from_local_datetime(local) {
             LocalResult::None => LocalResult::None,
             LocalResult::Single(offset) => match local.checked_sub_offset(offset.fix()) {
-                Some(dt) => LocalResult::Single(DateTime::from_naive_utc_and_offset(dt, offset)),
-                None => LocalResult::None,
+                Ok(dt) => LocalResult::Single(DateTime::from_naive_utc_and_offset(dt, offset)),
+                Err(_) => LocalResult::None,
             },
             LocalResult::Ambiguous(o1, o2) => {
                 match (local.checked_sub_offset(o1.fix()), local.checked_sub_offset(o2.fix())) {
-                    (Some(d1), Some(d2)) => LocalResult::Ambiguous(
+                    (Ok(d1), Ok(d2)) => LocalResult::Ambiguous(
                         DateTime::from_naive_utc_and_offset(d1, o1),
                         DateTime::from_naive_utc_and_offset(d2, o2),
                     ),
