@@ -118,14 +118,10 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of minutes.
     ///
-    /// Equivalent to `TimeDelta::seconds(minutes * 60)` with overflow checks.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when the `TimeDelta` would be out of bounds.
+    /// Equivalent to `TimeDelta::new(minutes as i64 * 60, 0).unwrap()`.
     #[inline]
-    pub const fn minutes(minutes: i64) -> Option<TimeDelta> {
-        TimeDelta::seconds(try_opt!(minutes.checked_mul(SECS_PER_MINUTE)))
+    pub const fn minutes(minutes: i32) -> TimeDelta {
+        expect!(TimeDelta::new(minutes as i64 * SECS_PER_MINUTE, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of seconds.
@@ -557,7 +553,7 @@ mod tests {
         assert_eq!(-(days(3) + seconds(70)), days(-4) + seconds(86_400 - 70));
 
         let mut d = TimeDelta::default();
-        d += TimeDelta::minutes(1).unwrap();
+        d += TimeDelta::minutes(1);
         d -= seconds(30);
         assert_eq!(d, seconds(30));
     }
@@ -1079,7 +1075,7 @@ mod tests {
         const ONE_WEEK: TimeDelta = TimeDelta::weeks(1);
         const ONE_DAY: TimeDelta = TimeDelta::days(1);
         const ONE_HOUR: TimeDelta = TimeDelta::hours(1);
-        const ONE_MINUTE: TimeDelta = expect!(TimeDelta::minutes(1), "");
+        const ONE_MINUTE: TimeDelta = TimeDelta::minutes(1);
         const ONE_SECOND: TimeDelta = expect!(TimeDelta::seconds(1), "");
         const ONE_MILLI: TimeDelta = expect!(TimeDelta::milliseconds(1), "");
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
