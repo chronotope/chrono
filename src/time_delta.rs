@@ -126,14 +126,11 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of seconds.
     ///
-    /// # Errors
-    ///
-    /// Returns `None` when `seconds` is more than `i64::MAX / 1_000` or less than
-    /// `-i64::MAX / 1_000` (in this context, this is the same as `i64::MIN / 1_000` due to
-    /// rounding).
+    /// Use [`TimeDelta::new()`] if you want to create a value `TimeDelta` with a range that is
+    /// greater than that of an `i32`.
     #[inline]
-    pub const fn seconds(seconds: i64) -> Option<TimeDelta> {
-        TimeDelta::new(seconds, 0)
+    pub const fn seconds(seconds: i32) -> TimeDelta {
+        expect!(TimeDelta::new(seconds as i64, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of milliseconds.
@@ -538,7 +535,7 @@ mod tests {
     #[test]
     fn test_duration() {
         let days = TimeDelta::days;
-        let seconds = |s| TimeDelta::seconds(s).unwrap();
+        let seconds = TimeDelta::seconds;
 
         assert!(seconds(1) != TimeDelta::zero());
         assert_eq!(seconds(1) + seconds(2), seconds(3));
@@ -563,10 +560,10 @@ mod tests {
         assert_eq!(TimeDelta::zero().num_days(), 0);
         assert_eq!(TimeDelta::days(1).num_days(), 1);
         assert_eq!(TimeDelta::days(-1).num_days(), -1);
-        assert_eq!(TimeDelta::seconds(86_399).unwrap().num_days(), 0);
-        assert_eq!(TimeDelta::seconds(86_401).unwrap().num_days(), 1);
-        assert_eq!(TimeDelta::seconds(-86_399).unwrap().num_days(), 0);
-        assert_eq!(TimeDelta::seconds(-86_401).unwrap().num_days(), -1);
+        assert_eq!(TimeDelta::seconds(86_399).num_days(), 0);
+        assert_eq!(TimeDelta::seconds(86_401).num_days(), 1);
+        assert_eq!(TimeDelta::seconds(-86_399).num_days(), 0);
+        assert_eq!(TimeDelta::seconds(-86_401).num_days(), -1);
         assert_eq!(TimeDelta::days(i32::MAX).num_days(), i32::MAX as i64);
         assert_eq!(TimeDelta::days(i32::MIN).num_days(), i32::MIN as i64);
     }
@@ -574,42 +571,12 @@ mod tests {
     #[test]
     fn test_duration_num_seconds() {
         assert_eq!(TimeDelta::zero().num_seconds(), 0);
-        assert_eq!(TimeDelta::seconds(1).unwrap().num_seconds(), 1);
-        assert_eq!(TimeDelta::seconds(-1).unwrap().num_seconds(), -1);
+        assert_eq!(TimeDelta::seconds(1).num_seconds(), 1);
+        assert_eq!(TimeDelta::seconds(-1).num_seconds(), -1);
         assert_eq!(TimeDelta::milliseconds(999).unwrap().num_seconds(), 0);
         assert_eq!(TimeDelta::milliseconds(1001).unwrap().num_seconds(), 1);
         assert_eq!(TimeDelta::milliseconds(-999).unwrap().num_seconds(), 0);
         assert_eq!(TimeDelta::milliseconds(-1001).unwrap().num_seconds(), -1);
-    }
-
-    #[test]
-    fn test_duration_seconds_max_allowed() {
-        let duration = TimeDelta::seconds(i64::MAX / 1_000).unwrap();
-        assert_eq!(duration.num_seconds(), i64::MAX / 1_000);
-        assert_eq!(
-            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
-            i64::MAX as i128 / 1_000 * 1_000_000_000
-        );
-    }
-
-    #[test]
-    fn test_duration_seconds_max_overflow() {
-        assert!(TimeDelta::seconds(i64::MAX / 1_000 + 1).is_none());
-    }
-
-    #[test]
-    fn test_duration_seconds_min_allowed() {
-        let duration = TimeDelta::seconds(i64::MIN / 1_000).unwrap(); // Same as -i64::MAX / 1_000 due to rounding
-        assert_eq!(duration.num_seconds(), i64::MIN / 1_000); // Same as -i64::MAX / 1_000 due to rounding
-        assert_eq!(
-            duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
-            -i64::MAX as i128 / 1_000 * 1_000_000_000
-        );
-    }
-
-    #[test]
-    fn test_duration_seconds_min_underflow() {
-        assert!(TimeDelta::seconds(-i64::MAX / 1_000 - 1).is_none());
     }
 
     #[test]
@@ -945,19 +912,19 @@ mod tests {
         assert_eq!(TimeDelta::zero() * i32::MIN, TimeDelta::zero());
         assert_eq!(TimeDelta::nanoseconds(1) * 0, TimeDelta::zero());
         assert_eq!(TimeDelta::nanoseconds(1) * 1, TimeDelta::nanoseconds(1));
-        assert_eq!(TimeDelta::nanoseconds(1) * 1_000_000_000, TimeDelta::seconds(1).unwrap());
-        assert_eq!(TimeDelta::nanoseconds(1) * -1_000_000_000, -TimeDelta::seconds(1).unwrap());
-        assert_eq!(-TimeDelta::nanoseconds(1) * 1_000_000_000, -TimeDelta::seconds(1).unwrap());
+        assert_eq!(TimeDelta::nanoseconds(1) * 1_000_000_000, TimeDelta::seconds(1));
+        assert_eq!(TimeDelta::nanoseconds(1) * -1_000_000_000, -TimeDelta::seconds(1));
+        assert_eq!(-TimeDelta::nanoseconds(1) * 1_000_000_000, -TimeDelta::seconds(1));
         assert_eq!(
             TimeDelta::nanoseconds(30) * 333_333_333,
-            TimeDelta::seconds(10).unwrap() - TimeDelta::nanoseconds(10)
+            TimeDelta::seconds(10) - TimeDelta::nanoseconds(10)
         );
         assert_eq!(
-            (TimeDelta::nanoseconds(1) + TimeDelta::seconds(1).unwrap() + TimeDelta::days(1)) * 3,
-            TimeDelta::nanoseconds(3) + TimeDelta::seconds(3).unwrap() + TimeDelta::days(3)
+            (TimeDelta::nanoseconds(1) + TimeDelta::seconds(1) + TimeDelta::days(1)) * 3,
+            TimeDelta::nanoseconds(3) + TimeDelta::seconds(3) + TimeDelta::days(3)
         );
-        assert_eq!(TimeDelta::milliseconds(1500).unwrap() * -2, TimeDelta::seconds(-3).unwrap());
-        assert_eq!(TimeDelta::milliseconds(-1500).unwrap() * 2, TimeDelta::seconds(-3).unwrap());
+        assert_eq!(TimeDelta::milliseconds(1500).unwrap() * -2, TimeDelta::seconds(-3));
+        assert_eq!(TimeDelta::milliseconds(-1500).unwrap() * 2, TimeDelta::seconds(-3));
     }
 
     #[test]
@@ -968,38 +935,38 @@ mod tests {
         assert_eq!(TimeDelta::nanoseconds(123_456_789) / -1, -TimeDelta::nanoseconds(123_456_789));
         assert_eq!(-TimeDelta::nanoseconds(123_456_789) / -1, TimeDelta::nanoseconds(123_456_789));
         assert_eq!(-TimeDelta::nanoseconds(123_456_789) / 1, -TimeDelta::nanoseconds(123_456_789));
-        assert_eq!(TimeDelta::seconds(1).unwrap() / 3, TimeDelta::nanoseconds(333_333_333));
-        assert_eq!(TimeDelta::seconds(4).unwrap() / 3, TimeDelta::nanoseconds(1_333_333_333));
-        assert_eq!(TimeDelta::seconds(-1).unwrap() / 2, TimeDelta::milliseconds(-500).unwrap());
-        assert_eq!(TimeDelta::seconds(1).unwrap() / -2, TimeDelta::milliseconds(-500).unwrap());
-        assert_eq!(TimeDelta::seconds(-1).unwrap() / -2, TimeDelta::milliseconds(500).unwrap());
-        assert_eq!(TimeDelta::seconds(-4).unwrap() / 3, TimeDelta::nanoseconds(-1_333_333_333));
-        assert_eq!(TimeDelta::seconds(-4).unwrap() / -3, TimeDelta::nanoseconds(1_333_333_333));
+        assert_eq!(TimeDelta::seconds(1) / 3, TimeDelta::nanoseconds(333_333_333));
+        assert_eq!(TimeDelta::seconds(4) / 3, TimeDelta::nanoseconds(1_333_333_333));
+        assert_eq!(TimeDelta::seconds(-1) / 2, TimeDelta::milliseconds(-500).unwrap());
+        assert_eq!(TimeDelta::seconds(1) / -2, TimeDelta::milliseconds(-500).unwrap());
+        assert_eq!(TimeDelta::seconds(-1) / -2, TimeDelta::milliseconds(500).unwrap());
+        assert_eq!(TimeDelta::seconds(-4) / 3, TimeDelta::nanoseconds(-1_333_333_333));
+        assert_eq!(TimeDelta::seconds(-4) / -3, TimeDelta::nanoseconds(1_333_333_333));
     }
 
     #[test]
     fn test_duration_sum() {
-        let duration_list_1 = [TimeDelta::zero(), TimeDelta::seconds(1).unwrap()];
+        let duration_list_1 = [TimeDelta::zero(), TimeDelta::seconds(1)];
         let sum_1: TimeDelta = duration_list_1.iter().sum();
-        assert_eq!(sum_1, TimeDelta::seconds(1).unwrap());
+        assert_eq!(sum_1, TimeDelta::seconds(1));
 
         let duration_list_2 = [
             TimeDelta::zero(),
-            TimeDelta::seconds(1).unwrap(),
-            TimeDelta::seconds(6).unwrap(),
-            TimeDelta::seconds(10).unwrap(),
+            TimeDelta::seconds(1),
+            TimeDelta::seconds(6),
+            TimeDelta::seconds(10),
         ];
         let sum_2: TimeDelta = duration_list_2.iter().sum();
-        assert_eq!(sum_2, TimeDelta::seconds(17).unwrap());
+        assert_eq!(sum_2, TimeDelta::seconds(17));
 
         let duration_arr = [
             TimeDelta::zero(),
-            TimeDelta::seconds(1).unwrap(),
-            TimeDelta::seconds(6).unwrap(),
-            TimeDelta::seconds(10).unwrap(),
+            TimeDelta::seconds(1),
+            TimeDelta::seconds(6),
+            TimeDelta::seconds(10),
         ];
         let sum_3: TimeDelta = duration_arr.into_iter().sum();
-        assert_eq!(sum_3, TimeDelta::seconds(17).unwrap());
+        assert_eq!(sum_3, TimeDelta::seconds(17));
     }
 
     #[test]
@@ -1007,7 +974,7 @@ mod tests {
         assert_eq!(TimeDelta::zero().to_string(), "P0D");
         assert_eq!(TimeDelta::days(42).to_string(), "PT3628800S");
         assert_eq!(TimeDelta::days(-42).to_string(), "-PT3628800S");
-        assert_eq!(TimeDelta::seconds(42).unwrap().to_string(), "PT42S");
+        assert_eq!(TimeDelta::seconds(42).to_string(), "PT42S");
         assert_eq!(TimeDelta::milliseconds(42).unwrap().to_string(), "PT0.042S");
         assert_eq!(TimeDelta::microseconds(42).to_string(), "PT0.000042S");
         assert_eq!(TimeDelta::nanoseconds(42).to_string(), "PT0.000000042S");
@@ -1015,7 +982,7 @@ mod tests {
             (TimeDelta::days(7) + TimeDelta::milliseconds(6543).unwrap()).to_string(),
             "PT604806.543S"
         );
-        assert_eq!(TimeDelta::seconds(-86_401).unwrap().to_string(), "-PT86401S");
+        assert_eq!(TimeDelta::seconds(-86_401).to_string(), "-PT86401S");
         assert_eq!(TimeDelta::nanoseconds(-1).to_string(), "-PT0.000000001S");
 
         // the format specifier should have no effect on `TimeDelta`
@@ -1027,8 +994,8 @@ mod tests {
 
     #[test]
     fn test_to_std() {
-        assert_eq!(TimeDelta::seconds(1).unwrap().to_std(), Ok(Duration::new(1, 0)));
-        assert_eq!(TimeDelta::seconds(86_401).unwrap().to_std(), Ok(Duration::new(86_401, 0)));
+        assert_eq!(TimeDelta::seconds(1).to_std(), Ok(Duration::new(1, 0)));
+        assert_eq!(TimeDelta::seconds(86_401).to_std(), Ok(Duration::new(86_401, 0)));
         assert_eq!(
             TimeDelta::milliseconds(123).unwrap().to_std(),
             Ok(Duration::new(0, 123_000_000))
@@ -1039,17 +1006,14 @@ mod tests {
         );
         assert_eq!(TimeDelta::nanoseconds(777).to_std(), Ok(Duration::new(0, 777)));
         assert_eq!(MAX.to_std(), Ok(Duration::new(9_223_372_036_854_775, 807_000_000)));
-        assert_eq!(TimeDelta::seconds(-1).unwrap().to_std(), Err(OutOfRangeError(())));
+        assert_eq!(TimeDelta::seconds(-1).to_std(), Err(OutOfRangeError(())));
         assert_eq!(TimeDelta::milliseconds(-1).unwrap().to_std(), Err(OutOfRangeError(())));
     }
 
     #[test]
     fn test_from_std() {
-        assert_eq!(Ok(TimeDelta::seconds(1).unwrap()), TimeDelta::from_std(Duration::new(1, 0)));
-        assert_eq!(
-            Ok(TimeDelta::seconds(86_401).unwrap()),
-            TimeDelta::from_std(Duration::new(86_401, 0))
-        );
+        assert_eq!(Ok(TimeDelta::seconds(1)), TimeDelta::from_std(Duration::new(1, 0)));
+        assert_eq!(Ok(TimeDelta::seconds(86_401)), TimeDelta::from_std(Duration::new(86_401, 0)));
         assert_eq!(
             Ok(TimeDelta::milliseconds(123).unwrap()),
             TimeDelta::from_std(Duration::new(0, 123_000_000))
@@ -1076,7 +1040,7 @@ mod tests {
         const ONE_DAY: TimeDelta = TimeDelta::days(1);
         const ONE_HOUR: TimeDelta = TimeDelta::hours(1);
         const ONE_MINUTE: TimeDelta = TimeDelta::minutes(1);
-        const ONE_SECOND: TimeDelta = expect!(TimeDelta::seconds(1), "");
+        const ONE_SECOND: TimeDelta = TimeDelta::seconds(1);
         const ONE_MILLI: TimeDelta = expect!(TimeDelta::milliseconds(1), "");
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
         const ONE_NANO: TimeDelta = TimeDelta::nanoseconds(1);
@@ -1099,7 +1063,7 @@ mod tests {
         assert!(ONE_NANO != TimeDelta::zero());
         assert_eq!(
             combo,
-            TimeDelta::seconds(86400 * 7 + 86400 + 3600 + 60 + 1).unwrap()
+            TimeDelta::seconds(86400 * 7 + 86400 + 3600 + 60 + 1)
                 + TimeDelta::nanoseconds(1 + 1_000 + 1_000_000)
         );
     }
@@ -1107,7 +1071,7 @@ mod tests {
     #[test]
     #[cfg(feature = "rkyv-validation")]
     fn test_rkyv_validation() {
-        let duration = TimeDelta::seconds(1).unwrap();
+        let duration = TimeDelta::seconds(1);
         let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
         assert_eq!(rkyv::from_bytes::<TimeDelta>(&bytes).unwrap(), duration);
     }
