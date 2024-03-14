@@ -16,7 +16,7 @@ use super::win_bindings::{GetTimeZoneInformationForYear, SYSTEMTIME, TIME_ZONE_I
 
 use crate::offset::local::{lookup_with_dst_transitions, Transition};
 use crate::{
-    Datelike, Error, FixedOffset, LocalResult, NaiveDate, NaiveDateTime, NaiveTime, Weekday,
+    Datelike, Error, FixedOffset, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Weekday,
 };
 
 // We don't use `SystemTimeToTzSpecificLocalTime` because it doesn't support the same range of dates
@@ -26,13 +26,13 @@ use crate::{
 // This method uses `overflowing_sub_offset` because it is no problem if the transition time in UTC
 // falls a couple of hours inside the buffer space around the `NaiveDateTime` range (although it is
 // very theoretical to have a transition at midnight around `NaiveDate::(MIN|MAX)`.
-pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
+pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     // Using a `TzInfo` based on the year of an UTC datetime is technically wrong, we should be
     // using the rules for the year of the corresponding local time. But this matches what
     // `SystemTimeToTzSpecificLocalTime` is documented to do.
     let tz_info = match TzInfo::for_year(utc.year()) {
         Some(tz_info) => tz_info,
-        None => return LocalResult::None,
+        None => return MappedLocalTime::None,
     };
     let offset = match (tz_info.std_transition, tz_info.dst_transition) {
         (Some(std_transition), Some(dst_transition)) => {
@@ -66,16 +66,16 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<Fixed
         }
         (None, None) => tz_info.std_offset,
     };
-    LocalResult::Single(offset)
+    MappedLocalTime::Single(offset)
 }
 
 // We don't use `TzSpecificLocalTimeToSystemTime` because it doesn't let us choose how to handle
 // ambiguous cases (during a DST transition). Instead we get the timezone information for the
 // current year and compute it ourselves, like we do on Unix.
-pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     let tz_info = match TzInfo::for_year(local.year()) {
         Some(tz_info) => tz_info,
-        None => return LocalResult::None,
+        None => return MappedLocalTime::None,
     };
     // Create a sorted slice of transitions and use `lookup_with_dst_transitions`.
     match (tz_info.std_transition, tz_info.dst_transition) {
@@ -89,7 +89,7 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<F
                 Ordering::Greater => [dst_transition, std_transition],
                 Ordering::Equal => {
                     // This doesn't make sense. Let's just return the standard offset.
-                    return LocalResult::Single(tz_info.std_offset);
+                    return MappedLocalTime::Single(tz_info.std_offset);
                 }
             };
             lookup_with_dst_transitions(&transitions, *local)
@@ -104,7 +104,7 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<F
                 [Transition::new(dst_transition, tz_info.std_offset, tz_info.dst_offset)];
             lookup_with_dst_transitions(&transitions, *local)
         }
-        (None, None) => LocalResult::Single(tz_info.std_offset),
+        (None, None) => MappedLocalTime::Single(tz_info.std_offset),
     }
 }
 
@@ -279,7 +279,7 @@ mod tests {
                 SystemTimeToFileTime(st, init.as_mut_ptr());
             }
             // SystemTimeToFileTime must have succeeded at this point, so we can assume the value is
-            // initalized.
+            // initialized.
             let filetime = unsafe { init.assume_init() };
             let bit_shift =
                 ((filetime.dwHighDateTime as u64) << 32) | (filetime.dwLowDateTime as u64);

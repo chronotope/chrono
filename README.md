@@ -24,7 +24,7 @@ Chrono aims to provide all functionality needed to do correct operations on date
 * The [`DateTime`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) type is timezone-aware
   by default, with separate timezone-naive types.
 * Operations that may produce an invalid or ambiguous date and time return `Option` or
-  [`LocalResult`](https://docs.rs/chrono/latest/chrono/offset/enum.LocalResult.html).
+  [`MappedLocalTime`](https://docs.rs/chrono/latest/chrono/offset/enum.MappedLocalTime.html).
 * Configurable parsing and formatting with an `strftime` inspired date and time formatting syntax.
 * The [`Local`](https://docs.rs/chrono/latest/chrono/offset/struct.Local.html) timezone works with
   the current timezone of the OS.

@@ -4,7 +4,7 @@ use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
 use crate::{
-    Datelike, Days, Error, LocalResult, Months, NaiveDateTime, TimeDelta, Timelike, Weekday,
+    Datelike, Days, Error, MappedLocalTime, Months, NaiveDateTime, TimeDelta, Timelike, Weekday,
 };
 
 #[derive(Clone)]
@@ -36,7 +36,7 @@ impl TimeZone for DstTester {
     fn offset_from_local_datetime(
         &self,
         local: &NaiveDateTime,
-    ) -> crate::LocalResult<Self::Offset> {
+    ) -> crate::MappedLocalTime<Self::Offset> {
         let local_to_winter_transition_start = NaiveDate::from_ymd(
             local.year(),
             DstTester::TO_WINTER_MONTH_DAY.0,
@@ -70,19 +70,19 @@ impl TimeZone for DstTester {
         .and_time(DstTester::transition_start_local() + TimeDelta::hours(1));
 
         if *local < local_to_winter_transition_end || *local >= local_to_summer_transition_end {
-            LocalResult::Single(DstTester::summer_offset())
+            MappedLocalTime::Single(DstTester::summer_offset())
         } else if *local >= local_to_winter_transition_start
             && *local < local_to_summer_transition_start
         {
-            LocalResult::Single(DstTester::winter_offset())
+            MappedLocalTime::Single(DstTester::winter_offset())
         } else if *local >= local_to_winter_transition_end
             && *local < local_to_winter_transition_start
         {
-            LocalResult::Ambiguous(DstTester::winter_offset(), DstTester::summer_offset())
+            MappedLocalTime::Ambiguous(DstTester::winter_offset(), DstTester::summer_offset())
         } else if *local >= local_to_summer_transition_start
             && *local < local_to_summer_transition_end
         {
-            LocalResult::None
+            MappedLocalTime::None
         } else {
             panic!("Unexpected local time {}", local)
         }
@@ -592,7 +592,7 @@ fn signed_duration_since_autoref() {
     let diff2 = dt2.signed_duration_since(&dt1); // Take by reference
     assert_eq!(diff1, -diff2);
 
-    let diff1 = dt1 - &dt2; // We can choose to substract rhs by reference
+    let diff1 = dt1 - &dt2; // We can choose to subtract rhs by reference
     let diff2 = dt2 - dt1; // Or consume rhs
     assert_eq!(diff1, -diff2);
 }

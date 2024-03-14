@@ -12,24 +12,24 @@ use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::Sys
 
 use super::tz_info::TimeZone;
 use super::{FixedOffset, NaiveDateTime};
-use crate::{Datelike, LocalResult};
+use crate::{Datelike, MappedLocalTime};
 
-pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> LocalResult<FixedOffset> {
+pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     offset(utc, false)
 }
 
-pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> LocalResult<FixedOffset> {
+pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     offset(local, true)
 }
 
-fn offset(d: &NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
+fn offset(d: &NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
     TZ_INFO.with(|maybe_cache| {
         maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
     })
 }
 
 // we have to store the `Cache` in an option as it can't
-// be initalized in a static context.
+// be initialized in a static context.
 thread_local! {
     static TZ_INFO: RefCell<Option<Cache>> = Default::default();
 }
@@ -104,7 +104,7 @@ fn current_zone(var: Option<&str>) -> TimeZone {
 }
 
 impl Cache {
-    fn offset(&mut self, d: NaiveDateTime, local: bool) -> LocalResult<FixedOffset> {
+    fn offset(&mut self, d: NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
         let now = SystemTime::now();
 
         match now.duration_since(self.last_checked) {
@@ -156,13 +156,13 @@ impl Cache {
                 .offset();
 
             return match FixedOffset::east(offset) {
-                Ok(offset) => LocalResult::Single(offset),
-                Err(_) => LocalResult::None,
+                Ok(offset) => MappedLocalTime::Single(offset),
+                Err(_) => MappedLocalTime::None,
             };
         }
 
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
-        // the entire time was skipped in which case we will return LocalResult::None anyway.
+        // the entire time was skipped in which case we will return MappedLocalTime::None anyway.
         self.zone
             .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
             .expect("unable to select local time type")
