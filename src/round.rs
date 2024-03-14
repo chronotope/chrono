@@ -471,7 +471,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:25:00 UTC"
         );
         // round down
@@ -481,16 +481,16 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
 
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(10).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(10)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(30).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(30)).unwrap().to_string(),
             "2012-12-12 18:30:00 UTC"
         );
         assert_eq!(
@@ -555,7 +555,7 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:25:00"
         );
         // round down
@@ -566,16 +566,16 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
 
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(10).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(10)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(30).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(30)).unwrap().to_string(),
             "2012-12-12 18:30:00"
         );
         assert_eq!(
@@ -592,7 +592,7 @@ mod tests {
     fn test_duration_round_pre_epoch() {
         let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
         assert_eq!(
-            dt.duration_round(TimeDelta::minutes(10).unwrap()).unwrap().to_string(),
+            dt.duration_round(TimeDelta::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
         );
     }
@@ -620,7 +620,7 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         // would round down
@@ -630,15 +630,15 @@ mod tests {
             )
             .unwrap();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(10).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(10)).unwrap().to_string(),
             "2012-12-12 18:20:00 UTC"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(30).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(30)).unwrap().to_string(),
             "2012-12-12 18:00:00 UTC"
         );
         assert_eq!(
@@ -698,7 +698,7 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         // would round down
@@ -709,15 +709,15 @@ mod tests {
             .unwrap()
             .naive_utc();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(5).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(5)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(10).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(10)).unwrap().to_string(),
             "2012-12-12 18:20:00"
         );
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(30).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(30)).unwrap().to_string(),
             "2012-12-12 18:00:00"
         );
         assert_eq!(
@@ -734,7 +734,7 @@ mod tests {
     fn test_duration_trunc_pre_epoch() {
         let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
         assert_eq!(
-            dt.duration_trunc(TimeDelta::minutes(10).unwrap()).unwrap().to_string(),
+            dt.duration_trunc(TimeDelta::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
         );
     }
@@ -756,7 +756,7 @@ mod tests {
 
     #[test]
     fn test_duration_trunc_close_to_epoch() {
-        let span = TimeDelta::minutes(15).unwrap();
+        let span = TimeDelta::minutes(15);
 
         let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms(0, 0, 15).unwrap();
         assert_eq!(dt.duration_trunc(span).unwrap().to_string(), "1970-01-01 00:00:00");
@@ -767,7 +767,7 @@ mod tests {
 
     #[test]
     fn test_duration_round_close_to_epoch() {
-        let span = TimeDelta::minutes(15).unwrap();
+        let span = TimeDelta::minutes(15);
 
         let dt = NaiveDate::from_ymd(1970, 1, 1).unwrap().and_hms(0, 0, 15).unwrap();
         assert_eq!(dt.duration_round(span).unwrap().to_string(), "1970-01-01 00:00:00");
