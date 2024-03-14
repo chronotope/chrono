@@ -963,10 +963,7 @@ impl NaiveDateTime {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
-    /// assert_eq!(
-    ///     dt.with_minute(45),
-    ///     NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 45, 56, 789)
-    /// );
+    /// assert_eq!(dt.with_minute(45), NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 45, 56, 789));
     /// assert_eq!(dt.with_minute(60), Err(Error::InvalidArgument));
     /// # Ok::<(), chrono::Error>(())
     /// ```
@@ -992,10 +989,7 @@ impl NaiveDateTime {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let dt = NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 56, 789)?;
-    /// assert_eq!(
-    ///     dt.with_second(17),
-    ///     NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 17, 789)
-    /// );
+    /// assert_eq!(dt.with_second(17), NaiveDate::from_ymd(2015, 9, 8)?.and_hms_milli(12, 34, 17, 789));
     /// assert_eq!(dt.with_second(60), Err(Error::InvalidArgument));
     /// # Ok::<(), chrono::Error>(())
     /// ```
