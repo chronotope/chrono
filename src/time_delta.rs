@@ -110,14 +110,10 @@ impl TimeDelta {
 
     /// Makes a new `TimeDelta` with the given number of hours.
     ///
-    /// Equivalent to `TimeDelta::seconds(hours * 60 * 60)` with overflow checks.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` when the `TimeDelta` would be out of bounds.
+    /// Equivalent to `TimeDelta::new(hours as i64 * 60 * 60, 0).unwrap()`.
     #[inline]
-    pub const fn hours(hours: i64) -> Option<TimeDelta> {
-        TimeDelta::seconds(try_opt!(hours.checked_mul(SECS_PER_HOUR)))
+    pub const fn hours(hours: i32) -> TimeDelta {
+        expect!(TimeDelta::new(hours as i64 * SECS_PER_HOUR, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of minutes.
@@ -1082,7 +1078,7 @@ mod tests {
     fn test_duration_const() {
         const ONE_WEEK: TimeDelta = TimeDelta::weeks(1);
         const ONE_DAY: TimeDelta = TimeDelta::days(1);
-        const ONE_HOUR: TimeDelta = expect!(TimeDelta::hours(1), "");
+        const ONE_HOUR: TimeDelta = TimeDelta::hours(1);
         const ONE_MINUTE: TimeDelta = expect!(TimeDelta::minutes(1), "");
         const ONE_SECOND: TimeDelta = expect!(TimeDelta::seconds(1), "");
         const ONE_MILLI: TimeDelta = expect!(TimeDelta::milliseconds(1), "");

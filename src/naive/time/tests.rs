@@ -126,15 +126,15 @@ fn test_time_overflowing_add() {
     let hmsm = |h, m, s, ms| NaiveTime::from_hms_milli(h, m, s, ms).unwrap();
 
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(11).unwrap()),
+        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(11)),
         (hmsm(14, 4, 5, 678), 0)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(23).unwrap()),
+        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(23)),
         (hmsm(2, 4, 5, 678), 86_400)
     );
     assert_eq!(
-        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(-7).unwrap()),
+        hmsm(3, 4, 5, 678).overflowing_add_signed(TimeDelta::hours(-7)),
         (hmsm(20, 4, 5, 678), -86_400)
     );
 
@@ -153,9 +153,9 @@ fn test_time_overflowing_add() {
 fn test_time_addassignment() {
     let hms = |h, m, s| NaiveTime::from_hms(h, m, s).unwrap();
     let mut time = hms(12, 12, 12);
-    time += TimeDelta::hours(10).unwrap();
+    time += TimeDelta::hours(10);
     assert_eq!(time, hms(22, 12, 12));
-    time += TimeDelta::hours(10).unwrap();
+    time += TimeDelta::hours(10);
     assert_eq!(time, hms(8, 12, 12));
 }
 
@@ -163,9 +163,9 @@ fn test_time_addassignment() {
 fn test_time_subassignment() {
     let hms = |h, m, s| NaiveTime::from_hms(h, m, s).unwrap();
     let mut time = hms(12, 12, 12);
-    time -= TimeDelta::hours(10).unwrap();
+    time -= TimeDelta::hours(10);
     assert_eq!(time, hms(2, 12, 12));
-    time -= TimeDelta::hours(10).unwrap();
+    time -= TimeDelta::hours(10);
     assert_eq!(time, hms(16, 12, 12));
 }
 

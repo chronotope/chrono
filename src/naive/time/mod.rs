@@ -527,15 +527,15 @@ impl NaiveTime {
     /// let from_hms = |h, m, s| NaiveTime::from_hms(h, m, s).unwrap();
     ///
     /// assert_eq!(
-    ///     from_hms(3, 4, 5).overflowing_add_signed(TimeDelta::hours(11).unwrap()),
+    ///     from_hms(3, 4, 5).overflowing_add_signed(TimeDelta::hours(11)),
     ///     (from_hms(14, 4, 5), 0)
     /// );
     /// assert_eq!(
-    ///     from_hms(3, 4, 5).overflowing_add_signed(TimeDelta::hours(23).unwrap()),
+    ///     from_hms(3, 4, 5).overflowing_add_signed(TimeDelta::hours(23)),
     ///     (from_hms(2, 4, 5), 86_400)
     /// );
     /// assert_eq!(
-    ///     from_hms(3, 4, 5).overflowing_add_signed(TimeDelta::hours(-7).unwrap()),
+    ///     from_hms(3, 4, 5).overflowing_add_signed(TimeDelta::hours(-7)),
     ///     (from_hms(20, 4, 5), -86_400)
     /// );
     /// ```
@@ -589,15 +589,15 @@ impl NaiveTime {
     /// let from_hms = |h, m, s| NaiveTime::from_hms(h, m, s).unwrap();
     ///
     /// assert_eq!(
-    ///     from_hms(3, 4, 5).overflowing_sub_signed(TimeDelta::hours(2).unwrap()),
+    ///     from_hms(3, 4, 5).overflowing_sub_signed(TimeDelta::hours(2)),
     ///     (from_hms(1, 4, 5), 0)
     /// );
     /// assert_eq!(
-    ///     from_hms(3, 4, 5).overflowing_sub_signed(TimeDelta::hours(17).unwrap()),
+    ///     from_hms(3, 4, 5).overflowing_sub_signed(TimeDelta::hours(17)),
     ///     (from_hms(10, 4, 5), 86_400)
     /// );
     /// assert_eq!(
-    ///     from_hms(3, 4, 5).overflowing_sub_signed(TimeDelta::hours(-22).unwrap()),
+    ///     from_hms(3, 4, 5).overflowing_sub_signed(TimeDelta::hours(-22)),
     ///     (from_hms(1, 4, 5), -86_400)
     /// );
     /// ```
