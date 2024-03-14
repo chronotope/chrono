@@ -1699,8 +1699,8 @@ impl Datelike for NaiveDate {
 /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 ///
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::zero(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(86399).unwrap(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(-86399).unwrap(), from_ymd(2014, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(86399), from_ymd(2014, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::seconds(-86399), from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(1), from_ymd(2014, 1, 2));
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(-1), from_ymd(2013, 12, 31));
 /// assert_eq!(from_ymd(2014, 1, 1) + TimeDelta::days(364), from_ymd(2014, 12, 31));
@@ -1842,8 +1842,8 @@ impl Sub<Days> for NaiveDate {
 /// let from_ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).unwrap();
 ///
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::zero(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(86399).unwrap(), from_ymd(2014, 1, 1));
-/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(-86399).unwrap(), from_ymd(2014, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(86399), from_ymd(2014, 1, 1));
+/// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::seconds(-86399), from_ymd(2014, 1, 1));
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(1), from_ymd(2013, 12, 31));
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(-1), from_ymd(2014, 1, 2));
 /// assert_eq!(from_ymd(2014, 1, 1) - TimeDelta::days(364), from_ymd(2013, 1, 2));

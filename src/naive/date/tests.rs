@@ -452,9 +452,9 @@ fn test_date_checked_add_signed() {
     let ymd = |y, m, d| NaiveDate::from_ymd(y, m, d).ok();
 
     check(ymd(2014, 1, 1), TimeDelta::zero(), ymd(2014, 1, 1));
-    check(ymd(2014, 1, 1), TimeDelta::seconds(86399).unwrap(), ymd(2014, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::seconds(86399), ymd(2014, 1, 1));
     // always round towards zero
-    check(ymd(2014, 1, 1), TimeDelta::seconds(-86399).unwrap(), ymd(2014, 1, 1));
+    check(ymd(2014, 1, 1), TimeDelta::seconds(-86399), ymd(2014, 1, 1));
     check(ymd(2014, 1, 1), TimeDelta::days(1), ymd(2014, 1, 2));
     check(ymd(2014, 1, 1), TimeDelta::days(-1), ymd(2013, 12, 31));
     check(ymd(2014, 1, 1), TimeDelta::days(364), ymd(2014, 12, 31));
