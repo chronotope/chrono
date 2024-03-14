@@ -901,10 +901,7 @@ impl NaiveTime {
     /// use chrono::{Error, NaiveTime};
     ///
     /// let dt = NaiveTime::from_hms_nano(23, 56, 4, 12_345_678)?;
-    /// assert_eq!(
-    ///     dt.with_nanosecond(333_333_333),
-    ///     NaiveTime::from_hms_nano(23, 56, 4, 333_333_333)
-    /// );
+    /// assert_eq!(dt.with_nanosecond(333_333_333), NaiveTime::from_hms_nano(23, 56, 4, 333_333_333));
     /// assert_eq!(dt.with_nanosecond(2_000_000_000), Err(Error::InvalidArgument));
     /// # Ok::<(), chrono::Error>(())
     /// ```
