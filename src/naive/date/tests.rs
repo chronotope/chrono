@@ -740,14 +740,6 @@ fn test_weeks_from() {
 }
 
 #[test]
-fn test_with_0_overflow() {
-    let dt = NaiveDate::from_ymd(2023, 4, 18).unwrap();
-    assert_eq!(dt.with_month0(u32::MAX), Err(Error::InvalidArgument));
-    assert_eq!(dt.with_day0(u32::MAX), Err(Error::InvalidArgument));
-    assert!(dt.with_ordinal0(4294967295).is_none());
-}
-
-#[test]
 fn test_leap_year() {
     for year in 0..=MAX_YEAR {
         let date = NaiveDate::from_ymd(year, 1, 1).unwrap();

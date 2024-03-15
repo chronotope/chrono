@@ -593,22 +593,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
         map_local(self, |datetime| datetime.with_month(month).ok())
     }
 
-    /// Makes a new `DateTime` with the month number (starting from 0) changed.
-    ///
-    /// See also the [`NaiveDate::with_month0`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `month0(3)` when day of the month is 31).
-    /// - The value for `month0` is invalid.
-    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
-    ///   daylight saving time transition.
-    #[inline]
-    pub fn with_month0(&self, month0: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_month0(month0).ok())
-    }
-
     /// Makes a new `DateTime` with the day of month (starting from 1) changed.
     ///
     /// See also the [`NaiveDate::with_day`] method.
@@ -625,22 +609,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
         map_local(self, |datetime| datetime.with_day(day).ok())
     }
 
-    /// Makes a new `DateTime` with the day of month (starting from 0) changed.
-    ///
-    /// See also the [`NaiveDate::with_day0`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (for example `day(30)` in April).
-    /// - The value for `day0` is invalid.
-    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
-    ///   daylight saving time transition.
-    #[inline]
-    pub fn with_day0(&self, day0: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_day0(day0).ok())
-    }
-
     /// Makes a new `DateTime` with the day of year (starting from 1) changed.
     ///
     /// See also the [`NaiveDate::with_ordinal`] method.
@@ -655,22 +623,6 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     pub fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_ordinal(ordinal))
-    }
-
-    /// Makes a new `DateTime` with the day of year (starting from 0) changed.
-    ///
-    /// See also the [`NaiveDate::with_ordinal0`] method.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (`with_ordinal0(365)` in a non-leap year).
-    /// - The value for `ordinal0` is invalid.
-    /// - The local time at the resulting date does not exist or is ambiguous, for example during a
-    ///   daylight saving time transition.
-    #[inline]
-    pub fn with_ordinal0(&self, ordinal0: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_ordinal0(ordinal0))
     }
 
     /// Set the time to a new fixed time on the existing date.
