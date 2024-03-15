@@ -1005,9 +1005,8 @@ impl NaiveDateTime {
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    /// As with the [`NaiveDateTime::nanosecond`] method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
+    /// As with the [`NaiveDateTime::nanosecond`] method, the input range can exceed 1,000,000,000
+    /// for leap seconds.
     ///
     /// See also the [`NaiveTime::with_nanosecond`] method.
     ///
