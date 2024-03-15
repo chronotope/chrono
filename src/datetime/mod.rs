@@ -700,18 +700,21 @@ impl<Tz: TimeZone> DateTime<Tz> {
 
     /// Makes a new `DateTime` with nanoseconds since the whole non-leap second changed.
     ///
-    /// Returns `None` when the resulting `NaiveDateTime` would be invalid.
-    /// As with the [`NaiveDateTime::nanosecond`] method,
-    /// the input range can exceed 1,000,000,000 for leap seconds.
+    /// As with the [`DateTime::nanosecond`] method, the input range can exceed 1,000,000,000 for
+    /// leap seconds.
     ///
     /// See also the [`NaiveTime::with_nanosecond`] method.
     ///
     /// # Errors
     ///
-    /// Returns `None` if `nanosecond >= 2,000,000,000`.
+    /// Returns [`Error::InvalidArgument`] if `nanosecond >= 2,000,000,000`.
     #[inline]
-    pub fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_nanosecond(nano).ok())
+    pub fn with_nanosecond(&self, nano: u32) -> Result<DateTime<Tz>, Error> {
+        // `with_nanosecond` does not need to recalculate the offset like the other `with_` methods.
+        // Like the IANA time zone database and other libraries we assume in chrono that offsets
+        // have second granularity, and time zone transitions (such as DTS) happen on second
+        // boundaries.
+        Ok(Self { datetime: self.datetime.with_nanosecond(nano)?, offset: self.offset.clone() })
     }
 }
 
