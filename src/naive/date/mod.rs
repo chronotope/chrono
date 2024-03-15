@@ -1437,10 +1437,14 @@ impl NaiveDate {
     /// Create a new `NaiveDate` from a raw year-ordinal-flags `i32`.
     ///
     /// In a valid value an ordinal is never `0`, and neither are the year flags. This method
-    /// doesn't do any validation.
+    /// doesn't do any validation in release builds.
     #[inline]
     const fn from_yof(yof: i32) -> NaiveDate {
-        debug_assert!(yof != 0);
+        // The following are the invariants our ordinal and flags should uphold for a valid
+        // `NaiveDate`.
+        debug_assert!(((yof & OL_MASK) >> 3) > 1);
+        debug_assert!(((yof & OL_MASK) >> 3) <= MAX_OL);
+        debug_assert!((yof & 0b111) != 000);
         NaiveDate { yof: unsafe { NonZeroI32::new_unchecked(yof) } }
     }
 
