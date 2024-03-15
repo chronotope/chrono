@@ -141,14 +141,12 @@ impl Days {
     }
 }
 
-/// Serialization/Deserialization of naive types in alternate formats
+/// Serialization/Deserialization of `NaiveDateTime` in alternate formats
 ///
-/// The various modules in here are intended to be used with serde's [`with`
-/// annotation][1] to serialize as something other than the default [RFC
-/// 3339][2] format.
+/// The various modules in here are intended to be used with serde's [`with` annotation] to
+/// serialize as something other than the default ISO 8601 format.
 ///
-/// [1]: https://serde.rs/attributes.html#field-attributes
-/// [2]: https://tools.ietf.org/html/rfc3339
+/// [`with` annotation]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
 pub mod serde {
     pub use super::datetime::serde::*;

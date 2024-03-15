@@ -23,10 +23,12 @@ pub struct MicroSecondsTimestampVisitor;
 #[derive(Debug)]
 pub struct MilliSecondsTimestampVisitor;
 
-/// Serialize into an ISO 8601 formatted string.
+/// Serialize to an RFC 3339 formatted string
 ///
-/// See [the `serde` module](./serde/index.html) for alternate
-/// serializations.
+/// As an extension to RFC 3339 this can serialize `DateTime`s outside the range of 0-9999 years
+/// using an ISO 8601 syntax (which prepends an `-` or `+`).
+///
+/// See [the `serde` module](crate::serde) for alternate serializations.
 impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -54,7 +56,7 @@ impl<'de> de::Visitor<'de> for DateTimeVisitor {
     type Value = DateTime<FixedOffset>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a formatted date and time string or a unix timestamp")
+        formatter.write_str("an RFC 3339 formatted date and time string")
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
@@ -65,13 +67,12 @@ impl<'de> de::Visitor<'de> for DateTimeVisitor {
     }
 }
 
-/// Deserialize a value that optionally includes a timezone offset in its
-/// string representation
+/// Deserialize an RFC 3339 formatted string into a `DateTime<FixedOffset>`
 ///
-/// The value to be deserialized must be an rfc3339 string.
+/// As an extension to RFC 3339 this can deserialize to `DateTime`s outside the range of 0-9999
+/// years using an ISO 8601 syntax (which prepends an `-` or `+`).
 ///
-/// See [the `serde` module](./serde/index.html) for alternate
-/// deserialization formats.
+/// See [the `serde` module](crate::serde) for alternate deserialization formats.
 impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -81,12 +82,14 @@ impl<'de> de::Deserialize<'de> for DateTime<FixedOffset> {
     }
 }
 
-/// Deserialize into a UTC value
+/// Deserialize an RFC 3339 formatted string into a `DateTime<Utc>`
 ///
-/// The value to be deserialized must be an rfc3339 string.
+/// If the value contains an offset from UTC that is not zero, the value will be converted to UTC.
 ///
-/// See [the `serde` module](./serde/index.html) for alternate
-/// deserialization formats.
+/// As an extension to RFC 3339 this can deserialize to `DateTime`s outside the range of 0-9999
+/// years using an ISO 8601 syntax (which prepends an `-` or `+`).
+///
+/// See [the `serde` module](crate::serde) for alternate deserialization formats.
 impl<'de> de::Deserialize<'de> for DateTime<Utc> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -96,13 +99,15 @@ impl<'de> de::Deserialize<'de> for DateTime<Utc> {
     }
 }
 
-/// Deserialize a value that includes no timezone in its string
-/// representation
+/// Deserialize an RFC 3339 formatted string into a `DateTime<Local>`
 ///
-/// The value to be deserialized must be an rfc3339 string.
+/// The value will remain the same instant in UTC, but the offset will be recalculated to match
+/// that of the `Local` platform time zone.
 ///
-/// See [the `serde` module](./serde/index.html) for alternate
-/// serialization formats.
+/// As an extension to RFC 3339 this can deserialize to `DateTime`s outside the range of 0-9999
+/// years using an ISO 8601 syntax (which prepends an `-` or `+`).
+///
+/// See [the `serde` module](crate::serde) for alternate deserialization formats.
 #[cfg(feature = "clock")]
 impl<'de> de::Deserialize<'de> for DateTime<Local> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
