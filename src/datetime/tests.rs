@@ -1526,7 +1526,7 @@ fn test_min_max_setters() {
     assert_eq!(beyond_min.with_hour(5), None);
     assert_eq!(beyond_min.with_minute(0), Some(beyond_min));
     assert_eq!(beyond_min.with_second(0), Some(beyond_min));
-    assert_eq!(beyond_min.with_nanosecond(0), Some(beyond_min));
+    assert_eq!(beyond_min.with_nanosecond(0), Ok(beyond_min));
 
     assert_eq!(beyond_max.with_year(2020).unwrap().year(), 2020);
     assert_eq!(beyond_max.with_year(beyond_max.year()), Some(beyond_max));
@@ -1547,7 +1547,7 @@ fn test_min_max_setters() {
     assert_eq!(beyond_max.with_hour(5), None);
     assert_eq!(beyond_max.with_minute(beyond_max.minute()), Some(beyond_max));
     assert_eq!(beyond_max.with_second(beyond_max.second()), Some(beyond_max));
-    assert_eq!(beyond_max.with_nanosecond(beyond_max.nanosecond()), Some(beyond_max));
+    assert_eq!(beyond_max.with_nanosecond(beyond_max.nanosecond()), Ok(beyond_max));
 }
 
 #[test]
