@@ -26,7 +26,7 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, MappedLocalTime, Offset, TimeZone, Utc};
-#[cfg(any(feature = "clock", feature = "std"))]
+#[cfg(feature = "clock")]
 use crate::OutOfRange;
 use crate::{try_err, try_ok_or, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
@@ -1759,16 +1759,16 @@ impl TryFrom<SystemTime> for DateTime<Local> {
 
 #[cfg(feature = "std")]
 impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for SystemTime {
-    type Error = OutOfRange;
+    type Error = Error;
 
-    fn try_from(dt: DateTime<Tz>) -> Result<SystemTime, OutOfRange> {
+    fn try_from(dt: DateTime<Tz>) -> Result<SystemTime, Error> {
         let sec = dt.timestamp();
         let sec_abs = sec.unsigned_abs();
         let nsec = dt.timestamp_subsec_nanos();
         if sec < 0 {
             // `dt` is before the Unix epoch.
             let mut t =
-                UNIX_EPOCH.checked_sub(Duration::new(sec_abs, 0)).ok_or_else(OutOfRange::new)?;
+                UNIX_EPOCH.checked_sub(Duration::new(sec_abs, 0)).ok_or(Error::OutOfRange)?;
 
             // Overflow safety: `t` is before the Unix epoch. Adding nanoseconds therefore cannot
             // overflow.
@@ -1777,7 +1777,7 @@ impl<Tz: TimeZone> TryFrom<DateTime<Tz>> for SystemTime {
             Ok(t)
         } else {
             // `dt` is after the Unix epoch.
-            UNIX_EPOCH.checked_add(Duration::new(sec_abs, nsec)).ok_or_else(OutOfRange::new)
+            UNIX_EPOCH.checked_add(Duration::new(sec_abs, nsec)).ok_or(Error::OutOfRange)
         }
     }
 }
