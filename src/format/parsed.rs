@@ -1743,7 +1743,7 @@ mod tests {
         // single result from timestamp
         assert_eq!(
             parse!(Utc; timestamp: 1_420_000_000, offset: 0),
-            Ok(Utc.with_ymd_and_hms(2014, 12, 31, 4, 26, 40).unwrap())
+            Ok(Utc.at_ymd_and_hms(2014, 12, 31, 4, 26, 40).unwrap())
         );
         assert_eq!(parse!(Utc; timestamp: 1_420_000_000, offset: 32400), Err(IMPOSSIBLE));
         assert_eq!(
@@ -1752,10 +1752,7 @@ mod tests {
         );
         assert_eq!(
             parse!(FixedOffset::east(32400).unwrap(); timestamp: 1_420_000_000, offset: 32400),
-            Ok(FixedOffset::east(32400)
-                .unwrap()
-                .with_ymd_and_hms(2014, 12, 31, 13, 26, 40)
-                .unwrap())
+            Ok(FixedOffset::east(32400).unwrap().at_ymd_and_hms(2014, 12, 31, 13, 26, 40).unwrap())
         );
 
         // TODO test with a variable time zone (for None and Ambiguous cases)

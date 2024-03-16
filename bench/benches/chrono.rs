@@ -206,7 +206,7 @@ fn bench_naivedate_add_signed(c: &mut Criterion) {
 }
 
 fn bench_datetime_with(c: &mut Criterion) {
-    let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2023, 9, 23, 7, 36, 0).unwrap();
+    let dt = FixedOffset::east(3600).unwrap().at_ymd_and_hms(2023, 9, 23, 7, 36, 0).unwrap();
     c.bench_function("bench_datetime_with", |b| {
         b.iter(|| black_box(black_box(dt).with_hour(12)).unwrap())
     });

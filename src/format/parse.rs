@@ -1587,7 +1587,7 @@ mod tests {
         let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
             FixedOffset::east(off * 60 * 60)
                 .unwrap()
-                .with_ymd_and_hms(y, m, d, h, n, s)
+                .at_ymd_and_hms(y, m, d, h, n, s)
                 .unwrap()
                 .with_nanosecond(nano)
                 .unwrap()
@@ -1681,7 +1681,7 @@ mod tests {
     fn parse_rfc850() {
         static RFC850_FMT: &str = "%A, %d-%b-%y %T GMT";
 
-        let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
+        let dt = Utc.at_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
 
         // Check that the format is what we expect
         #[cfg(feature = "alloc")]
@@ -1696,28 +1696,25 @@ mod tests {
         // Check that the rest of the weekdays parse correctly (this test originally failed because
         // Sunday parsed incorrectly).
         let testdates = [
+            (Utc.at_ymd_and_hms(1994, 11, 7, 8, 49, 37).unwrap(), "Monday, 07-Nov-94 08:49:37 GMT"),
             (
-                Utc.with_ymd_and_hms(1994, 11, 7, 8, 49, 37).unwrap(),
-                "Monday, 07-Nov-94 08:49:37 GMT",
-            ),
-            (
-                Utc.with_ymd_and_hms(1994, 11, 8, 8, 49, 37).unwrap(),
+                Utc.at_ymd_and_hms(1994, 11, 8, 8, 49, 37).unwrap(),
                 "Tuesday, 08-Nov-94 08:49:37 GMT",
             ),
             (
-                Utc.with_ymd_and_hms(1994, 11, 9, 8, 49, 37).unwrap(),
+                Utc.at_ymd_and_hms(1994, 11, 9, 8, 49, 37).unwrap(),
                 "Wednesday, 09-Nov-94 08:49:37 GMT",
             ),
             (
-                Utc.with_ymd_and_hms(1994, 11, 10, 8, 49, 37).unwrap(),
+                Utc.at_ymd_and_hms(1994, 11, 10, 8, 49, 37).unwrap(),
                 "Thursday, 10-Nov-94 08:49:37 GMT",
             ),
             (
-                Utc.with_ymd_and_hms(1994, 11, 11, 8, 49, 37).unwrap(),
+                Utc.at_ymd_and_hms(1994, 11, 11, 8, 49, 37).unwrap(),
                 "Friday, 11-Nov-94 08:49:37 GMT",
             ),
             (
-                Utc.with_ymd_and_hms(1994, 11, 12, 8, 49, 37).unwrap(),
+                Utc.at_ymd_and_hms(1994, 11, 12, 8, 49, 37).unwrap(),
                 "Saturday, 12-Nov-94 08:49:37 GMT",
             ),
         ];
@@ -1751,7 +1748,7 @@ mod tests {
         let ymd_hmsn = |y, m, d, h, n, s, nano, off| {
             FixedOffset::east(off * 60 * 60)
                 .unwrap()
-                .with_ymd_and_hms(y, m, d, h, n, s)
+                .at_ymd_and_hms(y, m, d, h, n, s)
                 .unwrap()
                 .with_nanosecond(nano)
                 .unwrap()

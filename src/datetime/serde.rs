@@ -956,7 +956,7 @@ pub mod ts_milliseconds_option {
 ///     time: DateTime<Utc>,
 /// }
 ///
-/// let time = Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap();
+/// let time = Utc.at_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -988,7 +988,7 @@ pub mod ts_seconds {
     ///     time: DateTime<Utc>,
     /// }
     ///
-    /// let my_s = S { time: Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap() };
+    /// let my_s = S { time: Utc.at_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap() };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
@@ -1074,7 +1074,7 @@ pub mod ts_seconds {
 ///     time: Option<DateTime<Utc>>,
 /// }
 ///
-/// let time = Some(Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap());
+/// let time = Some(Utc.at_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap());
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -1106,7 +1106,7 @@ pub mod ts_seconds_option {
     ///     time: Option<DateTime<Utc>>,
     /// }
     ///
-    /// let my_s = S { time: Some(Utc.with_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap()) };
+    /// let my_s = S { time: Some(Utc.at_ymd_and_hms(2015, 5, 15, 10, 0, 0).unwrap()) };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
@@ -1212,7 +1212,7 @@ mod tests {
         // it is not self-describing.
         use bincode::{deserialize, serialize};
 
-        let dt = Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
+        let dt = Utc.at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap();
         let encoded = serialize(&dt).unwrap();
         let decoded: DateTime<Utc> = deserialize(&encoded).unwrap();
         assert_eq!(dt, decoded);
@@ -1255,7 +1255,7 @@ mod tests {
         let tz = TestTimeZone;
         assert_eq!(format!("{:?}", &tz), "TEST");
 
-        let dt = tz.with_ymd_and_hms(2023, 4, 24, 21, 10, 33).unwrap();
+        let dt = tz.at_ymd_and_hms(2023, 4, 24, 21, 10, 33).unwrap();
         let encoded = serde_json::to_string(&dt).unwrap();
         dbg!(&encoded);
         let decoded: DateTime<FixedOffset> = serde_json::from_str(&encoded).unwrap();

@@ -126,7 +126,7 @@
 //! use chrono::offset::MappedLocalTime;
 //! use chrono::prelude::*;
 //!
-//! let dt = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap(); // `2014-07-08T09:10:11Z`
+//! let dt = Utc.at_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap(); // `2014-07-08T09:10:11Z`
 //! assert_eq!(
 //!     dt,
 //!     NaiveDate::from_ymd(2014, 7, 8)?
@@ -157,13 +157,13 @@
 //!
 //! // dynamic verification
 //! assert_eq!(
-//!     Utc.with_ymd_and_hms(2014, 7, 8, 21, 15, 33),
+//!     Utc.at_ymd_and_hms(2014, 7, 8, 21, 15, 33),
 //!     MappedLocalTime::Single(
 //!         NaiveDate::from_ymd(2014, 7, 8)?.and_hms(21, 15, 33)?.and_utc()
 //!     )
 //! );
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 8, 80, 15, 33), MappedLocalTime::None);
-//! assert_eq!(Utc.with_ymd_and_hms(2014, 7, 38, 21, 15, 33), MappedLocalTime::None);
+//! assert_eq!(Utc.at_ymd_and_hms(2014, 7, 8, 80, 15, 33), MappedLocalTime::None);
+//! assert_eq!(Utc.at_ymd_and_hms(2014, 7, 38, 21, 15, 33), MappedLocalTime::None);
 //!
 //! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
@@ -214,17 +214,17 @@
 //! assert_eq!(dt.with_year(-300).unwrap().num_days_from_ce(), -109606); // November 29, 301 BCE
 //!
 //! // arithmetic operations
-//! let dt1 = Utc.with_ymd_and_hms(2014, 11, 14, 8, 9, 10).unwrap();
-//! let dt2 = Utc.with_ymd_and_hms(2014, 11, 14, 10, 9, 8).unwrap();
+//! let dt1 = Utc.at_ymd_and_hms(2014, 11, 14, 8, 9, 10).unwrap();
+//! let dt2 = Utc.at_ymd_and_hms(2014, 11, 14, 10, 9, 8).unwrap();
 //! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
 //! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
 //! assert_eq!(
-//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + TimeDelta::seconds(1_000_000_000),
-//!     Utc.with_ymd_and_hms(2001, 9, 9, 1, 46, 40).unwrap()
+//!     Utc.at_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + TimeDelta::seconds(1_000_000_000),
+//!     Utc.at_ymd_and_hms(2001, 9, 9, 1, 46, 40).unwrap()
 //! );
 //! assert_eq!(
-//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - TimeDelta::seconds(1_000_000_000),
-//!     Utc.with_ymd_and_hms(1938, 4, 24, 22, 13, 20).unwrap()
+//!     Utc.at_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - TimeDelta::seconds(1_000_000_000),
+//!     Utc.at_ymd_and_hms(1938, 4, 24, 22, 13, 20).unwrap()
 //! );
 //! # Ok::<(), chrono::Error>(())
 //! ```
@@ -257,7 +257,7 @@
 //! # fn test() {
 //! use chrono::Locale;
 //!
-//! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
+//! let dt = Utc.at_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
 //! assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2014-11-28 12:00:09");
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), "Fri Nov 28 12:00:09 2014");
 //! assert_eq!(
@@ -304,7 +304,7 @@
 //! ```rust
 //! use chrono::prelude::*;
 //!
-//! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
+//! let dt = Utc.at_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
 //! let fixed_dt = dt.with_timezone(&FixedOffset::east(9 * 3600).unwrap());
 //!
 //! // method 1

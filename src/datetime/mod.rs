@@ -103,9 +103,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::prelude::*;
     ///
-    /// let date: DateTime<Utc> = Utc.with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
+    /// let date: DateTime<Utc> = Utc.at_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
     /// let other: DateTime<FixedOffset> =
-    ///     FixedOffset::east(23).unwrap().with_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
+    ///     FixedOffset::east(23).unwrap().at_ymd_and_hms(2020, 1, 1, 0, 0, 0).unwrap();
     /// assert_eq!(date.date_naive(), other.date_naive());
     /// ```
     #[inline]
@@ -130,7 +130,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
     ///
-    /// let dt: DateTime<Utc> = Utc.with_ymd_and_hms(2015, 5, 15, 0, 0, 0).unwrap();
+    /// let dt: DateTime<Utc> = Utc.at_ymd_and_hms(2015, 5, 15, 0, 0, 0).unwrap();
     /// assert_eq!(dt.timestamp(), 1431648000);
     ///
     /// assert_eq!(DateTime::from_timestamp(dt.timestamp(), dt.timestamp_subsec_nanos())?, dt);
@@ -999,7 +999,7 @@ impl DateTime<FixedOffset> {
     /// # use chrono::{DateTime, FixedOffset, TimeZone};
     /// assert_eq!(
     ///     DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 GMT").unwrap(),
-    ///     FixedOffset::east(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    ///     FixedOffset::east(0).unwrap().at_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// ```
     pub fn parse_from_rfc2822(s: &str) -> ParseResult<DateTime<FixedOffset>> {
@@ -1087,7 +1087,7 @@ impl DateTime<FixedOffset> {
     /// .unwrap();
     /// assert_eq!(
     ///     datetime,
-    ///     FixedOffset::east(2 * 3600).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
+    ///     FixedOffset::east(2 * 3600).unwrap().at_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap()
     /// );
     /// assert_eq!(remainder, " trailing text");
     /// ```
@@ -1133,7 +1133,7 @@ where
     /// ```rust
     /// use chrono::prelude::*;
     ///
-    /// let date_time: DateTime<Utc> = Utc.with_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
+    /// let date_time: DateTime<Utc> = Utc.at_ymd_and_hms(2017, 04, 02, 12, 50, 32).unwrap();
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
@@ -1259,11 +1259,11 @@ impl<Tz: TimeZone, Tz2: TimeZone> PartialOrd<DateTime<Tz2>> for DateTime<Tz> {
     /// use chrono::prelude::*;
     ///
     /// let earlier = Utc
-    ///     .with_ymd_and_hms(2015, 5, 15, 2, 0, 0)
+    ///     .at_ymd_and_hms(2015, 5, 15, 2, 0, 0)
     ///     .unwrap()
     ///     .with_timezone(&FixedOffset::west(1 * 3600).unwrap());
     /// let later = Utc
-    ///     .with_ymd_and_hms(2015, 5, 15, 3, 0, 0)
+    ///     .at_ymd_and_hms(2015, 5, 15, 3, 0, 0)
     ///     .unwrap()
     ///     .with_timezone(&FixedOffset::west(5 * 3600).unwrap());
     ///
@@ -1807,20 +1807,20 @@ where
     E: ::core::fmt::Debug,
 {
     assert_eq!(
-        to_string_utc(&Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()).ok(),
+        to_string_utc(&Utc.at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()).ok(),
         Some(r#""2014-07-24T12:34:06Z""#.into())
     );
 
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east(3660).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3660).unwrap().at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
         )
         .ok(),
         Some(r#""2014-07-24T12:34:06+01:01""#.into())
     );
     assert_eq!(
         to_string_fixed(
-            &FixedOffset::east(3650).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+            &FixedOffset::east(3650).unwrap().at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
         )
         .ok(),
         // An offset with seconds is not allowed by RFC 3339, so we round it to the nearest minute.
@@ -1847,25 +1847,23 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
 
     assert_eq!(
         norm(&utc_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
-        norm(&Some(Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
+        norm(&Some(Utc.at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
     );
     assert_eq!(
         norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
-        norm(&Some(Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
+        norm(&Some(Utc.at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
     );
 
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
-        norm(&Some(
-            FixedOffset::east(0).unwrap().with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
-        ))
+        norm(&Some(FixedOffset::east(0).unwrap().at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()))
     );
     assert_eq!(
         norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
         norm(&Some(
             FixedOffset::east(60 * 60 + 23 * 60)
                 .unwrap()
-                .with_ymd_and_hms(2014, 7, 24, 13, 57, 6)
+                .at_ymd_and_hms(2014, 7, 24, 13, 57, 6)
                 .unwrap()
         ))
     );
@@ -1874,11 +1872,11 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     // the conversion didn't change the instant itself
     assert_eq!(
         local_from_str(r#""2014-07-24T12:34:06Z""#).expect("local should parse"),
-        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+        Utc.at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
     );
     assert_eq!(
         local_from_str(r#""2014-07-24T13:57:06+01:23""#).expect("local should parse with offset"),
-        Utc.with_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
+        Utc.at_ymd_and_hms(2014, 7, 24, 12, 34, 6).unwrap()
     );
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());

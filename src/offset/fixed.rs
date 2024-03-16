@@ -46,7 +46,7 @@ impl FixedOffset {
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime =
-    ///     FixedOffset::east(5 * hour).unwrap().with_ymd_and_hms(2016, 11, 08, 0, 0, 0).unwrap();
+    ///     FixedOffset::east(5 * hour).unwrap().at_ymd_and_hms(2016, 11, 08, 0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00+05:00")
     /// # }
     /// ```
@@ -71,7 +71,7 @@ impl FixedOffset {
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime =
-    ///     FixedOffset::west(5 * hour).unwrap().with_ymd_and_hms(2016, 11, 08, 0, 0, 0).unwrap();
+    ///     FixedOffset::west(5 * hour).unwrap().at_ymd_and_hms(2016, 11, 08, 0, 0, 0).unwrap();
     /// assert_eq!(&datetime.to_rfc3339(), "2016-11-08T00:00:00-05:00")
     /// # }
     /// ```
@@ -168,22 +168,22 @@ mod tests {
         // this makes everything easier!
         let offset = FixedOffset::east(86399).unwrap();
         assert_eq!(
-            format!("{:?}", offset.with_ymd_and_hms(2012, 2, 29, 5, 6, 7).unwrap()),
+            format!("{:?}", offset.at_ymd_and_hms(2012, 2, 29, 5, 6, 7).unwrap()),
             "2012-02-29T05:06:07+23:59:59"
         );
         let offset = FixedOffset::east(-86399).unwrap();
         assert_eq!(
-            format!("{:?}", offset.with_ymd_and_hms(2012, 2, 29, 5, 6, 7).unwrap()),
+            format!("{:?}", offset.at_ymd_and_hms(2012, 2, 29, 5, 6, 7).unwrap()),
             "2012-02-29T05:06:07-23:59:59"
         );
         let offset = FixedOffset::west(86399).unwrap();
         assert_eq!(
-            format!("{:?}", offset.with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap()),
+            format!("{:?}", offset.at_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap()),
             "2012-03-04T05:06:07-23:59:59"
         );
         let offset = FixedOffset::west(-86399).unwrap();
         assert_eq!(
-            format!("{:?}", offset.with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap()),
+            format!("{:?}", offset.at_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap()),
             "2012-03-04T05:06:07+23:59:59"
         );
     }

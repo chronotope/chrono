@@ -17,7 +17,7 @@ fn verify_against_date_command_local(path: &'static str, dt: NaiveDateTime) {
     // seems to be consistent with the output of the `date` command, so we simply
     // compare both.
     // let local = Local
-    //     .with_ymd_and_hms(year, month, day, hour, 5, 1)
+    //     .at_ymd_and_hms(year, month, day, hour, 5, 1)
     //     // looks like the "date" command always returns a given time when it is ambiguous
     //     .earliest();
 
