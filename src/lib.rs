@@ -159,8 +159,8 @@
 //! # #[cfg(feature = "clock")] {
 //! // other time zone objects can be used to construct a local datetime.
 //! // obviously, `local_dt` is normally different from `dt`, but `fixed_dt` should be identical.
-//! let local_dt = Local.from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(9, 10, 11, 12).unwrap()).unwrap();
-//! let fixed_dt = FixedOffset::east(9 * 3600).unwrap().from_local_datetime(&NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(18, 10, 11, 12).unwrap()).unwrap();
+//! let local_dt = Local.from_local_datetime(NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(9, 10, 11, 12).unwrap()).unwrap();
+//! let fixed_dt = FixedOffset::east(9 * 3600).unwrap().from_local_datetime(NaiveDate::from_ymd(2014, 7, 8).unwrap().and_hms_milli(18, 10, 11, 12).unwrap()).unwrap();
 //! assert_eq!(dt, fixed_dt);
 //! # let _ = local_dt;
 //! # }
@@ -179,7 +179,7 @@
 //! use chrono::prelude::*;
 //!
 //! // assume this returned `2014-11-28T21:45:59.324310806+09:00`:
-//! let dt = FixedOffset::east(9*3600).unwrap().from_local_datetime(&NaiveDate::from_ymd(2014, 11, 28).unwrap().and_hms_nano(21, 45, 59, 324310806).unwrap()).unwrap();
+//! let dt = FixedOffset::east(9*3600).unwrap().from_local_datetime(NaiveDate::from_ymd(2014, 11, 28).unwrap().and_hms_nano(21, 45, 59, 324310806).unwrap()).unwrap();
 //!
 //! // property accessors
 //! assert_eq!((dt.year(), dt.month(), dt.day()), (2014, 11, 28));

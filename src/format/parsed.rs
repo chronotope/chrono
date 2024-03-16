@@ -858,7 +858,7 @@ impl Parsed {
         let datetime = self.to_naive_datetime_with_offset(offset)?;
         let offset = FixedOffset::east(offset).map_err(|_| OUT_OF_RANGE)?;
 
-        match offset.from_local_datetime(&datetime) {
+        match offset.from_local_datetime(datetime) {
             MappedLocalTime::None => Err(IMPOSSIBLE),
             MappedLocalTime::Single(t) => Ok(t),
             MappedLocalTime::Ambiguous(..) => Err(NOT_ENOUGH),
@@ -899,7 +899,7 @@ impl Parsed {
             let dt = DateTime::from_timestamp(timestamp, nanosecond)
                 .map_err(|_| OUT_OF_RANGE)?
                 .naive_utc();
-            guessed_offset = tz.offset_from_utc_datetime(&dt).fix().local_minus_utc();
+            guessed_offset = tz.offset_from_utc_datetime(dt).fix().local_minus_utc();
         }
 
         // checks if the given `DateTime` has a consistent `Offset` with given `self.offset`.
@@ -914,7 +914,7 @@ impl Parsed {
         // `guessed_offset` should be correct when `self.timestamp` is given.
         // it will be 0 otherwise, but this is fine as the algorithm ignores offset for that case.
         let datetime = self.to_naive_datetime_with_offset(guessed_offset)?;
-        match tz.from_local_datetime(&datetime) {
+        match tz.from_local_datetime(datetime) {
             MappedLocalTime::None => Err(IMPOSSIBLE),
             MappedLocalTime::Single(t) => {
                 if check_offset(&t) {
@@ -1656,7 +1656,7 @@ mod tests {
             Ok(FixedOffset::east(off)
                 .unwrap()
                 .from_local_datetime(
-                    &NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano(h, n, s, nano).unwrap(),
+                    NaiveDate::from_ymd(y, m, d).unwrap().and_hms_nano(h, n, s, nano).unwrap(),
                 )
                 .unwrap())
         };
@@ -1704,7 +1704,7 @@ mod tests {
                           minute: 26, second: 40, nanosecond: 12_345_678, offset: 0),
             Ok(Utc
                 .from_local_datetime(
-                    &NaiveDate::from_ymd(2014, 12, 31)
+                    NaiveDate::from_ymd(2014, 12, 31)
                         .unwrap()
                         .and_hms_nano(4, 26, 40, 12_345_678)
                         .unwrap()
@@ -1730,7 +1730,7 @@ mod tests {
             Ok(FixedOffset::east(32400)
                 .unwrap()
                 .from_local_datetime(
-                    &NaiveDate::from_ymd(2014, 12, 31)
+                    NaiveDate::from_ymd(2014, 12, 31)
                         .unwrap()
                         .and_hms_nano(13, 26, 40, 12_345_678)
                         .unwrap()

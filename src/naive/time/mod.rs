@@ -193,12 +193,12 @@ mod tests;
 /// let paramaribo_pre1945 = FixedOffset::east(-13236).unwrap(); // -03:40:36
 /// let leap_sec_2015 =
 ///     NaiveDate::from_ymd(2015, 6, 30).unwrap().and_hms_milli(23, 59, 59, 1_000).unwrap();
-/// let dt1 = paramaribo_pre1945.from_utc_datetime(&leap_sec_2015);
+/// let dt1 = paramaribo_pre1945.from_utc_datetime(leap_sec_2015);
 /// assert_eq!(format!("{:?}", dt1), "2015-06-30T20:19:24-03:40:36");
 /// assert_eq!(format!("{:?}", dt1.time()), "20:19:24");
 ///
 /// let next_sec = NaiveDate::from_ymd(2015, 7, 1).unwrap().and_hms(0, 0, 0).unwrap();
-/// let dt2 = paramaribo_pre1945.from_utc_datetime(&next_sec);
+/// let dt2 = paramaribo_pre1945.from_utc_datetime(next_sec);
 /// assert_eq!(format!("{:?}", dt2), "2015-06-30T20:19:24-03:40:36");
 /// assert_eq!(format!("{:?}", dt2.time()), "20:19:24");
 ///

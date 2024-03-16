@@ -1252,11 +1252,11 @@ mod tests {
             }
             fn offset_from_local_datetime(
                 &self,
-                _local: &NaiveDateTime,
+                _local: NaiveDateTime,
             ) -> MappedLocalTime<TestTimeZone> {
                 MappedLocalTime::Single(TestTimeZone)
             }
-            fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> TestTimeZone {
+            fn offset_from_utc_datetime(&self, _utc: NaiveDateTime) -> TestTimeZone {
                 TestTimeZone
             }
         }

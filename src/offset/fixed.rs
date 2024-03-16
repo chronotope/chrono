@@ -113,11 +113,11 @@ impl TimeZone for FixedOffset {
         *offset
     }
 
-    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+    fn offset_from_local_datetime(&self, _local: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
         MappedLocalTime::Single(*self)
     }
 
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> FixedOffset {
+    fn offset_from_utc_datetime(&self, _utc: NaiveDateTime) -> FixedOffset {
         *self
     }
 }

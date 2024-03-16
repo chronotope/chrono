@@ -26,7 +26,7 @@ use crate::{
 // This method uses `overflowing_sub_offset` because it is no problem if the transition time in UTC
 // falls a couple of hours inside the buffer space around the `NaiveDateTime` range (although it is
 // very theoretical to have a transition at midnight around `NaiveDate::(MIN|MAX)`.
-pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+pub(super) fn offset_from_utc_datetime(utc: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     // Using a `TzInfo` based on the year of an UTC datetime is technically wrong, we should be
     // using the rules for the year of the corresponding local time. But this matches what
     // `SystemTimeToTzSpecificLocalTime` is documented to do.
@@ -39,12 +39,12 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<F
             let std_transition_utc = std_transition.overflowing_sub_offset(tz_info.dst_offset);
             let dst_transition_utc = dst_transition.overflowing_sub_offset(tz_info.std_offset);
             if dst_transition_utc < std_transition_utc {
-                match utc >= &dst_transition_utc && utc < &std_transition_utc {
+                match utc >= dst_transition_utc && utc < std_transition_utc {
                     true => tz_info.dst_offset,
                     false => tz_info.std_offset,
                 }
             } else {
-                match utc >= &std_transition_utc && utc < &dst_transition_utc {
+                match utc >= std_transition_utc && utc < dst_transition_utc {
                     true => tz_info.std_offset,
                     false => tz_info.dst_offset,
                 }
@@ -52,14 +52,14 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<F
         }
         (Some(std_transition), None) => {
             let std_transition_utc = std_transition.overflowing_sub_offset(tz_info.dst_offset);
-            match utc < &std_transition_utc {
+            match utc < std_transition_utc {
                 true => tz_info.dst_offset,
                 false => tz_info.std_offset,
             }
         }
         (None, Some(dst_transition)) => {
             let dst_transition_utc = dst_transition.overflowing_sub_offset(tz_info.std_offset);
-            match utc < &dst_transition_utc {
+            match utc < dst_transition_utc {
                 true => tz_info.std_offset,
                 false => tz_info.dst_offset,
             }
@@ -72,7 +72,7 @@ pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<F
 // We don't use `TzSpecificLocalTimeToSystemTime` because it doesn't let us choose how to handle
 // ambiguous cases (during a DST transition). Instead we get the timezone information for the
 // current year and compute it ourselves, like we do on Unix.
-pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+pub(super) fn offset_from_local_datetime(local: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     let tz_info = match TzInfo::for_year(local.year()) {
         Some(tz_info) => tz_info,
         None => return MappedLocalTime::None,
@@ -92,17 +92,17 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTi
                     return MappedLocalTime::Single(tz_info.std_offset);
                 }
             };
-            lookup_with_dst_transitions(&transitions, *local)
+            lookup_with_dst_transitions(&transitions, local)
         }
         (Some(std_transition), None) => {
             let transitions =
                 [Transition::new(std_transition, tz_info.dst_offset, tz_info.std_offset)];
-            lookup_with_dst_transitions(&transitions, *local)
+            lookup_with_dst_transitions(&transitions, local)
         }
         (None, Some(dst_transition)) => {
             let transitions =
                 [Transition::new(dst_transition, tz_info.std_offset, tz_info.dst_offset)];
-            lookup_with_dst_transitions(&transitions, *local)
+            lookup_with_dst_transitions(&transitions, local)
         }
         (None, None) => MappedLocalTime::Single(tz_info.std_offset),
     }
@@ -233,16 +233,16 @@ mod tests {
         // implementation to `TzSpecificLocalTimeToSystemTime`.
         //
         // This uses parts of a previous Windows `Local` implementation in chrono.
-        fn from_local_time(dt: &NaiveDateTime) -> DateTime<Local> {
+        fn from_local_time(dt: NaiveDateTime) -> DateTime<Local> {
             let st = system_time_from_naive_date_time(dt);
             let utc_time = local_to_utc_time(&st);
             let utc_secs = system_time_as_unix_seconds(&utc_time);
             let local_secs = system_time_as_unix_seconds(&st);
             let offset = (local_secs - utc_secs) as i32;
             let offset = FixedOffset::east(offset).unwrap();
-            DateTime::from_naive_utc_and_offset(*dt - offset, offset)
+            DateTime::from_naive_utc_and_offset(dt - offset, offset)
         }
-        fn system_time_from_naive_date_time(dt: &NaiveDateTime) -> SYSTEMTIME {
+        fn system_time_from_naive_date_time(dt: NaiveDateTime) -> SYSTEMTIME {
             SYSTEMTIME {
                 // Valid values: 1601-30827
                 wYear: dt.year() as u16,
@@ -290,8 +290,8 @@ mod tests {
 
         while date.year() < 2078 {
             // Windows doesn't handle non-existing dates, it just treats it as valid.
-            if let Some(our_result) = Local.from_local_datetime(&date).earliest() {
-                assert_eq!(from_local_time(&date), our_result);
+            if let Some(our_result) = Local.from_local_datetime(date).earliest() {
+                assert_eq!(from_local_time(date), our_result);
             }
             date += TimeDelta::hours(1);
         }

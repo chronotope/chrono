@@ -853,7 +853,7 @@ mod tests {
         let dt = FixedOffset::east(34200)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd(2001, 7, 8)
+                NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
                     .and_hms_nano(0, 34, 59, 1_026_490_708)
                     .unwrap(),
@@ -1021,7 +1021,7 @@ mod tests {
         let dt = FixedOffset::east(34200)
             .unwrap()
             .from_local_datetime(
-                &NaiveDate::from_ymd(2001, 7, 8)
+                NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
                     .and_hms_nano(0, 34, 59, 1_026_490_708)
                     .unwrap(),

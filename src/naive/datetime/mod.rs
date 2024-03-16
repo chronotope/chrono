@@ -707,7 +707,7 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
-        tz.from_local_datetime(self)
+        tz.from_local_datetime(*self)
     }
 
     /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Utc>`.

@@ -38,13 +38,13 @@ mod inner {
     use crate::{FixedOffset, MappedLocalTime, NaiveDateTime};
 
     pub(super) fn offset_from_utc_datetime(
-        _utc_time: &NaiveDateTime,
+        _utc_time: NaiveDateTime,
     ) -> MappedLocalTime<FixedOffset> {
         MappedLocalTime::Single(FixedOffset::east(0).unwrap())
     }
 
     pub(super) fn offset_from_local_datetime(
-        _local_time: &NaiveDateTime,
+        _local_time: NaiveDateTime,
     ) -> MappedLocalTime<FixedOffset> {
         MappedLocalTime::Single(FixedOffset::east(0).unwrap())
     }
@@ -58,14 +58,12 @@ mod inner {
 mod inner {
     use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDateTime, Timelike};
 
-    pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+    pub(super) fn offset_from_utc_datetime(utc: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
         let offset = js_sys::Date::from(utc.and_utc()).get_timezone_offset();
         MappedLocalTime::Single(FixedOffset::west((offset as i32) * 60).unwrap())
     }
 
-    pub(super) fn offset_from_local_datetime(
-        local: &NaiveDateTime,
-    ) -> MappedLocalTime<FixedOffset> {
+    pub(super) fn offset_from_local_datetime(local: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
         let mut year = local.year();
         if year < 100 {
             // The API in `js_sys` does not let us create a `Date` with negative years.
@@ -158,11 +156,11 @@ impl TimeZone for Local {
         Local
     }
 
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+    fn offset_from_local_datetime(&self, local: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
         inner::offset_from_local_datetime(local)
     }
 
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> FixedOffset {
+    fn offset_from_utc_datetime(&self, utc: NaiveDateTime) -> FixedOffset {
         inner::offset_from_utc_datetime(utc).unwrap()
     }
 }
@@ -261,8 +259,8 @@ mod tests {
     #[test]
     fn verify_correct_offsets() {
         let now = Local::now();
-        let from_local = Local.from_local_datetime(&now.naive_local()).unwrap();
-        let from_utc = Local.from_utc_datetime(&now.naive_utc());
+        let from_local = Local.from_local_datetime(now.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(now.naive_utc());
 
         assert_eq!(now.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(now.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
@@ -274,8 +272,8 @@ mod tests {
     #[test]
     fn verify_correct_offsets_distant_past() {
         let distant_past = Local::now() - Days::new(365 * 500);
-        let from_local = Local.from_local_datetime(&distant_past.naive_local()).unwrap();
-        let from_utc = Local.from_utc_datetime(&distant_past.naive_utc());
+        let from_local = Local.from_local_datetime(distant_past.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(distant_past.naive_utc());
 
         assert_eq!(distant_past.offset().local_minus_utc(), from_local.offset().local_minus_utc());
         assert_eq!(distant_past.offset().local_minus_utc(), from_utc.offset().local_minus_utc());
@@ -287,8 +285,8 @@ mod tests {
     #[test]
     fn verify_correct_offsets_distant_future() {
         let distant_future = Local::now() + Days::new(365 * 35000);
-        let from_local = Local.from_local_datetime(&distant_future.naive_local()).unwrap();
-        let from_utc = Local.from_utc_datetime(&distant_future.naive_utc());
+        let from_local = Local.from_local_datetime(distant_future.naive_local()).unwrap();
+        let from_utc = Local.from_utc_datetime(distant_future.naive_utc());
 
         assert_eq!(
             distant_future.offset().local_minus_utc(),
