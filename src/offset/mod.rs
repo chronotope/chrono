@@ -209,9 +209,9 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     /// use chrono::{TimeZone, Utc};
     ///
-    /// assert_eq!(Utc.timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
+    /// assert_eq!(Utc.at_timestamp(1431648000, 0).unwrap().to_string(), "2015-05-15 00:00:00 UTC");
     /// ```
-    fn timestamp(&self, secs: i64, nsecs: u32) -> MappedLocalTime<DateTime<Self>> {
+    fn at_timestamp(&self, secs: i64, nsecs: u32) -> MappedLocalTime<DateTime<Self>> {
         match DateTime::from_timestamp(secs, nsecs) {
             Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(dt.naive_utc())),
             Err(_) => MappedLocalTime::None,
@@ -230,12 +230,12 @@ pub trait TimeZone: Sized + Clone {
     ///
     /// ```
     /// use chrono::{MappedLocalTime, TimeZone, Utc};
-    /// match Utc.timestamp_millis(1431648000) {
+    /// match Utc.at_timestamp_millis(1431648000) {
     ///     MappedLocalTime::Single(dt) => assert_eq!(dt.timestamp(), 1431648),
     ///     _ => panic!("Incorrect timestamp_millis"),
     /// };
     /// ```
-    fn timestamp_millis(&self, millis: i64) -> MappedLocalTime<DateTime<Self>> {
+    fn at_timestamp_millis(&self, millis: i64) -> MappedLocalTime<DateTime<Self>> {
         match DateTime::from_timestamp_millis(millis) {
             Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(dt.naive_utc())),
             Err(_) => MappedLocalTime::None,
@@ -245,16 +245,16 @@ pub trait TimeZone: Sized + Clone {
     /// Makes a new `DateTime` from the number of non-leap nanoseconds
     /// since January 1, 1970 0:00:00 UTC (aka "UNIX timestamp").
     ///
-    /// Unlike [`timestamp_millis`](#method.timestamp_millis), this never fails.
+    /// Unlike [`at_timestamp_millis`](#method.at_timestamp_millis), this never fails.
     ///
     /// # Example
     ///
     /// ```
     /// use chrono::{TimeZone, Utc};
     ///
-    /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
+    /// assert_eq!(Utc.at_timestamp_nanos(1431648000000000).timestamp(), 1431648);
     /// ```
-    fn timestamp_nanos(&self, nanos: i64) -> DateTime<Self> {
+    fn at_timestamp_nanos(self, nanos: i64) -> DateTime<Self> {
         self.from_utc_datetime(DateTime::from_timestamp_nanos(nanos).naive_utc())
     }
 
@@ -266,9 +266,9 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     /// use chrono::{TimeZone, Utc};
     ///
-    /// assert_eq!(Utc.timestamp_micros(1431648000000).unwrap().timestamp(), 1431648);
+    /// assert_eq!(Utc.at_timestamp_micros(1431648000000).unwrap().timestamp(), 1431648);
     /// ```
-    fn timestamp_micros(&self, micros: i64) -> MappedLocalTime<DateTime<Self>> {
+    fn at_timestamp_micros(&self, micros: i64) -> MappedLocalTime<DateTime<Self>> {
         match DateTime::from_timestamp_micros(micros) {
             Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(dt.naive_utc())),
             Err(_) => MappedLocalTime::None,
@@ -334,21 +334,21 @@ mod tests {
 
     #[test]
     fn test_negative_millis() {
-        let dt = Utc.timestamp_millis(-1000).unwrap();
+        let dt = Utc.at_timestamp_millis(-1000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
-        let dt = Utc.timestamp_millis(-7000).unwrap();
+        let dt = Utc.at_timestamp_millis(-7000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:53 UTC");
-        let dt = Utc.timestamp_millis(-7001).unwrap();
+        let dt = Utc.at_timestamp_millis(-7001).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.999 UTC");
-        let dt = Utc.timestamp_millis(-7003).unwrap();
+        let dt = Utc.at_timestamp_millis(-7003).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:52.997 UTC");
-        let dt = Utc.timestamp_millis(-999).unwrap();
+        let dt = Utc.at_timestamp_millis(-999).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.001 UTC");
-        let dt = Utc.timestamp_millis(-1).unwrap();
+        let dt = Utc.at_timestamp_millis(-1).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999 UTC");
-        let dt = Utc.timestamp_millis(-60000).unwrap();
+        let dt = Utc.at_timestamp_millis(-60000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
-        let dt = Utc.timestamp_millis(-3600000).unwrap();
+        let dt = Utc.at_timestamp_millis(-3600000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
 
         for (millis, expected) in &[
@@ -356,7 +356,7 @@ mod tests {
             (-7001, "1969-12-31 23:59:52.999 UTC"),
             (-7003, "1969-12-31 23:59:52.997 UTC"),
         ] {
-            match Utc.timestamp_millis(*millis) {
+            match Utc.at_timestamp_millis(*millis) {
                 MappedLocalTime::Single(dt) => {
                     assert_eq!(dt.to_string(), *expected);
                 }
@@ -367,36 +367,36 @@ mod tests {
 
     #[test]
     fn test_negative_nanos() {
-        let dt = Utc.timestamp_nanos(-1_000_000_000);
+        let dt = Utc.at_timestamp_nanos(-1_000_000_000);
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
-        let dt = Utc.timestamp_nanos(-999_999_999);
+        let dt = Utc.at_timestamp_nanos(-999_999_999);
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.000000001 UTC");
-        let dt = Utc.timestamp_nanos(-1);
+        let dt = Utc.at_timestamp_nanos(-1);
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999999999 UTC");
-        let dt = Utc.timestamp_nanos(-60_000_000_000);
+        let dt = Utc.at_timestamp_nanos(-60_000_000_000);
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
-        let dt = Utc.timestamp_nanos(-3_600_000_000_000);
+        let dt = Utc.at_timestamp_nanos(-3_600_000_000_000);
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
     }
 
     #[test]
     fn test_nanos_never_panics() {
-        Utc.timestamp_nanos(i64::max_value());
-        Utc.timestamp_nanos(i64::default());
-        Utc.timestamp_nanos(i64::min_value());
+        Utc.at_timestamp_nanos(i64::max_value());
+        Utc.at_timestamp_nanos(i64::default());
+        Utc.at_timestamp_nanos(i64::min_value());
     }
 
     #[test]
     fn test_negative_micros() {
-        let dt = Utc.timestamp_micros(-1_000_000).unwrap();
+        let dt = Utc.at_timestamp_micros(-1_000_000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59 UTC");
-        let dt = Utc.timestamp_micros(-999_999).unwrap();
+        let dt = Utc.at_timestamp_micros(-999_999).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.000001 UTC");
-        let dt = Utc.timestamp_micros(-1).unwrap();
+        let dt = Utc.at_timestamp_micros(-1).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:59.999999 UTC");
-        let dt = Utc.timestamp_micros(-60_000_000).unwrap();
+        let dt = Utc.at_timestamp_micros(-60_000_000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:59:00 UTC");
-        let dt = Utc.timestamp_micros(-3_600_000_000).unwrap();
+        let dt = Utc.at_timestamp_micros(-3_600_000_000).unwrap();
         assert_eq!(dt.to_string(), "1969-12-31 23:00:00 UTC");
     }
 }

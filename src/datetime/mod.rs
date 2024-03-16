@@ -125,7 +125,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// (aka "UNIX timestamp").
     ///
     /// The reverse operation of creating a [`DateTime`] from a timestamp can be performed
-    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::timestamp`].
+    /// using [`from_timestamp`](DateTime::from_timestamp) or [`TimeZone::at_timestamp`].
     ///
     /// ```
     /// use chrono::{DateTime, TimeZone, Utc};
@@ -727,7 +727,7 @@ impl DateTime<Utc> {
     /// [`timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::at_timestamp`] or [`DateTime::with_timezone`].
     ///
     /// The nanosecond part can exceed 1,000,000,000 in order to represent a
     /// [leap second](NaiveTime#leap-second-handling), but only when `secs % 60 == 59`.
@@ -770,7 +770,7 @@ impl DateTime<Utc> {
     /// This is guaranteed to round-trip with [`timestamp_millis`](DateTime::timestamp_millis).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_millis`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::at_timestamp_millis`] or [`DateTime::with_timezone`].
     ///
     /// # Errors
     ///
@@ -801,7 +801,7 @@ impl DateTime<Utc> {
     /// This is guaranteed to round-trip with [`timestamp_micros`](DateTime::timestamp_micros).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_micros`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::at_timestamp_micros`] or [`DateTime::with_timezone`].
     ///
     /// # Errors
     ///
@@ -836,7 +836,7 @@ impl DateTime<Utc> {
     /// This is guaranteed to round-trip with [`timestamp_nanos`](DateTime::timestamp_nanos).
     ///
     /// If you need to create a `DateTime` with a [`TimeZone`] different from [`Utc`], use
-    /// [`TimeZone::timestamp_nanos`] or [`DateTime::with_timezone`].
+    /// [`TimeZone::at_timestamp_nanos`] or [`DateTime::with_timezone`].
     ///
     /// The UNIX epoch starts on midnight, January 1, 1970, UTC.
     ///
@@ -1755,7 +1755,7 @@ impl From<js_sys::Date> for DateTime<Utc> {
 ))]
 impl From<&js_sys::Date> for DateTime<Utc> {
     fn from(date: &js_sys::Date) -> DateTime<Utc> {
-        Utc.timestamp_millis(date.get_time() as i64).unwrap()
+        Utc.at_timestamp_millis(date.get_time() as i64).unwrap()
     }
 }
 
