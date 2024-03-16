@@ -1712,13 +1712,13 @@ impl str::FromStr for DateTime<Local> {
 
 #[cfg(feature = "std")]
 impl TryFrom<SystemTime> for DateTime<Utc> {
-    type Error = OutOfRange;
+    type Error = Error;
 
-    fn try_from(t: SystemTime) -> Result<DateTime<Utc>, OutOfRange> {
+    fn try_from(t: SystemTime) -> Result<DateTime<Utc>, Error> {
         let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
             Ok(dur) => {
                 // `t` is at or after the Unix epoch.
-                let sec = i64::try_from(dur.as_secs()).map_err(|_| OutOfRange::new())?;
+                let sec = i64::try_from(dur.as_secs()).map_err(|_| Error::OutOfRange)?;
                 let nsec = dur.subsec_nanos();
                 (sec, nsec)
             }
@@ -1726,7 +1726,7 @@ impl TryFrom<SystemTime> for DateTime<Utc> {
                 // `t` is before the Unix epoch. `e.duration()` is how long before the epoch it
                 // is.
                 let dur = e.duration();
-                let sec = i64::try_from(dur.as_secs()).map_err(|_| OutOfRange::new())?;
+                let sec = i64::try_from(dur.as_secs()).map_err(|_| Error::OutOfRange)?;
                 let nsec = dur.subsec_nanos();
                 if nsec == 0 {
                     // Overflow safety: `sec` was returned by `dur.as_secs()`, and is guaranteed to
@@ -1744,7 +1744,7 @@ impl TryFrom<SystemTime> for DateTime<Utc> {
                 }
             }
         };
-        Utc.timestamp(sec, nsec).single().ok_or(OutOfRange::new())
+        DateTime::from_timestamp(sec, nsec)
     }
 }
 
@@ -1753,7 +1753,7 @@ impl TryFrom<SystemTime> for DateTime<Local> {
     type Error = OutOfRange;
 
     fn try_from(t: SystemTime) -> Result<DateTime<Local>, OutOfRange> {
-        DateTime::<Utc>::try_from(t).map(|t| t.with_timezone(&Local))
+        DateTime::<Utc>::try_from(t).map(|t| t.with_timezone(&Local)).map_err(|_| OutOfRange::new())
     }
 }
 
