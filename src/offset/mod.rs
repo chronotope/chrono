@@ -165,7 +165,7 @@ pub trait TimeZone: Sized + Clone {
         sec: u32,
     ) -> MappedLocalTime<DateTime<Self>> {
         match NaiveDate::from_ymd(year, month, day).and_then(|d| d.and_hms(hour, min, sec)) {
-            Ok(dt) => self.from_local_datetime(&dt),
+            Ok(dt) => self.from_local_datetime(dt),
             Err(_) => MappedLocalTime::None,
         }
     }
@@ -192,7 +192,7 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     fn timestamp(&self, secs: i64, nsecs: u32) -> MappedLocalTime<DateTime<Self>> {
         match DateTime::from_timestamp(secs, nsecs) {
-            Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(&dt.naive_utc())),
+            Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(dt.naive_utc())),
             Err(_) => MappedLocalTime::None,
         }
     }
@@ -216,7 +216,7 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     fn timestamp_millis(&self, millis: i64) -> MappedLocalTime<DateTime<Self>> {
         match DateTime::from_timestamp_millis(millis) {
-            Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(&dt.naive_utc())),
+            Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(dt.naive_utc())),
             Err(_) => MappedLocalTime::None,
         }
     }
@@ -234,7 +234,7 @@ pub trait TimeZone: Sized + Clone {
     /// assert_eq!(Utc.timestamp_nanos(1431648000000000).timestamp(), 1431648);
     /// ```
     fn timestamp_nanos(&self, nanos: i64) -> DateTime<Self> {
-        self.from_utc_datetime(&DateTime::from_timestamp_nanos(nanos).naive_utc())
+        self.from_utc_datetime(DateTime::from_timestamp_nanos(nanos).naive_utc())
     }
 
     /// Makes a new `DateTime` from the number of non-leap microseconds
@@ -249,7 +249,7 @@ pub trait TimeZone: Sized + Clone {
     /// ```
     fn timestamp_micros(&self, micros: i64) -> MappedLocalTime<DateTime<Self>> {
         match DateTime::from_timestamp_micros(micros) {
-            Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(&dt.naive_utc())),
+            Ok(dt) => MappedLocalTime::Single(self.from_utc_datetime(dt.naive_utc())),
             Err(_) => MappedLocalTime::None,
         }
     }
@@ -258,11 +258,11 @@ pub trait TimeZone: Sized + Clone {
     fn from_offset(offset: &Self::Offset) -> Self;
 
     /// Creates the offset(s) for given local `NaiveDateTime` if possible.
-    fn offset_from_local_datetime(&self, local: &NaiveDateTime) -> MappedLocalTime<Self::Offset>;
+    fn offset_from_local_datetime(&self, local: NaiveDateTime) -> MappedLocalTime<Self::Offset>;
 
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
-    fn from_local_datetime(&self, local: &NaiveDateTime) -> MappedLocalTime<DateTime<Self>> {
+    fn from_local_datetime(&self, local: NaiveDateTime) -> MappedLocalTime<DateTime<Self>> {
         // Return `MappedLocalTime::None` when the offset pushes a value out of range, instead of
         // panicking.
         match self.offset_from_local_datetime(local) {
@@ -284,13 +284,13 @@ pub trait TimeZone: Sized + Clone {
     }
 
     /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.
-    fn offset_from_utc_datetime(&self, utc: &NaiveDateTime) -> Self::Offset;
+    fn offset_from_utc_datetime(&self, utc: NaiveDateTime) -> Self::Offset;
 
     /// Converts the UTC `NaiveDateTime` to the local time.
     /// The UTC is continuous and thus this cannot fail (but can give the duplicate local time).
     #[allow(clippy::wrong_self_convention)]
-    fn from_utc_datetime(&self, utc: &NaiveDateTime) -> DateTime<Self> {
-        DateTime::from_naive_utc_and_offset(*utc, self.offset_from_utc_datetime(utc))
+    fn from_utc_datetime(&self, utc: NaiveDateTime) -> DateTime<Self> {
+        DateTime::from_naive_utc_and_offset(utc, self.offset_from_utc_datetime(utc))
     }
 }
 
@@ -304,18 +304,18 @@ mod tests {
             dbg!(offset_hour);
             let offset = FixedOffset::east(offset_hour * 60 * 60).unwrap();
 
-            let local_max = offset.from_utc_datetime(&NaiveDateTime::MAX);
+            let local_max = offset.from_utc_datetime(NaiveDateTime::MAX);
             assert_eq!(local_max.naive_utc(), NaiveDateTime::MAX);
-            let local_min = offset.from_utc_datetime(&NaiveDateTime::MIN);
+            let local_min = offset.from_utc_datetime(NaiveDateTime::MIN);
             assert_eq!(local_min.naive_utc(), NaiveDateTime::MIN);
 
-            let local_max = offset.from_local_datetime(&NaiveDateTime::MAX);
+            let local_max = offset.from_local_datetime(NaiveDateTime::MAX);
             if offset_hour >= 0 {
                 assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
             } else {
                 assert_eq!(local_max, MappedLocalTime::None);
             }
-            let local_min = offset.from_local_datetime(&NaiveDateTime::MIN);
+            let local_min = offset.from_local_datetime(NaiveDateTime::MIN);
             if offset_hour <= 0 {
                 assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
             } else {

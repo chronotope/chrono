@@ -114,11 +114,11 @@ impl TimeZone for Utc {
         Utc
     }
 
-    fn offset_from_local_datetime(&self, _local: &NaiveDateTime) -> MappedLocalTime<Utc> {
+    fn offset_from_local_datetime(&self, _local: NaiveDateTime) -> MappedLocalTime<Utc> {
         MappedLocalTime::Single(Utc)
     }
 
-    fn offset_from_utc_datetime(&self, _utc: &NaiveDateTime) -> Utc {
+    fn offset_from_utc_datetime(&self, _utc: NaiveDateTime) -> Utc {
         Utc
     }
 }

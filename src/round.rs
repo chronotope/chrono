@@ -320,7 +320,7 @@ mod tests {
         let pst = FixedOffset::east(8 * 60 * 60).unwrap();
         let dt = pst
             .from_local_datetime(
-                &NaiveDate::from_ymd(2018, 1, 11)
+                NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
                     .and_hms_nano(10, 5, 13, 84_660_684)
                     .unwrap(),
@@ -343,7 +343,7 @@ mod tests {
 
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2018, 1, 11)
+                NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
                     .and_hms_nano(10, 5, 27, 750_500_000)
                     .unwrap(),
@@ -363,7 +363,7 @@ mod tests {
     fn test_round_leap_nanos() {
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2016, 12, 31)
+                NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
                     .and_hms_nano(23, 59, 59, 1_750_500_000)
                     .unwrap(),
@@ -384,7 +384,7 @@ mod tests {
         let pst = FixedOffset::east(8 * 60 * 60).unwrap();
         let dt = pst
             .from_local_datetime(
-                &NaiveDate::from_ymd(2018, 1, 11)
+                NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
                     .and_hms_nano(10, 5, 13, 84_660_684)
                     .unwrap(),
@@ -407,7 +407,7 @@ mod tests {
 
         let dt = pst
             .from_local_datetime(
-                &NaiveDate::from_ymd(2018, 1, 11)
+                NaiveDate::from_ymd(2018, 1, 11)
                     .unwrap()
                     .and_hms_nano(10, 5, 27, 750_500_000)
                     .unwrap(),
@@ -427,7 +427,7 @@ mod tests {
     fn test_trunc_leap_nanos() {
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2016, 12, 31)
+                NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
                     .and_hms_nano(23, 59, 59, 1_750_500_000)
                     .unwrap(),
@@ -447,7 +447,7 @@ mod tests {
     fn test_duration_round() {
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2016, 12, 31)
+                NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
                     .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
@@ -467,7 +467,7 @@ mod tests {
         // round up
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
             )
             .unwrap();
         assert_eq!(
@@ -477,7 +477,7 @@ mod tests {
         // round down
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
             )
             .unwrap();
         assert_eq!(
@@ -529,7 +529,7 @@ mod tests {
     fn test_duration_round_naive() {
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2016, 12, 31)
+                NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
                     .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
@@ -550,7 +550,7 @@ mod tests {
         // round up
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
             )
             .unwrap()
             .naive_utc();
@@ -561,7 +561,7 @@ mod tests {
         // round down
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
             )
             .unwrap()
             .naive_utc();
@@ -601,7 +601,7 @@ mod tests {
     fn test_duration_trunc() {
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2016, 12, 31)
+                NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
                     .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
@@ -616,7 +616,7 @@ mod tests {
         // would round up
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
             )
             .unwrap();
         assert_eq!(
@@ -626,7 +626,7 @@ mod tests {
         // would round down
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
             )
             .unwrap();
         assert_eq!(
@@ -677,7 +677,7 @@ mod tests {
     fn test_duration_trunc_naive() {
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2016, 12, 31)
+                NaiveDate::from_ymd(2016, 12, 31)
                     .unwrap()
                     .and_hms_nano(23, 59, 59, 175_500_000)
                     .unwrap(),
@@ -693,7 +693,7 @@ mod tests {
         // would round up
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 30, 0).unwrap(),
             )
             .unwrap()
             .naive_utc();
@@ -704,7 +704,7 @@ mod tests {
         // would round down
         let dt = Utc
             .from_local_datetime(
-                &NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
+                NaiveDate::from_ymd(2012, 12, 12).unwrap().and_hms_milli(18, 22, 29, 999).unwrap(),
             )
             .unwrap()
             .naive_utc();

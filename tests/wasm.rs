@@ -67,7 +67,7 @@ fn from_is_exact() {
 fn local_from_local_datetime() {
     let now = Local::now();
     let ndt = now.naive_local();
-    let res = match Local.from_local_datetime(&ndt).single() {
+    let res = match Local.from_local_datetime(ndt).single() {
         Some(v) => v,
         None => panic! {"Required for test!"},
     };

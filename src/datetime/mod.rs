@@ -285,7 +285,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
-        tz.from_utc_datetime(&self.datetime)
+        tz.from_utc_datetime(self.datetime)
     }
 
     /// Fix the offset from UTC to its current value, dropping the associated timezone information.
@@ -314,7 +314,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs).ok()?;
         let tz = self.timezone();
-        Some(tz.from_utc_datetime(&datetime))
+        Some(tz.from_utc_datetime(datetime))
     }
 
     /// Adds given `Months` to the current date and time.
@@ -351,7 +351,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs).ok()?;
         let tz = self.timezone();
-        Some(tz.from_utc_datetime(&datetime))
+        Some(tz.from_utc_datetime(datetime))
     }
 
     /// Subtracts given `Months` from the current date and time.
@@ -397,7 +397,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // range local datetime when adding `Days(0)`.
         let naive = self.overflowing_naive_local().checked_add_days(days).ok()?;
         self.timezone()
-            .from_local_datetime(&naive)
+            .from_local_datetime(naive)
             .single()
             .filter(|dt| dt <= &DateTime::<Utc>::MAX_UTC)
     }
@@ -418,7 +418,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // range local datetime when adding `Days(0)`.
         let naive = self.overflowing_naive_local().checked_sub_days(days).ok()?;
         self.timezone()
-            .from_local_datetime(&naive)
+            .from_local_datetime(naive)
             .single()
             .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC)
     }
@@ -541,7 +541,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     /// let dt = pst
     ///     .from_local_datetime(
-    ///         &NaiveDate::from_ymd(2018, 1, 26).unwrap().and_hms_micro(10, 30, 9, 453_829).unwrap(),
+    ///         NaiveDate::from_ymd(2018, 1, 26).unwrap().and_hms_micro(10, 30, 9, 453_829).unwrap(),
     ///     )
     ///     .unwrap();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true), "2018-01-26T10:30:09+08:00");
@@ -696,7 +696,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[must_use]
     pub fn with_time(&self, time: NaiveTime) -> MappedLocalTime<Self> {
-        self.timezone().from_local_datetime(&self.overflowing_naive_local().date().and_time(time))
+        self.timezone().from_local_datetime(self.overflowing_naive_local().date().and_time(time))
     }
 
     /// Makes a new `DateTime` with the hour number changed.
@@ -919,20 +919,20 @@ impl DateTime<Utc> {
 
 impl Default for DateTime<Utc> {
     fn default() -> Self {
-        Utc.from_utc_datetime(&NaiveDateTime::default())
+        Utc.from_utc_datetime(NaiveDateTime::default())
     }
 }
 
 #[cfg(feature = "clock")]
 impl Default for DateTime<Local> {
     fn default() -> Self {
-        Local.from_utc_datetime(&NaiveDateTime::default())
+        Local.from_utc_datetime(NaiveDateTime::default())
     }
 }
 
 impl Default for DateTime<FixedOffset> {
     fn default() -> Self {
-        FixedOffset::west(0).unwrap().from_utc_datetime(&NaiveDateTime::default())
+        FixedOffset::west(0).unwrap().from_utc_datetime(NaiveDateTime::default())
     }
 }
 
@@ -1010,7 +1010,7 @@ where
     F: FnMut(NaiveDateTime) -> Option<NaiveDateTime>,
 {
     f(dt.overflowing_naive_local())
-        .and_then(|datetime| dt.timezone().from_local_datetime(&datetime).single())
+        .and_then(|datetime| dt.timezone().from_local_datetime(datetime).single())
         .filter(|dt| dt >= &DateTime::<Utc>::MIN_UTC && dt <= &DateTime::<Utc>::MAX_UTC)
 }
 
@@ -1097,7 +1097,7 @@ impl DateTime<FixedOffset> {
     ///     Ok(FixedOffset::east(0)
     ///         .unwrap()
     ///         .from_local_datetime(
-    ///             &NaiveDate::from_ymd(1983, 4, 13).unwrap().and_hms_milli(12, 9, 14, 274).unwrap()
+    ///             NaiveDate::from_ymd(1983, 4, 13).unwrap().and_hms_milli(12, 9, 14, 274).unwrap()
     ///         )
     ///         .unwrap())
     /// );
@@ -1390,7 +1390,7 @@ impl<Tz: TimeZone> AddAssign<TimeDelta> for DateTime<Tz> {
         let datetime =
             self.datetime.checked_add_signed(rhs).expect("`DateTime + TimeDelta` overflowed");
         let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime);
+        *self = tz.from_utc_datetime(datetime);
     }
 }
 
@@ -1510,7 +1510,7 @@ impl<Tz: TimeZone> SubAssign<TimeDelta> for DateTime<Tz> {
         let datetime =
             self.datetime.checked_sub_signed(rhs).expect("`DateTime - TimeDelta` overflowed");
         let tz = self.timezone();
-        *self = tz.from_utc_datetime(&datetime)
+        *self = tz.from_utc_datetime(datetime)
     }
 }
 

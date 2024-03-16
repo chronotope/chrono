@@ -14,17 +14,17 @@ use super::tz_info::TimeZone;
 use super::{FixedOffset, NaiveDateTime};
 use crate::{Datelike, MappedLocalTime};
 
-pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+pub(super) fn offset_from_utc_datetime(utc: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     offset(utc, false)
 }
 
-pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+pub(super) fn offset_from_local_datetime(local: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     offset(local, true)
 }
 
-fn offset(d: &NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
+fn offset(d: NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
     TZ_INFO.with(|maybe_cache| {
-        maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
+        maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(d, local)
     })
 }
 
