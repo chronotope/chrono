@@ -15,7 +15,7 @@ use crate::OutOfRange;
 /// use chrono::prelude::*;
 /// use chrono::Month;
 ///
-/// let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
+/// let date = Utc.at_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
 /// // `2019-10-28T09:10:11Z`
 /// let month = Month::try_from(u8::try_from(date.month()).unwrap()).ok();
 /// assert_eq!(month, Some(Month::October))
@@ -25,7 +25,7 @@ use crate::OutOfRange;
 /// # use chrono::prelude::*;
 /// # use chrono::Month;
 /// let month = Month::January;
-/// let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+/// let dt = Utc.at_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
 /// ```
 /// Allows mapping from and to month, from 1-January to 12-December.
@@ -282,11 +282,11 @@ mod tests {
         assert_eq!(Month::try_from(12), Ok(Month::December));
         assert_eq!(Month::try_from(13), Err(OutOfRange::new()));
 
-        let date = Utc.with_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
+        let date = Utc.at_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
         assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
         let month = Month::January;
-        let dt = Utc.with_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+        let dt = Utc.at_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 

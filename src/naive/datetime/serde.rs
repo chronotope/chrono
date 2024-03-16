@@ -1139,7 +1139,7 @@ mod tests {
         }
 
         let expected =
-            Test { one: Some(1), two: Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
+            Test { one: Some(1), two: Some(Utc.at_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap()) };
         let bytes: Vec<u8> = serialize(&expected).unwrap();
         let actual = deserialize::<Test>(&(bytes)).unwrap();
 

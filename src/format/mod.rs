@@ -20,7 +20,7 @@
 //! # #[cfg(feature = "alloc")] {
 //! use chrono::{NaiveDateTime, TimeZone, Utc};
 //!
-//! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
+//! let date_time = Utc.at_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
 //!
 //! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
 //! assert_eq!(formatted, "2020-11-10 00:01:32");

@@ -264,7 +264,7 @@ impl<'a> StrftimeItems<'a> {
     /// use chrono::{FixedOffset, TimeZone};
     ///
     /// let dt =
-    ///     FixedOffset::east(9 * 60 * 60).unwrap().with_ymd_and_hms(2023, 7, 11, 0, 34, 59).unwrap();
+    ///     FixedOffset::east(9 * 60 * 60).unwrap().at_ymd_and_hms(2023, 7, 11, 0, 34, 59).unwrap();
     ///
     /// // Note: you usually want to combine `StrftimeItems::new_with_locale` with other
     /// // locale-aware methods such as `DateTime::format_localized_with_items`.
@@ -961,7 +961,7 @@ mod tests {
     fn test_strftime_docs_localized() {
         let dt = FixedOffset::east(34200)
             .unwrap()
-            .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
+            .at_ymd_and_hms(2001, 7, 8, 0, 34, 59)
             .unwrap()
             .with_nanosecond(1_026_490_708)
             .unwrap();
@@ -1035,7 +1035,7 @@ mod tests {
     fn test_strftime_localized_korean() {
         let dt = FixedOffset::east(34200)
             .unwrap()
-            .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
+            .at_ymd_and_hms(2001, 7, 8, 0, 34, 59)
             .unwrap()
             .with_nanosecond(1_026_490_708)
             .unwrap();
@@ -1064,7 +1064,7 @@ mod tests {
     fn test_strftime_localized_japanese() {
         let dt = FixedOffset::east(34200)
             .unwrap()
-            .with_ymd_and_hms(2001, 7, 8, 0, 34, 59)
+            .at_ymd_and_hms(2001, 7, 8, 0, 34, 59)
             .unwrap()
             .with_nanosecond(1_026_490_708)
             .unwrap();
@@ -1091,8 +1091,8 @@ mod tests {
     #[test]
     #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
     fn test_strftime_localized_time() {
-        let dt1 = Utc.with_ymd_and_hms(2024, 2, 9, 6, 54, 32).unwrap();
-        let dt2 = Utc.with_ymd_and_hms(2024, 2, 9, 18, 54, 32).unwrap();
+        let dt1 = Utc.at_ymd_and_hms(2024, 2, 9, 6, 54, 32).unwrap();
+        let dt2 = Utc.at_ymd_and_hms(2024, 2, 9, 18, 54, 32).unwrap();
         // Some of these locales gave issues before pure-rust-locales 0.8.0 with chrono 0.4.27+
         assert_eq!(dt1.format_localized("%X", Locale::nl_NL).to_string(), "06:54:32");
         assert_eq!(dt2.format_localized("%X", Locale::nl_NL).to_string(), "18:54:32");
@@ -1127,7 +1127,7 @@ mod tests {
     fn test_strftime_parse() {
         let fmt_str = StrftimeItems::new("%Y-%m-%dT%H:%M:%S%z");
         let fmt_items = fmt_str.parse().unwrap();
-        let dt = Utc.with_ymd_and_hms(2014, 5, 7, 12, 34, 56).unwrap();
+        let dt = Utc.at_ymd_and_hms(2014, 5, 7, 12, 34, 56).unwrap();
         assert_eq!(&dt.format_with_items(fmt_items.iter()).to_string(), "2014-05-07T12:34:56+0000");
     }
 }

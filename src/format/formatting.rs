@@ -699,11 +699,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_datetime_format_alignment() {
-        let datetime = Utc
-            .with_ymd_and_hms(2007, 1, 2, 12, 34, 56)
-            .unwrap()
-            .with_nanosecond(123456789)
-            .unwrap();
+        let datetime =
+            Utc.at_ymd_and_hms(2007, 1, 2, 12, 34, 56).unwrap().with_nanosecond(123456789).unwrap();
 
         // Item::Literal, odd number of padding bytes.
         let percent = datetime.format("%%");

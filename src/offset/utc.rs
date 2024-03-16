@@ -39,7 +39,7 @@ use crate::OutOfRange;
 /// let dt = DateTime::from_timestamp(61, 0).unwrap();
 ///
 /// assert_eq!(Utc.at_timestamp(61, 0).unwrap(), dt);
-/// assert_eq!(Utc.with_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
+/// assert_eq!(Utc.at_ymd_and_hms(1970, 1, 1, 0, 1, 1).unwrap(), dt);
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(

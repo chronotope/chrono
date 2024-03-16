@@ -176,7 +176,7 @@ pub trait TimeZone: Sized + Clone {
     /// This assumes the proleptic Gregorian calendar, with the year 0 being 1 BCE.
     ///
     /// Returns `MappedLocalTime::None` on invalid input data.
-    fn with_ymd_and_hms(
+    fn at_ymd_and_hms(
         &self,
         year: i32,
         month: u32,

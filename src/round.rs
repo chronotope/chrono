@@ -260,7 +260,7 @@ pub enum RoundingError {
     ///
     /// ``` rust
     /// # use chrono::{DurationRound, TimeDelta, RoundingError, TimeZone, Utc};
-    /// let dt = Utc.with_ymd_and_hms(2300, 12, 12, 0, 0, 0).unwrap();
+    /// let dt = Utc.at_ymd_and_hms(2300, 12, 12, 0, 0, 0).unwrap();
     ///
     /// assert_eq!(dt.duration_round(TimeDelta::days(1)), Err(RoundingError::TimestampExceedsLimit));
     /// ```
@@ -486,7 +486,7 @@ mod tests {
         );
 
         // timezone east
-        let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::east(3600).unwrap().at_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 +01:00"
@@ -497,7 +497,7 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::west(3600).unwrap().at_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-28 00:00:00 -01:00"
@@ -573,7 +573,7 @@ mod tests {
 
     #[test]
     fn test_duration_round_pre_epoch() {
-        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
+        let dt = Utc.at_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
         assert_eq!(
             dt.duration_round(TimeDelta::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
@@ -634,7 +634,7 @@ mod tests {
         );
 
         // timezone east
-        let dt = FixedOffset::east(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::east(3600).unwrap().at_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 +01:00"
@@ -645,7 +645,7 @@ mod tests {
         );
 
         // timezone west
-        let dt = FixedOffset::west(3600).unwrap().with_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
+        let dt = FixedOffset::west(3600).unwrap().at_ymd_and_hms(2020, 10, 27, 15, 0, 0).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::days(1)).unwrap().to_string(),
             "2020-10-27 00:00:00 -01:00"
@@ -715,7 +715,7 @@ mod tests {
 
     #[test]
     fn test_duration_trunc_pre_epoch() {
-        let dt = Utc.with_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
+        let dt = Utc.at_ymd_and_hms(1969, 12, 12, 12, 12, 12).unwrap();
         assert_eq!(
             dt.duration_trunc(TimeDelta::minutes(10)).unwrap().to_string(),
             "1969-12-12 12:10:00 UTC"
