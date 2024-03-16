@@ -1736,7 +1736,7 @@ fn nano_roundrip() {
         i64::MAX,
     ] {
         println!("nanos: {}", nanos);
-        let dt = Utc.timestamp_nanos(nanos);
+        let dt = Utc.at_timestamp_nanos(nanos);
         let nanos2 = dt.timestamp_nanos().expect("value roundtrips");
         assert_eq!(nanos, nanos2);
     }

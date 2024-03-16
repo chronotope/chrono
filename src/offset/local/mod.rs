@@ -102,7 +102,7 @@ mod tz_info;
 /// use chrono::{DateTime, Local, TimeZone};
 ///
 /// let dt1: DateTime<Local> = Local::now();
-/// let dt2: DateTime<Local> = Local.timestamp(0, 0).unwrap();
+/// let dt2: DateTime<Local> = Local.at_timestamp(0, 0).unwrap();
 /// assert!(dt1 >= dt2);
 /// ```
 #[derive(Copy, Clone, Debug)]
