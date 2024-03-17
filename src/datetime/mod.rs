@@ -311,7 +311,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns `None` if the resulting date would be out of range.
     #[inline]
     #[must_use]
-    pub fn checked_add_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
+    pub fn checked_add_signed(&self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_add_signed(rhs).ok()?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(datetime))
@@ -331,7 +331,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// - The resulting UTC datetime would be out of range.
     /// - The resulting local datetime would be out of range (unless `months` is zero).
     #[must_use]
-    pub fn checked_add_months(self, months: Months) -> Option<DateTime<Tz>> {
+    pub fn checked_add_months(&self, months: Months) -> Option<DateTime<Tz>> {
         // `NaiveDate::checked_add_months` has a fast path for `Months(0)` that does not validate
         // the resulting date, with which we can return `Some` even for an out of range local
         // datetime.
@@ -348,7 +348,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// Returns `None` if the resulting date would be out of range.
     #[inline]
     #[must_use]
-    pub fn checked_sub_signed(self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_signed(&self, rhs: TimeDelta) -> Option<DateTime<Tz>> {
         let datetime = self.datetime.checked_sub_signed(rhs).ok()?;
         let tz = self.timezone();
         Some(tz.from_utc_datetime(datetime))
@@ -368,7 +368,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// - The resulting UTC datetime would be out of range.
     /// - The resulting local datetime would be out of range (unless `months` is zero).
     #[must_use]
-    pub fn checked_sub_months(self, months: Months) -> Option<DateTime<Tz>> {
+    pub fn checked_sub_months(&self, months: Months) -> Option<DateTime<Tz>> {
         // `NaiveDate::checked_sub_months` has a fast path for `Months(0)` that does not validate
         // the resulting date, with which we can return `Some` even for an out of range local
         // datetime.
@@ -388,9 +388,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// - The resulting UTC datetime would be out of range.
     /// - The resulting local datetime would be out of range (unless `days` is zero).
     #[must_use]
-    pub fn checked_add_days(self, days: Days) -> Option<Self> {
+    pub fn checked_add_days(&self, days: Days) -> Option<Self> {
         if days == Days::new(0) {
-            return Some(self);
+            return Some(self.clone());
         }
         // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
         // does not validate the resulting date. This allows us to return `Some` even for an out of
@@ -412,7 +412,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// - The resulting UTC datetime would be out of range.
     /// - The resulting local datetime would be out of range (unless `days` is zero).
     #[must_use]
-    pub fn checked_sub_days(self, days: Days) -> Option<Self> {
+    pub fn checked_sub_days(&self, days: Days) -> Option<Self> {
         // `NaiveDate::add_days` has a fast path if the result remains within the same year, that
         // does not validate the resulting date. This allows us to return `Some` even for an out of
         // range local datetime when adding `Days(0)`.
@@ -428,7 +428,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn signed_duration_since<Tz2: TimeZone>(
-        self,
+        &self,
         rhs: impl Borrow<DateTime<Tz2>>,
     ) -> TimeDelta {
         self.datetime.signed_duration_since(rhs.borrow().datetime)
