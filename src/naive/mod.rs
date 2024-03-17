@@ -56,7 +56,7 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn first_day(&self) -> NaiveDate {
+    pub const fn first_day(self) -> NaiveDate {
         let start = self.start.num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to subtract from `self.date`.
@@ -84,7 +84,7 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn last_day(&self) -> NaiveDate {
+    pub const fn last_day(self) -> NaiveDate {
         let end = self.start.pred().num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to add to `self.date`.
@@ -114,7 +114,7 @@ impl NaiveWeek {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn days(&self) -> RangeInclusive<NaiveDate> {
+    pub const fn days(self) -> RangeInclusive<NaiveDate> {
         self.first_day()..=self.last_day()
     }
 }
