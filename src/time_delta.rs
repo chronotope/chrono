@@ -178,29 +178,29 @@ impl TimeDelta {
 
     /// Returns the total number of whole weeks in the `TimeDelta`.
     #[inline]
-    pub const fn num_weeks(&self) -> i64 {
+    pub const fn num_weeks(self) -> i64 {
         self.num_days() / 7
     }
 
     /// Returns the total number of whole days in the `TimeDelta`.
-    pub const fn num_days(&self) -> i64 {
+    pub const fn num_days(self) -> i64 {
         self.num_seconds() / SECS_PER_DAY
     }
 
     /// Returns the total number of whole hours in the `TimeDelta`.
     #[inline]
-    pub const fn num_hours(&self) -> i64 {
+    pub const fn num_hours(self) -> i64 {
         self.num_seconds() / SECS_PER_HOUR
     }
 
     /// Returns the total number of whole minutes in the `TimeDelta`.
     #[inline]
-    pub const fn num_minutes(&self) -> i64 {
+    pub const fn num_minutes(self) -> i64 {
         self.num_seconds() / SECS_PER_MINUTE
     }
 
     /// Returns the total number of whole seconds in the `TimeDelta`.
-    pub const fn num_seconds(&self) -> i64 {
+    pub const fn num_seconds(self) -> i64 {
         // If secs is negative, nanos should be subtracted from the duration.
         if self.secs < 0 && self.nanos > 0 {
             self.secs + 1
@@ -212,7 +212,7 @@ impl TimeDelta {
     /// Returns the number of nanoseconds such that
     /// `subsec_nanos() + num_seconds() * NANOS_PER_SEC` is the total number of
     /// nanoseconds in the `TimeDelta`.
-    pub const fn subsec_nanos(&self) -> i32 {
+    pub const fn subsec_nanos(self) -> i32 {
         if self.secs < 0 && self.nanos > 0 {
             self.nanos - NANOS_PER_SEC
         } else {
@@ -221,7 +221,7 @@ impl TimeDelta {
     }
 
     /// Returns the total number of whole milliseconds in the `TimeDelta`.
-    pub const fn num_milliseconds(&self) -> i64 {
+    pub const fn num_milliseconds(self) -> i64 {
         // A proper TimeDelta will not overflow, because MIN and MAX are defined such
         // that the range is within the bounds of an i64, from -i64::MAX through to
         // +i64::MAX inclusive. Notably, i64::MIN is excluded from this range.
@@ -232,7 +232,7 @@ impl TimeDelta {
 
     /// Returns the total number of whole microseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
-    pub const fn num_microseconds(&self) -> Option<i64> {
+    pub const fn num_microseconds(self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(MICROS_PER_SEC));
         let nanos_part = self.subsec_nanos() / NANOS_PER_MICRO;
         secs_part.checked_add(nanos_part as i64)
@@ -240,7 +240,7 @@ impl TimeDelta {
 
     /// Returns the total number of whole nanoseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
-    pub const fn num_nanoseconds(&self) -> Option<i64> {
+    pub const fn num_nanoseconds(self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64));
         let nanos_part = self.subsec_nanos();
         secs_part.checked_add(nanos_part as i64)
@@ -248,7 +248,7 @@ impl TimeDelta {
 
     /// Add two `TimeDelta`s, returning `None` if overflow occurred.
     #[must_use]
-    pub const fn checked_add(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
+    pub const fn checked_add(self, rhs: &TimeDelta) -> Option<TimeDelta> {
         // No overflow checks here because we stay comfortably within the range of an `i64`.
         // Range checks happen in `TimeDelta::new`.
         let mut secs = self.secs + rhs.secs;
@@ -262,7 +262,7 @@ impl TimeDelta {
 
     /// Subtract two `TimeDelta`s, returning `None` if overflow occurred.
     #[must_use]
-    pub const fn checked_sub(&self, rhs: &TimeDelta) -> Option<TimeDelta> {
+    pub const fn checked_sub(self, rhs: &TimeDelta) -> Option<TimeDelta> {
         // No overflow checks here because we stay comfortably within the range of an `i64`.
         // Range checks happen in `TimeDelta::new`.
         let mut secs = self.secs - rhs.secs;
@@ -276,7 +276,7 @@ impl TimeDelta {
 
     /// Returns the `TimeDelta` as an absolute (non-negative) value.
     #[inline]
-    pub const fn abs(&self) -> TimeDelta {
+    pub const fn abs(self) -> TimeDelta {
         if self.secs < 0 && self.nanos != 0 {
             TimeDelta { secs: (self.secs + 1).abs(), nanos: NANOS_PER_SEC - self.nanos }
         } else {
@@ -304,7 +304,7 @@ impl TimeDelta {
 
     /// Returns `true` if the `TimeDelta` equals `TimeDelta::zero()`.
     #[inline]
-    pub const fn is_zero(&self) -> bool {
+    pub const fn is_zero(self) -> bool {
         self.secs == 0 && self.nanos == 0
     }
 
@@ -327,7 +327,7 @@ impl TimeDelta {
     ///
     /// This function errors when duration is less than zero. As standard
     /// library implementation is limited to non-negative values.
-    pub const fn to_std(&self) -> Result<Duration, OutOfRangeError> {
+    pub const fn to_std(self) -> Result<Duration, OutOfRangeError> {
         if self.secs < 0 {
             return Err(OutOfRangeError(()));
         }
