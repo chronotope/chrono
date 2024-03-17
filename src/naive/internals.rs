@@ -273,8 +273,8 @@ impl Mdf {
 
     /// Returns the month of this `Mdf`.
     #[inline]
-    pub(super) const fn month(&self) -> u32 {
-        let Mdf(mdf) = *self;
+    pub(super) const fn month(self) -> u32 {
+        let Mdf(mdf) = self;
         mdf >> 9
     }
 
@@ -284,19 +284,19 @@ impl Mdf {
     ///
     /// Returns [`Error::InvalidArgument`] if `month > 12`.
     #[inline]
-    pub(super) const fn with_month(&self, month: u32) -> Result<Mdf, Error> {
+    pub(super) const fn with_month(self, month: u32) -> Result<Mdf, Error> {
         if month > 12 {
             return Err(Error::InvalidArgument);
         }
 
-        let Mdf(mdf) = *self;
+        let Mdf(mdf) = self;
         Ok(Mdf((mdf & 0b1_1111_1111) | (month << 9)))
     }
 
     /// Returns the day of this `Mdf`.
     #[inline]
-    pub(super) const fn day(&self) -> u32 {
-        let Mdf(mdf) = *self;
+    pub(super) const fn day(self) -> u32 {
+        let Mdf(mdf) = self;
         (mdf >> 4) & 0b1_1111
     }
 
@@ -306,19 +306,19 @@ impl Mdf {
     ///
     /// Returns [`Error::InvalidArgument`] if `day > 31`.
     #[inline]
-    pub(super) const fn with_day(&self, day: u32) -> Result<Mdf, Error> {
+    pub(super) const fn with_day(self, day: u32) -> Result<Mdf, Error> {
         if day > 31 {
             return Err(Error::InvalidArgument);
         }
 
-        let Mdf(mdf) = *self;
+        let Mdf(mdf) = self;
         Ok(Mdf((mdf & !0b1_1111_0000) | (day << 4)))
     }
 
     /// Replaces the flags of this `Mdf`, keeping the month and day.
     #[inline]
-    pub(super) const fn with_flags(&self, YearFlags(flags): YearFlags) -> Mdf {
-        let Mdf(mdf) = *self;
+    pub(super) const fn with_flags(self, YearFlags(flags): YearFlags) -> Mdf {
+        let Mdf(mdf) = self;
         Mdf((mdf & !0b1111) | flags as u32)
     }
 
@@ -333,7 +333,7 @@ impl Mdf {
     ///
     /// Returns [`Error::DoesNotExist`] if the given day does not exist in the given month.
     #[inline]
-    pub(super) const fn ordinal(&self) -> Result<u32, Error> {
+    pub(super) const fn ordinal(self) -> Result<u32, Error> {
         let mdl = self.0 >> 3;
         let adjustment = MDL_TO_OL[mdl as usize];
         match adjustment {
@@ -345,7 +345,7 @@ impl Mdf {
 
     /// Returns the year flags of this `Mdf`.
     #[inline]
-    pub(super) const fn year_flags(&self) -> YearFlags {
+    pub(super) const fn year_flags(self) -> YearFlags {
         YearFlags((self.0 & 0b1111) as u8)
     }
 
@@ -360,7 +360,7 @@ impl Mdf {
     ///
     /// Returns [`Error::DoesNotExist`] if the given day does not exist in the given month.
     #[inline]
-    pub(super) const fn ordinal_and_flags(&self) -> Result<i32, Error> {
+    pub(super) const fn ordinal_and_flags(self) -> Result<i32, Error> {
         let mdl = self.0 >> 3;
         let adjustment = MDL_TO_OL[mdl as usize];
         match adjustment {
@@ -371,7 +371,7 @@ impl Mdf {
     }
 
     #[cfg(test)]
-    fn valid(&self) -> bool {
+    fn valid(self) -> bool {
         let mdl = self.0 >> 3;
         MDL_TO_OL[mdl as usize] > 0
     }
