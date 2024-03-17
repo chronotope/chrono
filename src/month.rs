@@ -75,8 +75,8 @@ impl Month {
     /// `m.succ()`: | `February` | `March`    | `...` | `January`
     #[inline]
     #[must_use]
-    pub const fn succ(&self) -> Month {
-        match *self {
+    pub const fn succ(self) -> Month {
+        match self {
             Month::January => Month::February,
             Month::February => Month::March,
             Month::March => Month::April,
@@ -99,8 +99,8 @@ impl Month {
     /// `m.pred()`: | `December` | `January`  | `...` | `November`
     #[inline]
     #[must_use]
-    pub const fn pred(&self) -> Month {
-        match *self {
+    pub const fn pred(self) -> Month {
+        match self {
             Month::January => Month::December,
             Month::February => Month::January,
             Month::March => Month::February,
@@ -123,8 +123,8 @@ impl Month {
     /// `m.number_from_month()`: | 1         | 2          | `...` | 12
     #[inline]
     #[must_use]
-    pub const fn number_from_month(&self) -> u32 {
-        match *self {
+    pub const fn number_from_month(self) -> u32 {
+        match self {
             Month::January => 1,
             Month::February => 2,
             Month::March => 3,
@@ -148,8 +148,8 @@ impl Month {
     /// assert_eq!(Month::January.name(), "January")
     /// ```
     #[must_use]
-    pub const fn name(&self) -> &'static str {
-        match *self {
+    pub const fn name(self) -> &'static str {
+        match self {
             Month::January => "January",
             Month::February => "February",
             Month::March => "March",
@@ -201,7 +201,7 @@ impl Months {
 
     /// Returns the total number of months in the `Months` instance.
     #[inline]
-    pub const fn as_u32(&self) -> u32 {
+    pub const fn as_u32(self) -> u32 {
         self.0
     }
 }
