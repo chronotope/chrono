@@ -83,14 +83,14 @@ impl YearFlags {
     }
 
     #[inline]
-    pub(super) const fn ndays(&self) -> u32 {
-        let YearFlags(flags) = *self;
+    pub(super) const fn ndays(self) -> u32 {
+        let YearFlags(flags) = self;
         366 - (flags >> 3) as u32
     }
 
     #[inline]
-    pub(super) const fn isoweek_delta(&self) -> u32 {
-        let YearFlags(flags) = *self;
+    pub(super) const fn isoweek_delta(self) -> u32 {
+        let YearFlags(flags) = self;
         let mut delta = (flags & 0b0111) as u32;
         if delta < 3 {
             delta += 7;
@@ -99,8 +99,8 @@ impl YearFlags {
     }
 
     #[inline]
-    pub(super) const fn nisoweeks(&self) -> u32 {
-        let YearFlags(flags) = *self;
+    pub(super) const fn nisoweeks(self) -> u32 {
+        let YearFlags(flags) = self;
         52 + ((0b0000_0100_0000_0110 >> flags as usize) & 1)
     }
 }
