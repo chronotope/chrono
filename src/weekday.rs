@@ -63,8 +63,8 @@ impl Weekday {
     /// `w.succ()`: | `Tue` | `Wed` | `Thu` | `Fri` | `Sat` | `Sun` | `Mon`
     #[inline]
     #[must_use]
-    pub const fn succ(&self) -> Weekday {
-        match *self {
+    pub const fn succ(self) -> Weekday {
+        match self {
             Weekday::Mon => Weekday::Tue,
             Weekday::Tue => Weekday::Wed,
             Weekday::Wed => Weekday::Thu,
@@ -82,8 +82,8 @@ impl Weekday {
     /// `w.pred()`: | `Sun` | `Mon` | `Tue` | `Wed` | `Thu` | `Fri` | `Sat`
     #[inline]
     #[must_use]
-    pub const fn pred(&self) -> Weekday {
-        match *self {
+    pub const fn pred(self) -> Weekday {
+        match self {
             Weekday::Mon => Weekday::Sun,
             Weekday::Tue => Weekday::Mon,
             Weekday::Wed => Weekday::Tue,
@@ -100,7 +100,7 @@ impl Weekday {
     /// ------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.number_from_monday()`: | 1     | 2     | 3     | 4     | 5     | 6     | 7
     #[inline]
-    pub const fn number_from_monday(&self) -> u32 {
+    pub const fn number_from_monday(self) -> u32 {
         self.num_days_from(Weekday::Mon) + 1
     }
 
@@ -110,7 +110,7 @@ impl Weekday {
     /// ------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.number_from_sunday()`: | 2     | 3     | 4     | 5     | 6     | 7     | 1
     #[inline]
-    pub const fn number_from_sunday(&self) -> u32 {
+    pub const fn number_from_sunday(self) -> u32 {
         self.num_days_from(Weekday::Sun) + 1
     }
 
@@ -133,7 +133,7 @@ impl Weekday {
     /// println!("{}", MTWRFSU[today.num_days_from_monday() as usize]);
     /// ```
     #[inline]
-    pub const fn num_days_from_monday(&self) -> u32 {
+    pub const fn num_days_from_monday(self) -> u32 {
         self.num_days_from(Weekday::Mon)
     }
 
@@ -143,7 +143,7 @@ impl Weekday {
     /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.num_days_from_sunday()`: | 1     | 2     | 3     | 4     | 5     | 6     | 0
     #[inline]
-    pub const fn num_days_from_sunday(&self) -> u32 {
+    pub const fn num_days_from_sunday(self) -> u32 {
         self.num_days_from(Weekday::Sun)
     }
 
@@ -153,8 +153,8 @@ impl Weekday {
     /// --------------------------- | ----- | ----- | ----- | ----- | ----- | ----- | -----
     /// `w.num_days_from(wd)`:      | 0     | 1     | 2     | 3     | 4     | 5     | 6
     #[inline]
-    pub(crate) const fn num_days_from(&self, day: Weekday) -> u32 {
-        (*self as u32 + 7 - day as u32) % 7
+    pub(crate) const fn num_days_from(self, day: Weekday) -> u32 {
+        (self as u32 + 7 - day as u32) % 7
     }
 }
 
