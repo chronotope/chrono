@@ -540,7 +540,7 @@ impl NaiveTime {
     /// );
     /// ```
     #[must_use]
-    pub const fn overflowing_add_signed(&self, rhs: TimeDelta) -> (NaiveTime, i64) {
+    pub const fn overflowing_add_signed(self, rhs: TimeDelta) -> (NaiveTime, i64) {
         let mut secs = self.secs as i64;
         let mut frac = self.frac as i32;
         let secs_to_add = rhs.num_seconds();
@@ -603,7 +603,7 @@ impl NaiveTime {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn overflowing_sub_signed(&self, rhs: TimeDelta) -> (NaiveTime, i64) {
+    pub const fn overflowing_sub_signed(self, rhs: TimeDelta) -> (NaiveTime, i64) {
         let (time, rhs) = self.overflowing_add_signed(rhs.neg());
         (time, -rhs) // safe to negate, rhs is within +/- (2^63 / 1000)
     }
@@ -700,7 +700,7 @@ impl NaiveTime {
     ///
     /// This method is similar to [`overflowing_add_signed`](#method.overflowing_add_signed), but
     /// preserves leap seconds.
-    pub(super) const fn overflowing_add_offset(&self, offset: FixedOffset) -> (NaiveTime, i32) {
+    pub(super) const fn overflowing_add_offset(self, offset: FixedOffset) -> (NaiveTime, i32) {
         let secs = self.secs as i32 + offset.local_minus_utc();
         let days = secs.div_euclid(86_400);
         let secs = secs.rem_euclid(86_400);
@@ -713,7 +713,7 @@ impl NaiveTime {
     ///
     /// This method is similar to [`overflowing_sub_signed`](#method.overflowing_sub_signed), but
     /// preserves leap seconds.
-    pub(super) const fn overflowing_sub_offset(&self, offset: FixedOffset) -> (NaiveTime, i32) {
+    pub(super) const fn overflowing_sub_offset(self, offset: FixedOffset) -> (NaiveTime, i32) {
         let secs = self.secs as i32 - offset.local_minus_utc();
         let days = secs.div_euclid(86_400);
         let secs = secs.rem_euclid(86_400);
@@ -750,12 +750,12 @@ impl NaiveTime {
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+    pub fn format_with_items<'a, I, B>(self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormat::new(None, Some(*self), items)
+        DelayedFormat::new(None, Some(self), items)
     }
 
     /// Formats the time with the specified format string.
@@ -795,7 +795,7 @@ impl NaiveTime {
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+    pub fn format(self, fmt: &str) -> DelayedFormat<StrftimeItems> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
@@ -816,12 +816,12 @@ impl NaiveTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_hour(&self, hour: u32) -> Result<NaiveTime, Error> {
+    pub const fn with_hour(self, hour: u32) -> Result<NaiveTime, Error> {
         if hour >= 24 {
             return Err(Error::InvalidArgument);
         }
         let secs = hour * 3600 + self.secs % 3600;
-        Ok(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..self })
     }
 
     /// Makes a new `NaiveTime` with the minute number changed.
@@ -841,12 +841,12 @@ impl NaiveTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_minute(&self, min: u32) -> Result<NaiveTime, Error> {
+    pub const fn with_minute(self, min: u32) -> Result<NaiveTime, Error> {
         if min >= 60 {
             return Err(Error::InvalidArgument);
         }
         let secs = self.secs / 3600 * 3600 + min * 60 + self.secs % 60;
-        Ok(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..self })
     }
 
     /// Makes a new `NaiveTime` with the second number changed.
@@ -869,12 +869,12 @@ impl NaiveTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_second(&self, sec: u32) -> Result<NaiveTime, Error> {
+    pub const fn with_second(self, sec: u32) -> Result<NaiveTime, Error> {
         if sec >= 60 {
             return Err(Error::InvalidArgument);
         }
         let secs = self.secs / 60 * 60 + sec;
-        Ok(NaiveTime { secs, ..*self })
+        Ok(NaiveTime { secs, ..self })
     }
 
     /// Makes a new `NaiveTime` with nanoseconds since the whole non-leap second changed.
@@ -910,15 +910,15 @@ impl NaiveTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_nanosecond(&self, nano: u32) -> Result<NaiveTime, Error> {
+    pub const fn with_nanosecond(self, nano: u32) -> Result<NaiveTime, Error> {
         if nano >= 2_000_000_000 {
             return Err(Error::InvalidArgument);
         }
-        Ok(NaiveTime { frac: nano, ..*self })
+        Ok(NaiveTime { frac: nano, ..self })
     }
 
     /// Returns a triple of the hour, minute and second numbers.
-    pub(crate) fn hms(&self) -> (u32, u32, u32) {
+    pub(crate) fn hms(self) -> (u32, u32, u32) {
         let sec = self.secs % 60;
         let mins = self.secs / 60;
         let min = mins % 60;
@@ -930,14 +930,14 @@ impl NaiveTime {
     // This duplicates `Timelike::num_seconds_from_midnight()`, because trait methods can't be const
     // yet.
     #[inline]
-    pub(crate) const fn num_seconds_from_midnight(&self) -> u32 {
+    pub(crate) const fn num_seconds_from_midnight(self) -> u32 {
         self.secs
     }
 
     /// Returns the number of nanoseconds since the whole non-leap second.
     // This duplicates `Timelike::nanosecond()`, because trait methods can't be const yet.
     #[inline]
-    pub(crate) const fn nanosecond(&self) -> u32 {
+    pub(crate) const fn nanosecond(self) -> u32 {
         self.frac
     }
 
