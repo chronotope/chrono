@@ -598,7 +598,7 @@ impl NaiveDateTime {
         expect!(
             self.date
                 .signed_duration_since(rhs.date)
-                .checked_add(&self.time.signed_duration_since(rhs.time)),
+                .checked_add(self.time.signed_duration_since(rhs.time)),
             "always in range"
         )
     }

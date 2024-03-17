@@ -248,7 +248,7 @@ impl TimeDelta {
 
     /// Add two `TimeDelta`s, returning `None` if overflow occurred.
     #[must_use]
-    pub const fn checked_add(self, rhs: &TimeDelta) -> Option<TimeDelta> {
+    pub const fn checked_add(self, rhs: TimeDelta) -> Option<TimeDelta> {
         // No overflow checks here because we stay comfortably within the range of an `i64`.
         // Range checks happen in `TimeDelta::new`.
         let mut secs = self.secs + rhs.secs;
@@ -262,7 +262,7 @@ impl TimeDelta {
 
     /// Subtract two `TimeDelta`s, returning `None` if overflow occurred.
     #[must_use]
-    pub const fn checked_sub(self, rhs: &TimeDelta) -> Option<TimeDelta> {
+    pub const fn checked_sub(self, rhs: TimeDelta) -> Option<TimeDelta> {
         // No overflow checks here because we stay comfortably within the range of an `i64`.
         // Range checks happen in `TimeDelta::new`.
         let mut secs = self.secs - rhs.secs;
@@ -361,7 +361,7 @@ impl Add for TimeDelta {
     type Output = TimeDelta;
 
     fn add(self, rhs: TimeDelta) -> TimeDelta {
-        self.checked_add(&rhs).expect("`TimeDelta + TimeDelta` overflowed")
+        self.checked_add(rhs).expect("`TimeDelta + TimeDelta` overflowed")
     }
 }
 
@@ -369,20 +369,20 @@ impl Sub for TimeDelta {
     type Output = TimeDelta;
 
     fn sub(self, rhs: TimeDelta) -> TimeDelta {
-        self.checked_sub(&rhs).expect("`TimeDelta - TimeDelta` overflowed")
+        self.checked_sub(rhs).expect("`TimeDelta - TimeDelta` overflowed")
     }
 }
 
 impl AddAssign for TimeDelta {
     fn add_assign(&mut self, rhs: TimeDelta) {
-        let new = self.checked_add(&rhs).expect("`TimeDelta + TimeDelta` overflowed");
+        let new = self.checked_add(rhs).expect("`TimeDelta + TimeDelta` overflowed");
         *self = new;
     }
 }
 
 impl SubAssign for TimeDelta {
     fn sub_assign(&mut self, rhs: TimeDelta) {
-        let new = self.checked_sub(&rhs).expect("`TimeDelta - TimeDelta` overflowed");
+        let new = self.checked_sub(rhs).expect("`TimeDelta - TimeDelta` overflowed");
         *self = new;
     }
 }
@@ -608,7 +608,7 @@ mod tests {
         // value will fail.
         assert!(TimeDelta::milliseconds(i64::MAX)
             .unwrap()
-            .checked_add(&TimeDelta::milliseconds(1).unwrap())
+            .checked_add(TimeDelta::milliseconds(1).unwrap())
             .is_none());
     }
 
@@ -631,7 +631,7 @@ mod tests {
         // storable value will fail.
         assert!(TimeDelta::milliseconds(-i64::MAX)
             .unwrap()
-            .checked_sub(&TimeDelta::milliseconds(1).unwrap())
+            .checked_sub(TimeDelta::milliseconds(1).unwrap())
             .is_none());
     }
 
@@ -685,7 +685,7 @@ mod tests {
         // value will fail.
         assert!(TimeDelta::milliseconds(i64::MAX)
             .unwrap()
-            .checked_add(&TimeDelta::microseconds(1))
+            .checked_add(TimeDelta::microseconds(1))
             .is_none());
     }
     #[test]
@@ -724,7 +724,7 @@ mod tests {
         // storable value will fail.
         assert!(TimeDelta::milliseconds(-i64::MAX)
             .unwrap()
-            .checked_sub(&TimeDelta::microseconds(1))
+            .checked_sub(TimeDelta::microseconds(1))
             .is_none());
     }
 
@@ -774,7 +774,7 @@ mod tests {
         // value will fail.
         assert!(TimeDelta::milliseconds(i64::MAX)
             .unwrap()
-            .checked_add(&TimeDelta::nanoseconds(1))
+            .checked_add(TimeDelta::nanoseconds(1))
             .is_none());
     }
 
@@ -814,7 +814,7 @@ mod tests {
         // storable value will fail.
         assert!(TimeDelta::milliseconds(-i64::MAX)
             .unwrap()
-            .checked_sub(&TimeDelta::nanoseconds(1))
+            .checked_sub(TimeDelta::nanoseconds(1))
             .is_none());
     }
 
@@ -867,26 +867,26 @@ mod tests {
         let milliseconds = |ms| TimeDelta::milliseconds(ms).unwrap();
 
         assert_eq!(
-            milliseconds(i64::MAX).checked_add(&milliseconds(0)),
+            milliseconds(i64::MAX).checked_add(milliseconds(0)),
             Some(milliseconds(i64::MAX))
         );
         assert_eq!(
-            milliseconds(i64::MAX - 1).checked_add(&TimeDelta::microseconds(999)),
+            milliseconds(i64::MAX - 1).checked_add(TimeDelta::microseconds(999)),
             Some(milliseconds(i64::MAX - 2) + TimeDelta::microseconds(1999))
         );
-        assert!(milliseconds(i64::MAX).checked_add(&TimeDelta::microseconds(1000)).is_none());
-        assert!(milliseconds(i64::MAX).checked_add(&TimeDelta::nanoseconds(1)).is_none());
+        assert!(milliseconds(i64::MAX).checked_add(TimeDelta::microseconds(1000)).is_none());
+        assert!(milliseconds(i64::MAX).checked_add(TimeDelta::nanoseconds(1)).is_none());
 
         assert_eq!(
-            milliseconds(-i64::MAX).checked_sub(&milliseconds(0)),
+            milliseconds(-i64::MAX).checked_sub(milliseconds(0)),
             Some(milliseconds(-i64::MAX))
         );
         assert_eq!(
-            milliseconds(-i64::MAX + 1).checked_sub(&TimeDelta::microseconds(999)),
+            milliseconds(-i64::MAX + 1).checked_sub(TimeDelta::microseconds(999)),
             Some(milliseconds(-i64::MAX + 2) - TimeDelta::microseconds(1999))
         );
-        assert!(milliseconds(-i64::MAX).checked_sub(&milliseconds(1)).is_none());
-        assert!(milliseconds(-i64::MAX).checked_sub(&TimeDelta::nanoseconds(1)).is_none());
+        assert!(milliseconds(-i64::MAX).checked_sub(milliseconds(1)).is_none());
+        assert!(milliseconds(-i64::MAX).checked_sub(TimeDelta::nanoseconds(1)).is_none());
     }
 
     #[test]
