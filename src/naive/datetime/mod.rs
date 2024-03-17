@@ -214,7 +214,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.date(), NaiveDate::from_ymd(2016, 7, 8).unwrap());
     /// ```
     #[inline]
-    pub const fn date(&self) -> NaiveDate {
+    pub const fn date(self) -> NaiveDate {
         self.date
     }
 
@@ -229,7 +229,7 @@ impl NaiveDateTime {
     /// assert_eq!(dt.time(), NaiveTime::from_hms(9, 10, 11).unwrap());
     /// ```
     #[inline]
-    pub const fn time(&self) -> NaiveTime {
+    pub const fn time(self) -> NaiveTime {
         self.time
     }
 
@@ -633,7 +633,7 @@ impl NaiveDateTime {
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+    pub fn format_with_items<'a, I, B>(self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -676,7 +676,7 @@ impl NaiveDateTime {
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+    pub fn format(self, fmt: &str) -> DelayedFormat<StrftimeItems> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
@@ -706,8 +706,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timezone(), tz);
     /// ```
     #[must_use]
-    pub fn and_local_timezone<Tz: TimeZone>(&self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
-        tz.from_local_datetime(*self)
+    pub fn and_local_timezone<Tz: TimeZone>(self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
+        tz.from_local_datetime(self)
     }
 
     /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Utc>`.
@@ -720,8 +720,8 @@ impl NaiveDateTime {
     /// assert_eq!(dt.timezone(), Utc);
     /// ```
     #[must_use]
-    pub const fn and_utc(&self) -> DateTime<Utc> {
-        DateTime::from_naive_utc_and_offset(*self, Utc)
+    pub const fn and_utc(self) -> DateTime<Utc> {
+        DateTime::from_naive_utc_and_offset(self, Utc)
     }
 
     /// Makes a new `NaiveDateTime` with the year number changed, while keeping the same month and
@@ -745,8 +745,8 @@ impl NaiveDateTime {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_year(&self, year: i32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { date: try_err!(self.date.with_year(year)), ..*self })
+    pub const fn with_year(self, year: i32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { date: try_err!(self.date.with_year(year)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the month number (starting from 1) changed.
@@ -774,8 +774,8 @@ impl NaiveDateTime {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_month(&self, month: u32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { date: try_err!(self.date.with_month(month)), ..*self })
+    pub const fn with_month(self, month: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { date: try_err!(self.date.with_month(month)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of month (starting from 1) changed.
@@ -800,8 +800,8 @@ impl NaiveDateTime {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_day(&self, day: u32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { date: try_err!(self.date.with_day(day)), ..*self })
+    pub const fn with_day(self, day: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { date: try_err!(self.date.with_day(day)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the day of year (starting from 1) changed.
@@ -837,8 +837,8 @@ impl NaiveDateTime {
     /// );
     /// ```
     #[inline]
-    pub const fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { date: try_opt!(self.date.with_ordinal(ordinal)), ..*self })
+    pub const fn with_ordinal(self, ordinal: u32) -> Option<NaiveDateTime> {
+        Some(NaiveDateTime { date: try_opt!(self.date.with_ordinal(ordinal)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the hour number changed.
@@ -860,8 +860,8 @@ impl NaiveDateTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_hour(&self, hour: u32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { time: try_err!(self.time.with_hour(hour)), ..*self })
+    pub const fn with_hour(self, hour: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_hour(hour)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the minute number changed.
@@ -883,8 +883,8 @@ impl NaiveDateTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_minute(&self, min: u32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { time: try_err!(self.time.with_minute(min)), ..*self })
+    pub const fn with_minute(self, min: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_minute(min)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the second number changed.
@@ -909,8 +909,8 @@ impl NaiveDateTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_second(&self, sec: u32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { time: try_err!(self.time.with_second(sec)), ..*self })
+    pub const fn with_second(self, sec: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_second(sec)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with nanoseconds since the whole non-leap second changed.
@@ -942,8 +942,8 @@ impl NaiveDateTime {
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[inline]
-    pub const fn with_nanosecond(&self, nano: u32) -> Result<NaiveDateTime, Error> {
-        Ok(NaiveDateTime { time: try_err!(self.time.with_nanosecond(nano)), ..*self })
+    pub const fn with_nanosecond(self, nano: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { time: try_err!(self.time.with_nanosecond(nano)), ..self })
     }
 
     /// The minimum possible `NaiveDateTime`.
