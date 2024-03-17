@@ -114,7 +114,7 @@ impl arbitrary::Arbitrary<'_> for NaiveDate {
 }
 
 impl NaiveDate {
-    pub(crate) fn weeks_from(&self, day: Weekday) -> i32 {
+    pub(crate) fn weeks_from(self, day: Weekday) -> i32 {
         (self.ordinal() as i32 - self.weekday().num_days_from(day) as i32 + 6) / 7
     }
 
@@ -658,8 +658,8 @@ impl NaiveDate {
     /// ```
     #[inline]
     #[must_use]
-    pub const fn and_time(&self, time: NaiveTime) -> NaiveDateTime {
-        NaiveDateTime::new(*self, time)
+    pub const fn and_time(self, time: NaiveTime) -> NaiveDateTime {
+        NaiveDateTime::new(self, time)
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
@@ -683,7 +683,7 @@ impl NaiveDate {
     /// assert_eq!(d.and_hms(24, 34, 56), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    pub const fn and_hms(&self, hour: u32, min: u32, sec: u32) -> Result<NaiveDateTime, Error> {
+    pub const fn and_hms(self, hour: u32, min: u32, sec: u32) -> Result<NaiveDateTime, Error> {
         let time = try_err!(NaiveTime::from_hms(hour, min, sec));
         Ok(self.and_time(time))
     }
@@ -801,7 +801,7 @@ impl NaiveDate {
 
     /// Returns the packed month-day-flags.
     #[inline]
-    const fn mdf(&self) -> Mdf {
+    const fn mdf(self) -> Mdf {
         Mdf::from_ol((self.yof() & OL_MASK) >> 3, self.year_flags())
     }
 
@@ -813,7 +813,7 @@ impl NaiveDate {
     /// - [`Error::InvalidArgument`] if the `mdf` was created with `month == 0` or `day == 0`.
     /// - [`Error::DoesNotExist`] if the given day does not exist in the given month.
     #[inline]
-    const fn with_mdf(&self, mdf: Mdf) -> Result<NaiveDate, Error> {
+    const fn with_mdf(self, mdf: Mdf) -> Result<NaiveDate, Error> {
         debug_assert!(self.year_flags().0 == mdf.year_flags().0);
         let ordinal = try_err!(mdf.ordinal());
         Ok(NaiveDate::from_yof((self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32))
@@ -834,7 +834,7 @@ impl NaiveDate {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn succ(&self) -> Result<NaiveDate, Error> {
+    pub const fn succ(self) -> Result<NaiveDate, Error> {
         let new_ol = (self.yof() & OL_MASK) + (1 << 4);
         match new_ol <= MAX_OL {
             true => Ok(NaiveDate::from_yof(self.yof() & !OL_MASK | new_ol)),
@@ -857,7 +857,7 @@ impl NaiveDate {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn pred(&self) -> Result<NaiveDate, Error> {
+    pub const fn pred(self) -> Result<NaiveDate, Error> {
         let new_shifted_ordinal = (self.yof() & ORDINAL_MASK) - (1 << 4);
         match new_shifted_ordinal > 0 {
             true => Ok(NaiveDate::from_yof(self.yof() & !ORDINAL_MASK | new_shifted_ordinal)),
@@ -958,7 +958,7 @@ impl NaiveDate {
     ///
     /// Returns `None` if `base < self`.
     #[must_use]
-    pub const fn years_since(&self, base: Self) -> Option<u32> {
+    pub const fn years_since(self, base: Self) -> Option<u32> {
         let mut years = self.year() - base.year();
         // Comparing tuples is not (yet) possible in const context. Instead we combine month and
         // day into one `u32` for easy comparison.
@@ -1002,12 +1002,12 @@ impl NaiveDate {
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+    pub fn format_with_items<'a, I, B>(self, items: I) -> DelayedFormat<I>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
     {
-        DelayedFormat::new(Some(*self), None, items)
+        DelayedFormat::new(Some(self), None, items)
     }
 
     /// Formats the date with the specified format string.
@@ -1045,7 +1045,7 @@ impl NaiveDate {
     #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+    pub fn format(self, fmt: &str) -> DelayedFormat<StrftimeItems> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
@@ -1107,8 +1107,8 @@ impl NaiveDate {
     /// }
     /// ```
     #[inline]
-    pub const fn iter_days(&self) -> NaiveDateDaysIterator {
-        NaiveDateDaysIterator { value: *self }
+    pub const fn iter_days(self) -> NaiveDateDaysIterator {
+        NaiveDateDaysIterator { value: self }
     }
 
     /// Returns an iterator that steps by weeks across all representable dates.
@@ -1138,15 +1138,15 @@ impl NaiveDate {
     /// }
     /// ```
     #[inline]
-    pub const fn iter_weeks(&self) -> NaiveDateWeeksIterator {
-        NaiveDateWeeksIterator { value: *self }
+    pub const fn iter_weeks(self) -> NaiveDateWeeksIterator {
+        NaiveDateWeeksIterator { value: self }
     }
 
     /// Returns the [`NaiveWeek`] that the date belongs to, starting with the [`Weekday`]
     /// specified.
     #[inline]
-    pub const fn week(&self, start: Weekday) -> NaiveWeek {
-        NaiveWeek::new(*self, start)
+    pub const fn week(self, start: Weekday) -> NaiveWeek {
+        NaiveWeek::new(self, start)
     }
 
     /// Returns `true` if this is a leap year.
@@ -1160,7 +1160,7 @@ impl NaiveDate {
     /// assert_eq!(NaiveDate::from_ymd(2004, 1, 1).unwrap().leap_year(), true);
     /// assert_eq!(NaiveDate::from_ymd(2100, 1, 1).unwrap().leap_year(), false);
     /// ```
-    pub const fn leap_year(&self) -> bool {
+    pub const fn leap_year(self) -> bool {
         self.yof() & (0b1000) == 0
     }
 
@@ -1204,7 +1204,7 @@ impl NaiveDate {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_year(&self, year: i32) -> Result<NaiveDate, Error> {
+    pub const fn with_year(self, year: i32) -> Result<NaiveDate, Error> {
         // we need to operate with `mdf` since we should keep the month and day number as is
         let mdf = self.mdf();
 
@@ -1256,7 +1256,7 @@ impl NaiveDate {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_month(&self, month: u32) -> Result<NaiveDate, Error> {
+    pub const fn with_month(self, month: u32) -> Result<NaiveDate, Error> {
         self.with_mdf(try_err!(self.mdf().with_month(month)))
     }
 
@@ -1280,7 +1280,7 @@ impl NaiveDate {
     /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_day(&self, day: u32) -> Result<NaiveDate, Error> {
+    pub const fn with_day(self, day: u32) -> Result<NaiveDate, Error> {
         self.with_mdf(try_err!(self.mdf().with_day(day)))
     }
 
@@ -1308,7 +1308,7 @@ impl NaiveDate {
     ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
     /// ```
     #[inline]
-    pub const fn with_ordinal(&self, ordinal: u32) -> Option<NaiveDate> {
+    pub const fn with_ordinal(self, ordinal: u32) -> Option<NaiveDate> {
         if ordinal == 0 || ordinal > 366 {
             return None;
         }
@@ -1321,33 +1321,33 @@ impl NaiveDate {
 
     // This duplicates `Datelike::year()`, because trait methods can't be const yet.
     #[inline]
-    const fn year(&self) -> i32 {
+    const fn year(self) -> i32 {
         self.yof() >> 13
     }
 
     /// Returns the day of year starting from 1.
     // This duplicates `Datelike::ordinal()`, because trait methods can't be const yet.
     #[inline]
-    const fn ordinal(&self) -> u32 {
+    const fn ordinal(self) -> u32 {
         ((self.yof() & ORDINAL_MASK) >> 4) as u32
     }
 
     // This duplicates `Datelike::month()`, because trait methods can't be const yet.
     #[inline]
-    const fn month(&self) -> u32 {
+    const fn month(self) -> u32 {
         self.mdf().month()
     }
 
     // This duplicates `Datelike::day()`, because trait methods can't be const yet.
     #[inline]
-    const fn day(&self) -> u32 {
+    const fn day(self) -> u32 {
         self.mdf().day()
     }
 
     /// Returns the day of week.
     // This duplicates `Datelike::weekday()`, because trait methods can't be const yet.
     #[inline]
-    pub(super) const fn weekday(&self) -> Weekday {
+    pub(super) const fn weekday(self) -> Weekday {
         match (((self.yof() & ORDINAL_MASK) >> 4) + (self.yof() & WEEKDAY_FLAGS_MASK)) % 7 {
             0 => Weekday::Mon,
             1 => Weekday::Tue,
@@ -1360,13 +1360,13 @@ impl NaiveDate {
     }
 
     #[inline]
-    const fn year_flags(&self) -> YearFlags {
+    const fn year_flags(self) -> YearFlags {
         YearFlags((self.yof() & YEAR_FLAGS_MASK) as u8)
     }
 
     /// Counts the days in the proleptic Gregorian calendar, with January 1, Year 1 (CE) as day 1.
     // This duplicates `Datelike::num_days_from_ce()`, because trait methods can't be const yet.
-    pub(crate) const fn num_days_from_ce(&self) -> i32 {
+    pub(crate) const fn num_days_from_ce(self) -> i32 {
         // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
         let mut year = self.year() - 1;
         let mut ndays = 0;
@@ -1392,7 +1392,7 @@ impl NaiveDate {
 
     /// Get the raw year-ordinal-flags `i32`.
     #[inline]
-    const fn yof(&self) -> i32 {
+    const fn yof(self) -> i32 {
         self.yof.get()
     }
 
@@ -1423,7 +1423,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn year(&self) -> i32 {
-        self.year()
+        (*self).year()
     }
 
     /// Returns the month number starting from 1.
@@ -1440,7 +1440,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn month(&self) -> u32 {
-        self.month()
+        (*self).month()
     }
 
     /// Returns the month number starting from 0.
@@ -1497,7 +1497,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn day(&self) -> u32 {
-        self.day()
+        (*self).day()
     }
 
     /// Returns the day of month starting from 0.
@@ -1585,7 +1585,7 @@ impl Datelike for NaiveDate {
     /// ```
     #[inline]
     fn weekday(&self) -> Weekday {
-        self.weekday()
+        (*self).weekday()
     }
 
     #[inline]
