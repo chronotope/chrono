@@ -78,7 +78,7 @@ impl IsoWeek {
     /// assert_eq!(d, NaiveDate::from_ymd(2014, 12, 29).unwrap());
     /// ```
     #[inline]
-    pub const fn year(&self) -> i32 {
+    pub const fn year(self) -> i32 {
         self.ywf >> 10
     }
 
@@ -95,7 +95,7 @@ impl IsoWeek {
     /// assert_eq!(d.iso_week().week(), 15);
     /// ```
     #[inline]
-    pub const fn week(&self) -> u32 {
+    pub const fn week(self) -> u32 {
         ((self.ywf >> 4) & 0x3f) as u32
     }
 
@@ -112,7 +112,7 @@ impl IsoWeek {
     /// assert_eq!(d.iso_week().week0(), 14);
     /// ```
     #[inline]
-    pub const fn week0(&self) -> u32 {
+    pub const fn week0(self) -> u32 {
         ((self.ywf >> 4) & 0x3f) as u32 - 1
     }
 }
