@@ -133,8 +133,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 ///     .unwrap()
 ///     .and_hms_nano_opt(02, 04, 59, 918355733)
 ///     .unwrap()
-///     .and_local_timezone(Utc)
-///     .unwrap();
+///     .and_utc();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -181,8 +180,7 @@ pub mod ts_nanoseconds {
     ///         .unwrap()
     ///         .and_hms_nano_opt(02, 04, 59, 918355733)
     ///         .unwrap()
-    ///         .and_local_timezone(Utc)
-    ///         .unwrap(),
+    ///         .and_utc(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -278,8 +276,7 @@ pub mod ts_nanoseconds {
 ///         .unwrap()
 ///         .and_hms_nano_opt(02, 04, 59, 918355733)
 ///         .unwrap()
-///         .and_local_timezone(Utc)
-///         .unwrap(),
+///         .and_utc(),
 /// );
 /// let my_s = S { time: time.clone() };
 ///
@@ -327,8 +324,7 @@ pub mod ts_nanoseconds_option {
     ///             .unwrap()
     ///             .and_hms_nano_opt(02, 04, 59, 918355733)
     ///             .unwrap()
-    ///             .and_local_timezone(Utc)
-    ///             .unwrap(),
+    ///             .and_utc(),
     ///     ),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
@@ -429,8 +425,7 @@ pub mod ts_nanoseconds_option {
 ///     .unwrap()
 ///     .and_hms_micro_opt(02, 04, 59, 918355)
 ///     .unwrap()
-///     .and_local_timezone(Utc)
-///     .unwrap();
+///     .and_utc();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -469,8 +464,7 @@ pub mod ts_microseconds {
     ///         .unwrap()
     ///         .and_hms_micro_opt(02, 04, 59, 918355)
     ///         .unwrap()
-    ///         .and_local_timezone(Utc)
-    ///         .unwrap(),
+    ///         .and_utc(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
@@ -567,8 +561,7 @@ pub mod ts_microseconds {
 ///         .unwrap()
 ///         .and_hms_micro_opt(02, 04, 59, 918355)
 ///         .unwrap()
-///         .and_local_timezone(Utc)
-///         .unwrap(),
+///         .and_utc(),
 /// );
 /// let my_s = S { time: time.clone() };
 ///
@@ -607,8 +600,7 @@ pub mod ts_microseconds_option {
     ///             .unwrap()
     ///             .and_hms_micro_opt(02, 04, 59, 918355)
     ///             .unwrap()
-    ///             .and_local_timezone(Utc)
-    ///             .unwrap(),
+    ///             .and_utc(),
     ///     ),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
@@ -707,8 +699,7 @@ pub mod ts_microseconds_option {
 ///     .unwrap()
 ///     .and_hms_milli_opt(02, 04, 59, 918)
 ///     .unwrap()
-///     .and_local_timezone(Utc)
-///     .unwrap();
+///     .and_utc();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -747,8 +738,7 @@ pub mod ts_milliseconds {
     ///         .unwrap()
     ///         .and_hms_milli_opt(02, 04, 59, 918)
     ///         .unwrap()
-    ///         .and_local_timezone(Utc)
-    ///         .unwrap(),
+    ///         .and_utc(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -838,8 +828,7 @@ pub mod ts_milliseconds {
 ///         .unwrap()
 ///         .and_hms_milli_opt(02, 04, 59, 918)
 ///         .unwrap()
-///         .and_local_timezone(Utc)
-///         .unwrap(),
+///         .and_utc(),
 /// );
 /// let my_s = S { time: time.clone() };
 ///
@@ -878,8 +867,7 @@ pub mod ts_milliseconds_option {
     ///             .unwrap()
     ///             .and_hms_milli_opt(02, 04, 59, 918)
     ///             .unwrap()
-    ///             .and_local_timezone(Utc)
-    ///             .unwrap(),
+    ///             .and_utc(),
     ///     ),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
