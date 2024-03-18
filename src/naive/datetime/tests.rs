@@ -269,14 +269,14 @@ fn test_datetime_add_sub_invariant() {
 }
 
 #[test]
-fn test_and_local_timezone() {
+fn test_in_timezone() {
     let ndt = NaiveDate::from_ymd(2022, 6, 15).unwrap().at_hms(18, 59, 36).unwrap();
     let dt_utc = ndt.and_utc();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 
     let offset_tz = FixedOffset::west(4 * 3600).unwrap();
-    let dt_offset = ndt.and_local_timezone(offset_tz).unwrap();
+    let dt_offset = ndt.in_timezone(offset_tz).unwrap();
     assert_eq!(dt_offset.naive_local(), ndt);
     assert_eq!(dt_offset.timezone(), offset_tz);
 }
@@ -381,13 +381,13 @@ fn test_and_timezone_min_max_dates() {
         dbg!(offset_hour);
         let offset = FixedOffset::east(offset_hour * 60 * 60).unwrap();
 
-        let local_max = NaiveDateTime::MAX.and_local_timezone(offset);
+        let local_max = NaiveDateTime::MAX.in_timezone(offset);
         if offset_hour >= 0 {
             assert_eq!(local_max.unwrap().naive_local(), NaiveDateTime::MAX);
         } else {
             assert_eq!(local_max, MappedLocalTime::None);
         }
-        let local_min = NaiveDateTime::MIN.and_local_timezone(offset);
+        let local_min = NaiveDateTime::MIN.in_timezone(offset);
         if offset_hour <= 0 {
             assert_eq!(local_min.unwrap().naive_local(), NaiveDateTime::MIN);
         } else {
