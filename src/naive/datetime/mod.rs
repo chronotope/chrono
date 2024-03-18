@@ -693,12 +693,12 @@ impl NaiveDateTime {
     ///     .unwrap()
     ///     .at_hms(23, 56, 4)
     ///     .unwrap()
-    ///     .and_local_timezone(tz)
+    ///     .in_timezone(tz)
     ///     .unwrap();
     /// assert_eq!(dt.timezone(), tz);
     /// ```
     #[must_use]
-    pub fn and_local_timezone<Tz: TimeZone>(self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
+    pub fn in_timezone<Tz: TimeZone>(self, tz: Tz) -> MappedLocalTime<DateTime<Tz>> {
         tz.from_local_datetime(self)
     }
 

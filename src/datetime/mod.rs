@@ -64,7 +64,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// passing it through FFI.
     ///
     /// For regular use you will probably want to use a method such as
-    /// [`TimeZone::from_local_datetime`] or [`NaiveDateTime::and_local_timezone`] instead.
+    /// [`TimeZone::from_local_datetime`] or [`NaiveDateTime::in_timezone`] instead.
     ///
     /// # Example
     ///
@@ -337,7 +337,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // datetime.
         self.overflowing_naive_local()
             .checked_add_months(months)?
-            .and_local_timezone(Tz::from_offset(&self.offset))
+            .in_timezone(self.timezone())
             .single()
     }
 
@@ -374,7 +374,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // datetime.
         self.overflowing_naive_local()
             .checked_sub_months(months)?
-            .and_local_timezone(Tz::from_offset(&self.offset))
+            .in_timezone(self.timezone())
             .single()
     }
 
