@@ -312,7 +312,7 @@ impl<'a> StrftimeItems<'a> {
     /// use chrono::NaiveDate;
     ///
     /// let fmt_items = StrftimeItems::new("%e %b %Y %k.%M").parse()?;
-    /// let datetime = NaiveDate::from_ymd(2023, 7, 11).unwrap().and_hms(9, 0, 0).unwrap();
+    /// let datetime = NaiveDate::from_ymd(2023, 7, 11).unwrap().at_hms(9, 0, 0).unwrap();
     ///
     /// // Formatting
     /// assert_eq!(
@@ -362,7 +362,7 @@ impl<'a> StrftimeItems<'a> {
     /// }
     ///
     /// let fmt_items = format_items("%e %b %Y", "%k.%M")?;
-    /// let datetime = NaiveDate::from_ymd(2023, 7, 11).unwrap().and_hms(9, 0, 0).unwrap();
+    /// let datetime = NaiveDate::from_ymd(2023, 7, 11).unwrap().at_hms(9, 0, 0).unwrap();
     ///
     /// assert_eq!(
     ///     datetime.format_with_items(fmt_items.as_slice().iter()).to_string(),
@@ -853,7 +853,7 @@ mod tests {
             .from_local_datetime(
                 NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
-                    .and_hms_nano(0, 34, 59, 1_026_490_708)
+                    .at_hms_nano(0, 34, 59, 1_026_490_708)
                     .unwrap(),
             )
             .unwrap();
@@ -1021,7 +1021,7 @@ mod tests {
             .from_local_datetime(
                 NaiveDate::from_ymd(2001, 7, 8)
                     .unwrap()
-                    .and_hms_nano(0, 34, 59, 1_026_490_708)
+                    .at_hms_nano(0, 34, 59, 1_026_490_708)
                     .unwrap(),
             )
             .unwrap();
