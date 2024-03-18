@@ -90,8 +90,8 @@ fn try_verify_against_date_command() {
     let mut children = vec![];
     for year in [1975, 1976, 1977, 2020, 2021, 2022, 2073, 2074, 2075, 2076, 2077].iter() {
         children.push(thread::spawn(|| {
-            let mut date = NaiveDate::from_ymd(*year, 1, 1).unwrap().and_time(NaiveTime::MIN);
-            let end = NaiveDate::from_ymd(*year + 1, 1, 1).unwrap().and_time(NaiveTime::MIN);
+            let mut date = NaiveDate::from_ymd(*year, 1, 1).unwrap().at(NaiveTime::MIN);
+            let end = NaiveDate::from_ymd(*year + 1, 1, 1).unwrap().at(NaiveTime::MIN);
             while date <= end {
                 verify_against_date_command_local(DATE_PATH, date);
                 date += chrono::TimeDelta::hours(1);

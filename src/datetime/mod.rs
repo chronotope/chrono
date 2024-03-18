@@ -648,7 +648,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     #[must_use]
     pub fn with_time(&self, time: NaiveTime) -> MappedLocalTime<Self> {
-        self.timezone().from_local_datetime(self.overflowing_naive_local().date().and_time(time))
+        self.timezone().from_local_datetime(self.overflowing_naive_local().date().at(time))
     }
 
     /// Makes a new `DateTime` with the hour number changed.
@@ -761,7 +761,7 @@ impl DateTime<Utc> {
         }
         let date = try_err!(NaiveDate::from_num_days_from_ce(days as i32));
         let time = try_err!(NaiveTime::from_num_seconds_from_midnight(secs as u32, nsecs));
-        Ok(date.and_time(time).and_utc())
+        Ok(date.at(time).and_utc())
     }
 
     /// Makes a new `DateTime<Utc>` from the number of non-leap milliseconds
