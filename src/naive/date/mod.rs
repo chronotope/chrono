@@ -636,7 +636,7 @@ impl NaiveDate {
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
     ///
     /// No [leap second](./struct.NaiveTime.html#leap-second-handling) is allowed here;
-    /// use `NaiveDate::and_hms_*` methods with a subsecond parameter instead.
+    /// use `NaiveDate::at_hms_*` methods with a subsecond parameter instead.
     ///
     /// # Errors
     ///
@@ -648,13 +648,13 @@ impl NaiveDate {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms(12, 34, 56).is_ok());
-    /// assert_eq!(d.and_hms(12, 34, 60), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms(12, 60, 56), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms(24, 34, 56), Err(Error::InvalidArgument));
+    /// assert!(d.at_hms(12, 34, 56).is_ok());
+    /// assert_eq!(d.at_hms(12, 34, 60), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms(12, 60, 56), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms(24, 34, 56), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    pub const fn and_hms(self, hour: u32, min: u32, sec: u32) -> Result<NaiveDateTime, Error> {
+    pub const fn at_hms(self, hour: u32, min: u32, sec: u32) -> Result<NaiveDateTime, Error> {
         let time = try_err!(NaiveTime::from_hms(hour, min, sec));
         Ok(self.and_time(time))
     }
@@ -677,15 +677,15 @@ impl NaiveDate {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_milli(12, 34, 56, 789).is_ok());
-    /// assert!(d.and_hms_milli(12, 34, 59, 1_789).is_ok()); // leap second
-    /// assert_eq!(d.and_hms_milli(12, 34, 59, 2_789), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_milli(12, 34, 60, 789), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_milli(12, 60, 56, 789), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_milli(24, 34, 56, 789), Err(Error::InvalidArgument));
+    /// assert!(d.at_hms_milli(12, 34, 56, 789).is_ok());
+    /// assert!(d.at_hms_milli(12, 34, 59, 1_789).is_ok()); // leap second
+    /// assert_eq!(d.at_hms_milli(12, 34, 59, 2_789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_milli(12, 34, 60, 789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_milli(12, 60, 56, 789), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_milli(24, 34, 56, 789), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    pub const fn and_hms_milli(
+    pub const fn at_hms_milli(
         &self,
         hour: u32,
         min: u32,
@@ -714,15 +714,15 @@ impl NaiveDate {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_micro(12, 34, 56, 789_012).is_ok());
-    /// assert!(d.and_hms_micro(12, 34, 59, 1_789_012).is_ok()); // leap second
-    /// assert_eq!(d.and_hms_micro(12, 34, 59, 2_789_012), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_micro(12, 34, 60, 789_012), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_micro(12, 60, 56, 789_012), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_micro(24, 34, 56, 789_012), Err(Error::InvalidArgument));
+    /// assert!(d.at_hms_micro(12, 34, 56, 789_012).is_ok());
+    /// assert!(d.at_hms_micro(12, 34, 59, 1_789_012).is_ok()); // leap second
+    /// assert_eq!(d.at_hms_micro(12, 34, 59, 2_789_012), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_micro(12, 34, 60, 789_012), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_micro(12, 60, 56, 789_012), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_micro(24, 34, 56, 789_012), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    pub const fn and_hms_micro(
+    pub const fn at_hms_micro(
         &self,
         hour: u32,
         min: u32,
@@ -751,15 +751,15 @@ impl NaiveDate {
     /// use chrono::{Error, NaiveDate};
     ///
     /// let d = NaiveDate::from_ymd(2015, 6, 3).unwrap();
-    /// assert!(d.and_hms_nano(12, 34, 56, 789_012_345).is_ok());
-    /// assert!(d.and_hms_nano(12, 34, 59, 1_789_012_345).is_ok()); // leap second
-    /// assert_eq!(d.and_hms_nano(12, 34, 59, 2_789_012_345), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_nano(12, 34, 60, 789_012_345), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_nano(12, 60, 56, 789_012_345), Err(Error::InvalidArgument));
-    /// assert_eq!(d.and_hms_nano(24, 34, 56, 789_012_345), Err(Error::InvalidArgument));
+    /// assert!(d.at_hms_nano(12, 34, 56, 789_012_345).is_ok());
+    /// assert!(d.at_hms_nano(12, 34, 59, 1_789_012_345).is_ok()); // leap second
+    /// assert_eq!(d.at_hms_nano(12, 34, 59, 2_789_012_345), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_nano(12, 34, 60, 789_012_345), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_nano(12, 60, 56, 789_012_345), Err(Error::InvalidArgument));
+    /// assert_eq!(d.at_hms_nano(24, 34, 56, 789_012_345), Err(Error::InvalidArgument));
     /// ```
     #[inline]
-    pub const fn and_hms_nano(
+    pub const fn at_hms_nano(
         &self,
         hour: u32,
         min: u32,

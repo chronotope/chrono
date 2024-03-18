@@ -185,7 +185,7 @@ pub trait TimeZone: Sized + Clone {
         min: u32,
         sec: u32,
     ) -> MappedLocalTime<DateTime<Self>> {
-        match NaiveDate::from_ymd(year, month, day).and_then(|d| d.and_hms(hour, min, sec)) {
+        match NaiveDate::from_ymd(year, month, day).and_then(|d| d.at_hms(hour, min, sec)) {
             Ok(dt) => self.from_local_datetime(dt),
             Err(_) => MappedLocalTime::None,
         }

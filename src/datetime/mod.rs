@@ -151,10 +151,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_milli(0, 0, 1, 444)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.at_hms_milli(0, 0, 1, 444)?.and_utc();
     /// assert_eq!(dt.timestamp_millis(), 1_444);
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_milli(1, 46, 40, 555)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.at_hms_milli(1, 46, 40, 555)?.and_utc();
     /// assert_eq!(dt.timestamp_millis(), 1_000_000_000_555);
     /// # Ok::<(), chrono::Error>(())
     /// ```
@@ -172,10 +172,10 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::NaiveDate;
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_micro(0, 0, 1, 444)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.at_hms_micro(0, 0, 1, 444)?.and_utc();
     /// assert_eq!(dt.timestamp_micros(), 1_000_444);
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_micro(1, 46, 40, 555)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.at_hms_micro(1, 46, 40, 555)?.and_utc();
     /// assert_eq!(dt.timestamp_micros(), 1_000_000_000_000_555);
     /// # Ok::<(), chrono::Error>(())
     /// ```
@@ -201,22 +201,22 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// ```
     /// use chrono::{Error, NaiveDate};
     ///
-    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.and_hms_nano(0, 0, 1, 444)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(1970, 1, 1)?.at_hms_nano(0, 0, 1, 444)?.and_utc();
     /// assert_eq!(dt.timestamp_nanos(), Ok(1_000_000_444));
     ///
-    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.and_hms_nano(1, 46, 40, 555)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(2001, 9, 9)?.at_hms_nano(1, 46, 40, 555)?.and_utc();
     /// assert_eq!(dt.timestamp_nanos(), Ok(1_000_000_000_000_000_555));
     ///
-    /// let dt = NaiveDate::from_ymd(1677, 9, 21)?.and_hms_nano(0, 12, 43, 145_224_192)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(1677, 9, 21)?.at_hms_nano(0, 12, 43, 145_224_192)?.and_utc();
     /// assert_eq!(dt.timestamp_nanos(), Ok(-9_223_372_036_854_775_808));
     ///
-    /// let dt = NaiveDate::from_ymd(2262, 4, 11)?.and_hms_nano(23, 47, 16, 854_775_807)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(2262, 4, 11)?.at_hms_nano(23, 47, 16, 854_775_807)?.and_utc();
     /// assert_eq!(dt.timestamp_nanos(), Ok(9_223_372_036_854_775_807));
     ///
-    /// let dt = NaiveDate::from_ymd(1677, 9, 21)?.and_hms_nano(0, 12, 43, 145_224_191)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(1677, 9, 21)?.at_hms_nano(0, 12, 43, 145_224_191)?.and_utc();
     /// assert_eq!(dt.timestamp_nanos(), Err(Error::OutOfRange));
     ///
-    /// let dt = NaiveDate::from_ymd(2262, 4, 11)?.and_hms_nano(23, 47, 16, 854_775_808)?.and_utc();
+    /// let dt = NaiveDate::from_ymd(2262, 4, 11)?.at_hms_nano(23, 47, 16, 854_775_808)?.and_utc();
     /// assert_eq!(dt.timestamp_nanos(), Err(Error::OutOfRange));
     /// # Ok::<(), Error>(())
     /// ```
@@ -530,7 +530,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, NaiveDate};
     /// let dt = NaiveDate::from_ymd(2018, 1, 26)
     ///     .unwrap()
-    ///     .and_hms_micro(18, 30, 9, 453_829)
+    ///     .at_hms_micro(18, 30, 9, 453_829)
     ///     .unwrap()
     ///     .and_utc();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false), "2018-01-26T18:30:09.453+00:00");
@@ -540,7 +540,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     /// let dt = pst
     ///     .from_local_datetime(
-    ///         NaiveDate::from_ymd(2018, 1, 26).unwrap().and_hms_micro(10, 30, 9, 453_829).unwrap(),
+    ///         NaiveDate::from_ymd(2018, 1, 26).unwrap().at_hms_micro(10, 30, 9, 453_829).unwrap(),
     ///     )
     ///     .unwrap();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true), "2018-01-26T10:30:09+08:00");
@@ -1052,7 +1052,7 @@ impl DateTime<FixedOffset> {
     ///     Ok(FixedOffset::east(0)
     ///         .unwrap()
     ///         .from_local_datetime(
-    ///             NaiveDate::from_ymd(1983, 4, 13).unwrap().and_hms_milli(12, 9, 14, 274).unwrap()
+    ///             NaiveDate::from_ymd(1983, 4, 13).unwrap().at_hms_milli(12, 9, 14, 274).unwrap()
     ///         )
     ///         .unwrap())
     /// );

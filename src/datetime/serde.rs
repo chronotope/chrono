@@ -120,7 +120,7 @@ impl<'de> de::Deserialize<'de> for DateTime<Local> {
 ///
 /// let time = NaiveDate::from_ymd(2018, 5, 17)
 ///     .unwrap()
-///     .and_hms_nano(02, 04, 59, 918355733)
+///     .at_hms_nano(02, 04, 59, 918355733)
 ///     .unwrap()
 ///     .and_utc();
 /// let my_s = S { time: time.clone() };
@@ -165,7 +165,7 @@ pub mod ts_nanoseconds {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2018, 5, 17)
     ///         .unwrap()
-    ///         .and_hms_nano(02, 04, 59, 918355733)
+    ///         .at_hms_nano(02, 04, 59, 918355733)
     ///         .unwrap()
     ///         .and_utc(),
     /// };
@@ -263,7 +263,7 @@ pub mod ts_nanoseconds {
 /// let time = Some(
 ///     NaiveDate::from_ymd(2018, 5, 17)
 ///         .unwrap()
-///         .and_hms_nano(02, 04, 59, 918355733)
+///         .at_hms_nano(02, 04, 59, 918355733)
 ///         .unwrap()
 ///         .and_utc(),
 /// );
@@ -311,7 +311,7 @@ pub mod ts_nanoseconds_option {
     ///     time: Some(
     ///         NaiveDate::from_ymd(2018, 5, 17)
     ///             .unwrap()
-    ///             .and_hms_nano(02, 04, 59, 918355733)
+    ///             .at_hms_nano(02, 04, 59, 918355733)
     ///             .unwrap()
     ///             .and_utc(),
     ///     ),
@@ -412,7 +412,7 @@ pub mod ts_nanoseconds_option {
 ///
 /// let time = NaiveDate::from_ymd(2018, 5, 17)
 ///     .unwrap()
-///     .and_hms_micro(02, 04, 59, 918355)
+///     .at_hms_micro(02, 04, 59, 918355)
 ///     .unwrap()
 ///     .and_utc();
 /// let my_s = S { time: time.clone() };
@@ -449,7 +449,7 @@ pub mod ts_microseconds {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2018, 5, 17)
     ///         .unwrap()
-    ///         .and_hms_micro(02, 04, 59, 918355)
+    ///         .at_hms_micro(02, 04, 59, 918355)
     ///         .unwrap()
     ///         .and_utc(),
     /// };
@@ -548,7 +548,7 @@ pub mod ts_microseconds {
 /// let time = Some(
 ///     NaiveDate::from_ymd(2018, 5, 17)
 ///         .unwrap()
-///         .and_hms_micro(02, 04, 59, 918355)
+///         .at_hms_micro(02, 04, 59, 918355)
 ///         .unwrap()
 ///         .and_utc(),
 /// );
@@ -587,7 +587,7 @@ pub mod ts_microseconds_option {
     ///     time: Some(
     ///         NaiveDate::from_ymd(2018, 5, 17)
     ///             .unwrap()
-    ///             .and_hms_micro(02, 04, 59, 918355)
+    ///             .at_hms_micro(02, 04, 59, 918355)
     ///             .unwrap()
     ///             .and_utc(),
     ///     ),
@@ -685,7 +685,7 @@ pub mod ts_microseconds_option {
 /// }
 ///
 /// let time =
-///     NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_utc();
+///     NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_milli(02, 04, 59, 918).unwrap().and_utc();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -720,7 +720,7 @@ pub mod ts_milliseconds {
     /// let my_s = S {
     ///     time: NaiveDate::from_ymd(2018, 5, 17)
     ///         .unwrap()
-    ///         .and_hms_milli(02, 04, 59, 918)
+    ///         .at_hms_milli(02, 04, 59, 918)
     ///         .unwrap()
     ///         .and_utc(),
     /// };
@@ -810,7 +810,7 @@ pub mod ts_milliseconds {
 /// }
 ///
 /// let time = Some(
-///     NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_utc(),
+///     NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_milli(02, 04, 59, 918).unwrap().and_utc(),
 /// );
 /// let my_s = S { time: time.clone() };
 ///
@@ -847,7 +847,7 @@ pub mod ts_milliseconds_option {
     ///     time: Some(
     ///         NaiveDate::from_ymd(2018, 5, 17)
     ///             .unwrap()
-    ///             .and_hms_milli(02, 04, 59, 918)
+    ///             .at_hms_milli(02, 04, 59, 918)
     ///             .unwrap()
     ///             .and_utc(),
     ///     ),

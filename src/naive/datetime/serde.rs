@@ -66,7 +66,7 @@ impl<'de> de::Deserialize<'de> for NaiveDateTime {
 /// }
 ///
 /// let time =
-///     NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_nano(02, 04, 59, 918355733).unwrap();
+///     NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_nano(02, 04, 59, 918355733).unwrap();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -107,10 +107,7 @@ pub mod ts_nanoseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17)
-    ///         .unwrap()
-    ///         .and_hms_nano(02, 04, 59, 918355733)
-    ///         .unwrap(),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_nano(02, 04, 59, 918355733).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355733}"#);
@@ -205,9 +202,8 @@ pub mod ts_nanoseconds {
 ///     time: Option<NaiveDateTime>,
 /// }
 ///
-/// let time = Some(
-///     NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_nano(02, 04, 59, 918355733).unwrap(),
-/// );
+/// let time =
+///     Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_nano(02, 04, 59, 918355733).unwrap());
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -249,7 +245,7 @@ pub mod ts_nanoseconds_option {
     ///
     /// let my_s = S {
     ///     time: Some(
-    ///         NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_nano(02, 04, 59, 918355733).unwrap(),
+    ///         NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_nano(02, 04, 59, 918355733).unwrap(),
     ///     ),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
@@ -353,7 +349,7 @@ pub mod ts_nanoseconds_option {
 ///     time: NaiveDateTime,
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_micro(02, 04, 59, 918355).unwrap();
+/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_micro(02, 04, 59, 918355).unwrap();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -386,7 +382,7 @@ pub mod ts_microseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_micro(02, 04, 59, 918355).unwrap(),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_micro(02, 04, 59, 918355).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918355}"#);
@@ -480,7 +476,7 @@ pub mod ts_microseconds {
 /// }
 ///
 /// let time =
-///     Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_micro(02, 04, 59, 918355).unwrap());
+///     Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_micro(02, 04, 59, 918355).unwrap());
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -514,7 +510,7 @@ pub mod ts_microseconds_option {
     ///
     /// let my_s = S {
     ///     time: Some(
-    ///         NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_micro(02, 04, 59, 918355).unwrap(),
+    ///         NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_micro(02, 04, 59, 918355).unwrap(),
     ///     ),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
@@ -612,7 +608,7 @@ pub mod ts_microseconds_option {
 ///     time: NaiveDateTime,
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap();
+/// let time = NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_milli(02, 04, 59, 918).unwrap();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -645,7 +641,7 @@ pub mod ts_milliseconds {
     /// }
     ///
     /// let my_s = S {
-    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap(),
+    ///     time: NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_milli(02, 04, 59, 918).unwrap(),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699918}"#);
@@ -736,7 +732,7 @@ pub mod ts_milliseconds {
 /// }
 ///
 /// let time =
-///     Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap());
+///     Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_milli(02, 04, 59, 918).unwrap());
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -770,7 +766,7 @@ pub mod ts_milliseconds_option {
     ///
     /// let my_s = S {
     ///     time: Some(
-    ///         NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap(),
+    ///         NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms_milli(02, 04, 59, 918).unwrap(),
     ///     ),
     /// };
     /// let as_string = serde_json::to_string(&my_s)?;
@@ -868,7 +864,7 @@ pub mod ts_milliseconds_option {
 ///     time: NaiveDateTime,
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2015, 5, 15).unwrap().and_hms(10, 0, 0).unwrap();
+/// let time = NaiveDate::from_ymd(2015, 5, 15).unwrap().at_hms(10, 0, 0).unwrap();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -900,7 +896,7 @@ pub mod ts_seconds {
     ///     time: NaiveDateTime,
     /// }
     ///
-    /// let my_s = S { time: NaiveDate::from_ymd(2015, 5, 15).unwrap().and_hms(10, 0, 0).unwrap() };
+    /// let my_s = S { time: NaiveDate::from_ymd(2015, 5, 15).unwrap().at_hms(10, 0, 0).unwrap() };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1431684000}"#);
     /// # Ok::<(), serde_json::Error>(())
@@ -989,7 +985,7 @@ pub mod ts_seconds {
 ///     time: Option<NaiveDateTime>,
 /// }
 ///
-/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms(02, 04, 59).unwrap());
+/// let time = Some(NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms(02, 04, 59).unwrap());
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -1021,7 +1017,7 @@ pub mod ts_seconds_option {
     ///     time: Option<NaiveDateTime>,
     /// }
     ///
-    /// let expected = NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms(02, 04, 59).unwrap();
+    /// let expected = NaiveDate::from_ymd(2018, 5, 17).unwrap().at_hms(02, 04, 59).unwrap();
     /// let my_s = S { time: Some(expected) };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);
@@ -1123,7 +1119,7 @@ mod tests {
     // it is not self-describing.
     #[test]
     fn test_serde_bincode() {
-        let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().and_hms_milli(9, 10, 48, 90).unwrap();
+        let dt = NaiveDate::from_ymd(2016, 7, 8).unwrap().at_hms_milli(9, 10, 48, 90).unwrap();
         let encoded = serialize(&dt).unwrap();
         let decoded: NaiveDateTime = deserialize(&encoded).unwrap();
         assert_eq!(dt, decoded);

@@ -286,7 +286,7 @@ mod tests {
             (bit_shift as i64 - HECTONANOSEC_TO_UNIX_EPOCH) / HECTONANOSECS_IN_SEC
         }
 
-        let mut date = NaiveDate::from_ymd(1975, 1, 1).unwrap().and_hms(0, 30, 0).unwrap();
+        let mut date = NaiveDate::from_ymd(1975, 1, 1).unwrap().at_hms(0, 30, 0).unwrap();
 
         while date.year() < 2078 {
             // Windows doesn't handle non-existing dates, it just treats it as valid.

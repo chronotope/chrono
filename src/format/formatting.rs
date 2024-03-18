@@ -684,14 +684,13 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn test_datetime_format() {
-        let dt = NaiveDate::from_ymd(2010, 9, 8).unwrap().and_hms_milli(7, 6, 54, 321).unwrap();
+        let dt = NaiveDate::from_ymd(2010, 9, 8).unwrap().at_hms_milli(7, 6, 54, 321).unwrap();
         assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
         assert_eq!(dt.format("%s").to_string(), "1283929614");
         assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
 
         // a horror of leap second: coming near to you.
-        let dt =
-            NaiveDate::from_ymd(2012, 6, 30).unwrap().and_hms_milli(23, 59, 59, 1_000).unwrap();
+        let dt = NaiveDate::from_ymd(2012, 6, 30).unwrap().at_hms_milli(23, 59, 59, 1_000).unwrap();
         assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
         assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
     }

@@ -309,7 +309,7 @@ mod tests {
         // issue #123
         let today = Utc::now().date_naive();
 
-        if let Ok(dt) = today.and_hms_milli(15, 2, 59, 1000) {
+        if let Ok(dt) = today.at_hms_milli(15, 2, 59, 1000) {
             let timestr = dt.time().to_string();
             // the OS API may or may not support the leap second,
             // but there are only two sensible options.
@@ -320,7 +320,7 @@ mod tests {
             );
         }
 
-        if let Ok(dt) = today.and_hms_milli(15, 2, 3, 1234) {
+        if let Ok(dt) = today.at_hms_milli(15, 2, 3, 1234) {
             let timestr = dt.time().to_string();
             assert!(
                 timestr == "15:02:03.234" || timestr == "15:02:04.234",
@@ -334,7 +334,7 @@ mod tests {
     #[cfg(windows)]
     fn test_lookup_with_dst_transitions() {
         let ymdhms =
-            |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
+            |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().at_hms(h, n, s).unwrap();
 
         #[track_caller]
         #[allow(clippy::too_many_arguments)]
@@ -348,7 +348,7 @@ mod tests {
             s: u32,
             result: MappedLocalTime<FixedOffset>,
         ) {
-            let dt = NaiveDate::from_ymd(y, m, d).unwrap().and_hms(h, n, s).unwrap();
+            let dt = NaiveDate::from_ymd(y, m, d).unwrap().at_hms(h, n, s).unwrap();
             assert_eq!(lookup_with_dst_transitions(transitions, dt), result);
         }
 

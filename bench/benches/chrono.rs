@@ -50,7 +50,7 @@ fn bench_datetime_to_rfc2822(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     let dt = pst
         .from_local_datetime(
-            NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_nano(10, 5, 13, 84_660_000).unwrap(),
+            NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_nano(10, 5, 13, 84_660_000).unwrap(),
         )
         .unwrap();
     c.bench_function("bench_datetime_to_rfc2822", |b| b.iter(|| black_box(dt).to_rfc2822()));
@@ -60,7 +60,7 @@ fn bench_datetime_to_rfc3339(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     let dt = pst
         .from_local_datetime(
-            NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_nano(10, 5, 13, 84_660_000).unwrap(),
+            NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_nano(10, 5, 13, 84_660_000).unwrap(),
         )
         .unwrap();
     c.bench_function("bench_datetime_to_rfc3339", |b| b.iter(|| black_box(dt).to_rfc3339()));
@@ -70,7 +70,7 @@ fn bench_datetime_to_rfc3339_opts(c: &mut Criterion) {
     let pst = FixedOffset::east(8 * 60 * 60).unwrap();
     let dt = pst
         .from_local_datetime(
-            NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_nano(10, 5, 13, 84_660_000).unwrap(),
+            NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_nano(10, 5, 13, 84_660_000).unwrap(),
         )
         .unwrap();
     c.bench_function("bench_datetime_to_rfc3339_opts", |b| {
