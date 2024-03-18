@@ -623,13 +623,13 @@ impl NaiveDate {
     /// let d = NaiveDate::from_ymd(2015, 6, 3).unwrap();
     /// let t = NaiveTime::from_hms_milli(12, 34, 56, 789).unwrap();
     ///
-    /// let dt: NaiveDateTime = d.and_time(t);
+    /// let dt: NaiveDateTime = d.at(t);
     /// assert_eq!(dt.date(), d);
     /// assert_eq!(dt.time(), t);
     /// ```
     #[inline]
     #[must_use]
-    pub const fn and_time(self, time: NaiveTime) -> NaiveDateTime {
+    pub const fn at(self, time: NaiveTime) -> NaiveDateTime {
         NaiveDateTime::new(self, time)
     }
 
@@ -656,7 +656,7 @@ impl NaiveDate {
     #[inline]
     pub const fn at_hms(self, hour: u32, min: u32, sec: u32) -> Result<NaiveDateTime, Error> {
         let time = try_err!(NaiveTime::from_hms(hour, min, sec));
-        Ok(self.and_time(time))
+        Ok(self.at(time))
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
@@ -693,7 +693,7 @@ impl NaiveDate {
         milli: u32,
     ) -> Result<NaiveDateTime, Error> {
         let time = try_err!(NaiveTime::from_hms_milli(hour, min, sec, milli));
-        Ok(self.and_time(time))
+        Ok(self.at(time))
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
@@ -730,7 +730,7 @@ impl NaiveDate {
         micro: u32,
     ) -> Result<NaiveDateTime, Error> {
         let time = try_err!(NaiveTime::from_hms_micro(hour, min, sec, micro));
-        Ok(self.and_time(time))
+        Ok(self.at(time))
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
@@ -767,7 +767,7 @@ impl NaiveDate {
         nano: u32,
     ) -> Result<NaiveDateTime, Error> {
         let time = try_err!(NaiveTime::from_hms_nano(hour, min, sec, nano));
-        Ok(self.and_time(time))
+        Ok(self.at(time))
     }
 
     /// Returns the packed month-day-flags.

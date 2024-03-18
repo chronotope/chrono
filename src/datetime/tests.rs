@@ -43,7 +43,7 @@ impl TimeZone for DstTester {
             DstTester::TO_WINTER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local());
+        .at(DstTester::transition_start_local());
 
         let local_to_winter_transition_end = NaiveDate::from_ymd(
             local.year(),
@@ -51,7 +51,7 @@ impl TimeZone for DstTester {
             DstTester::TO_WINTER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() - TimeDelta::hours(1));
+        .at(DstTester::transition_start_local() - TimeDelta::hours(1));
 
         let local_to_summer_transition_start = NaiveDate::from_ymd(
             local.year(),
@@ -59,7 +59,7 @@ impl TimeZone for DstTester {
             DstTester::TO_SUMMER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local());
+        .at(DstTester::transition_start_local());
 
         let local_to_summer_transition_end = NaiveDate::from_ymd(
             local.year(),
@@ -67,7 +67,7 @@ impl TimeZone for DstTester {
             DstTester::TO_SUMMER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local() + TimeDelta::hours(1));
+        .at(DstTester::transition_start_local() + TimeDelta::hours(1));
 
         if local < local_to_winter_transition_end || local >= local_to_summer_transition_end {
             MappedLocalTime::Single(DstTester::summer_offset())
@@ -95,7 +95,7 @@ impl TimeZone for DstTester {
             DstTester::TO_WINTER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local())
+        .at(DstTester::transition_start_local())
             - DstTester::summer_offset();
 
         let utc_to_summer_transition = NaiveDate::from_ymd(
@@ -104,7 +104,7 @@ impl TimeZone for DstTester {
             DstTester::TO_SUMMER_MONTH_DAY.1,
         )
         .unwrap()
-        .and_time(DstTester::transition_start_local())
+        .at(DstTester::transition_start_local())
             - DstTester::winter_offset();
 
         if utc < utc_to_winter_transition || utc >= utc_to_summer_transition {
@@ -597,7 +597,7 @@ fn signed_duration_since_autoref() {
 }
 
 #[test]
-fn test_datetime_date_and_time() {
+fn test_datetime_date_at() {
     let tz = FixedOffset::east(5 * 60 * 60).unwrap();
     let d = tz.at_ymd_and_hms(2014, 5, 6, 7, 8, 9).unwrap();
     assert_eq!(d.time(), NaiveTime::from_hms(7, 8, 9).unwrap());
@@ -1542,7 +1542,7 @@ fn test_min_max_add_days() {
     assert_eq!(beyond_min.checked_add_days(Days::new(0)), Some(beyond_min));
     assert_eq!(
         beyond_min.checked_add_days(Days::new(1)),
-        Some(offset_min.from_utc_datetime((NaiveDate::MIN + Days(1)).and_time(NaiveTime::MIN)))
+        Some(offset_min.from_utc_datetime((NaiveDate::MIN + Days(1)).at(NaiveTime::MIN)))
     );
     assert_eq!(beyond_min.checked_sub_days(Days::new(0)), Some(beyond_min));
     assert_eq!(beyond_min.checked_sub_days(Days::new(1)), None);
@@ -1552,7 +1552,7 @@ fn test_min_max_add_days() {
     assert_eq!(beyond_max.checked_sub_days(Days::new(0)), Some(beyond_max));
     assert_eq!(
         beyond_max.checked_sub_days(Days::new(1)),
-        Some(offset_max.from_utc_datetime((NaiveDate::MAX - Days(1)).and_time(max_time)))
+        Some(offset_max.from_utc_datetime((NaiveDate::MAX - Days(1)).at(max_time)))
     );
 }
 
@@ -1567,7 +1567,7 @@ fn test_min_max_add_months() {
     assert_eq!(beyond_min.checked_add_months(Months::new(0)), Some(beyond_min));
     assert_eq!(
         beyond_min.checked_add_months(Months::new(1)),
-        Some(offset_min.from_utc_datetime((NaiveDate::MIN + Months(1)).and_time(NaiveTime::MIN)))
+        Some(offset_min.from_utc_datetime((NaiveDate::MIN + Months(1)).at(NaiveTime::MIN)))
     );
     assert_eq!(beyond_min.checked_sub_months(Months::new(0)), Some(beyond_min));
     assert_eq!(beyond_min.checked_sub_months(Months::new(1)), None);
@@ -1577,7 +1577,7 @@ fn test_min_max_add_months() {
     assert_eq!(beyond_max.checked_sub_months(Months::new(0)), Some(beyond_max));
     assert_eq!(
         beyond_max.checked_sub_months(Months::new(1)),
-        Some(offset_max.from_utc_datetime((NaiveDate::MAX - Months(1)).and_time(max_time)))
+        Some(offset_max.from_utc_datetime((NaiveDate::MAX - Months(1)).at(max_time)))
     );
 }
 

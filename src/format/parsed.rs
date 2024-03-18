@@ -752,7 +752,7 @@ impl Parsed {
         let date = self.to_naive_date();
         let time = self.to_naive_time();
         if let (Ok(date), Ok(time)) = (date, time) {
-            let datetime = date.and_time(time);
+            let datetime = date.at(time);
 
             // verify the timestamp field if any
             // the following is safe, `timestamp` is very limited in range
@@ -814,7 +814,7 @@ impl Parsed {
             // validate other fields (e.g. week) and return
             let date = parsed.to_naive_date()?;
             let time = parsed.to_naive_time()?;
-            Ok(date.and_time(time))
+            Ok(date.at(time))
         } else {
             // reproduce the previous error(s)
             date?;

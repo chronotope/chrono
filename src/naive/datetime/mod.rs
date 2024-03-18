@@ -71,7 +71,7 @@ pub struct NaiveDateTime {
 
 impl NaiveDateTime {
     /// Makes a new `NaiveDateTime` from date and time components.
-    /// Equivalent to [`date.and_time(time)`](./struct.NaiveDate.html#method.and_time)
+    /// Equivalent to [`date.at(time)`](./struct.NaiveDate.html#method.at)
     /// and many other helper constructors on `NaiveDate`.
     ///
     /// # Example
@@ -939,7 +939,7 @@ impl NaiveDateTime {
 
     /// The Unix Epoch, 1970-01-01 00:00:00.
     pub const UNIX_EPOCH: Self =
-        expect(ok!(NaiveDate::from_ymd(1970, 1, 1)), "").and_time(NaiveTime::MIN);
+        expect(ok!(NaiveDate::from_ymd(1970, 1, 1)), "").at(NaiveTime::MIN);
 }
 
 impl From<NaiveDate> for NaiveDateTime {

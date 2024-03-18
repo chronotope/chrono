@@ -187,7 +187,7 @@ fn naive_date_time_from_system_time(
         // We have a concrete date.
         let date = NaiveDate::from_ymd(st.wYear as i32, st.wMonth as u32, st.wDay as u32)
             .map_err(|_| ())?;
-        return Ok(Some(date.and_time(time)));
+        return Ok(Some(date.at(time)));
     }
 
     // Resolve a rule with month, weekday, and nth weekday of the month to a date in the current
@@ -213,7 +213,7 @@ fn naive_date_time_from_system_time(
         }
         Err(_) => return Err(()), // `st.wMonth` must be invalid
     };
-    Ok(Some(date.and_time(time)))
+    Ok(Some(date.at(time)))
 }
 
 #[cfg(test)]
