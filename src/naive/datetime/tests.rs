@@ -274,7 +274,7 @@ fn test_datetime_add_sub_invariant() {
 #[test]
 fn test_and_local_timezone() {
     let ndt = NaiveDate::from_ymd_opt(2022, 6, 15).unwrap().and_hms_opt(18, 59, 36).unwrap();
-    let dt_utc = ndt.and_local_timezone(Utc).unwrap();
+    let dt_utc = ndt.and_utc();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 

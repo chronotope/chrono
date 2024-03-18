@@ -21,13 +21,12 @@ pub trait SubsecRound {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{SubsecRound, Timelike, Utc, NaiveDate};
+    /// # use chrono::{SubsecRound, Timelike, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11)
     ///     .unwrap()
     ///     .and_hms_milli_opt(12, 0, 0, 154)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
     /// ```
@@ -38,13 +37,12 @@ pub trait SubsecRound {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{SubsecRound, Timelike, Utc, NaiveDate};
+    /// # use chrono::{SubsecRound, Timelike, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11)
     ///     .unwrap()
     ///     .and_hms_milli_opt(12, 0, 0, 154)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
     /// ```
@@ -118,13 +116,12 @@ pub trait DurationRound: Sized {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DurationRound, TimeDelta, Utc, NaiveDate};
+    /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11)
     ///     .unwrap()
     ///     .and_hms_milli_opt(12, 0, 0, 154)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     /// assert_eq!(
     ///     dt.duration_round(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -140,13 +137,12 @@ pub trait DurationRound: Sized {
     ///
     /// # Example
     /// ``` rust
-    /// # use chrono::{DurationRound, TimeDelta, Utc, NaiveDate};
+    /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11)
     ///     .unwrap()
     ///     .and_hms_milli_opt(12, 0, 0, 154)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     /// assert_eq!(
     ///     dt.duration_trunc(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -258,13 +254,12 @@ pub enum RoundingError {
     /// Error when `TimeDelta.num_nanoseconds` exceeds the limit.
     ///
     /// ``` rust
-    /// # use chrono::{DurationRound, TimeDelta, RoundingError, Utc, NaiveDate};
+    /// # use chrono::{DurationRound, TimeDelta, RoundingError, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2260, 12, 31)
     ///     .unwrap()
     ///     .and_hms_nano_opt(23, 59, 59, 1_75_500_000)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     ///
     /// assert_eq!(
     ///     dt.duration_round(TimeDelta::try_days(300 * 365).unwrap()),

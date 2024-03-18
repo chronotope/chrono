@@ -652,13 +652,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Examples
     ///
     /// ```rust
-    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
+    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, NaiveDate};
     /// let dt = NaiveDate::from_ymd_opt(2018, 1, 26)
     ///     .unwrap()
     ///     .and_hms_micro_opt(18, 30, 9, 453_829)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false), "2018-01-26T18:30:09.453+00:00");
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true), "2018-01-26T18:30:09.453Z");
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true), "2018-01-26T18:30:09Z");

@@ -140,8 +140,7 @@
 //!     dt,
 //!     NaiveDate::from_ymd_opt(2014, 7, 8)?
 //!         .and_hms_opt(9, 10, 11)?
-//!         .and_local_timezone(Utc)
-//!         .unwrap()
+//!         .and_utc()
 //! );
 //!
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
@@ -154,21 +153,18 @@
 //!
 //! let dt = NaiveDate::from_ymd_opt(2014, 7, 8)?
 //!     .and_hms_milli_opt(9, 10, 11, 12)?
-//!     .and_local_timezone(Utc)
-//!     .unwrap(); // `2014-07-08T09:10:11.012Z`
+//!     .and_utc(); // `2014-07-08T09:10:11.012Z`
 //! assert_eq!(
 //!     dt,
 //!     NaiveDate::from_ymd_opt(2014, 7, 8)?
 //!         .and_hms_micro_opt(9, 10, 11, 12_000)?
-//!         .and_local_timezone(Utc)
-//!         .unwrap()
+//!         .and_utc()
 //! );
 //! assert_eq!(
 //!     dt,
 //!     NaiveDate::from_ymd_opt(2014, 7, 8)?
 //!         .and_hms_nano_opt(9, 10, 11, 12_000_000)?
-//!         .and_local_timezone(Utc)
-//!         .unwrap()
+//!         .and_utc()
 //! );
 //!
 //! // dynamic verification
@@ -245,8 +241,7 @@
 //!         .unwrap()
 //!         .and_hms_nano_opt(12, 45, 59, 324310806)
 //!         .unwrap()
-//!         .and_local_timezone(Utc)
-//!         .unwrap()
+//!         .and_utc()
 //! );
 //!
 //! // a sample of property manipulations (validates dynamically)
@@ -313,8 +308,7 @@
 //!     .unwrap()
 //!     .and_hms_nano_opt(12, 0, 9, 1)
 //!     .unwrap()
-//!     .and_local_timezone(Utc)
-//!     .unwrap();
+//!     .and_utc();
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # }
 //! # #[cfg(not(all(feature = "unstable-locales", feature = "alloc")))]
