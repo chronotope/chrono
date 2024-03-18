@@ -173,8 +173,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn date_naive(&self) -> NaiveDate {
-        let local = self.naive_local();
-        NaiveDate::from_ymd_opt(local.year(), local.month(), local.day()).unwrap()
+        self.naive_local().date()
     }
 
     /// Retrieves the time component.
