@@ -165,7 +165,7 @@ impl NaiveDate {
     #[deprecated(since = "0.4.23", note = "use `from_ymd_opt()` instead")]
     #[must_use]
     pub const fn from_ymd(year: i32, month: u32, day: u32) -> NaiveDate {
-        expect!(NaiveDate::from_ymd_opt(year, month, day), "invalid or out-of-range date")
+        expect(NaiveDate::from_ymd_opt(year, month, day), "invalid or out-of-range date")
     }
 
     /// Makes a new `NaiveDate` from the [calendar date](#calendar-date)
@@ -213,7 +213,7 @@ impl NaiveDate {
     #[deprecated(since = "0.4.23", note = "use `from_yo_opt()` instead")]
     #[must_use]
     pub const fn from_yo(year: i32, ordinal: u32) -> NaiveDate {
-        expect!(NaiveDate::from_yo_opt(year, ordinal), "invalid or out-of-range date")
+        expect(NaiveDate::from_yo_opt(year, ordinal), "invalid or out-of-range date")
     }
 
     /// Makes a new `NaiveDate` from the [ordinal date](#ordinal-date)
@@ -258,7 +258,7 @@ impl NaiveDate {
     #[deprecated(since = "0.4.23", note = "use `from_isoywd_opt()` instead")]
     #[must_use]
     pub const fn from_isoywd(year: i32, week: u32, weekday: Weekday) -> NaiveDate {
-        expect!(NaiveDate::from_isoywd_opt(year, week, weekday), "invalid or out-of-range date")
+        expect(NaiveDate::from_isoywd_opt(year, week, weekday), "invalid or out-of-range date")
     }
 
     /// Makes a new `NaiveDate` from the [ISO week date](#week-date)
@@ -349,7 +349,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn from_num_days_from_ce(days: i32) -> NaiveDate {
-        expect!(NaiveDate::from_num_days_from_ce_opt(days), "out-of-range date")
+        expect(NaiveDate::from_num_days_from_ce_opt(days), "out-of-range date")
     }
 
     /// Makes a new `NaiveDate` from a day's number in the proleptic Gregorian calendar, with
@@ -402,7 +402,7 @@ impl NaiveDate {
         weekday: Weekday,
         n: u8,
     ) -> NaiveDate {
-        expect!(NaiveDate::from_weekday_of_month_opt(year, month, weekday, n), "out-of-range date")
+        expect(NaiveDate::from_weekday_of_month_opt(year, month, weekday, n), "out-of-range date")
     }
 
     /// Makes a new `NaiveDate` by counting the number of occurrences of a particular day-of-week
@@ -752,7 +752,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn and_hms(&self, hour: u32, min: u32, sec: u32) -> NaiveDateTime {
-        expect!(self.and_hms_opt(hour, min, sec), "invalid time")
+        expect(self.and_hms_opt(hour, min, sec), "invalid time")
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute and second.
@@ -794,7 +794,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn and_hms_milli(&self, hour: u32, min: u32, sec: u32, milli: u32) -> NaiveDateTime {
-        expect!(self.and_hms_milli_opt(hour, min, sec, milli), "invalid time")
+        expect(self.and_hms_milli_opt(hour, min, sec, milli), "invalid time")
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and millisecond.
@@ -858,7 +858,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn and_hms_micro(&self, hour: u32, min: u32, sec: u32, micro: u32) -> NaiveDateTime {
-        expect!(self.and_hms_micro_opt(hour, min, sec, micro), "invalid time")
+        expect(self.and_hms_micro_opt(hour, min, sec, micro), "invalid time")
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and microsecond.
@@ -908,7 +908,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn and_hms_nano(&self, hour: u32, min: u32, sec: u32, nano: u32) -> NaiveDateTime {
-        expect!(self.and_hms_nano_opt(hour, min, sec, nano), "invalid time")
+        expect(self.and_hms_nano_opt(hour, min, sec, nano), "invalid time")
     }
 
     /// Makes a new `NaiveDateTime` from the current date, hour, minute, second and nanosecond.
@@ -975,7 +975,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn succ(&self) -> NaiveDate {
-        expect!(self.succ_opt(), "out of bound")
+        expect(self.succ_opt(), "out of bound")
     }
 
     /// Makes a new `NaiveDate` for the next calendar date.
@@ -1014,7 +1014,7 @@ impl NaiveDate {
     #[inline]
     #[must_use]
     pub const fn pred(&self) -> NaiveDate {
-        expect!(self.pred_opt(), "out of bound")
+        expect(self.pred_opt(), "out of bound")
     }
 
     /// Makes a new `NaiveDate` for the previous calendar date.
@@ -1158,7 +1158,7 @@ impl NaiveDate {
         let days = (year1_div_400 as i64 - year2_div_400 as i64) * 146_097 + (cycle1 - cycle2);
         // The range of `TimeDelta` is ca. 585 million years, the range of `NaiveDate` ca. 525.000
         // years.
-        expect!(TimeDelta::try_days(days), "always in range")
+        expect(TimeDelta::try_days(days), "always in range")
     }
 
     /// Returns the number of whole years from the given `base` until `self`.

@@ -716,15 +716,11 @@ macro_rules! try_opt {
 }
 
 /// Workaround because `.expect()` is not (yet) available in const context.
-#[macro_export]
-#[doc(hidden)]
-macro_rules! expect {
-    ($e:expr, $m:literal) => {
-        match $e {
-            Some(v) => v,
-            None => panic!($m),
-        }
-    };
+pub(crate) const fn expect<T: Copy>(opt: Option<T>, msg: &str) -> T {
+    match opt {
+        Some(val) => val,
+        None => panic!("{}", msg),
+    }
 }
 
 #[cfg(test)]

@@ -123,7 +123,7 @@ impl NaiveDateTime {
     #[must_use]
     pub const fn from_timestamp(secs: i64, nsecs: u32) -> NaiveDateTime {
         let datetime =
-            expect!(DateTime::from_timestamp(secs, nsecs), "invalid or out-of-range datetime");
+            expect(DateTime::from_timestamp(secs, nsecs), "invalid or out-of-range datetime");
         datetime.naive_utc()
     }
 
@@ -818,11 +818,11 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn signed_duration_since(self, rhs: NaiveDateTime) -> TimeDelta {
-        expect!(
+        expect(
             self.date
                 .signed_duration_since(rhs.date)
                 .checked_add(&self.time.signed_duration_since(rhs.time)),
-            "always in range"
+            "always in range",
         )
     }
 
@@ -956,7 +956,7 @@ impl NaiveDateTime {
 
     /// The Unix Epoch, 1970-01-01 00:00:00.
     pub const UNIX_EPOCH: Self =
-        expect!(NaiveDate::from_ymd_opt(1970, 1, 1), "").and_time(NaiveTime::MIN);
+        expect(NaiveDate::from_ymd_opt(1970, 1, 1), "").and_time(NaiveTime::MIN);
 }
 
 impl From<NaiveDate> for NaiveDateTime {

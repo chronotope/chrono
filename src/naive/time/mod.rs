@@ -256,7 +256,7 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_hms(hour: u32, min: u32, sec: u32) -> NaiveTime {
-        expect!(NaiveTime::from_hms_opt(hour, min, sec), "invalid time")
+        expect(NaiveTime::from_hms_opt(hour, min, sec), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute and second.
@@ -299,7 +299,7 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_hms_milli(hour: u32, min: u32, sec: u32, milli: u32) -> NaiveTime {
-        expect!(NaiveTime::from_hms_milli_opt(hour, min, sec, milli), "invalid time")
+        expect(NaiveTime::from_hms_milli_opt(hour, min, sec, milli), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and millisecond.
@@ -350,7 +350,7 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_hms_micro(hour: u32, min: u32, sec: u32, micro: u32) -> NaiveTime {
-        expect!(NaiveTime::from_hms_micro_opt(hour, min, sec, micro), "invalid time")
+        expect(NaiveTime::from_hms_micro_opt(hour, min, sec, micro), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and microsecond.
@@ -401,7 +401,7 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_hms_nano(hour: u32, min: u32, sec: u32, nano: u32) -> NaiveTime {
-        expect!(NaiveTime::from_hms_nano_opt(hour, min, sec, nano), "invalid time")
+        expect(NaiveTime::from_hms_nano_opt(hour, min, sec, nano), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from hour, minute, second and nanosecond.
@@ -453,7 +453,7 @@ impl NaiveTime {
     #[inline]
     #[must_use]
     pub const fn from_num_seconds_from_midnight(secs: u32, nano: u32) -> NaiveTime {
-        expect!(NaiveTime::from_num_seconds_from_midnight_opt(secs, nano), "invalid time")
+        expect(NaiveTime::from_num_seconds_from_midnight_opt(secs, nano), "invalid time")
     }
 
     /// Makes a new `NaiveTime` from the number of seconds since midnight and nanosecond.
@@ -767,7 +767,7 @@ impl NaiveTime {
         let secs_from_frac = frac.div_euclid(1_000_000_000);
         let frac = frac.rem_euclid(1_000_000_000) as u32;
 
-        expect!(TimeDelta::new(secs + secs_from_frac, frac), "must be in range")
+        expect(TimeDelta::new(secs + secs_from_frac, frac), "must be in range")
     }
 
     /// Adds given `FixedOffset` to the current time, and returns the number of days that should be
