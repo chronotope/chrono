@@ -279,9 +279,9 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub const fn timestamp_nanos(&self) -> i64 {
-        expect!(
+        expect(
             self.timestamp_nanos_opt(),
-            "value can not be represented in a timestamp with nanosecond precision."
+            "value can not be represented in a timestamp with nanosecond precision.",
         )
     }
 
@@ -857,7 +857,7 @@ impl DateTime<Utc> {
     pub const fn from_timestamp_nanos(nanos: i64) -> Self {
         let secs = nanos.div_euclid(1_000_000_000);
         let nsecs = nanos.rem_euclid(1_000_000_000) as u32;
-        expect!(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
+        expect(Self::from_timestamp(secs, nsecs), "timestamp in nanos is always in range")
     }
 
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.

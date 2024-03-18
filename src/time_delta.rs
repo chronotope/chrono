@@ -104,7 +104,7 @@ impl TimeDelta {
     #[must_use]
     #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_weeks` instead")]
     pub const fn weeks(weeks: i64) -> TimeDelta {
-        expect!(TimeDelta::try_weeks(weeks), "TimeDelta::weeks out of bounds")
+        expect(TimeDelta::try_weeks(weeks), "TimeDelta::weeks out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of weeks.
@@ -132,7 +132,7 @@ impl TimeDelta {
     #[must_use]
     #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_days` instead")]
     pub const fn days(days: i64) -> TimeDelta {
-        expect!(TimeDelta::try_days(days), "TimeDelta::days out of bounds")
+        expect(TimeDelta::try_days(days), "TimeDelta::days out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of days.
@@ -159,7 +159,7 @@ impl TimeDelta {
     #[must_use]
     #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_hours` instead")]
     pub const fn hours(hours: i64) -> TimeDelta {
-        expect!(TimeDelta::try_hours(hours), "TimeDelta::hours out of bounds")
+        expect(TimeDelta::try_hours(hours), "TimeDelta::hours out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of hours.
@@ -185,7 +185,7 @@ impl TimeDelta {
     #[must_use]
     #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_minutes` instead")]
     pub const fn minutes(minutes: i64) -> TimeDelta {
-        expect!(TimeDelta::try_minutes(minutes), "TimeDelta::minutes out of bounds")
+        expect(TimeDelta::try_minutes(minutes), "TimeDelta::minutes out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of minutes.
@@ -210,7 +210,7 @@ impl TimeDelta {
     #[must_use]
     #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_seconds` instead")]
     pub const fn seconds(seconds: i64) -> TimeDelta {
-        expect!(TimeDelta::try_seconds(seconds), "TimeDelta::seconds out of bounds")
+        expect(TimeDelta::try_seconds(seconds), "TimeDelta::seconds out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of seconds.
@@ -234,7 +234,7 @@ impl TimeDelta {
     #[inline]
     #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_milliseconds` instead")]
     pub const fn milliseconds(milliseconds: i64) -> TimeDelta {
-        expect!(TimeDelta::try_milliseconds(milliseconds), "TimeDelta::milliseconds out of bounds")
+        expect(TimeDelta::try_milliseconds(milliseconds), "TimeDelta::milliseconds out of bounds")
     }
 
     /// Makes a new `TimeDelta` with the given number of milliseconds.
@@ -1244,12 +1244,12 @@ mod tests {
 
     #[test]
     fn test_duration_const() {
-        const ONE_WEEK: TimeDelta = expect!(TimeDelta::try_weeks(1), "");
-        const ONE_DAY: TimeDelta = expect!(TimeDelta::try_days(1), "");
-        const ONE_HOUR: TimeDelta = expect!(TimeDelta::try_hours(1), "");
-        const ONE_MINUTE: TimeDelta = expect!(TimeDelta::try_minutes(1), "");
-        const ONE_SECOND: TimeDelta = expect!(TimeDelta::try_seconds(1), "");
-        const ONE_MILLI: TimeDelta = expect!(TimeDelta::try_milliseconds(1), "");
+        const ONE_WEEK: TimeDelta = expect(TimeDelta::try_weeks(1), "");
+        const ONE_DAY: TimeDelta = expect(TimeDelta::try_days(1), "");
+        const ONE_HOUR: TimeDelta = expect(TimeDelta::try_hours(1), "");
+        const ONE_MINUTE: TimeDelta = expect(TimeDelta::try_minutes(1), "");
+        const ONE_SECOND: TimeDelta = expect(TimeDelta::try_seconds(1), "");
+        const ONE_MILLI: TimeDelta = expect(TimeDelta::try_milliseconds(1), "");
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
         const ONE_NANO: TimeDelta = TimeDelta::nanoseconds(1);
         let combo: TimeDelta = ONE_WEEK
