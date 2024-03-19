@@ -24,19 +24,25 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTi
 
 fn offset(d: &NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
     TZ_INFO.with(|maybe_cache| {
-        maybe_cache.borrow_mut().get_or_insert_with(Cache::default).offset(*d, local)
+        maybe_cache.borrow_mut().offset(*d, local)
     })
 }
 
-// we have to store the `Cache` in an option as it can't
-// be initialized in a static context.
 thread_local! {
-    static TZ_INFO: RefCell<Option<Cache>> = Default::default();
+    static TZ_INFO: RefCell<Cache> = const { RefCell::new(
+        Cache {
+            zone: None,
+            source: Source::Uninitialized,
+            last_checked: SystemTime::UNIX_EPOCH,
+        }
+    ) };
 }
 
+#[derive(PartialEq)]
 enum Source {
     Environment { hash: u64 },
     LocalTime,
+    Uninitialized,
 }
 
 impl Source {
@@ -54,7 +60,7 @@ impl Source {
 }
 
 struct Cache {
-    zone: TimeZone,
+    zone: Option<TimeZone>,
     source: Source,
     last_checked: SystemTime,
 }
@@ -74,19 +80,6 @@ fn fallback_timezone() -> Option<TimeZone> {
     TimeZone::from_tz_data(&bytes).ok()
 }
 
-impl Default for Cache {
-    fn default() -> Cache {
-        // default to UTC if no local timezone can be found
-        let env_tz = env::var("TZ").ok();
-        let env_ref = env_tz.as_deref();
-        Cache {
-            last_checked: SystemTime::now(),
-            source: Source::new(env_ref),
-            zone: current_zone(env_ref),
-        }
-    }
-}
-
 fn current_zone(var: Option<&str>) -> TimeZone {
     TimeZone::local(var).ok().or_else(fallback_timezone).unwrap_or_else(TimeZone::utc)
 }
@@ -98,6 +91,8 @@ impl Cache {
         if !local {
             let offset = self
                 .zone
+                .as_ref()
+                .unwrap()
                 .find_local_time_type(d.and_utc().timestamp())
                 .expect("unable to select local time type")
                 .offset();
@@ -111,6 +106,8 @@ impl Cache {
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
         // the entire time was skipped in which case we will return MappedLocalTime::None anyway.
         self.zone
+            .as_ref()
+            .unwrap()
             .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
             .expect("unable to select local time type")
             .and_then(|o| FixedOffset::east_opt(o.offset()))
@@ -125,7 +122,7 @@ impl Cache {
     fn refresh_cache(&mut self) {
         let now = SystemTime::now();
         if let Ok(d) = now.duration_since(self.last_checked) {
-            if d.as_secs() < 1 {
+            if d.as_secs() < 1 && self.source != Source::Uninitialized {
                 return;
             }
         }
@@ -134,7 +131,7 @@ impl Cache {
             let env_tz = env::var("TZ").ok();
             let env_ref = env_tz.as_deref();
             self.source = Source::new(env_ref);
-            self.zone = current_zone(env_ref);
+            self.zone = Some(current_zone(env_ref));
         }
         self.last_checked = now;
     }
