@@ -124,11 +124,17 @@ impl Cache {
         let env_tz = env::var("TZ").ok();
         self.source = Source::new(env_tz.as_deref());
         self.zone = Some(
-            TimeZone::local(env_tz.as_deref())
+            self.read_from_tz_env_or_localtime(env_tz.as_deref())
                 .ok()
                 .or_else(fallback_timezone)
                 .unwrap_or_else(TimeZone::utc),
         );
+    }
+
+    /// Read the `TZ` environment variable or the TZif file that it points to.
+    /// Read from `/etc/localtime` if the variable is not set.
+    fn read_from_tz_env_or_localtime(&self, env_tz: Option<&str>) -> Result<TimeZone, ()> {
+        TimeZone::local(env_tz).map_err(|_| ())
     }
 }
 
