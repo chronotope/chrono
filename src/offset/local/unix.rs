@@ -53,12 +53,6 @@ struct Cache {
     last_checked: SystemTime,
 }
 
-#[cfg(target_os = "aix")]
-const TZDB_LOCATION: &str = "/usr/share/lib/zoneinfo";
-
-#[cfg(not(any(target_os = "android", target_os = "aix")))]
-const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
-
 impl Cache {
     fn tz_info(&mut self) -> &TimeZone {
         self.refresh_cache();
@@ -148,7 +142,7 @@ impl Cache {
 
     #[cfg(not(target_os = "android"))]
     fn read_tzif_inner(&self, tz_name: &str) -> Result<Vec<u8>, ()> {
-        let path = PathBuf::from(TZDB_LOCATION).join(tz_name);
+        let path = self.tzdb_dir()?.join(tz_name);
         let tzif = fs::read(path).map_err(|_| ())?;
         Ok(tzif)
     }
@@ -156,6 +150,22 @@ impl Cache {
     fn read_tzif_inner(&self, tz_name: &str) -> Result<Vec<u8>, ()> {
         let tzif = android_tzdata::find_tz_data(&tz_name).map_err(|_| ())?;
         Ok(tzif)
+    }
+
+    /// Get the location of the time zone database directory with TZif files.
+    #[cfg(not(target_os = "android"))]
+    fn tzdb_dir(&self) -> Result<PathBuf, ()> {
+        // Possible system timezone directories
+        const ZONE_INFO_DIRECTORIES: [&str; 4] =
+            ["/usr/share/zoneinfo", "/share/zoneinfo", "/etc/zoneinfo", "/usr/share/lib/zoneinfo"];
+
+        for dir in &ZONE_INFO_DIRECTORIES {
+            let path = PathBuf::from(dir);
+            if path.exists() {
+                return Ok(path);
+            }
+        }
+        Err(())
     }
 }
 
