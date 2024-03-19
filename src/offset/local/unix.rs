@@ -114,30 +114,47 @@ impl Cache {
     fn read_tz_info(&mut self) {
         let env_tz = env::var("TZ").ok();
         self.source = Source::new(env_tz.as_deref());
-        self.zone = Some(
-            self.read_from_tz_env_or_localtime(env_tz.as_deref())
-                .or_else(|_| self.read_with_tz_name())
-                .unwrap_or_else(|_| TimeZone::utc()),
-        );
+        if let Some(env_tz) = env_tz {
+            if self.read_from_tz_env(&env_tz).is_ok() {
+                return;
+            }
+        }
+        #[cfg(not(target_os = "android"))]
+        if self.read_from_symlink().is_ok() {
+            return;
+        }
+        if self.read_with_tz_name().is_ok() {
+            return;
+        }
+        self.zone = Some(TimeZone::utc());
     }
 
     /// Read the `TZ` environment variable or the TZif file that it points to.
-    /// Read from `/etc/localtime` if the variable is not set.
-    fn read_from_tz_env_or_localtime(&self, env_tz: Option<&str>) -> Result<TimeZone, ()> {
-        TimeZone::local(env_tz).map_err(|_| ())
+    fn read_from_tz_env(&mut self, tz_var: &str) -> Result<(), ()> {
+        self.zone = Some(TimeZone::from_posix_tz(tz_var).map_err(|_| ())?);
+        Ok(())
+    }
+
+    /// Read the Tzif file that `/etc/localtime` is symlinked to.
+    #[cfg(not(target_os = "android"))]
+    fn read_from_symlink(&mut self) -> Result<(), ()> {
+        let tzif = fs::read("/etc/localtime").map_err(|_| ())?;
+        self.zone = Some(TimeZone::from_tz_data(&tzif).map_err(|_| ())?);
+        Ok(())
     }
 
     /// Get the IANA time zone name of the system by whichever means the `iana_time_zone` crate gets
     /// it, and try to read the corresponding TZif data.
-    fn read_with_tz_name(&self) -> Result<TimeZone, ()> {
+    fn read_with_tz_name(&mut self) -> Result<(), ()> {
         let tz_name = iana_time_zone::get_timezone().map_err(|_| ())?;
         self.read_tzif(&tz_name)
     }
 
     /// Try to read the TZif data for the specified time zone name.
-    fn read_tzif(&self, tz_name: &str) -> Result<TimeZone, ()> {
+    fn read_tzif(&mut self, tz_name: &str) -> Result<(), ()> {
         let tzif = self.read_tzif_inner(tz_name)?;
-        TimeZone::from_tz_data(&tzif).map_err(|_| ())
+        self.zone = Some(TimeZone::from_tz_data(&tzif).map_err(|_| ())?);
+        Ok(())
     }
 
     #[cfg(not(target_os = "android"))]
