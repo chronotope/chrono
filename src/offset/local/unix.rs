@@ -105,14 +105,39 @@ fn current_zone(var: Option<&str>) -> TimeZone {
 
 impl Cache {
     fn offset(&mut self, d: NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
+        self.refresh_cache();
+
+        if !local {
+            let offset = self
+                .zone
+                .find_local_time_type(d.and_utc().timestamp())
+                .expect("unable to select local time type")
+                .offset();
+
+            return match FixedOffset::east_opt(offset) {
+                Some(offset) => MappedLocalTime::Single(offset),
+                None => MappedLocalTime::None,
+            };
+        }
+
+        // we pass through the year as the year of a local point in time must either be valid in that locale, or
+        // the entire time was skipped in which case we will return MappedLocalTime::None anyway.
+        self.zone
+            .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
+            .expect("unable to select local time type")
+            .and_then(|o| FixedOffset::east_opt(o.offset()))
+    }
+
+    /// Refresh our cached data if necessary.
+    ///
+    /// If the cache has been around for less than a second then we reuse it unconditionally. This is
+    /// a reasonable tradeoff because the timezone generally won't be changing _that_ often, but if
+    /// the time zone does change, it will reflect sufficiently quickly from an application user's
+    /// perspective.
+    fn refresh_cache(&mut self) {
         let now = SystemTime::now();
 
         match now.duration_since(self.last_checked) {
-            // If the cache has been around for less than a second then we reuse it
-            // unconditionally. This is a reasonable tradeoff because the timezone
-            // generally won't be changing _that_ often, but if the time zone does
-            // change, it will reflect sufficiently quickly from an application
-            // user's perspective.
             Ok(d) if d.as_secs() < 1 => (),
             Ok(_) | Err(_) => {
                 let env_tz = env::var("TZ").ok();
@@ -147,25 +172,5 @@ impl Cache {
                 self.source = new_source;
             }
         }
-
-        if !local {
-            let offset = self
-                .zone
-                .find_local_time_type(d.and_utc().timestamp())
-                .expect("unable to select local time type")
-                .offset();
-
-            return match FixedOffset::east_opt(offset) {
-                Some(offset) => MappedLocalTime::Single(offset),
-                None => MappedLocalTime::None,
-            };
-        }
-
-        // we pass through the year as the year of a local point in time must either be valid in that locale, or
-        // the entire time was skipped in which case we will return MappedLocalTime::None anyway.
-        self.zone
-            .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
-            .expect("unable to select local time type")
-            .and_then(|o| FixedOffset::east_opt(o.offset()))
     }
 }
