@@ -41,37 +41,6 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTi
     })
 }
 
-thread_local! {
-    static TZ_INFO: RefCell<Cache> = const { RefCell::new(
-        Cache {
-            zone: None,
-            source: Source::Uninitialized,
-            last_checked: SystemTime::UNIX_EPOCH,
-        }
-    ) };
-}
-
-#[derive(PartialEq)]
-enum Source {
-    Environment { hash: u64 },
-    LocalTime,
-    Uninitialized,
-}
-
-impl Source {
-    fn new(env_tz: Option<&str>) -> Source {
-        match env_tz {
-            Some(tz) => {
-                let mut hasher = hash_map::DefaultHasher::new();
-                hasher.write(tz.as_bytes());
-                let hash = hasher.finish();
-                Source::Environment { hash }
-            }
-            None => Source::LocalTime,
-        }
-    }
-}
-
 struct Cache {
     zone: Option<TimeZone>,
     source: Source,
@@ -145,6 +114,37 @@ impl Cache {
                 }
             }
             _ => true,
+        }
+    }
+}
+
+thread_local! {
+    static TZ_INFO: RefCell<Cache> = const { RefCell::new(
+        Cache {
+            zone: None,
+            source: Source::Uninitialized,
+            last_checked: SystemTime::UNIX_EPOCH,
+        }
+    ) };
+}
+
+#[derive(PartialEq)]
+enum Source {
+    Environment { hash: u64 },
+    LocalTime,
+    Uninitialized,
+}
+
+impl Source {
+    fn new(env_tz: Option<&str>) -> Source {
+        match env_tz {
+            Some(tz) => {
+                let mut hasher = hash_map::DefaultHasher::new();
+                hasher.write(tz.as_bytes());
+                let hash = hasher.finish();
+                Source::Environment { hash }
+            }
+            None => Source::LocalTime,
         }
     }
 }
