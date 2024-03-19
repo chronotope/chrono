@@ -8,7 +8,13 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::SystemTime};
+use std::cell::RefCell;
+use std::collections::hash_map;
+use std::env;
+use std::fs;
+use std::hash::Hasher;
+use std::path::PathBuf;
+use std::time::SystemTime;
 
 use super::tz_info::TimeZone;
 use super::{FixedOffset, NaiveDateTime};
@@ -131,11 +137,25 @@ impl Cache {
     /// it, and try to read the corresponding TZif data.
     fn read_with_tz_name(&self) -> Result<TimeZone, ()> {
         let tz_name = iana_time_zone::get_timezone().map_err(|_| ())?;
-        #[cfg(not(target_os = "android"))]
-        let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).map_err(|_| ())?;
-        #[cfg(target_os = "android")]
-        let bytes = android_tzdata::find_tz_data(&tz_name).ok()?;
-        TimeZone::from_tz_data(&bytes).map_err(|_| ())
+        self.read_tzif(&tz_name)
+    }
+
+    /// Try to read the TZif data for the specified time zone name.
+    fn read_tzif(&self, tz_name: &str) -> Result<TimeZone, ()> {
+        let tzif = self.read_tzif_inner(tz_name)?;
+        TimeZone::from_tz_data(&tzif).map_err(|_| ())
+    }
+
+    #[cfg(not(target_os = "android"))]
+    fn read_tzif_inner(&self, tz_name: &str) -> Result<Vec<u8>, ()> {
+        let path = PathBuf::from(TZDB_LOCATION).join(tz_name);
+        let tzif = fs::read(path).map_err(|_| ())?;
+        Ok(tzif)
+    }
+    #[cfg(target_os = "android")]
+    fn read_tzif_inner(&self, tz_name: &str) -> Result<Vec<u8>, ()> {
+        let tzif = android_tzdata::find_tz_data(&tz_name).map_err(|_| ())?;
+        Ok(tzif)
     }
 }
 
