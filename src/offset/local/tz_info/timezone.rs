@@ -33,7 +33,7 @@ impl TimeZone {
     }
 
     /// Construct a time zone from a POSIX TZ string, as described in [the POSIX documentation of the `TZ` environment variable](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html).
-    fn from_posix_tz(tz_string: &str) -> Result<Self, Error> {
+    pub(crate) fn from_posix_tz(tz_string: &str) -> Result<Self, Error> {
         if tz_string.is_empty() {
             return Err(Error::InvalidTzString("empty TZ string"));
         }
