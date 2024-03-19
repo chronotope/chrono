@@ -15,16 +15,29 @@ use super::{FixedOffset, NaiveDateTime};
 use crate::{Datelike, MappedLocalTime};
 
 pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
-    offset(utc, false)
+    TZ_INFO.with(|cache| {
+        let mut cache_ref = cache.borrow_mut();
+        let tz_info = cache_ref.tz_info();
+        let offset = tz_info
+            .find_local_time_type(utc.and_utc().timestamp())
+            .expect("unable to select local time type")
+            .offset();
+
+        match FixedOffset::east_opt(offset) {
+            Some(offset) => MappedLocalTime::Single(offset),
+            None => MappedLocalTime::None,
+        }
+    })
 }
 
 pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
-    offset(local, true)
-}
-
-fn offset(d: &NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
-    TZ_INFO.with(|maybe_cache| {
-        maybe_cache.borrow_mut().offset(*d, local)
+    TZ_INFO.with(|cache| {
+        let mut cache_ref = cache.borrow_mut();
+        let tz_info = cache_ref.tz_info();
+        tz_info
+            .find_local_time_type_from_local(local.and_utc().timestamp(), local.year())
+            .expect("unable to select local time type")
+            .and_then(|o| FixedOffset::east_opt(o.offset()))
     })
 }
 
@@ -85,32 +98,9 @@ fn current_zone(var: Option<&str>) -> TimeZone {
 }
 
 impl Cache {
-    fn offset(&mut self, d: NaiveDateTime, local: bool) -> MappedLocalTime<FixedOffset> {
+    fn tz_info(&mut self) -> &TimeZone {
         self.refresh_cache();
-
-        if !local {
-            let offset = self
-                .zone
-                .as_ref()
-                .unwrap()
-                .find_local_time_type(d.and_utc().timestamp())
-                .expect("unable to select local time type")
-                .offset();
-
-            return match FixedOffset::east_opt(offset) {
-                Some(offset) => MappedLocalTime::Single(offset),
-                None => MappedLocalTime::None,
-            };
-        }
-
-        // we pass through the year as the year of a local point in time must either be valid in that locale, or
-        // the entire time was skipped in which case we will return MappedLocalTime::None anyway.
-        self.zone
-            .as_ref()
-            .unwrap()
-            .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
-            .expect("unable to select local time type")
-            .and_then(|o| FixedOffset::east_opt(o.offset()))
+        self.zone.as_ref().unwrap()
     }
 
     /// Refresh our cached data if necessary.
