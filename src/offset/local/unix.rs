@@ -35,8 +35,8 @@ thread_local! {
 }
 
 enum Source {
-    LocalTime { mtime: SystemTime },
     Environment { hash: u64 },
+    LocalTime,
 }
 
 impl Source {
@@ -48,19 +48,7 @@ impl Source {
                 let hash = hasher.finish();
                 Source::Environment { hash }
             }
-            None => match fs::symlink_metadata("/etc/localtime") {
-                Ok(data) => Source::LocalTime {
-                    // we have to pick a sensible default when the mtime fails
-                    // by picking SystemTime::now() we raise the probability of
-                    // the cache being invalidated if/when the mtime starts working
-                    mtime: data.modified().unwrap_or_else(|_| SystemTime::now()),
-                },
-                Err(_) => {
-                    // as above, now() should be a better default than some constant
-                    // TODO: see if we can improve caching in the case where the fallback is a valid timezone
-                    Source::LocalTime { mtime: SystemTime::now() }
-                }
-            },
+            None => Source::LocalTime,
         }
     }
 }
@@ -162,10 +150,11 @@ impl Cache {
             (Source::Environment { .. }, Source::LocalTime { .. })
             | (Source::LocalTime { .. }, Source::Environment { .. }) => true,
             // stay as file, but mtime has changed
-            (Source::LocalTime { mtime: old_mtime }, Source::LocalTime { mtime })
-                if old_mtime != mtime =>
-            {
-                true
+            (Source::LocalTime, Source::LocalTime) => {
+                match fs::symlink_metadata("/etc/localtime").and_then(|m| m.modified()) {
+                    Ok(mtime) => mtime > self.last_checked,
+                    Err(_) => false,
+                }
             }
             // stay as env, but hash of variable has changed
             (Source::Environment { hash: old_hash }, Source::Environment { hash })
