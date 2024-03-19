@@ -189,6 +189,16 @@ impl CachedTzInfo {
         const ZONE_INFO_DIRECTORIES: [&str; 4] =
             ["/usr/share/zoneinfo", "/share/zoneinfo", "/etc/zoneinfo", "/usr/share/lib/zoneinfo"];
 
+        // Use the value of the `TZDIR` environment variable if set.
+        if let Some(tz_dir) = env::var_os("TZDIR") {
+            if !tz_dir.is_empty() {
+                let path = PathBuf::from(tz_dir);
+                if path.exists() {
+                    return Ok(path);
+                }
+            }
+        }
+
         for dir in &ZONE_INFO_DIRECTORIES {
             let path = PathBuf::from(dir);
             if path.exists() {
