@@ -53,15 +53,6 @@ const TZDB_LOCATION: &str = "/usr/share/lib/zoneinfo";
 #[cfg(not(any(target_os = "android", target_os = "aix")))]
 const TZDB_LOCATION: &str = "/usr/share/zoneinfo";
 
-fn fallback_timezone() -> Option<TimeZone> {
-    let tz_name = iana_time_zone::get_timezone().ok()?;
-    #[cfg(not(target_os = "android"))]
-    let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).ok()?;
-    #[cfg(target_os = "android")]
-    let bytes = android_tzdata::find_tz_data(&tz_name).ok()?;
-    TimeZone::from_tz_data(&bytes).ok()
-}
-
 impl Cache {
     fn tz_info(&mut self) -> &TimeZone {
         self.refresh_cache();
@@ -125,9 +116,8 @@ impl Cache {
         self.source = Source::new(env_tz.as_deref());
         self.zone = Some(
             self.read_from_tz_env_or_localtime(env_tz.as_deref())
-                .ok()
-                .or_else(fallback_timezone)
-                .unwrap_or_else(TimeZone::utc),
+                .or_else(|_| self.read_with_tz_name())
+                .unwrap_or_else(|_| TimeZone::utc()),
         );
     }
 
@@ -135,6 +125,17 @@ impl Cache {
     /// Read from `/etc/localtime` if the variable is not set.
     fn read_from_tz_env_or_localtime(&self, env_tz: Option<&str>) -> Result<TimeZone, ()> {
         TimeZone::local(env_tz).map_err(|_| ())
+    }
+
+    /// Get the IANA time zone name of the system by whichever means the `iana_time_zone` crate gets
+    /// it, and try to read the corresponding TZif data.
+    fn read_with_tz_name(&self) -> Result<TimeZone, ()> {
+        let tz_name = iana_time_zone::get_timezone().map_err(|_| ())?;
+        #[cfg(not(target_os = "android"))]
+        let bytes = fs::read(format!("{}/{}", TZDB_LOCATION, tz_name)).map_err(|_| ())?;
+        #[cfg(target_os = "android")]
+        let bytes = android_tzdata::find_tz_data(&tz_name).ok()?;
+        TimeZone::from_tz_data(&bytes).map_err(|_| ())
     }
 }
 
