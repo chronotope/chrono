@@ -136,41 +136,45 @@ impl Cache {
     /// perspective.
     fn refresh_cache(&mut self) {
         let now = SystemTime::now();
-
-        match now.duration_since(self.last_checked) {
-            Ok(d) if d.as_secs() < 1 => (),
-            Ok(_) | Err(_) => {
-                let env_tz = env::var("TZ").ok();
-                let env_ref = env_tz.as_deref();
-                let new_source = Source::new(env_ref);
-
-                let out_of_date = match (&self.source, &new_source) {
-                    // change from env to file or file to env, must recreate the zone
-                    (Source::Environment { .. }, Source::LocalTime { .. })
-                    | (Source::LocalTime { .. }, Source::Environment { .. }) => true,
-                    // stay as file, but mtime has changed
-                    (Source::LocalTime { mtime: old_mtime }, Source::LocalTime { mtime })
-                        if old_mtime != mtime =>
-                    {
-                        true
-                    }
-                    // stay as env, but hash of variable has changed
-                    (Source::Environment { hash: old_hash }, Source::Environment { hash })
-                        if old_hash != hash =>
-                    {
-                        true
-                    }
-                    // cache can be reused
-                    _ => false,
-                };
-
-                if out_of_date {
-                    self.zone = current_zone(env_ref);
-                }
-
-                self.last_checked = now;
-                self.source = new_source;
+        if let Ok(d) = now.duration_since(self.last_checked) {
+            if d.as_secs() < 1 {
+                return;
             }
+        }
+
+        if self.needs_update() {
+            let env_tz = env::var("TZ").ok();
+            let env_ref = env_tz.as_deref();
+            self.source = Source::new(env_ref);
+            self.zone = current_zone(env_ref);
+        }
+        self.last_checked = now;
+    }
+
+    /// Check if any of the `TZ` environment variable or `/etc/localtime` have changed.
+    fn needs_update(&self) -> bool {
+        let env_tz = env::var("TZ").ok();
+        let env_ref = env_tz.as_deref();
+        let new_source = Source::new(env_ref);
+
+        match (&self.source, &new_source) {
+            // change from env to file or file to env, must recreate the zone
+            (Source::Environment { .. }, Source::LocalTime { .. })
+            | (Source::LocalTime { .. }, Source::Environment { .. }) => true,
+            // stay as file, but mtime has changed
+            (Source::LocalTime { mtime: old_mtime }, Source::LocalTime { mtime })
+                if old_mtime != mtime =>
+            {
+                true
+            }
+            // stay as env, but hash of variable has changed
+            (Source::Environment { hash: old_hash }, Source::Environment { hash })
+                if old_hash != hash =>
+            {
+                true
+            }
+            // cache can be reused
+            _ => false,
         }
     }
 }
