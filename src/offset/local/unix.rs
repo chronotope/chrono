@@ -62,10 +62,6 @@ fn fallback_timezone() -> Option<TimeZone> {
     TimeZone::from_tz_data(&bytes).ok()
 }
 
-fn current_zone(var: Option<&str>) -> TimeZone {
-    TimeZone::local(var).ok().or_else(fallback_timezone).unwrap_or_else(TimeZone::utc)
-}
-
 impl Cache {
     fn tz_info(&mut self) -> &TimeZone {
         self.refresh_cache();
@@ -87,10 +83,7 @@ impl Cache {
         }
 
         if self.needs_update() {
-            let env_tz = env::var("TZ").ok();
-            let env_ref = env_tz.as_deref();
-            self.source = Source::new(env_ref);
-            self.zone = Some(current_zone(env_ref));
+            self.read_tz_info();
         }
         self.last_checked = now;
     }
@@ -115,6 +108,27 @@ impl Cache {
             }
             _ => true,
         }
+    }
+
+    /// Try to get the current time zone data.
+    ///
+    /// The following sources are tried in order:
+    /// - `TZ` environment variable, containing:
+    ///   - the POSIX TZ rule
+    ///   - an absolute path
+    ///   - an IANA time zone name in combination with the platform time zone database
+    /// - the `/etc/localtime` symlink
+    /// - the global IANA time zone name in combination with the platform time zone database
+    /// - fall back to UTC if all else fails
+    fn read_tz_info(&mut self) {
+        let env_tz = env::var("TZ").ok();
+        self.source = Source::new(env_tz.as_deref());
+        self.zone = Some(
+            TimeZone::local(env_tz.as_deref())
+                .ok()
+                .or_else(fallback_timezone)
+                .unwrap_or_else(TimeZone::utc),
+        );
     }
 }
 
