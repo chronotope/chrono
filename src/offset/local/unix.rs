@@ -13,7 +13,7 @@ use std::collections::hash_map;
 use std::env;
 use std::fs;
 use std::hash::Hasher;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 use super::tz_info::TimeZone;
@@ -112,10 +112,11 @@ impl Cache {
     /// - the global IANA time zone name in combination with the platform time zone database
     /// - fall back to UTC if all else fails
     fn read_tz_info(&mut self) {
-        let env_tz = env::var("TZ").ok();
-        self.source = Source::new(env_tz.as_deref());
-        if let Some(env_tz) = env_tz {
-            if self.read_from_tz_env(&env_tz).is_ok() {
+        self.source = Source::new(env::var("TZ").ok().as_deref());
+
+        let tz_var = TzEnvVar::get();
+        if let Some(tz_var) = tz_var {
+            if self.read_from_tz_env(&tz_var).is_ok() {
                 return;
             }
         }
@@ -130,8 +131,20 @@ impl Cache {
     }
 
     /// Read the `TZ` environment variable or the TZif file that it points to.
-    fn read_from_tz_env(&mut self, tz_var: &str) -> Result<(), ()> {
-        self.zone = Some(TimeZone::from_posix_tz(tz_var).map_err(|_| ())?);
+    fn read_from_tz_env(&mut self, tz_var: &TzEnvVar) -> Result<(), ()> {
+        match tz_var {
+            TzEnvVar::TzString(tz_string) => {
+                self.zone = Some(TimeZone::from_tz_string(tz_string).map_err(|_| ())?);
+            }
+            TzEnvVar::Path(path) => {
+                let path = PathBuf::from(&path[1..]);
+                let tzif = fs::read(path).map_err(|_| ())?;
+                self.zone = Some(TimeZone::from_tz_data(&tzif).map_err(|_| ())?);
+            }
+            TzEnvVar::TzName(tz_id) => self.read_tzif(&tz_id[1..])?,
+            #[cfg(not(target_os = "android"))]
+            TzEnvVar::LocaltimeSymlink => self.read_from_symlink()?,
+        };
         Ok(())
     }
 
@@ -213,6 +226,38 @@ impl Source {
                 Source::Environment { hash }
             }
             None => Source::LocalTime,
+        }
+    }
+}
+
+/// Type of the `TZ` environment variable.
+///
+/// Supported formats are:
+/// - a POSIX TZ string
+/// - an absolute path (starting with `:/`, as supported by glibc and others)
+/// - a time zone name (starting with `:`, as supported by glibc and others)
+/// - "localtime" (supported by Solaris and maybe others)
+enum TzEnvVar {
+    TzString(String),
+    Path(String),   // Value still starts with `:`
+    TzName(String), // Value still starts with `:`
+    #[cfg(not(target_os = "android"))]
+    LocaltimeSymlink,
+}
+
+impl TzEnvVar {
+    /// Get the current value of the `TZ` environment variable and determine its format.
+    fn get() -> Option<TzEnvVar> {
+        match env::var("TZ").ok() {
+            None => None,
+            Some(s) if s.is_empty() => None,
+            #[cfg(not(target_os = "android"))]
+            Some(s) if s == "localtime" => Some(TzEnvVar::LocaltimeSymlink),
+            Some(tz_var) => match tz_var.strip_prefix(':') {
+                Some(path) if Path::new(&path).is_absolute() => Some(TzEnvVar::Path(tz_var)),
+                Some(_) => Some(TzEnvVar::TzName(tz_var)),
+                None => Some(TzEnvVar::TzString(tz_var)),
+            },
         }
     }
 }
