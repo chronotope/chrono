@@ -146,24 +146,18 @@ impl Cache {
         let new_source = Source::new(env_ref);
 
         match (&self.source, &new_source) {
-            // change from env to file or file to env, must recreate the zone
-            (Source::Environment { .. }, Source::LocalTime { .. })
-            | (Source::LocalTime { .. }, Source::Environment { .. }) => true,
-            // stay as file, but mtime has changed
+            (Source::Environment { hash: old_hash }, Source::Environment { hash })
+                if old_hash == hash =>
+            {
+                false
+            }
             (Source::LocalTime, Source::LocalTime) => {
                 match fs::symlink_metadata("/etc/localtime").and_then(|m| m.modified()) {
                     Ok(mtime) => mtime > self.last_checked,
                     Err(_) => false,
                 }
             }
-            // stay as env, but hash of variable has changed
-            (Source::Environment { hash: old_hash }, Source::Environment { hash })
-                if old_hash != hash =>
-            {
-                true
-            }
-            // cache can be reused
-            _ => false,
+            _ => true,
         }
     }
 }
