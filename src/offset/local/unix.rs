@@ -47,13 +47,13 @@ pub(super) fn offset_from_local_datetime(local: &NaiveDateTime) -> MappedLocalTi
     })
 }
 
-struct Cache {
+struct CachedTzInfo {
     zone: Option<TimeZone>,
     source: Source,
     last_checked: SystemTime,
 }
 
-impl Cache {
+impl CachedTzInfo {
     fn tz_info(&mut self) -> &TimeZone {
         self.refresh_cache();
         self.zone.as_ref().unwrap()
@@ -200,8 +200,8 @@ impl Cache {
 }
 
 thread_local! {
-    static TZ_INFO: RefCell<Cache> = const { RefCell::new(
-        Cache {
+    static TZ_INFO: RefCell<CachedTzInfo> = const { RefCell::new(
+        CachedTzInfo {
             zone: None,
             source: Source::Uninitialized,
             last_checked: SystemTime::UNIX_EPOCH,
