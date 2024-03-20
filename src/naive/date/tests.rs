@@ -399,16 +399,16 @@ fn test_date_with_fields() {
 #[test]
 fn test_date_with_ordinal() {
     let d = NaiveDate::from_ymd(2000, 5, 5).unwrap();
-    assert_eq!(d.with_ordinal(0), None);
-    assert_eq!(d.with_ordinal(1), Some(NaiveDate::from_ymd(2000, 1, 1).unwrap()));
-    assert_eq!(d.with_ordinal(60), Some(NaiveDate::from_ymd(2000, 2, 29).unwrap()));
-    assert_eq!(d.with_ordinal(61), Some(NaiveDate::from_ymd(2000, 3, 1).unwrap()));
-    assert_eq!(d.with_ordinal(366), Some(NaiveDate::from_ymd(2000, 12, 31).unwrap()));
-    assert_eq!(d.with_ordinal(367), None);
-    assert_eq!(d.with_ordinal(1 << 28 | 60), None);
+    assert_eq!(d.with_ordinal(0), Err(Error::InvalidArgument));
+    assert_eq!(d.with_ordinal(1), Ok(NaiveDate::from_ymd(2000, 1, 1).unwrap()));
+    assert_eq!(d.with_ordinal(60), Ok(NaiveDate::from_ymd(2000, 2, 29).unwrap()));
+    assert_eq!(d.with_ordinal(61), Ok(NaiveDate::from_ymd(2000, 3, 1).unwrap()));
+    assert_eq!(d.with_ordinal(366), Ok(NaiveDate::from_ymd(2000, 12, 31).unwrap()));
+    assert_eq!(d.with_ordinal(367), Err(Error::InvalidArgument));
+    assert_eq!(d.with_ordinal(1 << 28 | 60), Err(Error::InvalidArgument));
     let d = NaiveDate::from_ymd(1999, 5, 5).unwrap();
-    assert_eq!(d.with_ordinal(366), None);
-    assert_eq!(d.with_ordinal(u32::MAX), None);
+    assert_eq!(d.with_ordinal(366), Err(Error::DoesNotExist));
+    assert_eq!(d.with_ordinal(u32::MAX), Err(Error::InvalidArgument));
 }
 
 #[test]
@@ -745,7 +745,7 @@ fn test_leap_year() {
         let date = NaiveDate::from_ymd(year, 1, 1).unwrap();
         let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
         assert_eq!(date.leap_year(), is_leap);
-        assert_eq!(date.leap_year(), date.with_ordinal(366).is_some());
+        assert_eq!(date.leap_year(), date.with_ordinal(366).is_ok());
     }
 }
 

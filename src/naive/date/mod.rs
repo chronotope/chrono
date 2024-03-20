@@ -1288,34 +1288,34 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
-    /// - The value for `ordinal` is invalid.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist (`with_ordinal(366)` in a
+    ///   non-leap year).
+    /// - [`Error::InvalidArgument`] if the value for `ordinal` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::NaiveDate;
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2015, 3, 1).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2015, 1, 1).unwrap().with_ordinal(366),
-    ///            None); // 2015 had only 365 days
+    /// let date = NaiveDate::from_ymd(2015, 9, 8)?;
+    /// assert_eq!(date.with_ordinal(60), NaiveDate::from_ymd(2015, 3, 1));
+    /// assert_eq!(date.with_ordinal(366), Err(Error::DoesNotExist)); // 2015 had only 365 days
     ///
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(60),
-    ///            Some(NaiveDate::from_ymd(2016, 2, 29).unwrap()));
-    /// assert_eq!(NaiveDate::from_ymd(2016, 1, 1).unwrap().with_ordinal(366),
-    ///            Some(NaiveDate::from_ymd(2016, 12, 31).unwrap()));
+    /// let date = NaiveDate::from_ymd(2016, 9, 8)?;
+    /// assert_eq!(date.with_ordinal(60), NaiveDate::from_ymd(2016, 2, 29));
+    /// assert_eq!(date.with_ordinal(366), NaiveDate::from_ymd(2016, 12, 31));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_ordinal(self, ordinal: u32) -> Option<NaiveDate> {
+    pub const fn with_ordinal(self, ordinal: u32) -> Result<NaiveDate, Error> {
         if ordinal == 0 || ordinal > 366 {
-            return None;
+            return Err(Error::InvalidArgument);
         }
         let yof = (self.yof() & !ORDINAL_MASK) | (ordinal << 4) as i32;
         match yof & OL_MASK <= MAX_OL {
-            true => Some(NaiveDate::from_yof(yof)),
-            false => None, // Does not exist: Ordinal 366 in a common year.
+            true => Ok(NaiveDate::from_yof(yof)),
+            false => Err(Error::DoesNotExist), // Ordinal 366 in a common year.
         }
     }
 
