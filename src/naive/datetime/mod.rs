@@ -810,35 +810,28 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if:
-    /// - The resulting date does not exist (`with_ordinal(366)` in a non-leap year).
-    /// - The value for `ordinal` is invalid.
+    /// This method returns:
+    /// - [`Error::DoesNotExist`] if the resulting date does not exist (`with_ordinal(366)` in a
+    ///   non-leap year).
+    /// - [`Error::InvalidArgument`] if the value for `ordinal` is invalid.
     ///
     /// # Example
     ///
     /// ```
-    /// use chrono::{NaiveDate, NaiveDateTime};
+    /// use chrono::{Error, NaiveDate, NaiveDateTime};
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8).unwrap().and_hms(12, 34, 56).unwrap();
-    /// assert_eq!(
-    ///     dt.with_ordinal(60),
-    ///     Some(NaiveDate::from_ymd(2015, 3, 1).unwrap().and_hms(12, 34, 56).unwrap())
-    /// );
-    /// assert_eq!(dt.with_ordinal(366), None); // 2015 had only 365 days
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_ordinal(60), NaiveDate::from_ymd(2015, 3, 1)?.and_hms(12, 34, 56));
+    /// assert_eq!(dt.with_ordinal(366), Err(Error::DoesNotExist)); // 2015 had only 365 days
     ///
-    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2016, 9, 8).unwrap().and_hms(12, 34, 56).unwrap();
-    /// assert_eq!(
-    ///     dt.with_ordinal(60),
-    ///     Some(NaiveDate::from_ymd(2016, 2, 29).unwrap().and_hms(12, 34, 56).unwrap())
-    /// );
-    /// assert_eq!(
-    ///     dt.with_ordinal(366),
-    ///     Some(NaiveDate::from_ymd(2016, 12, 31).unwrap().and_hms(12, 34, 56).unwrap())
-    /// );
+    /// let dt: NaiveDateTime = NaiveDate::from_ymd(2016, 9, 8)?.and_hms(12, 34, 56)?;
+    /// assert_eq!(dt.with_ordinal(60), NaiveDate::from_ymd(2016, 2, 29)?.and_hms(12, 34, 56));
+    /// assert_eq!(dt.with_ordinal(366), NaiveDate::from_ymd(2016, 12, 31)?.and_hms(12, 34, 56));
+    /// # Ok::<(), Error>(())
     /// ```
     #[inline]
-    pub const fn with_ordinal(self, ordinal: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { date: try_opt!(ok!(self.date.with_ordinal(ordinal))), ..self })
+    pub const fn with_ordinal(self, ordinal: u32) -> Result<NaiveDateTime, Error> {
+        Ok(NaiveDateTime { date: try_err!(self.date.with_ordinal(ordinal)), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the hour number changed.

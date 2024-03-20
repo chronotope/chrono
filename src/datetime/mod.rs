@@ -622,7 +622,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///   daylight saving time transition.
     #[inline]
     pub fn with_ordinal(&self, ordinal: u32) -> Option<DateTime<Tz>> {
-        map_local(self, |datetime| datetime.with_ordinal(ordinal))
+        map_local(self, |datetime| datetime.with_ordinal(ordinal).ok())
     }
 
     /// Set the time to a new fixed time on the existing date.
