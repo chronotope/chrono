@@ -903,16 +903,8 @@ impl NaiveDateTime {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
-    /// Converts the `NaiveDateTime` into the timezone-aware `DateTime<Tz>`
-    /// with the provided timezone, if possible.
-    ///
-    /// This can fail in cases where the local time represented by the `NaiveDateTime`
-    /// is not a valid local timestamp in the target timezone due to an offset transition
-    /// for example if the target timezone had a change from +00:00 to +01:00
-    /// occurring at 2015-09-05 22:59:59, then a local time of 2015-09-05 23:56:04
-    /// could never occur. Similarly, if the offset transitioned in the opposite direction
-    /// then there would be two local times of 2015-09-05 23:56:04, one at +00:00 and one
-    /// at +01:00.
+    /// Converts the `NaiveDateTime` into a timezone-aware `DateTime<Tz>` with the provided
+    /// time zone.
     ///
     /// # Example
     ///
