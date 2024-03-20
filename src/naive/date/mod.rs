@@ -546,7 +546,7 @@ impl NaiveDate {
             return Some(self);
         }
 
-        match months.0 <= core::i32::MAX as u32 {
+        match months.0 <= i32::MAX as u32 {
             true => self.diff_months(months.0 as i32),
             false => None,
         }
@@ -582,47 +582,18 @@ impl NaiveDate {
             return Some(self);
         }
 
-        // Copy `i32::MAX` here so we don't have to do a complicated cast
-        match months.0 <= 2_147_483_647 {
+        match months.0 <= i32::MAX as u32 {
             true => self.diff_months(-(months.0 as i32)),
             false => None,
         }
     }
 
     const fn diff_months(self, months: i32) -> Option<Self> {
-        let (years, left) = ((months / 12), (months % 12));
-
-        // Determine new year (without taking months into account for now
-
-        let year = if (years > 0 && years > (MAX_YEAR - self.year()))
-            || (years < 0 && years < (MIN_YEAR - self.year()))
-        {
-            return None;
-        } else {
-            self.year() + years
-        };
-
-        // Determine new month
-
-        let month = self.month() as i32 + left;
-        let (year, month) = if month <= 0 {
-            if year == MIN_YEAR {
-                return None;
-            }
-
-            (year - 1, month + 12)
-        } else if month > 12 {
-            if year == MAX_YEAR {
-                return None;
-            }
-
-            (year + 1, month - 12)
-        } else {
-            (year, month)
-        };
+        let months = try_opt!((self.year() * 12 + self.month() as i32 - 1).checked_add(months));
+        let year = months.div_euclid(12);
+        let month = months.rem_euclid(12) as u32 + 1;
 
         // Clamp original day in case new month is shorter
-
         let flags = YearFlags::from_year(year);
         let feb_days = if flags.ndays() == 366 { 29 } else { 28 };
         let days = [31, feb_days, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -632,7 +603,7 @@ impl NaiveDate {
             day = day_max;
         };
 
-        NaiveDate::from_mdf(year, try_opt!(Mdf::new(month as u32, day, flags)))
+        NaiveDate::from_ymd_opt(year, month, day)
     }
 
     /// Add a duration in [`Days`] to the date
