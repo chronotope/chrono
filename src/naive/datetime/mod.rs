@@ -838,7 +838,7 @@ impl NaiveDateTime {
     /// ```
     #[inline]
     pub const fn with_ordinal(self, ordinal: u32) -> Option<NaiveDateTime> {
-        Some(NaiveDateTime { date: try_opt!(self.date.with_ordinal(ordinal)), ..self })
+        Some(NaiveDateTime { date: try_opt!(ok!(self.date.with_ordinal(ordinal))), ..self })
     }
 
     /// Makes a new `NaiveDateTime` with the hour number changed.

@@ -1124,7 +1124,7 @@ fn resolve_week_date(
     if ordinal <= 0 {
         return Err(IMPOSSIBLE);
     }
-    first_day_of_year.with_ordinal(ordinal as u32).ok_or(IMPOSSIBLE)
+    first_day_of_year.with_ordinal(ordinal as u32).map_err(|_| IMPOSSIBLE)
 }
 
 #[cfg(test)]
