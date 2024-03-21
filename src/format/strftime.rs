@@ -258,8 +258,8 @@ impl<'a> StrftimeItems<'a> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(any(feature = "alloc", feature = "std")), doc = "```ignore")]
-    #[cfg_attr(any(feature = "alloc", feature = "std"), doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "alloc")] {
     /// use chrono::format::{Locale, StrftimeItems};
     /// use chrono::{FixedOffset, TimeZone};
     ///
