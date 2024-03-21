@@ -1047,8 +1047,7 @@ pub mod ts_seconds_option {
     ///     time: Option<NaiveDateTime>,
     /// }
     ///
-    /// let expected =
-    ///     NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_opt(02, 04, 59).unwrap();
+    /// let expected = NaiveDate::from_ymd_opt(2018, 5, 17).unwrap().and_hms_opt(02, 04, 59).unwrap();
     /// let my_s = S { time: Some(expected) };
     /// let as_string = serde_json::to_string(&my_s)?;
     /// assert_eq!(as_string, r#"{"time":1526522699}"#);
