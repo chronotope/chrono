@@ -50,7 +50,7 @@ impl FixedOffset {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(feature = "std")] {
+    /// # #[cfg(feature = "alloc")] {
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime =
@@ -85,7 +85,7 @@ impl FixedOffset {
     /// # Example
     ///
     /// ```
-    /// # #[cfg(feature = "std")] {
+    /// # #[cfg(feature = "alloc")] {
     /// use chrono::{FixedOffset, TimeZone};
     /// let hour = 3600;
     /// let datetime =

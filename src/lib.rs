@@ -385,7 +385,7 @@
 //! to get the number of additional number of nanoseconds.
 //!
 //! ```
-//! # #[cfg(feature = "std")] {
+//! # #[cfg(feature = "alloc")] {
 //! // We need the trait in scope to use Utc::timestamp().
 //! use chrono::{DateTime, Utc};
 //!
