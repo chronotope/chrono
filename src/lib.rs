@@ -128,8 +128,7 @@
 //! This is a bit verbose due to Rust's lack of function and method overloading,
 //! but in turn we get a rich combination of initialization methods.
 //!
-#![cfg_attr(not(feature = "now"), doc = "```ignore")]
-#![cfg_attr(feature = "now", doc = "```rust")]
+//! ```
 //! use chrono::offset::MappedLocalTime;
 //! use chrono::prelude::*;
 //!
