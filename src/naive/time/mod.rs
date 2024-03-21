@@ -949,7 +949,7 @@ impl Timelike for NaiveTime {
     /// Use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
     /// ```
-    /// # #[cfg(feature = "std")] {
+    /// # #[cfg(feature = "alloc")] {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.second(), 59);
@@ -982,7 +982,7 @@ impl Timelike for NaiveTime {
     /// use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
     /// ```
-    /// # #[cfg(feature = "std")] {
+    /// # #[cfg(feature = "alloc")] {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);

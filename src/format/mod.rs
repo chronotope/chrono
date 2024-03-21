@@ -17,7 +17,7 @@
 //!
 //! # Example
 //! ```
-//! # #[cfg(feature = "std")] {
+//! # #[cfg(feature = "alloc")] {
 //! use chrono::{NaiveDateTime, TimeZone, Utc};
 //!
 //! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
