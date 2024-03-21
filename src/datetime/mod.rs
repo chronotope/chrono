@@ -79,8 +79,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
-    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "clock")] {
     /// use chrono::{DateTime, Local};
     ///
     /// let dt = Local::now();
@@ -90,6 +90,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// // Serialize, pass through FFI... and recreate the `DateTime`:
     /// let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, offset);
     /// assert_eq!(dt, dt_new);
+    /// # }
     /// ```
     #[inline]
     #[must_use]
@@ -691,8 +692,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
-    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "clock")] {
     /// use chrono::{Local, NaiveTime};
     ///
     /// let noon = NaiveTime::from_hms_opt(12, 0, 0).unwrap();
@@ -701,6 +702,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// assert_eq!(today_noon.single().unwrap().time(), noon);
     /// assert_eq!(today_midnight.single().unwrap().time(), NaiveTime::MIN);
+    /// # }
     /// ```
     #[must_use]
     pub fn with_time(&self, time: NaiveTime) -> LocalResult<Self> {

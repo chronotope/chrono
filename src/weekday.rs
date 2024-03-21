@@ -123,8 +123,8 @@ impl Weekday {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
-    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "clock")] {
     /// # use chrono::{Local, Datelike};
     /// // MTWRFSU is occasionally used as a single-letter abbreviation of the weekdays.
     /// // Use `num_days_from_monday` to index into the array.
@@ -132,6 +132,7 @@ impl Weekday {
     ///
     /// let today = Local::now().weekday();
     /// println!("{}", MTWRFSU[today.num_days_from_monday() as usize]);
+    /// # }
     /// ```
     #[inline]
     pub const fn num_days_from_monday(&self) -> u32 {

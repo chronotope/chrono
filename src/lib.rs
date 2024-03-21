@@ -108,20 +108,22 @@
 //! or in the local time zone
 //! ([`Local::now()`](./offset/struct.Local.html#method.now)).
 //!
-#![cfg_attr(not(feature = "now"), doc = "```ignore")]
-#![cfg_attr(feature = "now", doc = "```rust")]
+//! ```
+//! # #[cfg(feature = "now")] {
 //! use chrono::prelude::*;
 //!
 //! let utc: DateTime<Utc> = Utc::now(); // e.g. `2014-11-28T12:45:59.324310806Z`
 //! # let _ = utc;
+//! # }
 //! ```
 //!
-#![cfg_attr(not(feature = "clock"), doc = "```ignore")]
-#![cfg_attr(feature = "clock", doc = "```rust")]
+//! ```
+//! # #[cfg(feature = "clock")] {
 //! use chrono::prelude::*;
 //!
 //! let local: DateTime<Local> = Local::now(); // e.g. `2014-11-28T21:45:59.324310806+09:00`
 //! # let _ = local;
+//! # }
 //! ```
 //!
 //! Alternatively, you can create your own date and time.
@@ -382,8 +384,8 @@
 //! [`DateTime.timestamp_subsec_nanos`](DateTime::timestamp_subsec_nanos)
 //! to get the number of additional number of nanoseconds.
 //!
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-#![cfg_attr(feature = "std", doc = "```rust")]
+//! ```
+//! # #[cfg(feature = "std")] {
 //! // We need the trait in scope to use Utc::timestamp().
 //! use chrono::{DateTime, Utc};
 //!
@@ -394,6 +396,7 @@
 //! // Get epoch value from a datetime:
 //! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();
 //! assert_eq!(dt.timestamp(), 1_500_000_000);
+//! # }
 //! ```
 //!
 //! ### Naive date and time
