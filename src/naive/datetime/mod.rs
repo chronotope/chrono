@@ -347,7 +347,7 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: try_opt!(self.date.checked_add_months(rhs)), time: self.time })
+        Some(Self { date: try_opt!(ok!(self.date.checked_add_months(rhs))), time: self.time })
     }
 
     /// Adds given `FixedOffset` to the current datetime.
@@ -530,7 +530,7 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: try_opt!(self.date.checked_sub_months(rhs)), time: self.time })
+        Some(Self { date: try_opt!(ok!(self.date.checked_sub_months(rhs))), time: self.time })
     }
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`

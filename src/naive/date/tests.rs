@@ -40,88 +40,43 @@ fn test_date_bounds() {
 }
 
 #[test]
-fn diff_months() {
+fn diff_months() -> Result<(), Error> {
+    let ymd = NaiveDate::from_ymd;
     // identity
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3).unwrap().checked_add_months(Months::new(0)),
-        Some(NaiveDate::from_ymd(2022, 8, 3).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 8, 3)?.checked_add_months(Months::new(0)), ymd(2022, 8, 3));
     // add with months exceeding `i32::MAX`
     assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3)
-            .unwrap()
-            .checked_add_months(Months::new(i32::MAX as u32 + 1)),
-        None
+        ymd(2022, 8, 3)?.checked_add_months(Months::new(i32::MAX as u32 + 1)),
+        Err(Error::OutOfRange)
     );
-
     // sub with months exceeding `i32::MIN`
     assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3)
-            .unwrap()
-            .checked_sub_months(Months::new(i32::MIN.unsigned_abs() + 1)),
-        None
+        ymd(2022, 8, 3)?.checked_sub_months(Months::new(i32::MIN.unsigned_abs() + 1)),
+        Err(Error::OutOfRange)
     );
-
     // add overflowing year
-    assert_eq!(NaiveDate::MAX.checked_add_months(Months::new(1)), None);
-
+    assert_eq!(NaiveDate::MAX.checked_add_months(Months::new(1)), Err(Error::OutOfRange));
     // add underflowing year
-    assert_eq!(NaiveDate::MIN.checked_sub_months(Months::new(1)), None);
-
+    assert_eq!(NaiveDate::MIN.checked_sub_months(Months::new(1)), Err(Error::OutOfRange));
     // sub crossing year 0 boundary
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3).unwrap().checked_sub_months(Months::new(2050 * 12)),
-        Some(NaiveDate::from_ymd(-28, 8, 3).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 8, 3)?.checked_sub_months(Months::new(2050 * 12)), ymd(-28, 8, 3));
     // add crossing year boundary
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3).unwrap().checked_add_months(Months::new(6)),
-        Some(NaiveDate::from_ymd(2023, 2, 3).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 8, 3)?.checked_add_months(Months::new(6)), ymd(2023, 2, 3));
     // sub crossing year boundary
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3).unwrap().checked_sub_months(Months::new(10)),
-        Some(NaiveDate::from_ymd(2021, 10, 3).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 8, 3)?.checked_sub_months(Months::new(10)), ymd(2021, 10, 3));
     // add clamping day, non-leap year
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 1, 29).unwrap().checked_add_months(Months::new(1)),
-        Some(NaiveDate::from_ymd(2022, 2, 28).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 1, 29)?.checked_add_months(Months::new(1)), ymd(2022, 2, 28));
     // add to leap day
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 10, 29).unwrap().checked_add_months(Months::new(16)),
-        Some(NaiveDate::from_ymd(2024, 2, 29).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 10, 29)?.checked_add_months(Months::new(16)), ymd(2024, 2, 29));
     // add into december
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 10, 31).unwrap().checked_add_months(Months::new(2)),
-        Some(NaiveDate::from_ymd(2022, 12, 31).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 10, 31)?.checked_add_months(Months::new(2)), ymd(2022, 12, 31));
     // sub into december
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 10, 31).unwrap().checked_sub_months(Months::new(10)),
-        Some(NaiveDate::from_ymd(2021, 12, 31).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 10, 31)?.checked_sub_months(Months::new(10)), ymd(2021, 12, 31));
     // add into january
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3).unwrap().checked_add_months(Months::new(5)),
-        Some(NaiveDate::from_ymd(2023, 1, 3).unwrap())
-    );
-
+    assert_eq!(ymd(2022, 8, 3)?.checked_add_months(Months::new(5)), ymd(2023, 1, 3));
     // sub into january
-    assert_eq!(
-        NaiveDate::from_ymd(2022, 8, 3).unwrap().checked_sub_months(Months::new(7)),
-        Some(NaiveDate::from_ymd(2022, 1, 3).unwrap())
-    );
+    assert_eq!(ymd(2022, 8, 3)?.checked_sub_months(Months::new(7)), ymd(2022, 1, 3));
+    Ok(())
 }
 
 #[test]
