@@ -479,9 +479,6 @@
 extern crate alloc;
 
 mod time_delta;
-#[cfg(feature = "std")]
-#[doc(no_inline)]
-pub use time_delta::OutOfRangeError;
 pub use time_delta::TimeDelta;
 
 use core::fmt;

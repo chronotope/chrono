@@ -320,26 +320,25 @@ impl TimeDelta {
 
     /// Creates a `TimeDelta` object from `std::time::Duration`
     ///
-    /// This function errors when original duration is larger than the maximum
-    /// value supported for this type.
-    pub const fn from_std(duration: Duration) -> Result<TimeDelta, OutOfRangeError> {
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`] if the `Duration` is out of range for a `TimeDelta`.
+    pub const fn from_std(duration: Duration) -> Result<TimeDelta, Error> {
         // We need to check secs as u64 before coercing to i64
         if duration.as_secs() > MAX.secs as u64 {
-            return Err(OutOfRangeError(()));
+            return Err(Error::OutOfRange);
         }
-        match TimeDelta::new(duration.as_secs() as i64, duration.subsec_nanos()) {
-            Ok(d) => Ok(d),
-            Err(_) => Err(OutOfRangeError(())),
-        }
+        TimeDelta::new(duration.as_secs() as i64, duration.subsec_nanos())
     }
 
     /// Creates a `std::time::Duration` object from a `TimeDelta`.
     ///
-    /// This function errors when duration is less than zero. As standard
-    /// library implementation is limited to non-negative values.
-    pub const fn to_std(self) -> Result<Duration, OutOfRangeError> {
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`] if the `TimeDelta` is negative.
+    pub const fn to_std(self) -> Result<Duration, Error> {
         if self.secs < 0 {
-            return Err(OutOfRangeError(()));
+            return Err(Error::OutOfRange);
         }
         Ok(Duration::new(self.secs as u64, self.nanos as u32))
     }
@@ -478,29 +477,6 @@ impl fmt::Display for TimeDelta {
     }
 }
 
-/// Represents error when converting `TimeDelta` to/from a standard library
-/// implementation
-///
-/// The `std::time::Duration` supports a range from zero to `u64::MAX`
-/// *seconds*, while this module supports signed range of up to
-/// `i64::MAX` of *milliseconds*.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OutOfRangeError(());
-
-impl fmt::Display for OutOfRangeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Source duration value is out of range for the target type")
-    }
-}
-
-#[cfg(feature = "std")]
-impl std::error::Error for OutOfRangeError {
-    #[allow(deprecated)]
-    fn description(&self) -> &str {
-        "out of range error"
-    }
-}
-
 #[inline]
 const fn div_mod_floor_64(this: i64, other: i64) -> (i64, i64) {
     (this.div_euclid(other), this.rem_euclid(other))
@@ -526,7 +502,6 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 
 #[cfg(test)]
 mod tests {
-    use super::OutOfRangeError;
     use super::{TimeDelta, MAX, MIN};
     use crate::{expect, ok, Error};
     use core::time::Duration;
@@ -1016,8 +991,8 @@ mod tests {
         );
         assert_eq!(TimeDelta::nanoseconds(777).to_std(), Ok(Duration::new(0, 777)));
         assert_eq!(MAX.to_std(), Ok(Duration::new(9_223_372_036_854_775, 807_000_000)));
-        assert_eq!(TimeDelta::seconds(-1).to_std(), Err(OutOfRangeError(())));
-        assert_eq!(TimeDelta::milliseconds(-1).unwrap().to_std(), Err(OutOfRangeError(())));
+        assert_eq!(TimeDelta::seconds(-1).to_std(), Err(Error::OutOfRange));
+        assert_eq!(TimeDelta::milliseconds(-1).unwrap().to_std(), Err(Error::OutOfRange));
     }
 
     #[test]
@@ -1036,11 +1011,11 @@ mod tests {
         assert_eq!(Ok(MAX), TimeDelta::from_std(Duration::new(9_223_372_036_854_775, 807_000_000)));
         assert_eq!(
             TimeDelta::from_std(Duration::new(9_223_372_036_854_776, 0)),
-            Err(OutOfRangeError(()))
+            Err(Error::OutOfRange)
         );
         assert_eq!(
             TimeDelta::from_std(Duration::new(9_223_372_036_854_775, 807_000_001)),
-            Err(OutOfRangeError(()))
+            Err(Error::OutOfRange)
         );
     }
 
