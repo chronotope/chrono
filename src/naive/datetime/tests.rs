@@ -271,7 +271,7 @@ fn test_datetime_add_sub_invariant() {
 #[test]
 fn test_in_timezone() {
     let ndt = NaiveDate::from_ymd(2022, 6, 15).unwrap().at_hms(18, 59, 36).unwrap();
-    let dt_utc = ndt.and_utc();
+    let dt_utc = ndt.in_utc();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 
@@ -282,9 +282,9 @@ fn test_in_timezone() {
 }
 
 #[test]
-fn test_and_utc() {
+fn test_in_utc() {
     let ndt = NaiveDate::from_ymd(2023, 1, 30).unwrap().at_hms(19, 32, 33).unwrap();
-    let dt_utc = ndt.and_utc();
+    let dt_utc = ndt.in_utc();
     assert_eq!(dt_utc.naive_local(), ndt);
     assert_eq!(dt_utc.timezone(), Utc);
 }

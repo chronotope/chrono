@@ -245,7 +245,7 @@ fn test_datetime_from_timestamp_nanos() {
 fn test_datetime_from_timestamp() {
     let from_timestamp = |secs| DateTime::from_timestamp(secs, 0);
     let ymdhms =
-        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().at_hms(h, n, s).unwrap().and_utc();
+        |y, m, d, h, n, s| NaiveDate::from_ymd(y, m, d).unwrap().at_hms(h, n, s).unwrap().in_utc();
     assert_eq!(from_timestamp(-1), Ok(ymdhms(1969, 12, 31, 23, 59, 59)));
     assert_eq!(from_timestamp(0), Ok(ymdhms(1970, 1, 1, 0, 0, 0)));
     assert_eq!(from_timestamp(1), Ok(ymdhms(1970, 1, 1, 0, 0, 1)));
@@ -258,7 +258,7 @@ fn test_datetime_from_timestamp() {
 #[test]
 fn test_datetime_timestamp() {
     let to_timestamp = |y, m, d, h, n, s| {
-        NaiveDate::from_ymd(y, m, d).unwrap().at_hms(h, n, s).unwrap().and_utc().timestamp()
+        NaiveDate::from_ymd(y, m, d).unwrap().at_hms(h, n, s).unwrap().in_utc().timestamp()
     };
     assert_eq!(to_timestamp(1969, 12, 31, 23, 59, 59), -1);
     assert_eq!(to_timestamp(1970, 1, 1, 0, 0, 0), 0);
@@ -841,7 +841,7 @@ fn test_rfc3339_opts() {
     assert_eq!(dt.to_rfc3339_opts(Nanos, false), "2018-01-11T10:05:13.084660000+08:00");
     assert_eq!(dt.to_rfc3339_opts(AutoSi, false), "2018-01-11T10:05:13.084660+08:00");
 
-    let ut = dt.naive_utc().and_utc();
+    let ut = dt.naive_utc().in_utc();
     assert_eq!(ut.to_rfc3339_opts(Secs, false), "2018-01-11T02:05:13+00:00");
     assert_eq!(ut.to_rfc3339_opts(Secs, true), "2018-01-11T02:05:13Z");
     assert_eq!(ut.to_rfc3339_opts(Millis, false), "2018-01-11T02:05:13.084+00:00");
@@ -1379,7 +1379,7 @@ fn test_years_elapsed() {
 #[test]
 fn test_datetime_add_assign() {
     let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().at_hms(0, 0, 0).unwrap();
-    let datetime = naivedatetime.and_utc();
+    let datetime = naivedatetime.in_utc();
     let mut datetime_add = datetime;
 
     datetime_add += TimeDelta::seconds(60);
@@ -1416,7 +1416,7 @@ fn test_datetime_add_assign_local() {
 #[test]
 fn test_datetime_sub_assign() {
     let naivedatetime = NaiveDate::from_ymd(2000, 1, 1).unwrap().at_hms(12, 0, 0).unwrap();
-    let datetime = naivedatetime.and_utc();
+    let datetime = naivedatetime.in_utc();
     let mut datetime_sub = datetime;
 
     datetime_sub -= TimeDelta::minutes(90);

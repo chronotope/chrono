@@ -117,7 +117,7 @@ pub mod ts_nanoseconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.and_utc().timestamp_nanos().map_err(|_| {
+        serializer.serialize_i64(dt.in_utc().timestamp_nanos().map_err(|_| {
             ser::Error::custom("value out of range for a timestamp with nanosecond precision")
         })?)
     }
@@ -258,7 +258,7 @@ pub mod ts_nanoseconds_option {
     {
         match *opt {
             Some(ref dt) => {
-                serializer.serialize_some(&dt.and_utc().timestamp_nanos().map_err(|_| {
+                serializer.serialize_some(&dt.in_utc().timestamp_nanos().map_err(|_| {
                     ser::Error::custom(
                         "value out of range for a timestamp with nanosecond precision",
                     )
@@ -392,7 +392,7 @@ pub mod ts_microseconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.and_utc().timestamp_micros())
+        serializer.serialize_i64(dt.in_utc().timestamp_micros())
     }
 
     /// Deserialize a `NaiveDateTime` from a microseconds timestamp
@@ -522,7 +522,7 @@ pub mod ts_microseconds_option {
         S: ser::Serializer,
     {
         match *opt {
-            Some(ref dt) => serializer.serialize_some(&dt.and_utc().timestamp_micros()),
+            Some(ref dt) => serializer.serialize_some(&dt.in_utc().timestamp_micros()),
             None => serializer.serialize_none(),
         }
     }
@@ -651,7 +651,7 @@ pub mod ts_milliseconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.and_utc().timestamp_millis())
+        serializer.serialize_i64(dt.in_utc().timestamp_millis())
     }
 
     /// Deserialize a `NaiveDateTime` from a milliseconds timestamp
@@ -778,7 +778,7 @@ pub mod ts_milliseconds_option {
         S: ser::Serializer,
     {
         match *opt {
-            Some(ref dt) => serializer.serialize_some(&dt.and_utc().timestamp_millis()),
+            Some(ref dt) => serializer.serialize_some(&dt.in_utc().timestamp_millis()),
             None => serializer.serialize_none(),
         }
     }
@@ -905,7 +905,7 @@ pub mod ts_seconds {
     where
         S: ser::Serializer,
     {
-        serializer.serialize_i64(dt.and_utc().timestamp())
+        serializer.serialize_i64(dt.in_utc().timestamp())
     }
 
     /// Deserialize a `NaiveDateTime` from a seconds timestamp
@@ -1028,7 +1028,7 @@ pub mod ts_seconds_option {
         S: ser::Serializer,
     {
         match *opt {
-            Some(ref dt) => serializer.serialize_some(&dt.and_utc().timestamp()),
+            Some(ref dt) => serializer.serialize_some(&dt.in_utc().timestamp()),
             None => serializer.serialize_none(),
         }
     }

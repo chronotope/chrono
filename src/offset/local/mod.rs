@@ -59,7 +59,7 @@ mod inner {
     use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDateTime, Timelike};
 
     pub(super) fn offset_from_utc_datetime(utc: NaiveDateTime) -> MappedLocalTime<FixedOffset> {
-        let offset = js_sys::Date::from(utc.and_utc()).get_timezone_offset();
+        let offset = js_sys::Date::from(utc.in_utc()).get_timezone_offset();
         MappedLocalTime::Single(FixedOffset::west((offset as i32) * 60).unwrap())
     }
 

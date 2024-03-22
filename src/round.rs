@@ -23,7 +23,7 @@ pub trait SubsecRound {
     /// ``` rust
     /// # use chrono::{SubsecRound, Timelike, NaiveDate};
     /// let dt =
-    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().and_utc();
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().in_utc();
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
     /// ```
@@ -36,7 +36,7 @@ pub trait SubsecRound {
     /// ``` rust
     /// # use chrono::{SubsecRound, Timelike, NaiveDate};
     /// let dt =
-    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().and_utc();
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().in_utc();
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
     /// ```
@@ -112,7 +112,7 @@ pub trait DurationRound: Sized {
     /// ``` rust
     /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
     /// let dt =
-    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().and_utc();
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().in_utc();
     /// assert_eq!(
     ///     dt.duration_round(TimeDelta::milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -130,7 +130,7 @@ pub trait DurationRound: Sized {
     /// ``` rust
     /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
     /// let dt =
-    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().and_utc();
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().at_hms_milli(12, 0, 0, 154).unwrap().in_utc();
     /// assert_eq!(
     ///     dt.duration_trunc(TimeDelta::milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -180,7 +180,7 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp =
-            naive.and_utc().timestamp_nanos().map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            naive.in_utc().timestamp_nanos().map_err(|_| RoundingError::TimestampExceedsLimit)?;
         if span == 0 {
             return Ok(original);
         }
@@ -217,7 +217,7 @@ where
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp =
-            naive.and_utc().timestamp_nanos().map_err(|_| RoundingError::TimestampExceedsLimit)?;
+            naive.in_utc().timestamp_nanos().map_err(|_| RoundingError::TimestampExceedsLimit)?;
         let delta_down = stamp % span;
         match delta_down.cmp(&0) {
             Ordering::Equal => Ok(original),
@@ -247,7 +247,7 @@ pub enum RoundingError {
     ///     .unwrap()
     ///     .at_hms_nano(23, 59, 59, 1_75_500_000)
     ///     .unwrap()
-    ///     .and_utc();
+    ///     .in_utc();
     ///
     /// assert_eq!(
     ///     dt.duration_round(TimeDelta::days(300 * 365)),

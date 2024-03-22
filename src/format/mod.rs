@@ -25,7 +25,7 @@
 //! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
 //! assert_eq!(formatted, "2020-11-10 00:01:32");
 //!
-//! let parsed = NaiveDateTime::parse_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?.and_utc();
+//! let parsed = NaiveDateTime::parse_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?.in_utc();
 //! assert_eq!(parsed, date_time);
 //! # }
 //! # Ok::<(), chrono::ParseError>(())
