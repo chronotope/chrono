@@ -14,7 +14,7 @@ use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, i64};
 
-use crate::{expect, ok, try_opt, Error};
+use crate::{expect, ok, try_ok_or, try_opt, Error};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -232,12 +232,17 @@ impl TimeDelta {
         secs_part + nanos_part as i64
     }
 
-    /// Returns the total number of whole microseconds in the `TimeDelta`,
-    /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
-    pub const fn num_microseconds(self) -> Option<i64> {
-        let secs_part = try_opt!(self.num_seconds().checked_mul(MICROS_PER_SEC));
+    /// Returns the total number of whole microseconds in the `TimeDelta`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::OutOfRange`]  on overflow (exceeding 2^63 microseconds in either
+    /// direction).
+    pub const fn num_microseconds(self) -> Result<i64, Error> {
+        let secs_part =
+            try_ok_or!(self.num_seconds().checked_mul(MICROS_PER_SEC), Error::OutOfRange);
         let nanos_part = self.subsec_nanos() / NANOS_PER_MICRO;
-        secs_part.checked_add(nanos_part as i64)
+        Ok(try_ok_or!(secs_part.checked_add(nanos_part as i64), Error::OutOfRange))
     }
 
     /// Returns the total number of whole nanoseconds in the `TimeDelta`,
@@ -520,7 +525,7 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 mod tests {
     use super::OutOfRangeError;
     use super::{TimeDelta, MAX, MIN};
-    use crate::{expect, ok};
+    use crate::{expect, ok, Error};
     use core::time::Duration;
 
     #[test]
@@ -639,17 +644,17 @@ mod tests {
 
     #[test]
     fn test_duration_num_microseconds() {
-        assert_eq!(TimeDelta::zero().num_microseconds(), Some(0));
-        assert_eq!(TimeDelta::microseconds(1).num_microseconds(), Some(1));
-        assert_eq!(TimeDelta::microseconds(-1).num_microseconds(), Some(-1));
-        assert_eq!(TimeDelta::nanoseconds(999).num_microseconds(), Some(0));
-        assert_eq!(TimeDelta::nanoseconds(1001).num_microseconds(), Some(1));
-        assert_eq!(TimeDelta::nanoseconds(-999).num_microseconds(), Some(0));
-        assert_eq!(TimeDelta::nanoseconds(-1001).num_microseconds(), Some(-1));
+        assert_eq!(TimeDelta::zero().num_microseconds(), Ok(0));
+        assert_eq!(TimeDelta::microseconds(1).num_microseconds(), Ok(1));
+        assert_eq!(TimeDelta::microseconds(-1).num_microseconds(), Ok(-1));
+        assert_eq!(TimeDelta::nanoseconds(999).num_microseconds(), Ok(0));
+        assert_eq!(TimeDelta::nanoseconds(1001).num_microseconds(), Ok(1));
+        assert_eq!(TimeDelta::nanoseconds(-999).num_microseconds(), Ok(0));
+        assert_eq!(TimeDelta::nanoseconds(-1001).num_microseconds(), Ok(-1));
 
         // overflow checks
-        assert_eq!(TimeDelta::max_value().num_microseconds(), None);
-        assert_eq!(TimeDelta::min_value().num_microseconds(), None);
+        assert_eq!(TimeDelta::max_value().num_microseconds(), Err(Error::OutOfRange));
+        assert_eq!(TimeDelta::min_value().num_microseconds(), Err(Error::OutOfRange));
     }
     #[test]
     fn test_duration_microseconds_max_allowed() {
@@ -657,7 +662,7 @@ mod tests {
         // fewer than the number that can actually be stored in a TimeDelta, so this
         // is not a particular insightful test.
         let duration = TimeDelta::microseconds(i64::MAX);
-        assert_eq!(duration.num_microseconds(), Some(i64::MAX));
+        assert_eq!(duration.num_microseconds(), Ok(i64::MAX));
         assert_eq!(
             duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
             i64::MAX as i128 * 1_000
@@ -667,7 +672,7 @@ mod tests {
         // milliseconds and then checking that the number of microseconds matches
         // the storage limit.
         let duration = TimeDelta::milliseconds(i64::MAX).unwrap();
-        assert!(duration.num_microseconds().is_none());
+        assert_eq!(duration.num_microseconds(), Err(Error::OutOfRange));
         assert_eq!(
             duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
             i64::MAX as i128 * 1_000_000
@@ -678,7 +683,7 @@ mod tests {
         // This test establishes that a TimeDelta can store more microseconds than
         // are representable through the return of duration.num_microseconds().
         let duration = TimeDelta::microseconds(i64::MAX) + TimeDelta::microseconds(1);
-        assert!(duration.num_microseconds().is_none());
+        assert_eq!(duration.num_microseconds(), Err(Error::OutOfRange));
         assert_eq!(
             duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
             (i64::MAX as i128 + 1) * 1_000
@@ -696,7 +701,7 @@ mod tests {
         // fewer than the number that can actually be stored in a TimeDelta, so this
         // is not a particular insightful test.
         let duration = TimeDelta::microseconds(i64::MIN);
-        assert_eq!(duration.num_microseconds(), Some(i64::MIN));
+        assert_eq!(duration.num_microseconds(), Ok(i64::MIN));
         assert_eq!(
             duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
             i64::MIN as i128 * 1_000
@@ -706,7 +711,7 @@ mod tests {
         // milliseconds and then checking that the number of microseconds matches
         // the storage limit.
         let duration = TimeDelta::milliseconds(-i64::MAX).unwrap();
-        assert!(duration.num_microseconds().is_none());
+        assert_eq!(duration.num_microseconds(), Err(Error::OutOfRange));
         assert_eq!(
             duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
             -i64::MAX as i128 * 1_000_000
@@ -717,7 +722,7 @@ mod tests {
         // This test establishes that a TimeDelta can store more microseconds than
         // are representable through the return of duration.num_microseconds().
         let duration = TimeDelta::microseconds(i64::MIN) - TimeDelta::microseconds(1);
-        assert!(duration.num_microseconds().is_none());
+        assert_eq!(duration.num_microseconds(), Err(Error::OutOfRange));
         assert_eq!(
             duration.secs as i128 * 1_000_000_000 + duration.nanos as i128,
             (i64::MIN as i128 - 1) * 1_000
@@ -828,7 +833,7 @@ mod tests {
         );
         assert_eq!(MAX, TimeDelta::milliseconds(i64::MAX).unwrap());
         assert_eq!(MAX.num_milliseconds(), i64::MAX);
-        assert_eq!(MAX.num_microseconds(), None);
+        assert_eq!(MAX.num_microseconds(), Err(Error::OutOfRange));
         assert_eq!(MAX.num_nanoseconds(), None);
     }
 
@@ -840,7 +845,7 @@ mod tests {
         );
         assert_eq!(MIN, TimeDelta::milliseconds(-i64::MAX).unwrap());
         assert_eq!(MIN.num_milliseconds(), -i64::MAX);
-        assert_eq!(MIN.num_microseconds(), None);
+        assert_eq!(MIN.num_microseconds(), Err(Error::OutOfRange));
         assert_eq!(MIN.num_nanoseconds(), None);
     }
 
