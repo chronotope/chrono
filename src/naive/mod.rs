@@ -6,8 +6,8 @@
 
 use core::ops::RangeInclusive;
 
+use crate::expect;
 use crate::Weekday;
-use crate::{expect, ok};
 
 pub(crate) mod date;
 pub(crate) mod datetime;
@@ -63,7 +63,7 @@ impl NaiveWeek {
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        expect(ok!(self.date.add_days(days)), "first weekday out of range for `NaiveDate`")
+        expect(self.date.add_days(days), "first weekday out of range for `NaiveDate`")
     }
 
     /// Returns a date representing the last day of the week.
@@ -91,7 +91,7 @@ impl NaiveWeek {
         // Do not construct an intermediate date before `self.date` (like with `first_day()`),
         // because that may be out of range if `date` is close to `NaiveDate::MIN`.
         let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        expect(ok!(self.date.add_days(days)), "last weekday out of range for `NaiveDate`")
+        expect(self.date.add_days(days), "last weekday out of range for `NaiveDate`")
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by

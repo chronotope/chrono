@@ -20,7 +20,7 @@ use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::{
-    expect, ok, try_err, try_opt, DateTime, Datelike, Error, FixedOffset, MappedLocalTime, Months,
+    expect, try_err, try_opt, DateTime, Datelike, Error, FixedOffset, MappedLocalTime, Months,
     TimeDelta, TimeZone, Timelike, Weekday,
 };
 
@@ -595,12 +595,11 @@ impl NaiveDateTime {
     /// ```
     #[must_use]
     pub const fn signed_duration_since(self, rhs: NaiveDateTime) -> TimeDelta {
-        expect(
-            self.date
-                .signed_duration_since(rhs.date)
-                .checked_add(self.time.signed_duration_since(rhs.time)),
-            "always in range",
-        )
+        let time_part = self.time.signed_duration_since(rhs.time);
+        match self.date.signed_duration_since(rhs.date).checked_add(time_part) {
+            Some(d) => d,
+            None => panic!("always in range"),
+        }
     }
 
     /// Formats the combined date and time with the specified formatting items.
@@ -938,8 +937,7 @@ impl NaiveDateTime {
     pub const MAX: Self = Self { date: NaiveDate::MAX, time: NaiveTime::MAX };
 
     /// The Unix Epoch, 1970-01-01 00:00:00.
-    pub const UNIX_EPOCH: Self =
-        expect(ok!(NaiveDate::from_ymd(1970, 1, 1)), "").at(NaiveTime::MIN);
+    pub const UNIX_EPOCH: Self = expect(NaiveDate::from_ymd(1970, 1, 1), "").at(NaiveTime::MIN);
 }
 
 impl From<NaiveDate> for NaiveDateTime {

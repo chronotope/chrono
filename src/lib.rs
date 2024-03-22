@@ -660,10 +660,10 @@ macro_rules! try_err {
 }
 
 /// Workaround because `.expect()` is not (yet) available in const context.
-pub(crate) const fn expect<T: Copy>(opt: Option<T>, msg: &str) -> T {
+pub(crate) const fn expect<T: Copy, E: Copy>(opt: Result<T, E>, msg: &str) -> T {
     match opt {
-        Some(val) => val,
-        None => panic!("{}", msg),
+        Ok(val) => val,
+        Err(_) => panic!("{}", msg),
     }
 }
 

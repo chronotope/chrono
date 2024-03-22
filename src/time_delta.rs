@@ -99,7 +99,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(weeks as i64 * 7 * 24 * 60 * 60).unwrap()`.
     #[inline]
     pub const fn weeks(weeks: i32) -> TimeDelta {
-        expect(ok!(TimeDelta::new(weeks as i64 * SECS_PER_WEEK, 0)), "always in range")
+        expect(TimeDelta::new(weeks as i64 * SECS_PER_WEEK, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of days.
@@ -107,7 +107,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(days as i64 * 24 * 60 * 60).unwrap()`.
     #[inline]
     pub const fn days(days: i32) -> TimeDelta {
-        expect(ok!(TimeDelta::new(days as i64 * SECS_PER_DAY, 0)), "always in range")
+        expect(TimeDelta::new(days as i64 * SECS_PER_DAY, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of hours.
@@ -115,7 +115,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(hours as i64 * 60 * 60, 0).unwrap()`.
     #[inline]
     pub const fn hours(hours: i32) -> TimeDelta {
-        expect(ok!(TimeDelta::new(hours as i64 * SECS_PER_HOUR, 0)), "always in range")
+        expect(TimeDelta::new(hours as i64 * SECS_PER_HOUR, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of minutes.
@@ -123,7 +123,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(minutes as i64 * 60, 0).unwrap()`.
     #[inline]
     pub const fn minutes(minutes: i32) -> TimeDelta {
-        expect(ok!(TimeDelta::new(minutes as i64 * SECS_PER_MINUTE, 0)), "always in range")
+        expect(TimeDelta::new(minutes as i64 * SECS_PER_MINUTE, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of seconds.
@@ -132,7 +132,7 @@ impl TimeDelta {
     /// greater than that of an `i32`.
     #[inline]
     pub const fn seconds(seconds: i32) -> TimeDelta {
-        expect(ok!(TimeDelta::new(seconds as i64, 0)), "always in range")
+        expect(TimeDelta::new(seconds as i64, 0), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of milliseconds.
@@ -251,7 +251,8 @@ impl TimeDelta {
     ///
     /// Returns [`Error::OutOfRange`]  on overflow (exceeding 2^63 nanoseconds in either direction).
     pub const fn num_nanoseconds(self) -> Result<i64, Error> {
-        let secs_part = try_ok_or!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64), Error::OutOfRange);
+        let secs_part =
+            try_ok_or!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64), Error::OutOfRange);
         let nanos_part = self.subsec_nanos();
         Ok(try_ok_or!(secs_part.checked_add(nanos_part as i64), Error::OutOfRange))
     }
@@ -503,7 +504,7 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 #[cfg(test)]
 mod tests {
     use super::{TimeDelta, MAX, MIN};
-    use crate::{expect, ok, Error};
+    use crate::{expect, Error};
     use core::time::Duration;
 
     #[test]
@@ -1026,7 +1027,7 @@ mod tests {
         const ONE_HOUR: TimeDelta = TimeDelta::hours(1);
         const ONE_MINUTE: TimeDelta = TimeDelta::minutes(1);
         const ONE_SECOND: TimeDelta = TimeDelta::seconds(1);
-        const ONE_MILLI: TimeDelta = expect(ok!(TimeDelta::milliseconds(1)), "");
+        const ONE_MILLI: TimeDelta = expect(TimeDelta::milliseconds(1), "");
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
         const ONE_NANO: TimeDelta = TimeDelta::nanoseconds(1);
         let combo: TimeDelta = ONE_WEEK
