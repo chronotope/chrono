@@ -263,10 +263,8 @@ impl<'a> StrftimeItems<'a> {
     /// use chrono::format::{Locale, StrftimeItems};
     /// use chrono::{FixedOffset, TimeZone};
     ///
-    /// let dt = FixedOffset::east(9 * 60 * 60)
-    ///     .unwrap()
-    ///     .with_ymd_and_hms(2023, 7, 11, 0, 34, 59)
-    ///     .unwrap();
+    /// let dt =
+    ///     FixedOffset::east(9 * 60 * 60).unwrap().with_ymd_and_hms(2023, 7, 11, 0, 34, 59).unwrap();
     ///
     /// // Note: you usually want to combine `StrftimeItems::new_with_locale` with other
     /// // locale-aware methods such as `DateTime::format_localized_with_items`.

@@ -684,11 +684,8 @@ pub mod ts_microseconds_option {
 ///     time: DateTime<Utc>,
 /// }
 ///
-/// let time = NaiveDate::from_ymd(2018, 5, 17)
-///     .unwrap()
-///     .and_hms_milli(02, 04, 59, 918)
-///     .unwrap()
-///     .and_utc();
+/// let time =
+///     NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_utc();
 /// let my_s = S { time: time.clone() };
 ///
 /// let as_string = serde_json::to_string(&my_s)?;
@@ -813,11 +810,7 @@ pub mod ts_milliseconds {
 /// }
 ///
 /// let time = Some(
-///     NaiveDate::from_ymd(2018, 5, 17)
-///         .unwrap()
-///         .and_hms_milli(02, 04, 59, 918)
-///         .unwrap()
-///         .and_utc(),
+///     NaiveDate::from_ymd(2018, 5, 17).unwrap().and_hms_milli(02, 04, 59, 918).unwrap().and_utc(),
 /// );
 /// let my_s = S { time: time.clone() };
 ///

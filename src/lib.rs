@@ -205,9 +205,7 @@
 //! assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600)?);
 //! assert_eq!(
 //!     dt.with_timezone(&Utc),
-//!     NaiveDate::from_ymd(2014, 11, 28)?
-//!         .and_hms_nano(12, 45, 59, 324310806)?
-//!         .and_utc()
+//!     NaiveDate::from_ymd(2014, 11, 28)?.and_hms_nano(12, 45, 59, 324310806)?.and_utc()
 //! );
 //!
 //! // a sample of property manipulations (validates dynamically)
@@ -221,15 +219,14 @@
 //! assert_eq!(dt1.signed_duration_since(dt2), TimeDelta::seconds(-2 * 3600 + 2));
 //! assert_eq!(dt2.signed_duration_since(dt1), TimeDelta::seconds(2 * 3600 - 2));
 //! assert_eq!(
-//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap()
-//!         + TimeDelta::seconds(1_000_000_000),
+//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() + TimeDelta::seconds(1_000_000_000),
 //!     Utc.with_ymd_and_hms(2001, 9, 9, 1, 46, 40).unwrap()
 //! );
 //! assert_eq!(
-//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap()
-//!         - TimeDelta::seconds(1_000_000_000),
+//!     Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap() - TimeDelta::seconds(1_000_000_000),
 //!     Utc.with_ymd_and_hms(1938, 4, 24, 22, 13, 20).unwrap()
 //! );
+//! # Ok::<(), chrono::Error>(())
 //! ```
 //!
 //! ### Formatting and Parsing
@@ -308,7 +305,7 @@
 //! use chrono::prelude::*;
 //!
 //! let dt = Utc.with_ymd_and_hms(2014, 11, 28, 12, 0, 9).unwrap();
-//! let fixed_dt = dt.with_timezone(&FixedOffset::east(9*3600).unwrap());
+//! let fixed_dt = dt.with_timezone(&FixedOffset::east(9 * 3600).unwrap());
 //!
 //! // method 1
 //! assert_eq!("2014-11-28T12:00:09Z".parse::<DateTime<Utc>>(), Ok(dt.clone()));

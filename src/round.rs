@@ -22,11 +22,8 @@ pub trait SubsecRound {
     /// # Example
     /// ``` rust
     /// # use chrono::{SubsecRound, Timelike, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11)
-    ///     .unwrap()
-    ///     .and_hms_milli(12, 0, 0, 154)
-    ///     .unwrap()
-    ///     .and_utc();
+    /// let dt =
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_milli(12, 0, 0, 154).unwrap().and_utc();
     /// assert_eq!(dt.round_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.round_subsecs(1).nanosecond(), 200_000_000);
     /// ```
@@ -38,11 +35,8 @@ pub trait SubsecRound {
     /// # Example
     /// ``` rust
     /// # use chrono::{SubsecRound, Timelike, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11)
-    ///     .unwrap()
-    ///     .and_hms_milli(12, 0, 0, 154)
-    ///     .unwrap()
-    ///     .and_utc();
+    /// let dt =
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_milli(12, 0, 0, 154).unwrap().and_utc();
     /// assert_eq!(dt.trunc_subsecs(2).nanosecond(), 150_000_000);
     /// assert_eq!(dt.trunc_subsecs(1).nanosecond(), 100_000_000);
     /// ```
@@ -117,11 +111,8 @@ pub trait DurationRound: Sized {
     /// # Example
     /// ``` rust
     /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11)
-    ///     .unwrap()
-    ///     .and_hms_milli(12, 0, 0, 154)
-    ///     .unwrap()
-    ///     .and_utc();
+    /// let dt =
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_milli(12, 0, 0, 154).unwrap().and_utc();
     /// assert_eq!(
     ///     dt.duration_round(TimeDelta::milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"
@@ -138,11 +129,8 @@ pub trait DurationRound: Sized {
     /// # Example
     /// ``` rust
     /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
-    /// let dt = NaiveDate::from_ymd(2018, 1, 11)
-    ///     .unwrap()
-    ///     .and_hms_milli(12, 0, 0, 154)
-    ///     .unwrap()
-    ///     .and_utc();
+    /// let dt =
+    ///     NaiveDate::from_ymd(2018, 1, 11).unwrap().and_hms_milli(12, 0, 0, 154).unwrap().and_utc();
     /// assert_eq!(
     ///     dt.duration_trunc(TimeDelta::milliseconds(10).unwrap()).unwrap().to_string(),
     ///     "2018-01-11 12:00:00.150 UTC"

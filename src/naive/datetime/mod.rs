@@ -599,7 +599,7 @@ impl NaiveDateTime {
             self.date
                 .signed_duration_since(rhs.date)
                 .checked_add(self.time.signed_duration_since(rhs.time)),
-            "always in range"
+            "always in range",
         )
     }
 
