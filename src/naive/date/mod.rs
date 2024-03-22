@@ -35,7 +35,7 @@ use crate::format::{
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{ok, try_err, try_ok_or, try_opt};
+use crate::{try_err, try_ok_or};
 use crate::{Datelike, Error, TimeDelta, Weekday};
 
 use super::internals::{Mdf, YearFlags};
@@ -449,30 +449,30 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
     /// ```
     /// # use chrono::{NaiveDate, Months};
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20).unwrap().checked_add_months(Months::new(6)),
-    ///     Some(NaiveDate::from_ymd(2022, 8, 20).unwrap())
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_add_months(Months::new(6)),
+    ///     NaiveDate::from_ymd(2022, 8, 20)
     /// );
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 7, 31).unwrap().checked_add_months(Months::new(2)),
-    ///     Some(NaiveDate::from_ymd(2022, 9, 30).unwrap())
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_add_months(Months::new(2)),
+    ///     NaiveDate::from_ymd(2022, 9, 30)
     /// );
+    /// # Ok::<(), chrono::Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_add_months(self, months: Months) -> Option<Self> {
+    pub const fn checked_add_months(self, months: Months) -> Result<Self, Error> {
         if months.0 == 0 {
-            return Some(self);
+            return Ok(self);
         }
 
         match months.0 <= i32::MAX as u32 {
             true => self.diff_months(months.0 as i32),
-            false => None,
+            false => Err(Error::OutOfRange),
         }
     }
 
@@ -482,38 +482,38 @@ impl NaiveDate {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
     /// ```
     /// # use chrono::{NaiveDate, Months};
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2022, 2, 20).unwrap().checked_sub_months(Months::new(6)),
-    ///     Some(NaiveDate::from_ymd(2021, 8, 20).unwrap())
+    ///     NaiveDate::from_ymd(2022, 2, 20)?.checked_sub_months(Months::new(6)),
+    ///     NaiveDate::from_ymd(2021, 8, 20)
     /// );
-    ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2014, 1, 1)
-    ///         .unwrap()
-    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
-    ///     None
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.checked_sub_months(Months::new(3)),
+    ///     NaiveDate::from_ymd(2022, 4, 30)
     /// );
+    /// # Ok::<(), chrono::Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_sub_months(self, months: Months) -> Option<Self> {
+    pub const fn checked_sub_months(self, months: Months) -> Result<Self, Error> {
         if months.0 == 0 {
-            return Some(self);
+            return Ok(self);
         }
 
         match months.0 <= i32::MAX as u32 {
             true => self.diff_months(-(months.0 as i32)),
-            false => None,
+            false => Err(Error::OutOfRange),
         }
     }
 
-    const fn diff_months(self, months: i32) -> Option<Self> {
-        let months = try_opt!((self.year() * 12 + self.month() as i32 - 1).checked_add(months));
+    const fn diff_months(self, months: i32) -> Result<Self, Error> {
+        let months = try_ok_or!(
+            (self.year() * 12 + self.month() as i32 - 1).checked_add(months),
+            Error::OutOfRange
+        );
         let year = months.div_euclid(12);
         let month = months.rem_euclid(12) as u32 + 1;
 
@@ -527,7 +527,7 @@ impl NaiveDate {
             day = day_max;
         };
 
-        ok!(NaiveDate::from_ymd(year, month, day))
+        NaiveDate::from_ymd(year, month, day)
     }
 
     /// Add a duration in [`Days`] to the date
