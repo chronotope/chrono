@@ -20,8 +20,8 @@ use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::{
-    expect, ok, try_err, try_ok_or, try_opt, DateTime, Datelike, Error, FixedOffset,
-    MappedLocalTime, Months, TimeDelta, TimeZone, Timelike, Weekday,
+    expect, ok, try_err, try_opt, DateTime, Datelike, Error, FixedOffset, MappedLocalTime, Months,
+    TimeDelta, TimeZone, Timelike, Weekday,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -309,7 +309,7 @@ impl NaiveDateTime {
     /// ```
     pub const fn checked_add_signed(self, rhs: TimeDelta) -> Result<NaiveDateTime, Error> {
         let (time, remainder) = self.time.overflowing_add_signed(rhs);
-        let remainder = try_ok_or!(TimeDelta::new(remainder, 0), Error::OutOfRange);
+        let remainder = try_err!(TimeDelta::new(remainder, 0));
         let date = try_err!(self.date.checked_add_signed(remainder));
         Ok(NaiveDateTime { date, time })
     }
@@ -492,7 +492,7 @@ impl NaiveDateTime {
     /// ```
     pub const fn checked_sub_signed(self, rhs: TimeDelta) -> Result<NaiveDateTime, Error> {
         let (time, remainder) = self.time.overflowing_sub_signed(rhs);
-        let remainder = try_ok_or!(TimeDelta::new(remainder, 0), Error::OutOfRange);
+        let remainder = try_err!(TimeDelta::new(remainder, 0));
         let date = try_err!(self.date.checked_sub_signed(remainder));
         Ok(NaiveDateTime { date, time })
     }

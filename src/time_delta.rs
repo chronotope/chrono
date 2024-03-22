@@ -13,10 +13,8 @@
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, i64};
-#[cfg(feature = "std")]
-use std::error::Error;
 
-use crate::{expect, try_opt};
+use crate::{expect, ok, try_opt, Error};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -79,17 +77,21 @@ impl TimeDelta {
     ///
     /// # Errors
     ///
-    /// Returns `None` when the duration is out of bounds, or if `nanos` ≥ 1,000,000,000.
-    pub const fn new(secs: i64, nanos: u32) -> Option<TimeDelta> {
+    /// This method returns:
+    /// - [`Error::OutOfRange`] when the duration is out of bounds.
+    /// - [`Error::InvalidArgument`] if `nanos` ≥ 1,000,000,000.
+    pub const fn new(secs: i64, nanos: u32) -> Result<TimeDelta, Error> {
+        if nanos >= 1_000_000_000 {
+            return Err(Error::InvalidArgument);
+        }
         if secs < MIN.secs
             || secs > MAX.secs
-            || nanos >= 1_000_000_000
             || (secs == MAX.secs && nanos > MAX.nanos as u32)
             || (secs == MIN.secs && nanos < MIN.nanos as u32)
         {
-            return None;
+            return Err(Error::OutOfRange);
         }
-        Some(TimeDelta { secs, nanos: nanos as i32 })
+        Ok(TimeDelta { secs, nanos: nanos as i32 })
     }
 
     /// Makes a new `TimeDelta` with the given number of weeks.
@@ -97,7 +99,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(weeks as i64 * 7 * 24 * 60 * 60).unwrap()`.
     #[inline]
     pub const fn weeks(weeks: i32) -> TimeDelta {
-        expect(TimeDelta::new(weeks as i64 * SECS_PER_WEEK, 0), "always in range")
+        expect(ok!(TimeDelta::new(weeks as i64 * SECS_PER_WEEK, 0)), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of days.
@@ -105,7 +107,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(days as i64 * 24 * 60 * 60).unwrap()`.
     #[inline]
     pub const fn days(days: i32) -> TimeDelta {
-        expect(TimeDelta::new(days as i64 * SECS_PER_DAY, 0), "always in range")
+        expect(ok!(TimeDelta::new(days as i64 * SECS_PER_DAY, 0)), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of hours.
@@ -113,7 +115,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(hours as i64 * 60 * 60, 0).unwrap()`.
     #[inline]
     pub const fn hours(hours: i32) -> TimeDelta {
-        expect(TimeDelta::new(hours as i64 * SECS_PER_HOUR, 0), "always in range")
+        expect(ok!(TimeDelta::new(hours as i64 * SECS_PER_HOUR, 0)), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of minutes.
@@ -121,7 +123,7 @@ impl TimeDelta {
     /// Equivalent to `TimeDelta::new(minutes as i64 * 60, 0).unwrap()`.
     #[inline]
     pub const fn minutes(minutes: i32) -> TimeDelta {
-        expect(TimeDelta::new(minutes as i64 * SECS_PER_MINUTE, 0), "always in range")
+        expect(ok!(TimeDelta::new(minutes as i64 * SECS_PER_MINUTE, 0)), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of seconds.
@@ -130,7 +132,7 @@ impl TimeDelta {
     /// greater than that of an `i32`.
     #[inline]
     pub const fn seconds(seconds: i32) -> TimeDelta {
-        expect(TimeDelta::new(seconds as i64, 0), "always in range")
+        expect(ok!(TimeDelta::new(seconds as i64, 0)), "always in range")
     }
 
     /// Makes a new `TimeDelta` with the given number of milliseconds.
@@ -257,7 +259,7 @@ impl TimeDelta {
             nanos -= NANOS_PER_SEC;
             secs += 1;
         }
-        TimeDelta::new(secs, nanos as u32)
+        ok!(TimeDelta::new(secs, nanos as u32))
     }
 
     /// Subtract two `TimeDelta`s, returning `None` if overflow occurred.
@@ -271,7 +273,7 @@ impl TimeDelta {
             nanos += NANOS_PER_SEC;
             secs -= 1;
         }
-        TimeDelta::new(secs, nanos as u32)
+        ok!(TimeDelta::new(secs, nanos as u32))
     }
 
     /// Returns the `TimeDelta` as an absolute (non-negative) value.
@@ -318,8 +320,8 @@ impl TimeDelta {
             return Err(OutOfRangeError(()));
         }
         match TimeDelta::new(duration.as_secs() as i64, duration.subsec_nanos()) {
-            Some(d) => Ok(d),
-            None => Err(OutOfRangeError(())),
+            Ok(d) => Ok(d),
+            Err(_) => Err(OutOfRangeError(())),
         }
     }
 
@@ -484,7 +486,7 @@ impl fmt::Display for OutOfRangeError {
 }
 
 #[cfg(feature = "std")]
-impl Error for OutOfRangeError {
+impl std::error::Error for OutOfRangeError {
     #[allow(deprecated)]
     fn description(&self) -> &str {
         "out of range error"
