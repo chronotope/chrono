@@ -57,8 +57,8 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///
 /// Let's see how `Parsed` correctly detects the second RFC 2822 string from before is inconsistent.
 ///
-#[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-#[cfg_attr(feature = "alloc", doc = "```rust")]
+/// ```
+/// # #[cfg(feature = "alloc")] {
 /// use chrono::format::{ParseErrorKind, Parsed};
 /// use chrono::Weekday;
 ///
@@ -91,6 +91,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// if let Err(error) = result {
 ///     assert_eq!(error.kind(), ParseErrorKind::Impossible);
 /// }
+/// # }
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
 ///
@@ -100,8 +101,8 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// [RFC2822 formatting item]: crate::format::Fixed::RFC2822
 /// [`format::parse()`]: crate::format::parse()
 ///
-#[cfg_attr(not(feature = "alloc"), doc = "```ignore")]
-#[cfg_attr(feature = "alloc", doc = "```rust")]
+/// ```
+/// # #[cfg(feature = "alloc")] {
 /// use chrono::format::{parse, Fixed, Item, Parsed};
 /// use chrono::Weekday;
 ///
@@ -122,6 +123,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 ///     // What is the weekday?
 ///     assert_eq!(parsed.weekday(), Some(Weekday::Thu));
 /// }
+/// # }
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
 #[derive(Clone, PartialEq, Eq, Debug, Default, Hash)]

@@ -21,7 +21,7 @@
 use core::fmt;
 
 use crate::naive::{NaiveDate, NaiveDateTime};
-use crate::DateTime;
+use crate::{DateTime, Error};
 
 pub(crate) mod fixed;
 pub use self::fixed::FixedOffset;
@@ -116,6 +116,27 @@ impl<T> MappedLocalTime<T> {
             MappedLocalTime::None => MappedLocalTime::None,
             MappedLocalTime::Single(v) => MappedLocalTime::Single(f(v)),
             MappedLocalTime::Ambiguous(min, max) => MappedLocalTime::Ambiguous(f(min), f(max)),
+        }
+    }
+
+    /// Maps a `MappedLocalTime<T>` into `MappedLocalTime<U>` with given function.
+    ///
+    /// Returns `MappedLocalTime::None` if the function returns `Err`.
+    #[must_use]
+    pub(crate) fn and_then<U, F: FnMut(T) -> Result<U, Error>>(
+        self,
+        mut f: F,
+    ) -> MappedLocalTime<U> {
+        match self {
+            MappedLocalTime::None => MappedLocalTime::None,
+            MappedLocalTime::Single(v) => match f(v) {
+                Ok(new) => MappedLocalTime::Single(new),
+                Err(_) => MappedLocalTime::None,
+            },
+            MappedLocalTime::Ambiguous(min, max) => match (f(min), f(max)) {
+                (Ok(min), Ok(max)) => MappedLocalTime::Ambiguous(min, max),
+                _ => MappedLocalTime::None,
+            },
         }
     }
 }
@@ -263,24 +284,11 @@ pub trait TimeZone: Sized + Clone {
     /// Converts the local `NaiveDateTime` to the timezone-aware `DateTime` if possible.
     #[allow(clippy::wrong_self_convention)]
     fn from_local_datetime(&self, local: NaiveDateTime) -> MappedLocalTime<DateTime<Self>> {
-        // Return `MappedLocalTime::None` when the offset pushes a value out of range, instead of
-        // panicking.
-        match self.offset_from_local_datetime(local) {
-            MappedLocalTime::None => MappedLocalTime::None,
-            MappedLocalTime::Single(offset) => match local.checked_sub_offset(offset.fix()) {
-                Ok(dt) => MappedLocalTime::Single(DateTime::from_naive_utc_and_offset(dt, offset)),
-                Err(_) => MappedLocalTime::None,
-            },
-            MappedLocalTime::Ambiguous(o1, o2) => {
-                match (local.checked_sub_offset(o1.fix()), local.checked_sub_offset(o2.fix())) {
-                    (Ok(d1), Ok(d2)) => MappedLocalTime::Ambiguous(
-                        DateTime::from_naive_utc_and_offset(d1, o1),
-                        DateTime::from_naive_utc_and_offset(d2, o2),
-                    ),
-                    _ => MappedLocalTime::None,
-                }
-            }
-        }
+        self.offset_from_local_datetime(local).and_then(|off| {
+            local
+                .checked_sub_offset(off.fix())
+                .map(|dt| DateTime::from_naive_utc_and_offset(dt, off))
+        })
     }
 
     /// Creates the offset for given UTC `NaiveDateTime`. This cannot fail.

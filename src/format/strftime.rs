@@ -208,8 +208,7 @@ impl<'a> StrftimeItems<'a> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(any(feature = "alloc", feature = "std")), doc = "```ignore")]
-    #[cfg_attr(any(feature = "alloc", feature = "std"), doc = "```rust")]
+    /// ```
     /// use chrono::format::*;
     ///
     /// let strftime_parser = StrftimeItems::new("%F"); // %F: year-month-day (ISO 8601)
@@ -259,8 +258,8 @@ impl<'a> StrftimeItems<'a> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(any(feature = "alloc", feature = "std")), doc = "```ignore")]
-    #[cfg_attr(any(feature = "alloc", feature = "std"), doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "alloc")] {
     /// use chrono::format::{Locale, StrftimeItems};
     /// use chrono::{FixedOffset, TimeZone};
     ///
@@ -279,6 +278,7 @@ impl<'a> StrftimeItems<'a> {
     /// assert_eq!(fmtr.to_string(), "2023년 07월 11일");
     /// let fmtr = dt.format_with_items(StrftimeItems::new_with_locale("%x", Locale::ja_JP));
     /// assert_eq!(fmtr.to_string(), "2023年07月11日");
+    /// # }
     /// ```
     #[cfg(feature = "unstable-locales")]
     #[must_use]

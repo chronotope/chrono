@@ -68,8 +68,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
-    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "clock")] {
     /// use chrono::{DateTime, Local};
     ///
     /// let dt = Local::now();
@@ -79,6 +79,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// // Serialize, pass through FFI... and recreate the `DateTime`:
     /// let dt_new = DateTime::<Local>::from_naive_utc_and_offset(naive_utc, offset);
     /// assert_eq!(dt, dt_new);
+    /// # }
     /// ```
     #[inline]
     #[must_use]
@@ -110,8 +111,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     #[inline]
     #[must_use]
     pub fn date_naive(&self) -> NaiveDate {
-        let local = self.naive_local();
-        NaiveDate::from_ymd(local.year(), local.month(), local.day()).unwrap()
+        self.naive_local().date()
     }
 
     /// Retrieves the time component.
@@ -527,13 +527,12 @@ impl<Tz: TimeZone> DateTime<Tz> {
     /// # Examples
     ///
     /// ```rust
-    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, Utc, NaiveDate};
+    /// # use chrono::{FixedOffset, SecondsFormat, TimeZone, NaiveDate};
     /// let dt = NaiveDate::from_ymd(2018, 1, 26)
     ///     .unwrap()
     ///     .and_hms_micro(18, 30, 9, 453_829)
     ///     .unwrap()
-    ///     .and_local_timezone(Utc)
-    ///     .unwrap();
+    ///     .and_utc();
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, false), "2018-01-26T18:30:09.453+00:00");
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Millis, true), "2018-01-26T18:30:09.453Z");
     /// assert_eq!(dt.to_rfc3339_opts(SecondsFormat::Secs, true), "2018-01-26T18:30:09Z");
@@ -634,8 +633,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Example
     ///
-    #[cfg_attr(not(feature = "clock"), doc = "```ignore")]
-    #[cfg_attr(feature = "clock", doc = "```rust")]
+    /// ```
+    /// # #[cfg(feature = "clock")] {
     /// use chrono::{Local, NaiveTime};
     ///
     /// let noon = NaiveTime::from_hms(12, 0, 0)?;
@@ -644,6 +643,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// assert_eq!(today_noon.single().unwrap().time(), noon);
     /// assert_eq!(today_midnight.single().unwrap().time(), NaiveTime::MIN);
+    /// # }
     /// # Ok::<(), chrono::Error>(())
     /// ```
     #[must_use]

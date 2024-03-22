@@ -63,7 +63,7 @@ impl NaiveWeek {
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        expect!(ok!(self.date.add_days(days)), "first weekday out of range for `NaiveDate`")
+        expect(ok!(self.date.add_days(days)), "first weekday out of range for `NaiveDate`")
     }
 
     /// Returns a date representing the last day of the week.
@@ -91,7 +91,7 @@ impl NaiveWeek {
         // Do not construct an intermediate date before `self.date` (like with `first_day()`),
         // because that may be out of range if `date` is close to `NaiveDate::MIN`.
         let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        expect!(ok!(self.date.add_days(days)), "last weekday out of range for `NaiveDate`")
+        expect(ok!(self.date.add_days(days)), "last weekday out of range for `NaiveDate`")
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -135,14 +135,12 @@ impl Days {
     }
 }
 
-/// Serialization/Deserialization of naive types in alternate formats
+/// Serialization/Deserialization of `NaiveDateTime` in alternate formats
 ///
-/// The various modules in here are intended to be used with serde's [`with`
-/// annotation][1] to serialize as something other than the default [RFC
-/// 3339][2] format.
+/// The various modules in here are intended to be used with serde's [`with` annotation] to
+/// serialize as something other than the default ISO 8601 format.
 ///
-/// [1]: https://serde.rs/attributes.html#field-attributes
-/// [2]: https://tools.ietf.org/html/rfc3339
+/// [`with` annotation]: https://serde.rs/field-attrs.html#with
 #[cfg(feature = "serde")]
 pub mod serde {
     pub use super::datetime::serde::*;

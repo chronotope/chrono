@@ -73,7 +73,7 @@ mod tests;
 /// All methods accepting fractional seconds will accept such values.
 ///
 /// ```
-/// use chrono::{NaiveDate, NaiveTime, Utc};
+/// use chrono::{NaiveDate, NaiveTime};
 ///
 /// let t = NaiveTime::from_hms_milli(8, 59, 59, 1_000).unwrap();
 ///
@@ -83,8 +83,7 @@ mod tests;
 ///     .unwrap()
 ///     .and_hms_nano(23, 59, 59, 1_000_000_000)
 ///     .unwrap()
-///     .and_local_timezone(Utc)
-///     .unwrap();
+///     .and_utc();
 /// # let _ = (t, dt1, dt2);
 /// ```
 ///
@@ -166,14 +165,13 @@ mod tests;
 /// will be represented as the second part being 60, as required by ISO 8601.
 ///
 /// ```
-/// use chrono::{NaiveDate, Utc};
+/// use chrono::NaiveDate;
 ///
 /// let dt = NaiveDate::from_ymd(2015, 6, 30)
 ///     .unwrap()
 ///     .and_hms_milli(23, 59, 59, 1_000)
 ///     .unwrap()
-///     .and_local_timezone(Utc)
-///     .unwrap();
+///     .and_utc();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ```
 ///
@@ -691,7 +689,7 @@ impl NaiveTime {
         let secs_from_frac = frac.div_euclid(1_000_000_000);
         let frac = frac.rem_euclid(1_000_000_000) as u32;
 
-        expect!(TimeDelta::new(secs + secs_from_frac, frac), "must be in range")
+        expect(TimeDelta::new(secs + secs_from_frac, frac), "must be in range")
     }
 
     /// Adds given `FixedOffset` to the current time, and returns the number of days that should be
@@ -992,12 +990,13 @@ impl Timelike for NaiveTime {
     /// ([Why?](#leap-second-handling))
     /// Use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
-    #[cfg_attr(not(feature = "std"), doc = "```ignore")]
-    #[cfg_attr(feature = "std", doc = "```")]
+    /// ```
+    /// # #[cfg(feature = "alloc")] {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.second(), 59);
     /// assert_eq!(leap.format("%H:%M:%S").to_string(), "23:59:60");
+    /// # }
     /// ```
     #[inline]
     fn second(&self) -> u32 {
@@ -1021,12 +1020,13 @@ impl Timelike for NaiveTime {
     /// You can reduce the range with `time.nanosecond() % 1_000_000_000`, or
     /// use the proper [formatting method](#method.format) to get a human-readable representation.
     ///
-    #[cfg_attr(not(feature = "std"), doc = "```ignore")]
-    #[cfg_attr(feature = "std", doc = "```")]
+    /// ```
+    /// # #[cfg(feature = "alloc")] {
     /// # use chrono::{NaiveTime, Timelike};
     /// let leap = NaiveTime::from_hms_milli(23, 59, 59, 1_000).unwrap();
     /// assert_eq!(leap.nanosecond(), 1_000_000_000);
     /// assert_eq!(leap.format("%H:%M:%S%.9f").to_string(), "23:59:60.000000000");
+    /// # }
     /// ```
     #[inline]
     fn nanosecond(&self) -> u32 {

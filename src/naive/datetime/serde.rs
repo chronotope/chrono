@@ -3,10 +3,9 @@ use serde::{de, ser};
 
 use super::NaiveDateTime;
 
-/// Serialize a `NaiveDateTime` as an RFC 3339 string
+/// Serialize a `NaiveDateTime` as an ISO 8601 string
 ///
-/// See [the `serde` module](./serde/index.html) for alternate
-/// serialization formats.
+/// See [the `naive::serde` module](crate::naive::serde) for alternate serialization formats.
 impl ser::Serialize for NaiveDateTime {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
