@@ -131,35 +131,35 @@
 //!     dt,
 //!     NaiveDate::from_ymd(2014, 7, 8)?
 //!         .at_hms(9, 10, 11)?
-//!         .and_utc()
+//!         .in_utc()
 //! );
 //!
 //! // July 8 is 188th day of the year 2014 (`o` for "ordinal")
-//! assert_eq!(dt, NaiveDate::from_yo(2014, 189).unwrap().at_hms(9, 10, 11).unwrap().and_utc());
+//! assert_eq!(dt, NaiveDate::from_yo(2014, 189).unwrap().at_hms(9, 10, 11).unwrap().in_utc());
 //! // July 8 is Tuesday in ISO week 28 of the year 2014.
-//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue).unwrap().at_hms(9, 10, 11).unwrap().and_utc());
+//! assert_eq!(dt, NaiveDate::from_isoywd(2014, 28, Weekday::Tue).unwrap().at_hms(9, 10, 11).unwrap().in_utc());
 //!
 //! let dt = NaiveDate::from_ymd(2014, 7, 8)?
 //!     .at_hms_milli(9, 10, 11, 12)?
-//!     .and_utc(); // `2014-07-08T09:10:11.012Z`
+//!     .in_utc(); // `2014-07-08T09:10:11.012Z`
 //! assert_eq!(
 //!     dt,
 //!     NaiveDate::from_ymd(2014, 7, 8)?
 //!         .at_hms_micro(9, 10, 11, 12_000)?
-//!         .and_utc()
+//!         .in_utc()
 //! );
 //! assert_eq!(
 //!     dt,
 //!     NaiveDate::from_ymd(2014, 7, 8)?
 //!         .at_hms_nano(9, 10, 11, 12_000_000)?
-//!         .and_utc()
+//!         .in_utc()
 //! );
 //!
 //! // dynamic verification
 //! assert_eq!(
 //!     Utc.at_ymd_and_hms(2014, 7, 8, 21, 15, 33),
 //!     MappedLocalTime::Single(
-//!         NaiveDate::from_ymd(2014, 7, 8)?.at_hms(21, 15, 33)?.and_utc()
+//!         NaiveDate::from_ymd(2014, 7, 8)?.at_hms(21, 15, 33)?.in_utc()
 //!     )
 //! );
 //! assert_eq!(Utc.at_ymd_and_hms(2014, 7, 8, 80, 15, 33), MappedLocalTime::None);
@@ -203,7 +203,7 @@
 //! assert_eq!(dt.timezone(), FixedOffset::east(9 * 3600)?);
 //! assert_eq!(
 //!     dt.with_timezone(&Utc),
-//!     NaiveDate::from_ymd(2014, 11, 28)?.at_hms_nano(12, 45, 59, 324310806)?.and_utc()
+//!     NaiveDate::from_ymd(2014, 11, 28)?.at_hms_nano(12, 45, 59, 324310806)?.in_utc()
 //! );
 //!
 //! // a sample of property manipulations (validates dynamically)
@@ -271,7 +271,7 @@
 //!
 //! // Note that milli/nanoseconds are only printed if they are non-zero
 //! let dt_nano =
-//!     NaiveDate::from_ymd(2014, 11, 28).unwrap().at_hms_nano(12, 0, 9, 1).unwrap().and_utc();
+//!     NaiveDate::from_ymd(2014, 11, 28).unwrap().at_hms_nano(12, 0, 9, 1).unwrap().in_utc();
 //! assert_eq!(format!("{:?}", dt_nano), "2014-11-28T12:00:09.000000001Z");
 //! # }
 //! # #[cfg(not(all(feature = "unstable-locales", feature = "alloc")))]

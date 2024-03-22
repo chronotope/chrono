@@ -708,11 +708,11 @@ impl NaiveDateTime {
     ///
     /// ```
     /// use chrono::{NaiveDate, Utc};
-    /// let dt = NaiveDate::from_ymd(2023, 1, 30).unwrap().at_hms(19, 32, 33).unwrap().and_utc();
+    /// let dt = NaiveDate::from_ymd(2023, 1, 30).unwrap().at_hms(19, 32, 33).unwrap().in_utc();
     /// assert_eq!(dt.timezone(), Utc);
     /// ```
     #[must_use]
-    pub const fn and_utc(self) -> DateTime<Utc> {
+    pub const fn in_utc(self) -> DateTime<Utc> {
         DateTime::from_naive_utc_and_offset(self, Utc)
     }
 

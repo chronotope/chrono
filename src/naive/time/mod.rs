@@ -83,7 +83,7 @@ mod tests;
 ///     .unwrap()
 ///     .at_hms_nano(23, 59, 59, 1_000_000_000)
 ///     .unwrap()
-///     .and_utc();
+///     .in_utc();
 /// # let _ = (t, dt1, dt2);
 /// ```
 ///
@@ -167,11 +167,8 @@ mod tests;
 /// ```
 /// use chrono::NaiveDate;
 ///
-/// let dt = NaiveDate::from_ymd(2015, 6, 30)
-///     .unwrap()
-///     .at_hms_milli(23, 59, 59, 1_000)
-///     .unwrap()
-///     .and_utc();
+/// let dt =
+///     NaiveDate::from_ymd(2015, 6, 30).unwrap().at_hms_milli(23, 59, 59, 1_000).unwrap().in_utc();
 /// assert_eq!(format!("{:?}", dt), "2015-06-30T23:59:60Z");
 /// ```
 ///

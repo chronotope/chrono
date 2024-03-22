@@ -756,7 +756,7 @@ impl Parsed {
 
             // verify the timestamp field if any
             // the following is safe, `timestamp` is very limited in range
-            let timestamp = datetime.and_utc().timestamp() - i64::from(offset);
+            let timestamp = datetime.in_utc().timestamp() - i64::from(offset);
             if let Some(given_timestamp) = self.timestamp {
                 // if `datetime` represents a leap second, it might be off by one second.
                 if given_timestamp != timestamp
