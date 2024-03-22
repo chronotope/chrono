@@ -142,15 +142,15 @@ impl TimeDelta {
     /// Returns `None` the `TimeDelta` would be out of bounds, i.e. when `milliseconds` is more
     /// than `i64::MAX` or less than `-i64::MAX`. Notably, this is not the same as `i64::MIN`.
     #[inline]
-    pub const fn milliseconds(milliseconds: i64) -> Option<TimeDelta> {
+    pub const fn milliseconds(milliseconds: i64) -> Result<TimeDelta, Error> {
         // We don't need to compare against MAX, as this function accepts an
         // i64, and MAX is aligned to i64::MAX milliseconds.
         if milliseconds < -i64::MAX {
-            return None;
+            return Err(Error::OutOfRange);
         }
         let (secs, millis) = div_mod_floor_64(milliseconds, MILLIS_PER_SEC);
         let d = TimeDelta { secs, nanos: millis as i32 * NANOS_PER_MILLI };
-        Some(d)
+        Ok(d)
     }
 
     /// Makes a new `TimeDelta` with the given number of microseconds.
@@ -520,7 +520,7 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 mod tests {
     use super::OutOfRangeError;
     use super::{TimeDelta, MAX, MIN};
-    use crate::expect;
+    use crate::{expect, ok};
     use core::time::Duration;
 
     #[test]
@@ -1043,7 +1043,7 @@ mod tests {
         const ONE_HOUR: TimeDelta = TimeDelta::hours(1);
         const ONE_MINUTE: TimeDelta = TimeDelta::minutes(1);
         const ONE_SECOND: TimeDelta = TimeDelta::seconds(1);
-        const ONE_MILLI: TimeDelta = expect(TimeDelta::milliseconds(1), "");
+        const ONE_MILLI: TimeDelta = expect(ok!(TimeDelta::milliseconds(1)), "");
         const ONE_MICRO: TimeDelta = TimeDelta::microseconds(1);
         const ONE_NANO: TimeDelta = TimeDelta::nanoseconds(1);
         let combo: TimeDelta = ONE_WEEK
