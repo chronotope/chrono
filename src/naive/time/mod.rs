@@ -18,7 +18,7 @@ use crate::format::{
     parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
     Parsed, StrftimeItems,
 };
-use crate::{expect, try_ok_or};
+use crate::{expect, ok, try_ok_or};
 use crate::{Error, FixedOffset, TimeDelta, Timelike};
 
 #[cfg(feature = "serde")]
@@ -686,7 +686,7 @@ impl NaiveTime {
         let secs_from_frac = frac.div_euclid(1_000_000_000);
         let frac = frac.rem_euclid(1_000_000_000) as u32;
 
-        expect(TimeDelta::new(secs + secs_from_frac, frac), "must be in range")
+        expect(ok!(TimeDelta::new(secs + secs_from_frac, frac)), "must be in range")
     }
 
     /// Adds given `FixedOffset` to the current time, and returns the number of days that should be
