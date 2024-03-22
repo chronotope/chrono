@@ -175,7 +175,7 @@ fn duration_round<T>(
 where
     T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
+    if let Ok(span) = duration.num_nanoseconds() {
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
@@ -212,7 +212,7 @@ fn duration_trunc<T>(
 where
     T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
 {
-    if let Some(span) = duration.num_nanoseconds() {
+    if let Ok(span) = duration.num_nanoseconds() {
         if span < 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
