@@ -20,8 +20,8 @@ use crate::format::{Fixed, Item, Numeric, Pad};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::{
-    expect, try_err, try_opt, DateTime, Datelike, Error, FixedOffset, MappedLocalTime, Months,
-    TimeDelta, TimeZone, Timelike, Weekday,
+    expect, try_err, DateTime, Datelike, Error, FixedOffset, MappedLocalTime, Months, TimeDelta,
+    TimeZone, Timelike, Weekday,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
@@ -320,7 +320,7 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
@@ -328,26 +328,18 @@ impl NaiveDateTime {
     /// use chrono::{Months, NaiveDate};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2014, 1, 1)
-    ///         .unwrap()
-    ///         .at_hms(1, 0, 0)
-    ///         .unwrap()
-    ///         .checked_add_months(Months::new(1)),
-    ///     Some(NaiveDate::from_ymd(2014, 2, 1).unwrap().at_hms(1, 0, 0).unwrap())
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.at_hms(1, 0, 0)?.checked_add_months(Months::new(1)),
+    ///     NaiveDate::from_ymd(2014, 2, 1)?.at_hms(1, 0, 0)
     /// );
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2014, 1, 1)
-    ///         .unwrap()
-    ///         .at_hms(1, 0, 0)
-    ///         .unwrap()
-    ///         .checked_add_months(Months::new(core::i32::MAX as u32 + 1)),
-    ///     None
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.at_hms(1, 0, 0)?.checked_add_months(Months::new(2)),
+    ///     NaiveDate::from_ymd(2022, 9, 30)?.at_hms(1, 0, 0)
     /// );
+    /// # Ok::<(), chrono::Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_add_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: try_opt!(ok!(self.date.checked_add_months(rhs))), time: self.time })
+    pub const fn checked_add_months(self, rhs: Months) -> Result<NaiveDateTime, Error> {
+        Ok(Self { date: try_err!(self.date.checked_add_months(rhs)), time: self.time })
     }
 
     /// Adds given `FixedOffset` to the current datetime.
@@ -503,7 +495,7 @@ impl NaiveDateTime {
     ///
     /// # Errors
     ///
-    /// Returns `None` if the resulting date would be out of range.
+    /// Returns [`Error::OutOfRange`] if the resulting date would be out of range.
     ///
     /// # Example
     ///
@@ -511,26 +503,17 @@ impl NaiveDateTime {
     /// use chrono::{Months, NaiveDate};
     ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2014, 1, 1)
-    ///         .unwrap()
-    ///         .at_hms(1, 0, 0)
-    ///         .unwrap()
-    ///         .checked_sub_months(Months::new(1)),
-    ///     Some(NaiveDate::from_ymd(2013, 12, 1).unwrap().at_hms(1, 0, 0).unwrap())
+    ///     NaiveDate::from_ymd(2014, 1, 1)?.at_hms(1, 0, 0)?.checked_sub_months(Months::new(1)),
+    ///     NaiveDate::from_ymd(2013, 12, 1)?.at_hms(1, 0, 0)
     /// );
-    ///
     /// assert_eq!(
-    ///     NaiveDate::from_ymd(2014, 1, 1)
-    ///         .unwrap()
-    ///         .at_hms(1, 0, 0)
-    ///         .unwrap()
-    ///         .checked_sub_months(Months::new(core::i32::MAX as u32 + 1)),
-    ///     None
+    ///     NaiveDate::from_ymd(2022, 7, 31)?.at_hms(1, 0, 0)?.checked_sub_months(Months::new(3)),
+    ///     NaiveDate::from_ymd(2022, 4, 30)?.at_hms(1, 0, 0)
     /// );
+    /// # Ok::<(), chrono::Error>(())
     /// ```
-    #[must_use]
-    pub const fn checked_sub_months(self, rhs: Months) -> Option<NaiveDateTime> {
-        Some(Self { date: try_opt!(ok!(self.date.checked_sub_months(rhs))), time: self.time })
+    pub const fn checked_sub_months(self, rhs: Months) -> Result<NaiveDateTime, Error> {
+        Ok(Self { date: try_err!(self.date.checked_sub_months(rhs)), time: self.time })
     }
 
     /// Add a duration in [`Days`] to the date part of the `NaiveDateTime`

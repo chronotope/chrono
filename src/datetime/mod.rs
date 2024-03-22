@@ -336,7 +336,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // the resulting date, with which we can return `Some` even for an out of range local
         // datetime.
         self.overflowing_naive_local()
-            .checked_add_months(months)?
+            .checked_add_months(months)
+            .ok()?
             .in_timezone(self.timezone())
             .single()
     }
@@ -373,7 +374,8 @@ impl<Tz: TimeZone> DateTime<Tz> {
         // the resulting date, with which we can return `Some` even for an out of range local
         // datetime.
         self.overflowing_naive_local()
-            .checked_sub_months(months)?
+            .checked_sub_months(months)
+            .ok()?
             .in_timezone(self.timezone())
             .single()
     }
