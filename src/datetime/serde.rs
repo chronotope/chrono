@@ -241,6 +241,14 @@ pub mod ts_nanoseconds {
             DateTime::from_timestamp((value / 1_000_000_000) as i64, (value % 1_000_000_000) as u32)
                 .map_err(|_| invalid_ts(value))
         }
+
+        ///  Deserialize a timestamp in nanoseconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_u64(value.parse::<u64>().map_err(|e| E::custom(e))?)
+        }
     }
 }
 
@@ -503,7 +511,7 @@ pub mod ts_microseconds {
             formatter.write_str("a unix timestamp in microseconds")
         }
 
-        /// Deserialize a timestamp in milliseconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -515,7 +523,7 @@ pub mod ts_microseconds {
             .map_err(|_| invalid_ts(value))
         }
 
-        /// Deserialize a timestamp in milliseconds since the epoch
+        /// Deserialize a timestamp in microseconds since the epoch
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: de::Error,
@@ -525,6 +533,14 @@ pub mod ts_microseconds {
                 ((value % 1_000_000) * 1_000) as u32,
             )
             .map_err(|_| invalid_ts(value))
+        }
+
+        /// Deserialize a timestamp in microseconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_u64(value.parse::<u64>().map_err(|e| E::custom(e))?)
         }
     }
 }
@@ -790,6 +806,14 @@ pub mod ts_milliseconds {
             DateTime::from_timestamp((value / 1000) as i64, ((value % 1000) * 1_000_000) as u32)
                 .map_err(|_| invalid_ts(value))
         }
+
+        /// Deserialize a timestamp in milliseconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_u64(value.parse::<u64>().map_err(|e| E::custom(e))?)
+        }
     }
 }
 
@@ -1054,6 +1078,14 @@ pub mod ts_seconds {
             } else {
                 DateTime::from_timestamp(value as i64, 0).map_err(|_| invalid_ts(value))
             }
+        }
+
+        /// Deserialize a timestamp in seconds since the epoch
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_u64(value.parse::<u64>().map_err(|e| E::custom(e))?)
         }
     }
 }
