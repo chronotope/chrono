@@ -63,6 +63,19 @@ jobs:
         env:
           RUSTDOCFLAGS: -Dwarnings
 
+  check-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo publish --locked --dry-run ${{ env.ALL_NON_EXCLUSIVE_FEATURES }}
+      - shell: bash
+        name: cargo package
+        run: |
+          set -eux
+          cargo package --list ${{ env.ALL_NON_EXCLUSIVE_FEATURES }}
+          cargo package ${{ env.ALL_NON_EXCLUSIVE_FEATURES }}
+
   cffconvert:
     runs-on: ubuntu-latest
     steps:
