@@ -9,7 +9,7 @@ use core::fmt;
     not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
+        not(target_os = "wasi")
     ))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -89,7 +89,7 @@ impl Utc {
     #[cfg(not(all(
         target_arch = "wasm32",
         feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
+        not(target_os = "wasi")
     )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
@@ -108,6 +108,20 @@ impl Utc {
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
         DateTime::<Utc>::from(now)
+    }
+
+    /// Returns a `DateTime` which corresponds to the current date and time.
+    #[cfg(all(
+        target_arch = "wasm32",
+        feature = "wasmbind",
+        target_os = "emscripten"
+    ))]
+    #[must_use]
+    pub fn now() -> DateTime<Utc> {
+        use emscripten_functions::emscripten::run_script_string;
+        // In order to handle number than i32, string is used to store the number
+        let now = run_script_string("Date.now().toString()").expect("Date.now() failed").parse::<i64>().unwrap();
+        Utc.timestamp_millis_opt(now).unwrap()
     }
 }
 

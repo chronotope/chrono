@@ -16,7 +16,7 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Date;
 use crate::{DateTime, Utc};
 
-#[cfg(unix)]
+#[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))))]
 #[path = "unix.rs"]
 mod inner;
 
@@ -31,11 +31,7 @@ mod win_bindings;
 #[cfg(all(
     not(unix),
     not(windows),
-    not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    ))
+    not(all(target_arch = "wasm32", feature = "wasmbind", not(target_os = "wasi"),))
 ))]
 mod inner {
     use crate::{FixedOffset, MappedLocalTime, NaiveDateTime};
@@ -92,7 +88,42 @@ mod inner {
     }
 }
 
-#[cfg(unix)]
+#[cfg(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))]
+mod inner {
+    use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDateTime, Timelike};
+    use emscripten_functions::emscripten::run_script_int;
+
+    pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
+        let offset = run_script_int(&format!(
+            "new Date(Date.UTC({}, {}, {}, {}, {}, {}, 0)).getTimezoneOffset()",
+            utc.year(),
+            utc.month0() + 1,
+            utc.day(),
+            utc.hour(),
+            utc.minute(),
+            utc.second()
+        ));
+        MappedLocalTime::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
+    }
+
+    pub(super) fn offset_from_local_datetime(
+        local: &NaiveDateTime,
+    ) -> MappedLocalTime<FixedOffset> {
+        let offset = run_script_int(&format!(
+            "new Date({}, {}, {}, {}, {}, {}, 0).getTimezoneOffset()",
+            local.year(),
+            local.month0() + 1,
+            local.day(),
+            local.hour(),
+            local.minute(),
+            local.second()
+        ));
+        // We always get a result, even if this time does not exist or is ambiguous.
+        MappedLocalTime::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
+    }
+}
+
+#[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))))]
 mod tz_info;
 
 /// The local timescale.
