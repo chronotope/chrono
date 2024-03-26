@@ -1,5 +1,5 @@
 [package]
-name = "emscripten_test"
+name = "emscripten-test"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-chrono = { path = ".." }
+chrono = { path = "../.." }

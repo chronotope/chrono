@@ -183,7 +183,7 @@ jobs:
         with:
           node-version: 18
       - run: |
-          cd emscripten_test
+          cd ci/emscripten-test
           cargo build --target wasm32-unknown-emscripten
           TZ=Asia/Tokyo node ./js/test.js
 
