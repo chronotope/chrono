@@ -16,7 +16,10 @@ use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Date;
 use crate::{DateTime, Utc};
 
-#[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))))]
+#[cfg(all(
+    unix,
+    not(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))
+))]
 #[path = "unix.rs"]
 mod inner;
 
@@ -31,7 +34,12 @@ mod win_bindings;
 #[cfg(all(
     not(unix),
     not(windows),
-    not(all(target_arch = "wasm32", feature = "wasmbind", not(target_os = "wasi"),))
+    not(all(
+        target_arch = "wasm32",
+        feature = "wasmbind",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )),
+    not(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))
 ))]
 mod inner {
     use crate::{FixedOffset, MappedLocalTime, NaiveDateTime};
@@ -88,7 +96,7 @@ mod inner {
     }
 }
 
-#[cfg(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))]
+#[cfg(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))]
 mod inner {
     use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDateTime, Timelike};
     use emscripten_functions::emscripten::run_script_int;
@@ -122,7 +130,10 @@ mod inner {
     }
 }
 
-#[cfg(all(unix, not(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))))]
+#[cfg(all(
+    unix,
+    not(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))
+))]
 mod tz_info;
 
 /// The local timescale.

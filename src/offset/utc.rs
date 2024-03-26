@@ -6,7 +6,12 @@
 use core::fmt;
 #[cfg(all(
     feature = "now",
-    not(all(target_arch = "wasm32", feature = "wasmbind", not(target_os = "wasi")))
+    not(all(
+        target_arch = "wasm32",
+        feature = "wasmbind",
+        not(any(target_os = "emscripten", target_os = "wasi"))
+    )),
+    not(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -103,7 +108,7 @@ impl Utc {
     }
 
     /// Returns a `DateTime` which corresponds to the current date and time.
-    #[cfg(all(target_arch = "wasm32", feature = "wasmbind", target_os = "emscripten"))]
+    #[cfg(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
         use emscripten_functions::emscripten::run_script_string;

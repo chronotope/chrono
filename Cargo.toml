@@ -18,7 +18,7 @@ name = "chrono"
 
 [features]
 # Don't forget to adjust `ALL_NON_EXCLUSIVE_FEATURES` in CI scripts when adding a feature or an optional dependency.
-default = ["clock", "std", "oldtime", "wasmbind"]
+default = ["clock", "std", "oldtime", "wasmbind", "wasmbind-emscripten"]
 alloc = []
 libc = []
 winapi = ["windows-targets"]
@@ -26,7 +26,8 @@ std = ["alloc"]
 clock = ["winapi", "iana-time-zone", "android-tzdata", "now"]
 now = ["std"]
 oldtime = []
-wasmbind = ["wasm-bindgen", "js-sys", "emscripten-functions"]
+wasmbind = ["wasm-bindgen", "js-sys"]
+wasmbind-emscripten = ["emscripten-functions"]
 unstable-locales = ["pure-rust-locales"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
 rkyv = ["dep:rkyv", "rkyv/size_32"]
