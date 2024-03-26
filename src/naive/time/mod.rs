@@ -15,8 +15,8 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseResult, Parsed,
+    StrftimeItems,
 };
 use crate::{expect, try_ok_or};
 use crate::{Error, FixedOffset, TimeDelta, Timelike};
@@ -1488,7 +1488,7 @@ impl fmt::Display for NaiveTime {
 /// assert!("foo".parse::<NaiveTime>().is_err());
 /// ```
 impl str::FromStr for NaiveTime {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<NaiveTime> {
         const HOUR_AND_MINUTE: &[Item<'static>] = &[
