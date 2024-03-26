@@ -102,7 +102,6 @@ impl TimeDelta {
     /// Panics when the duration is out of bounds.
     #[inline]
     #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_weeks` instead")]
     pub const fn weeks(weeks: i64) -> TimeDelta {
         expect(TimeDelta::try_weeks(weeks), "TimeDelta::weeks out of bounds")
     }
@@ -130,7 +129,6 @@ impl TimeDelta {
     /// Panics when the `TimeDelta` would be out of bounds.
     #[inline]
     #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_days` instead")]
     pub const fn days(days: i64) -> TimeDelta {
         expect(TimeDelta::try_days(days), "TimeDelta::days out of bounds")
     }
@@ -157,7 +155,6 @@ impl TimeDelta {
     /// Panics when the `TimeDelta` would be out of bounds.
     #[inline]
     #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_hours` instead")]
     pub const fn hours(hours: i64) -> TimeDelta {
         expect(TimeDelta::try_hours(hours), "TimeDelta::hours out of bounds")
     }
@@ -183,7 +180,6 @@ impl TimeDelta {
     /// Panics when the `TimeDelta` would be out of bounds.
     #[inline]
     #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_minutes` instead")]
     pub const fn minutes(minutes: i64) -> TimeDelta {
         expect(TimeDelta::try_minutes(minutes), "TimeDelta::minutes out of bounds")
     }
@@ -208,7 +204,6 @@ impl TimeDelta {
     /// (in this context, this is the same as `i64::MIN / 1_000` due to rounding).
     #[inline]
     #[must_use]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_seconds` instead")]
     pub const fn seconds(seconds: i64) -> TimeDelta {
         expect(TimeDelta::try_seconds(seconds), "TimeDelta::seconds out of bounds")
     }
@@ -232,7 +227,6 @@ impl TimeDelta {
     /// Panics when the `TimeDelta` would be out of bounds, i.e. when `milliseconds` is more than
     /// `i64::MAX` or less than `-i64::MAX`. Notably, this is not the same as `i64::MIN`.
     #[inline]
-    #[deprecated(since = "0.4.35", note = "Use `TimeDelta::try_milliseconds` instead")]
     pub const fn milliseconds(milliseconds: i64) -> TimeDelta {
         expect(TimeDelta::try_milliseconds(milliseconds), "TimeDelta::milliseconds out of bounds")
     }
@@ -688,7 +682,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     #[should_panic(expected = "TimeDelta::seconds out of bounds")]
     fn test_duration_seconds_max_overflow_panic() {
         let _ = TimeDelta::seconds(i64::MAX / 1_000 + 1);
@@ -710,7 +703,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     #[should_panic(expected = "TimeDelta::seconds out of bounds")]
     fn test_duration_seconds_min_underflow_panic() {
         let _ = TimeDelta::seconds(-i64::MAX / 1_000 - 1);
@@ -773,7 +765,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
     #[should_panic(expected = "TimeDelta::milliseconds out of bounds")]
     fn test_duration_milliseconds_min_underflow_panic() {
         // Here we ensure that trying to create a value one millisecond below the
