@@ -107,7 +107,7 @@ impl Utc {
     #[must_use]
     pub fn now() -> DateTime<Utc> {
         use emscripten_functions::emscripten::run_script_string;
-        // In order to handle number than i32, string is used to store the number
+        // `run_script_string` instead of `run_script_int` so we can parse the return value as `i64` instead of `i32`.
         let now = run_script_string("Date.now().toString()")
             .expect("Date.now() failed")
             .parse::<i64>()
