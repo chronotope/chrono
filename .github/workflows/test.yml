@@ -185,7 +185,7 @@ jobs:
       - run: |
           cd emscripten_test
           cargo build --target wasm32-unknown-emscripten
-          node ./js/test.js
+          TZ=Asia/Tokyo node ./js/test.js
 
   cross-targets:
     strategy:

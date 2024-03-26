@@ -11,7 +11,7 @@ chronoFactory().then((chronoRaw) => {
 
   console.log(`Current time (Wasm: UTC): ${chrono.currentTimeUtc()}`);
   console.log(`Current time (Wasm: Local): ${chrono.currentTimeLocal()}`);
-  console.log(`Timezone offset (Wasm): ${chrono.timezoneOffset()}`);
+  console.log(`Current time (JS): ${new Date(currentTimeJs).toISOString()}`);
   const currentTimeUtcParsed = Date.parse(chrono.currentTimeUtc());
   const currentTimeLocalParsed = Date.parse(chrono.currentTimeLocal());
 
