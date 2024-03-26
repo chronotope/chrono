@@ -94,7 +94,7 @@ mod inner {
     use emscripten_functions::emscripten::run_script_int;
 
     pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
-        let offset = run_script_int(&format!(
+        let offset = run_script_int(format!(
             "new Date(Date.UTC({}, {}, {}, {}, {}, {}, 0)).getTimezoneOffset()",
             utc.year(),
             utc.month0() + 1,
@@ -109,7 +109,7 @@ mod inner {
     pub(super) fn offset_from_local_datetime(
         local: &NaiveDateTime,
     ) -> MappedLocalTime<FixedOffset> {
-        let offset = run_script_int(&format!(
+        let offset = run_script_int(format!(
             "new Date({}, {}, {}, {}, {}, {}, 0).getTimezoneOffset()",
             local.year(),
             local.month0() + 1,
@@ -118,7 +118,6 @@ mod inner {
             local.minute(),
             local.second()
         ));
-        // We always get a result, even if this time does not exist or is ambiguous.
         MappedLocalTime::Single(FixedOffset::west_opt((offset as i32) * 60).unwrap())
     }
 }
