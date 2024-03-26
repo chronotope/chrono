@@ -167,6 +167,26 @@ jobs:
       # `wasm32-wasi`.
       - run: cargo wasi test --features=serde,unstable-locales --color=always -- --color=always
 
+  test_emscripten:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-emscripten
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: |
+          cd emscripten_test
+          cargo build --target wasm32-unknown-emscripten
+          node ./js/test.js
+
   cross-targets:
     strategy:
       matrix:
