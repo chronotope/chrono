@@ -1,4 +1,3 @@
-workspace = { members = ["emscripten_test"] }
 [package]
 name = "chrono"
 version = "0.4.35"
