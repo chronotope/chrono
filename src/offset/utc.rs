@@ -87,7 +87,14 @@ impl Utc {
     /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
-    #[cfg(not(all(target_arch = "wasm32", feature = "wasmbind", not(target_os = "wasi"))))]
+    #[cfg(not(any(
+        all(
+            target_arch = "wasm32",
+            feature = "wasmbind",
+            not(any(target_os = "emscripten", target_os = "wasi"))
+        ),
+        all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten")
+    )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
         let now =
