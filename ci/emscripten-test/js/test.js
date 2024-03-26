@@ -17,20 +17,33 @@ chronoFactory().then((chronoRaw) => {
 
   const diffUtc = Math.abs(currentTimeUtcParsed - currentTimeJs);
   const diffLocal = Math.abs(currentTimeLocalParsed - currentTimeJs);
-  console.log("")
-  console.log("Test #1: The difference should be less than 1 second:")
+  console.log("");
+  console.log("Test #1: The difference should be less than 1 second:");
   console.log(`Difference (UTC): ${diffUtc} ms`);
   console.log(`Difference (Local): ${diffLocal} ms`);
   assert(diffUtc < 1000);
   assert(diffLocal < 1000);
 
-  console.log("")
-  console.log("Test #2: Timezone offset should be the same:")
-  const timezoneJs = new Date().getTimezoneOffset();
+  console.log("");
+  console.log("Test #2: Timezone offset should be the same:");
+  const timezoneJsBefore = new Date().getTimezoneOffset();
   const timezoneWasm = chrono.timezoneOffset();
-  console.log(`Timezone (JS): ${timezoneJs} min`);
-  console.log(`Timezone (Wasm): ${timezoneWasm} sec (${timezoneWasm / 60} min)`);
-  assert(timezoneJs === timezoneWasm / 60);
+  const timezoneJsAfter = new Date().getTimezoneOffset();
+  if (timezoneJsBefore !== timezoneJsAfter) {
+    console.log(
+      `Timezone (JS): ${timezoneJsBefore} min -> ${timezoneJsAfter} min`,
+    );
+  } else {
+    console.log(`Timezone (JS): ${timezoneJsBefore} min`);
+  }
+  console.log(
+    `Timezone (Wasm): ${timezoneWasm} sec (${timezoneWasm / 60} min)`,
+  );
+  // The timezone offset may change during the test, (Summer Time, etc.)
+  // so we need to check if the offset is either before or after the test.
+  assert(
+    [timezoneJsBefore, timezoneJsAfter].includes(timezoneWasm / 60),
+  );
 
   console.log("");
   console.log("All tests passed.");
