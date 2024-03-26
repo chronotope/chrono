@@ -121,6 +121,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        if: matrix.target == 'wasm32-unknown-emscripten'
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -164,6 +166,26 @@ jobs:
       # We can't use `--all-features` because `rustc-serialize` doesn't support
       # `wasm32-wasi`.
       - run: cargo wasi test --features=serde,unstable-locales --color=always -- --color=always
+
+  test_emscripten:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-emscripten
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: |
+          cd ci/emscripten-test
+          cargo build --target wasm32-unknown-emscripten
+          TZ=Asia/Tokyo node ./js/test.js
 
   cross-targets:
     strategy:

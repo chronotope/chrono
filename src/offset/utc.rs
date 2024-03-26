@@ -10,7 +10,8 @@ use core::fmt;
         target_arch = "wasm32",
         feature = "wasmbind",
         not(any(target_os = "emscripten", target_os = "wasi"))
-    ))
+    )),
+    not(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -86,10 +87,13 @@ impl Utc {
     /// let offset = FixedOffset::east_opt(5 * 60 * 60).unwrap();
     /// let now_with_offset = Utc::now().with_timezone(&offset);
     /// ```
-    #[cfg(not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
+    #[cfg(not(any(
+        all(
+            target_arch = "wasm32",
+            feature = "wasmbind",
+            not(any(target_os = "emscripten", target_os = "wasi"))
+        ),
+        all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten")
     )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
@@ -108,6 +112,18 @@ impl Utc {
     pub fn now() -> DateTime<Utc> {
         let now = js_sys::Date::new_0();
         DateTime::<Utc>::from(now)
+    }
+
+    /// Returns a `DateTime` which corresponds to the current date and time.
+    #[cfg(all(target_arch = "wasm32", feature = "wasmbind-emscripten", target_os = "emscripten"))]
+    #[must_use]
+    pub fn now() -> DateTime<Utc> {
+        use emscripten_functions::emscripten::run_script_string;
+        // `run_script_string` instead of `run_script_int` so we can parse the return value as `i64` instead of `i32`.
+        let now = run_script_string("Date.now().toString()")
+            .and_then(|s| s.parse::<i64>().ok())
+            .expect("failed to get current time");
+        Utc.timestamp_millis_opt(now).unwrap()
     }
 }
 

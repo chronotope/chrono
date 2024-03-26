@@ -18,7 +18,7 @@ name = "chrono"
 
 [features]
 # Don't forget to adjust `ALL_NON_EXCLUSIVE_FEATURES` in CI scripts when adding a feature or an optional dependency.
-default = ["clock", "std", "oldtime", "wasmbind"]
+default = ["clock", "std", "oldtime", "wasmbind", "wasmbind-emscripten"]
 alloc = []
 libc = []
 winapi = ["windows-targets"]
@@ -27,6 +27,7 @@ clock = ["winapi", "iana-time-zone", "android-tzdata", "now"]
 now = ["std"]
 oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
+wasmbind-emscripten = ["emscripten-functions"]
 unstable-locales = ["pure-rust-locales"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
 rkyv = ["dep:rkyv", "rkyv/size_32"]
@@ -48,6 +49,9 @@ arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
 wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }       # contains FFI bindings for the JS Date API
+
+[target.'cfg(all(target_arch = "wasm32", target_os = "emscripten"))'.dependencies]
+emscripten-functions = { version = "0.2.1", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 windows-targets = { version = "0.52", optional = true }
