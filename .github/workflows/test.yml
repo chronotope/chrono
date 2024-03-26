@@ -121,6 +121,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        if: matrix.target == 'wasm32-unknown-emscripten'
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
