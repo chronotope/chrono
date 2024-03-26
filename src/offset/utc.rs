@@ -109,9 +109,8 @@ impl Utc {
         use emscripten_functions::emscripten::run_script_string;
         // `run_script_string` instead of `run_script_int` so we can parse the return value as `i64` instead of `i32`.
         let now = run_script_string("Date.now().toString()")
-            .expect("Date.now() failed")
-            .parse::<i64>()
-            .unwrap();
+            .and_then(|s| s.parse::<i64>().ok())
+            .expect("failed to get current time");
         Utc.timestamp_millis_opt(now).unwrap()
     }
 }
