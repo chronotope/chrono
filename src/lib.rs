@@ -521,7 +521,8 @@ pub use time_delta::TimeDelta;
 /// Alias of [`TimeDelta`].
 pub type Duration = TimeDelta;
 
-mod macros;
+#[doc(hidden)]
+pub mod macros;
 
 use core::fmt;
 

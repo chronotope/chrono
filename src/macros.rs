@@ -41,7 +41,7 @@ macro_rules! date {
 
 /// Create a [`NaiveTime`](crate::naive::NaiveTime) with a statically known value.
 ///
-/// Supported formats are 'hour:minute' and 'hour:minute:second'.
+/// Supported formats are 'hour:minute', 'hour:minute:second' and 'hour:minute:second.fraction'.
 ///
 /// The input is checked at compile time.
 ///
@@ -51,11 +51,24 @@ macro_rules! date {
 /// # use chrono::Timelike;
 ///
 /// assert_eq!(time!(7:03), time!(7:03:00));
+/// assert_eq!(time!(12:34:56.789), time!(12:34:56.789000));
 /// let leap_second = time!(23:59:60);
 /// # assert!(leap_second.second() == 59 && leap_second.nanosecond() == 1_000_000_000);
 /// ```
 #[macro_export]
 macro_rules! time {
+    ($h:literal:$m:literal:$s:literal) => {{
+        #[allow(clippy::zero_prefixed_literal)]
+        {
+            const SECS_NANOS: (u32, u32) = $crate::macros::parse_sec_and_nano(stringify!($s));
+            const TIME: $crate::NaiveTime =
+                match $crate::NaiveTime::from_hms_nano_opt($h, $m, SECS_NANOS.0, SECS_NANOS.1) {
+                    Some(t) => t,
+                    None => panic!("invalid time"),
+                };
+            TIME
+        }
+    }};
     ($h:literal:$m:literal:$s:literal) => {{
         #[allow(clippy::zero_prefixed_literal)]
         {
@@ -97,6 +110,7 @@ macro_rules! time {
 /// // NaiveDateTime
 /// let _ = datetime!(2023-09-08 7:03);
 /// let _ = datetime!(2023-09-08 7:03:25);
+/// let _ = datetime!(2023-09-08 7:03:25.01234);
 /// // DateTime<FixedOffset>
 /// let _ = datetime!(2023-09-08 7:03:25+02:00);
 /// let _ = datetime!(2023-09-08 7:03:25-02:00);
@@ -110,10 +124,7 @@ macro_rules! datetime {
                 Some(d) => d,
                 None => panic!("invalid calendar date"),
             };
-            const SECS_NANOS: (u32, u32) = match $s {
-                60u32 => (59, 1_000_000_000),
-                s => (s, 0),
-            };
+            const SECS_NANOS: (u32, u32) = $crate::macros::parse_sec_and_nano(stringify!($s));
             const TIME: $crate::NaiveTime =
                 match $crate::NaiveTime::from_hms_nano_opt($h, $min, SECS_NANOS.0, SECS_NANOS.1) {
                     Some(t) => t,
@@ -139,10 +150,7 @@ macro_rules! datetime {
                 Some(d) => d,
                 None => panic!("invalid calendar date"),
             };
-            const SECS_NANOS: (u32, u32) = match $s {
-                60u32 => (59, 1_000_000_000),
-                s => (s, 0),
-            };
+            const SECS_NANOS: (u32, u32) = $crate::macros::parse_sec_and_nano(stringify!($s));
             const TIME: $crate::NaiveTime =
                 match $crate::NaiveTime::from_hms_nano_opt($h, $min, SECS_NANOS.0, SECS_NANOS.1) {
                     Some(t) => t,
@@ -168,10 +176,7 @@ macro_rules! datetime {
                 Some(d) => d,
                 None => panic!("invalid calendar date"),
             };
-            const SECS_NANOS: (u32, u32) = match $s {
-                60u32 => (59, 1_000_000_000),
-                s => (s, 0),
-            };
+            const SECS_NANOS: (u32, u32) = $crate::macros::parse_sec_and_nano(stringify!($s));
             const TIME: $crate::NaiveTime =
                 match $crate::NaiveTime::from_hms_nano_opt($h, $min, SECS_NANOS.0, SECS_NANOS.1) {
                     Some(t) => t,
@@ -264,10 +269,55 @@ macro_rules! offset {
     }};
 }
 
+/// Helper method that allows our macro's to parse a second and optional fractional second.
+///
+/// This makes use of the fact that a `literal` macro argument can accept multiple types, such as an
+/// integer or a floating point value. So a macro accepts both `12` and `12.34` as valid inputs (and
+/// other literals we don't care about). However we  don't know the type of the literal until use.
+///
+/// With `stringify!()` it is possible to get back the original string argument to the macro. This
+/// `parse_sec_and_nano` is a function to parse the value in const context.
+#[doc(hidden)]
+pub const fn parse_sec_and_nano(s: &str) -> (u32, u32) {
+    const fn digit(d: u8) -> u32 {
+        if d < b'0' || d > b'9' {
+            panic!("not a digit");
+        }
+        (d - b'0') as u32
+    }
+    const fn digit_opt(s: &[u8], index: usize) -> u32 {
+        match index < s.len() {
+            true => digit(s[index]),
+            false => 0,
+        }
+    }
+    let s = s.as_bytes();
+    let second = digit(s[0]) * 10 + digit(s[1]);
+    let nano = if s.len() >= 4 && s[2] == b'.' && s.len() <= 12 {
+        digit_opt(s, 3) * 100_000_000
+            + digit_opt(s, 4) * 10_000_000
+            + digit_opt(s, 5) * 1_000_000
+            + digit_opt(s, 6) * 100_000
+            + digit_opt(s, 7) * 10_000
+            + digit_opt(s, 8) * 1000
+            + digit_opt(s, 9) * 100
+            + digit_opt(s, 10) * 10
+            + digit_opt(s, 11)
+    } else if s.len() != 2 {
+        panic!("invalid time");
+    } else {
+        0
+    };
+    match second {
+        60 => (59, 1_000_000_000 + nano),
+        _ => (second, nano),
+    }
+}
+
 #[cfg(test)]
 #[rustfmt::skip::macros(date)]
 mod tests {
-    use crate::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone};
+    use crate::{DateTime, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike};
 
     #[test]
     fn init_macros() {
@@ -275,6 +325,11 @@ mod tests {
         assert_eq!(date!(2023-253), NaiveDate::from_yo_opt(2023, 253).unwrap());
         assert_eq!(time!(7:03), NaiveTime::from_hms_opt(7, 3, 0).unwrap());
         assert_eq!(time!(7:03:25), NaiveTime::from_hms_opt(7, 3, 25).unwrap());
+        assert_eq!(time!(7:03:25.01), NaiveTime::from_hms_milli_opt(7, 3, 25, 10).unwrap());
+        assert_eq!(
+            time!(7:03:25.123456789),
+            NaiveTime::from_hms_nano_opt(7, 3, 25, 123_456_789).unwrap()
+        );
         assert_eq!(
             time!(23:59:60),
             NaiveTime::from_hms_nano_opt(23, 59, 59, 1_000_000_000).unwrap()
@@ -288,8 +343,21 @@ mod tests {
             NaiveDate::from_ymd_opt(2023, 9, 8).unwrap().and_hms_opt(7, 3, 25).unwrap(),
         );
         assert_eq!(
+            datetime!(2023-09-08 7:03:25.01),
+            NaiveDate::from_ymd_opt(2023, 9, 8).unwrap().and_hms_milli_opt(7, 3, 25, 10).unwrap(),
+        );
+        assert_eq!(
             datetime!(2023-09-08 7:03:25+02:00),
             FixedOffset::east_opt(7200).unwrap().with_ymd_and_hms(2023, 9, 8, 7, 3, 25).unwrap(),
+        );
+        assert_eq!(
+            datetime!(2023-09-08 7:03:25.01+02:00),
+            FixedOffset::east_opt(7200)
+                .unwrap()
+                .with_ymd_and_hms(2023, 9, 8, 7, 3, 25)
+                .unwrap()
+                .with_nanosecond(10_000_000)
+                .unwrap(),
         );
         assert_eq!(
             datetime!(2023-09-08 7:03:25-02:00),
