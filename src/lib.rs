@@ -573,9 +573,11 @@ pub mod offset;
 #[cfg(feature = "clock")]
 #[doc(inline)]
 pub use offset::Local;
+#[doc(hidden)]
+pub use offset::LocalResult;
+pub use offset::MappedLocalTime;
 #[doc(inline)]
 pub use offset::{FixedOffset, Offset, TimeZone, Utc};
-pub use offset::{LocalResult, MappedLocalTime};
 
 pub mod round;
 pub use round::{DurationRound, RoundingError, SubsecRound};
