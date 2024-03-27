@@ -489,7 +489,8 @@ pub use duration::Duration;
 #[doc(no_inline)]
 pub use duration::OutOfRangeError;
 
-mod macros;
+#[doc(hidden)]
+pub mod macros;
 
 use core::fmt;
 
