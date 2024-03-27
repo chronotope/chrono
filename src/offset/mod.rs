@@ -54,8 +54,11 @@ pub use self::utc::Utc;
 /// the `MappedLocalTime` type to help deal with the result correctly.
 ///
 /// The type of `T` is usually a [`DateTime`] but may also be only an offset.
+pub type MappedLocalTime<T> = LocalResult<T>;
 #[derive(Clone, PartialEq, Debug, Copy, Eq, Hash)]
-pub enum MappedLocalTime<T> {
+
+/// Old name of [`MappedLocalTime`]. See that type for more documentation.
+pub enum LocalResult<T> {
     /// The local time maps to a single unique result.
     Single(T),
 
@@ -140,9 +143,6 @@ impl<T> MappedLocalTime<T> {
         }
     }
 }
-
-/// The conversion result from the local time to the timezone-aware datetime types.
-pub type LocalResult<T> = MappedLocalTime<T>;
 
 #[allow(deprecated)]
 impl<Tz: TimeZone> MappedLocalTime<Date<Tz>> {
