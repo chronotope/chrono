@@ -65,7 +65,6 @@ Optional features:
 * `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
 * `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
 * `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
-* `rustc-serialize`: Enable serialization/deserialization via rustc-serialize (deprecated).
 * `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
 * `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
   The implementation and API may change or even be removed in a patch release. Feedback welcome.

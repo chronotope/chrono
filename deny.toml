@@ -3,9 +3,6 @@ allow-osi-fsf-free = "either"
 copyleft = "deny"
 
 [advisories]
-ignore = [
-  "RUSTSEC-2022-0004", # rustc_serialize, cannot remove due to compatibility
-]
 unmaintained = "deny"
 unsound = "deny"
 yanked = "deny"
