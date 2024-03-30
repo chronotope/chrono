@@ -8,19 +8,19 @@ use crate::OutOfRange;
 /// The month of the year.
 ///
 /// This enum is just a convenience implementation.
-/// The month in dates created by DateLike objects does not return this enum.
+/// The month in dates created by `Datelike` objects does not return this enum.
 ///
-/// It is possible to convert from a date to a month independently
+/// It is possible to convert from a date to a month using `try_from`:
 /// ```
 /// use chrono::prelude::*;
 /// use chrono::Month;
 ///
 /// let date = Utc.at_ymd_and_hms(2019, 10, 28, 9, 10, 11).unwrap();
 /// // `2019-10-28T09:10:11Z`
-/// let month = Month::try_from(u8::try_from(date.month()).unwrap()).ok();
-/// assert_eq!(month, Some(Month::October))
+/// let month = Month::try_from(date.month() as u8).unwrap();
+/// assert_eq!(month, Month::October)
 /// ```
-/// Or from a Month to an integer usable by dates
+/// Or from a `Month` to an integer with simple casting:
 /// ```
 /// # use chrono::prelude::*;
 /// # use chrono::Month;
@@ -28,9 +28,8 @@ use crate::OutOfRange;
 /// let dt = Utc.at_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
 /// ```
-/// Allows mapping from and to month, from 1-January to 12-December.
-/// Can be Serialized/Deserialized with serde
-// Actual implementation is zero-indexed, API intended as 1-indexed for more intuitive behavior.
+///
+/// Can be Serialized/Deserialized with serde.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd, Ord)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
@@ -42,29 +41,29 @@ use crate::OutOfRange;
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(arbitrary::Arbitrary))]
 pub enum Month {
     /// January
-    January = 0,
+    January = 1,
     /// February
-    February = 1,
+    February = 2,
     /// March
-    March = 2,
+    March = 3,
     /// April
-    April = 3,
+    April = 4,
     /// May
-    May = 4,
+    May = 5,
     /// June
-    June = 5,
+    June = 6,
     /// July
-    July = 6,
+    July = 7,
     /// August
-    August = 7,
+    August = 8,
     /// September
-    September = 8,
+    September = 9,
     /// October
-    October = 9,
+    October = 10,
     /// November
-    November = 10,
+    November = 11,
     /// December
-    December = 11,
+    December = 12,
 }
 
 impl Month {
