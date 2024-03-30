@@ -537,10 +537,6 @@ pub use month::{Month, Months};
 mod traits;
 pub use traits::{Datelike, Timelike};
 
-#[cfg(feature = "__internal_bench")]
-#[doc(hidden)]
-pub use naive::__BenchYearFlags;
-
 /// Serialization/Deserialization with serde
 ///
 /// The [`DateTime`] type has default implementations for (de)serializing to/from the [RFC 3339]

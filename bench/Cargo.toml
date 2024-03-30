@@ -11,7 +11,7 @@ edition = "2021"
 name = "benches"
 
 [dependencies]
-chrono = { path = "..", features = ["__internal_bench", "serde"] }
+chrono = { path = "..", features = ["serde"] }
 
 [[bench]]
 name = "chrono"

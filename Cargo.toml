@@ -35,8 +35,6 @@ rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
 rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
 rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
 rkyv-validation = ["dep:rkyv", "rkyv?/validation"]
-# Features for internal use only:
-__internal_bench = []
 
 [dependencies]
 serde = { version = "1.0.99", default-features = false, optional = true }

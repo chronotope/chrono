@@ -20,10 +20,6 @@ pub use self::datetime::NaiveDateTime;
 pub use self::isoweek::IsoWeek;
 pub use self::time::NaiveTime;
 
-#[cfg(feature = "__internal_bench")]
-#[doc(hidden)]
-pub use self::internals::YearFlags as __BenchYearFlags;
-
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]

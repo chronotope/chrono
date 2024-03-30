@@ -6,7 +6,7 @@ use chrono::format::StrftimeItems;
 use chrono::prelude::*;
 #[cfg(feature = "unstable-locales")]
 use chrono::Locale;
-use chrono::{DateTime, FixedOffset, Local, SecondsFormat, TimeDelta, Utc, __BenchYearFlags};
+use chrono::{DateTime, FixedOffset, Local, SecondsFormat, TimeDelta, Utc};
 
 fn bench_date_from_ymd(c: &mut Criterion) {
     c.bench_function("bench_date_from_ymd", |b| {
@@ -75,16 +75,6 @@ fn bench_datetime_to_rfc3339_opts(c: &mut Criterion) {
         .unwrap();
     c.bench_function("bench_datetime_to_rfc3339_opts", |b| {
         b.iter(|| black_box(dt).to_rfc3339_opts(SecondsFormat::Nanos, true))
-    });
-}
-
-fn bench_year_flags_from_year(c: &mut Criterion) {
-    c.bench_function("bench_year_flags_from_year", |b| {
-        b.iter(|| {
-            for year in -999i32..1000 {
-                let _ = __BenchYearFlags::from_year(black_box(year));
-            }
-        })
     });
 }
 
@@ -221,7 +211,6 @@ criterion_group!(
     bench_datetime_to_rfc2822,
     bench_datetime_to_rfc3339,
     bench_datetime_to_rfc3339_opts,
-    bench_year_flags_from_year,
     bench_num_days_from_ce,
     bench_get_local_time,
     bench_parse_strftime,
