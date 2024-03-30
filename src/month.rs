@@ -25,7 +25,7 @@ use crate::OutOfRange;
 /// # use chrono::prelude::*;
 /// # use chrono::Month;
 /// let month = Month::January;
-/// let dt = Utc.at_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+/// let dt = Utc.at_ymd_and_hms(2019, month as u32, 28, 9, 10, 11).unwrap();
 /// assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
 /// ```
 ///
@@ -112,30 +112,6 @@ impl Month {
             Month::October => Month::September,
             Month::November => Month::October,
             Month::December => Month::November,
-        }
-    }
-
-    /// Returns a month-of-year number starting from January = 1.
-    ///
-    /// `m`:                     | `January` | `February` | `...` | `December`
-    /// -------------------------| --------- | ---------- | --- | -----
-    /// `m.number_from_month()`: | 1         | 2          | `...` | 12
-    #[inline]
-    #[must_use]
-    pub const fn number_from_month(self) -> u32 {
-        match self {
-            Month::January => 1,
-            Month::February => 2,
-            Month::March => 3,
-            Month::April => 4,
-            Month::May => 5,
-            Month::June => 6,
-            Month::July => 7,
-            Month::August => 8,
-            Month::September => 9,
-            Month::October => 10,
-            Month::November => 11,
-            Month::December => 12,
         }
     }
 
@@ -285,7 +261,7 @@ mod tests {
         assert_eq!(Month::try_from(date.month() as u8), Ok(Month::October));
 
         let month = Month::January;
-        let dt = Utc.at_ymd_and_hms(2019, month.number_from_month(), 28, 9, 10, 11).unwrap();
+        let dt = Utc.at_ymd_and_hms(2019, month as u32, 28, 9, 10, 11).unwrap();
         assert_eq!((dt.year(), dt.month(), dt.day()), (2019, 1, 28));
     }
 
