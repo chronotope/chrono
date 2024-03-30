@@ -57,7 +57,7 @@ pub(crate) mod locales;
 pub(crate) use formatting::write_hundreds;
 #[cfg(feature = "alloc")]
 pub(crate) use formatting::write_rfc2822;
-#[cfg(any(feature = "alloc", feature = "serde", feature = "rustc-serialize"))]
+#[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) use formatting::write_rfc3339;
 pub use formatting::SecondsFormat;
 #[cfg(feature = "alloc")]

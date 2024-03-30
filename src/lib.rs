@@ -508,9 +508,6 @@
 #![warn(unreachable_pub)]
 #![deny(clippy::tests_outside_test_module)]
 #![cfg_attr(not(any(feature = "std", test)), no_std)]
-// can remove this if/when rustc-serialize support is removed
-// keeps clippy happy in the meantime
-#![cfg_attr(feature = "rustc-serialize", allow(deprecated))]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[cfg(feature = "alloc")]
@@ -551,8 +548,6 @@ pub use date::Date;
 pub use date::{MAX_DATE, MIN_DATE};
 
 mod datetime;
-#[cfg(feature = "rustc-serialize")]
-pub use datetime::rustc_serialize::TsSeconds;
 pub use datetime::DateTime;
 #[allow(deprecated)]
 #[doc(no_inline)]
