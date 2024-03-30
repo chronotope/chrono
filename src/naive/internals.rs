@@ -1,7 +1,5 @@
 //! Internal helper types for working with dates.
 
-#![cfg_attr(feature = "__internal_bench", allow(missing_docs))]
-
 use core::fmt;
 
 use crate::Error;
@@ -68,11 +66,9 @@ const YEAR_TO_FLAGS: &[YearFlags; 400] = &[
 ];
 
 impl YearFlags {
-    #[allow(unreachable_pub)] // public as an alias for benchmarks only
-    #[doc(hidden)] // for benchmarks only
     #[inline]
     #[must_use]
-    pub const fn from_year(year: i32) -> YearFlags {
+    pub(super) const fn from_year(year: i32) -> YearFlags {
         let year = year.rem_euclid(400);
         YearFlags::from_year_mod_400(year)
     }
