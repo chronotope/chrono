@@ -2,7 +2,7 @@ name: All Tests and Builds
 
 env:
   # It's really `--all-features`, but not adding the mutually exclusive features from rkyv
-  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-32 rkyv-validation rustc-serialize serde arbitrary"
+  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-32 rkyv-validation serde arbitrary"
 
 on:
   push:
@@ -41,12 +41,12 @@ jobs:
       - run: |
           cargo test --lib \
             --features \
-            unstable-locales,wasmbind,oldtime,clock,rustc-serialize,winapi,serde \
+            unstable-locales,wasmbind,oldtime,clock,winapi,serde \
             --color=always -- --color=always
       - run: |
           cargo test --doc \
             --features \
-            unstable-locales,wasmbind,oldtime,clock,rustc-serialize,winapi,serde \
+            unstable-locales,wasmbind,oldtime,clock,winapi,serde \
             --color=always -- --color=always
 
   rust_versions:

@@ -24,8 +24,6 @@ use crate::{
     expect, try_opt, DateTime, Datelike, FixedOffset, MappedLocalTime, Months, TimeDelta, TimeZone,
     Timelike, Weekday,
 };
-#[cfg(feature = "rustc-serialize")]
-pub(super) mod rustc_serialize;
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s
 #[cfg(feature = "serde")]
@@ -2152,7 +2150,7 @@ impl Default for NaiveDateTime {
     }
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_encodable_json<F, E>(to_string: F)
 where
     F: Fn(&NaiveDateTime) -> Result<String, E>,
@@ -2194,7 +2192,7 @@ where
     );
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_decodable_json<F, E>(from_str: F)
 where
     F: Fn(&str) -> Result<NaiveDateTime, E>,
@@ -2261,22 +2259,4 @@ where
     // pre-0.3.0 rustc-serialize format is now invalid
     assert!(from_str(r#"{"date":{"ymdf":20},"time":{"secs":0,"frac":0}}"#).is_err());
     assert!(from_str(r#"null"#).is_err());
-}
-
-#[cfg(all(test, feature = "rustc-serialize"))]
-fn test_decodable_json_timestamp<F, E>(from_str: F)
-where
-    F: Fn(&str) -> Result<rustc_serialize::TsSeconds, E>,
-    E: ::std::fmt::Debug,
-{
-    assert_eq!(
-        *from_str("0").unwrap(),
-        NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(),
-        "should parse integers as timestamps"
-    );
-    assert_eq!(
-        *from_str("-1").unwrap(),
-        NaiveDate::from_ymd_opt(1969, 12, 31).unwrap().and_hms_opt(23, 59, 59).unwrap(),
-        "should parse integers as timestamps"
-    );
 }

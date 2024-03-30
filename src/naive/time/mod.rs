@@ -21,9 +21,6 @@ use crate::format::{
 use crate::{expect, try_opt};
 use crate::{FixedOffset, TimeDelta, Timelike};
 
-#[cfg(feature = "rustc-serialize")]
-mod rustc_serialize;
-
 #[cfg(feature = "serde")]
 mod serde;
 
@@ -1645,7 +1642,7 @@ impl Default for NaiveTime {
     }
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_encodable_json<F, E>(to_string: F)
 where
     F: Fn(&NaiveTime) -> Result<String, E>,
@@ -1685,7 +1682,7 @@ where
     );
 }
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_decodable_json<F, E>(from_str: F)
 where
     F: Fn(&str) -> Result<NaiveTime, E>,

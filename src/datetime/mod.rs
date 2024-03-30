@@ -34,9 +34,6 @@ use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(feature = "rustc-serialize")]
-pub(super) mod rustc_serialize;
-
 /// documented at re-export site
 #[cfg(feature = "serde")]
 pub(super) mod serde;
@@ -1937,7 +1934,7 @@ where
 ///                                                                  719163
 const UNIX_EPOCH_DAY: i64 = 719_163;
 
-#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "serde"))]
 fn test_encodable_json<FUtc, FFixed, E>(to_string_utc: FUtc, to_string_fixed: FFixed)
 where
     FUtc: Fn(&DateTime<Utc>) -> Result<String, E>,
@@ -1967,7 +1964,7 @@ where
     );
 }
 
-#[cfg(all(test, feature = "clock", any(feature = "rustc-serialize", feature = "serde")))]
+#[cfg(all(test, feature = "clock", feature = "serde"))]
 fn test_decodable_json<FUtc, FFixed, FLocal, E>(
     utc_from_str: FUtc,
     fixed_from_str: FFixed,
@@ -2021,51 +2018,4 @@ fn test_decodable_json<FUtc, FFixed, FLocal, E>(
 
     assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
-}
-
-#[cfg(all(test, feature = "clock", feature = "rustc-serialize"))]
-fn test_decodable_json_timestamps<FUtc, FFixed, FLocal, E>(
-    utc_from_str: FUtc,
-    fixed_from_str: FFixed,
-    local_from_str: FLocal,
-) where
-    FUtc: Fn(&str) -> Result<rustc_serialize::TsSeconds<Utc>, E>,
-    FFixed: Fn(&str) -> Result<rustc_serialize::TsSeconds<FixedOffset>, E>,
-    FLocal: Fn(&str) -> Result<rustc_serialize::TsSeconds<Local>, E>,
-    E: ::core::fmt::Debug,
-{
-    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
-        dt.as_ref().map(|dt| (dt, dt.offset()))
-    }
-
-    assert_eq!(
-        norm(&utc_from_str("0").ok().map(DateTime::from)),
-        norm(&Some(Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap()))
-    );
-    assert_eq!(
-        norm(&utc_from_str("-1").ok().map(DateTime::from)),
-        norm(&Some(Utc.with_ymd_and_hms(1969, 12, 31, 23, 59, 59).unwrap()))
-    );
-
-    assert_eq!(
-        norm(&fixed_from_str("0").ok().map(DateTime::from)),
-        norm(&Some(
-            FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap()
-        ))
-    );
-    assert_eq!(
-        norm(&fixed_from_str("-1").ok().map(DateTime::from)),
-        norm(&Some(
-            FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(1969, 12, 31, 23, 59, 59).unwrap()
-        ))
-    );
-
-    assert_eq!(
-        *fixed_from_str("0").expect("0 timestamp should parse"),
-        Utc.with_ymd_and_hms(1970, 1, 1, 0, 0, 0).unwrap()
-    );
-    assert_eq!(
-        *local_from_str("-1").expect("-1 timestamp should parse"),
-        Utc.with_ymd_and_hms(1969, 12, 31, 23, 59, 59).unwrap()
-    );
 }
