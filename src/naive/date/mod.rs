@@ -163,16 +163,15 @@ impl NaiveDate {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Error, NaiveDate};
+    /// use chrono::{Error, Month, NaiveDate};
     ///
-    /// let from_ymd = NaiveDate::from_ymd;
-    ///
-    /// assert!(from_ymd(2015, 3, 14).is_ok());
-    /// assert_eq!(from_ymd(2015, 0, 14), Err(Error::InvalidArgument));
-    /// assert_eq!(from_ymd(2015, 2, 29), Err(Error::DoesNotExist));
-    /// assert!(from_ymd(-4, 2, 29).is_ok()); // 5 BCE is a leap year
-    /// assert_eq!(from_ymd(400000, 1, 1), Err(Error::OutOfRange));
-    /// assert_eq!(from_ymd(-400000, 1, 1), Err(Error::OutOfRange));
+    /// assert!(NaiveDate::from_ymd(2015, 3, 14).is_ok());
+    /// assert!(NaiveDate::from_ymd(2015, Month::March as u32, 14).is_ok());
+    /// assert_eq!(NaiveDate::from_ymd(2015, 0, 14), Err(Error::InvalidArgument));
+    /// assert_eq!(NaiveDate::from_ymd(2015, 2, 29), Err(Error::DoesNotExist));
+    /// assert!(NaiveDate::from_ymd(-4, 2, 29).is_ok()); // 5 BCE is a leap year
+    /// assert_eq!(NaiveDate::from_ymd(400000, 1, 1), Err(Error::OutOfRange));
+    /// assert_eq!(NaiveDate::from_ymd(-400000, 1, 1), Err(Error::OutOfRange));
     /// ```
     pub const fn from_ymd(year: i32, month: u32, day: u32) -> Result<NaiveDate, Error> {
         let flags = YearFlags::from_year(year);
@@ -1198,10 +1197,11 @@ impl NaiveDate {
     /// # Examples
     ///
     /// ```
-    /// use chrono::{Error, NaiveDate};
+    /// use chrono::{Error, Month, NaiveDate};
     ///
     /// let date = NaiveDate::from_ymd(2015, 9, 30)?;
     /// assert_eq!(date.with_month(7), NaiveDate::from_ymd(2015, 7, 30));
+    /// assert_eq!(date.with_month(Month::July as u32), NaiveDate::from_ymd(2015, 7, 30));
     /// assert_eq!(date.with_month(13), Err(Error::InvalidArgument)); // No month 13
     /// assert_eq!(date.with_month(2), Err(Error::DoesNotExist)); // No February 30
     /// # Ok::<(), Error>(())
