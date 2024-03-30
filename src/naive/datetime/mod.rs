@@ -756,10 +756,14 @@ impl NaiveDateTime {
     /// # Example
     ///
     /// ```
-    /// use chrono::{Error, NaiveDate, NaiveDateTime};
+    /// use chrono::{Error, Month, NaiveDate, NaiveDateTime};
     ///
     /// let dt: NaiveDateTime = NaiveDate::from_ymd(2015, 9, 30)?.at_hms(12, 34, 56)?;
     /// assert_eq!(dt.with_month(10), NaiveDate::from_ymd(2015, 10, 30)?.at_hms(12, 34, 56));
+    /// assert_eq!(
+    ///     dt.with_month(Month::October as u32),
+    ///     NaiveDate::from_ymd(2015, 10, 30)?.at_hms(12, 34, 56)
+    /// );
     /// assert_eq!(dt.with_month(13), Err(Error::InvalidArgument));
     /// assert_eq!(dt.with_month(2), Err(Error::DoesNotExist)); // No February 30
     /// # Ok::<(), Error>(())
