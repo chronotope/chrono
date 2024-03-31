@@ -30,7 +30,7 @@ use crate::offset::{FixedOffset, MappedLocalTime, Offset, TimeZone, Utc};
 use crate::OutOfRange;
 use crate::{try_err, try_ok_or, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// documented at re-export site
@@ -47,7 +47,7 @@ mod tests;
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
 #[derive(Copy, Clone)]
 #[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd))
 )]
