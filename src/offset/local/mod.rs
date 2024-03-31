@@ -6,7 +6,7 @@
 #[cfg(windows)]
 use std::cmp::Ordering;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
@@ -107,7 +107,7 @@ mod tz_info;
 /// ```
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq)),
     archive_attr(derive(Clone, Copy, Debug))

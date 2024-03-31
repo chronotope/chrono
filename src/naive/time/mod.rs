@@ -9,7 +9,7 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, str};
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "alloc")]
@@ -205,7 +205,7 @@ mod tests;
 /// **there is absolutely no guarantee that the leap second read has actually happened**.
 #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
 #[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))

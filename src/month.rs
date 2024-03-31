@@ -1,6 +1,6 @@
 use core::fmt;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use crate::OutOfRange;
@@ -32,7 +32,7 @@ use crate::OutOfRange;
 /// Can be Serialized/Deserialized with serde.
 #[derive(PartialEq, Eq, Copy, Clone, Debug, Hash, PartialOrd, Ord)]
 #[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))

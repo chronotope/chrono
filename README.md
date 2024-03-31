@@ -60,7 +60,6 @@ Default features:
 Optional features:
 
 * `serde`: Enable serialization/deserialization via [serde].
-* `rkyv`: Deprecated, use the `rkyv-*` features.
 * `rkyv-16`: Enable serialization/deserialization via [rkyv], using 16-bit integers for integral `*size` types.
 * `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
 * `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
@@ -70,7 +69,7 @@ Optional features:
   The implementation and API may change or even be removed in a patch release. Feedback welcome.
 * `oldtime`: This feature no longer has any effect; it used to offer compatibility with the `time` 0.1 crate.
 
-Note: The `rkyv{,-16,-32,-64}` features are mutually exclusive.
+Note: The `rkyv-{16,32,64}` features are mutually exclusive.
 
 [serde]: https://github.com/serde-rs/serde
 [rkyv]: https://github.com/rkyv/rkyv

@@ -14,7 +14,7 @@ use core::fmt;
 ))]
 use std::time::SystemTime;
 
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+#[cfg(any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, MappedLocalTime, Offset, TimeZone};
@@ -43,7 +43,7 @@ use crate::OutOfRange;
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(
-    any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
+    any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, Debug, Hash))
