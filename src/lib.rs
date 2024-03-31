@@ -25,12 +25,12 @@
 //!
 //! Default features:
 //!
+//! - `std`: Implements `TryFrom<SystemTime>` and `std::error::Error` for error types,
+//!    implies `alloc`.
 //! - `alloc`: Enable features that depend on allocation (primarily string formatting).
-//! - `std`: Enables functionality that depends on the standard library. This is a superset of
-//!   `alloc` and adds interoperation with standard library types and traits.
-//! - `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
-//! - `now`: Enables reading the system time (`now`).
-//! - `wasmbind`: Interface with the JS Date API for the `wasm32` target.
+//! - `clock`: Enables reading the local timezone (`Local`), implies `now`.
+//! - `now`: Enables reading the system time (`now()`), on most platforms using the standard
+//!   library.
 //!
 //! Optional features:
 //!
@@ -42,7 +42,8 @@
 //! - `rkyv-64`: Enable serialization/deserialization via [rkyv],
 //!    using 64-bit integers for integral `*size` types.
 //! - `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
-//! - `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
+//! - `arbitrary`: Construct arbitrary instances of a type with the [arbitrary] crate.
+//! - `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 //! - `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
 //!   The implementation and API may change or even be removed in a patch release. Feedback welcome.
 //!
@@ -52,6 +53,7 @@
 //!
 //! [serde]: https://github.com/serde-rs/serde
 //! [rkyv]: https://github.com/rkyv/rkyv
+//! [arbitrary]: https://github.com/rust-fuzz/arbitrary/
 //! [cargo docs]: https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html#choosing-features
 //!
 //! ## Overview
