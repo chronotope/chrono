@@ -50,12 +50,10 @@ See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference.
 
 Default features:
 
+* `std`: Implements `TryFrom<SystemTime>` and `std::error::Error` for error types, implies `alloc`.
 * `alloc`: Enable features that depend on allocation (primarily string formatting).
-* `std`: Enables functionality that depends on the standard library. This is a superset of `alloc`
-  and adds interoperation with standard library types and traits.
-* `clock`: Enables reading the local timezone (`Local`). This is a superset of `now`.
-* `now`: Enables reading the system time (`now`).
-* `wasmbind`: Interface with the JS Date API for the `wasm32` target.
+* `clock`: Enables reading the local timezone (`Local`), implies `now`.
+* `now`: Enables reading the system time (`now()`), on most platforms using the standard library.
 
 Optional features:
 
@@ -64,15 +62,16 @@ Optional features:
 * `rkyv-32`: Enable serialization/deserialization via [rkyv], using 32-bit integers for integral `*size` types.
 * `rkyv-64`: Enable serialization/deserialization via [rkyv], using 64-bit integers for integral `*size` types.
 * `rkyv-validation`: Enable rkyv validation support using `bytecheck`.
-* `arbitrary`: Construct arbitrary instances of a type with the Arbitrary crate.
+* `arbitrary`: Construct arbitrary instances of a type with the [arbitrary] crate.
+* `wasmbind`: Interface with the JS Date API for the `wasm32` target.
 * `unstable-locales`: Enable localization. This adds various methods with a `_localized` suffix.
   The implementation and API may change or even be removed in a patch release. Feedback welcome.
-* `oldtime`: This feature no longer has any effect; it used to offer compatibility with the `time` 0.1 crate.
 
 Note: The `rkyv-{16,32,64}` features are mutually exclusive.
 
 [serde]: https://github.com/serde-rs/serde
 [rkyv]: https://github.com/rkyv/rkyv
+[arbitrary]: https://github.com/rust-fuzz/arbitrary/
 
 ## Rust version requirements
 
