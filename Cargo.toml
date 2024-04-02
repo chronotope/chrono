@@ -21,16 +21,21 @@ name = "chrono"
 default = ["clock", "std"]
 alloc = []
 std = ["alloc"]
-clock = ["windows-targets", "iana-time-zone", "android-tzdata", "now"]
+clock = [
+  "dep:windows-targets",
+  "dep:iana-time-zone",
+  "dep:android-tzdata",
+  "now",
+]
 now = ["std"]
-wasmbind = ["wasm-bindgen", "js-sys"]
-unstable-locales = ["pure-rust-locales"]
+wasmbind = ["dep:wasm-bindgen", "dep:js-sys"]
+unstable-locales = ["dep:pure-rust-locales"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
 rkyv = ["dep:rkyv", "rkyv/size_32"]
 rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
 rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
 rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
-rkyv-validation = ["rkyv?/validation"]
+rkyv-validation = ["dep:rkyv", "rkyv?/validation"]
 # Features for internal use only:
 __internal_bench = []
 
