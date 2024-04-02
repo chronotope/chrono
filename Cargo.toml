@@ -16,26 +16,37 @@ rust-version = "1.61.0"
 [lib]
 name = "chrono"
 
-[features]
-# Don't forget to adjust `ALL_NON_EXCLUSIVE_FEATURES` in CI scripts when adding a feature or an optional dependency.
+[features] # Don't forget to adjust `ALL_NON_EXCLUSIVE_FEATURES` in CI scripts when adding a feature or an optional dependency.
 default = ["clock", "std"]
+# Enable features that depend on allocation (primarily string formatting).
 alloc = []
+# Implements `TryFrom<SystemTime>` and `std::error::Error` for error types, implies of `alloc`.
 std = ["alloc"]
+# Enables reading the local timezone (`Local`), implies `now`.
 clock = [
   "dep:windows-targets",
   "dep:iana-time-zone",
   "dep:android-tzdata",
   "now",
 ]
+# Enables reading the system time (`now()`), on most platforms using the standard library.
 now = []
+# Enable features that depend on allocation (primarily string formatting).
 serde = ["dep:serde"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
+# Enable serialization/deserialization via rkyv, using 16-bit integers for integral `*size` types.
 rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
+# Enable serialization/deserialization via rkyv, using 32-bit integers for integral `*size` types.
 rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
+# Enable serialization/deserialization via rkyv, using 64-bit integers for integral `*size` types.
 rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
+# Enable rkyv validation support using `bytecheck`.
 rkyv-validation = ["dep:rkyv", "rkyv?/validation"]
+# Construct arbitrary instances of a type with the arbitrary crate.
 arbitrary = ["dep:arbitrary"]
+# Interface with the JS Date API for the `wasm32` target.
 wasmbind = ["dep:wasm-bindgen", "dep:js-sys"]
+# Enable localization. This adds various methods with a `_localized` suffix.
 unstable-locales = ["dep:pure-rust-locales"]
 
 [dependencies]
