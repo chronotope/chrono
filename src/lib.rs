@@ -470,7 +470,21 @@
 #![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
 #![deny(clippy::tests_outside_test_module)]
-#![cfg_attr(not(any(feature = "std", test)), no_std)]
+#![cfg_attr(
+    not(any(
+        feature = "std",
+        all(
+            feature = "now",
+            not(all(
+                target_arch = "wasm32",
+                feature = "wasmbind",
+                not(any(target_os = "emscripten", target_os = "wasi"))
+            ))
+        ),
+        test
+    )),
+    no_std
+)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[cfg(feature = "alloc")]

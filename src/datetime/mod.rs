@@ -26,7 +26,7 @@ use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, MappedLocalTime, Offset, TimeZone, Utc};
-#[cfg(feature = "clock")]
+#[cfg(all(feature = "std", feature = "clock"))]
 use crate::OutOfRange;
 use crate::{try_err, try_ok_or, Datelike, Error, Months, TimeDelta, Timelike, Weekday};
 
@@ -870,6 +870,50 @@ impl DateTime<Utc> {
         }
     }
 
+    #[cfg(any(
+        feature = "std",
+        all(
+            feature = "now",
+            not(all(
+                target_arch = "wasm32",
+                feature = "wasmbind",
+                not(any(target_os = "emscripten", target_os = "wasi"))
+            ))
+        )
+    ))]
+    pub(crate) fn try_from_system_time(t: std::time::SystemTime) -> Result<DateTime<Utc>, Error> {
+        let (sec, nsec) = match t.duration_since(std::time::UNIX_EPOCH) {
+            Ok(dur) => {
+                // `t` is at or after the Unix epoch.
+                let sec = i64::try_from(dur.as_secs()).map_err(|_| Error::OutOfRange)?;
+                let nsec = dur.subsec_nanos();
+                (sec, nsec)
+            }
+            Err(e) => {
+                // `t` is before the Unix epoch. `e.duration()` is how long before the epoch it
+                // is.
+                let dur = e.duration();
+                let sec = i64::try_from(dur.as_secs()).map_err(|_| Error::OutOfRange)?;
+                let nsec = dur.subsec_nanos();
+                if nsec == 0 {
+                    // Overflow safety: `sec` was returned by `dur.as_secs()`, and is guaranteed to
+                    // be non-negative. Negating a non-negative signed integer cannot overflow.
+                    (-sec, 0)
+                } else {
+                    // Overflow safety: In addition to the above, `-x - 1`, where `x` is a
+                    // non-negative signed integer, also cannot overflow.
+                    let sec = -sec - 1;
+                    // Overflow safety: `nsec` was returned by `dur.subsec_nanos()`, and is
+                    // guaranteed to be between 0 and 999_999_999 inclusive. Subtracting it from
+                    // 1_000_000_000 is therefore guaranteed not to overflow.
+                    let nsec = 1_000_000_000 - nsec;
+                    (sec, nsec)
+                }
+            }
+        };
+        DateTime::from_timestamp(sec, nsec)
+    }
+
     /// The Unix Epoch, 1970-01-01 00:00:00 UTC.
     pub const UNIX_EPOCH: Self = Self { datetime: NaiveDateTime::UNIX_EPOCH, offset: Utc };
 }
@@ -1672,40 +1716,11 @@ impl TryFrom<SystemTime> for DateTime<Utc> {
     type Error = Error;
 
     fn try_from(t: SystemTime) -> Result<DateTime<Utc>, Error> {
-        let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
-            Ok(dur) => {
-                // `t` is at or after the Unix epoch.
-                let sec = i64::try_from(dur.as_secs()).map_err(|_| Error::OutOfRange)?;
-                let nsec = dur.subsec_nanos();
-                (sec, nsec)
-            }
-            Err(e) => {
-                // `t` is before the Unix epoch. `e.duration()` is how long before the epoch it
-                // is.
-                let dur = e.duration();
-                let sec = i64::try_from(dur.as_secs()).map_err(|_| Error::OutOfRange)?;
-                let nsec = dur.subsec_nanos();
-                if nsec == 0 {
-                    // Overflow safety: `sec` was returned by `dur.as_secs()`, and is guaranteed to
-                    // be non-negative. Negating a non-negative signed integer cannot overflow.
-                    (-sec, 0)
-                } else {
-                    // Overflow safety: In addition to the above, `-x - 1`, where `x` is a
-                    // non-negative signed integer, also cannot overflow.
-                    let sec = -sec - 1;
-                    // Overflow safety: `nsec` was returned by `dur.subsec_nanos()`, and is
-                    // guaranteed to be between 0 and 999_999_999 inclusive. Subtracting it from
-                    // 1_000_000_000 is therefore guaranteed not to overflow.
-                    let nsec = 1_000_000_000 - nsec;
-                    (sec, nsec)
-                }
-            }
-        };
-        DateTime::from_timestamp(sec, nsec)
+        DateTime::try_from_system_time(t)
     }
 }
 
-#[cfg(feature = "clock")]
+#[cfg(all(feature = "std", feature = "clock"))]
 impl TryFrom<SystemTime> for DateTime<Local> {
     type Error = OutOfRange;
 

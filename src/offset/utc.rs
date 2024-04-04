@@ -89,7 +89,7 @@ impl Utc {
     )))]
     #[must_use]
     pub fn now() -> DateTime<Utc> {
-        SystemTime::now().try_into().expect(
+        DateTime::try_from_system_time(SystemTime::now()).expect(
             "system clock is set to a time extremely far into the past or future; cannot convert",
         )
     }

@@ -27,7 +27,7 @@ clock = [
   "dep:android-tzdata",
   "now",
 ]
-now = ["std"]
+now = []
 wasmbind = ["dep:wasm-bindgen", "dep:js-sys"]
 unstable-locales = ["dep:pure-rust-locales"]
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
