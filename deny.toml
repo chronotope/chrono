@@ -3,9 +3,6 @@ allow-osi-fsf-free = "either"
 copyleft = "deny"
 
 [advisories]
-ignore = [
-  "RUSTSEC-2021-0145", # atty (dev-deps only, dependency of criterion)
-]
 unmaintained = "deny"
 unsound = "deny"
 yanked = "deny"

@@ -142,7 +142,16 @@ impl<T> MappedLocalTime<T> {
 }
 
 impl<T: fmt::Debug> MappedLocalTime<T> {
-    /// Returns the single unique conversion result, or panics accordingly.
+    /// Returns a single unique conversion result or panics.
+    ///
+    /// `unwrap()` is best combined with time zone types where the mapping can never fail like
+    /// [`Utc`] and [`FixedOffset`]. Note that for [`FixedOffset`] there is a rare case where a
+    /// resulting [`DateTime`] can be out of range.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the local time falls within a _fold_ or a _gap_ in the local time, and on any
+    /// error that may have been returned by the type implementing [`TimeZone`].
     #[must_use]
     #[track_caller]
     pub fn unwrap(self) -> T {

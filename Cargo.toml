@@ -9,7 +9,7 @@ keywords = ["date", "time", "calendar"]
 categories = ["date-and-time"]
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-exclude = ["/ci/*"]
+include = ["src/*", "tests/*.rs", "LICENSE.txt", "CITATION.cff"]
 edition = "2021"
 rust-version = "1.61.0"
 

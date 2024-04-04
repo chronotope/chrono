@@ -2068,64 +2068,6 @@ const YEAR_DELTAS: &[u8; 401] = &[
     96, 97, 97, 97, 97, // 400+1
 ];
 
-#[cfg(all(test, feature = "serde"))]
-fn test_encodable_json<F, E>(to_string: F)
-where
-    F: Fn(&NaiveDate) -> Result<String, E>,
-    E: ::std::fmt::Debug,
-{
-    assert_eq!(
-        to_string(&NaiveDate::from_ymd(2014, 7, 24).unwrap()).ok(),
-        Some(r#""2014-07-24""#.into())
-    );
-    assert_eq!(
-        to_string(&NaiveDate::from_ymd(0, 1, 1).unwrap()).ok(),
-        Some(r#""0000-01-01""#.into())
-    );
-    assert_eq!(
-        to_string(&NaiveDate::from_ymd(-1, 12, 31).unwrap()).ok(),
-        Some(r#""-0001-12-31""#.into())
-    );
-    assert_eq!(to_string(&NaiveDate::MIN).ok(), Some(r#""-262143-01-01""#.into()));
-    assert_eq!(to_string(&NaiveDate::MAX).ok(), Some(r#""+262142-12-31""#.into()));
-}
-
-#[cfg(all(test, feature = "serde"))]
-fn test_decodable_json<F, E>(from_str: F)
-where
-    F: Fn(&str) -> Result<NaiveDate, E>,
-    E: ::std::fmt::Debug,
-{
-    use std::{i32, i64};
-
-    assert_eq!(from_str(r#""2016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8).unwrap()));
-    assert_eq!(from_str(r#""2016-7-8""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8).unwrap()));
-    assert_eq!(from_str(r#""+002016-07-08""#).ok(), Some(NaiveDate::from_ymd(2016, 7, 8).unwrap()));
-    assert_eq!(from_str(r#""0000-01-01""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1).unwrap()));
-    assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1).unwrap()));
-    assert_eq!(from_str(r#""-0001-12-31""#).ok(), Some(NaiveDate::from_ymd(-1, 12, 31).unwrap()));
-    assert_eq!(from_str(r#""-262143-01-01""#).ok(), Some(NaiveDate::MIN));
-    assert_eq!(from_str(r#""+262142-12-31""#).ok(), Some(NaiveDate::MAX));
-
-    // bad formats
-    assert!(from_str(r#""""#).is_err());
-    assert!(from_str(r#""20001231""#).is_err());
-    assert!(from_str(r#""2000-00-00""#).is_err());
-    assert!(from_str(r#""2000-02-30""#).is_err());
-    assert!(from_str(r#""2001-02-29""#).is_err());
-    assert!(from_str(r#""2002-002-28""#).is_err());
-    assert!(from_str(r#""yyyy-mm-dd""#).is_err());
-    assert!(from_str(r#"0"#).is_err());
-    assert!(from_str(r#"20.01"#).is_err());
-    assert!(from_str(&i32::MIN.to_string()).is_err());
-    assert!(from_str(&i32::MAX.to_string()).is_err());
-    assert!(from_str(&i64::MIN.to_string()).is_err());
-    assert!(from_str(&i64::MAX.to_string()).is_err());
-    assert!(from_str(r#"{}"#).is_err());
-    assert!(from_str(r#"{"ymdf":20}"#).is_err());
-    assert!(from_str(r#"null"#).is_err());
-}
-
 #[cfg(feature = "serde")]
 mod serde {
     use super::NaiveDate;
@@ -2181,17 +2123,76 @@ mod serde {
 
     #[cfg(test)]
     mod tests {
-        use crate::naive::date::{test_decodable_json, test_encodable_json};
         use crate::NaiveDate;
 
         #[test]
         fn test_serde_serialize() {
-            test_encodable_json(serde_json::to_string);
+            assert_eq!(
+                serde_json::to_string(&NaiveDate::from_ymd(2014, 7, 24).unwrap()).ok(),
+                Some(r#""2014-07-24""#.into())
+            );
+            assert_eq!(
+                serde_json::to_string(&NaiveDate::from_ymd(0, 1, 1).unwrap()).ok(),
+                Some(r#""0000-01-01""#.into())
+            );
+            assert_eq!(
+                serde_json::to_string(&NaiveDate::from_ymd(-1, 12, 31).unwrap()).ok(),
+                Some(r#""-0001-12-31""#.into())
+            );
+            assert_eq!(
+                serde_json::to_string(&NaiveDate::MIN).ok(),
+                Some(r#""-262143-01-01""#.into())
+            );
+            assert_eq!(
+                serde_json::to_string(&NaiveDate::MAX).ok(),
+                Some(r#""+262142-12-31""#.into())
+            );
         }
 
         #[test]
         fn test_serde_deserialize() {
-            test_decodable_json(|input| serde_json::from_str(input));
+            let from_str = serde_json::from_str::<NaiveDate>;
+
+            assert_eq!(
+                from_str(r#""2016-07-08""#).ok(),
+                Some(NaiveDate::from_ymd(2016, 7, 8).unwrap())
+            );
+            assert_eq!(
+                from_str(r#""2016-7-8""#).ok(),
+                Some(NaiveDate::from_ymd(2016, 7, 8).unwrap())
+            );
+            assert_eq!(from_str(r#""+002016-07-08""#).ok(), NaiveDate::from_ymd(2016, 7, 8).ok());
+            assert_eq!(
+                from_str(r#""0000-01-01""#).ok(),
+                Some(NaiveDate::from_ymd(0, 1, 1).unwrap())
+            );
+            assert_eq!(from_str(r#""0-1-1""#).ok(), Some(NaiveDate::from_ymd(0, 1, 1).unwrap()));
+            assert_eq!(
+                from_str(r#""-0001-12-31""#).ok(),
+                Some(NaiveDate::from_ymd(-1, 12, 31).unwrap())
+            );
+            assert_eq!(from_str(r#""-262143-01-01""#).ok(), Some(NaiveDate::MIN));
+            assert_eq!(from_str(r#""+262142-12-31""#).ok(), Some(NaiveDate::MAX));
+
+            // bad formats
+            assert!(from_str(r#""""#).is_err());
+            assert!(from_str(r#""20001231""#).is_err());
+            assert!(from_str(r#""2000-00-00""#).is_err());
+            assert!(from_str(r#""2000-02-30""#).is_err());
+            assert!(from_str(r#""2001-02-29""#).is_err());
+            assert!(from_str(r#""2002-002-28""#).is_err());
+            assert!(from_str(r#""yyyy-mm-dd""#).is_err());
+            assert!(from_str(r#"0"#).is_err());
+            assert!(from_str(r#"20.01"#).is_err());
+            let min = i32::MIN.to_string();
+            assert!(from_str(&min).is_err());
+            let max = i32::MAX.to_string();
+            assert!(from_str(&max).is_err());
+            let min = i64::MIN.to_string();
+            assert!(from_str(&min).is_err());
+            let max = i64::MAX.to_string();
+            assert!(from_str(&max).is_err());
+            assert!(from_str(r#"{}"#).is_err());
         }
 
         #[test]

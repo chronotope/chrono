@@ -78,7 +78,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: |
           cargo hack check --feature-powerset --optional-deps arbitrary,serde \
-            --skip __internal_bench,iana-time-zone,pure-rust-locales,libc,winapi,rkyv-16,rkyv-64,rkyv-validation \
+            --skip __internal_bench,iana-time-zone,oldtime,pure-rust-locales,libc,winapi,rkyv-validation,wasmbind \
+            --mutually-exclusive-features arbitrary,rkyv,rkyv-16,rkyv-32,rkyv-64,serde \
             --all-targets
         # run using `bash` on all platforms for consistent
         # line-continuation marks
@@ -159,8 +160,7 @@ jobs:
       - uses: mwilliamson/setup-wasmtime-action@v2
         with:
           wasmtime-version: "12.0.1"
-      # We can't use `--all-features` because `rustc-serialize` doesn't support
-      # `wasm32-wasi`.
+      # We can't use `--all-features` because rkyv uses the mutually-exclusive-feature pattern
       - run: cargo wasi test --features=serde,unstable-locales --color=always -- --color=always
 
   cross-targets:
