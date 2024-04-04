@@ -1244,7 +1244,7 @@ fn test_to_string_round_trip_with_local() {
 }
 
 #[test]
-#[cfg(feature = "clock")]
+#[cfg(all(feature = "alloc", feature = "clock"))]
 fn test_datetime_format_with_local() {
     // if we are not around the year boundary, local and UTC date should have the same year
     let dt = Local::now().with_month(5).unwrap();
