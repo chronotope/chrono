@@ -51,7 +51,11 @@ pub struct DelayedFormat<I> {
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time.
     #[must_use]
-    pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
+    pub(crate) fn new(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        items: I,
+    ) -> DelayedFormat<I> {
         DelayedFormat {
             date,
             time,
@@ -64,7 +68,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 
     /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
     #[must_use]
-    pub fn new_with_offset<Off>(
+    pub(crate) fn new_with_offset<Off>(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         offset: &Off,
@@ -87,7 +91,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
     #[cfg(feature = "unstable-locales")]
     #[must_use]
-    pub fn new_with_locale(
+    pub(crate) fn new_with_locale(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         items: I,
@@ -99,7 +103,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
     #[cfg(feature = "unstable-locales")]
     #[must_use]
-    pub fn new_with_offset_and_locale<Off>(
+    pub(crate) fn new_with_offset_and_locale<Off>(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         offset: &Off,
