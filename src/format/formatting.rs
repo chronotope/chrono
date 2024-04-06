@@ -103,7 +103,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                 Item::Literal(s) | Item::Space(s) => w.write_str(s),
                 #[cfg(feature = "alloc")]
                 Item::OwnedLiteral(ref s) | Item::OwnedSpace(ref s) => w.write_str(s),
-                Item::Numeric(ref spec, ref pad) => self.format_numeric(w, spec, pad),
+                Item::Numeric(ref spec, pad) => self.format_numeric(w, spec, pad),
                 Item::Fixed(ref spec) => self.format_fixed(w, spec),
                 Item::Error => Err(fmt::Error),
             }?;
@@ -112,7 +112,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     #[cfg(feature = "alloc")]
-    fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: &Pad) -> fmt::Result {
+    fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
         use self::Numeric::*;
 
         let (width, v) = match (spec, self.date, self.time) {
