@@ -139,7 +139,6 @@ fn test_datetime_from_timestamp_millis() {
     for (timestamp_millis, _formatted) in valid_map.iter().copied() {
         let datetime = DateTime::from_timestamp_millis(timestamp_millis).unwrap();
         assert_eq!(timestamp_millis, datetime.timestamp_millis());
-        #[cfg(feature = "alloc")]
         assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -174,7 +173,6 @@ fn test_datetime_from_timestamp_micros() {
     for (timestamp_micros, _formatted) in valid_map.iter().copied() {
         let datetime = DateTime::from_timestamp_micros(timestamp_micros).unwrap();
         assert_eq!(timestamp_micros, datetime.timestamp_micros());
-        #[cfg(feature = "alloc")]
         assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -214,7 +212,6 @@ fn test_datetime_from_timestamp_nanos() {
     for (timestamp_nanos, _formatted) in valid_map.iter().copied() {
         let datetime = DateTime::from_timestamp_nanos(timestamp_nanos);
         assert_eq!(timestamp_nanos, datetime.timestamp_nanos_opt().unwrap());
-        #[cfg(feature = "alloc")]
         assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -1539,7 +1536,6 @@ fn test_min_max_getters() {
     // assert_eq!(beyond_min.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
-    #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_min.format("%Y-%m-%dT%H:%M:%S%:z").to_string(),
         "-262144-12-31T22:00:00-02:00"
@@ -1564,7 +1560,6 @@ fn test_min_max_getters() {
     // assert_eq!(beyond_max.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
-    #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_max.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string(),
         "+262143-01-01T01:59:59.999999999+02:00"
@@ -1817,7 +1812,7 @@ fn test_test_deprecated_from_offset() {
 }
 
 #[test]
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+#[cfg(feature = "unstable-locales")]
 fn locale_decimal_point() {
     use crate::Locale::{ar_SY, nl_NL};
     let dt =

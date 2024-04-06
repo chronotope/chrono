@@ -175,13 +175,11 @@ mod tests {
         assert_eq!(minweek.year(), date::MIN_YEAR);
         assert_eq!(minweek.week(), 1);
         assert_eq!(minweek.week0(), 0);
-        #[cfg(feature = "alloc")]
         assert_eq!(format!("{:?}", minweek), NaiveDate::MIN.format("%G-W%V").to_string());
 
         assert_eq!(maxweek.year(), date::MAX_YEAR + 1);
         assert_eq!(maxweek.week(), 1);
         assert_eq!(maxweek.week0(), 0);
-        #[cfg(feature = "alloc")]
         assert_eq!(format!("{:?}", maxweek), NaiveDate::MAX.format("%G-W%V").to_string());
     }
 

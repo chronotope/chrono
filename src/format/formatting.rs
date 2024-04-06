@@ -5,31 +5,21 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::string::String;
-#[cfg(feature = "alloc")]
 use core::borrow::Borrow;
-#[cfg(feature = "alloc")]
-use core::fmt::Display;
-use core::fmt::{self, Write};
+use core::fmt::{self, Display, Write};
 
-#[cfg(feature = "alloc")]
 use crate::offset::Offset;
-#[cfg(any(feature = "alloc", feature = "serde"))]
-use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
-#[cfg(feature = "alloc")]
-use crate::{NaiveDate, NaiveTime, Utc, Weekday};
+use crate::{Datelike, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Timelike, Utc, Weekday};
 
-#[cfg(feature = "alloc")]
 use super::locales;
-#[cfg(any(feature = "alloc", feature = "serde"))]
-use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
-#[cfg(feature = "alloc")]
-use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric};
-#[cfg(feature = "alloc")]
+use super::{
+    Colons, Fixed, InternalFixed, InternalInternal, Item, Numeric, OffsetFormat, OffsetPrecision,
+    Pad,
+};
 use locales::*;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
 /// This is normally constructed via `format` methods of each date and time type.
-#[cfg(feature = "alloc")]
 #[derive(Debug)]
 pub struct DelayedFormat<I, Off = Utc> {
     /// The date view, if any.
@@ -45,7 +35,6 @@ pub struct DelayedFormat<I, Off = Utc> {
     locale: Locale,
 }
 
-#[cfg(feature = "alloc")]
 impl<'a, I, B> DelayedFormat<I>
 where
     I: Iterator<Item = B> + Clone,
@@ -70,7 +59,6 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
 impl<'a, I, B, Off> DelayedFormat<I, Off>
 where
     I: Iterator<Item = B> + Clone,
@@ -162,7 +150,6 @@ where
         self.format(f)
     }
 
-    #[cfg(feature = "alloc")]
     fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
         use self::Numeric::*;
 
@@ -251,7 +238,6 @@ where
         }
     }
 
-    #[cfg(feature = "alloc")]
     fn format_fixed(&self, w: &mut impl Write, spec: &Fixed) -> fmt::Result {
         use Fixed::*;
         use InternalInternal::*;
@@ -368,7 +354,6 @@ where
     }
 }
 
-#[cfg(feature = "alloc")]
 impl<'a, I, B, Off> Display for DelayedFormat<I, Off>
 where
     I: Iterator<Item = B> + Clone,
@@ -451,7 +436,6 @@ impl Display for OffsetWrapper {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "serde"))]
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
     fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
@@ -561,7 +545,6 @@ pub enum SecondsFormat {
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
 #[inline]
-#[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) fn write_rfc3339(
     w: &mut impl Write,
     dt: NaiveDateTime,
@@ -624,7 +607,6 @@ pub(crate) fn write_rfc3339(
     .format(w, off)
 }
 
-#[cfg(feature = "alloc")]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
     w: &mut impl Write,
@@ -739,15 +721,12 @@ impl<'a, 'b> Write for TruncatingWriter<'a, 'b> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "alloc")]
 mod tests {
     use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
     use crate::FixedOffset;
-    #[cfg(feature = "alloc")]
     use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_date_format() {
         let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
         assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
@@ -792,7 +771,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_time_format() {
         let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
         assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
@@ -828,7 +806,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_datetime_format() {
         let dt =
             NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
@@ -846,7 +823,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_datetime_format_alignment() {
         let datetime = Utc
             .with_ymd_and_hms(2007, 1, 2, 12, 34, 56)

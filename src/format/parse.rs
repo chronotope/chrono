@@ -1687,7 +1687,6 @@ mod tests {
         let dt = Utc.with_ymd_and_hms(1994, 11, 6, 8, 49, 37).unwrap();
 
         // Check that the format is what we expect
-        #[cfg(feature = "alloc")]
         assert_eq!(dt.format(RFC850_FMT).to_string(), "Sunday, 06-Nov-94 08:49:37 GMT");
 
         // Check that it parses correctly

@@ -14,14 +14,14 @@ use core::{fmt, hash, str};
 #[cfg(feature = "std")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+#[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
 use crate::format::{
-    parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
-    StrftimeItems, TOO_LONG,
+    parse, parse_and_remainder, parse_rfc3339, DelayedFormat, Fixed, Item, ParseError, ParseResult,
+    Parsed, StrftimeItems, TOO_LONG,
 };
 #[cfg(feature = "alloc")]
-use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat, SecondsFormat};
+use crate::format::{write_rfc2822, write_rfc3339, SecondsFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
@@ -1098,7 +1098,6 @@ where
     Tz::Offset: fmt::Display,
 {
     /// Formats the combined date and time with the specified formatting items.
-    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I, Tz::Offset>
@@ -1122,7 +1121,6 @@ where
     /// let formatted = format!("{}", date_time.format("%d/%m/%Y %H:%M"));
     /// assert_eq!(formatted, "02/04/2017 12:50");
     /// ```
-    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>, Tz::Offset> {
@@ -1130,7 +1128,7 @@ where
     }
 
     /// Formats the combined date and time with the specified formatting items and locale.
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -1157,7 +1155,7 @@ where
     ///
     /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(

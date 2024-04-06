@@ -13,7 +13,6 @@
 //! `W`: weekday before the first day of the year
 //! `LWWW`: will also be referred to as the year flags (`F`)
 
-#[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 use core::iter::FusedIterator;
 use core::num::NonZeroI32;
@@ -24,14 +23,12 @@ use core::{fmt, str};
 use rkyv::{Archive, Deserialize, Serialize};
 
 /// L10n locales.
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+#[cfg(feature = "unstable-locales")]
 use pure_rust_locales::Locale;
 
-#[cfg(feature = "alloc")]
-use crate::format::DelayedFormat;
 use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    parse, parse_and_remainder, write_hundreds, DelayedFormat, Item, Numeric, Pad, ParseError,
+    ParseResult, Parsed, StrftimeItems,
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
@@ -1179,7 +1176,6 @@ impl NaiveDate {
     /// # let d = NaiveDate::from_ymd_opt(2015, 9, 5).unwrap();
     /// assert_eq!(format!("{}", d.format_with_items(fmt)), "2015-09-05");
     /// ```
-    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
@@ -1222,7 +1218,6 @@ impl NaiveDate {
     /// assert_eq!(format!("{}", d.format("%Y-%m-%d")), "2015-09-05");
     /// assert_eq!(format!("{}", d.format("%A, %-d %B, %C%y")), "Saturday, 5 September, 2015");
     /// ```
-    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
     pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
@@ -1230,7 +1225,7 @@ impl NaiveDate {
     }
 
     /// Formats the date with the specified formatting items and locale.
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
@@ -1249,7 +1244,7 @@ impl NaiveDate {
     ///
     /// See the [`crate::format::strftime`] module on the supported escape
     /// sequences.
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(
