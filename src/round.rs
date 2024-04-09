@@ -102,7 +102,7 @@ const fn span_for_digits(digits: u16) -> u32 {
 /// Both rounding and truncating are done via [`TimeDelta::num_nanoseconds`] and
 /// [`DateTime::timestamp_nanos_opt`]. This means that they will fail if either the
 /// `TimeDelta` or the `DateTime` are too big to represented as nanoseconds. They
-/// will also fail if the `TimeDelta` is bigger than the timestamp.
+/// will also fail if the `TimeDelta` is bigger than the timestamp, negative or zero.
 pub trait DurationRound: Sized {
     /// Error that can occur in rounding or truncating
     #[cfg(feature = "std")]
@@ -188,14 +188,11 @@ where
     T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
 {
     if let Some(span) = duration.num_nanoseconds() {
-        if span < 0 {
+        if span <= 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp =
             naive.and_utc().timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
-        if span == 0 {
-            return Ok(original);
-        }
         let delta_down = stamp % span;
         if delta_down == 0 {
             Ok(original)
@@ -225,7 +222,7 @@ where
     T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
 {
     if let Some(span) = duration.num_nanoseconds() {
-        if span < 0 {
+        if span <= 0 {
             return Err(RoundingError::DurationExceedsLimit);
         }
         let stamp =
@@ -453,9 +450,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            dt.duration_round(TimeDelta::zero()).unwrap().to_string(),
-            "2016-12-31 23:59:59.175500 UTC"
+            dt.duration_round(TimeDelta::new(-1, 0).unwrap()),
+            Err(RoundingError::DurationExceedsLimit)
         );
+        assert_eq!(dt.duration_round(TimeDelta::zero()), Err(RoundingError::DurationExceedsLimit));
 
         assert_eq!(
             dt.duration_round(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
@@ -544,9 +542,10 @@ mod tests {
             .naive_utc();
 
         assert_eq!(
-            dt.duration_round(TimeDelta::zero()).unwrap().to_string(),
-            "2016-12-31 23:59:59.175500"
+            dt.duration_round(TimeDelta::new(-1, 0).unwrap()),
+            Err(RoundingError::DurationExceedsLimit)
         );
+        assert_eq!(dt.duration_round(TimeDelta::zero()), Err(RoundingError::DurationExceedsLimit));
 
         assert_eq!(
             dt.duration_round(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
@@ -619,6 +618,12 @@ mod tests {
                     .unwrap(),
             )
             .unwrap();
+
+        assert_eq!(
+            dt.duration_trunc(TimeDelta::new(-1, 0).unwrap()),
+            Err(RoundingError::DurationExceedsLimit)
+        );
+        assert_eq!(dt.duration_trunc(TimeDelta::zero()), Err(RoundingError::DurationExceedsLimit));
 
         assert_eq!(
             dt.duration_trunc(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
@@ -704,6 +709,12 @@ mod tests {
             )
             .unwrap()
             .naive_utc();
+
+        assert_eq!(
+            dt.duration_trunc(TimeDelta::new(-1, 0).unwrap()),
+            Err(RoundingError::DurationExceedsLimit)
+        );
+        assert_eq!(dt.duration_trunc(TimeDelta::zero()), Err(RoundingError::DurationExceedsLimit));
 
         assert_eq!(
             dt.duration_trunc(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
