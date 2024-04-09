@@ -4,23 +4,12 @@
 //! The UTC (Coordinated Universal Time) time zone.
 
 use core::fmt;
-#[cfg(all(
-    feature = "now",
-    not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    ))
-))]
-use std::time::SystemTime;
 
 #[cfg(any(feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, MappedLocalTime, Offset, TimeZone};
 use crate::naive::NaiveDateTime;
-#[cfg(feature = "now")]
-use crate::DateTime;
 #[cfg(all(feature = "now", doc))]
 use crate::OutOfRange;
 
@@ -82,14 +71,10 @@ impl Utc {
     /// Panics if the system clock is set to a time in the extremely distant past or future, such
     /// that it is out of the range representable by `DateTime<Utc>`. It is assumed that this
     /// crate will no longer be in use by that time.
-    #[cfg(not(all(
-        target_arch = "wasm32",
-        feature = "wasmbind",
-        not(any(target_os = "emscripten", target_os = "wasi"))
-    )))]
+    #[cfg(any(not(target_arch = "wasm32"), target_os = "emscripten", target_os = "wasi"))]
     #[must_use]
-    pub fn now() -> DateTime<Utc> {
-        DateTime::try_from_system_time(SystemTime::now()).expect(
+    pub fn now() -> crate::DateTime<Utc> {
+        crate::DateTime::try_from_system_time(std::time::SystemTime::now()).expect(
             "system clock is set to a time extremely far into the past or future; cannot convert",
         )
     }
@@ -101,9 +86,9 @@ impl Utc {
         not(any(target_os = "emscripten", target_os = "wasi"))
     ))]
     #[must_use]
-    pub fn now() -> DateTime<Utc> {
+    pub fn now() -> crate::DateTime<Utc> {
         let now = js_sys::Date::new_0();
-        DateTime::<Utc>::from(now)
+        crate::DateTime::<Utc>::from(now)
     }
 }
 

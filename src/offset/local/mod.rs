@@ -11,7 +11,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 use super::fixed::FixedOffset;
 use super::{MappedLocalTime, TimeZone};
-use crate::{DateTime, NaiveDateTime, Utc};
+use crate::NaiveDateTime;
 
 #[cfg(unix)]
 #[path = "unix.rs"]
@@ -120,8 +120,8 @@ impl Local {
     /// Returns a `DateTime<Local>` which corresponds to the current date, time and offset from
     /// UTC.
     ///
-    /// See also the similar [`Utc::now()`] which returns `DateTime<Utc>`, i.e. without the local
-    /// offset.
+    /// See also the similar [`Utc::now()`](crate::Utc::now) which returns `DateTime<Utc>`, i.e.
+    /// without the local offset.
     ///
     /// # Example
     ///
@@ -144,8 +144,14 @@ impl Local {
     /// let offset = FixedOffset::east(5 * 60 * 60).unwrap();
     /// let now_with_offset = Local::now().with_timezone(&offset);
     /// ```
-    pub fn now() -> DateTime<Local> {
-        Utc::now().with_timezone(&Local)
+    #[cfg(any(
+        not(target_arch = "wasm32"),
+        feature = "wasmbind",
+        target_os = "emscripten",
+        target_os = "wasi",
+    ))]
+    pub fn now() -> crate::DateTime<Local> {
+        crate::Utc::now().with_timezone(&Local)
     }
 }
 
