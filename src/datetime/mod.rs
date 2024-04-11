@@ -874,7 +874,16 @@ impl DateTime<Utc> {
         feature = "std",
         all(
             feature = "now",
-            any(not(target_arch = "wasm32"), target_os = "emscripten", target_os = "wasi")
+            any(
+                unix,
+                windows,
+                target_os = "solid_asp3",
+                target_os = "hermit",
+                target_os = "wasi",
+                target_os = "xous",
+                all(target_vendor = "fortanix", target_env = "sgx"),
+                target_os = "teeos",
+            )
         )
     ))]
     pub(crate) fn try_from_system_time(t: std::time::SystemTime) -> Result<DateTime<Utc>, Error> {

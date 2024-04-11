@@ -71,7 +71,21 @@ impl Utc {
     /// Panics if the system clock is set to a time in the extremely distant past or future, such
     /// that it is out of the range representable by `DateTime<Utc>`. It is assumed that this
     /// crate will no longer be in use by that time.
-    #[cfg(any(not(target_arch = "wasm32"), target_os = "emscripten", target_os = "wasi"))]
+    // Covers the platforms with `SystemTime::time()` supported by the Rust Standard Library as of
+    // Rust 1.78. See:
+    //   https://github.com/rust-lang/rust/blob/22a5267c83a3e17f2b763279eb24bb632c45dc6b/library/std/src/sys/pal/uefi/mod.rs
+    // Note that some platforms listed in the PAL table do not support `SystemTime::time()` (e.g.,
+    // `zkvm` and `wasm`).
+    #[cfg(any(
+        unix,
+        windows,
+        target_os = "solid_asp3",
+        target_os = "hermit",
+        target_os = "wasi",
+        target_os = "xous",
+        all(target_vendor = "fortanix", target_env = "sgx"),
+        target_os = "teeos",
+    ))]
     #[must_use]
     pub fn now() -> crate::DateTime<Utc> {
         crate::DateTime::try_from_system_time(std::time::SystemTime::now()).expect(

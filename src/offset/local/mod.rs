@@ -145,10 +145,15 @@ impl Local {
     /// let now_with_offset = Local::now().with_timezone(&offset);
     /// ```
     #[cfg(any(
-        not(target_arch = "wasm32"),
-        feature = "wasmbind",
-        target_os = "emscripten",
+        unix,
+        windows,
+        target_os = "solid_asp3",
+        target_os = "hermit",
         target_os = "wasi",
+        target_os = "xous",
+        all(target_vendor = "fortanix", target_env = "sgx"),
+        target_os = "teeos",
+        all(target_arch = "wasm32", feature = "wasmbind")
     ))]
     pub fn now() -> crate::DateTime<Local> {
         crate::Utc::now().with_timezone(&Local)
