@@ -73,9 +73,10 @@ impl Utc {
     /// crate will no longer be in use by that time.
     // Covers the platforms with `SystemTime::time()` supported by the Rust Standard Library as of
     // Rust 1.78. See:
-    //   https://github.com/rust-lang/rust/blob/22a5267c83a3e17f2b763279eb24bb632c45dc6b/library/std/src/sys/pal/uefi/mod.rs
+    //   https://github.com/rust-lang/rust/blob/5e9bed7b1e1524936001b37b6ecbf406179d8ebe/library/std/src/sys/pal/mod.rs
     // Note that some platforms listed in the PAL table do not support `SystemTime::time()` (e.g.,
-    // `zkvm` and `wasm`).
+    // `zkvm` and `wasm`). When updating this configuration, also be sure to update `Local::now()`
+    // and `DateTime::try_from_system_time()`.
     #[cfg(any(
         unix,
         windows,
