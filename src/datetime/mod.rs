@@ -25,7 +25,7 @@ use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat, SecondsFormat};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveDateTime, NaiveTime};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
-use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
+use crate::offset::{FixedOffset, FromOffset, LocalResult, Offset, TimeZone, Utc};
 #[allow(deprecated)]
 use crate::Date;
 use crate::{expect, try_opt};
@@ -405,12 +405,28 @@ impl<Tz: TimeZone> DateTime<Tz> {
     }
 
     /// Changes the associated time zone.
-    /// The returned `DateTime` references the same instant of time from the perspective of the
-    /// provided time zone.
+    ///
+    /// The returned `DateTime` references the same instant of time in UTC but with the offset of
+    /// the target time zone.
     #[inline]
     #[must_use]
     pub fn with_timezone<Tz2: TimeZone>(&self, tz: &Tz2) -> DateTime<Tz2> {
         tz.from_utc_datetime(&self.datetime)
+    }
+
+    /// Changes the associated `TimeZone` type.
+    ///
+    /// The returned `DateTime` references the same instant of time in UTC but with another
+    /// [`TimeZone`] type. A best effort is made to convert the value of the associated [`Offset`]
+    /// type to the `Offset` type of the target `TimeZone`.
+    #[inline]
+    #[must_use]
+    pub fn to_timezone<Tz2: TimeZone>(&self) -> DateTime<Tz2>
+    where
+        <Tz2 as TimeZone>::Offset: FromOffset<<Tz as TimeZone>::Offset>,
+    {
+        let new_offset = <Tz2 as TimeZone>::Offset::from_offset(self.offset());
+        DateTime { datetime: self.datetime, offset: new_offset }
     }
 
     /// Fix the offset from UTC to its current value, dropping the associated timezone information.
