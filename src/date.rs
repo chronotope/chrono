@@ -4,7 +4,6 @@
 //! ISO 8601 calendar date with time zone.
 #![allow(deprecated)]
 
-#[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 use core::cmp::Ordering;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -13,9 +12,8 @@ use core::{fmt, hash};
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+#[cfg(feature = "unstable-locales")]
 use crate::format::Locale;
-#[cfg(feature = "alloc")]
 use crate::format::{DelayedFormat, Item, StrftimeItems};
 use crate::naive::{IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::{TimeZone, Utc};
@@ -331,10 +329,9 @@ where
     Tz::Offset: fmt::Display,
 {
     /// Formats the date with the specified formatting items.
-    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I>
+    pub fn format_with_items<'a, I, B>(&self, items: I) -> DelayedFormat<I, Tz::Offset>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -345,22 +342,21 @@ where
     /// Formats the date with the specified format string.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
-    #[cfg(feature = "alloc")]
     #[inline]
     #[must_use]
-    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>> {
+    pub fn format<'a>(&self, fmt: &'a str) -> DelayedFormat<StrftimeItems<'a>, Tz::Offset> {
         self.format_with_items(StrftimeItems::new(fmt))
     }
 
     /// Formats the date with the specified formatting items and locale.
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     #[must_use]
     pub fn format_localized_with_items<'a, I, B>(
         &self,
         items: I,
         locale: Locale,
-    ) -> DelayedFormat<I>
+    ) -> DelayedFormat<I, Tz::Offset>
     where
         I: Iterator<Item = B> + Clone,
         B: Borrow<Item<'a>>,
@@ -377,14 +373,14 @@ where
     /// Formats the date with the specified format string and locale.
     /// See the [`crate::format::strftime`] module
     /// on the supported escape sequences.
-    #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
+    #[cfg(feature = "unstable-locales")]
     #[inline]
     #[must_use]
     pub fn format_localized<'a>(
         &self,
         fmt: &'a str,
         locale: Locale,
-    ) -> DelayedFormat<StrftimeItems<'a>> {
+    ) -> DelayedFormat<StrftimeItems<'a>, Tz::Offset> {
         self.format_localized_with_items(StrftimeItems::new_with_locale(fmt, locale), locale)
     }
 }

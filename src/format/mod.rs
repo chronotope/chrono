@@ -3,9 +3,9 @@
 
 //! Formatting (and parsing) utilities for date and time.
 //!
-//! This module provides the common types and routines to implement,
-//! for example, [`DateTime::format`](../struct.DateTime.html#method.format) or
-//! [`DateTime::parse_from_str`](../struct.DateTime.html#method.parse_from_str) methods.
+//! This module provides the common types and routines to implement, for example,
+//! [`DateTime::format_with`](crate::DateTime::format_with) or
+//! [`DateTime::parse_from_str`](crate::DateTime::parse_from_str) methods.
 //! For most cases you should use these high-level interfaces.
 //!
 //! Internally the formatting and parsing shares the same abstract **formatting items**,
@@ -17,17 +17,15 @@
 //!
 //! # Example
 //! ```
-//! # #[cfg(feature = "alloc")] {
 //! use chrono::{NaiveDateTime, TimeZone, Utc};
 //!
 //! let date_time = Utc.with_ymd_and_hms(2020, 11, 10, 0, 1, 32).unwrap();
 //!
-//! let formatted = format!("{}", date_time.format("%Y-%m-%d %H:%M:%S"));
+//! let formatted = date_time.format_to_string("%Y-%m-%d %H:%M:%S").unwrap();
 //! assert_eq!(formatted, "2020-11-10 00:01:32");
 //!
 //! let parsed = NaiveDateTime::parse_from_str(&formatted, "%Y-%m-%d %H:%M:%S")?.and_utc();
 //! assert_eq!(parsed, date_time);
-//! # }
 //! # Ok::<(), chrono::ParseError>(())
 //! ```
 
@@ -49,9 +47,6 @@ pub(crate) mod scan;
 
 pub mod strftime;
 
-#[allow(unused)]
-// TODO: remove '#[allow(unused)]' once we use this module for parsing or something else that does
-// not require `alloc`.
 pub(crate) mod locales;
 
 pub(crate) use formatting::write_hundreds;
@@ -59,12 +54,14 @@ pub(crate) use formatting::write_hundreds;
 pub(crate) use formatting::write_rfc2822;
 #[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) use formatting::write_rfc3339;
-pub use formatting::SecondsFormat;
 #[cfg(feature = "alloc")]
 #[allow(deprecated)]
-pub use formatting::{format, format_item, DelayedFormat};
+pub use formatting::{format, format_item};
+pub use formatting::{DelayedFormat, FormattingSpec, SecondsFormat};
 #[cfg(feature = "unstable-locales")]
 pub use locales::Locale;
+#[cfg(not(feature = "unstable-locales"))]
+pub(crate) use locales::Locale;
 pub(crate) use parse::parse_rfc3339;
 pub use parse::{parse, parse_and_remainder};
 pub use parsed::Parsed;
@@ -367,6 +364,76 @@ const fn internal_fixed(val: InternalInternal) -> Item<'static> {
 }
 
 impl<'a> Item<'a> {
+    /// Check if the `Item` can be used if type to be formatted has a `date`, `time` and/or
+    /// `offset` available.
+    ///
+    /// Returns either `Ok(())` or `Err(BAD_FORMAT)`.
+    pub(crate) const fn check_fields(
+        &self,
+        date: bool,
+        time: bool,
+        offset: bool,
+        _locale: Locale,
+    ) -> Result<(), ParseError> {
+        use InternalInternal::*;
+
+        match (self, date, time, offset) {
+            (Item::Literal(_), _, _, _)
+            | (Item::Space(_), _, _, _)
+            | (Item::Numeric(Numeric::Year, _), true, _, _)
+            | (Item::Numeric(Numeric::YearDiv100, _), true, _, _)
+            | (Item::Numeric(Numeric::YearMod100, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoYear, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoYearDiv100, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoYearMod100, _), true, _, _)
+            | (Item::Numeric(Numeric::Month, _), true, _, _)
+            | (Item::Numeric(Numeric::Day, _), true, _, _)
+            | (Item::Numeric(Numeric::WeekFromSun, _), true, _, _)
+            | (Item::Numeric(Numeric::WeekFromMon, _), true, _, _)
+            | (Item::Numeric(Numeric::IsoWeek, _), true, _, _)
+            | (Item::Numeric(Numeric::NumDaysFromSun, _), true, _, _)
+            | (Item::Numeric(Numeric::WeekdayFromMon, _), true, _, _)
+            | (Item::Numeric(Numeric::Ordinal, _), true, _, _)
+            | (Item::Numeric(Numeric::Hour, _), _, true, _)
+            | (Item::Numeric(Numeric::Hour12, _), _, true, _)
+            | (Item::Numeric(Numeric::Minute, _), _, true, _)
+            | (Item::Numeric(Numeric::Second, _), _, true, _)
+            | (Item::Numeric(Numeric::Nanosecond, _), _, true, _)
+            | (Item::Numeric(Numeric::Timestamp, _), true, true, _)
+            | (Item::Fixed(Fixed::ShortMonthName), true, _, _)
+            | (Item::Fixed(Fixed::LongMonthName), true, _, _)
+            | (Item::Fixed(Fixed::ShortWeekdayName), true, _, _)
+            | (Item::Fixed(Fixed::LongWeekdayName), true, _, _)
+            | (Item::Fixed(Fixed::Nanosecond), _, true, _)
+            | (Item::Fixed(Fixed::Nanosecond3), _, true, _)
+            | (Item::Fixed(Fixed::Nanosecond6), _, true, _)
+            | (Item::Fixed(Fixed::Nanosecond9), _, true, _)
+            | (Item::Fixed(Fixed::Internal(InternalFixed { val: Nanosecond3NoDot })), _, true, _)
+            | (Item::Fixed(Fixed::Internal(InternalFixed { val: Nanosecond6NoDot })), _, true, _)
+            | (Item::Fixed(Fixed::Internal(InternalFixed { val: Nanosecond9NoDot })), _, true, _)
+            | (Item::Fixed(Fixed::TimezoneName), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetColon), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetDoubleColon), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetTripleColon), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetColonZ), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffset), _, _, true)
+            | (Item::Fixed(Fixed::TimezoneOffsetZ), _, _, true)
+            | (Item::Fixed(Fixed::RFC2822), true, true, true)
+            | (Item::Fixed(Fixed::RFC3339), true, true, true) => Ok(()),
+            (Item::Fixed(Fixed::LowerAmPm), true, _, _)
+            | (Item::Fixed(Fixed::UpperAmPm), true, _, _) => {
+                if locales::am_pm(_locale)[0].is_empty() {
+                    Err(BAD_FORMAT)
+                } else {
+                    Ok(())
+                }
+            }
+            #[cfg(any(feature = "alloc", feature = "std"))]
+            (Item::OwnedLiteral(_), _, _, _) | (Item::OwnedSpace(_), _, _, _) => Ok(()),
+            _ => Err(BAD_FORMAT),
+        }
+    }
+
     /// Convert items that contain a reference to the format string into an owned variant.
     #[cfg(any(feature = "alloc", feature = "std"))]
     pub fn to_owned(self) -> Item<'static> {
@@ -463,7 +530,7 @@ const NOT_ENOUGH: ParseError = ParseError(ParseErrorKind::NotEnough);
 const INVALID: ParseError = ParseError(ParseErrorKind::Invalid);
 const TOO_SHORT: ParseError = ParseError(ParseErrorKind::TooShort);
 pub(crate) const TOO_LONG: ParseError = ParseError(ParseErrorKind::TooLong);
-const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
+pub(crate) const BAD_FORMAT: ParseError = ParseError(ParseErrorKind::BadFormat);
 
 // this implementation is here only because we need some private code from `scan`
 

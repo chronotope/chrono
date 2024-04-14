@@ -3,6 +3,8 @@ use crate::naive::{NaiveDate, NaiveTime};
 use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
 use crate::offset::{Local, Offset};
+#[cfg(feature = "unstable-locales")]
+use crate::ParseError;
 use crate::{Datelike, Days, MappedLocalTime, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
 
 #[derive(Clone)]
@@ -139,7 +141,6 @@ fn test_datetime_from_timestamp_millis() {
     for (timestamp_millis, _formatted) in valid_map.iter().copied() {
         let datetime = DateTime::from_timestamp_millis(timestamp_millis).unwrap();
         assert_eq!(timestamp_millis, datetime.timestamp_millis());
-        #[cfg(feature = "alloc")]
         assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -174,7 +175,6 @@ fn test_datetime_from_timestamp_micros() {
     for (timestamp_micros, _formatted) in valid_map.iter().copied() {
         let datetime = DateTime::from_timestamp_micros(timestamp_micros).unwrap();
         assert_eq!(timestamp_micros, datetime.timestamp_micros());
-        #[cfg(feature = "alloc")]
         assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -214,7 +214,6 @@ fn test_datetime_from_timestamp_nanos() {
     for (timestamp_nanos, _formatted) in valid_map.iter().copied() {
         let datetime = DateTime::from_timestamp_nanos(timestamp_nanos);
         assert_eq!(timestamp_nanos, datetime.timestamp_nanos_opt().unwrap());
-        #[cfg(feature = "alloc")]
         assert_eq!(datetime.format("%F %T%.9f").to_string(), _formatted);
     }
 
@@ -1313,7 +1312,7 @@ fn test_to_string_round_trip_with_local() {
 fn test_datetime_format_with_local() {
     // if we are not around the year boundary, local and UTC date should have the same year
     let dt = Local::now().with_month(5).unwrap();
-    assert_eq!(dt.format("%Y").to_string(), dt.with_timezone(&Utc).format("%Y").to_string());
+    assert_eq!(dt.format_to_string("%Y"), dt.with_timezone(&Utc).format_to_string("%Y"));
 }
 
 #[test]
@@ -1539,7 +1538,6 @@ fn test_min_max_getters() {
     // assert_eq!(beyond_min.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
-    #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_min.format("%Y-%m-%dT%H:%M:%S%:z").to_string(),
         "-262144-12-31T22:00:00-02:00"
@@ -1564,7 +1562,6 @@ fn test_min_max_getters() {
     // assert_eq!(beyond_max.to_rfc2822(), "");
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
-    #[cfg(feature = "alloc")]
     assert_eq!(
         beyond_max.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string(),
         "+262143-01-01T01:59:59.999999999+02:00"
@@ -1817,21 +1814,22 @@ fn test_test_deprecated_from_offset() {
 }
 
 #[test]
-#[cfg(all(feature = "unstable-locales", feature = "alloc"))]
-fn locale_decimal_point() {
+#[cfg(feature = "unstable-locales")]
+fn locale_decimal_point() -> Result<(), ParseError> {
     use crate::Locale::{ar_SY, nl_NL};
     let dt =
         Utc.with_ymd_and_hms(2018, 9, 5, 18, 58, 0).unwrap().with_nanosecond(123456780).unwrap();
 
-    assert_eq!(dt.format_localized("%T%.f", nl_NL).to_string(), "18:58:00,123456780");
-    assert_eq!(dt.format_localized("%T%.3f", nl_NL).to_string(), "18:58:00,123");
-    assert_eq!(dt.format_localized("%T%.6f", nl_NL).to_string(), "18:58:00,123456");
-    assert_eq!(dt.format_localized("%T%.9f", nl_NL).to_string(), "18:58:00,123456780");
+    assert_eq!(dt.format_to_string_localized("%T%.f", nl_NL)?, "18:58:00,123456780");
+    assert_eq!(dt.format_to_string_localized("%T%.3f", nl_NL)?, "18:58:00,123");
+    assert_eq!(dt.format_to_string_localized("%T%.6f", nl_NL)?, "18:58:00,123456");
+    assert_eq!(dt.format_to_string_localized("%T%.9f", nl_NL)?, "18:58:00,123456780");
 
-    assert_eq!(dt.format_localized("%T%.f", ar_SY).to_string(), "18:58:00.123456780");
-    assert_eq!(dt.format_localized("%T%.3f", ar_SY).to_string(), "18:58:00.123");
-    assert_eq!(dt.format_localized("%T%.6f", ar_SY).to_string(), "18:58:00.123456");
-    assert_eq!(dt.format_localized("%T%.9f", ar_SY).to_string(), "18:58:00.123456780");
+    assert_eq!(dt.format_to_string_localized("%T%.f", ar_SY)?, "18:58:00.123456780");
+    assert_eq!(dt.format_to_string_localized("%T%.3f", ar_SY)?, "18:58:00.123");
+    assert_eq!(dt.format_to_string_localized("%T%.6f", ar_SY)?, "18:58:00.123456");
+    assert_eq!(dt.format_to_string_localized("%T%.9f", ar_SY)?, "18:58:00.123456780");
+    Ok(())
 }
 
 /// This is an extended test for <https://github.com/chronotope/chrono/issues/1289>.

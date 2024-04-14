@@ -4,40 +4,404 @@
 //! Date and time formatting routines.
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
-use alloc::string::{String, ToString};
-#[cfg(feature = "alloc")]
+use alloc::string::String;
 use core::borrow::Borrow;
-#[cfg(feature = "alloc")]
-use core::fmt::Display;
-use core::fmt::{self, Write};
+use core::fmt::{self, Display, Write};
+use core::marker::PhantomData;
 
-#[cfg(feature = "alloc")]
 use crate::offset::Offset;
-#[cfg(any(feature = "alloc", feature = "serde"))]
-use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
-#[cfg(feature = "alloc")]
-use crate::{NaiveDate, NaiveTime, Weekday};
+use crate::{
+    DateTime, Datelike, FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Timelike, Utc,
+    Weekday,
+};
 
-#[cfg(feature = "alloc")]
 use super::locales;
-#[cfg(any(feature = "alloc", feature = "serde"))]
-use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
-#[cfg(feature = "alloc")]
-use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric};
-#[cfg(feature = "alloc")]
+use super::{
+    Colons, Fixed, InternalFixed, InternalInternal, Item, Numeric, OffsetFormat, OffsetPrecision,
+    Pad, ParseError,
+};
 use locales::*;
 
-/// A *temporary* object which can be used as an argument to `format!` or others.
-/// This is normally constructed via `format` methods of each date and time type.
-#[cfg(feature = "alloc")]
+/// Formatting specification for type `T` using formatting items provided by `I`.
+///
+/// The input type `T` is a type such as [`NaiveDate`] or [`DateTime<Tz>`].
+/// Not all input types can be used in combination with all formatting [`Item`]'s. For example
+/// [`NaiveDate`] can't be used in combination with items for time or offset. On creation of a
+/// `FormattingSpec` the items are verified to be usable with the input type.
+///
+/// Formatting [`Item`]'s are provided by a type `I` that implement `IntoIter<Item<Item<'_>>`,
+/// such as the [`StrftimeItems`] iterator, `Vec<Item<'_>>`, an array, or `&[Item<'_>]` slice.
+///
+/// [`StrftimeItems`]: crate::format::StrftimeItems
+#[derive(Clone, Debug)]
+pub struct FormattingSpec<T, I> {
+    pub(crate) items: I,
+    pub(crate) date_time_type: PhantomData<T>,
+    #[allow(dead_code)]
+    pub(crate) locale: Locale,
+}
+
+impl<'a, J, Tz: TimeZone> FormattingSpec<DateTime<Tz>, J> {
+    /// Create a new `FormattingSpec` that can be used to format multiple [`DateTime`]'s.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the formatting [`Item`]'s is [`Item::Error`], or requires a
+    /// value the input type doesn't have, such as an hour or an offset from UTC on a [`NaiveDate`]
+    /// type.
+    ///
+    /// # Example 1
+    ///
+    /// Take a slice as argument for `from_items`. This is the most efficient way to use a
+    /// `FormattingSpec`.
+    ///
+    /// ```
+    /// use chrono::{DateTime, TimeZone, Utc};
+    /// use chrono::format::{FormattingSpec, StrftimeItems};
+    ///
+    /// let fmt_str = "%a, %Y-%m-%d %H:%M:%S";
+    /// let fmt_items = StrftimeItems::new(&fmt_str).parse()?;
+    /// let formatter = FormattingSpec::<DateTime<Utc>, _>::from_items(fmt_items.as_slice())?;
+    ///
+    /// // We can format multiple values without re-parsing the format string.
+    /// let dt1 = Utc.with_ymd_and_hms(2023, 4, 5, 6, 7, 8).unwrap();
+    /// assert_eq!(dt1.format_with(&formatter).to_string(), "Wed, 2023-04-05 06:07:08");
+    /// let dt2 = Utc.with_ymd_and_hms(2023, 6, 7, 8, 9, 10).unwrap();
+    /// assert_eq!(dt2.format_with(&formatter).to_string(), "Wed, 2023-06-07 08:09:10");
+    /// # Ok::<(), chrono::ParseError>(())
+    /// ```
+    ///
+    /// # Example 2
+    ///
+    /// Take a [`StrftimeItems`] iterator as argument for `from_items`.
+    ///
+    /// The [`StrftimeItems`] iterator will parse the format string on creation of the
+    /// `FormattingSpec`, and reparse it on every use during formatting. This can be a simple
+    /// solution if you need to work without `std` or `alloc`.
+    ///
+    /// But if you can allocate, [`DateTime::format_to_string`] is an easier and slightly more
+    /// performant alternative.
+    ///
+    /// [`StrftimeItems`]: crate::format::StrftimeItems
+    ///
+    /// ```
+    /// use chrono::{DateTime, TimeZone, Utc};
+    /// use chrono::format::{FormattingSpec, StrftimeItems};
+    ///
+    /// let fmt_str = "%a, %Y-%m-%d %H:%M:%S";
+    /// let fmt_str_iter = StrftimeItems::new(&fmt_str);
+    /// let formatter = FormattingSpec::<DateTime<Utc>, _>::from_items(fmt_str_iter)?; // parse 1
+    ///
+    /// let dt1 = Utc.with_ymd_and_hms(2023, 4, 5, 6, 7, 8).unwrap();
+    /// assert_eq!(dt1.format_with(&formatter).to_string(), "Wed, 2023-04-05 06:07:08"); // parse 2
+    /// let dt2 = Utc.with_ymd_and_hms(2023, 6, 7, 8, 9, 10).unwrap();
+    /// assert_eq!(dt2.format_with(&formatter).to_string(), "Wed, 2023-06-07 08:09:10"); // parse 3
+    /// # Ok::<(), chrono::ParseError>(())
+    /// ```
+    ///
+    /// # Example 3
+    ///
+    /// Take a `Vec` as argument for `from_items`. This creates an owned `FormattingSpec`.
+    ///
+    /// An owned `FormattingSpec` comes with a disadvantage: it will create owned [`DelayedFormat`]'s
+    /// in turn, which involves cloning the `Vec` on every use.
+    ///
+    /// ```
+    /// use chrono::{DateTime, TimeZone, Utc};
+    /// use chrono::format::{FormattingSpec, StrftimeItems};
+    ///
+    /// let fmt_str = "%a, %Y-%m-%d %H:%M:%S";
+    /// let fmt_items = StrftimeItems::new(&fmt_str).parse()?;
+    /// let formatter = FormattingSpec::<DateTime<Utc>, _>::from_items(fmt_items)?; // clone 1
+    ///
+    /// let dt1 = Utc.with_ymd_and_hms(2023, 4, 5, 6, 7, 8).unwrap();
+    /// assert_eq!(dt1.format_with(&formatter).to_string(), "Wed, 2023-04-05 06:07:08"); // clone 2 & 3
+    /// let dt2 = Utc.with_ymd_and_hms(2023, 6, 7, 8, 9, 10).unwrap();
+    /// assert_eq!(dt2.format_with(&formatter).to_string(), "Wed, 2023-06-07 08:09:10"); // clone 4 & 5
+    /// # Ok::<(), chrono::ParseError>(())
+    /// ```
+    pub fn from_items<I, B>(items: I) -> Result<Self, ParseError>
+    where
+        I: IntoIterator<Item = B, IntoIter = J>,
+        J: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        let items = items.into_iter();
+        let locale = locales::default_locale();
+        for item in items.clone() {
+            item.borrow().check_fields(true, true, true, locale)?
+        }
+        Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+    }
+
+    /// Create a new `FormattingSpec` that can be used to format multiple [`DateTime`]'s localized
+    /// for `locale`.
+    ///
+    /// You may want to combine this with the locale-aware [`StrftimeItems::new_with_locale`].
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the formatting [`Item`]'s is for a value the input type doesn't
+    /// have, such as an hour or an offset from UTC on a [`NaiveDate`] type.
+    ///
+    /// Also errors if the locale does not support an [`Item`], which may happen with the
+    /// [`Fixed::UpperAmPm`] and [`Fixed::LowerAmPm`] items (`%P` and `%p` formatting specifiers).
+    ///
+    /// [`StrftimeItems::new_with_locale`]: crate::format::StrftimeItems::new_with_locale
+    ///
+    /// # Example
+    ///
+    /// Take a slice as argument. This is the most efficient way to use a `FormattingSpec`.
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, TimeZone, Utc};
+    /// use chrono::format::{FormattingSpec, Locale, StrftimeItems};
+    ///
+    /// let date = NaiveDate::from_ymd_opt(2023, 4, 5).unwrap();
+    ///
+    /// let fmt_str = "%a %-d %B ’%y";
+    /// let items = StrftimeItems::new_with_locale(&fmt_str, Locale::nl_NL).parse()?;
+    /// let formatter = FormattingSpec::<NaiveDate, _>::from_items_localized(&items, Locale::nl_NL)?;
+    /// assert_eq!(date.format_with(&formatter).to_string(), "wo 5 april ’23");
+    ///
+    /// let dt2 = Utc.with_ymd_and_hms(2023, 6, 7, 8, 9, 10).unwrap();
+    /// assert_eq!(dt2.format_with(&formatter.into()).to_string(), "wo 7 juni ’23");
+    /// # Ok::<(), chrono::ParseError>(())
+    /// ```
+    #[cfg(feature = "unstable-locales")]
+    pub fn from_items_localized<I, B>(items: I, locale: Locale) -> Result<Self, ParseError>
+    where
+        I: IntoIterator<Item = B, IntoIter = J>,
+        J: Iterator<Item = B> + Clone,
+        B: Borrow<Item<'a>>,
+    {
+        let items = items.into_iter();
+        for item in items.clone() {
+            item.borrow().check_fields(true, true, true, locale)?
+        }
+        Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+    }
+}
+
+impl<'a, Tz: TimeZone> FormattingSpec<DateTime<Tz>, &'a [Item<'a>]> {
+    /// Creates a new `FormattingSpec` given a slice of [`Item`]'s.
+    ///
+    /// The difference with the more generic [`FormattingSpec::from_items`] is that `from_slice` is
+    /// usable in `const` context.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the formatting [`Item`]'s is for a value the input type doesn't
+    /// have, such as an hour or an offset from UTC on a [`NaiveDate`] type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use chrono::format::*;
+    /// # use chrono::{DateTime, Utc, TimeZone};
+    ///
+    /// // A manual implementation of `DateTime::to_rfc3339`
+    /// const RFC3339_ITEMS: &[Item<'static>] = &[
+    ///     Item::Numeric(Numeric::Year, Pad::Zero),
+    ///     Item::Literal("-"),
+    ///     Item::Numeric(Numeric::Month, Pad::Zero),
+    ///     Item::Literal("-"),
+    ///     Item::Numeric(Numeric::Day, Pad::Zero),
+    ///     Item::Literal("T"),
+    ///     Item::Numeric(Numeric::Hour, Pad::Zero),
+    ///     Item::Literal(":"),
+    ///     Item::Numeric(Numeric::Minute, Pad::Zero),
+    ///     Item::Literal(":"),
+    ///     Item::Numeric(Numeric::Second, Pad::Zero),
+    ///     Item::Fixed(Fixed::Nanosecond),
+    ///     Item::Fixed(Fixed::TimezoneOffsetColon),
+    /// ];
+    /// const RFC3339_SPEC: FormattingSpec<DateTime<Utc>, &[Item<'_>]> =
+    ///     match FormattingSpec::<DateTime<Utc>, _>::from_slice(RFC3339_ITEMS) {
+    ///         Ok(spec) => spec,
+    ///         Err(_) => panic!(), // Will give a compile error if the `Item`s are incorrect.
+    ///     };
+    ///
+    /// let datetime = Utc.with_ymd_and_hms(2023, 6, 7, 8, 9, 10).unwrap();
+    /// assert_eq!(datetime.format_with(&RFC3339_SPEC).to_string(), "2023-06-07T08:09:10+00:00");
+    /// ```
+    pub const fn from_slice(items: &'a [Item<'a>]) -> Result<Self, ParseError> {
+        let locale = locales::default_locale();
+        let mut i = 0;
+        while i < items.len() {
+            if let Err(e) = items[i].check_fields(true, true, true, locale) {
+                return Err(e);
+            }
+            i += 1;
+        }
+        Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+    }
+
+    /// Creates a new `FormattingSpec` given a slice of [`Item`]'s and a `locale`.
+    ///
+    /// The difference with the more generic [`FormattingSpec::from_items_localized`] is that
+    /// `from_slice_localized` is usable in `const` context.
+    ///
+    /// You may want to combine this with the locale-aware [`StrftimeItems::new_with_locale`].
+    ///
+    /// [`StrftimeItems::new_with_locale`]: crate::format::StrftimeItems::new_with_locale
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if one of the formatting [`Item`]'s is for a value the input type doesn't
+    /// have, such as an hour or an offset from UTC on a [`NaiveDate`] type.
+    #[cfg(feature = "unstable-locales")]
+    pub const fn from_slice_localized(
+        items: &'a [Item<'a>],
+        locale: Locale,
+    ) -> Result<Self, ParseError> {
+        let mut i = 0;
+        while i < items.len() {
+            if let Err(e) = items[i].check_fields(true, true, true, locale) {
+                return Err(e);
+            }
+            i += 1;
+        }
+        Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+    }
+}
+
+macro_rules! formatting_spec_impls {
+    ($type:ty, $date:literal, $time:literal, $off:literal) => {
+        impl<'a, J> FormattingSpec<$type, J> {
+            /// Create a new `FormattingSpec` that can be used to format multiple [`DateTime`]'s.
+            #[doc = concat!("[`", stringify!($type), "`]'s.")]
+            pub fn from_items<I, B>(items: I) -> Result<Self, ParseError>
+            where
+                I: IntoIterator<Item = B, IntoIter = J>,
+                J: Iterator<Item = B> + Clone,
+                B: Borrow<Item<'a>>,
+            {
+                let items = items.into_iter();
+                let locale = locales::default_locale();
+                for item in items.clone() {
+                    item.borrow().check_fields($date, $time, $off, locale)?
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+
+            /// Create a new `FormattingSpec` that can be used to format multiple [`DateTime`]'s
+            /// localized for `locale`.
+            #[doc = concat!("[`", stringify!($type), "`]'s.")]
+            #[cfg(feature = "unstable-locales")]
+            pub fn from_items_localized<I, B>(items: I, locale: Locale) -> Result<Self, ParseError>
+            where
+                I: IntoIterator<Item = B, IntoIter = J>,
+                J: Iterator<Item = B> + Clone,
+                B: Borrow<Item<'a>>,
+            {
+                let items = items.into_iter();
+                for item in items.clone() {
+                    item.borrow().check_fields($date, $time, $off, locale)?
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+        }
+
+        impl<'a> FormattingSpec<$type, &'a [Item<'a>]> {
+            /// Creates a new `FormattingSpec` given a slice of [`Item`]'s.
+            pub const fn from_slice(items: &'a [Item<'a>]) -> Result<Self, ParseError> {
+                let locale = locales::default_locale();
+                let mut i = 0;
+                while i < items.len() {
+                    if let Err(e) = items[i].check_fields($date, $time, $off, locale) {
+                        return Err(e);
+                    }
+                    i += 1;
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+
+            /// Creates a new `FormattingSpec` given a slice of [`Item`]'s and a `locale`.
+            #[cfg(feature = "unstable-locales")]
+            pub const fn from_slice_localized(
+                items: &'a [Item<'a>],
+                locale: Locale,
+            ) -> Result<Self, ParseError> {
+                let mut i = 0;
+                while i < items.len() {
+                    if let Err(e) = items[i].check_fields(true, true, true, locale) {
+                        return Err(e);
+                    }
+                    i += 1;
+                }
+                Ok(FormattingSpec { items, date_time_type: PhantomData, locale })
+            }
+        }
+    };
+}
+
+formatting_spec_impls!(NaiveDateTime, true, true, false);
+formatting_spec_impls!(NaiveDate, true, false, false);
+formatting_spec_impls!(NaiveTime, false, true, false);
+
+impl<T, I> FormattingSpec<T, I> {
+    /// Unwraps this `FormattingSpec<T, I>`, returning the underlying iterator `I`.
+    pub fn into_inner(self) -> I {
+        self.items
+    }
+
+    /// Returns the locale of this `FormattingSpec`.
+    #[cfg(feature = "unstable-locales")]
+    pub fn locale(&self) -> Locale {
+        self.locale
+    }
+}
+
+impl<'a, T, I, J, B> FormattingSpec<T, I>
+where
+    I: IntoIterator<Item = B, IntoIter = J> + Clone,
+    J: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+{
+    /// Makes a new `DelayedFormat` with this `FormattingSpec` and a local date, time and/or
+    /// UTC offset.
+    ///
+    /// # Errors/panics
+    ///
+    /// If the iterator given for `items` returns [`Item::Error`], the `Display` implementation of
+    /// `Formatter` will return an error, which causes a panic when used in combination with
+    /// [`to_string`](ToString::to_string), [`println!`] and [`format!`].
+    pub(crate) fn formatter<Off>(
+        &self,
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        offset: Option<Off>,
+    ) -> DelayedFormat<J, Off> {
+        let items = self.items.clone().into_iter();
+        DelayedFormat { date, time, off: offset, items, locale: self.locale }
+    }
+}
+macro_rules! formatting_spec_from_impls {
+    ($src:ty, $dst:ty) => {
+        impl<I> From<FormattingSpec<$src, I>> for FormattingSpec<$dst, I> {
+            fn from(value: FormattingSpec<$src, I>) -> Self {
+                Self { items: value.items, date_time_type: PhantomData, locale: value.locale }
+            }
+        }
+    };
+}
+formatting_spec_from_impls!(NaiveTime, NaiveDateTime);
+formatting_spec_from_impls!(NaiveDate, NaiveDateTime);
+formatting_spec_from_impls!(NaiveTime, DateTime<Utc>);
+formatting_spec_from_impls!(NaiveDate, DateTime<Utc>);
+formatting_spec_from_impls!(NaiveDateTime, DateTime<Utc>);
+
+/// A *temporary* object which can be used as an argument to [`format!`] or others.
+/// This is normally constructed via the `format_with` methods of each date and time type.
 #[derive(Debug)]
-pub struct DelayedFormat<I> {
+pub struct DelayedFormat<I, Off = Utc> {
     /// The date view, if any.
     date: Option<NaiveDate>,
     /// The time view, if any.
     time: Option<NaiveTime>,
-    /// The name and local-to-UTC difference for the offset (timezone), if any.
-    off: Option<(String, FixedOffset)>,
+    /// The offset from UTC, if any
+    off: Option<Off>,
     /// An iterator returning formatting items.
     items: I,
     /// Locale used for text.
@@ -45,27 +409,15 @@ pub struct DelayedFormat<I> {
     locale: Locale,
 }
 
-#[cfg(feature = "alloc")]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
+impl<'a, I, B> DelayedFormat<I>
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+{
     /// Makes a new `DelayedFormat` value out of local date and time.
     #[must_use]
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
         DelayedFormat { date, time, off: None, items, locale: default_locale() }
-    }
-
-    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
-    #[must_use]
-    pub fn new_with_offset<Off>(
-        date: Option<NaiveDate>,
-        time: Option<NaiveTime>,
-        offset: &Off,
-        items: I,
-    ) -> DelayedFormat<I>
-    where
-        Off: Offset + Display,
-    {
-        let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date, time, off: Some(name_and_diff), items, locale: default_locale() }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
@@ -79,22 +431,39 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     ) -> DelayedFormat<I> {
         DelayedFormat { date, time, off: None, items, locale }
     }
+}
+
+impl<'a, I, B, Off> DelayedFormat<I, Off>
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+    Off: Offset + Display,
+{
+    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
+    #[must_use]
+    pub fn new_with_offset(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        offset: &Off,
+        items: I,
+    ) -> DelayedFormat<I, Off> {
+        DelayedFormat { date, time, off: Some(offset.clone()), items, locale: default_locale() }
+    }
 
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
     #[cfg(feature = "unstable-locales")]
     #[must_use]
-    pub fn new_with_offset_and_locale<Off>(
+    pub fn new_with_offset_and_locale(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         offset: &Off,
         items: I,
         locale: Locale,
-    ) -> DelayedFormat<I>
+    ) -> DelayedFormat<I, Off>
     where
         Off: Offset + Display,
     {
-        let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date, time, off: Some(name_and_diff), items, locale }
+        DelayedFormat { date, time, off: Some(offset.clone()), items, locale }
     }
 
     fn format(&self, w: &mut impl Write) -> fmt::Result {
@@ -112,6 +481,49 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 
     #[cfg(feature = "alloc")]
+    fn format_with_parameters(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Justify/pad/truncate the formatted result by rendering it to a temporary `String`
+        // first.
+        let mut result = String::new();
+        self.format(&mut result)?;
+        f.pad(&result)
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn format_with_parameters(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // We have to replicate the `fmt::Formatter:pad` method without allocating.
+        let mut counter = CountingSink::new();
+        self.format(&mut counter)?;
+        let chars_count = counter.chars_written();
+
+        if let Some(max_width) = f.precision() {
+            if chars_count > max_width {
+                let mut truncating_writer = TruncatingWriter::new(f, max_width);
+                return self.format(&mut truncating_writer);
+            }
+        }
+        if let Some(min_width) = f.width() {
+            if chars_count < min_width {
+                let padding = min_width - chars_count;
+                let (before, after) = match f.align().unwrap_or(fmt::Alignment::Left) {
+                    fmt::Alignment::Left => (0, padding),
+                    fmt::Alignment::Right => (padding, 0),
+                    fmt::Alignment::Center => (padding / 2, (padding + 1) / 2),
+                };
+                let fill = f.fill();
+                for _ in 0..before {
+                    f.write_char(fill)?;
+                }
+                self.format(f)?;
+                for _ in 0..after {
+                    f.write_char(fill)?;
+                }
+                return Ok(());
+            }
+        }
+        self.format(f)
+    }
+
     fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
         use self::Numeric::*;
 
@@ -191,7 +603,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                 write_n(w, 9, (t.nanosecond() % 1_000_000_000) as i64, pad, false)
             }
             (Timestamp, Some(d), Some(t)) => {
-                let offset = self.off.as_ref().map(|(_, o)| i64::from(o.local_minus_utc()));
+                let offset = self.off.as_ref().map(|o| i64::from(o.fix().local_minus_utc()));
                 let timestamp = d.and_time(t).and_utc().timestamp() - offset.unwrap_or(0);
                 write_n(w, 9, timestamp, pad, false)
             }
@@ -200,7 +612,6 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         }
     }
 
-    #[cfg(feature = "alloc")]
     fn format_fixed(&self, w: &mut impl Write, spec: &Fixed) -> fmt::Result {
         use Fixed::*;
         use InternalInternal::*;
@@ -220,6 +631,9 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             }
             (LowerAmPm, _, Some(t), _) => {
                 let ampm = if t.hour12().0 { am_pm(self.locale)[1] } else { am_pm(self.locale)[0] };
+                if ampm.is_empty() {
+                    return Err(fmt::Error);
+                }
                 for c in ampm.chars().flat_map(|c| c.to_lowercase()) {
                     w.write_char(c)?
                 }
@@ -227,6 +641,9 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             }
             (UpperAmPm, _, Some(t), _) => {
                 let ampm = if t.hour12().0 { am_pm(self.locale)[1] } else { am_pm(self.locale)[0] };
+                if ampm.is_empty() {
+                    return Err(fmt::Error);
+                }
                 w.write_str(ampm)
             }
             (Nanosecond, _, Some(t), _) => {
@@ -265,50 +682,50 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             (Internal(InternalFixed { val: Nanosecond9NoDot }), _, Some(t), _) => {
                 write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
             }
-            (TimezoneName, _, _, Some((tz_name, _))) => write!(w, "{}", tz_name),
-            (TimezoneOffset | TimezoneOffsetZ, _, _, Some((_, off))) => {
+            (TimezoneName, _, _, Some(off)) => write!(w, "{}", off),
+            (TimezoneOffset | TimezoneOffsetZ, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Minutes,
                     colons: Colons::Maybe,
                     allow_zulu: *spec == TimezoneOffsetZ,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (TimezoneOffsetColon | TimezoneOffsetColonZ, _, _, Some((_, off))) => {
+            (TimezoneOffsetColon | TimezoneOffsetColonZ, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Minutes,
                     colons: Colons::Colon,
                     allow_zulu: *spec == TimezoneOffsetColonZ,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (TimezoneOffsetDoubleColon, _, _, Some((_, off))) => {
+            (TimezoneOffsetDoubleColon, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Seconds,
                     colons: Colons::Colon,
                     allow_zulu: false,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (TimezoneOffsetTripleColon, _, _, Some((_, off))) => {
+            (TimezoneOffsetTripleColon, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Hours,
                     colons: Colons::None,
                     allow_zulu: false,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (RFC2822, Some(d), Some(t), Some((_, off))) => {
-                write_rfc2822(w, crate::NaiveDateTime::new(d, t), *off)
+            (RFC2822, Some(d), Some(t), Some(off)) => {
+                write_rfc2822(w, crate::NaiveDateTime::new(d, t), off.fix())
             }
-            (RFC3339, Some(d), Some(t), Some((_, off))) => write_rfc3339(
+            (RFC3339, Some(d), Some(t), Some(off)) => write_rfc3339(
                 w,
                 crate::NaiveDateTime::new(d, t),
-                *off,
+                off.fix(),
                 SecondsFormat::AutoSi,
                 false,
             ),
@@ -317,12 +734,18 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     }
 }
 
-#[cfg(feature = "alloc")]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
+impl<'a, I, B, Off> Display for DelayedFormat<I, Off>
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+    Off: Offset + Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut result = String::new();
-        self.format(&mut result)?;
-        f.pad(&result)
+        if f.width().is_some() || f.precision().is_some() {
+            self.format_with_parameters(f)
+        } else {
+            self.format(f)
+        }
     }
 }
 
@@ -344,7 +767,7 @@ where
     DelayedFormat {
         date: date.copied(),
         time: time.copied(),
-        off: off.cloned(),
+        off: off.cloned().map(|(tz_name, offset)| OffsetWrapper { offset, tz_name }),
         items,
         locale: default_locale(),
     }
@@ -364,14 +787,35 @@ pub fn format_item(
     DelayedFormat {
         date: date.copied(),
         time: time.copied(),
-        off: off.cloned(),
+        off: off.cloned().map(|(tz_name, offset)| OffsetWrapper { offset, tz_name }),
         items: [item].into_iter(),
         locale: default_locale(),
     }
     .fmt(w)
 }
 
-#[cfg(any(feature = "alloc", feature = "serde"))]
+/// Only used by the deprecated `format` and `format_item` functions.
+#[cfg(feature = "alloc")]
+#[derive(Clone, Debug)]
+struct OffsetWrapper {
+    offset: FixedOffset,
+    tz_name: String,
+}
+
+#[cfg(feature = "alloc")]
+impl Offset for OffsetWrapper {
+    fn fix(&self) -> FixedOffset {
+        self.offset
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl Display for OffsetWrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&self.tz_name)
+    }
+}
+
 impl OffsetFormat {
     /// Writes an offset from UTC with the format defined by `self`.
     fn format(&self, w: &mut impl Write, off: FixedOffset) -> fmt::Result {
@@ -481,7 +925,6 @@ pub enum SecondsFormat {
 
 /// Writes the date, time and offset to the string. same as `%Y-%m-%dT%H:%M:%S%.f%:z`
 #[inline]
-#[cfg(any(feature = "alloc", feature = "serde"))]
 pub(crate) fn write_rfc3339(
     w: &mut impl Write,
     dt: NaiveDateTime,
@@ -544,7 +987,6 @@ pub(crate) fn write_rfc3339(
     .format(w, off)
 }
 
-#[cfg(feature = "alloc")]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
     w: &mut impl Write,
@@ -603,116 +1045,159 @@ pub(crate) fn write_hundreds(w: &mut impl Write, n: u8) -> fmt::Result {
     w.write_char(ones as char)
 }
 
+/// Sink that counts the number of bytes written to it.
+#[cfg(not(feature = "alloc"))]
+struct CountingSink {
+    written: usize,
+}
+
+#[cfg(not(feature = "alloc"))]
+impl CountingSink {
+    fn new() -> Self {
+        Self { written: 0 }
+    }
+
+    fn chars_written(&self) -> usize {
+        self.written
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl Write for CountingSink {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.written = self.written.checked_add(s.chars().count()).ok_or(fmt::Error)?;
+        Ok(())
+    }
+}
+
+// `Write` adaptor that only emits up to `max` characters.
+#[cfg(not(feature = "alloc"))]
+struct TruncatingWriter<'a, 'b> {
+    formatter: &'a mut fmt::Formatter<'b>,
+    chars_remaining: usize,
+}
+
+#[cfg(not(feature = "alloc"))]
+impl<'a, 'b> TruncatingWriter<'a, 'b> {
+    fn new(formatter: &'a mut fmt::Formatter<'b>, max: usize) -> Self {
+        Self { formatter, chars_remaining: max }
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl<'a, 'b> Write for TruncatingWriter<'a, 'b> {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let max = self.chars_remaining;
+        let char_count = s.chars().count();
+        let (s, count) = if char_count <= max {
+            (s, char_count)
+        } else {
+            let (i, _) = s.char_indices().nth(max).unwrap();
+            (&s[..i], max)
+        };
+        self.chars_remaining -= count;
+        self.formatter.write_str(s)
+    }
+}
+
 #[cfg(test)]
-#[cfg(feature = "alloc")]
 mod tests {
     use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
-    use crate::FixedOffset;
-    #[cfg(feature = "alloc")]
+    use crate::format::{FormattingSpec, ParseError, StrftimeItems};
+    use crate::{DateTime, FixedOffset};
     use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_date_format() {
-        let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
-        assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
-        assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
-        assert_eq!(d.format("%d,%e").to_string(), "04, 4");
-        assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
-        assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");
-        assert_eq!(d.format("%j").to_string(), "064"); // since 2012 is a leap year
-        assert_eq!(d.format("%D,%x").to_string(), "03/04/12,03/04/12");
-        assert_eq!(d.format("%F").to_string(), "2012-03-04");
-        assert_eq!(d.format("%v").to_string(), " 4-Mar-2012");
-        assert_eq!(d.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        let ymd = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+
+        let d = ymd(2012, 3, 4);
+        assert_eq!(d.format_to_string("%Y,%C,%y,%G,%g").unwrap(), "2012,20,12,2012,12");
+        assert_eq!(d.format_to_string("%m,%b,%h,%B").unwrap(), "03,Mar,Mar,March");
+        assert_eq!(d.format_to_string("%d,%e").unwrap(), "04, 4");
+        assert_eq!(d.format_to_string("%U,%W,%V").unwrap(), "10,09,09");
+        assert_eq!(d.format_to_string("%a,%A,%w,%u").unwrap(), "Sun,Sunday,0,7");
+        assert_eq!(d.format_to_string("%j").unwrap(), "064"); // since 2012 is a leap year
+        assert_eq!(d.format_to_string("%D,%x").unwrap(), "03/04/12,03/04/12");
+        assert_eq!(d.format_to_string("%F").unwrap(), "2012-03-04");
+        assert_eq!(d.format_to_string("%v").unwrap(), " 4-Mar-2012");
+        assert_eq!(d.format_to_string("%t%n%%%n%t").unwrap(), "\t\n%\n\t");
 
         // non-four-digit years
-        assert_eq!(
-            NaiveDate::from_ymd_opt(12345, 1, 1).unwrap().format("%Y").to_string(),
-            "+12345"
-        );
-        assert_eq!(NaiveDate::from_ymd_opt(1234, 1, 1).unwrap().format("%Y").to_string(), "1234");
-        assert_eq!(NaiveDate::from_ymd_opt(123, 1, 1).unwrap().format("%Y").to_string(), "0123");
-        assert_eq!(NaiveDate::from_ymd_opt(12, 1, 1).unwrap().format("%Y").to_string(), "0012");
-        assert_eq!(NaiveDate::from_ymd_opt(1, 1, 1).unwrap().format("%Y").to_string(), "0001");
-        assert_eq!(NaiveDate::from_ymd_opt(0, 1, 1).unwrap().format("%Y").to_string(), "0000");
-        assert_eq!(NaiveDate::from_ymd_opt(-1, 1, 1).unwrap().format("%Y").to_string(), "-0001");
-        assert_eq!(NaiveDate::from_ymd_opt(-12, 1, 1).unwrap().format("%Y").to_string(), "-0012");
-        assert_eq!(NaiveDate::from_ymd_opt(-123, 1, 1).unwrap().format("%Y").to_string(), "-0123");
-        assert_eq!(NaiveDate::from_ymd_opt(-1234, 1, 1).unwrap().format("%Y").to_string(), "-1234");
-        assert_eq!(
-            NaiveDate::from_ymd_opt(-12345, 1, 1).unwrap().format("%Y").to_string(),
-            "-12345"
-        );
+        assert_eq!(ymd(12345, 1, 1).format_to_string("%Y").unwrap(), "+12345");
+        assert_eq!(ymd(1234, 1, 1).format_to_string("%Y").unwrap(), "1234");
+        assert_eq!(ymd(123, 1, 1).format_to_string("%Y").unwrap(), "0123");
+        assert_eq!(ymd(12, 1, 1).format_to_string("%Y").unwrap(), "0012");
+        assert_eq!(ymd(1, 1, 1).format_to_string("%Y").unwrap(), "0001");
+        assert_eq!(ymd(0, 1, 1).format_to_string("%Y").unwrap(), "0000");
+        assert_eq!(ymd(-1, 1, 1).format_to_string("%Y").unwrap(), "-0001");
+        assert_eq!(ymd(-12, 1, 1).format_to_string("%Y").unwrap(), "-0012");
+        assert_eq!(ymd(-123, 1, 1).format_to_string("%Y").unwrap(), "-0123");
+        assert_eq!(ymd(-1234, 1, 1).format_to_string("%Y").unwrap(), "-1234");
+        assert_eq!(ymd(-12345, 1, 1).format_to_string("%Y").unwrap(), "-12345");
 
         // corner cases
-        assert_eq!(
-            NaiveDate::from_ymd_opt(2007, 12, 31).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2008,08,52,53,01"
-        );
-        assert_eq!(
-            NaiveDate::from_ymd_opt(2010, 1, 3).unwrap().format("%G,%g,%U,%W,%V").to_string(),
-            "2009,09,01,00,53"
-        );
+        assert_eq!(ymd(2007, 12, 31).format_to_string("%G,%U,%W,%V").unwrap(), "2008,52,53,01");
+        assert_eq!(ymd(2010, 1, 3).format_to_string("%G,%U,%W,%V").unwrap(), "2009,01,00,53");
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_time_format() {
         let t = NaiveTime::from_hms_nano_opt(3, 5, 7, 98765432).unwrap();
-        assert_eq!(t.format("%H,%k,%I,%l,%P,%p").to_string(), "03, 3,03, 3,am,AM");
-        assert_eq!(t.format("%M").to_string(), "05");
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,098765432,.098765432");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".098,.098765,.098765432");
-        assert_eq!(t.format("%R").to_string(), "03:05");
-        assert_eq!(t.format("%T,%X").to_string(), "03:05:07,03:05:07");
-        assert_eq!(t.format("%r").to_string(), "03:05:07 AM");
-        assert_eq!(t.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        assert_eq!(t.format_to_string("%H,%k,%I,%l,%P,%p").unwrap(), "03, 3,03, 3,am,AM");
+        assert_eq!(t.format_to_string("%M").unwrap(), "05");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,098765432,.098765432");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".098,.098765,.098765432");
+        assert_eq!(t.format_to_string("%R").unwrap(), "03:05");
+        assert_eq!(t.format_to_string("%T,%X").unwrap(), "03:05:07,03:05:07");
+        assert_eq!(t.format_to_string("%r").unwrap(), "03:05:07 AM");
+        assert_eq!(t.format_to_string("%t%n%%%n%t").unwrap(), "\t\n%\n\t");
 
         let t = NaiveTime::from_hms_micro_opt(3, 5, 7, 432100).unwrap();
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,432100000,.432100");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".432,.432100,.432100000");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,432100000,.432100");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".432,.432100,.432100000");
 
         let t = NaiveTime::from_hms_milli_opt(3, 5, 7, 210).unwrap();
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,210000000,.210");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".210,.210000,.210000000");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,210000000,.210");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".210,.210000,.210000000");
 
         let t = NaiveTime::from_hms_opt(3, 5, 7).unwrap();
-        assert_eq!(t.format("%S,%f,%.f").to_string(), "07,000000000,");
-        assert_eq!(t.format("%.3f,%.6f,%.9f").to_string(), ".000,.000000,.000000000");
+        assert_eq!(t.format_to_string("%S,%f,%.f").unwrap(), "07,000000000,");
+        assert_eq!(t.format_to_string("%.3f,%.6f,%.9f").unwrap(), ".000,.000000,.000000000");
 
         // corner cases
         assert_eq!(
-            NaiveTime::from_hms_opt(13, 57, 9).unwrap().format("%r").to_string(),
+            NaiveTime::from_hms_opt(13, 57, 9).unwrap().format_to_string("%r").unwrap(),
             "01:57:09 PM"
         );
         assert_eq!(
-            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000).unwrap().format("%X").to_string(),
+            NaiveTime::from_hms_milli_opt(23, 59, 59, 1_000)
+                .unwrap()
+                .format_to_string("%X")
+                .unwrap(),
             "23:59:60"
         );
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
     fn test_datetime_format() {
         let dt =
             NaiveDate::from_ymd_opt(2010, 9, 8).unwrap().and_hms_milli_opt(7, 6, 54, 321).unwrap();
-        assert_eq!(dt.format("%c").to_string(), "Wed Sep  8 07:06:54 2010");
-        assert_eq!(dt.format("%s").to_string(), "1283929614");
-        assert_eq!(dt.format("%t%n%%%n%t").to_string(), "\t\n%\n\t");
+        assert_eq!(dt.format_to_string("%c").unwrap(), "Wed Sep  8 07:06:54 2010");
+        assert_eq!(dt.format_to_string("%s").unwrap(), "1283929614");
+        assert_eq!(dt.format_to_string("%t%n%%%n%t").unwrap(), "\t\n%\n\t");
 
         // a horror of leap second: coming near to you.
         let dt = NaiveDate::from_ymd_opt(2012, 6, 30)
             .unwrap()
             .and_hms_milli_opt(23, 59, 59, 1_000)
             .unwrap();
-        assert_eq!(dt.format("%c").to_string(), "Sat Jun 30 23:59:60 2012");
-        assert_eq!(dt.format("%s").to_string(), "1341100799"); // not 1341100800, it's intentional.
+        assert_eq!(dt.format_to_string("%c").unwrap(), "Sat Jun 30 23:59:60 2012");
+        assert_eq!(dt.format_to_string("%s").unwrap(), "1341100799"); // not 1341100800, it's intentional.
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
-    fn test_datetime_format_alignment() {
+    fn test_datetime_format_alignment() -> Result<(), ParseError> {
         let datetime = Utc
             .with_ymd_and_hms(2007, 1, 2, 12, 34, 56)
             .unwrap()
@@ -720,32 +1205,38 @@ mod tests {
             .unwrap();
 
         // Item::Literal, odd number of padding bytes.
-        let percent = datetime.format("%%");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%%"))?;
+        let percent = datetime.format_with(&fmtr);
         assert_eq!("   %", format!("{:>4}", percent));
         assert_eq!("%   ", format!("{:<4}", percent));
         assert_eq!(" %  ", format!("{:^4}", percent));
 
         // Item::Numeric, custom non-ASCII padding character
-        let year = datetime.format("%Y");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%Y"))?;
+        let year = datetime.format_with(&fmtr);
         assert_eq!("——2007", format!("{:—>6}", year));
         assert_eq!("2007——", format!("{:—<6}", year));
         assert_eq!("—2007—", format!("{:—^6}", year));
 
         // Item::Fixed
-        let tz = datetime.format("%Z");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%Z"))?;
+        let tz = datetime.format_with(&fmtr);
         assert_eq!("  UTC", format!("{:>5}", tz));
         assert_eq!("UTC  ", format!("{:<5}", tz));
         assert_eq!(" UTC ", format!("{:^5}", tz));
 
         // [Item::Numeric, Item::Space, Item::Literal, Item::Space, Item::Numeric]
-        let ymd = datetime.format("%Y %B %d");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%Y %B %d"))?;
+        let ymd = datetime.format_with(&fmtr);
         assert_eq!("  2007 January 02", format!("{:>17}", ymd));
         assert_eq!("2007 January 02  ", format!("{:<17}", ymd));
         assert_eq!(" 2007 January 02 ", format!("{:^17}", ymd));
 
         // Truncated
-        let time = datetime.format("%T%.6f");
+        let fmtr = FormattingSpec::<DateTime<Utc>, _>::from_items(StrftimeItems::new("%T%.6f"))?;
+        let time = datetime.format_with(&fmtr);
         assert_eq!("12:34:56.1234", format!("{:.13}", time));
+        Ok(())
     }
 
     #[test]
