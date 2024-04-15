@@ -46,7 +46,7 @@ mod tests;
 /// There are some constructors implemented here (the `from_*` methods), but
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
@@ -57,6 +57,10 @@ pub struct DateTime<Tz: TimeZone> {
     datetime: NaiveDateTime,
     offset: Tz::Offset,
 }
+
+// The Copy impl is not derived, because it would add an un-necessary
+// `Tz: Copy` bound
+impl<Tz: TimeZone> Copy for DateTime<Tz> where <Tz as TimeZone>::Offset: Copy {}
 
 /// The minimum possible `DateTime<Utc>`.
 #[deprecated(since = "0.4.20", note = "Use DateTime::MIN_UTC instead")]
