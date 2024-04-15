@@ -1,8 +1,8 @@
 use super::DateTime;
 use crate::naive::{NaiveDate, NaiveTime};
-use crate::offset::{FixedOffset, TimeZone, Utc};
 #[cfg(feature = "clock")]
-use crate::offset::{Local, Offset};
+use crate::offset::Local;
+use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
 use crate::{Datelike, Days, MappedLocalTime, Months, NaiveDateTime, TimeDelta, Timelike, Weekday};
 
 #[derive(Clone)]
@@ -1318,9 +1318,44 @@ fn test_datetime_format_with_local() {
 
 #[test]
 fn test_datetime_is_send_and_copy() {
+    #[derive(Clone)]
+    struct Tz {
+        _not_send: *const i32,
+    }
+    impl TimeZone for Tz {
+        type Offset = Off;
+
+        fn from_offset(_: &Self::Offset) -> Self {
+            unimplemented!()
+        }
+        fn offset_from_local_date(&self, _: &NaiveDate) -> crate::MappedLocalTime<Self::Offset> {
+            unimplemented!()
+        }
+        fn offset_from_local_datetime(
+            &self,
+            _: &NaiveDateTime,
+        ) -> crate::MappedLocalTime<Self::Offset> {
+            unimplemented!()
+        }
+        fn offset_from_utc_date(&self, _: &NaiveDate) -> Self::Offset {
+            unimplemented!()
+        }
+        fn offset_from_utc_datetime(&self, _: &NaiveDateTime) -> Self::Offset {
+            unimplemented!()
+        }
+    }
+
+    #[derive(Copy, Clone, Debug)]
+    struct Off(());
+    impl Offset for Off {
+        fn fix(&self) -> FixedOffset {
+            unimplemented!()
+        }
+    }
+
     fn _assert_send_copy<T: Send + Copy>() {}
-    // UTC is known to be `Send + Copy`.
-    _assert_send_copy::<DateTime<Utc>>();
+    // `DateTime` is `Send + Copy` if the offset is.
+    _assert_send_copy::<DateTime<Tz>>();
 }
 
 #[test]

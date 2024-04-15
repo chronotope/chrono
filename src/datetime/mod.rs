@@ -46,7 +46,7 @@ mod tests;
 /// There are some constructors implemented here (the `from_*` methods), but
 /// the general-purpose constructors are all via the methods on the
 /// [`TimeZone`](./offset/trait.TimeZone.html) implementations.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[cfg_attr(
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
@@ -1406,6 +1406,15 @@ impl<Tz: TimeZone> Timelike for DateTime<Tz> {
     fn with_nanosecond(&self, nano: u32) -> Option<DateTime<Tz>> {
         map_local(self, |datetime| datetime.with_nanosecond(nano))
     }
+}
+
+// We don't store a field with the `Tz` type, so it doesn't need to influence whether `DateTime` can
+// be `Copy`. Implement it manually if the two types we do have are `Copy`.
+impl<Tz: TimeZone> Copy for DateTime<Tz>
+where
+    <Tz as TimeZone>::Offset: Copy,
+    NaiveDateTime: Copy,
+{
 }
 
 impl<Tz: TimeZone, Tz2: TimeZone> PartialEq<DateTime<Tz2>> for DateTime<Tz> {
