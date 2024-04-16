@@ -9,12 +9,12 @@ use core::str;
 use core::usize;
 
 use super::scan;
+use super::ParseResult;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
-use super::{ParseError, ParseResult};
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
-use crate::{DateTime, FixedOffset, Weekday};
+use crate::{DateTime, Error, FixedOffset, Weekday};
 
-fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
+fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> Result<&mut Parsed, Error> {
     p.set_weekday(match v {
         0 => Weekday::Sun,
         1 => Weekday::Mon,
@@ -23,11 +23,11 @@ fn set_weekday_with_num_days_from_sunday(p: &mut Parsed, v: i64) -> ParseResult<
         4 => Weekday::Thu,
         5 => Weekday::Fri,
         6 => Weekday::Sat,
-        _ => return Err(OUT_OF_RANGE),
+        _ => return Err(Error::InvalidArgument),
     })
 }
 
-fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<&mut Parsed> {
+fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> Result<&mut Parsed, Error> {
     p.set_weekday(match v {
         1 => Weekday::Mon,
         2 => Weekday::Tue,
@@ -36,7 +36,7 @@ fn set_weekday_with_number_from_monday(p: &mut Parsed, v: i64) -> ParseResult<&m
         5 => Weekday::Fri,
         6 => Weekday::Sat,
         7 => Weekday::Sun,
-        _ => return Err(OUT_OF_RANGE),
+        _ => return Err(Error::InvalidArgument),
     })
 }
 
@@ -288,7 +288,7 @@ fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
     items: I,
-) -> Result<&'b str, ParseError>
+) -> Result<&'b str, Error>
 where
     I: Iterator<Item = B>,
     B: Borrow<Item<'a>>,
@@ -339,7 +339,7 @@ where
 
             Item::Numeric(ref spec, ref _pad) => {
                 use super::Numeric::*;
-                type Setter = fn(&mut Parsed, i64) -> ParseResult<&mut Parsed>;
+                type Setter = fn(&mut Parsed, i64) -> Result<&mut Parsed, Error>;
 
                 let (width, signed, set): (usize, bool, Setter) = match *spec {
                     Year => (4, true, Parsed::set_year),
@@ -521,10 +521,10 @@ where
 /// "2012-12-12T12:12:12Z".parse::<DateTime<FixedOffset>>()?;
 /// "2012-12-12 12:12:12Z".parse::<DateTime<FixedOffset>>()?;
 /// "2012-  12-12T12:  12:12Z".parse::<DateTime<FixedOffset>>()?;
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 impl str::FromStr for DateTime<FixedOffset> {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<DateTime<FixedOffset>> {
         let mut parsed = Parsed::default();
@@ -718,7 +718,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_numeric() -> Result<(), ParseError> {
+    fn test_parse_numeric() -> Result<(), Error> {
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
 
@@ -845,7 +845,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_fixed() -> Result<(), ParseError> {
+    fn test_parse_fixed() -> Result<(), Error> {
         use crate::format::Fixed::*;
         use crate::format::Item::{Literal, Space};
 
@@ -914,7 +914,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_fixed_nanosecond() -> Result<(), ParseError> {
+    fn test_parse_fixed_nanosecond() -> Result<(), Error> {
         use crate::format::Fixed::Nanosecond;
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
@@ -1015,7 +1015,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_fixed_timezone_offset() -> Result<(), ParseError> {
+    fn test_parse_fixed_timezone_offset() -> Result<(), Error> {
         use crate::format::Fixed::*;
         use crate::format::InternalInternal::*;
         use crate::format::Item::Literal;
@@ -1452,7 +1452,7 @@ mod tests {
 
     #[test]
     #[rustfmt::skip]
-    fn test_parse_practical_examples() -> Result<(), ParseError> {
+    fn test_parse_practical_examples() -> Result<(), Error> {
         use crate::format::InternalInternal::*;
         use crate::format::Item::{Literal, Space};
         use crate::format::Numeric::*;
@@ -1832,6 +1832,6 @@ mod tests {
     fn test_issue_1010() {
         let dt = crate::NaiveDateTime::parse_from_str("\u{c}SUN\u{e}\u{3000}\0m@J\u{3000}\0\u{3000}\0m\u{c}!\u{c}\u{b}\u{c}\u{c}\u{c}\u{c}%A\u{c}\u{b}\0SU\u{c}\u{c}",
         "\u{c}\u{c}%A\u{c}\u{b}\0SUN\u{c}\u{c}\u{c}SUNN\u{c}\u{c}\u{c}SUN\u{c}\u{c}!\u{c}\u{b}\u{c}\u{c}\u{c}\u{c}%A\u{c}\u{b}%a");
-        assert_eq!(dt, Err(ParseError(ParseErrorKind::Invalid)));
+        assert_eq!(dt, Err(Error::InvalidCharacter));
     }
 }

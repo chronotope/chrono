@@ -17,8 +17,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use crate::format::Locale;
 use crate::format::{
-    parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseError, ParseResult, Parsed,
-    StrftimeItems, TOO_LONG,
+    parse, parse_and_remainder, parse_rfc3339, Fixed, Item, ParseResult, Parsed, StrftimeItems,
+    TOO_LONG,
 };
 #[cfg(feature = "alloc")]
 use crate::format::{write_rfc2822, write_rfc3339, DelayedFormat, SecondsFormat};
@@ -1684,10 +1684,10 @@ where
 /// "2012-12-12 12:12:12Z".parse::<DateTime<Utc>>()?;
 /// "2012-12-12 12:12:12+0000".parse::<DateTime<Utc>>()?;
 /// "2012-12-12 12:12:12+00:00".parse::<DateTime<Utc>>()?;
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 impl str::FromStr for DateTime<Utc> {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<DateTime<Utc>> {
         s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Utc))
@@ -1705,11 +1705,11 @@ impl str::FromStr for DateTime<Utc> {
 /// "2012-12-12 12:12:12Z".parse::<DateTime<Local>>()?;
 /// "2012-12-12 12:12:12+0000".parse::<DateTime<Local>>()?;
 /// "2012-12-12 12:12:12+00:00".parse::<DateTime<Local>>()?;
-/// # Ok::<(), chrono::ParseError>(())
+/// # Ok::<(), chrono::Error>(())
 /// ```
 #[cfg(feature = "clock")]
 impl str::FromStr for DateTime<Local> {
-    type Err = ParseError;
+    type Err = Error;
 
     fn from_str(s: &str) -> ParseResult<DateTime<Local>> {
         s.parse::<DateTime<FixedOffset>>().map(|dt| dt.with_timezone(&Local))

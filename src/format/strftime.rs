@@ -159,12 +159,14 @@ Notes:
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
+#[cfg(any(feature = "alloc", feature = "std"))]
+use super::BAD_FORMAT;
 use super::{fixed, internal_fixed, num, num0, nums};
 #[cfg(feature = "unstable-locales")]
 use super::{locales, Locale};
 use super::{Fixed, InternalInternal, Item, Numeric, Pad};
 #[cfg(any(feature = "alloc", feature = "std"))]
-use super::{ParseError, BAD_FORMAT};
+use crate::Error;
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::vec::Vec;
 
@@ -325,10 +327,10 @@ impl<'a> StrftimeItems<'a> {
     /// parse(&mut parsed, "11 Jul 2023 9.00", fmt_items.as_slice().iter())?;
     /// let parsed_dt = parsed.to_naive_datetime_with_offset(0)?;
     /// assert_eq!(parsed_dt, datetime);
-    /// # Ok::<(), chrono::ParseError>(())
+    /// # Ok::<(), chrono::Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std"))]
-    pub fn parse(self) -> Result<Vec<Item<'a>>, ParseError> {
+    pub fn parse(self) -> Result<Vec<Item<'a>>, Error> {
         self.into_iter()
             .map(|item| match item == Item::Error {
                 false => Ok(item),
@@ -352,10 +354,10 @@ impl<'a> StrftimeItems<'a> {
     /// # Example
     ///
     /// ```
-    /// use chrono::format::{Item, ParseError, StrftimeItems};
-    /// use chrono::NaiveDate;
+    /// use chrono::format::{Item, StrftimeItems};
+    /// use chrono::{Error, NaiveDate};
     ///
-    /// fn format_items(date_fmt: &str, time_fmt: &str) -> Result<Vec<Item<'static>>, ParseError> {
+    /// fn format_items(date_fmt: &str, time_fmt: &str) -> Result<Vec<Item<'static>>, Error> {
     ///     // `fmt_string` is dropped at the end of this function.
     ///     let fmt_string = format!("{} {}", date_fmt, time_fmt);
     ///     StrftimeItems::new(&fmt_string).parse_to_owned()
@@ -368,10 +370,10 @@ impl<'a> StrftimeItems<'a> {
     ///     datetime.format_with_items(fmt_items.as_slice().iter()).to_string(),
     ///     "11 Jul 2023  9.00"
     /// );
-    /// # Ok::<(), ParseError>(())
+    /// # Ok::<(), Error>(())
     /// ```
     #[cfg(any(feature = "alloc", feature = "std"))]
-    pub fn parse_to_owned(self) -> Result<Vec<Item<'static>>, ParseError> {
+    pub fn parse_to_owned(self) -> Result<Vec<Item<'static>>, Error> {
         self.into_iter()
             .map(|item| match item == Item::Error {
                 false => Ok(item.to_owned()),
