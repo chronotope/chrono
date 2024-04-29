@@ -594,7 +594,7 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `base < self`.
+    /// Returns `None` if `base > self`.
     #[must_use]
     pub fn years_since(&self, base: Self) -> Option<u32> {
         let mut years = self.year() - base.year();
