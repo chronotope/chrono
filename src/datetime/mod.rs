@@ -1027,7 +1027,7 @@ impl DateTime<FixedOffset> {
     /// for a version that does not require a timezone in the to-be-parsed str. The returned
     /// [`DateTime`] value will have a [`FixedOffset`] reflecting the parsed timezone.
     ///
-    /// See the [`format::strftime` module](./format/strftime/index.html) for supported format
+    /// See the [`format::strftime` module](../format/strftime/index.html) for supported format
     /// sequences.
     ///
     /// # Example
