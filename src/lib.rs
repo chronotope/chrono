@@ -501,7 +501,6 @@
 //! [chrono#1095]: https://github.com/chronotope/chrono/pull/1095
 
 #![doc(html_root_url = "https://docs.rs/chrono/latest/", test(attr(deny(warnings))))]
-#![cfg_attr(feature = "bench", feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 #![warn(unreachable_pub)]
