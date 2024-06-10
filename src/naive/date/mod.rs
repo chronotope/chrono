@@ -1200,9 +1200,11 @@ impl NaiveDate {
     /// or just feed it into `print!` and other formatting macros.
     /// (In this way it avoids the redundant memory allocation.)
     ///
-    /// A wrong format string does *not* issue an error immediately.
-    /// Rather, converting or formatting the `DelayedFormat` fails.
-    /// You are recommended to immediately use `DelayedFormat` for this reason.
+    /// # Panics
+    ///
+    /// Converting or formatting the returned `DelayedFormat` panics if the format string is wrong.
+    /// Because of this delayed failure, you are recommended to immediately use the `DelayedFormat`
+    /// value.
     ///
     /// # Example
     ///
