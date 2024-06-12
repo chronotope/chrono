@@ -822,7 +822,7 @@ impl DateTime<Utc> {
         Self::from_timestamp(secs, nsecs)
     }
 
-    /// Creates a new [`DateTime<Utc>`] from the number of non-leap microseconds
+    /// Creates a new [`DateTime<Utc>`] from the number of non-leap nanoseconds
     /// since January 1, 1970 0:00:00.000 UTC (aka "UNIX timestamp").
     ///
     /// This is guaranteed to round-trip with [`timestamp_nanos`](DateTime::timestamp_nanos).
