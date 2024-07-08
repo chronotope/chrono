@@ -471,14 +471,14 @@ fn test_date_checked_add_signed() {
         ymd(MAX_YEAR, 12, 31),
     );
     check(ymd(0, 1, 1), TimeDelta::try_days(MAX_DAYS_FROM_YEAR_0 as i64 + 1).unwrap(), None);
-    check(ymd(0, 1, 1), TimeDelta::max_value(), None);
+    check(ymd(0, 1, 1), TimeDelta::MAX, None);
     check(
         ymd(0, 1, 1),
         TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64).unwrap(),
         ymd(MIN_YEAR, 1, 1),
     );
     check(ymd(0, 1, 1), TimeDelta::try_days(MIN_DAYS_FROM_YEAR_0 as i64 - 1).unwrap(), None);
-    check(ymd(0, 1, 1), TimeDelta::min_value(), None);
+    check(ymd(0, 1, 1), TimeDelta::MIN, None);
 }
 
 #[test]

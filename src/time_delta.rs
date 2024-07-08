@@ -417,12 +417,14 @@ impl TimeDelta {
     }
 
     /// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
+    #[deprecated(since = "0.4.39", note = "Use `TimeDelta::MIN` instead")]
     #[inline]
     pub const fn min_value() -> TimeDelta {
         MIN
     }
 
     /// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
+    #[deprecated(since = "0.4.39", note = "Use `TimeDelta::MAX` instead")]
     #[inline]
     pub const fn max_value() -> TimeDelta {
         MAX
@@ -474,6 +476,12 @@ impl TimeDelta {
         };
         TimeDelta { secs: -self.secs - secs_diff, nanos }
     }
+
+    /// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
+    pub const MIN: Self = MIN;
+
+    /// The maximum possible `TimeDelta`: `i64::MAX` milliseconds.
+    pub const MAX: Self = MAX;
 }
 
 impl Neg for TimeDelta {
