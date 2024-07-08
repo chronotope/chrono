@@ -36,13 +36,13 @@ fn test_datetime_add() {
         Some((NaiveDate::MAX.year(), 12, 31, 23, 59, 59)),
     );
     check((0, 1, 1, 0, 0, 0), max_days_from_year_0 + seconds(86_400), None);
-    check((0, 1, 1, 0, 0, 0), TimeDelta::max_value(), None);
+    check((0, 1, 1, 0, 0, 0), TimeDelta::MAX, None);
 
     let min_days_from_year_0 =
         NaiveDate::MIN.signed_duration_since(NaiveDate::from_ymd_opt(0, 1, 1).unwrap());
     check((0, 1, 1, 0, 0, 0), min_days_from_year_0, Some((NaiveDate::MIN.year(), 1, 1, 0, 0, 0)));
     check((0, 1, 1, 0, 0, 0), min_days_from_year_0 - seconds(1), None);
-    check((0, 1, 1, 0, 0, 0), TimeDelta::min_value(), None);
+    check((0, 1, 1, 0, 0, 0), TimeDelta::MIN, None);
 }
 
 #[test]
