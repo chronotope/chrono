@@ -674,9 +674,9 @@ mod tests {
 
     #[test]
     fn test_nanos_never_panics() {
-        Utc.timestamp_nanos(i64::max_value());
+        Utc.timestamp_nanos(i64::MAX);
         Utc.timestamp_nanos(i64::default());
-        Utc.timestamp_nanos(i64::min_value());
+        Utc.timestamp_nanos(i64::MIN);
     }
 
     #[test]

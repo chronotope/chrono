@@ -156,7 +156,7 @@ impl AlternateTime {
         };
 
         // Check if the current year is valid for the following computations
-        if !(i32::min_value() + 2 <= current_year && current_year <= i32::max_value() - 2) {
+        if !(i32::MIN + 2..=i32::MAX - 2).contains(&current_year) {
             return Err(Error::OutOfRange("out of range date time"));
         }
 
@@ -233,7 +233,7 @@ impl AlternateTime {
         current_year: i32,
     ) -> Result<crate::MappedLocalTime<LocalTimeType>, Error> {
         // Check if the current year is valid for the following computations
-        if !(i32::min_value() + 2 <= current_year && current_year <= i32::max_value() - 2) {
+        if !(i32::MIN + 2..=i32::MAX - 2).contains(&current_year) {
             return Err(Error::OutOfRange("out of range date time"));
         }
 
@@ -687,7 +687,7 @@ impl UtcDateTime {
         let minute = (remaining_seconds / SECONDS_PER_MINUTE) % MINUTES_PER_HOUR;
         let second = remaining_seconds % SECONDS_PER_MINUTE;
 
-        let year = match year >= i32::min_value() as i64 && year <= i32::max_value() as i64 {
+        let year = match year >= i32::MIN as i64 && year <= i32::MAX as i64 {
             true => year as i32,
             false => return Err(Error::OutOfRange("i64 is out of range for i32")),
         };

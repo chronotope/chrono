@@ -415,7 +415,7 @@ impl<'a> TimeZoneRef<'a> {
 
     /// Convert Unix leap time to Unix time, from the list of leap seconds in a time zone
     fn unix_leap_time_to_unix_time(&self, unix_leap_time: i64) -> Result<i64, Error> {
-        if unix_leap_time == i64::min_value() {
+        if unix_leap_time == i64::MIN {
             return Err(Error::OutOfRange("out of range operation"));
         }
 
@@ -572,7 +572,7 @@ pub(crate) struct LocalTimeType {
 impl LocalTimeType {
     /// Construct a local time type
     pub(super) fn new(ut_offset: i32, is_dst: bool, name: Option<&[u8]>) -> Result<Self, Error> {
-        if ut_offset == i32::min_value() {
+        if ut_offset == i32::MIN {
             return Err(Error::LocalTimeType("invalid UTC offset"));
         }
 
@@ -586,7 +586,7 @@ impl LocalTimeType {
 
     /// Construct a local time type with the specified UTC offset in seconds
     pub(super) const fn with_offset(ut_offset: i32) -> Result<Self, Error> {
-        if ut_offset == i32::min_value() {
+        if ut_offset == i32::MIN {
             return Err(Error::LocalTimeType("invalid UTC offset"));
         }
 
@@ -818,7 +818,7 @@ mod tests {
         let time_zone_3 =
             TimeZone::new(vec![Transition::new(0, 0)], utc_local_time_types.clone(), vec![], None)?;
         let time_zone_4 = TimeZone::new(
-            vec![Transition::new(i32::min_value().into(), 0), Transition::new(0, 1)],
+            vec![Transition::new(i32::MIN.into(), 0), Transition::new(0, 1)],
             vec![utc, cet],
             Vec::new(),
             Some(fixed_extra_rule),
@@ -926,7 +926,7 @@ mod tests {
     #[test]
     fn test_leap_seconds_overflow() -> Result<(), Error> {
         let time_zone_err = TimeZone::new(
-            vec![Transition::new(i64::min_value(), 0)],
+            vec![Transition::new(i64::MIN, 0)],
             vec![LocalTimeType::UTC],
             vec![LeapSecond::new(0, 1)],
             Some(TransitionRule::from(LocalTimeType::UTC)),
@@ -934,13 +934,13 @@ mod tests {
         assert!(time_zone_err.is_err());
 
         let time_zone = TimeZone::new(
-            vec![Transition::new(i64::max_value(), 0)],
+            vec![Transition::new(i64::MAX, 0)],
             vec![LocalTimeType::UTC],
             vec![LeapSecond::new(0, 1)],
             None,
         )?;
         assert!(matches!(
-            time_zone.find_local_time_type(i64::max_value()),
+            time_zone.find_local_time_type(i64::MAX),
             Err(Error::FindLocalTimeType(_))
         ));
 
