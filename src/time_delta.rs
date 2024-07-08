@@ -10,9 +10,9 @@
 
 //! Temporal quantification
 
+use core::fmt;
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::time::Duration;
-use core::{fmt, i64};
 #[cfg(feature = "std")]
 use std::error::Error;
 

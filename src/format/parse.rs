@@ -6,7 +6,6 @@
 
 use core::borrow::Borrow;
 use core::str;
-use core::usize;
 
 use super::scan;
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
