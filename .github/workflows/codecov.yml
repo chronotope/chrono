@@ -13,6 +13,7 @@ jobs:
   job_code_coverage:
     name: llvm-cov
     runs-on: ubuntu-latest
+    environment: Coverage
     env:
       CARGO_TERM_COLOR: always
     steps:
