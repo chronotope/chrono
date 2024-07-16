@@ -99,6 +99,8 @@ Notes:
 
 [^1]: `%C`, `%y`:
    This is floor division, so 100 BCE (year number -99) will print `-1` and `99` respectively.
+   For `%y`, values greater or equal to 70 are interpreted as being in the 20th century,
+   values smaller than 70 in the 21st century.
 
 [^2]: `%U`:
    Week 1 starts with the first Sunday in that year.
