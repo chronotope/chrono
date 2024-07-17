@@ -62,6 +62,29 @@ pub struct TimeDelta {
     nanos: i32, // Always 0 <= nanos < NANOS_PER_SEC
 }
 
+#[cfg(feature = "serde")]
+impl serde::Serialize for TimeDelta {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		<(i64, i32) as serde::Serialize>::serialize(&(self.secs, self.nanos), serializer)
+	}
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for TimeDelta {
+	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+		let (secs, nanos) = <(i64, i32) as serde::Deserialize>::deserialize(deserializer)?;
+        if secs < MIN.secs
+            || secs > MAX.secs
+            || nanos >= 1_000_000_000
+            || (secs == MAX.secs && nanos > MAX.nanos)
+            || (secs == MIN.secs && nanos < MIN.nanos)
+        {
+            return Err(serde::de::Error::custom("TimeDelta out of bounds"));
+        }
+		Ok(TimeDelta { secs, nanos })
+	}
+}
+
 /// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
 pub(crate) const MIN: TimeDelta = TimeDelta {
     secs: -i64::MAX / MILLIS_PER_SEC - 1,
@@ -1304,5 +1327,12 @@ mod tests {
         let duration = TimeDelta::try_seconds(1).unwrap();
         let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
         assert_eq!(rkyv::from_bytes::<TimeDelta>(&bytes).unwrap(), duration);
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serde() {
+        let duration = TimeDelta::new(123, 456).unwrap();
+        assert_eq!(serde_json::from_value::<TimeDelta>(serde_json::to_value(&duration).unwrap()).unwrap(), duration);
     }
 }
