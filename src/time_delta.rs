@@ -64,25 +64,24 @@ pub struct TimeDelta {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for TimeDelta {
-	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-		<(i64, i32) as serde::Serialize>::serialize(&(self.secs, self.nanos), serializer)
-	}
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        <(i64, i32) as serde::Serialize>::serialize(&(self.secs, self.nanos), serializer)
+    }
 }
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for TimeDelta {
-	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-		let (secs, nanos) = <(i64, i32) as serde::Deserialize>::deserialize(deserializer)?;
-        if secs < MIN.secs
-            || secs > MAX.secs
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let (secs, nanos) = <(i64, i32) as serde::Deserialize>::deserialize(deserializer)?;
+        if !(MIN.secs..=MAX.secs).contains(&secs)
             || nanos >= 1_000_000_000
             || (secs == MAX.secs && nanos > MAX.nanos)
             || (secs == MIN.secs && nanos < MIN.nanos)
         {
             return Err(serde::de::Error::custom("TimeDelta out of bounds"));
         }
-		Ok(TimeDelta { secs, nanos })
-	}
+        Ok(TimeDelta { secs, nanos })
+    }
 }
 
 /// The minimum possible `TimeDelta`: `-i64::MAX` milliseconds.
@@ -1333,6 +1332,9 @@ mod tests {
     #[cfg(feature = "serde")]
     fn test_serde() {
         let duration = TimeDelta::new(123, 456).unwrap();
-        assert_eq!(serde_json::from_value::<TimeDelta>(serde_json::to_value(&duration).unwrap()).unwrap(), duration);
+        assert_eq!(
+            serde_json::from_value::<TimeDelta>(serde_json::to_value(duration).unwrap()).unwrap(),
+            duration
+        );
     }
 }
