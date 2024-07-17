@@ -1337,4 +1337,11 @@ mod tests {
             duration
         );
     }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    #[should_panic(expected = "TimeDelta out of bounds")]
+    fn test_serde_oob_panic() {
+        let _ = serde_json::from_value::<TimeDelta>(serde_json::json!([MAX.secs + 1, 0])).unwrap();
+    }
 }
