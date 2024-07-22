@@ -6,8 +6,7 @@
 
 use core::ops::RangeInclusive;
 
-use crate::expect;
-use crate::Weekday;
+use crate::{expect, Weekday};
 
 pub(crate) mod date;
 pub(crate) mod datetime;
@@ -15,13 +14,15 @@ mod internals;
 pub(crate) mod isoweek;
 pub(crate) mod time;
 
-pub use self::date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
 #[allow(deprecated)]
 pub use self::date::{MAX_DATE, MIN_DATE};
 #[allow(deprecated)]
 pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
-pub use self::isoweek::IsoWeek;
-pub use self::time::NaiveTime;
+pub use self::{
+    date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator},
+    isoweek::IsoWeek,
+    time::NaiveTime,
+};
 
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]
@@ -60,13 +61,37 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub const fn first_day(&self) -> NaiveDate {
+        expect(self.checked_first_day(), "first weekday out of range for `NaiveDate`")
+    }
+
+    /// Returns a date representing the first day of the week or
+    /// `None` if the date is out of `NaiveDate`'s range
+    /// (more than ca. 262,000 years away from common era).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::MIN;
+    /// let week = date.week(Weekday::Mon);
+    /// if let Some(first_day) = week.checked_first_day() {
+    ///     assert!(first_day == date);
+    /// } else {
+    ///     // error handling code
+    ///     return;
+    /// };
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn checked_first_day(&self) -> Option<NaiveDate> {
         let start = self.start.num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to subtract from `self.date`.
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        expect(self.date.add_days(days), "first weekday out of range for `NaiveDate`")
+        self.date.add_days(days)
     }
 
     /// Returns a date representing the last day of the week.
