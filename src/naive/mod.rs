@@ -265,4 +265,18 @@ mod test {
         let date_min = NaiveDate::MIN;
         assert!(date_min.week(Weekday::Mon).last_day() >= date_min);
     }
+
+    #[test]
+    fn test_naiveweek_checked_no_panic() {
+        let date_max = NaiveDate::MAX;
+        if let Some(last) = date_max.week(Weekday::Mon).checked_last_day() {
+            assert!(last == date_max);
+        }
+        let date_min = NaiveDate::MIN;
+        if let Some(first) = date_min.week(Weekday::Mon).checked_first_day() {
+            assert!(first == date_min);
+        }
+        let _ = date_min.week(Weekday::Mon).checked_days();
+        let _ = date_max.week(Weekday::Mon).checked_days();
+    }
 }
