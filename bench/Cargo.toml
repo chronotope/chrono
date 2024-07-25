@@ -7,8 +7,8 @@ edition = "2021"
 # But not when it lives in a separate crate :-).
 # See https://github.com/chronotope/chrono/pull/1104.
 
-[lib]
-name = "benches"
+[features]
+unstable-locales = ["chrono/unstable-locales"]
 
 [dependencies]
 chrono = { path = "..", features = ["__internal_bench", "serde"] }
