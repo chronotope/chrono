@@ -876,7 +876,7 @@ impl Parsed {
     ///   including offset from UTC.
     /// - `OUT_OF_RANGE`
     ///   - if any of the fields of `Parsed` are set to a value beyond their acceptable
-    ///   range.
+    ///     range.
     ///   - if the value would be outside the range of a [`NaiveDateTime`] or [`FixedOffset`].
     ///   - if the date does not exist.
     pub fn to_datetime(&self) -> ParseResult<DateTime<FixedOffset>> {
