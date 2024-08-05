@@ -1,8 +1,6 @@
 [licenses]
-allow-osi-fsf-free = "either"
-copyleft = "deny"
+allow = ["Apache-2.0", "MIT", "Unicode-DFS-2016"]
+private = { ignore = true }
 
 [advisories]
-unmaintained = "deny"
-unsound = "deny"
 yanked = "deny"
