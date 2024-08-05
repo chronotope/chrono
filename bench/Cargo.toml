@@ -2,6 +2,7 @@
 name = "benches"
 version = "0.1.0"
 edition = "2021"
+publish = false
 
 # Even as a `dev-dependency` Criterion and its dependencies can affect the MSRV of chrono.
 # But not when it lives in a separate crate :-).
