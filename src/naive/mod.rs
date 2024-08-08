@@ -6,8 +6,7 @@
 
 use core::ops::RangeInclusive;
 
-use crate::expect;
-use crate::Weekday;
+use crate::{expect, Weekday};
 
 pub(crate) mod date;
 pub(crate) mod datetime;
@@ -15,13 +14,15 @@ mod internals;
 pub(crate) mod isoweek;
 pub(crate) mod time;
 
-pub use self::date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
 #[allow(deprecated)]
 pub use self::date::{MAX_DATE, MIN_DATE};
 #[allow(deprecated)]
 pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
-pub use self::isoweek::IsoWeek;
-pub use self::time::NaiveTime;
+pub use self::{
+    date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator},
+    isoweek::IsoWeek,
+    time::NaiveTime,
+};
 
 #[cfg(feature = "__internal_bench")]
 #[doc(hidden)]
@@ -60,13 +61,37 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub const fn first_day(&self) -> NaiveDate {
+        expect(self.checked_first_day(), "first weekday out of range for `NaiveDate`")
+    }
+
+    /// Returns a date representing the first day of the week or
+    /// `None` if the date is out of `NaiveDate`'s range
+    /// (more than ca. 262,000 years away from common era).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::MIN;
+    /// let week = date.week(Weekday::Mon);
+    /// if let Some(first_day) = week.checked_first_day() {
+    ///     assert!(first_day == date);
+    /// } else {
+    ///     // error handling code
+    ///     return;
+    /// };
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn checked_first_day(&self) -> Option<NaiveDate> {
         let start = self.start.num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to subtract from `self.date`.
         // Do not construct an intermediate date beyond `self.date`, because that may be out of
         // range if `date` is close to `NaiveDate::MAX`.
         let days = start - ref_day - if start > ref_day { 7 } else { 0 };
-        expect(self.date.add_days(days), "first weekday out of range for `NaiveDate`")
+        self.date.add_days(days)
     }
 
     /// Returns a date representing the last day of the week.
@@ -88,13 +113,37 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub const fn last_day(&self) -> NaiveDate {
+        expect(self.checked_last_day(), "last weekday out of range for `NaiveDate`")
+    }
+
+    /// Returns a date representing the last day of the week or
+    /// `None` if the date is out of `NaiveDate`'s range
+    /// (more than ca. 262,000 years away from common era).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::MAX;
+    /// let week = date.week(Weekday::Mon);
+    /// if let Some(last_day) = week.checked_last_day() {
+    ///     assert!(last_day == date);
+    /// } else {
+    ///     // error handling code
+    ///     return;
+    /// };
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn checked_last_day(&self) -> Option<NaiveDate> {
         let end = self.start.pred().num_days_from_monday() as i32;
         let ref_day = self.date.weekday().num_days_from_monday() as i32;
         // Calculate the number of days to add to `self.date`.
         // Do not construct an intermediate date before `self.date` (like with `first_day()`),
         // because that may be out of range if `date` is close to `NaiveDate::MIN`.
         let days = end - ref_day + if end < ref_day { 7 } else { 0 };
-        expect(self.date.add_days(days), "last weekday out of range for `NaiveDate`")
+        self.date.add_days(days)
     }
 
     /// Returns a [`RangeInclusive<T>`] representing the whole week bounded by
@@ -118,7 +167,43 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub const fn days(&self) -> RangeInclusive<NaiveDate> {
-        self.first_day()..=self.last_day()
+        // `expect` doesn't work because `RangeInclusive` is not `Copy`
+        match self.checked_days() {
+            Some(val) => val,
+            None => panic!("{}", "first or last weekday is out of range for `NaiveDate`"),
+        }
+    }
+
+    /// Returns an [`Option<RangeInclusive<T>>`] representing the whole week bounded by
+    /// [checked_first_day](NaiveWeek::checked_first_day) and
+    /// [checked_last_day](NaiveWeek::checked_last_day) functions.
+    ///
+    /// Returns `None` if either of the boundaries are out of `NaiveDate`'s range
+    /// (more than ca. 262,000 years away from common era).
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::MAX;
+    /// let week = date.week(Weekday::Mon);
+    /// let _days = match week.checked_days() {
+    ///     Some(d) => d,
+    ///     None => {
+    ///         // error handling code
+    ///         return;
+    ///     }
+    /// };
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn checked_days(&self) -> Option<RangeInclusive<NaiveDate>> {
+        match (self.checked_first_day(), self.checked_last_day()) {
+            (Some(first), Some(last)) => Some(first..=last),
+            (_, _) => None,
+        }
     }
 }
 
@@ -179,5 +264,19 @@ mod test {
         assert!(date_max.week(Weekday::Mon).first_day() <= date_max);
         let date_min = NaiveDate::MIN;
         assert!(date_min.week(Weekday::Mon).last_day() >= date_min);
+    }
+
+    #[test]
+    fn test_naiveweek_checked_no_panic() {
+        let date_max = NaiveDate::MAX;
+        if let Some(last) = date_max.week(Weekday::Mon).checked_last_day() {
+            assert!(last == date_max);
+        }
+        let date_min = NaiveDate::MIN;
+        if let Some(first) = date_min.week(Weekday::Mon).checked_first_day() {
+            assert!(first == date_min);
+        }
+        let _ = date_min.week(Weekday::Mon).checked_days();
+        let _ = date_max.week(Weekday::Mon).checked_days();
     }
 }
