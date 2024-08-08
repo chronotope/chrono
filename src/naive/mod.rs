@@ -167,7 +167,43 @@ impl NaiveWeek {
     #[inline]
     #[must_use]
     pub const fn days(&self) -> RangeInclusive<NaiveDate> {
-        self.first_day()..=self.last_day()
+        // `expect` doesn't work because `RangeInclusive` is not `Copy`
+        match self.checked_days() {
+            Some(val) => val,
+            None => panic!("{}", "first or last weekday is out of range for `NaiveDate`"),
+        }
+    }
+
+    /// Returns an [`Option<RangeInclusive<T>>`] representing the whole week bounded by
+    /// [checked_first_day](NaiveWeek::checked_first_day) and
+    /// [checked_last_day](NaiveWeek::checked_last_day) functions.
+    ///
+    /// Returns `None` if either of the boundaries are out of `NaiveDate`'s range
+    /// (more than ca. 262,000 years away from common era).
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use chrono::{NaiveDate, Weekday};
+    ///
+    /// let date = NaiveDate::MAX;
+    /// let week = date.week(Weekday::Mon);
+    /// let _days = match week.checked_days() {
+    ///     Some(d) => d,
+    ///     None => {
+    ///         // error handling code
+    ///         return;
+    ///     }
+    /// };
+    /// ```
+    #[inline]
+    #[must_use]
+    pub const fn checked_days(&self) -> Option<RangeInclusive<NaiveDate>> {
+        match (self.checked_first_day(), self.checked_last_day()) {
+            (Some(first), Some(last)) => Some(first..=last),
+            (_, _) => None,
+        }
     }
 }
 
