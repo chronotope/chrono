@@ -247,6 +247,21 @@ impl<'a> Cursor<'a> {
         Ok(u32::from_be_bytes(buf))
     }
 
+    #[cfg(target_env = "ohos")]
+    pub(crate) fn seek_after(&mut self, offset: usize) -> Result<usize, io::Error> {
+        if offset < self.read_count {
+            return Err(io::Error::from(ErrorKind::UnexpectedEof));
+        }
+        match self.remaining.get((offset - self.read_count)..) {
+            Some(remaining) => {
+                self.remaining = remaining;
+                self.read_count = offset;
+                Ok(offset)
+            }
+            _ => Err(io::Error::from(ErrorKind::UnexpectedEof)),
+        }
+    }
+
     /// Read exactly `count` bytes, reducing remaining data and incrementing read count
     pub(crate) fn read_exact(&mut self, count: usize) -> Result<&'a [u8], io::Error> {
         match (self.remaining.get(..count), self.remaining.get(count..)) {
