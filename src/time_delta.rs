@@ -640,7 +640,7 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 
 #[cfg(feature = "serde")]
 mod serde {
-    use super::{TimeDelta, MAX, MIN};
+    use super::TimeDelta;
     use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
     impl Serialize for TimeDelta {
@@ -652,20 +652,13 @@ mod serde {
     impl<'de> Deserialize<'de> for TimeDelta {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
             let (secs, nanos) = <(i64, i32) as Deserialize>::deserialize(deserializer)?;
-            if !(MIN.secs..=MAX.secs).contains(&secs)
-                || nanos >= 1_000_000_000
-                || (secs == MAX.secs && nanos > MAX.nanos)
-                || (secs == MIN.secs && nanos < MIN.nanos)
-            {
-                return Err(Error::custom("TimeDelta out of bounds"));
-            }
-            Ok(TimeDelta { secs, nanos })
+            TimeDelta::new(secs, nanos as u32).ok_or(Error::custom("TimeDelta out of bounds"))
         }
     }
 
     #[cfg(test)]
     mod tests {
-        use super::{TimeDelta, MAX};
+        use super::{TimeDelta, super::MAX};
 
         #[test]
         fn test_serde() {
