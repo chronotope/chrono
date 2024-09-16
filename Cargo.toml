@@ -41,7 +41,7 @@ __internal_bench = []
 num-traits = { version = "0.2", default-features = false }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.8", optional = true }
-rkyv = { version = "0.7.43", optional = true, default-features = false }
+rkyv = { version = "0.8.3", optional = true, default-features = false }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]
