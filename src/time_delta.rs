@@ -658,7 +658,7 @@ mod serde {
 
     #[cfg(test)]
     mod tests {
-        use super::{TimeDelta, super::MAX};
+        use super::{super::MAX, TimeDelta};
 
         #[test]
         fn test_serde() {
