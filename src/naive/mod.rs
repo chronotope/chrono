@@ -29,7 +29,7 @@ pub use self::internals::YearFlags as __BenchYearFlags;
 
 /// A week represented by a [`NaiveDate`] and a [`Weekday`] which is the first
 /// day of the week.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct NaiveWeek {
     date: NaiveDate,
     start: Weekday,
