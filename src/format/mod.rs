@@ -33,10 +33,9 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::boxed::Box;
+use core::error::Error;
 use core::fmt;
 use core::str::FromStr;
-#[cfg(feature = "std")]
-use std::error::Error;
 
 use crate::{Month, ParseMonthError, ParseWeekdayError, Weekday};
 
@@ -448,7 +447,6 @@ impl fmt::Display for ParseError {
     }
 }
 
-#[cfg(feature = "std")]
 impl Error for ParseError {
     #[allow(deprecated)]
     fn description(&self) -> &str {
