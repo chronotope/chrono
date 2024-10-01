@@ -616,15 +616,40 @@ impl<Tz: TimeZone> DateTime<Tz> {
     ///
     /// # Panics
     ///
-    /// Panics if the date can not be represented in this format: the year may not be negative and
-    /// can not have more than 4 digits.
+    /// RFC 2822 is only defined on years 0 through 9999, and this method panics on dates outside
+    /// of that range.
     #[cfg(feature = "alloc")]
     #[must_use]
+    #[deprecated(
+        since = "0.4.36",
+        note = "Can panic on years outside of the range 0..=9999. Use `try_to_rfc2822()` instead."
+    )]
     pub fn to_rfc2822(&self) -> String {
+        self.try_to_rfc2822().expect("date outside of defined range for rfc2822")
+    }
+
+    /// Returns an RFC 2822 date and time string such as `Tue, 1 Jul 2003 10:52:37 +0200`.
+    ///
+    /// # Errors
+    ///
+    /// RFC 2822 is only defined on years 0 through 9999, and this method returns an error on dates
+    /// outside of that range.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use chrono::{TimeZone, Utc};
+    /// let dt = Utc.with_ymd_and_hms(2023, 6, 10, 9, 18, 25).unwrap();
+    /// assert_eq!(dt.try_to_rfc2822(), Some("Sat, 10 Jun 2023 09:18:25 +0000".to_owned()));
+    ///
+    /// let dt = Utc.with_ymd_and_hms(10_000, 1, 1, 0, 0, 0).unwrap();
+    /// assert_eq!(dt.try_to_rfc2822(), None);
+    /// ```
+    #[cfg(feature = "alloc")]
+    pub fn try_to_rfc2822(&self) -> Option<String> {
         let mut result = String::with_capacity(32);
-        write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix())
-            .expect("writing rfc2822 datetime to string should never fail");
-        result
+        write_rfc2822(&mut result, self.overflowing_naive_local(), self.offset.fix()).ok()?;
+        Some(result)
     }
 
     /// Returns an RFC 3339 and ISO 8601 date and time string such as `1996-12-19T16:39:57-08:00`.
