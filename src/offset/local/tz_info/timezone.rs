@@ -8,6 +8,9 @@ use std::{cmp::Ordering, fmt, str};
 use super::rule::{AlternateTime, TransitionRule};
 use super::{parser, Error, DAYS_PER_WEEK, SECONDS_PER_DAY};
 
+#[cfg(target_env = "ohos")]
+use crate::offset::local::tz_info::parser::Cursor;
+
 /// Time zone
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) struct TimeZone {
@@ -48,6 +51,12 @@ impl TimeZone {
             if let Ok(bytes) = android_tzdata::find_tz_data(tz_string) {
                 return Self::from_tz_data(&bytes);
             }
+        }
+
+        // ohos merge all file into tzdata since ver35
+        #[cfg(target_env = "ohos")]
+        {
+            return Self::from_tz_data(&find_ohos_tz_data(tz_string)?);
         }
 
         let mut chars = tz_string.chars();
@@ -626,6 +635,58 @@ fn find_tz_file(path: impl AsRef<Path>) -> Result<File, Error> {
         }
 
         Err(Error::Io(io::ErrorKind::NotFound.into()))
+    }
+}
+
+#[cfg(target_env = "ohos")]
+fn from_tzdata_bytes(bytes: &mut Vec<u8>, tz_string: &str) -> Result<Vec<u8>, Error> {
+    const VERSION_SIZE: usize = 12;
+    const OFFSET_SIZE: usize = 4;
+    const INDEX_CHUNK_SIZE: usize = 48;
+    const ZONENAME_SIZE: usize = 40;
+
+    let mut cursor = Cursor::new(&bytes);
+    // version head
+    let _ = cursor.read_exact(VERSION_SIZE)?;
+    let index_offset_offset = cursor.read_be_u32()?;
+    let data_offset_offset = cursor.read_be_u32()?;
+    // final offset
+    let _ = cursor.read_be_u32()?;
+
+    cursor.seek_after(index_offset_offset as usize)?;
+    let mut idx = index_offset_offset;
+    while idx < data_offset_offset {
+        let index_buf = cursor.read_exact(ZONENAME_SIZE)?;
+        let offset = cursor.read_be_u32()?;
+        let length = cursor.read_be_u32()?;
+        let zone_name = str::from_utf8(index_buf)?.trim_end_matches('\0');
+        if zone_name != tz_string {
+            idx += INDEX_CHUNK_SIZE as u32;
+            continue;
+        }
+        cursor.seek_after((data_offset_offset + offset) as usize)?;
+        return match cursor.read_exact(length as usize) {
+            Ok(result) => Ok(result.to_vec()),
+            Err(_err) => Err(Error::InvalidTzFile("invalid ohos tzdata chunk")),
+        };
+    }
+
+    Err(Error::InvalidTzString("cannot find tz string within tzdata"))
+}
+
+#[cfg(target_env = "ohos")]
+fn from_tzdata_file(file: &mut File, tz_string: &str) -> Result<Vec<u8>, Error> {
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes)?;
+    from_tzdata_bytes(&mut bytes, tz_string)
+}
+
+#[cfg(target_env = "ohos")]
+fn find_ohos_tz_data(tz_string: &str) -> Result<Vec<u8>, Error> {
+    const TZDATA_PATH: &str = "/system/etc/zoneinfo/tzdata";
+    match File::open(TZDATA_PATH) {
+        Ok(mut file) => from_tzdata_file(&mut file, tz_string),
+        Err(_err) => Err(_err.into()),
     }
 }
 
