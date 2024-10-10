@@ -9,7 +9,12 @@ use core::str::FromStr;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"))]
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
 use rkyv_08::{Archive, Deserialize, Serialize};
 
 use super::{MappedLocalTime, Offset, TimeZone};
@@ -250,7 +255,10 @@ mod tests {
     #[cfg(feature = "rkyv-08-bytecheck")]
     fn test_rkyv_bytecheck() {
         let offset = FixedOffset::from_str("-0500").unwrap();
-		let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&offset).unwrap();
-        assert_eq!(rkyv_08::from_bytes::<FixedOffset, rkyv_08::rancor::Error>(&bytes).unwrap(), offset);
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&offset).unwrap();
+        assert_eq!(
+            rkyv_08::from_bytes::<FixedOffset, rkyv_08::rancor::Error>(&bytes).unwrap(),
+            offset
+        );
     }
 }

@@ -3,7 +3,12 @@ use core::fmt;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"))]
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
 use rkyv_08::{Archive, Deserialize, Serialize};
 
 use crate::OutOfRange;

@@ -21,7 +21,12 @@ use crate::{expect, try_opt};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-#[cfg(any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"))]
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
 use rkyv_08::{Archive, Deserialize, Serialize};
 
 /// The number of nanoseconds in a microsecond.
@@ -1363,7 +1368,10 @@ mod tests {
     #[cfg(feature = "rkyv-08-bytecheck")]
     fn test_rkyv_bytecheck() {
         let duration = TimeDelta::try_seconds(1).unwrap();
-		let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&duration).unwrap();
-		assert_eq!(rkyv_08::from_bytes::<TimeDelta, rkyv_08::rancor::Error>(&bytes).unwrap(), duration);
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&duration).unwrap();
+        assert_eq!(
+            rkyv_08::from_bytes::<TimeDelta, rkyv_08::rancor::Error>(&bytes).unwrap(),
+            duration
+        );
     }
 }
