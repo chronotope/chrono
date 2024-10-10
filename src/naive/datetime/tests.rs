@@ -407,3 +407,21 @@ fn test_rkyv_validation() {
     let bytes = rkyv::to_bytes::<_, 12>(&dt_max).unwrap();
     assert_eq!(rkyv::from_bytes::<NaiveDateTime>(&bytes).unwrap(), dt_max);
 }
+
+#[test]
+#[cfg(feature = "rkyv-08-bytecheck")]
+fn test_rkyv_validation() {
+    let dt_min = NaiveDateTime::MIN;
+    let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&dt_min).unwrap();
+    assert_eq!(
+        rkyv_08::from_bytes::<NaiveDateTime, rkyv_08::rancor::Error>(&bytes).unwrap(),
+        dt_min
+    );
+
+    let dt_max = NaiveDateTime::MAX;
+    let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&dt_max).unwrap();
+    assert_eq!(
+        rkyv_08::from_bytes::<NaiveDateTime, rkyv_08::rancor::Error>(&bytes).unwrap(),
+        dt_max
+    );
+}
