@@ -862,6 +862,18 @@ fn test_rkyv_validation() {
     assert_eq!(rkyv::from_bytes::<NaiveDate>(&bytes).unwrap(), date_max);
 }
 
+#[test]
+#[cfg(feature = "rkyv-08-bytecheck")]
+fn test_rkyv_validation() {
+    let date_min = NaiveDate::MIN;
+    let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&date_min).unwrap();
+    assert_eq!(rkyv_08::from_bytes::<NaiveDate, rkyv_08::rancor::Error>(&bytes).unwrap(), date_min);
+
+    let date_max = NaiveDate::MAX;
+    let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&date_max).unwrap();
+    assert_eq!(rkyv_08::from_bytes::<NaiveDate, rkyv_08::rancor::Error>(&bytes).unwrap(), date_max);
+}
+
 //   MAX_YEAR-12-31 minus 0000-01-01
 // = (MAX_YEAR-12-31 minus 0000-12-31) + (0000-12-31 - 0000-01-01)
 // = MAX_YEAR * 365 + (# of leap years from 0001 to MAX_YEAR) + 365

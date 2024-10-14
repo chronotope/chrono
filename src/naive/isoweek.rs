@@ -10,6 +10,14 @@ use super::internals::YearFlags;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
+use rkyv_08::{Archive, Deserialize, Serialize};
+
 /// ISO 8601 week.
 ///
 /// This type, combined with [`Weekday`](../enum.Weekday.html),
@@ -22,6 +30,15 @@ use rkyv::{Archive, Deserialize, Serialize};
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+)]
+#[cfg_attr(
+    any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"),
+    derive(Archive, Deserialize, Serialize),
+    rkyv(
+		crate = rkyv_08,
+		compare(PartialEq, PartialOrd),
+		derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash),
+	),
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct IsoWeek {
@@ -162,7 +179,7 @@ impl fmt::Debug for IsoWeek {
 
 #[cfg(test)]
 mod tests {
-    #[cfg(feature = "rkyv-validation")]
+    #[cfg(any(feature = "rkyv-validation", feature = "rkyv-08-bytecheck"))]
     use super::IsoWeek;
     use crate::naive::date::{self, NaiveDate};
     use crate::Datelike;
@@ -229,5 +246,23 @@ mod tests {
         let maxweek = NaiveDate::MAX.iso_week();
         let bytes = rkyv::to_bytes::<_, 4>(&maxweek).unwrap();
         assert_eq!(rkyv::from_bytes::<IsoWeek>(&bytes).unwrap(), maxweek);
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-08-bytecheck")]
+    fn test_rkyv_bytecheck() {
+        let minweek = NaiveDate::MIN.iso_week();
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&minweek).unwrap();
+        assert_eq!(
+            rkyv_08::from_bytes::<IsoWeek, rkyv_08::rancor::Error>(&bytes).unwrap(),
+            minweek
+        );
+
+        let maxweek = NaiveDate::MAX.iso_week();
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&maxweek).unwrap();
+        assert_eq!(
+            rkyv_08::from_bytes::<IsoWeek, rkyv_08::rancor::Error>(&bytes).unwrap(),
+            maxweek
+        );
     }
 }
