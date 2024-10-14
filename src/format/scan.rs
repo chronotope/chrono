@@ -15,6 +15,28 @@ use crate::Weekday;
 /// Any number that does not fit in `i64` is an error.
 #[inline]
 pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
+    let (s, n) = unsigned_number(s, min, max)?;
+    Ok((s, n.try_into().map_err(|_| OUT_OF_RANGE)?))
+}
+
+/// Tries to parse the negative number from `min` to `max` digits.
+///
+/// The absence of digits at all is an unconditional error.
+/// More than `max` digits are consumed up to the first `max` digits.
+/// Any number that does not fit in `i64` is an error.
+#[inline]
+pub(super) fn negative_number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)> {
+    let (s, n) = unsigned_number(s, min, max)?;
+    let signed_neg = (n as i64).wrapping_neg();
+    if !signed_neg.is_negative() {
+        return Err(OUT_OF_RANGE);
+    }
+    Ok((s, signed_neg))
+}
+
+/// Tries to parse a number from `min` to `max` digits as an unsigned integer.
+#[inline]
+pub(super) fn unsigned_number(s: &str, min: usize, max: usize) -> ParseResult<(&str, u64)> {
     assert!(min <= max);
 
     // We are only interested in ascii numbers, so we can work with the `str` as bytes. We stop on
@@ -25,7 +47,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
         return Err(TOO_SHORT);
     }
 
-    let mut n = 0i64;
+    let mut n = 0u64;
     for (i, c) in bytes.iter().take(max).cloned().enumerate() {
         // cloned() = copied()
         if !c.is_ascii_digit() {
@@ -36,7 +58,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
             }
         }
 
-        n = match n.checked_mul(10).and_then(|n| n.checked_add((c - b'0') as i64)) {
+        n = match n.checked_mul(10).and_then(|n| n.checked_add((c - b'0') as u64)) {
             Some(n) => n,
             None => return Err(OUT_OF_RANGE),
         };
@@ -181,7 +203,7 @@ pub(super) fn space(s: &str) -> ParseResult<&str> {
 }
 
 /// Consumes any number (including zero) of colon or spaces.
-pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
+pub(super) fn colon_or_space(s: &str) -> ParseResult<&str> {
     Ok(s.trim_start_matches(|c: char| c == ':' || c.is_whitespace()))
 }
 
@@ -199,7 +221,7 @@ pub(crate) fn colon_or_space(s: &str) -> ParseResult<&str> {
 /// This is part of [RFC 3339 & ISO 8601].
 ///
 /// [RFC 3339 & ISO 8601]: https://en.wikipedia.org/w/index.php?title=ISO_8601&oldid=1114309368#Time_offsets_from_UTC
-pub(crate) fn timezone_offset<F>(
+pub(super) fn timezone_offset<F>(
     mut s: &str,
     mut consume_colon: F,
     allow_zulu: bool,
@@ -215,34 +237,28 @@ where
         }
     }
 
-    const fn digits(s: &str) -> ParseResult<(u8, u8)> {
+    fn digits(s: &str) -> ParseResult<u8> {
         let b = s.as_bytes();
         if b.len() < 2 {
-            Err(TOO_SHORT)
-        } else {
-            Ok((b[0], b[1]))
+            return Err(TOO_SHORT);
+        }
+        match (b[0], b[1]) {
+            (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => Ok((h1 - b'0') * 10 + (h2 - b'0')),
+            _ => Err(INVALID),
         }
     }
     let negative = match s.chars().next() {
         Some('+') => {
-            // PLUS SIGN (U+2B)
             s = &s['+'.len_utf8()..];
-
             false
         }
         Some('-') => {
-            // HYPHEN-MINUS (U+2D)
             s = &s['-'.len_utf8()..];
-
             true
         }
-        Some('−') => {
+        Some('−') if allow_tz_minus_sign => {
             // MINUS SIGN (U+2212)
-            if !allow_tz_minus_sign {
-                return Err(INVALID);
-            }
             s = &s['−'.len_utf8()..];
-
             true
         }
         Some(_) => return Err(INVALID),
@@ -250,10 +266,7 @@ where
     };
 
     // hours (00--99)
-    let hours = match digits(s)? {
-        (h1 @ b'0'..=b'9', h2 @ b'0'..=b'9') => i32::from((h1 - b'0') * 10 + (h2 - b'0')),
-        _ => return Err(INVALID),
-    };
+    let hours = digits(s)? as i32;
     s = &s[2..];
 
     // colons (and possibly other separators)
@@ -261,21 +274,14 @@ where
 
     // minutes (00--59)
     // if the next two items are digits then we have to add minutes
-    let minutes = if let Ok(ds) = digits(s) {
-        match ds {
-            (m1 @ b'0'..=b'5', m2 @ b'0'..=b'9') => i32::from((m1 - b'0') * 10 + (m2 - b'0')),
-            (b'6'..=b'9', b'0'..=b'9') => return Err(OUT_OF_RANGE),
-            _ => return Err(INVALID),
+    let minutes = match digits(s) {
+        Ok(m) if m >= 60 => return Err(OUT_OF_RANGE),
+        Ok(m) => {
+            s = &s[2..];
+            m as i32
         }
-    } else if allow_missing_minutes {
-        0
-    } else {
-        return Err(TOO_SHORT);
-    };
-    s = match s.len() {
-        len if len >= 2 => &s[2..],
-        0 => s,
-        _ => return Err(TOO_SHORT),
+        Err(_) if allow_missing_minutes => 0,
+        Err(e) => return Err(e),
     };
 
     let seconds = hours * 3600 + minutes * 60;
