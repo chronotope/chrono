@@ -422,7 +422,7 @@ pub enum ParseErrorKind {
     /// All formatting items have been read but there is a remaining input.
     TooLong,
 
-    /// There was an error on the formatting string, or there were non-supported formating items.
+    /// There was an error on the formatting string, or there were non-supported formatting items.
     BadFormat,
 
     // TODO: Change this to `#[non_exhaustive]` (on the enum) with the next breaking release.
