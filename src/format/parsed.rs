@@ -536,7 +536,7 @@ impl Parsed {
     ///
     /// # Errors
     ///
-    /// Returns `OUT_OF_RANGE` if `value` is ouside the range of an `i32`.
+    /// Returns `OUT_OF_RANGE` if `value` is outside the range of an `i32`.
     ///
     /// Returns `IMPOSSIBLE` if this field was already set to a different value.
     #[inline]

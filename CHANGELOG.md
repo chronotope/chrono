@@ -143,7 +143,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 ### Fixes
 
-* Make Datetime arithmatic adjust their offsets after discovering their new
+* Make Datetime arithmetic adjust their offsets after discovering their new
   timestamps (@quodlibetor #337)
 * Put wasm-bindgen related code and dependencies behind a `wasmbind` feature
   gate. (@quodlibetor #335)
@@ -599,7 +599,7 @@ and replaced by 0.2.25 very shortly. Duh.)
 
 ### Added
 
-- `Offset` is splitted into `TimeZone` (constructor) and `Offset` (storage) types.
+- `Offset` is split into `TimeZone` (constructor) and `Offset` (storage) types.
   You would normally see only the former, as the latter is mostly an implementation detail.
   Most importantly, `Local` now can be used to directly construct timezone-aware values.
 
@@ -661,7 +661,7 @@ and replaced by 0.2.25 very shortly. Duh.)
   so we simply let it go.
 
   In the case that `Time` is really required, one can use a simpler `NaiveTime`.
-  `NaiveTime` and `NaiveDate` can be freely combined and splitted,
+  `NaiveTime` and `NaiveDate` can be freely combined and split,
   and `TimeZone::from_{local,utc}_datetime` can be used to convert from/to the local time.
 
 - `with_offset` method has been removed. Use `with_timezone` method instead.

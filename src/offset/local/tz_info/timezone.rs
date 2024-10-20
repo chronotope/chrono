@@ -252,7 +252,7 @@ impl<'a> TimeZoneRef<'a> {
 
                 match transition_start.cmp(&transition_end) {
                     Ordering::Greater => {
-                        // bakwards transition, eg from DST to regular
+                        // backwards transition, eg from DST to regular
                         // this means a given local time could have one of two possible offsets
                         if local_leap_time < transition_end {
                             return Ok(crate::MappedLocalTime::Single(prev));
