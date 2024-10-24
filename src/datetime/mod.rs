@@ -1727,7 +1727,7 @@ impl<Tz: TimeZone> Sub<&DateTime<Tz>> for DateTime<Tz> {
 /// - The local time at the resulting date does not exist or is ambiguous, for example during a
 ///   daylight saving time transition.
 ///
-/// Strongly consider using `DateTime<Tz>::checked_sub_days` to get an `Option` instead.
+/// Strongly consider using `DateTime<Tz>::checked_add_days` to get an `Option` instead.
 impl<Tz: TimeZone> Add<Days> for DateTime<Tz> {
     type Output = DateTime<Tz>;
 
