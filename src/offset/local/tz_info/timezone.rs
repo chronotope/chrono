@@ -935,7 +935,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dst_end_posix_tz() -> Result<(), Error> {
+    fn test_dst_backward_posix_tz() -> Result<(), Error> {
         // Northern hemisphere DST (CET/CEST)
         let tz: TimeZone = TimeZone::from_posix_tz("CET-1CEST,M3.5.0,M10.5.0/3")?;
         let tz_ref = tz.as_ref();
@@ -966,11 +966,26 @@ mod tests {
         assert_eq!(offsets.latest().unwrap().ut_offset, -14400);
         assert_eq!(offsets.latest().unwrap().name.unwrap().as_bytes(), b"-04");
 
+        // Reverse DST (Europe/Dublin)
+        let tz: TimeZone = TimeZone::from_posix_tz("IST-1GMT0,M10.5.0,M3.5.0/1")?;
+        let tz_ref = tz.as_ref();
+        // For 2024 DST *starts* at 2:00 on October 27, moving back 1 hour.
+        let date = NaiveDateTime::new(NaiveDate::from_ymd_opt(2024, 10, 27).unwrap(), NaiveTime::from_hms_opt(2, 0, 0).unwrap());
+        let offsets = tz_ref.find_local_time_type_from_local(date.and_utc().timestamp(), 2024)?;
+        // The earlier time is the time still in DST.
+        assert_eq!(offsets.earliest().unwrap().is_dst, false);
+        assert_eq!(offsets.earliest().unwrap().ut_offset, 3600);
+        assert_eq!(offsets.earliest().unwrap().name.unwrap().as_bytes(), b"IST");
+        // The later time is the standard time.
+        assert_eq!(offsets.latest().unwrap().is_dst, true);
+        assert_eq!(offsets.latest().unwrap().ut_offset, 0);
+        assert_eq!(offsets.latest().unwrap().name.unwrap().as_bytes(), b"GMT");
+
         Ok(())
     }
 
     #[test]
-    fn test_dst_end_tzfile() -> Result<(), Error> {
+    fn test_dst_backward_tzfile() -> Result<(), Error> {
         // Northern hemisphere DST (CET/CEST)
         let data:[u8;604] = [
                 0x54, 0x5a, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1d, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x09, 0x65, 0x92, 0x00, 0x80, 0x66, 0x08, 0xb5, 0x90, 0x67, 0x1d, 0x90, 0x90, 0x67, 0xe8, 0x97, 0x90, 0x68, 0xfd, 0x72, 0x90, 0x69, 0xc8, 0x79, 0x90, 0x6a, 0xdd, 0x54, 0x90, 0x6b, 0xa8, 0x5b, 0x90, 0x6c, 0xc6, 0x71, 0x10,
