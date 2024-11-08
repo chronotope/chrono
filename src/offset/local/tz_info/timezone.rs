@@ -238,7 +238,7 @@ impl<'a> TimeZoneRef<'a> {
         let local_leap_time = local_time;
 
         // if we have at least one transition,
-        // we must check _all_ of them, incase of any Overlapping (MappedLocalTime::Ambiguous) or Skipping (MappedLocalTime::None) transitions
+        // we must check _all_ of them, in case of any Overlapping (MappedLocalTime::Ambiguous) or Skipping (MappedLocalTime::None) transitions
         let offset_after_last = if !self.transitions.is_empty() {
             let mut prev = self.local_time_types[0];
 
@@ -259,7 +259,8 @@ impl<'a> TimeZoneRef<'a> {
                         } else if local_leap_time >= transition_end
                             && local_leap_time <= transition_start
                         {
-                            if prev.ut_offset < after_ltt.ut_offset {
+                            // Going from local to UTC a bigger offset means an earlier time.
+                            if prev.ut_offset > after_ltt.ut_offset {
                                 return Ok(crate::MappedLocalTime::Ambiguous(prev, after_ltt));
                             } else {
                                 return Ok(crate::MappedLocalTime::Ambiguous(after_ltt, prev));
@@ -271,7 +272,8 @@ impl<'a> TimeZoneRef<'a> {
                         if local_leap_time < transition_start {
                             return Ok(crate::MappedLocalTime::Single(prev));
                         } else if local_leap_time == transition_end {
-                            if prev.ut_offset < after_ltt.ut_offset {
+                            // Going from local to UTC a bigger offset means an earlier time.
+                            if prev.ut_offset > after_ltt.ut_offset {
                                 return Ok(crate::MappedLocalTime::Ambiguous(prev, after_ltt));
                             } else {
                                 return Ok(crate::MappedLocalTime::Ambiguous(after_ltt, prev));

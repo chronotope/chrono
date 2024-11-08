@@ -272,7 +272,7 @@ impl AlternateTime {
                     } else if local_time >= dst_end_transition_end
                         && local_time <= dst_end_transition_start
                     {
-                        Ok(crate::MappedLocalTime::Ambiguous(self.std, self.dst))
+                        Ok(crate::MappedLocalTime::Ambiguous(self.dst, self.std))
                     } else {
                         Ok(crate::MappedLocalTime::Single(self.std))
                     }
@@ -284,7 +284,7 @@ impl AlternateTime {
                     } else if local_time >= dst_end_transition_end
                         && local_time <= dst_end_transition_start
                     {
-                        Ok(crate::MappedLocalTime::Ambiguous(self.std, self.dst))
+                        Ok(crate::MappedLocalTime::Ambiguous(self.dst, self.std))
                     } else if local_time > dst_end_transition_end
                         && local_time < dst_start_transition_start
                     {
@@ -309,7 +309,7 @@ impl AlternateTime {
                     } else if local_time >= dst_start_transition_end
                         && local_time <= dst_start_transition_start
                     {
-                        Ok(crate::MappedLocalTime::Ambiguous(self.dst, self.std))
+                        Ok(crate::MappedLocalTime::Ambiguous(self.std, self.dst))
                     } else if local_time > dst_start_transition_start
                         && local_time < dst_end_transition_start
                     {
@@ -337,7 +337,7 @@ impl AlternateTime {
                     } else if local_time >= dst_start_transition_end
                         && local_time <= dst_start_transition_start
                     {
-                        Ok(crate::MappedLocalTime::Ambiguous(self.dst, self.std))
+                        Ok(crate::MappedLocalTime::Ambiguous(self.std, self.dst))
                     } else {
                         Ok(crate::MappedLocalTime::Single(self.dst))
                     }
