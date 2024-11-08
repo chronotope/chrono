@@ -937,6 +937,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::bool_assert_comparison)]
     fn test_dst_backward_posix_tz() -> Result<(), Error> {
         // Northern hemisphere DST (CET/CEST)
         let tz: TimeZone = TimeZone::from_posix_tz("CET-1CEST,M3.5.0,M10.5.0/3")?;
@@ -996,6 +997,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::bool_assert_comparison)]
     fn test_dst_backward_tzfile() -> Result<(), Error> {
         // Northern hemisphere DST (CET/CEST)
         let data: [u8; 604] = [
