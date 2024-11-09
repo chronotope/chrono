@@ -281,6 +281,7 @@ impl TimeDelta {
     }
 
     /// Returns the total number of whole days in the `TimeDelta`.
+    #[inline]
     pub const fn num_days(&self) -> i64 {
         self.num_seconds() / SECS_PER_DAY
     }
