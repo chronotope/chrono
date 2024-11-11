@@ -940,7 +940,7 @@ mod tests {
     #[allow(clippy::bool_assert_comparison)]
     fn test_dst_backward_posix_tz() -> Result<(), Error> {
         // Northern hemisphere DST (CET/CEST)
-        let tz: TimeZone = TimeZone::from_posix_tz("CET-1CEST,M3.5.0,M10.5.0/3")?;
+        let tz = TimeZone::from_posix_tz("CET-1CEST,M3.5.0,M10.5.0/3")?;
         let tz_ref = tz.as_ref();
         // For 2024 DST ends at 3:00 on October 27, moving back 1 hour.
         let date = NaiveDateTime::new(
@@ -958,7 +958,7 @@ mod tests {
         assert_eq!(offsets.latest().unwrap().name.unwrap().as_bytes(), b"CET");
 
         // Southern Hemisphere (Chili)
-        let tz: TimeZone = TimeZone::from_posix_tz("<-04>4<-03>,M9.1.6/24,M4.1.6/24")?;
+        let tz = TimeZone::from_posix_tz("<-04>4<-03>,M9.1.6/24,M4.1.6/24")?;
         let tz_ref = tz.as_ref();
         // For 2024 DST ends at 0:00 on April 7, moving back 1 hour.
         let date = NaiveDateTime::new(
@@ -976,7 +976,7 @@ mod tests {
         assert_eq!(offsets.latest().unwrap().name.unwrap().as_bytes(), b"-04");
 
         // Reverse DST (Europe/Dublin)
-        let tz: TimeZone = TimeZone::from_posix_tz("IST-1GMT0,M10.5.0,M3.5.0/1")?;
+        let tz = TimeZone::from_posix_tz("IST-1GMT0,M10.5.0,M3.5.0/1")?;
         let tz_ref = tz.as_ref();
         // For 2024 DST *starts* at 2:00 on October 27, moving back 1 hour.
         let date = NaiveDateTime::new(
@@ -1047,7 +1047,7 @@ mod tests {
             0x33, 0x0a,
         ];
 
-        let tz: TimeZone = TimeZone::from_tz_data(&data)?;
+        let tz = TimeZone::from_tz_data(&data)?;
         let tz_ref = tz.as_ref();
         // For 2024 DST ends at 3:00 on October 27, moving back 1 hour.
         let date = NaiveDateTime::new(
@@ -1248,7 +1248,7 @@ mod tests {
             0x33, 0x3e, 0x2c, 0x4d, 0x39, 0x2e, 0x31, 0x2e, 0x36, 0x2f, 0x32, 0x34, 0x2c, 0x4d,
             0x34, 0x2e, 0x31, 0x2e, 0x36, 0x2f, 0x32, 0x34, 0x0a,
         ];
-        let tz: TimeZone = TimeZone::from_tz_data(&data)?;
+        let tz = TimeZone::from_tz_data(&data)?;
         let tz_ref = tz.as_ref();
         // For 2024 DST ends at 0:00 on April 7, moving back 1 hour.
         let date = NaiveDateTime::new(
