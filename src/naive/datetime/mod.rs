@@ -9,7 +9,8 @@ use core::fmt::Write;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, str};
-
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -2147,5 +2148,12 @@ impl str::FromStr for NaiveDateTime {
 impl Default for NaiveDateTime {
     fn default() -> Self {
         Self::UNIX_EPOCH
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for NaiveDateTime {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{}T{}", self.date(), self.time());
     }
 }

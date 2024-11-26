@@ -10,13 +10,14 @@
 
 //! Temporal quantification
 
+use crate::{expect, try_opt};
 use core::fmt;
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::time::Duration;
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 #[cfg(feature = "std")]
 use std::error::Error;
-
-use crate::{expect, try_opt};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -590,6 +591,18 @@ impl fmt::Display for TimeDelta {
         }
         f.write_str("S")?;
         Ok(())
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for TimeDelta {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(
+            fmt,
+            "TimeDelta {{ secs: {=i64}, nanos: {=i32} }}",
+            self.num_seconds(),
+            self.subsec_nanos()
+        );
     }
 }
 

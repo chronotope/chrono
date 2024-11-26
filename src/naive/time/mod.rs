@@ -8,7 +8,8 @@ use core::borrow::Borrow;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::time::Duration;
 use core::{fmt, str};
-
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -1639,5 +1640,12 @@ impl str::FromStr for NaiveTime {
 impl Default for NaiveTime {
     fn default() -> Self {
         NaiveTime::from_hms_opt(0, 0, 0).unwrap()
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for NaiveTime {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{=u32}:{=u32}:{=u32}", self.hour(), self.minute(), self.second());
     }
 }

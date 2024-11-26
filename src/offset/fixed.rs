@@ -5,7 +5,8 @@
 
 use core::fmt;
 use core::str::FromStr;
-
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -149,6 +150,13 @@ impl TimeZone for FixedOffset {
 impl Offset for FixedOffset {
     fn fix(&self) -> FixedOffset {
         *self
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for FixedOffset {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "FixedOffset({=i32})", self.local_minus_utc());
     }
 }
 
