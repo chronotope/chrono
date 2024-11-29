@@ -366,7 +366,7 @@ const fn internal_fixed(val: InternalInternal) -> Item<'static> {
     Item::Fixed(Fixed::Internal(InternalFixed { val }))
 }
 
-impl<'a> Item<'a> {
+impl Item<'_> {
     /// Convert items that contain a reference to the format string into an owned variant.
     #[cfg(any(feature = "alloc", feature = "std"))]
     pub fn to_owned(self) -> Item<'static> {

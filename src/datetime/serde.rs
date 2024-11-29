@@ -38,7 +38,7 @@ impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
             inner: &'a DateTime<Tz>,
         }
 
-        impl<'a, Tz: TimeZone> fmt::Display for FormatIso8601<'a, Tz> {
+        impl<Tz: TimeZone> fmt::Display for FormatIso8601<'_, Tz> {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 let naive = self.inner.naive_local();
                 let offset = self.inner.offset.fix();
@@ -52,7 +52,7 @@ impl<Tz: TimeZone> ser::Serialize for DateTime<Tz> {
 
 struct DateTimeVisitor;
 
-impl<'de> de::Visitor<'de> for DateTimeVisitor {
+impl de::Visitor<'_> for DateTimeVisitor {
     type Value = DateTime<FixedOffset>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -230,7 +230,7 @@ pub mod ts_nanoseconds {
         d.deserialize_i64(NanoSecondsTimestampVisitor)
     }
 
-    impl<'de> de::Visitor<'de> for NanoSecondsTimestampVisitor {
+    impl de::Visitor<'_> for NanoSecondsTimestampVisitor {
         type Value = DateTime<Utc>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -512,7 +512,7 @@ pub mod ts_microseconds {
         d.deserialize_i64(MicroSecondsTimestampVisitor)
     }
 
-    impl<'de> de::Visitor<'de> for MicroSecondsTimestampVisitor {
+    impl de::Visitor<'_> for MicroSecondsTimestampVisitor {
         type Value = DateTime<Utc>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -786,7 +786,7 @@ pub mod ts_milliseconds {
         d.deserialize_i64(MilliSecondsTimestampVisitor).map(|dt| dt.with_timezone(&Utc))
     }
 
-    impl<'de> de::Visitor<'de> for MilliSecondsTimestampVisitor {
+    impl de::Visitor<'_> for MilliSecondsTimestampVisitor {
         type Value = DateTime<Utc>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1052,7 +1052,7 @@ pub mod ts_seconds {
         d.deserialize_i64(SecondsTimestampVisitor)
     }
 
-    impl<'de> de::Visitor<'de> for SecondsTimestampVisitor {
+    impl de::Visitor<'_> for SecondsTimestampVisitor {
         type Value = DateTime<Utc>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
