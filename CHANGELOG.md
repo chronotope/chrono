@@ -238,7 +238,7 @@ release notes on [GitHub](https://github.com/chronotope/chrono/releases).
 
 ### Features
 
-* New `timestamp_millis` method on `DateTime` and `NaiveDateTim` that returns
+* New `timestamp_millis` method on `DateTime` and `NaiveDateTime` that returns
   number of milliseconds since the epoch. (@quodlibetor)
 * Support exact decimal width on subsecond display for RFC3339 via a new
   `to_rfc3339_opts` method on `DateTime` (@dekellum)
