@@ -16,7 +16,7 @@ impl ser::Serialize for NaiveTime {
 
 struct NaiveTimeVisitor;
 
-impl<'de> de::Visitor<'de> for NaiveTimeVisitor {
+impl de::Visitor<'_> for NaiveTimeVisitor {
     type Value = NaiveTime;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

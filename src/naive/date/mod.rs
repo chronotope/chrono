@@ -2406,7 +2406,7 @@ mod serde {
                 inner: &'a D,
             }
 
-            impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+            impl<D: fmt::Debug> fmt::Display for FormatWrapped<'_, D> {
                 fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                     self.inner.fmt(f)
                 }
@@ -2418,7 +2418,7 @@ mod serde {
 
     struct NaiveDateVisitor;
 
-    impl<'de> de::Visitor<'de> for NaiveDateVisitor {
+    impl de::Visitor<'_> for NaiveDateVisitor {
         type Value = NaiveDate;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

@@ -15,7 +15,7 @@ impl ser::Serialize for NaiveDateTime {
             inner: &'a D,
         }
 
-        impl<'a, D: fmt::Debug> fmt::Display for FormatWrapped<'a, D> {
+        impl<D: fmt::Debug> fmt::Display for FormatWrapped<'_, D> {
             fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 self.inner.fmt(f)
             }
@@ -27,7 +27,7 @@ impl ser::Serialize for NaiveDateTime {
 
 struct NaiveDateTimeVisitor;
 
-impl<'de> de::Visitor<'de> for NaiveDateTimeVisitor {
+impl de::Visitor<'_> for NaiveDateTimeVisitor {
     type Value = NaiveDateTime;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -161,7 +161,7 @@ pub mod ts_nanoseconds {
 
     pub(super) struct NanoSecondsTimestampVisitor;
 
-    impl<'de> de::Visitor<'de> for NanoSecondsTimestampVisitor {
+    impl de::Visitor<'_> for NanoSecondsTimestampVisitor {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -443,7 +443,7 @@ pub mod ts_microseconds {
 
     pub(super) struct MicroSecondsTimestampVisitor;
 
-    impl<'de> de::Visitor<'de> for MicroSecondsTimestampVisitor {
+    impl de::Visitor<'_> for MicroSecondsTimestampVisitor {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -713,7 +713,7 @@ pub mod ts_milliseconds {
 
     pub(super) struct MilliSecondsTimestampVisitor;
 
-    impl<'de> de::Visitor<'de> for MilliSecondsTimestampVisitor {
+    impl de::Visitor<'_> for MilliSecondsTimestampVisitor {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -968,7 +968,7 @@ pub mod ts_seconds {
 
     pub(super) struct SecondsTimestampVisitor;
 
-    impl<'de> de::Visitor<'de> for SecondsTimestampVisitor {
+    impl de::Visitor<'_> for SecondsTimestampVisitor {
         type Value = NaiveDateTime;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

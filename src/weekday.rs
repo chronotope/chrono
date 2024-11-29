@@ -276,7 +276,7 @@ mod weekday_serde {
 
     struct WeekdayVisitor;
 
-    impl<'de> de::Visitor<'de> for WeekdayVisitor {
+    impl de::Visitor<'_> for WeekdayVisitor {
         type Value = Weekday;
 
         fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
