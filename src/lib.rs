@@ -412,7 +412,7 @@
 //!
 //! ## Rust version requirements
 //!
-//! The Minimum Supported Rust Version (MSRV) is currently **Rust 1.61.0**.
+//! The Minimum Supported Rust Version (MSRV) is currently **Rust 1.81.0**.
 //!
 //! The MSRV is explicitly tested in CI. It may be bumped in minor releases, but this is not done
 //! lightly.
@@ -684,8 +684,7 @@ impl fmt::Debug for OutOfRange {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for OutOfRange {}
+impl core::error::Error for OutOfRange {}
 
 /// Workaround because `?` is not (yet) available in const context.
 #[macro_export]
