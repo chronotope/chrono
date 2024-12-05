@@ -89,7 +89,7 @@ impl<T> MappedLocalTime<T> {
         }
     }
 
-    /// Returns the earliest possible result of a the time zone mapping.
+    /// Returns the earliest possible result of the time zone mapping.
     ///
     /// # Errors
     ///
@@ -102,7 +102,7 @@ impl<T> MappedLocalTime<T> {
         }
     }
 
-    /// Returns the latest possible result of a the time zone mapping.
+    /// Returns the latest possible result of the time zone mapping.
     ///
     /// # Errors
     ///
