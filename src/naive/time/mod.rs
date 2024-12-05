@@ -12,6 +12,14 @@ use core::{fmt, str};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
+use rkyv_08::{Archive, Deserialize, Serialize};
+
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
@@ -215,6 +223,15 @@ mod tests;
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+)]
+#[cfg_attr(
+    any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"),
+    derive(Archive, Deserialize, Serialize),
+    rkyv(
+		crate = rkyv_08,
+		compare(PartialEq, PartialOrd),
+		derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash),
+	),
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct NaiveTime {

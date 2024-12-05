@@ -34,6 +34,11 @@ rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
 rkyv-32 = ["dep:rkyv", "rkyv?/size_32"]
 rkyv-64 = ["dep:rkyv", "rkyv?/size_64"]
 rkyv-validation = ["rkyv?/validation"]
+rkyv-08 = ["dep:rkyv-08", "rkyv-08/pointer_width_32"]
+rkyv-08-16 = ["dep:rkyv-08", "rkyv-08/pointer_width_16"]
+rkyv-08-32 = ["dep:rkyv-08", "rkyv-08/pointer_width_32"]
+rkyv-08-64 = ["dep:rkyv-08", "rkyv-08/pointer_width_64"]
+rkyv-08-bytecheck = ["rkyv-08/bytecheck"]
 # Features for internal use only:
 __internal_bench = []
 
@@ -42,6 +47,7 @@ num-traits = { version = "0.2", default-features = false }
 serde = { version = "1.0.99", default-features = false, optional = true }
 pure-rust-locales = { version = "0.8", optional = true }
 rkyv = { version = "0.7.43", optional = true, default-features = false }
+rkyv-08 = { package = "rkyv", version = "0.8.8", optional = true, default-features = false }
 arbitrary = { version = "1.0.0", features = ["derive"], optional = true }
 
 [target.'cfg(all(target_arch = "wasm32", not(any(target_os = "emscripten", target_os = "wasi"))))'.dependencies]

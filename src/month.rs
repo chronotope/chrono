@@ -3,6 +3,14 @@ use core::fmt;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
+use rkyv_08::{Archive, Deserialize, Serialize};
+
 use crate::OutOfRange;
 
 /// The month of the year.
@@ -34,6 +42,15 @@ use crate::OutOfRange;
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+)]
+#[cfg_attr(
+    any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"),
+    derive(Archive, Deserialize, Serialize),
+    rkyv(
+		crate = rkyv_08,
+		compare(PartialEq, PartialOrd),
+		derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash),
+	),
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(all(feature = "arbitrary", feature = "std"), derive(arbitrary::Arbitrary))]
@@ -437,5 +454,13 @@ mod tests {
         let month = Month::January;
         let bytes = rkyv::to_bytes::<_, 1>(&month).unwrap();
         assert_eq!(rkyv::from_bytes::<Month>(&bytes).unwrap(), month);
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-08-bytecheck")]
+    fn test_rkyv_08_bytecheck() {
+        let month = Month::January;
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&month).unwrap();
+        assert_eq!(rkyv_08::from_bytes::<Month, rkyv_08::rancor::Error>(&bytes).unwrap(), month);
     }
 }

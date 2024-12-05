@@ -9,6 +9,14 @@ use std::cmp::Ordering;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
+use rkyv_08::{Archive, Deserialize, Serialize};
+
 use super::fixed::FixedOffset;
 use super::{MappedLocalTime, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -116,6 +124,15 @@ mod tz_info;
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq)),
     archive_attr(derive(Clone, Copy, Debug))
+)]
+#[cfg_attr(
+    any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"),
+    derive(Archive, Deserialize, Serialize),
+    rkyv(
+		crate = rkyv_08,
+		compare(PartialEq),
+		derive(Clone, Copy, Debug),
+	),
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
@@ -537,5 +554,21 @@ mod tests {
         // but is deserialized to an archived variant without a
         // wrapping object
         assert_eq!(rkyv::from_bytes::<Local>(&bytes).unwrap(), super::ArchivedLocal);
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-08-bytecheck")]
+    fn test_rkyv_bytecheck() {
+        let local = Local;
+        // Local is a ZST and serializes to 0 bytes
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&local).unwrap();
+        assert_eq!(bytes.len(), 0);
+
+        // but is deserialized to an archived variant without a
+        // wrapping object
+        assert_eq!(
+            rkyv_08::from_bytes::<Local, rkyv_08::rancor::Error>(&bytes).unwrap(),
+            super::ArchivedLocal
+        );
     }
 }

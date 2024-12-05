@@ -34,6 +34,14 @@ use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
+use rkyv_08::{Archive, Deserialize, Serialize};
+
 /// documented at re-export site
 #[cfg(feature = "serde")]
 pub(super) mod serde;
@@ -51,6 +59,11 @@ mod tests;
     any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"),
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd))
+)]
+#[cfg_attr(
+    any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"),
+    derive(Archive, Deserialize, Serialize),
+    rkyv(crate = rkyv_08, compare(PartialEq, PartialOrd))
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct DateTime<Tz: TimeZone> {
@@ -1770,7 +1783,7 @@ impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
 // * https://github.com/rust-lang/rust/issues/26925
 // * https://github.com/rkyv/rkyv/issues/333
 // * https://github.com/dtolnay/syn/issues/370
-#[cfg(feature = "rkyv-validation")]
+#[cfg(any(feature = "rkyv-validation", feature = "rkyv-08-bytecheck"))]
 impl<Tz: TimeZone> fmt::Debug for ArchivedDateTime<Tz>
 where
     Tz: Archive,

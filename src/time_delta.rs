@@ -21,6 +21,14 @@ use crate::{expect, try_opt};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
+#[cfg(any(
+    feature = "rkyv-08",
+    feature = "rkyv-08-16",
+    feature = "rkyv-08-32",
+    feature = "rkyv-08-64"
+))]
+use rkyv_08::{Archive, Deserialize, Serialize};
+
 /// The number of nanoseconds in a microsecond.
 const NANOS_PER_MICRO: i32 = 1000;
 /// The number of nanoseconds in a millisecond.
@@ -55,6 +63,15 @@ const SECS_PER_WEEK: i64 = 604_800;
     derive(Archive, Deserialize, Serialize),
     archive(compare(PartialEq, PartialOrd)),
     archive_attr(derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash))
+)]
+#[cfg_attr(
+    any(feature = "rkyv-08", feature = "rkyv-08-16", feature = "rkyv-08-32", feature = "rkyv-08-64"),
+    derive(Archive, Deserialize, Serialize),
+    rkyv(
+		crate = rkyv_08,
+		compare(PartialEq, PartialOrd),
+		derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Hash),
+	),
 )]
 #[cfg_attr(feature = "rkyv-validation", archive(check_bytes))]
 pub struct TimeDelta {
@@ -1346,5 +1363,16 @@ mod tests {
         let duration = TimeDelta::try_seconds(1).unwrap();
         let bytes = rkyv::to_bytes::<_, 16>(&duration).unwrap();
         assert_eq!(rkyv::from_bytes::<TimeDelta>(&bytes).unwrap(), duration);
+    }
+
+    #[test]
+    #[cfg(feature = "rkyv-08-bytecheck")]
+    fn test_rkyv_bytecheck() {
+        let duration = TimeDelta::try_seconds(1).unwrap();
+        let bytes = rkyv_08::to_bytes::<rkyv_08::rancor::Error>(&duration).unwrap();
+        assert_eq!(
+            rkyv_08::from_bytes::<TimeDelta, rkyv_08::rancor::Error>(&bytes).unwrap(),
+            duration
+        );
     }
 }
