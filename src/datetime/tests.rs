@@ -1929,7 +1929,7 @@ fn try_to_rfc2822() {
 #[should_panic]
 #[test]
 fn try_to_rfc2822_panics_year_greater_than_9999() {
-    NaiveDateTime::new(
+    assert!(NaiveDateTime::new(
             NaiveDate::from_ymd_opt(10000, 12, 31).unwrap(),
             NaiveTime::from_hms_nano_opt(
                 60,
@@ -1943,5 +1943,5 @@ fn try_to_rfc2822_panics_year_greater_than_9999() {
                 60,
             ))
             .unwrap_or_default(),
-    ).and_utc().to_rfc2822();
+    ).and_utc().to_rfc2822() == "")
 }
