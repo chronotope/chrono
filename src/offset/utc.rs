@@ -4,6 +4,10 @@
 //! The UTC (Coordinated Universal Time) time zone.
 
 use core::fmt;
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
+#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
+use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(all(
     feature = "now",
     not(all(
@@ -13,9 +17,6 @@ use core::fmt;
     ))
 ))]
 use std::time::{SystemTime, UNIX_EPOCH};
-
-#[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
-use rkyv::{Archive, Deserialize, Serialize};
 
 use super::{FixedOffset, MappedLocalTime, Offset, TimeZone};
 use crate::naive::{NaiveDate, NaiveDateTime};
@@ -148,5 +149,12 @@ impl fmt::Debug for Utc {
 impl fmt::Display for Utc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "UTC")
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for Utc {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "UTC");
     }
 }

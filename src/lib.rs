@@ -521,6 +521,8 @@ pub use time_delta::TimeDelta;
 pub type Duration = TimeDelta;
 
 use core::fmt;
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 
 /// A convenience module appropriate for glob imports (`use chrono::prelude::*;`).
 pub mod prelude {
@@ -675,6 +677,13 @@ impl OutOfRange {
 impl fmt::Display for OutOfRange {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "out of range")
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for OutOfRange {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "out of range");
     }
 }
 
