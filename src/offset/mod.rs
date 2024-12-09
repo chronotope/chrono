@@ -595,6 +595,12 @@ pub trait TimeZone: Sized + Clone {
     }
 }
 
+/// Trait to create one `Offset` type from another `Offset` type.
+pub trait FromOffset<Off> {
+    /// Converts to this type from the input type.
+    fn from_offset(offset: &Off) -> Self;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
