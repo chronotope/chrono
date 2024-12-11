@@ -19,7 +19,7 @@
 [codecov-link]: https://codecov.io/gh/chronotope/chrono
 
 Chrono aims to provide all functionality needed to do correct operations on dates and times in the
-[proleptic Gregorian calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
+[proleptic Gregorian Calendar](https://en.wikipedia.org/wiki/Proleptic_Gregorian_calendar):
 
 * The [`DateTime`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) type is timezone-aware
   by default, with separate timezone-naive types.
@@ -40,7 +40,7 @@ See [docs.rs](https://docs.rs/chrono/latest/chrono/) for the API reference.
 
 ## Limitations
 
-* Only the proleptic Gregorian calendar (i.e. extended to support older dates) is supported.
+* Only the proleptic Gregorian Calendar (i.e. extended to support older dates) is supported.
 * Date types are limited to about +/- 262,000 years from the common epoch.
 * Time types are limited to nanosecond accuracy.
 * Leap seconds can be represented, but Chrono does not fully support them.
