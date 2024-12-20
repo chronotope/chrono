@@ -161,6 +161,22 @@ impl Month {
             Month::December => "December",
         }
     }
+
+    ///     Get the length of the month in a given year
+    pub const fn length(&self, year: i32) -> u8 {
+        match *self {
+            Month::January
+            | Month::March
+            | Month::May
+            | Month::July
+            | Month::August
+            | Month::October
+            | Month::December => 31,
+            Month::April | Month::June | Month::September | Month::November => 30,
+            Month::February if year % 4 == 0 && (year % 25 != 0 || year % 16 == 0) => 29,
+            Month::February => 28,
+        }
+    }
 }
 
 impl TryFrom<u8> for Month {
