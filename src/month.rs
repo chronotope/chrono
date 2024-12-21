@@ -163,7 +163,7 @@ impl Month {
     }
 
     ///     Get the length of the month in a given year
-    pub const fn length(&self, year: i32) -> u8 {
+    pub const fn len(&self, year: i32) -> u8 {
         match *self {
             Month::January
             | Month::March
@@ -173,7 +173,7 @@ impl Month {
             | Month::October
             | Month::December => 31,
             Month::April | Month::June | Month::September | Month::November => 30,
-            Month::February if year % 4 == 0 && (year % 25 != 0 || year % 16 == 0) => 29,
+            Month::February if (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0) => 29,
             Month::February => 28,
         }
     }
