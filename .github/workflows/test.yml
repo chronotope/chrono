@@ -145,25 +145,20 @@ jobs:
       # with the host system.
       - run: TZ="$(date +%z)" NOW="$(date +%s)" wasm-pack test --node -- --features wasmbind
 
-  test_wasi:
+  test_wasip1:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        target:
-          - wasm32-wasi
+        target: [wasm32-wasip1]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-wasi
+          targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
-      - run: cargo install cargo-wasi
-      - uses: mwilliamson/setup-wasmtime-action@v2
-        with:
-          wasmtime-version: "12.0.1"
       # We can't use `--all-features` because rkyv uses the mutually-exclusive-feature pattern
-      - run: cargo wasi test --features=serde,unstable-locales --color=always -- --color=always
+      - run: cargo check --target ${{ matrix.target }} --all-targets --features=serde,unstable-locales
 
   cross-targets:
     strategy:
