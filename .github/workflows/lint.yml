@@ -8,6 +8,8 @@ on:
   push:
     branches: [main, 0.5.x]
   pull_request:
+  schedule:
+    - cron: "38 6 * * 5"
 
 jobs:
   lint:
