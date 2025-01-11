@@ -794,6 +794,7 @@ mod tests {
             &[num(Year), Space(" "), Literal("x"), Space(" "), Literal("1235")],
             parsed!(year: 1234),
         );
+        check("12341235", &[num(Year), Literal("1235")], parsed!(year: 1234));
 
         // signed numeric
         check("-42", &[num(Year)], parsed!(year: -42));
@@ -806,9 +807,12 @@ mod tests {
         check("  -42195", &[num(Year)], parsed!(year: -42195));
         check(" +42195", &[num(Year)], parsed!(year: 42195));
         check("  -42195", &[num(Year)], parsed!(year: -42195));
+        check("  -42195123", &[num(Year), Literal("123")], parsed!(year: -42195));
         check("  +42195", &[num(Year)], parsed!(year: 42195));
+        check("  +42195123", &[num(Year), Literal("123")], parsed!(year: 42195));
         check("-42195 ", &[num(Year)], Err(TOO_LONG));
         check("+42195 ", &[num(Year)], Err(TOO_LONG));
+        check("+42195123 ", &[num(Year), Literal("123")], Err(TOO_LONG));
         check("  -   42", &[num(Year)], Err(INVALID));
         check("  +   42", &[num(Year)], Err(INVALID));
         check("  -42195", &[Space("  "), num(Year)], parsed!(year: -42195));
