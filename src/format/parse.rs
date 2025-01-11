@@ -290,7 +290,7 @@ where
         Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot })) => 6,
         Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot })) => 9,
         Item::Literal(prefix) => {
-            prefix.as_bytes().iter().take_while(|&&c| b'0' <= c && c <= b'9').count()
+            prefix.as_bytes().iter().take_while(|&&c| (b'0'..=b'9').contains(&c)).count()
         }
         _ => 0,
     })
@@ -404,8 +404,11 @@ where
                 // Try to consume the number in the non-greedy way.
                 if max_width == usize::MAX {
                     let next_size = get_numeric_item_len(next_item).unwrap_or(0);
-                    let numeric_bytes_available =
-                        substr.as_bytes().iter().take_while(|&&c| b'0' <= c && c <= b'9').count();
+                    let numeric_bytes_available = substr
+                        .as_bytes()
+                        .iter()
+                        .take_while(|&&c| (b'0'..=b'9').contains(&c))
+                        .count();
                     max_width = numeric_bytes_available - next_size;
                 }
                 let mut v = try_consume!(scan::number(substr, min_width, max_width));
