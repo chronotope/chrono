@@ -1596,6 +1596,21 @@ mod tests {
             parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
         );
         check(
+            "12345678901234567",
+            &[num(Timestamp), internal_fixed(Nanosecond3NoDot)],
+            parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567890",
+            &[num(Timestamp), internal_fixed(Nanosecond6NoDot)],
+            parsed!(nanosecond: 567_890_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567890123",
+            &[num(Timestamp), internal_fixed(Nanosecond9NoDot)],
+            parsed!(nanosecond: 567_890_123, timestamp: 12_345_678_901_234),
+        );
+        check(
             "12345678901234.56789",
             &[num(Timestamp), fixed(Fixed::Nanosecond)],
             parsed!(nanosecond: 567_890_000, timestamp: 12_345_678_901_234),

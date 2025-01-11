@@ -23,7 +23,7 @@ pub(super) fn number(s: &str, min: usize, max: usize) -> ParseResult<(&str, i64)
         return Err(TOO_SHORT);
     }
 
-    if (min > max) {
+    if min > max {
         return Err(INVALID);
     }
 
