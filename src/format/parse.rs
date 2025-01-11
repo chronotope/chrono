@@ -317,17 +317,10 @@ where
         }};
     }
 
-    // convert items to a pair (current, Option(next_item))
-    // so we can have information about the next item
-    let items: Vec<B> = items.collect::<Vec<_>>();
-    let last_item = items.last();
-    let mut items: Vec<(&B, Option<&B>)> =
-        items.windows(2).map(|arr| (&arr[0], Some(&arr[1]))).collect::<Vec<_>>();
-    if let Some(last_item) = last_item {
-        items.push((last_item, None));
-    }
+    let mut items_iter = items.peekable();
 
-    for (item, next_item) in items {
+    while let Some(item) = items_iter.next() {
+        let next_item = items_iter.peek();
         match *item.borrow() {
             Item::Literal(prefix) => {
                 if s.len() < prefix.len() {
