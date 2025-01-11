@@ -412,12 +412,6 @@ where
                     );
                     max_width = numeric_bytes_available - next_size;
                 }
-                if substr.len() < min_width {
-                    return Err(TOO_SHORT);
-                }
-                if max_width == 0 {
-                    return Err(INVALID);
-                }
                 // println!("min_width: {:?}, max_width: {:?}", min_width, max_width);
                 let mut v = try_consume!(scan::number(substr, min_width, max_width));
                 if neg {
