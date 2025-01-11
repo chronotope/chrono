@@ -279,6 +279,24 @@ where
     parse_internal(parsed, s, items)
 }
 
+fn get_fixed_item_len<'a, B>(item: Option<&B>) -> Option<usize>
+where
+    B: Borrow<Item<'a>>,
+{
+    use super::Fixed::*;
+
+    item.map(|i| {
+        println!("{:?}", i.borrow());
+        match *i.borrow() {
+            Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot })) => 3,
+            Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot })) => 6,
+            Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot })) => 9,
+            // Item::Literal(prefix) => prefix.len(),
+            _ => 0,
+        }
+    })
+}
+
 fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
@@ -300,7 +318,17 @@ where
         }};
     }
 
-    for item in items {
+    // convert items to a pair (current, Option(next_item))
+    // so we can have information about the next item
+    let items: Vec<B> = items.collect::<Vec<_>>();
+    let last_item = items.last();
+    let mut items: Vec<(&B, Option<&B>)> =
+        items.windows(2).map(|arr| (&arr[0], Some(&arr[1]))).collect::<Vec<_>>();
+    if let Some(last_item) = last_item {
+        items.push((last_item, None));
+    }
+
+    for (item, next_item) in items {
         match *item.borrow() {
             Item::Literal(prefix) => {
                 if s.len() < prefix.len() {
@@ -357,25 +385,44 @@ where
                     Second => (2, false, Parsed::set_second),
                     Nanosecond => (9, false, Parsed::set_nanosecond),
                     Timestamp => (usize::MAX, false, Parsed::set_timestamp),
-
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
                 };
-
                 s = s.trim_start();
-                let v = if signed {
-                    if s.starts_with('-') {
-                        let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
-                        0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
-                    } else if s.starts_with('+') {
-                        try_consume!(scan::number(&s[1..], 1, usize::MAX))
+
+                let (neg, start_idx, min_width, mut max_width) = {
+                    if signed && s.starts_with('-') {
+                        (true, 1, 1, usize::MAX)
+                    } else if signed && s.starts_with('+') {
+                        (false, 1, 1, usize::MAX)
                     } else {
-                        // if there is no explicit sign, we respect the original `width`
-                        try_consume!(scan::number(s, 1, width))
+                        (false, 0, 1, width)
                     }
-                } else {
-                    try_consume!(scan::number(s, 1, width))
                 };
+                let substr = &s[start_idx..];
+
+                if max_width == usize::MAX {
+                    let next_size = get_fixed_item_len(next_item).unwrap_or(0);
+                    let numeric_bytes_available =
+                        substr.as_bytes().iter().take_while(|&&c| b'0' <= c && c <= b'9').count();
+                    println!(
+                        "{numeric_bytes_available} {next_size}  s: {}, spec: {:?}",
+                        &s[start_idx..],
+                        spec
+                    );
+                    max_width = numeric_bytes_available - next_size;
+                }
+                if substr.len() < min_width {
+                    return Err(TOO_SHORT);
+                }
+                if max_width == 0 {
+                    return Err(INVALID);
+                }
+                // println!("min_width: {:?}, max_width: {:?}", min_width, max_width);
+                let mut v = try_consume!(scan::number(substr, min_width, max_width));
+                if neg {
+                    v = 0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
+                }
                 set(parsed, v)?;
             }
 
@@ -1536,6 +1583,11 @@ mod tests {
             "12345678901234.56789",
             &[num(Timestamp), Literal("."), num(Nanosecond)],
             parsed!(nanosecond: 56_789, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567",
+            &[num(Timestamp), internal_fixed(Nanosecond3NoDot)],
+            parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
         );
         check(
             "12345678901234.56789",
