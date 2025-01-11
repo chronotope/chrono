@@ -400,6 +400,8 @@ where
                 };
                 let substr = &s[start_idx..];
 
+                // If the width is not fixed, we need to determine the width from the next item.
+                // Try to consume the number in the non-greedy way.
                 if max_width == usize::MAX {
                     let next_size = get_numeric_item_len(next_item).unwrap_or(0);
                     let numeric_bytes_available =
