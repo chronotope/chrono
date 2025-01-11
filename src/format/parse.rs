@@ -377,9 +377,11 @@ where
                     Second => (2, false, Parsed::set_second),
                     Nanosecond => (9, false, Parsed::set_nanosecond),
                     Timestamp => (usize::MAX, false, Parsed::set_timestamp),
+
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
                 };
+
                 s = s.trim_start();
 
                 let (neg, start_idx, min_width, mut max_width) = {
