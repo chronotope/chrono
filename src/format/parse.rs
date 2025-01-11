@@ -279,21 +279,20 @@ where
     parse_internal(parsed, s, items)
 }
 
-fn get_fixed_item_len<'a, B>(item: Option<&B>) -> Option<usize>
+fn get_numeric_item_len<'a, B>(item: Option<&B>) -> Option<usize>
 where
     B: Borrow<Item<'a>>,
 {
     use super::Fixed::*;
 
-    item.map(|i| {
-        println!("{:?}", i.borrow());
-        match *i.borrow() {
-            Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot })) => 3,
-            Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot })) => 6,
-            Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot })) => 9,
-            // Item::Literal(prefix) => prefix.len(),
-            _ => 0,
+    item.map(|i| match *i.borrow() {
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot })) => 3,
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot })) => 6,
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot })) => 9,
+        Item::Literal(prefix) => {
+            prefix.as_bytes().iter().take_while(|&&c| b'0' <= c && c <= b'9').count()
         }
+        _ => 0,
     })
 }
 
@@ -402,17 +401,11 @@ where
                 let substr = &s[start_idx..];
 
                 if max_width == usize::MAX {
-                    let next_size = get_fixed_item_len(next_item).unwrap_or(0);
+                    let next_size = get_numeric_item_len(next_item).unwrap_or(0);
                     let numeric_bytes_available =
                         substr.as_bytes().iter().take_while(|&&c| b'0' <= c && c <= b'9').count();
-                    println!(
-                        "{numeric_bytes_available} {next_size}  s: {}, spec: {:?}",
-                        &s[start_idx..],
-                        spec
-                    );
                     max_width = numeric_bytes_available - next_size;
                 }
-                // println!("min_width: {:?}, max_width: {:?}", min_width, max_width);
                 let mut v = try_consume!(scan::number(substr, min_width, max_width));
                 if neg {
                     v = 0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
@@ -1524,6 +1517,15 @@ mod tests {
             ),
         );
         check(
+            "20151230204",
+            &[
+                num(Year), Literal("123"), num(Month), num(Day)
+            ],
+            parsed!(
+                year: 2015, month: 2, day: 4
+            ),
+        );
+        check(
             "Mon, 10 Jun 2013 09:32:37 GMT",
             &[
                 fixed(Fixed::ShortWeekdayName), Literal(","), Space(" "), num(Day), Space(" "),
@@ -1577,6 +1579,11 @@ mod tests {
             "12345678901234.56789",
             &[num(Timestamp), Literal("."), num(Nanosecond)],
             parsed!(nanosecond: 56_789, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234111",
+            &[num(Timestamp), Literal("111")],
+            parsed!(timestamp: 12_345_678_901_234),
         );
         check(
             "12345678901234567",
