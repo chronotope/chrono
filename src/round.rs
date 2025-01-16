@@ -154,7 +154,7 @@ pub trait DurationRound: Sized {
     /// ```
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err>;
 
-    /// Return a copy rounded up by TimeDelta.
+    /// Return a copy rounded **up** by TimeDelta.
     ///
     /// # Example
     /// ``` rust
