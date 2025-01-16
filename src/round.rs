@@ -895,14 +895,11 @@ mod tests {
 
     #[test]
     fn test_duration_round_up() {
-        let dt = Utc
-            .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2016, 12, 31)
-                    .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
-                    .unwrap(),
-            )
-            .unwrap();
+        let dt = NaiveDate::from_ymd_opt(2016, 12, 31)
+            .unwrap()
+            .and_hms_nano_opt(23, 59, 59, 175_500_000)
+            .unwrap()
+            .and_utc();
 
         assert_eq!(
             dt.duration_round_up(TimeDelta::new(-1, 0).unwrap()),
@@ -919,14 +916,12 @@ mod tests {
         );
 
         // round up
-        let dt = Utc
-            .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2012, 12, 12)
-                    .unwrap()
-                    .and_hms_milli_opt(18, 22, 30, 0)
-                    .unwrap(),
-            )
-            .unwrap();
+        let dt = NaiveDate::from_ymd_opt(2012, 12, 12)
+            .unwrap()
+            .and_hms_milli_opt(18, 22, 30, 0)
+            .unwrap()
+            .and_utc();
+
         assert_eq!(
             dt.duration_round_up(TimeDelta::try_minutes(5).unwrap()).unwrap().to_string(),
             "2012-12-12 18:25:00 UTC"
@@ -976,15 +971,10 @@ mod tests {
 
     #[test]
     fn test_duration_round_up_naive() {
-        let dt = Utc
-            .from_local_datetime(
-                &NaiveDate::from_ymd_opt(2016, 12, 31)
-                    .unwrap()
-                    .and_hms_nano_opt(23, 59, 59, 175_500_000)
-                    .unwrap(),
-            )
+        let dt = NaiveDate::from_ymd_opt(2016, 12, 31)
             .unwrap()
-            .naive_utc();
+            .and_hms_nano_opt(23, 59, 59, 175_500_000)
+            .unwrap();
 
         assert_eq!(
             dt.duration_round_up(TimeDelta::new(-1, 0).unwrap()),
@@ -1072,7 +1062,7 @@ mod tests {
         //
         //                                                v
         // We add 2 to get to 1677-09-21 00:12:43.145224194 UTC
-        // this issue is because of abs(i64::MIN) == i64::MAX + 1
+        // this issue is because abs(i64::MIN) == i64::MAX + 1
         let dt = DateTime::from_timestamp_nanos(i64::MIN + 2);
         assert_eq!(dt.duration_round_up(span).unwrap(), DateTime::UNIX_EPOCH);
     }
