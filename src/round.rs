@@ -1039,4 +1039,41 @@ mod tests {
             "1969-12-12 12:20:00 UTC"
         );
     }
+
+    #[test]
+    fn test_duration_round_up_close_to_min_max() {
+        let mut dt = NaiveDate::from_ymd_opt(2012, 12, 12)
+            .unwrap()
+            .and_hms_milli_opt(18, 22, 30, 0)
+            .unwrap()
+            .and_utc();
+
+        let span = TimeDelta::nanoseconds(i64::MAX);
+
+        assert_eq!(
+            dt.duration_round_up(span).unwrap().to_string(),
+            DateTime::from_timestamp_nanos(i64::MAX).to_string()
+        );
+
+        dt = DateTime::UNIX_EPOCH + TimeDelta::nanoseconds(1);
+        assert_eq!(dt.duration_round_up(span).unwrap(), DateTime::from_timestamp_nanos(i64::MAX));
+
+        let dt = DateTime::from_timestamp_nanos(0 + 1);
+        assert_eq!(
+            dt.duration_round_up(span).unwrap().to_string(),
+            "2262-04-11 23:47:16.854775807 UTC"
+        );
+
+        let dt = DateTime::from_timestamp_nanos(0 - 1);
+        assert_eq!(dt.duration_round_up(span).unwrap(), DateTime::UNIX_EPOCH);
+
+        // Rounds to 1677-09-21 00:12:43.145224193 UTC if at i64::MIN.
+        // because i64::MIN is 1677-09-21 00:12:43.145224192 UTC.
+        //
+        //                                                v
+        // We add 2 to get to 1677-09-21 00:12:43.145224194 UTC
+        // this issue is because of abs(i64::MIN) == i64::MAX + 1
+        let dt = DateTime::from_timestamp_nanos(i64::MIN + 2);
+        assert_eq!(dt.duration_round_up(span).unwrap(), DateTime::UNIX_EPOCH);
+    }
 }
