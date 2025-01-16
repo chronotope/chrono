@@ -931,10 +931,6 @@ mod tests {
             dt.duration_round_up(TimeDelta::try_minutes(5).unwrap()).unwrap().to_string(),
             "2012-12-12 18:25:00 UTC"
         );
-        assert_eq!(
-            dt.duration_round_up(TimeDelta::try_minutes(5).unwrap()).unwrap().to_string(),
-            "2012-12-12 18:25:00 UTC"
-        );
 
         assert_eq!(
             dt.duration_round_up(TimeDelta::try_minutes(10).unwrap()).unwrap().to_string(),
@@ -1017,12 +1013,6 @@ mod tests {
             dt.duration_round_up(TimeDelta::try_minutes(5).unwrap()).unwrap().to_string(),
             "2012-12-12 18:25:00"
         );
-
-        assert_eq!(
-            dt.duration_round_up(TimeDelta::try_minutes(5).unwrap()).unwrap().to_string(),
-            "2012-12-12 18:25:00"
-        );
-
         assert_eq!(
             dt.duration_round_up(TimeDelta::try_minutes(10).unwrap()).unwrap().to_string(),
             "2012-12-12 18:30:00"
