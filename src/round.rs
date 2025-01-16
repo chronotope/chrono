@@ -153,17 +153,46 @@ pub trait DurationRound: Sized {
     /// );
     /// ```
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err>;
+
+    /// Return a copy rounded up by TimeDelta.
+    ///
+    /// # Example
+    /// ``` rust
+    /// # use chrono::{DurationRound, TimeDelta, NaiveDate};
+    /// let dt = NaiveDate::from_ymd_opt(2018, 1, 11)
+    ///     .unwrap()
+    ///     .and_hms_milli_opt(12, 0, 0, 154)
+    ///     .unwrap()
+    ///     .and_utc();
+    /// assert_eq!(
+    ///     dt.duration_round_up(TimeDelta::milliseconds(10)).unwrap().to_string(),
+    ///     "2018-01-11 12:00:00.160 UTC"
+    /// );
+    /// assert_eq!(
+    ///     dt.duration_round_up(TimeDelta::hours(1)).unwrap().to_string(),
+    ///     "2018-01-11 13:00:00 UTC"
+    /// );
+    ///
+    /// assert_eq!(
+    ///     dt.duration_round_up(TimeDelta::days(1)).unwrap().to_string(),
+    ///     "2018-01-12 00:00:00 UTC"
+    /// );
+    /// ```
+    fn duration_round_up(self, duration: TimeDelta) -> Result<Self, Self::Err>;
 }
 
 impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
     type Err = RoundingError;
-
     fn duration_round(self, duration: TimeDelta) -> Result<Self, Self::Err> {
         duration_round(self.naive_local(), self, duration)
     }
 
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err> {
         duration_trunc(self.naive_local(), self, duration)
+    }
+
+    fn duration_round_up(self, duration: TimeDelta) -> Result<Self, Self::Err> {
+        duration_round_up(self.naive_local(), self, duration)
     }
 }
 
@@ -176,6 +205,9 @@ impl DurationRound for NaiveDateTime {
 
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err> {
         duration_trunc(self, self, duration)
+    }
+    fn duration_round_up(self, duration: TimeDelta) -> Result<Self, Self::Err> {
+        duration_round_up(self, self, duration)
     }
 }
 
@@ -232,6 +264,31 @@ where
             Ordering::Equal => Ok(original),
             Ordering::Greater => Ok(original - TimeDelta::nanoseconds(delta_down)),
             Ordering::Less => Ok(original - TimeDelta::nanoseconds(span - delta_down.abs())),
+        }
+    } else {
+        Err(RoundingError::DurationExceedsLimit)
+    }
+}
+
+fn duration_round_up<T>(
+    naive: NaiveDateTime,
+    original: T,
+    duration: TimeDelta,
+) -> Result<T, RoundingError>
+where
+    T: Timelike + Add<TimeDelta, Output = T> + Sub<TimeDelta, Output = T>,
+{
+    if let Some(span) = duration.num_nanoseconds() {
+        if span <= 0 {
+            return Err(RoundingError::DurationExceedsLimit);
+        }
+        let stamp =
+            naive.and_utc().timestamp_nanos_opt().ok_or(RoundingError::TimestampExceedsLimit)?;
+        let delta_down = stamp % span;
+        match delta_down.cmp(&0) {
+            Ordering::Equal => Ok(original),
+            Ordering::Greater => Ok(original + TimeDelta::nanoseconds(span - delta_down)),
+            Ordering::Less => Ok(original + TimeDelta::nanoseconds(delta_down.abs())),
         }
     } else {
         Err(RoundingError::DurationExceedsLimit)
