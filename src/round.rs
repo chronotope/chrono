@@ -1048,13 +1048,13 @@ mod tests {
         dt = DateTime::UNIX_EPOCH + TimeDelta::nanoseconds(1);
         assert_eq!(dt.duration_round_up(span).unwrap(), DateTime::from_timestamp_nanos(i64::MAX));
 
-        let dt = DateTime::from_timestamp_nanos(0 + 1);
+        let dt = DateTime::from_timestamp_nanos(1);
         assert_eq!(
             dt.duration_round_up(span).unwrap().to_string(),
             "2262-04-11 23:47:16.854775807 UTC"
         );
 
-        let dt = DateTime::from_timestamp_nanos(0 - 1);
+        let dt = DateTime::from_timestamp_nanos(-1);
         assert_eq!(dt.duration_round_up(span).unwrap(), DateTime::UNIX_EPOCH);
 
         // Rounds to 1677-09-21 00:12:43.145224193 UTC if at i64::MIN.
