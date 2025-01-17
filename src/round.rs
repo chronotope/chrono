@@ -206,6 +206,7 @@ impl DurationRound for NaiveDateTime {
     fn duration_trunc(self, duration: TimeDelta) -> Result<Self, Self::Err> {
         duration_trunc(self, self, duration)
     }
+
     fn duration_round_up(self, duration: TimeDelta) -> Result<Self, Self::Err> {
         duration_round_up(self, self, duration)
     }
@@ -905,6 +906,7 @@ mod tests {
             dt.duration_round_up(TimeDelta::new(-1, 0).unwrap()),
             Err(RoundingError::DurationExceedsLimit)
         );
+
         assert_eq!(
             dt.duration_round_up(TimeDelta::zero()),
             Err(RoundingError::DurationExceedsLimit)
