@@ -183,6 +183,7 @@ pub trait DurationRound: Sized {
 
 impl<Tz: TimeZone> DurationRound for DateTime<Tz> {
     type Err = RoundingError;
+
     fn duration_round(self, duration: TimeDelta) -> Result<Self, Self::Err> {
         duration_round(self.naive_local(), self, duration)
     }
