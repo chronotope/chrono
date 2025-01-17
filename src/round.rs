@@ -913,6 +913,11 @@ mod tests {
         );
 
         assert_eq!(
+            dt.duration_round_up(TimeDelta::MAX),
+            Err(RoundingError::DurationExceedsLimit)
+        );
+
+        assert_eq!(
             dt.duration_round_up(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
             "2016-12-31 23:59:59.180 UTC"
         );
@@ -988,6 +993,11 @@ mod tests {
         );
 
         assert_eq!(
+            dt.duration_round_up(TimeDelta::MAX),
+            Err(RoundingError::DurationExceedsLimit)
+        );
+
+        assert_eq!(
             dt.duration_round_up(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
             "2016-12-31 23:59:59.180"
         );
@@ -1030,6 +1040,12 @@ mod tests {
             dt.duration_round_up(TimeDelta::try_minutes(10).unwrap()).unwrap().to_string(),
             "1969-12-12 12:20:00 UTC"
         );
+
+        let time_delta = TimeDelta::minutes(30);
+        assert_eq!(
+            DateTime::UNIX_EPOCH.duration_round_up(time_delta).unwrap().to_string(),
+            "1970-01-01 00:00:00 UTC"
+        )
     }
 
     #[test]
