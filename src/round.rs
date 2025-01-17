@@ -912,10 +912,7 @@ mod tests {
             Err(RoundingError::DurationExceedsLimit)
         );
 
-        assert_eq!(
-            dt.duration_round_up(TimeDelta::MAX),
-            Err(RoundingError::DurationExceedsLimit)
-        );
+        assert_eq!(dt.duration_round_up(TimeDelta::MAX), Err(RoundingError::DurationExceedsLimit));
 
         assert_eq!(
             dt.duration_round_up(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
@@ -992,10 +989,7 @@ mod tests {
             Err(RoundingError::DurationExceedsLimit)
         );
 
-        assert_eq!(
-            dt.duration_round_up(TimeDelta::MAX),
-            Err(RoundingError::DurationExceedsLimit)
-        );
+        assert_eq!(dt.duration_round_up(TimeDelta::MAX), Err(RoundingError::DurationExceedsLimit));
 
         assert_eq!(
             dt.duration_round_up(TimeDelta::try_milliseconds(10).unwrap()).unwrap().to_string(),
