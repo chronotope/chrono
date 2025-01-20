@@ -25,19 +25,19 @@ pub struct MilliSecondsTimestampVisitor;
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct SecondsTimedeltaVisitor;
+pub struct SecondsTimeDeltaVisitor;
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct NanoSecondsTimedeltaVisitor;
+pub struct NanoSecondsTimeDeltaVisitor;
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct MicroSecondsTimedeltaVisitor;
+pub struct MicroSecondsTimeDeltaVisitor;
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct MilliSecondsTimedeltaVisitor;
+pub struct MilliSecondsTimeDeltaVisitor;
 
 /// Serialize to an RFC 3339 formatted string
 ///
@@ -1254,7 +1254,7 @@ pub mod td_nanoseconds {
     use crate::TimeDelta;
     use crate::serde::invalid_td;
 
-    use super::NanoSecondsTimedeltaVisitor;
+    use super::NanoSecondsTimeDeltaVisitor;
 
     /// Serialize a [`TimeDelta`] into an integer number of nanoseconds.
     ///
@@ -1316,10 +1316,10 @@ pub mod td_nanoseconds {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(NanoSecondsTimedeltaVisitor)
+        d.deserialize_i64(NanoSecondsTimeDeltaVisitor)
     }
 
-    impl de::Visitor<'_> for NanoSecondsTimedeltaVisitor {
+    impl de::Visitor<'_> for NanoSecondsTimeDeltaVisitor {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1375,7 +1375,7 @@ pub mod td_nanoseconds_option {
 
     use crate::TimeDelta;
 
-    use super::NanoSecondsTimedeltaVisitor;
+    use super::NanoSecondsTimeDeltaVisitor;
 
     /// Serialize a UTC datetime into an integer number of nanoseconds or none
     ///
@@ -1440,12 +1440,12 @@ pub mod td_nanoseconds_option {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_option(OptionNanoSecondsTimedeltaVisitor)
+        d.deserialize_option(OptionNanoSecondsTimeDeltaVisitor)
     }
 
-    struct OptionNanoSecondsTimedeltaVisitor;
+    struct OptionNanoSecondsTimeDeltaVisitor;
 
-    impl<'de> de::Visitor<'de> for OptionNanoSecondsTimedeltaVisitor {
+    impl<'de> de::Visitor<'de> for OptionNanoSecondsTimeDeltaVisitor {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1457,7 +1457,7 @@ pub mod td_nanoseconds_option {
         where
             D: de::Deserializer<'de>,
         {
-            d.deserialize_i64(NanoSecondsTimedeltaVisitor).map(Some)
+            d.deserialize_i64(NanoSecondsTimeDeltaVisitor).map(Some)
         }
 
         /// Deserialize a timedelta in nanoseconds
@@ -1510,7 +1510,7 @@ pub mod td_microseconds {
     use crate::TimeDelta;
     use crate::serde::invalid_td;
 
-    use super::MicroSecondsTimedeltaVisitor;
+    use super::MicroSecondsTimeDeltaVisitor;
 
     /// Serialize a [`TimeDelta`] into an integer number of microseconds.
     ///
@@ -1572,10 +1572,10 @@ pub mod td_microseconds {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(MicroSecondsTimedeltaVisitor)
+        d.deserialize_i64(MicroSecondsTimeDeltaVisitor)
     }
 
-    impl de::Visitor<'_> for MicroSecondsTimedeltaVisitor {
+    impl de::Visitor<'_> for MicroSecondsTimeDeltaVisitor {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1631,7 +1631,7 @@ pub mod td_microseconds_option {
 
     use crate::TimeDelta;
 
-    use super::MicroSecondsTimedeltaVisitor;
+    use super::MicroSecondsTimeDeltaVisitor;
 
     /// Serialize a UTC datetime into an integer number of microseconds or none
     ///
@@ -1696,12 +1696,12 @@ pub mod td_microseconds_option {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_option(OptionmicroSecondsTimedeltaVisitor)
+        d.deserialize_option(OptionmicroSecondsTimeDeltaVisitor)
     }
 
-    struct OptionmicroSecondsTimedeltaVisitor;
+    struct OptionmicroSecondsTimeDeltaVisitor;
 
-    impl<'de> de::Visitor<'de> for OptionmicroSecondsTimedeltaVisitor {
+    impl<'de> de::Visitor<'de> for OptionmicroSecondsTimeDeltaVisitor {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1713,7 +1713,7 @@ pub mod td_microseconds_option {
         where
             D: de::Deserializer<'de>,
         {
-            d.deserialize_i64(MicroSecondsTimedeltaVisitor).map(Some)
+            d.deserialize_i64(MicroSecondsTimeDeltaVisitor).map(Some)
         }
 
         /// Deserialize a timedelta in microseconds
@@ -1766,7 +1766,7 @@ pub mod td_milliseconds {
     use crate::TimeDelta;
     use crate::serde::invalid_td;
 
-    use super::MilliSecondsTimedeltaVisitor;
+    use super::MilliSecondsTimeDeltaVisitor;
 
     /// Serialize a [`TimeDelta`] into an integer number of milliseconds.
     ///
@@ -1826,10 +1826,10 @@ pub mod td_milliseconds {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(MilliSecondsTimedeltaVisitor)
+        d.deserialize_i64(MilliSecondsTimeDeltaVisitor)
     }
 
-    impl de::Visitor<'_> for MilliSecondsTimedeltaVisitor {
+    impl de::Visitor<'_> for MilliSecondsTimeDeltaVisitor {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1885,7 +1885,7 @@ pub mod td_milliseconds_option {
 
     use crate::TimeDelta;
 
-    use super::MilliSecondsTimedeltaVisitor;
+    use super::MilliSecondsTimeDeltaVisitor;
 
     /// Serialize a UTC datetime into an integer number of milliseconds or none
     ///
@@ -1948,12 +1948,12 @@ pub mod td_milliseconds_option {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_option(OptionmilliSecondsTimedeltaVisitor)
+        d.deserialize_option(OptionmilliSecondsTimeDeltaVisitor)
     }
 
-    struct OptionmilliSecondsTimedeltaVisitor;
+    struct OptionmilliSecondsTimeDeltaVisitor;
 
-    impl<'de> de::Visitor<'de> for OptionmilliSecondsTimedeltaVisitor {
+    impl<'de> de::Visitor<'de> for OptionmilliSecondsTimeDeltaVisitor {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -1965,7 +1965,7 @@ pub mod td_milliseconds_option {
         where
             D: de::Deserializer<'de>,
         {
-            d.deserialize_i64(MilliSecondsTimedeltaVisitor).map(Some)
+            d.deserialize_i64(MilliSecondsTimeDeltaVisitor).map(Some)
         }
 
         /// Deserialize a timedelta in milliseconds
@@ -2018,7 +2018,7 @@ pub mod td_seconds {
     use crate::TimeDelta;
     use crate::serde::invalid_td;
 
-    use super::SecondsTimedeltaVisitor;
+    use super::SecondsTimeDeltaVisitor;
 
     /// Serialize a [`TimeDelta`] into an integer number of seconds.
     ///
@@ -2078,10 +2078,10 @@ pub mod td_seconds {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_i64(SecondsTimedeltaVisitor)
+        d.deserialize_i64(SecondsTimeDeltaVisitor)
     }
 
-    impl de::Visitor<'_> for SecondsTimedeltaVisitor {
+    impl de::Visitor<'_> for SecondsTimeDeltaVisitor {
         type Value = TimeDelta;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -2137,7 +2137,7 @@ pub mod td_seconds_option {
 
     use crate::TimeDelta;
 
-    use super::SecondsTimedeltaVisitor;
+    use super::SecondsTimeDeltaVisitor;
 
     /// Serialize a UTC datetime into an integer number of seconds or none
     ///
@@ -2200,12 +2200,12 @@ pub mod td_seconds_option {
     where
         D: de::Deserializer<'de>,
     {
-        d.deserialize_option(OptionSecondsTimedeltaVisitor)
+        d.deserialize_option(OptionSecondsTimeDeltaVisitor)
     }
 
-    struct OptionSecondsTimedeltaVisitor;
+    struct OptionSecondsTimeDeltaVisitor;
 
-    impl<'de> de::Visitor<'de> for OptionSecondsTimedeltaVisitor {
+    impl<'de> de::Visitor<'de> for OptionSecondsTimeDeltaVisitor {
         type Value = Option<TimeDelta>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -2217,7 +2217,7 @@ pub mod td_seconds_option {
         where
             D: de::Deserializer<'de>,
         {
-            d.deserialize_i64(SecondsTimedeltaVisitor).map(Some)
+            d.deserialize_i64(SecondsTimeDeltaVisitor).map(Some)
         }
 
         /// Deserialize a timedelta in seconds

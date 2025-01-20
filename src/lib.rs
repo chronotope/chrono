@@ -632,12 +632,12 @@ pub mod serde {
         E: de::Error,
         T: fmt::Display,
     {
-        E::custom(SerdeError::InvalidTimedelta(value))
+        E::custom(SerdeError::InvalidTimeDelta(value))
     }
 
     enum SerdeError<T: fmt::Display> {
         InvalidTimestamp(T),
-        InvalidTimedelta(T),
+        InvalidTimeDelta(T),
     }
 
     impl<T: fmt::Display> fmt::Display for SerdeError<T> {
@@ -646,7 +646,7 @@ pub mod serde {
                 Self::InvalidTimestamp(ts) => {
                     write!(f, "value is not a legal timestamp: {}", ts)
                 }
-                Self::InvalidTimedelta(td) => {
+                Self::InvalidTimeDelta(td) => {
                     write!(f, "value is not a legal timedelta: {}", td)
                 }
             }
