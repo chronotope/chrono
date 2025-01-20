@@ -1252,7 +1252,7 @@ pub mod td_nanoseconds {
     use serde::{de, ser};
 
     use crate::TimeDelta;
-    use crate::serde::invalid_td;
+    use crate::serde::invalid_time_delta;
 
     use super::NanoSecondsTimeDeltaVisitor;
 
@@ -1339,7 +1339,7 @@ pub mod td_nanoseconds {
         where
             E: de::Error,
         {
-            Ok(TimeDelta::nanoseconds(value.try_into().map_err(|_| invalid_td(value))?))
+            Ok(TimeDelta::nanoseconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
         }
     }
 }
@@ -1508,7 +1508,7 @@ pub mod td_microseconds {
     use serde::{de, ser};
 
     use crate::TimeDelta;
-    use crate::serde::invalid_td;
+    use crate::serde::invalid_time_delta;
 
     use super::MicroSecondsTimeDeltaVisitor;
 
@@ -1595,7 +1595,7 @@ pub mod td_microseconds {
         where
             E: de::Error,
         {
-            Ok(TimeDelta::microseconds(value.try_into().map_err(|_| invalid_td(value))?))
+            Ok(TimeDelta::microseconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
         }
     }
 }
@@ -1764,7 +1764,7 @@ pub mod td_milliseconds {
     use serde::{de, ser};
 
     use crate::TimeDelta;
-    use crate::serde::invalid_td;
+    use crate::serde::invalid_time_delta;
 
     use super::MilliSecondsTimeDeltaVisitor;
 
@@ -1849,7 +1849,7 @@ pub mod td_milliseconds {
         where
             E: de::Error,
         {
-            Ok(TimeDelta::milliseconds(value.try_into().map_err(|_| invalid_td(value))?))
+            Ok(TimeDelta::milliseconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
         }
     }
 }
@@ -2016,7 +2016,7 @@ pub mod td_seconds {
     use serde::{de, ser};
 
     use crate::TimeDelta;
-    use crate::serde::invalid_td;
+    use crate::serde::invalid_time_delta;
 
     use super::SecondsTimeDeltaVisitor;
 
@@ -2101,7 +2101,7 @@ pub mod td_seconds {
         where
             E: de::Error,
         {
-            Ok(TimeDelta::seconds(value.try_into().map_err(|_| invalid_td(value))?))
+            Ok(TimeDelta::seconds(value.try_into().map_err(|_| invalid_time_delta(value))?))
         }
     }
 }

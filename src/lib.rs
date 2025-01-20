@@ -627,7 +627,7 @@ pub mod serde {
     }
 
     /// Create a custom `de::Error` with `SerdeError::InvalidTimestamp`.
-    pub(crate) fn invalid_td<E, T>(value: T) -> E
+    pub(crate) fn invalid_time_delta<E, T>(value: T) -> E
     where
         E: de::Error,
         T: fmt::Display,
