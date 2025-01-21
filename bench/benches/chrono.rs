@@ -185,6 +185,25 @@ fn bench_format_with_items(c: &mut Criterion) {
     });
 }
 
+fn benches_delayed_format(c: &mut Criterion) {
+    let mut group = c.benchmark_group("delayed_format");
+    let dt = Local::now();
+    group.bench_function(BenchmarkId::new("with_display", dt), |b| {
+        b.iter_batched(
+            || dt.format("%Y-%m-%dT%H:%M:%S%.f%:z"),
+            |df| black_box(df).to_string(),
+            criterion::BatchSize::SmallInput,
+        )
+    });
+    group.bench_function(BenchmarkId::new("with_string_buffer", dt), |b| {
+        b.iter_batched(
+            || (dt.format("%Y-%m-%dT%H:%M:%S%.f%:z"), String::with_capacity(256)),
+            |(df, string)| black_box(df).write_to(&mut black_box(string)),
+            criterion::BatchSize::SmallInput,
+        )
+    });
+}
+
 fn bench_format_manual(c: &mut Criterion) {
     let dt = Local::now();
     c.bench_function("bench_format_manual", |b| {
@@ -237,6 +256,7 @@ criterion_group!(
     bench_format,
     bench_format_with_items,
     bench_format_manual,
+    benches_delayed_format,
     bench_naivedate_add_signed,
     bench_datetime_with,
 );
