@@ -198,18 +198,10 @@ fn benches_delayed_format(c: &mut Criterion) {
     group.bench_function(BenchmarkId::new("with_string_buffer", dt), |b| {
         b.iter_batched(
             || (dt.format("%Y-%m-%dT%H:%M:%S%.f%:z"), String::with_capacity(256)),
-            |(df, string)| black_box(df).format_into(&mut black_box(string)),
+            |(df, string)| black_box(df).write_to(&mut black_box(string)),
             criterion::BatchSize::SmallInput,
         )
     });
-    group.bench_function(BenchmarkId::new("with_vec_buffer", dt), |b| {
-        b.iter_batched(
-            || (dt.format("%Y-%m-%dT%H:%M:%S%.f%:z"), String::with_capacity(256)),
-            |(df, string)| black_box(df).format_into(&mut black_box(string)),
-            criterion::BatchSize::SmallInput,
-        )
-    });
-    group.finish();
 }
 
 fn bench_format_manual(c: &mut Criterion) {

@@ -97,30 +97,38 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
         DelayedFormat { date, time, off: Some(name_and_diff), items, locale }
     }
 
-    /// Formats `DelayedFormat` into an `std::io::Write` instance.
-    /// # Errors
-    /// This function returns an error if formatting into the `std::io::Write` instance fails.
-    #[cfg(feature = "std")]
-    pub fn format_into_io(self, w: &mut impl std::io::Write) -> fmt::Result {
-        // wrapper to allow reuse of the existing string based
-        // writers
-        struct IoWriter<W: std::io::Write> {
-            writer: W,
-        }
-        impl<W: std::io::Write> fmt::Write for IoWriter<W> {
-            #[inline]
-            fn write_str(&mut self, s: &str) -> fmt::Result {
-                self.writer.write_all(s.as_bytes()).map_err(|_| fmt::Error)
-            }
-        }
-        let mut writer = IoWriter { writer: w };
-        self.format_into(&mut writer)
-    }
-
     /// Formats `DelayedFormat` into a `core::fmt::Write` instance.
     /// # Errors
-    /// This function returns an error if formatting into the `core::fmt::Write` instance fails.
-    pub fn format_into(&self, w: &mut impl Write) -> fmt::Result {
+    /// This function returns a `core::fmt::Error` if formatting into the `core::fmt::Write` instance fails.
+    ///
+    /// # Example
+    /// ### Writing to a String
+    /// ```
+    /// let dt = chrono::DateTime::from_timestamp(1643723400, 123456789).unwrap();
+    /// let df = dt.format("%Y-%m-%d %H:%M:%S%.9f");
+    /// let mut buffer = String::new();
+    /// let _ = df.write_to(&mut buffer);
+    /// ```
+    /// ### Writing to a Vec
+    /// ```
+    /// // wrapper to allow reuse of the existing string based
+    /// // writers
+    /// struct IoWriter<W: std::io::Write> {
+    ///     writer: W,
+    /// }
+    /// impl<W: std::io::Write> std::fmt::Write for IoWriter<W> {
+    ///     #[inline]
+    ///     fn write_str(&mut self, s: &str) -> std::fmt::Result {
+    ///         self.writer.write_all(s.as_bytes()).map_err(|_| std::fmt::Error)
+    ///     }
+    /// }
+    /// let dt = chrono::DateTime::from_timestamp(1643723400, 123456789).unwrap();
+    /// let df = dt.format("%Y-%m-%d %H:%M:%S%.9f");
+    /// let w: Vec<u8> = Vec::new();
+    /// let mut writer = IoWriter { writer: w };
+    /// let _ = df.write_to(&mut writer);
+    /// ```
+    pub fn write_to(&self, w: &mut impl Write) -> fmt::Result {
         for item in self.items.clone() {
             match *item.borrow() {
                 Item::Literal(s) | Item::Space(s) => w.write_str(s),
@@ -344,7 +352,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
-        self.format_into(&mut result)?;
+        self.write_to(&mut result)?;
         f.pad(&result)
     }
 }
@@ -634,25 +642,21 @@ mod tests {
     #[cfg(feature = "alloc")]
     use crate::{NaiveDate, NaiveTime, TimeZone, Timelike, Utc};
 
-    #[cfg(all(feature = "std", feature = "alloc"))]
+    #[cfg(feature = "alloc")]
     #[test]
-    fn test_delayed_format_into_io_matches_format_into() {
+    fn test_delayed_write_to() {
         let dt = crate::DateTime::from_timestamp(1643723400, 123456789).unwrap();
         let df = dt.format("%Y-%m-%d %H:%M:%S%.9f");
 
         let mut dt_str = String::new();
-        let mut dt_vec_str = Vec::new();
 
-        df.format_into(&mut dt_str).unwrap();
-        df.format_into_io(&mut dt_vec_str).unwrap();
-
-        assert_eq!(dt_str, String::from_utf8(dt_vec_str).unwrap());
+        df.write_to(&mut dt_str).unwrap();
         assert_eq!(dt_str, "2022-02-01 13:50:00.123456789");
     }
 
     #[cfg(all(feature = "std", feature = "unstable-locales", feature = "alloc"))]
     #[test]
-    fn test_with_locale_delayed_format_into_io_matches_format_into() {
+    fn test_with_locale_delayed_write_to() {
         use crate::format::locales::Locale;
         use crate::DateTime;
 
@@ -660,12 +664,9 @@ mod tests {
         let df = dt.format_localized("%A, %B %d, %Y", Locale::ja_JP);
 
         let mut dt_str = String::new();
-        let mut dt_vec_str = Vec::new();
 
-        df.format_into(&mut dt_str).unwrap();
-        df.format_into_io(&mut dt_vec_str).unwrap();
+        df.write_to(&mut dt_str).unwrap();
 
-        assert_eq!(dt_str, String::from_utf8(dt_vec_str).unwrap());
         assert_eq!(dt_str, "火曜日, 2月 01, 2022");
     }
 
