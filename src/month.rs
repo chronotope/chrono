@@ -284,6 +284,13 @@ impl fmt::Debug for ParseMonthError {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl defmt::Format for ParseMonthError {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "ParseMonthError {{ .. }}")
+    }
+}
+
 #[cfg(feature = "serde")]
 mod month_serde {
     use super::Month;

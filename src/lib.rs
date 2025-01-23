@@ -684,6 +684,13 @@ impl fmt::Debug for OutOfRange {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl defmt::Format for OutOfRange {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "out of range");
+    }
+}
+
 #[cfg(feature = "std")]
 impl std::error::Error for OutOfRange {}
 

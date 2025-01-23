@@ -1761,6 +1761,16 @@ impl<Tz: TimeZone> fmt::Debug for DateTime<Tz> {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<Tz: TimeZone> defmt::Format for DateTime<Tz>
+where
+    Tz::Offset: defmt::Format,
+{
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}{}", self.overflowing_naive_local(), self.offset);
+    }
+}
+
 // `fmt::Debug` is hand implemented for the `rkyv::Archive` variant of `DateTime` because
 // deriving a trait recursively does not propagate trait defined associated types with their own
 // constraints:
