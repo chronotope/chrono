@@ -105,12 +105,7 @@ const fn span_for_digits(digits: u16) -> u32 {
 /// will also fail if the `TimeDelta` is bigger than the timestamp, negative or zero.
 pub trait DurationRound: Sized {
     /// Error that can occur in rounding or truncating
-    #[cfg(feature = "std")]
-    type Err: std::error::Error;
-
-    /// Error that can occur in rounding or truncating
-    #[cfg(not(feature = "std"))]
-    type Err: fmt::Debug + fmt::Display;
+    type Err: core::error::Error;
 
     /// Return a copy rounded by TimeDelta.
     ///
@@ -354,8 +349,7 @@ impl fmt::Display for RoundingError {
     }
 }
 
-#[cfg(feature = "std")]
-impl std::error::Error for RoundingError {
+impl core::error::Error for RoundingError {
     #[allow(deprecated)]
     fn description(&self) -> &str {
         "error from rounding or truncating with DurationRound"
