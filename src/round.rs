@@ -301,6 +301,7 @@ where
 ///
 /// See: [`DurationRound`]
 #[derive(Debug, Clone, PartialEq, Eq, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RoundingError {
     /// Error when the TimeDelta exceeds the TimeDelta from or until the Unix epoch.
     ///
