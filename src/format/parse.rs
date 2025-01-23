@@ -279,6 +279,23 @@ where
     parse_internal(parsed, s, items)
 }
 
+fn get_numeric_item_len<'a, B>(item: Option<&B>) -> Option<usize>
+where
+    B: Borrow<Item<'a>>,
+{
+    use super::Fixed::*;
+
+    item.map(|i| match *i.borrow() {
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond3NoDot })) => 3,
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond6NoDot })) => 6,
+        Item::Fixed(Internal(InternalFixed { val: InternalInternal::Nanosecond9NoDot })) => 9,
+        Item::Literal(prefix) => {
+            prefix.as_bytes().iter().take_while(|&&c| c.is_ascii_digit()).count()
+        }
+        _ => 0,
+    })
+}
+
 fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
@@ -300,7 +317,10 @@ where
         }};
     }
 
-    for item in items {
+    let mut items_iter = items.peekable();
+
+    while let Some(item) = items_iter.next() {
+        let next_item = items_iter.peek();
         match *item.borrow() {
             Item::Literal(prefix) => {
                 if s.len() < prefix.len() {
@@ -363,19 +383,30 @@ where
                 };
 
                 s = s.trim_start();
-                let v = if signed {
-                    if s.starts_with('-') {
-                        let v = try_consume!(scan::number(&s[1..], 1, usize::MAX));
-                        0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
-                    } else if s.starts_with('+') {
-                        try_consume!(scan::number(&s[1..], 1, usize::MAX))
+
+                let (neg, start_idx, min_width, mut max_width) = {
+                    if signed && s.starts_with('-') {
+                        (true, 1, 1, usize::MAX)
+                    } else if signed && s.starts_with('+') {
+                        (false, 1, 1, usize::MAX)
                     } else {
-                        // if there is no explicit sign, we respect the original `width`
-                        try_consume!(scan::number(s, 1, width))
+                        (false, 0, 1, width)
                     }
-                } else {
-                    try_consume!(scan::number(s, 1, width))
                 };
+                let substr = &s[start_idx..];
+
+                // If the width is not fixed, we need to determine the width from the next item.
+                // Try to consume the number in the non-greedy way.
+                if max_width == usize::MAX {
+                    let next_size = get_numeric_item_len(next_item).unwrap_or(0);
+                    let numeric_bytes_available =
+                        substr.as_bytes().iter().take_while(|&&c| c.is_ascii_digit()).count();
+                    max_width = numeric_bytes_available - next_size;
+                }
+                let mut v = try_consume!(scan::number(substr, min_width, max_width));
+                if neg {
+                    v = 0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
+                }
                 set(parsed, v)?;
             }
 
@@ -765,6 +796,7 @@ mod tests {
             &[num(Year), Space(" "), Literal("x"), Space(" "), Literal("1235")],
             parsed!(year: 1234),
         );
+        check("12341235", &[num(Year), Literal("1235")], parsed!(year: 1234));
 
         // signed numeric
         check("-42", &[num(Year)], parsed!(year: -42));
@@ -777,9 +809,12 @@ mod tests {
         check("  -42195", &[num(Year)], parsed!(year: -42195));
         check(" +42195", &[num(Year)], parsed!(year: 42195));
         check("  -42195", &[num(Year)], parsed!(year: -42195));
+        check("  -42195123", &[num(Year), Literal("123")], parsed!(year: -42195));
         check("  +42195", &[num(Year)], parsed!(year: 42195));
+        check("  +42195123", &[num(Year), Literal("123")], parsed!(year: 42195));
         check("-42195 ", &[num(Year)], Err(TOO_LONG));
         check("+42195 ", &[num(Year)], Err(TOO_LONG));
+        check("+42195123 ", &[num(Year), Literal("123")], Err(TOO_LONG));
         check("  -   42", &[num(Year)], Err(INVALID));
         check("  +   42", &[num(Year)], Err(INVALID));
         check("  -42195", &[Space("  "), num(Year)], parsed!(year: -42195));
@@ -1483,6 +1518,15 @@ mod tests {
             ),
         );
         check(
+            "20151230204",
+            &[
+                num(Year), Literal("123"), num(Month), num(Day)
+            ],
+            parsed!(
+                year: 2015, month: 2, day: 4
+            ),
+        );
+        check(
             "Mon, 10 Jun 2013 09:32:37 GMT",
             &[
                 fixed(Fixed::ShortWeekdayName), Literal(","), Space(" "), num(Day), Space(" "),
@@ -1536,6 +1580,31 @@ mod tests {
             "12345678901234.56789",
             &[num(Timestamp), Literal("."), num(Nanosecond)],
             parsed!(nanosecond: 56_789, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234111",
+            &[num(Timestamp), Literal("111")],
+            parsed!(timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567",
+            &[num(Timestamp), internal_fixed(Nanosecond3NoDot)],
+            parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567",
+            &[num(Timestamp), internal_fixed(Nanosecond3NoDot)],
+            parsed!(nanosecond: 567_000_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567890",
+            &[num(Timestamp), internal_fixed(Nanosecond6NoDot)],
+            parsed!(nanosecond: 567_890_000, timestamp: 12_345_678_901_234),
+        );
+        check(
+            "12345678901234567890123",
+            &[num(Timestamp), internal_fixed(Nanosecond9NoDot)],
+            parsed!(nanosecond: 567_890_123, timestamp: 12_345_678_901_234),
         );
         check(
             "12345678901234.56789",
