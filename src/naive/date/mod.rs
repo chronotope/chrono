@@ -19,7 +19,8 @@ use core::iter::FusedIterator;
 use core::num::NonZeroI32;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::{fmt, str};
-
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -2235,6 +2236,13 @@ impl fmt::Debug for NaiveDate {
         write_hundreds(f, mdf.month() as u8)?;
         f.write_char('-')?;
         write_hundreds(f, mdf.day() as u8)
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for NaiveDate {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{=i32:04}-{=u32:02}-{=u32:02}", self.year(), self.month(), self.day());
     }
 }
 

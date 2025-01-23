@@ -1,5 +1,6 @@
 use core::fmt;
-
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
@@ -260,6 +261,13 @@ impl Months {
     #[inline]
     pub const fn as_u32(&self) -> u32 {
         self.0
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl Format for Months {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "Months({=u32})", self.as_u32());
     }
 }
 
