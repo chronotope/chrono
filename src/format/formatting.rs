@@ -4,7 +4,7 @@
 //! Date and time formatting routines.
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
-use alloc::string::{String, ToString};
+use alloc::string::String;
 #[cfg(feature = "alloc")]
 use core::borrow::Borrow;
 #[cfg(feature = "alloc")]
@@ -16,7 +16,7 @@ use crate::offset::Offset;
 #[cfg(any(feature = "alloc", feature = "serde"))]
 use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
 #[cfg(feature = "alloc")]
-use crate::{NaiveDate, NaiveTime, Weekday};
+use crate::{NaiveDate, NaiveTime, Utc, Weekday};
 
 #[cfg(feature = "alloc")]
 use super::locales;
@@ -31,13 +31,13 @@ use locales::*;
 /// This is normally constructed via `format` methods of each date and time type.
 #[cfg(feature = "alloc")]
 #[derive(Debug)]
-pub struct DelayedFormat<I> {
+pub struct DelayedFormat<I, Off = Utc> {
     /// The date view, if any.
     date: Option<NaiveDate>,
     /// The time view, if any.
     time: Option<NaiveTime>,
-    /// The name and local-to-UTC difference for the offset (timezone), if any.
-    off: Option<(String, FixedOffset)>,
+    /// The offset from UTC, if any
+    off: Option<Off>,
     /// An iterator returning formatting items.
     items: I,
     /// Locale used for text.
@@ -46,26 +46,15 @@ pub struct DelayedFormat<I> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
+impl<'a, I, B> DelayedFormat<I>
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+{
     /// Makes a new `DelayedFormat` value out of local date and time.
     #[must_use]
     pub fn new(date: Option<NaiveDate>, time: Option<NaiveTime>, items: I) -> DelayedFormat<I> {
         DelayedFormat { date, time, off: None, items, locale: default_locale() }
-    }
-
-    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
-    #[must_use]
-    pub fn new_with_offset<Off>(
-        date: Option<NaiveDate>,
-        time: Option<NaiveTime>,
-        offset: &Off,
-        items: I,
-    ) -> DelayedFormat<I>
-    where
-        Off: Offset + Display,
-    {
-        let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date, time, off: Some(name_and_diff), items, locale: default_locale() }
     }
 
     /// Makes a new `DelayedFormat` value out of local date and time and locale.
@@ -79,22 +68,40 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     ) -> DelayedFormat<I> {
         DelayedFormat { date, time, off: None, items, locale }
     }
+}
+
+#[cfg(feature = "alloc")]
+impl<'a, I, B, Off> DelayedFormat<I, Off>
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+    Off: Offset + Display,
+{
+    /// Makes a new `DelayedFormat` value out of local date and time and UTC offset.
+    #[must_use]
+    pub fn new_with_offset(
+        date: Option<NaiveDate>,
+        time: Option<NaiveTime>,
+        offset: &Off,
+        items: I,
+    ) -> DelayedFormat<I, Off> {
+        DelayedFormat { date, time, off: Some(offset.clone()), items, locale: default_locale() }
+    }
 
     /// Makes a new `DelayedFormat` value out of local date and time, UTC offset and locale.
     #[cfg(feature = "unstable-locales")]
     #[must_use]
-    pub fn new_with_offset_and_locale<Off>(
+    pub fn new_with_offset_and_locale(
         date: Option<NaiveDate>,
         time: Option<NaiveTime>,
         offset: &Off,
         items: I,
         locale: Locale,
-    ) -> DelayedFormat<I>
+    ) -> DelayedFormat<I, Off>
     where
         Off: Offset + Display,
     {
-        let name_and_diff = (offset.to_string(), offset.fix());
-        DelayedFormat { date, time, off: Some(name_and_diff), items, locale }
+        DelayedFormat { date, time, off: Some(offset.clone()), items, locale }
     }
 
     /// Formats `DelayedFormat` into a `core::fmt::Write` instance.
@@ -203,7 +210,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
                 write_n(w, 9, (t.nanosecond() % 1_000_000_000) as i64, pad, false)
             }
             (Timestamp, Some(d), Some(t)) => {
-                let offset = self.off.as_ref().map(|(_, o)| i64::from(o.local_minus_utc()));
+                let offset = self.off.as_ref().map(|o| i64::from(o.fix().local_minus_utc()));
                 let timestamp = d.and_time(t).and_utc().timestamp() - offset.unwrap_or(0);
                 write_n(w, 9, timestamp, pad, false)
             }
@@ -277,50 +284,50 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             (Internal(InternalFixed { val: Nanosecond9NoDot }), _, Some(t), _) => {
                 write!(w, "{:09}", t.nanosecond() % 1_000_000_000)
             }
-            (TimezoneName, _, _, Some((tz_name, _))) => write!(w, "{}", tz_name),
-            (TimezoneOffset | TimezoneOffsetZ, _, _, Some((_, off))) => {
+            (TimezoneName, _, _, Some(off)) => write!(w, "{}", off),
+            (TimezoneOffset | TimezoneOffsetZ, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Minutes,
                     colons: Colons::Maybe,
                     allow_zulu: *spec == TimezoneOffsetZ,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (TimezoneOffsetColon | TimezoneOffsetColonZ, _, _, Some((_, off))) => {
+            (TimezoneOffsetColon | TimezoneOffsetColonZ, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Minutes,
                     colons: Colons::Colon,
                     allow_zulu: *spec == TimezoneOffsetColonZ,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (TimezoneOffsetDoubleColon, _, _, Some((_, off))) => {
+            (TimezoneOffsetDoubleColon, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Seconds,
                     colons: Colons::Colon,
                     allow_zulu: false,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (TimezoneOffsetTripleColon, _, _, Some((_, off))) => {
+            (TimezoneOffsetTripleColon, _, _, Some(off)) => {
                 let offset_format = OffsetFormat {
                     precision: OffsetPrecision::Hours,
                     colons: Colons::None,
                     allow_zulu: false,
                     padding: Pad::Zero,
                 };
-                offset_format.format(w, *off)
+                offset_format.format(w, off.fix())
             }
-            (RFC2822, Some(d), Some(t), Some((_, off))) => {
-                write_rfc2822(w, crate::NaiveDateTime::new(d, t), *off)
+            (RFC2822, Some(d), Some(t), Some(off)) => {
+                write_rfc2822(w, crate::NaiveDateTime::new(d, t), off.fix())
             }
-            (RFC3339, Some(d), Some(t), Some((_, off))) => write_rfc3339(
+            (RFC3339, Some(d), Some(t), Some(off)) => write_rfc3339(
                 w,
                 crate::NaiveDateTime::new(d, t),
-                *off,
+                off.fix(),
                 SecondsFormat::AutoSi,
                 false,
             ),
@@ -330,7 +337,12 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
 }
 
 #[cfg(feature = "alloc")]
-impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> Display for DelayedFormat<I> {
+impl<'a, I, B, Off> Display for DelayedFormat<I, Off>
+where
+    I: Iterator<Item = B> + Clone,
+    B: Borrow<Item<'a>>,
+    Off: Offset + Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
         self.write_to(&mut result)?;
@@ -356,7 +368,7 @@ where
     DelayedFormat {
         date: date.copied(),
         time: time.copied(),
-        off: off.cloned(),
+        off: off.cloned().map(|(tz_name, offset)| OffsetWrapper { offset, tz_name }),
         items,
         locale: default_locale(),
     }
@@ -376,11 +388,33 @@ pub fn format_item(
     DelayedFormat {
         date: date.copied(),
         time: time.copied(),
-        off: off.cloned(),
+        off: off.cloned().map(|(tz_name, offset)| OffsetWrapper { offset, tz_name }),
         items: [item].into_iter(),
         locale: default_locale(),
     }
     .fmt(w)
+}
+
+/// Only used by the deprecated `format` and `format_item` functions.
+#[cfg(feature = "alloc")]
+#[derive(Clone, Debug)]
+struct OffsetWrapper {
+    offset: FixedOffset,
+    tz_name: String,
+}
+
+#[cfg(feature = "alloc")]
+impl Offset for OffsetWrapper {
+    fn fix(&self) -> FixedOffset {
+        self.offset
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl Display for OffsetWrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&self.tz_name)
+    }
 }
 
 #[cfg(any(feature = "alloc", feature = "serde"))]
