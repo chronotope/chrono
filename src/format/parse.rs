@@ -406,6 +406,8 @@ where
 
                 if starts_with_sign && signed {
                     width = recalculate_numeric_item_width(substr, next_item);
+                } else if starts_with_sign {
+                    return Err(INVALID);
                 }
 
                 let v = try_consume!(scan::number(substr, 1, width));
