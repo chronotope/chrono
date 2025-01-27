@@ -366,7 +366,7 @@ where
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
                 s = s.trim_start();
-                let mut substr = &s[..];
+                let mut substr = s;
                 let negative = s.starts_with('-');
                 let positive = s.starts_with('+');
                 let starts_with_sign = negative || positive;
