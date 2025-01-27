@@ -296,6 +296,15 @@ where
     })
 }
 
+fn recalculate_numeric_item_width<'a, B>(s: &str, next_item: Option<&B>) -> usize
+where
+    B: Borrow<Item<'a>>,
+{
+    let next_width = get_numeric_item_len(next_item).unwrap_or(0);
+    let numeric_bytes_available = s.as_bytes().iter().take_while(|&&c| c.is_ascii_digit()).count();
+    numeric_bytes_available - next_width
+}
+
 fn parse_internal<'a, 'b, I, B>(
     parsed: &mut Parsed,
     mut s: &'b str,
@@ -356,7 +365,16 @@ where
                 use super::Numeric::*;
                 type Setter = fn(&mut Parsed, i64) -> ParseResult<()>;
 
-                let (width, signed, set): (usize, bool, Setter) = match *spec {
+                s = s.trim_start();
+                let mut substr = &s[..];
+                let negative = s.starts_with('-');
+                let positive = s.starts_with('+');
+                let starts_with_sign = negative || positive;
+                if starts_with_sign {
+                    substr = &s[1..];
+                }
+
+                let (mut width, signed, set): (usize, bool, Setter) = match *spec {
                     Year => (4, true, Parsed::set_year),
                     YearDiv100 => (2, false, Parsed::set_year_div_100),
                     YearMod100 => (2, false, Parsed::set_year_mod_100),
@@ -376,37 +394,23 @@ where
                     Minute => (2, false, Parsed::set_minute),
                     Second => (2, false, Parsed::set_second),
                     Nanosecond => (9, false, Parsed::set_nanosecond),
-                    Timestamp => (usize::MAX, false, Parsed::set_timestamp),
+                    Timestamp => (
+                        recalculate_numeric_item_width(substr, next_item),
+                        false,
+                        Parsed::set_timestamp,
+                    ),
 
                     // for the future expansion
                     Internal(ref int) => match int._dummy {},
                 };
 
-                s = s.trim_start();
-
-                let (neg, start_idx, min_width, mut max_width) = {
-                    if signed && s.starts_with('-') {
-                        (true, 1, 1, usize::MAX)
-                    } else if signed && s.starts_with('+') {
-                        (false, 1, 1, usize::MAX)
-                    } else {
-                        (false, 0, 1, width)
-                    }
-                };
-                let substr = &s[start_idx..];
-
-                // If the width is not fixed, we need to determine the width from the next item.
-                // Try to consume the number in the non-greedy way.
-                if max_width == usize::MAX {
-                    let next_size = get_numeric_item_len(next_item).unwrap_or(0);
-                    let numeric_bytes_available =
-                        substr.as_bytes().iter().take_while(|&&c| c.is_ascii_digit()).count();
-                    max_width = numeric_bytes_available - next_size;
+                if starts_with_sign && signed {
+                    width = recalculate_numeric_item_width(substr, next_item);
                 }
-                let mut v = try_consume!(scan::number(substr, min_width, max_width));
-                if neg {
-                    v = 0i64.checked_sub(v).ok_or(OUT_OF_RANGE)?
-                }
+
+                let v = try_consume!(scan::number(substr, 1, width));
+                let v = if negative { 0i64.checked_sub(v).ok_or(OUT_OF_RANGE)? } else { v };
+
                 set(parsed, v)?;
             }
 
