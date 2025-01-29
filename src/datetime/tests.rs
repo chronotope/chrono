@@ -639,6 +639,23 @@ fn test_datetime_with_timezone() {
 }
 
 #[test]
+#[cfg(feature = "clock")]
+fn test_datetime_to_timezone() {
+    let dt = Local::now();
+
+    let fixed: DateTime<FixedOffset> = dt.to_timezone();
+    assert_eq!(fixed, dt);
+    assert_eq!(fixed.offset().fix(), dt.offset().fix());
+
+    let utc: DateTime<Utc> = dt.to_timezone();
+    assert_eq!(utc, dt);
+
+    let local: DateTime<Local> = fixed.to_timezone();
+    assert_eq!(local, fixed);
+    assert_eq!(local.offset().fix(), fixed.offset().fix());
+}
+
+#[test]
 #[cfg(feature = "alloc")]
 fn test_datetime_rfc2822() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
