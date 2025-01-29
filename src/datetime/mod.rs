@@ -3,17 +3,6 @@
 
 //! ISO 8601 date and time with time zone.
 
-#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
-use alloc::string::String;
-use core::borrow::Borrow;
-use core::cmp::Ordering;
-use core::fmt::Write;
-use core::ops::{Add, AddAssign, Sub, SubAssign};
-use core::time::Duration;
-use core::{fmt, hash, str};
-#[cfg(feature = "std")]
-use std::time::{SystemTime, UNIX_EPOCH};
-
 #[cfg(all(feature = "unstable-locales", feature = "alloc"))]
 use crate::format::Locale;
 use crate::format::{
@@ -30,6 +19,18 @@ use crate::offset::{FixedOffset, LocalResult, Offset, TimeZone, Utc};
 use crate::Date;
 use crate::{expect, try_opt};
 use crate::{Datelike, Months, TimeDelta, Timelike, Weekday};
+#[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
+use alloc::string::String;
+use core::borrow::Borrow;
+use core::cmp::Ordering;
+use core::fmt::Write;
+use core::ops::{Add, AddAssign, Sub, SubAssign};
+use core::time::Duration;
+use core::{fmt, hash, str};
+#[cfg(feature = "defmt")]
+use defmt::{Format, Formatter};
+#[cfg(feature = "std")]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
@@ -1090,6 +1091,13 @@ impl DateTime<FixedOffset> {
         let mut parsed = Parsed::new();
         let remainder = parse_and_remainder(&mut parsed, s, StrftimeItems::new(fmt))?;
         parsed.to_datetime().map(|d| (d, remainder))
+    }
+}
+
+#[cfg(feature = "defmt")]
+impl<Tz: TimeZone> Format for DateTime<Tz> {
+    fn format(&self, fmt: Formatter) {
+        defmt::write!(fmt, "{=i32:04}-{=u32:02}-{=u32:02}", self.year(), self.month(), self.day());
     }
 }
 
