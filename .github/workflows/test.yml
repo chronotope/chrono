@@ -22,9 +22,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test ${{ env.ALL_NON_EXCLUSIVE_FEATURES }} --color=always -- --color=always
 
-  # later this may be able to be included with the below
-  # kept separate for now as the following don't compile on 1.60
-  # * arbitrary (requires 1.63 as of v1.3.0)
   rust_msrv:
     strategy:
       matrix:
@@ -34,19 +31,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: "1.61.0"
+          toolchain: "1.81.0"
       - uses: Swatinem/rust-cache@v2
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere
       - run: |
           cargo test --lib \
             --features \
-            unstable-locales,wasmbind,oldtime,clock,winapi,serde \
+            unstable-locales,wasmbind,oldtime,clock,winapi,serde,arbitrary \
             --color=always -- --color=always
       - run: |
           cargo test --doc \
             --features \
-            unstable-locales,wasmbind,oldtime,clock,winapi,serde \
+            unstable-locales,wasmbind,oldtime,clock,winapi,serde,arbitrary \
             --color=always -- --color=always
 
   rust_versions:
