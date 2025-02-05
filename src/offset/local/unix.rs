@@ -12,7 +12,7 @@ use std::{cell::RefCell, collections::hash_map, env, fs, hash::Hasher, time::Sys
 
 use super::tz_info::TimeZone;
 use super::{FixedOffset, NaiveDateTime};
-use crate::{Datelike, MappedLocalTime};
+use crate::MappedLocalTime;
 
 pub(super) fn offset_from_utc_datetime(utc: &NaiveDateTime) -> MappedLocalTime<FixedOffset> {
     offset(utc, false)
@@ -164,7 +164,7 @@ impl Cache {
         // we pass through the year as the year of a local point in time must either be valid in that locale, or
         // the entire time was skipped in which case we will return MappedLocalTime::None anyway.
         self.zone
-            .find_local_time_type_from_local(d.and_utc().timestamp(), d.year())
+            .find_local_time_type_from_local(d)
             .expect("unable to select local time type")
             .and_then(|o| FixedOffset::east_opt(o.offset()))
     }

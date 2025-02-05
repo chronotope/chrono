@@ -1,12 +1,12 @@
 //! Types related to a time zone.
 
+use super::rule::{AlternateTime, TransitionRule};
+use super::{parser, Error, DAYS_PER_WEEK, SECONDS_PER_DAY};
+use crate::NaiveDateTime;
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::{cmp::Ordering, fmt, str};
-
-use super::rule::{AlternateTime, TransitionRule};
-use super::{parser, Error, DAYS_PER_WEEK, SECONDS_PER_DAY};
 
 #[cfg(target_env = "ohos")]
 use crate::offset::local::tz_info::parser::Cursor;
@@ -133,13 +133,11 @@ impl TimeZone {
         self.as_ref().find_local_time_type(unix_time)
     }
 
-    // should we pass NaiveDateTime all the way through to this fn?
     pub(crate) fn find_local_time_type_from_local(
         &self,
-        local_time: i64,
-        year: i32,
+        local_time: NaiveDateTime,
     ) -> Result<crate::MappedLocalTime<LocalTimeType>, Error> {
-        self.as_ref().find_local_time_type_from_local(local_time, year)
+        self.as_ref().find_local_time_type_from_local(local_time)
     }
 
     /// Returns a reference to the time zone
@@ -225,8 +223,7 @@ impl<'a> TimeZoneRef<'a> {
 
     pub(crate) fn find_local_time_type_from_local(
         &self,
-        local_time: i64,
-        year: i32,
+        local_time: NaiveDateTime,
     ) -> Result<crate::MappedLocalTime<LocalTimeType>, Error> {
         // #TODO: this is wrong as we need 'local_time_to_local_leap_time ?
         // but ... does the local time even include leap seconds ??
@@ -235,10 +232,10 @@ impl<'a> TimeZoneRef<'a> {
         //     Err(Error::OutOfRange(error)) => return Err(Error::FindLocalTimeType(error)),
         //     Err(err) => return Err(err),
         // };
-        let local_leap_time = local_time;
+        let local_leap_time = local_time.and_utc().timestamp();
 
         // if we have at least one transition,
-        // we must check _all_ of them, incase of any Overlapping (MappedLocalTime::Ambiguous) or Skipping (MappedLocalTime::None) transitions
+        // we must check _all_ of them, in case of any Overlapping (MappedLocalTime::Ambiguous) or Skipping (MappedLocalTime::None) transitions
         let offset_after_last = if !self.transitions.is_empty() {
             let mut prev = self.local_time_types[0];
 
@@ -301,7 +298,7 @@ impl<'a> TimeZoneRef<'a> {
         };
 
         if let Some(extra_rule) = self.extra_rule {
-            match extra_rule.find_local_time_type_from_local(local_time, year) {
+            match extra_rule.find_local_time_type_from_local(local_time) {
                 Ok(local_time_type) => Ok(local_time_type),
                 Err(Error::OutOfRange(error)) => Err(Error::FindLocalTimeType(error)),
                 err => err,

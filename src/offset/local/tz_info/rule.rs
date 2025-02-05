@@ -1,11 +1,11 @@
-use std::cmp::Ordering;
-
 use super::parser::Cursor;
 use super::timezone::{LocalTimeType, SECONDS_PER_WEEK};
 use super::{
     Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
     SECONDS_PER_DAY,
 };
+use crate::{Datelike, NaiveDateTime};
+use std::cmp::Ordering;
 
 /// Transition rule
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -81,15 +81,14 @@ impl TransitionRule {
     /// Find the local time type associated to the transition rule at the specified Unix time in seconds
     pub(super) fn find_local_time_type_from_local(
         &self,
-        local_time: i64,
-        year: i32,
+        local_time: NaiveDateTime,
     ) -> Result<crate::MappedLocalTime<LocalTimeType>, Error> {
         match self {
             TransitionRule::Fixed(local_time_type) => {
                 Ok(crate::MappedLocalTime::Single(*local_time_type))
             }
             TransitionRule::Alternate(alternate_time) => {
-                alternate_time.find_local_time_type_from_local(local_time, year)
+                alternate_time.find_local_time_type_from_local(local_time)
             }
         }
     }
@@ -229,9 +228,11 @@ impl AlternateTime {
 
     fn find_local_time_type_from_local(
         &self,
-        local_time: i64,
-        current_year: i32,
+        local_time: NaiveDateTime,
     ) -> Result<crate::MappedLocalTime<LocalTimeType>, Error> {
+        let current_year = local_time.year();
+        let local_time = local_time.and_utc().timestamp();
+
         // Check if the current year is valid for the following computations
         if !(i32::MIN + 2..=i32::MAX - 2).contains(&current_year) {
             return Err(Error::OutOfRange("out of range date time"));
