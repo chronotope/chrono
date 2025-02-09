@@ -18,13 +18,13 @@ use crate::{Datelike, FixedOffset, NaiveDateTime, Timelike};
 #[cfg(feature = "alloc")]
 use crate::{NaiveDate, NaiveTime, Weekday};
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", feature = "serde"))]
 use super::locales;
 #[cfg(any(feature = "alloc", feature = "serde"))]
 use super::{Colons, OffsetFormat, OffsetPrecision, Pad};
 #[cfg(feature = "alloc")]
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric};
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", feature = "serde"))]
 use locales::*;
 
 /// A *temporary* object which can be used as an argument to `format!` or others.
@@ -556,7 +556,7 @@ pub(crate) fn write_rfc3339(
     .format(w, off)
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", feature = "serde"))]
 /// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
     w: &mut impl Write,
