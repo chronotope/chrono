@@ -296,7 +296,7 @@
 //!
 //! assert_eq!(dt.format("%a %b %e %T %Y").to_string(), dt.format("%c").to_string());
 //! assert_eq!(dt.to_string(), "2014-11-28 12:00:09 UTC");
-//! assert_eq!(dt.to_rfc2822(), "Fri, 28 Nov 2014 12:00:09 +0000");
+//! assert_eq!(dt.try_to_rfc2822().unwrap(), "Fri, 28 Nov 2014 12:00:09 +0000");
 //! assert_eq!(dt.to_rfc3339(), "2014-11-28T12:00:09+00:00");
 //! assert_eq!(format!("{:?}", dt), "2014-11-28T12:00:09Z");
 //!
@@ -381,7 +381,7 @@
 //!
 //! // Construct a datetime from epoch:
 //! let dt: DateTime<Utc> = DateTime::from_timestamp(1_500_000_000, 0).unwrap();
-//! assert_eq!(dt.to_rfc2822(), "Fri, 14 Jul 2017 02:40:00 +0000");
+//! assert_eq!(dt.try_to_rfc2822(), Some("Fri, 14 Jul 2017 02:40:00 +0000".to_owned()));
 //!
 //! // Get epoch value from a datetime:
 //! let dt = DateTime::parse_from_rfc2822("Fri, 14 Jul 2017 02:40:00 +0000").unwrap();

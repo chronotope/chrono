@@ -556,8 +556,13 @@ pub(crate) fn write_rfc3339(
     .format(w, off)
 }
 
+/// Write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
+///
+/// # Errors
+///
+/// RFC 2822 is only defined on years 0 through 9999, and this function returns an error on dates
+/// outside that range.
 #[cfg(feature = "alloc")]
-/// write datetimes like `Tue, 1 Jul 2003 10:52:37 +0200`, same as `%a, %d %b %Y %H:%M:%S %z`
 pub(crate) fn write_rfc2822(
     w: &mut impl Write,
     dt: NaiveDateTime,
