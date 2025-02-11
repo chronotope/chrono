@@ -230,13 +230,9 @@ impl AlternateTime {
         &self,
         local_time: NaiveDateTime,
     ) -> Result<crate::MappedLocalTime<LocalTimeType>, Error> {
+        // Year must be between i32::MIN + 2 and i32::MAX - 2, year in NaiveDate is always smaller.
         let current_year = local_time.year();
         let local_time = local_time.and_utc().timestamp();
-
-        // Check if the current year is valid for the following computations
-        if !(i32::MIN + 2..=i32::MAX - 2).contains(&current_year) {
-            return Err(Error::OutOfRange("out of range date time"));
-        }
 
         let dst_start_transition_start =
             self.dst_start.unix_time(current_year, 0) + i64::from(self.dst_start_time);
