@@ -60,7 +60,7 @@ mod tests;
 ///   on the same calendar date---April 23, 1616---but in the different calendar.
 ///   Britain used the Julian calendar at that time, so Shakespeare's death is later.)
 ///
-/// * ISO 8601 calendars has the year 0, which is 1 BCE (a year before 1 CE).
+/// * ISO 8601 calendars have the year 0, which is 1 BCE (a year before 1 CE).
 ///   If you need a typical BCE/BC and CE/AD notation for year numbers,
 ///   use the [`Datelike::year_ce`] method.
 ///
