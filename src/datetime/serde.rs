@@ -2,7 +2,7 @@ use core::fmt;
 use serde::{de, ser};
 
 use super::DateTime;
-use crate::format::{write_rfc3339, SecondsFormat};
+use crate::format::{SecondsFormat, write_rfc3339};
 #[cfg(feature = "clock")]
 use crate::offset::Local;
 use crate::offset::{FixedOffset, Offset, TimeZone, Utc};
@@ -1289,7 +1289,9 @@ mod tests {
         }
 
         assert!(serde_json::from_str::<DateTime<Utc>>(r#""2014-07-32T12:34:06Z""#).is_err());
-        assert!(serde_json::from_str::<DateTime<FixedOffset>>(r#""2014-07-32T12:34:06Z""#).is_err());
+        assert!(
+            serde_json::from_str::<DateTime<FixedOffset>>(r#""2014-07-32T12:34:06Z""#).is_err()
+        );
     }
 
     #[test]

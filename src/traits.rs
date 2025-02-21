@@ -37,11 +37,7 @@ pub trait Datelike: Sized {
     #[inline]
     fn year_ce(&self) -> (bool, u32) {
         let year = self.year();
-        if year < 1 {
-            (false, (1 - year) as u32)
-        } else {
-            (true, year as u32)
-        }
+        if year < 1 { (false, (1 - year) as u32) } else { (true, year as u32) }
     }
 
     /// Returns the month number starting from 1.

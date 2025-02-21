@@ -3,8 +3,8 @@ use core::fmt;
 #[cfg(any(feature = "rkyv", feature = "rkyv-16", feature = "rkyv-32", feature = "rkyv-64"))]
 use rkyv::{Archive, Deserialize, Serialize};
 
-use crate::naive::NaiveDate;
 use crate::OutOfRange;
+use crate::naive::NaiveDate;
 
 /// The month of the year.
 ///
@@ -395,8 +395,8 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")]
     fn test_serde_serialize() {
-        use serde_json::to_string;
         use Month::*;
+        use serde_json::to_string;
 
         let cases: Vec<(Month, &str)> = vec![
             (January, "\"January\""),
@@ -422,8 +422,8 @@ mod tests {
     #[test]
     #[cfg(feature = "serde")]
     fn test_serde_deserialize() {
-        use serde_json::from_str;
         use Month::*;
+        use serde_json::from_str;
 
         let cases: Vec<(&str, Month)> = vec![
             ("\"january\"", January),

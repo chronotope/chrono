@@ -4,7 +4,7 @@
 //! A collection of parsed date and time items.
 //! They can be constructed incrementally while being checked for consistency.
 
-use super::{ParseResult, IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
+use super::{IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE, ParseResult};
 use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::offset::{FixedOffset, MappedLocalTime, Offset, TimeZone};
 use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
@@ -176,11 +176,7 @@ pub struct Parsed {
 #[inline]
 fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<()> {
     if let Some(ref old) = *old {
-        if *old == new {
-            Ok(())
-        } else {
-            Err(IMPOSSIBLE)
-        }
+        if *old == new { Ok(()) } else { Err(IMPOSSIBLE) }
     } else {
         *old = Some(new);
         Ok(())
@@ -701,11 +697,7 @@ impl Parsed {
             (_, _, _) => return Err(NOT_ENOUGH),
         };
 
-        if verified {
-            Ok(parsed_date)
-        } else {
-            Err(IMPOSSIBLE)
-        }
+        if verified { Ok(parsed_date) } else { Err(IMPOSSIBLE) }
     }
 
     /// Returns a parsed naive time out of given fields.
@@ -1166,10 +1158,10 @@ fn resolve_week_date(
 mod tests {
     use super::super::{IMPOSSIBLE, NOT_ENOUGH, OUT_OF_RANGE};
     use super::Parsed;
-    use crate::naive::{NaiveDate, NaiveTime};
-    use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::Datelike;
     use crate::Weekday::*;
+    use crate::naive::{NaiveDate, NaiveTime};
+    use crate::offset::{FixedOffset, TimeZone, Utc};
 
     #[test]
     fn test_parsed_set_fields() {

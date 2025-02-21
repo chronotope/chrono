@@ -14,7 +14,7 @@ use std::ptr;
 
 use super::win_bindings::{GetTimeZoneInformationForYear, SYSTEMTIME, TIME_ZONE_INFORMATION};
 
-use crate::offset::local::{lookup_with_dst_transitions, Transition};
+use crate::offset::local::{Transition, lookup_with_dst_transitions};
 use crate::{Datelike, FixedOffset, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Weekday};
 
 // We don't use `SystemTimeToTzSpecificLocalTime` because it doesn't support the same range of dates
@@ -213,7 +213,7 @@ fn naive_date_time_from_system_time(
 #[cfg(test)]
 mod tests {
     use crate::offset::local::win_bindings::{
-        SystemTimeToFileTime, TzSpecificLocalTimeToSystemTime, FILETIME, SYSTEMTIME,
+        FILETIME, SYSTEMTIME, SystemTimeToFileTime, TzSpecificLocalTimeToSystemTime,
     };
     use crate::{DateTime, FixedOffset, Local, NaiveDate, NaiveDateTime, TimeDelta};
     use crate::{Datelike, TimeZone, Timelike};

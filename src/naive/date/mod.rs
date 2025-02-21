@@ -30,13 +30,13 @@ use pure_rust_locales::Locale;
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    Item, Numeric, Pad, ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder,
+    write_hundreds,
 };
 use crate::month::Months;
 use crate::naive::{Days, IsoWeek, NaiveDateTime, NaiveTime, NaiveWeek};
-use crate::{expect, try_opt};
 use crate::{Datelike, TimeDelta, Weekday};
+use crate::{expect, try_opt};
 
 use super::internals::{Mdf, YearFlags};
 

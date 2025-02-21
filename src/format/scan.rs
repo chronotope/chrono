@@ -5,7 +5,7 @@
  * Various scanning routines for the parser.
  */
 
-use super::{ParseResult, INVALID, OUT_OF_RANGE, TOO_SHORT};
+use super::{INVALID, OUT_OF_RANGE, ParseResult, TOO_SHORT};
 use crate::Weekday;
 
 /// Tries to parse the non-negative number from `min` to `max` digits.
@@ -217,11 +217,7 @@ where
 
     const fn digits(s: &str) -> ParseResult<(u8, u8)> {
         let b = s.as_bytes();
-        if b.len() < 2 {
-            Err(TOO_SHORT)
-        } else {
-            Ok((b[0], b[1]))
-        }
+        if b.len() < 2 { Err(TOO_SHORT) } else { Ok((b[0], b[1])) }
     }
     let negative = match s.chars().next() {
         Some('+') => {
@@ -359,8 +355,8 @@ mod tests {
         comment_2822, nanosecond, nanosecond_fixed, short_or_long_month0, short_or_long_weekday,
         timezone_offset_2822,
     };
-    use crate::format::{INVALID, TOO_SHORT};
     use crate::Weekday;
+    use crate::format::{INVALID, TOO_SHORT};
 
     #[test]
     fn test_rfc2822_comments() {

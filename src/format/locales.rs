@@ -1,6 +1,6 @@
 #[cfg(feature = "unstable-locales")]
 mod localized {
-    use pure_rust_locales::{locale_match, Locale};
+    use pure_rust_locales::{Locale, locale_match};
 
     pub(crate) const fn default_locale() -> Locale {
         Locale::POSIX

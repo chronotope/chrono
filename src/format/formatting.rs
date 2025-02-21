@@ -638,8 +638,8 @@ mod tests {
     #[cfg(all(feature = "std", feature = "unstable-locales", feature = "alloc"))]
     #[test]
     fn test_with_locale_delayed_write_to() {
-        use crate::format::locales::Locale;
         use crate::DateTime;
+        use crate::format::locales::Locale;
 
         let dt = DateTime::from_timestamp(1643723400, 123456789).unwrap();
         let df = dt.format_localized("%A, %B %d, %Y", Locale::ja_JP);

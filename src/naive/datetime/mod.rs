@@ -15,14 +15,14 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
-use crate::format::{parse, parse_and_remainder, ParseError, ParseResult, Parsed, StrftimeItems};
 use crate::format::{Fixed, Item, Numeric, Pad};
+use crate::format::{ParseError, ParseResult, Parsed, StrftimeItems, parse, parse_and_remainder};
 use crate::naive::{Days, IsoWeek, NaiveDate, NaiveTime};
 use crate::offset::Utc;
 use crate::time_delta::NANOS_PER_SEC;
 use crate::{
-    expect, try_opt, DateTime, Datelike, FixedOffset, MappedLocalTime, Months, TimeDelta, TimeZone,
-    Timelike, Weekday,
+    DateTime, Datelike, FixedOffset, MappedLocalTime, Months, TimeDelta, TimeZone, Timelike,
+    Weekday, expect, try_opt,
 };
 
 /// Tools to help serializing/deserializing `NaiveDateTime`s

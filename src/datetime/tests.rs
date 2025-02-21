@@ -734,10 +734,7 @@ fn test_datetime_rfc2822() {
             "Thu,\n\t13\n      Feb\n        1969\n    23:32\n             -0330 (Newfoundland Time)"
         ),
         Ok(
-            ymdhms(
-                &FixedOffset::east_opt(-3 * 60 * 60 - 30 * 60).unwrap(),
-                1969, 2, 13, 23, 32, 0,
-            )
+            ymdhms(&FixedOffset::east_opt(-3 * 60 * 60 - 30 * 60).unwrap(), 1969, 2, 13, 23, 32, 0,)
         )
     );
     // example from RFC 2822 Appendix A.5. without trailing " (Newfoundland Time)"
@@ -1099,8 +1096,10 @@ fn test_parse_from_str() {
         Ok(ymdhms(&edt, 2014, 5, 7, 12, 34, 56))
     ); // ignore offset
     assert!(DateTime::parse_from_str("20140507000000", "%Y%m%d%H%M%S").is_err()); // no offset
-    assert!(DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
-        .is_err());
+    assert!(
+        DateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
+            .is_err()
+    );
     assert_eq!(
         DateTime::parse_from_str("0", "%s").unwrap(),
         DateTime::from_timestamp(0, 0).unwrap().fixed_offset()

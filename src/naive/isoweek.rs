@@ -164,8 +164,8 @@ impl fmt::Debug for IsoWeek {
 mod tests {
     #[cfg(feature = "rkyv-validation")]
     use super::IsoWeek;
-    use crate::naive::date::{self, NaiveDate};
     use crate::Datelike;
+    use crate::naive::date::{self, NaiveDate};
 
     #[test]
     fn test_iso_week_extremes() {

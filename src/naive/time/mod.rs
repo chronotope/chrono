@@ -15,11 +15,11 @@ use rkyv::{Archive, Deserialize, Serialize};
 #[cfg(feature = "alloc")]
 use crate::format::DelayedFormat;
 use crate::format::{
-    parse, parse_and_remainder, write_hundreds, Fixed, Item, Numeric, Pad, ParseError, ParseResult,
-    Parsed, StrftimeItems,
+    Fixed, Item, Numeric, Pad, ParseError, ParseResult, Parsed, StrftimeItems, parse,
+    parse_and_remainder, write_hundreds,
 };
-use crate::{expect, try_opt};
 use crate::{FixedOffset, TimeDelta, Timelike};
+use crate::{expect, try_opt};
 
 #[cfg(feature = "serde")]
 mod serde;
