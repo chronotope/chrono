@@ -1142,7 +1142,7 @@ impl NaiveDate {
         let mut years = self.year() - base.year();
         // Comparing tuples is not (yet) possible in const context. Instead we combine month and
         // day into one `u32` for easy comparison.
-        if (self.month() << 5 | self.day()) < (base.month() << 5 | base.day()) {
+        if ((self.month() << 5) | self.day()) < ((base.month() << 5) | base.day()) {
             years -= 1;
         }
 
