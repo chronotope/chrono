@@ -199,11 +199,10 @@ fn test_datetime_parse_from_str() {
         NaiveDateTime::parse_from_str("Fri, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT"),
         Ok(ymdhms(2013, 8, 9, 23, 54, 35))
     );
-    assert!(NaiveDateTime::parse_from_str(
-        "Sat, 09 Aug 2013 23:54:35 GMT",
-        "%a, %d %b %Y %H:%M:%S GMT"
-    )
-    .is_err());
+    assert!(
+        NaiveDateTime::parse_from_str("Sat, 09 Aug 2013 23:54:35 GMT", "%a, %d %b %Y %H:%M:%S GMT")
+            .is_err()
+    );
     assert!(NaiveDateTime::parse_from_str("2014-5-7 12:3456", "%Y-%m-%d %H:%M:%S").is_err());
     assert!(NaiveDateTime::parse_from_str("12:34:56", "%H:%M:%S").is_err()); // insufficient
     assert_eq!(

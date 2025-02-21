@@ -365,8 +365,8 @@ impl std::error::Error for RoundingError {
 #[cfg(test)]
 mod tests {
     use super::{DurationRound, RoundingError, SubsecRound, TimeDelta};
-    use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::Timelike;
+    use crate::offset::{FixedOffset, TimeZone, Utc};
     use crate::{DateTime, NaiveDate};
 
     #[test]

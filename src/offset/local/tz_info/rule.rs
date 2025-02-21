@@ -1,7 +1,7 @@
 use super::parser::Cursor;
 use super::timezone::{LocalTimeType, SECONDS_PER_WEEK};
 use super::{
-    Error, CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, DAY_IN_MONTHS_NORMAL_YEAR,
+    CUMUL_DAY_IN_MONTHS_NORMAL_YEAR, DAY_IN_MONTHS_NORMAL_YEAR, DAYS_PER_WEEK, Error,
     SECONDS_PER_DAY,
 };
 use crate::{Datelike, NaiveDateTime};
@@ -39,7 +39,7 @@ impl TransitionRule {
             Some(&b',') => std_offset - 3600,
             Some(_) => parse_offset(&mut cursor)?,
             None => {
-                return Err(Error::UnsupportedTzString("DST start and end rules must be provided"))
+                return Err(Error::UnsupportedTzString("DST start and end rules must be provided"));
             }
         };
 
@@ -219,11 +219,7 @@ impl AlternateTime {
                 }
             };
 
-        if is_dst {
-            Ok(&self.dst)
-        } else {
-            Ok(&self.std)
-        }
+        if is_dst { Ok(&self.dst) } else { Ok(&self.std) }
     }
 
     fn find_local_time_type_from_local(

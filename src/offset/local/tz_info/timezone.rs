@@ -1,13 +1,13 @@
 //! Types related to a time zone.
 
-use super::rule::{AlternateTime, TransitionRule};
-use super::{parser, Error, DAYS_PER_WEEK, SECONDS_PER_DAY};
-use crate::NaiveDateTime;
 use std::fs::{self, File};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 use std::{cmp::Ordering, fmt, str};
 
+use super::rule::{AlternateTime, TransitionRule};
+use super::{DAYS_PER_WEEK, Error, SECONDS_PER_DAY, parser};
+use crate::NaiveDateTime;
 #[cfg(target_env = "ohos")]
 use crate::offset::local::tz_info::parser::Cursor;
 

@@ -3,9 +3,9 @@ use std::iter;
 use std::num::ParseIntError;
 use std::str::{self, FromStr};
 
+use super::Error;
 use super::rule::TransitionRule;
 use super::timezone::{LeapSecond, LocalTimeType, TimeZone, Transition};
-use super::Error;
 
 pub(super) fn parse(bytes: &[u8]) -> Result<TimeZone, Error> {
     let mut cursor = Cursor::new(bytes);
@@ -14,7 +14,7 @@ pub(super) fn parse(bytes: &[u8]) -> Result<TimeZone, Error> {
         Version::V1 => match cursor.is_empty() {
             true => (state, None),
             false => {
-                return Err(Error::InvalidTzFile("remaining data after end of TZif v1 data block"))
+                return Err(Error::InvalidTzFile("remaining data after end of TZif v1 data block"));
             }
         },
         Version::V2 | Version::V3 => {

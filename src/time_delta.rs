@@ -301,22 +301,14 @@ impl TimeDelta {
     /// Returns the total number of whole seconds in the `TimeDelta`.
     pub const fn num_seconds(&self) -> i64 {
         // If secs is negative, nanos should be subtracted from the duration.
-        if self.secs < 0 && self.nanos > 0 {
-            self.secs + 1
-        } else {
-            self.secs
-        }
+        if self.secs < 0 && self.nanos > 0 { self.secs + 1 } else { self.secs }
     }
 
     /// Returns the number of nanoseconds such that
     /// `subsec_nanos() + num_seconds() * NANOS_PER_SEC` is the total number of
     /// nanoseconds in the `TimeDelta`.
     pub const fn subsec_nanos(&self) -> i32 {
-        if self.secs < 0 && self.nanos > 0 {
-            self.nanos - NANOS_PER_SEC
-        } else {
-            self.nanos
-        }
+        if self.secs < 0 && self.nanos > 0 { self.nanos - NANOS_PER_SEC } else { self.nanos }
     }
 
     /// Returns the total number of whole milliseconds in the `TimeDelta`.
@@ -642,7 +634,7 @@ impl arbitrary::Arbitrary<'_> for TimeDelta {
 #[cfg(feature = "serde")]
 mod serde {
     use super::TimeDelta;
-    use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de::Error};
 
     impl Serialize for TimeDelta {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -683,7 +675,7 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::OutOfRangeError;
-    use super::{TimeDelta, MAX, MIN};
+    use super::{MAX, MIN, TimeDelta};
     use crate::expect;
     use core::time::Duration;
 
@@ -803,10 +795,12 @@ mod tests {
     fn test_duration_milliseconds_max_overflow() {
         // Here we ensure that trying to add one millisecond to the maximum storable
         // value will fail.
-        assert!(TimeDelta::try_milliseconds(i64::MAX)
-            .unwrap()
-            .checked_add(&TimeDelta::try_milliseconds(1).unwrap())
-            .is_none());
+        assert!(
+            TimeDelta::try_milliseconds(i64::MAX)
+                .unwrap()
+                .checked_add(&TimeDelta::try_milliseconds(1).unwrap())
+                .is_none()
+        );
     }
 
     #[test]
@@ -826,10 +820,12 @@ mod tests {
     fn test_duration_milliseconds_min_underflow() {
         // Here we ensure that trying to subtract one millisecond from the minimum
         // storable value will fail.
-        assert!(TimeDelta::try_milliseconds(-i64::MAX)
-            .unwrap()
-            .checked_sub(&TimeDelta::try_milliseconds(1).unwrap())
-            .is_none());
+        assert!(
+            TimeDelta::try_milliseconds(-i64::MAX)
+                .unwrap()
+                .checked_sub(&TimeDelta::try_milliseconds(1).unwrap())
+                .is_none()
+        );
     }
 
     #[test]
@@ -905,10 +901,12 @@ mod tests {
         );
         // Here we ensure that trying to add one microsecond to the maximum storable
         // value will fail.
-        assert!(TimeDelta::try_milliseconds(i64::MAX)
-            .unwrap()
-            .checked_add(&TimeDelta::microseconds(1))
-            .is_none());
+        assert!(
+            TimeDelta::try_milliseconds(i64::MAX)
+                .unwrap()
+                .checked_add(&TimeDelta::microseconds(1))
+                .is_none()
+        );
     }
     #[test]
     fn test_duration_microseconds_min_allowed() {
@@ -944,10 +942,12 @@ mod tests {
         );
         // Here we ensure that trying to subtract one microsecond from the minimum
         // storable value will fail.
-        assert!(TimeDelta::try_milliseconds(-i64::MAX)
-            .unwrap()
-            .checked_sub(&TimeDelta::microseconds(1))
-            .is_none());
+        assert!(
+            TimeDelta::try_milliseconds(-i64::MAX)
+                .unwrap()
+                .checked_sub(&TimeDelta::microseconds(1))
+                .is_none()
+        );
     }
 
     #[test]
@@ -1009,10 +1009,12 @@ mod tests {
         );
         // Here we ensure that trying to add one nanosecond to the maximum storable
         // value will fail.
-        assert!(TimeDelta::try_milliseconds(i64::MAX)
-            .unwrap()
-            .checked_add(&TimeDelta::nanoseconds(1))
-            .is_none());
+        assert!(
+            TimeDelta::try_milliseconds(i64::MAX)
+                .unwrap()
+                .checked_add(&TimeDelta::nanoseconds(1))
+                .is_none()
+        );
     }
 
     #[test]
@@ -1049,10 +1051,12 @@ mod tests {
         );
         // Here we ensure that trying to subtract one nanosecond from the minimum
         // storable value will fail.
-        assert!(TimeDelta::try_milliseconds(-i64::MAX)
-            .unwrap()
-            .checked_sub(&TimeDelta::nanoseconds(1))
-            .is_none());
+        assert!(
+            TimeDelta::try_milliseconds(-i64::MAX)
+                .unwrap()
+                .checked_sub(&TimeDelta::nanoseconds(1))
+                .is_none()
+        );
     }
 
     #[test]

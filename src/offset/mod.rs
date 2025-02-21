@@ -20,9 +20,9 @@
 
 use core::fmt;
 
-use crate::format::{parse, ParseResult, Parsed, StrftimeItems};
-use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 use crate::Weekday;
+use crate::format::{ParseResult, Parsed, StrftimeItems, parse};
+use crate::naive::{NaiveDate, NaiveDateTime, NaiveTime};
 #[allow(deprecated)]
 use crate::{Date, DateTime};
 

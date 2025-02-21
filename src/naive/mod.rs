@@ -6,8 +6,8 @@
 
 use core::ops::RangeInclusive;
 
-use crate::expect;
 use crate::Weekday;
+use crate::expect;
 
 pub(crate) mod date;
 pub(crate) mod datetime;
@@ -15,11 +15,11 @@ mod internals;
 pub(crate) mod isoweek;
 pub(crate) mod time;
 
-pub use self::date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
 #[allow(deprecated)]
 pub use self::date::{MAX_DATE, MIN_DATE};
+pub use self::date::{NaiveDate, NaiveDateDaysIterator, NaiveDateWeeksIterator};
 #[allow(deprecated)]
-pub use self::datetime::{NaiveDateTime, MAX_DATETIME, MIN_DATETIME};
+pub use self::datetime::{MAX_DATETIME, MIN_DATETIME, NaiveDateTime};
 pub use self::isoweek::IsoWeek;
 pub use self::time::NaiveTime;
 

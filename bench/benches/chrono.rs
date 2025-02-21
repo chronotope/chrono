@@ -1,12 +1,12 @@
 //! Benchmarks for chrono that just depend on std
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 
-use chrono::format::StrftimeItems;
-use chrono::prelude::*;
 #[cfg(feature = "unstable-locales")]
 use chrono::Locale;
-use chrono::{DateTime, FixedOffset, Local, TimeDelta, Utc, __BenchYearFlags};
+use chrono::format::StrftimeItems;
+use chrono::prelude::*;
+use chrono::{__BenchYearFlags, DateTime, FixedOffset, Local, TimeDelta, Utc};
 
 fn bench_date_from_ymd(c: &mut Criterion) {
     c.bench_function("bench_date_from_ymd", |b| {

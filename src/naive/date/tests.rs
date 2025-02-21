@@ -1,5 +1,5 @@
-use super::{Days, Months, NaiveDate, MAX_YEAR, MIN_YEAR};
-use crate::naive::internals::{YearFlags, A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF};
+use super::{Days, MAX_YEAR, MIN_YEAR, Months, NaiveDate};
+use crate::naive::internals::{A, AG, B, BA, C, CB, D, DC, E, ED, F, FE, G, GF, YearFlags};
 use crate::{Datelike, TimeDelta, Weekday};
 
 // as it is hard to verify year flags in `NaiveDate::MIN` and `NaiveDate::MAX`,

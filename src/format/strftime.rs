@@ -161,12 +161,12 @@ Notes:
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-use super::{fixed, internal_fixed, num, num0, nums};
-#[cfg(feature = "unstable-locales")]
-use super::{locales, Locale};
-use super::{Fixed, InternalInternal, Item, Numeric, Pad};
 #[cfg(any(feature = "alloc", feature = "std"))]
-use super::{ParseError, BAD_FORMAT};
+use super::{BAD_FORMAT, ParseError};
+use super::{Fixed, InternalInternal, Item, Numeric, Pad};
+#[cfg(feature = "unstable-locales")]
+use super::{Locale, locales};
+use super::{fixed, internal_fixed, num, num0, nums};
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::vec::Vec;
 
@@ -686,8 +686,8 @@ mod tests {
     use crate::format::Item::{self, Literal, Space};
     #[cfg(feature = "unstable-locales")]
     use crate::format::Locale;
-    use crate::format::{fixed, internal_fixed, num, num0, nums};
     use crate::format::{Fixed, InternalInternal, Numeric::*};
+    use crate::format::{fixed, internal_fixed, num, num0, nums};
     #[cfg(feature = "alloc")]
     use crate::{DateTime, FixedOffset, NaiveDate, TimeZone, Timelike, Utc};
 
