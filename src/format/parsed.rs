@@ -175,11 +175,12 @@ pub struct Parsed {
 /// and if it is empty, set `old` to `new` as well.
 #[inline]
 fn set_if_consistent<T: PartialEq>(old: &mut Option<T>, new: T) -> ParseResult<()> {
-    if let Some(ref old) = *old {
-        if *old == new { Ok(()) } else { Err(IMPOSSIBLE) }
-    } else {
-        *old = Some(new);
-        Ok(())
+    match old {
+        Some(old) if *old != new => Err(IMPOSSIBLE),
+        _ => {
+            *old = Some(new);
+            Ok(())
+        }
     }
 }
 
