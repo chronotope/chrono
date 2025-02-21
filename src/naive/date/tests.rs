@@ -181,7 +181,7 @@ fn test_date_from_yo() {
     assert_eq!(from_yo(2012, 300), Some(ymd(2012, 10, 26)));
     assert_eq!(from_yo(2012, 366), Some(ymd(2012, 12, 31)));
     assert_eq!(from_yo(2012, 367), None);
-    assert_eq!(from_yo(2012, 1 << 28 | 60), None);
+    assert_eq!(from_yo(2012, (1 << 28) | 60), None);
 
     assert_eq!(from_yo(2014, 0), None);
     assert_eq!(from_yo(2014, 1), Some(ymd(2014, 1, 1)));
@@ -406,7 +406,7 @@ fn test_date_with_ordinal() {
     assert_eq!(d.with_ordinal(61), Some(NaiveDate::from_ymd_opt(2000, 3, 1).unwrap()));
     assert_eq!(d.with_ordinal(366), Some(NaiveDate::from_ymd_opt(2000, 12, 31).unwrap()));
     assert_eq!(d.with_ordinal(367), None);
-    assert_eq!(d.with_ordinal(1 << 28 | 60), None);
+    assert_eq!(d.with_ordinal((1 << 28) | 60), None);
     let d = NaiveDate::from_ymd_opt(1999, 5, 5).unwrap();
     assert_eq!(d.with_ordinal(366), None);
     assert_eq!(d.with_ordinal(u32::MAX), None);
