@@ -140,6 +140,8 @@ pub struct Parsed {
     #[doc(hidden)]
     pub isoyear_mod_100: Option<i32>,
     #[doc(hidden)]
+    pub quarter: Option<u32>,
+    #[doc(hidden)]
     pub month: Option<u32>,
     #[doc(hidden)]
     pub week_from_sun: Option<u32>,
@@ -302,6 +304,23 @@ impl Parsed {
             return Err(OUT_OF_RANGE);
         }
         set_if_consistent(&mut self.isoyear_mod_100, value as i32)
+    }
+
+    /// Set the [`quarter`](Parsed::quarter) field to the given value.
+    ///
+    /// Quarter 1 starts in January.
+    ///
+    /// # Errors
+    ///
+    /// Returns `OUT_OF_RANGE` if `value` is not in the range 1-4.
+    ///
+    /// Returns `IMPOSSIBLE` if this field was already set to a different value.
+    #[inline]
+    pub fn set_quarter(&mut self, value: i64) -> ParseResult<()> {
+        if !(1..=4).contains(&value) {
+            return Err(OUT_OF_RANGE);
+        }
+        set_if_consistent(&mut self.quarter, value as u32)
     }
 
     /// Set the [`month`](Parsed::month) field to the given value.
@@ -698,7 +717,15 @@ impl Parsed {
             (_, _, _) => return Err(NOT_ENOUGH),
         };
 
-        if verified { Ok(parsed_date) } else { Err(IMPOSSIBLE) }
+        if !verified {
+            return Err(IMPOSSIBLE);
+        } else if let Some(parsed) = self.quarter {
+            if parsed != parsed_date.quarter() {
+                return Err(IMPOSSIBLE);
+            }
+        }
+
+        Ok(parsed_date)
     }
 
     /// Returns a parsed naive time out of given fields.
@@ -1013,6 +1040,14 @@ impl Parsed {
         self.isoyear_mod_100
     }
 
+    /// Get the `quarter` field if set.
+    ///
+    /// See also [`set_quarter()`](Parsed::set_quarter).
+    #[inline]
+    pub fn quarter(&self) -> Option<u32> {
+        self.quarter
+    }
+
     /// Get the `month` field if set.
     ///
     /// See also [`set_month()`](Parsed::set_month).
@@ -1267,6 +1302,11 @@ mod tests {
         assert!(Parsed::new().set_isoyear_mod_100(99).is_ok());
         assert_eq!(Parsed::new().set_isoyear_mod_100(100), Err(OUT_OF_RANGE));
 
+        assert_eq!(Parsed::new().set_quarter(0), Err(OUT_OF_RANGE));
+        assert!(Parsed::new().set_quarter(1).is_ok());
+        assert!(Parsed::new().set_quarter(4).is_ok());
+        assert_eq!(Parsed::new().set_quarter(5), Err(OUT_OF_RANGE));
+
         assert_eq!(Parsed::new().set_month(0), Err(OUT_OF_RANGE));
         assert!(Parsed::new().set_month(1).is_ok());
         assert!(Parsed::new().set_month(12).is_ok());
@@ -1424,6 +1464,17 @@ mod tests {
         );
         assert_eq!(parse!(year: -1, year_div_100: 0, month: 1, day: 1), Err(IMPOSSIBLE));
         assert_eq!(parse!(year: -1, year_mod_100: 99, month: 1, day: 1), Err(IMPOSSIBLE));
+
+        // quarters
+        assert_eq!(parse!(year: 2000, quarter: 1), Err(NOT_ENOUGH));
+        assert_eq!(parse!(year: 2000, quarter: 1, month: 1, day: 1), ymd(2000, 1, 1));
+        assert_eq!(parse!(year: 2000, quarter: 2, month: 4, day: 1), ymd(2000, 4, 1));
+        assert_eq!(parse!(year: 2000, quarter: 3, month: 7, day: 1), ymd(2000, 7, 1));
+        assert_eq!(parse!(year: 2000, quarter: 4, month: 10, day: 1), ymd(2000, 10, 1));
+
+        // quarter: conflicting inputs
+        assert_eq!(parse!(year: 2000, quarter: 2, month: 3, day: 31), Err(IMPOSSIBLE));
+        assert_eq!(parse!(year: 2000, quarter: 4, month: 3, day: 31), Err(IMPOSSIBLE));
 
         // weekdates
         assert_eq!(parse!(year: 2000, week_from_mon: 0), Err(NOT_ENOUGH));
