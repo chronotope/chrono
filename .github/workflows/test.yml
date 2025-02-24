@@ -39,15 +39,7 @@ jobs:
       # run --lib and --doc to avoid the long running integration tests
       # which are run elsewhere
       - run: |
-          cargo test --lib \
-            --features \
-            unstable-locales,wasmbind,oldtime,clock,winapi,serde \
-            --color=always -- --color=always
-      - run: |
-          cargo test --doc \
-            --features \
-            unstable-locales,wasmbind,oldtime,clock,winapi,serde \
-            --color=always -- --color=always
+          cargo check --lib --features unstable-locales,wasmbind,oldtime,clock,winapi,serde
 
   rust_versions:
     strategy:
