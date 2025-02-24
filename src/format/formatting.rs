@@ -185,6 +185,7 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
             (IsoYearMod100, Some(d), _) => {
                 write_two(w, d.iso_week().year().rem_euclid(100) as u8, pad)
             }
+            (Quarter, Some(d), _) => write_one(w, d.quarter() as u8),
             (Month, Some(d), _) => write_two(w, d.month() as u8, pad),
             (Day, Some(d), _) => write_two(w, d.day() as u8, pad),
             (WeekFromSun, Some(d), _) => write_two(w, d.weeks_from(Weekday::Sun) as u8, pad),
@@ -657,6 +658,7 @@ mod tests {
         let d = NaiveDate::from_ymd_opt(2012, 3, 4).unwrap();
         assert_eq!(d.format("%Y,%C,%y,%G,%g").to_string(), "2012,20,12,2012,12");
         assert_eq!(d.format("%m,%b,%h,%B").to_string(), "03,Mar,Mar,March");
+        assert_eq!(d.format("%q").to_string(), "1");
         assert_eq!(d.format("%d,%e").to_string(), "04, 4");
         assert_eq!(d.format("%U,%W,%V").to_string(), "10,09,09");
         assert_eq!(d.format("%a,%A,%w,%u").to_string(), "Sun,Sunday,0,7");

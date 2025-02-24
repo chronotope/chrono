@@ -15,6 +15,7 @@ The following specifiers are available both to formatting and parsing.
 | `%C`  | `20`     | The proleptic Gregorian year divided by 100, zero-padded to 2 digits. [^1] |
 | `%y`  | `01`     | The proleptic Gregorian year modulo 100, zero-padded to 2 digits. [^1]     |
 |       |          |                                                                            |
+| `%q`  | `1`      | Quarter of year (1-4)                                                      |
 | `%m`  | `07`     | Month number (01--12), zero-padded to 2 digits.                            |
 | `%b`  | `Jul`    | Abbreviated month name. Always 3 letters.                                  |
 | `%B`  | `July`   | Full month name. Also accepts corresponding abbreviation in parsing.       |
@@ -538,6 +539,7 @@ impl<'a> StrftimeItems<'a> {
                     'm' => num0(Month),
                     'n' => Space("\n"),
                     'p' => fixed(Fixed::UpperAmPm),
+                    'q' => num(Quarter),
                     #[cfg(not(feature = "unstable-locales"))]
                     'r' => queue_from_slice!(T_FMT_AMPM),
                     #[cfg(feature = "unstable-locales")]
@@ -866,6 +868,7 @@ mod tests {
         assert_eq!(dt.format("%Y").to_string(), "2001");
         assert_eq!(dt.format("%C").to_string(), "20");
         assert_eq!(dt.format("%y").to_string(), "01");
+        assert_eq!(dt.format("%q").to_string(), "3");
         assert_eq!(dt.format("%m").to_string(), "07");
         assert_eq!(dt.format("%b").to_string(), "Jul");
         assert_eq!(dt.format("%B").to_string(), "July");

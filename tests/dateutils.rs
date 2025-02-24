@@ -110,7 +110,7 @@ fn try_verify_against_date_command() {
 #[cfg(target_os = "linux")]
 fn verify_against_date_command_format_local(path: &'static str, dt: NaiveDateTime) {
     let required_format =
-        "d%d D%D F%F H%H I%I j%j k%k l%l m%m M%M S%S T%T u%u U%U w%w W%W X%X y%y Y%Y z%:z";
+        "d%d D%D F%F H%H I%I j%j k%k l%l m%m M%M q%q S%S T%T u%u U%U w%w W%W X%X y%y Y%Y z%:z";
     // a%a - depends from localization
     // A%A - depends from localization
     // b%b - depends from localization

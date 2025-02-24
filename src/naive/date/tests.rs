@@ -666,13 +666,15 @@ fn test_date_parse_from_str() {
         Ok(ymd(2014, 5, 7))
     ); // ignore time and offset
     assert_eq!(
-        NaiveDate::parse_from_str("2015-W06-1=2015-033", "%G-W%V-%u = %Y-%j"),
+        NaiveDate::parse_from_str("2015-W06-1=2015-033 Q1", "%G-W%V-%u = %Y-%j Q%q"),
         Ok(ymd(2015, 2, 2))
     );
     assert_eq!(NaiveDate::parse_from_str("Fri, 09 Aug 13", "%a, %d %b %y"), Ok(ymd(2013, 8, 9)));
     assert!(NaiveDate::parse_from_str("Sat, 09 Aug 2013", "%a, %d %b %Y").is_err());
     assert!(NaiveDate::parse_from_str("2014-57", "%Y-%m-%d").is_err());
     assert!(NaiveDate::parse_from_str("2014", "%Y").is_err()); // insufficient
+
+    assert!(NaiveDate::parse_from_str("2014-5-7 Q3", "%Y-%m-%d Q%q").is_err()); // mismatched quarter
 
     assert_eq!(
         NaiveDate::parse_from_str("2020-01-0", "%Y-%W-%w").ok(),

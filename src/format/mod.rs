@@ -115,6 +115,8 @@ pub enum Numeric {
     IsoYearDiv100,
     /// Year in the ISO week date, modulo 100 (FW=PW=2). Cannot be negative.
     IsoYearMod100,
+    /// Quarter (FW=PW=1).
+    Quarter,
     /// Month (FW=PW=2).
     Month,
     /// Day of the month (FW=PW=2).
