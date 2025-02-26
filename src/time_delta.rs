@@ -304,8 +304,10 @@ impl TimeDelta {
         if self.secs < 0 && self.nanos > 0 { self.secs + 1 } else { self.secs }
     }
 
-    /// Returns the number of nanoseconds such that
-    /// `subsec_nanos() + num_seconds() * NANOS_PER_SEC` is the total number of
+    /// Returns the number of nanoseconds in the fractional part of the duration.
+    ///
+    /// This is the number of nanoseconds such that
+    /// `subsec_nanos() + num_seconds() * 1_000_000_000` is the total number of
     /// nanoseconds in the `TimeDelta`.
     pub const fn subsec_nanos(&self) -> i32 {
         if self.secs < 0 && self.nanos > 0 { self.nanos - NANOS_PER_SEC } else { self.nanos }
@@ -766,6 +768,15 @@ mod tests {
     #[should_panic(expected = "TimeDelta::seconds out of bounds")]
     fn test_duration_seconds_min_underflow_panic() {
         let _ = TimeDelta::seconds(-i64::MAX / 1_000 - 1);
+    }
+
+    #[test]
+    fn test_duration_subsec_nanos() {
+        assert_eq!(TimeDelta::zero().subsec_nanos(), 0);
+        assert_eq!(TimeDelta::nanoseconds(1).subsec_nanos(), 1);
+        assert_eq!(TimeDelta::nanoseconds(-1).subsec_nanos(), -1);
+        assert_eq!(TimeDelta::seconds(1).subsec_nanos(), 0);
+        assert_eq!(TimeDelta::nanoseconds(1_000_000_001).subsec_nanos(), 1);
     }
 
     #[test]
