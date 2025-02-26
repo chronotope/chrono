@@ -313,6 +313,24 @@ impl TimeDelta {
         if self.secs < 0 && self.nanos > 0 { self.nanos - NANOS_PER_SEC } else { self.nanos }
     }
 
+    /// Returns the number of microseconds in the fractional part of the duration.
+    ///
+    /// This is the number of microseconds such that
+    /// `subsec_micros() + num_seconds() * 1_000_000` is the truncated number of
+    /// microseconds in the duration.
+    pub const fn subsec_micros(&self) -> i32 {
+        self.subsec_nanos() / NANOS_PER_MICRO
+    }
+
+    /// Returns the number of milliseconds in the fractional part of the duration.
+    ///
+    /// This is the number of milliseconds such that
+    /// `subsec_millis() + num_seconds() * 1_000` is the truncated number of
+    /// milliseconds in the duration.
+    pub const fn subsec_millis(&self) -> i32 {
+        self.subsec_nanos() / NANOS_PER_MILLI
+    }
+
     /// Returns the total number of whole milliseconds in the `TimeDelta`.
     pub const fn num_milliseconds(&self) -> i64 {
         // A proper TimeDelta will not overflow, because MIN and MAX are defined such
@@ -777,6 +795,26 @@ mod tests {
         assert_eq!(TimeDelta::nanoseconds(-1).subsec_nanos(), -1);
         assert_eq!(TimeDelta::seconds(1).subsec_nanos(), 0);
         assert_eq!(TimeDelta::nanoseconds(1_000_000_001).subsec_nanos(), 1);
+    }
+
+    #[test]
+    fn test_duration_subsec_micros() {
+        assert_eq!(TimeDelta::zero().subsec_micros(), 0);
+        assert_eq!(TimeDelta::microseconds(1).subsec_micros(), 1);
+        assert_eq!(TimeDelta::microseconds(-1).subsec_micros(), -1);
+        assert_eq!(TimeDelta::seconds(1).subsec_micros(), 0);
+        assert_eq!(TimeDelta::microseconds(1_000_001).subsec_micros(), 1);
+        assert_eq!(TimeDelta::nanoseconds(1_000_001_999).subsec_micros(), 1);
+    }
+
+    #[test]
+    fn test_duration_subsec_millis() {
+        assert_eq!(TimeDelta::zero().subsec_millis(), 0);
+        assert_eq!(TimeDelta::milliseconds(1).subsec_millis(), 1);
+        assert_eq!(TimeDelta::milliseconds(-1).subsec_millis(), -1);
+        assert_eq!(TimeDelta::seconds(1).subsec_millis(), 0);
+        assert_eq!(TimeDelta::milliseconds(1_001).subsec_millis(), 1);
+        assert_eq!(TimeDelta::microseconds(1_001_999).subsec_millis(), 1);
     }
 
     #[test]
