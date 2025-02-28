@@ -623,15 +623,28 @@ pub mod serde {
         E::custom(SerdeError::InvalidTimestamp(value))
     }
 
+    /// Create a custom `de::Error` with `SerdeError::InvalidTimestamp`.
+    pub(crate) fn invalid_time_delta<E, T>(value: T) -> E
+    where
+        E: de::Error,
+        T: fmt::Display,
+    {
+        E::custom(SerdeError::InvalidTimeDelta(value))
+    }
+
     enum SerdeError<T: fmt::Display> {
         InvalidTimestamp(T),
+        InvalidTimeDelta(T),
     }
 
     impl<T: fmt::Display> fmt::Display for SerdeError<T> {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match self {
-                SerdeError::InvalidTimestamp(ts) => {
+                Self::InvalidTimestamp(ts) => {
                     write!(f, "value is not a legal timestamp: {}", ts)
+                }
+                Self::InvalidTimeDelta(td) => {
+                    write!(f, "value is not a legal timedelta: {}", td)
                 }
             }
         }
