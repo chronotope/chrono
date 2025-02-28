@@ -304,6 +304,16 @@ impl TimeDelta {
         if self.secs < 0 && self.nanos > 0 { self.secs + 1 } else { self.secs }
     }
 
+    /// Returns the fractional number of seconds in the `TimeDelta`.
+    pub fn as_seconds_f64(self) -> f64 {
+        self.secs as f64 + self.nanos as f64 / NANOS_PER_SEC as f64
+    }
+
+    /// Returns the fractional number of seconds in the `TimeDelta`.
+    pub fn as_seconds_f32(self) -> f32 {
+        self.secs as f32 + self.nanos as f32 / NANOS_PER_SEC as f32
+    }
+
     /// Returns the total number of whole milliseconds in the `TimeDelta`.
     pub const fn num_milliseconds(&self) -> i64 {
         // A proper TimeDelta will not overflow, because MIN and MAX are defined such
@@ -786,6 +796,32 @@ mod tests {
     #[should_panic(expected = "TimeDelta::seconds out of bounds")]
     fn test_duration_seconds_min_underflow_panic() {
         let _ = TimeDelta::seconds(-i64::MAX / 1_000 - 1);
+    }
+
+    #[test]
+    fn test_duration_as_seconds_f64() {
+        assert_eq!(TimeDelta::seconds(1).as_seconds_f64(), 1.0);
+        assert_eq!(TimeDelta::seconds(-1).as_seconds_f64(), -1.0);
+        assert_eq!(TimeDelta::seconds(100).as_seconds_f64(), 100.0);
+        assert_eq!(TimeDelta::seconds(-100).as_seconds_f64(), -100.0);
+
+        assert_eq!(TimeDelta::milliseconds(500).as_seconds_f64(), 0.5);
+        assert_eq!(TimeDelta::milliseconds(-500).as_seconds_f64(), -0.5);
+        assert_eq!(TimeDelta::milliseconds(1_500).as_seconds_f64(), 1.5);
+        assert_eq!(TimeDelta::milliseconds(-1_500).as_seconds_f64(), -1.5);
+    }
+
+    #[test]
+    fn test_duration_as_seconds_f32() {
+        assert_eq!(TimeDelta::seconds(1).as_seconds_f32(), 1.0);
+        assert_eq!(TimeDelta::seconds(-1).as_seconds_f32(), -1.0);
+        assert_eq!(TimeDelta::seconds(100).as_seconds_f32(), 100.0);
+        assert_eq!(TimeDelta::seconds(-100).as_seconds_f32(), -100.0);
+
+        assert_eq!(TimeDelta::milliseconds(500).as_seconds_f32(), 0.5);
+        assert_eq!(TimeDelta::milliseconds(-500).as_seconds_f32(), -0.5);
+        assert_eq!(TimeDelta::milliseconds(1_500).as_seconds_f32(), 1.5);
+        assert_eq!(TimeDelta::milliseconds(-1_500).as_seconds_f32(), -1.5);
     }
 
     #[test]
