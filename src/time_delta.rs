@@ -304,22 +304,14 @@ impl TimeDelta {
         if self.secs < 0 && self.nanos > 0 { self.secs + 1 } else { self.secs }
     }
 
-    /// Returns the number of nanoseconds in the fractional part of the duration.
-    ///
-    /// This is the number of nanoseconds such that
-    /// `subsec_nanos() + num_seconds() * 1_000_000_000` is the total number of
-    /// nanoseconds in the `TimeDelta`.
-    pub const fn subsec_nanos(&self) -> i32 {
-        if self.secs < 0 && self.nanos > 0 { self.nanos - NANOS_PER_SEC } else { self.nanos }
-    }
-
-    /// Returns the number of microseconds in the fractional part of the duration.
-    ///
-    /// This is the number of microseconds such that
-    /// `subsec_micros() + num_seconds() * 1_000_000` is the truncated number of
-    /// microseconds in the duration.
-    pub const fn subsec_micros(&self) -> i32 {
-        self.subsec_nanos() / NANOS_PER_MICRO
+    /// Returns the total number of whole milliseconds in the `TimeDelta`.
+    pub const fn num_milliseconds(&self) -> i64 {
+        // A proper TimeDelta will not overflow, because MIN and MAX are defined such
+        // that the range is within the bounds of an i64, from -i64::MAX through to
+        // +i64::MAX inclusive. Notably, i64::MIN is excluded from this range.
+        let secs_part = self.num_seconds() * MILLIS_PER_SEC;
+        let nanos_part = self.subsec_nanos() / NANOS_PER_MILLI;
+        secs_part + nanos_part as i64
     }
 
     /// Returns the number of milliseconds in the fractional part of the duration.
@@ -331,16 +323,6 @@ impl TimeDelta {
         self.subsec_nanos() / NANOS_PER_MILLI
     }
 
-    /// Returns the total number of whole milliseconds in the `TimeDelta`.
-    pub const fn num_milliseconds(&self) -> i64 {
-        // A proper TimeDelta will not overflow, because MIN and MAX are defined such
-        // that the range is within the bounds of an i64, from -i64::MAX through to
-        // +i64::MAX inclusive. Notably, i64::MIN is excluded from this range.
-        let secs_part = self.num_seconds() * MILLIS_PER_SEC;
-        let nanos_part = self.subsec_nanos() / NANOS_PER_MILLI;
-        secs_part + nanos_part as i64
-    }
-
     /// Returns the total number of whole microseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 microseconds in either direction).
     pub const fn num_microseconds(&self) -> Option<i64> {
@@ -349,12 +331,30 @@ impl TimeDelta {
         secs_part.checked_add(nanos_part as i64)
     }
 
+    /// Returns the number of microseconds in the fractional part of the duration.
+    ///
+    /// This is the number of microseconds such that
+    /// `subsec_micros() + num_seconds() * 1_000_000` is the truncated number of
+    /// microseconds in the duration.
+    pub const fn subsec_micros(&self) -> i32 {
+        self.subsec_nanos() / NANOS_PER_MICRO
+    }
+
     /// Returns the total number of whole nanoseconds in the `TimeDelta`,
     /// or `None` on overflow (exceeding 2^63 nanoseconds in either direction).
     pub const fn num_nanoseconds(&self) -> Option<i64> {
         let secs_part = try_opt!(self.num_seconds().checked_mul(NANOS_PER_SEC as i64));
         let nanos_part = self.subsec_nanos();
         secs_part.checked_add(nanos_part as i64)
+    }
+
+    /// Returns the number of nanoseconds in the fractional part of the duration.
+    ///
+    /// This is the number of nanoseconds such that
+    /// `subsec_nanos() + num_seconds() * 1_000_000_000` is the total number of
+    /// nanoseconds in the `TimeDelta`.
+    pub const fn subsec_nanos(&self) -> i32 {
+        if self.secs < 0 && self.nanos > 0 { self.nanos - NANOS_PER_SEC } else { self.nanos }
     }
 
     /// Add two `TimeDelta`s, returning `None` if overflow occurred.
