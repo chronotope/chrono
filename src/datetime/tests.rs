@@ -640,17 +640,18 @@ fn test_datetime_with_timezone() {
 
 #[test]
 #[cfg(feature = "alloc")]
+#[allow(deprecated)]
 fn test_datetime_rfc2822() {
     let edt = FixedOffset::east_opt(5 * 60 * 60).unwrap();
 
     // timezone 0
     assert_eq!(
-        Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().to_rfc2822(),
-        "Wed, 18 Feb 2015 23:16:09 +0000"
+        Utc.with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap().try_to_rfc2822().as_deref(),
+        Some("Wed, 18 Feb 2015 23:16:09 +0000")
     );
     assert_eq!(
-        Utc.with_ymd_and_hms(2015, 2, 1, 23, 16, 9).unwrap().to_rfc2822(),
-        "Sun, 1 Feb 2015 23:16:09 +0000"
+        Utc.with_ymd_and_hms(2015, 2, 1, 23, 16, 9).unwrap().try_to_rfc2822().as_deref(),
+        Some("Sun, 1 Feb 2015 23:16:09 +0000")
     );
     // timezone +05
     assert_eq!(
@@ -661,8 +662,9 @@ fn test_datetime_rfc2822() {
                 .unwrap()
         )
         .unwrap()
-        .to_rfc2822(),
-        "Wed, 18 Feb 2015 23:16:09 +0500"
+        .try_to_rfc2822()
+        .as_deref(),
+        Some("Wed, 18 Feb 2015 23:16:09 +0500")
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:60 +0500"),
@@ -696,8 +698,9 @@ fn test_datetime_rfc2822() {
                 .unwrap()
         )
         .unwrap()
-        .to_rfc2822(),
-        "Wed, 18 Feb 2015 23:59:60 +0500"
+        .try_to_rfc2822()
+        .as_deref(),
+        Some("Wed, 18 Feb 2015 23:59:60 +0500")
     );
 
     assert_eq!(
@@ -709,8 +712,8 @@ fn test_datetime_rfc2822() {
         Ok(FixedOffset::east_opt(0).unwrap().with_ymd_and_hms(2015, 2, 18, 23, 16, 9).unwrap())
     );
     assert_eq!(
-        ymdhms_micro(&edt, 2015, 2, 18, 23, 59, 59, 1_234_567).to_rfc2822(),
-        "Wed, 18 Feb 2015 23:59:60 +0500"
+        ymdhms_micro(&edt, 2015, 2, 18, 23, 59, 59, 1_234_567).try_to_rfc2822().as_deref(),
+        Some("Wed, 18 Feb 2015 23:59:60 +0500")
     );
     assert_eq!(
         DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:59:58 +0500"),
@@ -759,6 +762,31 @@ fn test_datetime_rfc2822() {
     assert!(DateTime::parse_from_rfc2822("Wed. 18 Feb 2015 23:16:09 +0000").is_err());
     // *trailing* space causes failure
     assert!(DateTime::parse_from_rfc2822("Wed, 18 Feb 2015 23:16:09 +0000   ").is_err());
+
+    const RFC_2822_YEAR_MAX: i32 = 9999;
+    const RFC_2822_YEAR_MIN: i32 = 0;
+
+    let dt = Utc.with_ymd_and_hms(RFC_2822_YEAR_MAX, 1, 2, 3, 4, 5).unwrap();
+    assert_eq!(dt.to_rfc2822(), "Sat, 2 Jan 9999 03:04:05 +0000");
+
+    let dt = Utc.with_ymd_and_hms(RFC_2822_YEAR_MIN, 1, 2, 3, 4, 5).unwrap();
+    assert_eq!(dt.to_rfc2822(), "Sun, 2 Jan 0000 03:04:05 +0000");
+}
+
+#[test]
+#[should_panic]
+#[cfg(feature = "alloc")]
+#[allow(deprecated)]
+fn test_rfc_2822_year_range_panic_high() {
+    let _ = Utc.with_ymd_and_hms(10000, 1, 2, 3, 4, 5).unwrap().to_rfc2822();
+}
+
+#[test]
+#[should_panic]
+#[cfg(feature = "alloc")]
+#[allow(deprecated)]
+fn test_rfc_2822_year_range_panic_low() {
+    let _ = Utc.with_ymd_and_hms(-1, 1, 2, 3, 4, 5).unwrap().to_rfc2822();
 }
 
 #[test]
@@ -1569,8 +1597,8 @@ fn test_min_max_getters() {
     let beyond_max = offset_max.from_utc_datetime(&NaiveDateTime::MAX);
 
     assert_eq!(format!("{:?}", beyond_min), "-262144-12-31T22:00:00-02:00");
-    // RFC 2822 doesn't support years with more than 4 digits.
-    // assert_eq!(beyond_min.to_rfc2822(), "");
+    #[cfg(feature = "alloc")]
+    assert_eq!(beyond_min.try_to_rfc2822(), None); // doesn't support years with more than 4 digits.
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_min.to_rfc3339(), "-262144-12-31T22:00:00-02:00");
     #[cfg(feature = "alloc")]
@@ -1594,8 +1622,8 @@ fn test_min_max_getters() {
     assert_eq!(beyond_min.nanosecond(), 0);
 
     assert_eq!(format!("{:?}", beyond_max), "+262143-01-01T01:59:59.999999999+02:00");
-    // RFC 2822 doesn't support years with more than 4 digits.
-    // assert_eq!(beyond_max.to_rfc2822(), "");
+    #[cfg(feature = "alloc")]
+    assert_eq!(beyond_max.try_to_rfc2822(), None); // doesn't support years with more than 4 digits.
     #[cfg(feature = "alloc")]
     assert_eq!(beyond_max.to_rfc3339(), "+262143-01-01T01:59:59.999999999+02:00");
     #[cfg(feature = "alloc")]
