@@ -211,7 +211,8 @@ pub(crate) fn parse_rfc3339<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseRes
         parsed.set_nanosecond(nanosecond)?;
     }
 
-    let offset = try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true));
+    let offset =
+        try_consume!(scan::timezone_offset(s, |s| scan::char(s, b':'), true, false, true, false));
     // This range check is similar to the one in `FixedOffset::east_opt`, so it would be redundant.
     // But it is possible to read the offset directly from `Parsed`. We want to only successfully
     // populate `Parsed` if the input is fully valid RFC 3339.
@@ -462,6 +463,7 @@ where
                             false,
                             false,
                             true,
+                            matches!(spec, &TimezoneOffsetDoubleColon),
                         ));
                         parsed.set_offset(i64::from(offset))?;
                     }
@@ -473,6 +475,7 @@ where
                             true,
                             false,
                             true,
+                            false,
                         ));
                         parsed.set_offset(i64::from(offset))?;
                     }
@@ -485,6 +488,7 @@ where
                             true,
                             true,
                             true,
+                            false,
                         ));
                         parsed.set_offset(i64::from(offset))?;
                     }
@@ -577,7 +581,7 @@ fn parse_rfc3339_relaxed<'a>(parsed: &mut Parsed, mut s: &'a str) -> ParseResult
     let (s, offset) = if s.len() >= 3 && "UTC".as_bytes().eq_ignore_ascii_case(&s.as_bytes()[..3]) {
         (&s[3..], 0)
     } else {
-        scan::timezone_offset(s, scan::colon_or_space, true, false, true)?
+        scan::timezone_offset(s, scan::colon_or_space, true, false, true, false)?
     };
     parsed.set_offset(i64::from(offset))?;
     Ok((s, ()))
@@ -1841,6 +1845,11 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn issue_1629() {
+        DateTime::parse_from_str("2023-01-02T23:24:25+01:30:01", "%Y-%m-%dT%H:%M:%S%::z").unwrap();
     }
 
     #[test]
