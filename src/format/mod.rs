@@ -33,6 +33,8 @@
 
 #[cfg(all(feature = "alloc", not(feature = "std"), not(test)))]
 use alloc::boxed::Box;
+#[cfg(feature = "alloc")]
+use alloc::sync::Arc;
 use core::fmt;
 use core::str::FromStr;
 #[cfg(feature = "std")]
@@ -149,11 +151,44 @@ pub enum Numeric {
     /// For formatting, it assumes UTC upon the absence of time zone offset.
     Timestamp,
 
+    #[cfg(feature = "alloc")]
+    /// An extension to carry the width of the padding.
+    Padded {
+        /// The numeric to be padded.
+        numeric: Arc<Numeric>,
+        /// The width of the padding.
+        width: usize,
+    },
+
     /// Internal uses only.
     ///
     /// This item exists so that one can add additional internal-only formatting
     /// without breaking major compatibility (as enum variants cannot be selectively private).
     Internal(InternalNumeric),
+}
+
+impl Numeric {
+    #[cfg(feature = "alloc")]
+    fn with_padding(self, width: usize) -> Self {
+        if width != 0 {
+            // update padding
+            match self {
+                Numeric::Padded { numeric, .. } => Numeric::Padded { numeric, width },
+                numeric => Numeric::Padded { numeric: Arc::new(numeric), width },
+            }
+        } else {
+            // remove padding
+            match self {
+                Numeric::Padded { numeric, .. } => numeric.as_ref().clone(),
+                numeric => numeric,
+            }
+        }
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn with_padding(self, _width: usize) -> Self {
+        self
+    }
 }
 
 /// An opaque type representing numeric item types for internal uses only.

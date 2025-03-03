@@ -7,6 +7,8 @@
 use core::borrow::Borrow;
 use core::str;
 
+#[cfg(feature = "alloc")]
+use super::ParseErrorKind::BadFormat;
 use super::scan;
 use super::{BAD_FORMAT, INVALID, OUT_OF_RANGE, TOO_LONG, TOO_SHORT};
 use super::{Fixed, InternalFixed, InternalInternal, Item, Numeric, Pad, Parsed};
@@ -359,7 +361,9 @@ where
                     Nanosecond => (9, false, Parsed::set_nanosecond),
                     Timestamp => (usize::MAX, false, Parsed::set_timestamp),
 
-                    // for the future expansion
+                    #[cfg(feature = "alloc")]
+                    Padded { .. } => return Err(ParseError(BadFormat)),
+
                     Internal(ref int) => match int._dummy {},
                 };
 
