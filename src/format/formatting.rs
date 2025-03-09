@@ -127,89 +127,58 @@ impl<'a, I: Iterator<Item = B> + Clone, B: Borrow<Item<'a>>> DelayedFormat<I> {
     fn format_numeric(&self, w: &mut impl Write, spec: &Numeric, pad: Pad) -> fmt::Result {
         use self::Numeric::*;
 
-        fn write_one(w: &mut impl Write, v: u8) -> fmt::Result {
-            w.write_char((b'0' + v) as char)
-        }
+        // unpack padding width if provided
+        let (spec, mut pad_width) = spec.unwrap_padding();
 
-        fn write_two(w: &mut impl Write, v: u8, pad: Pad) -> fmt::Result {
-            let ones = b'0' + v % 10;
-            match (v / 10, pad) {
-                (0, Pad::None) => {}
-                (0, Pad::Space) => w.write_char(' ')?,
-                (tens, _) => w.write_char((b'0' + tens) as char)?,
-            }
-            w.write_char(ones as char)
-        }
-
-        #[inline]
-        fn write_year(w: &mut impl Write, year: i32, pad: Pad) -> fmt::Result {
-            if (1000..=9999).contains(&year) {
-                // fast path
-                write_hundreds(w, (year / 100) as u8)?;
-                write_hundreds(w, (year % 100) as u8)
-            } else {
-                write_n(w, 4, year as i64, pad, !(0..10_000).contains(&year))
-            }
-        }
-
-        fn write_n(
-            w: &mut impl Write,
-            n: usize,
-            v: i64,
-            pad: Pad,
-            always_sign: bool,
-        ) -> fmt::Result {
-            if always_sign {
-                match pad {
-                    Pad::None => write!(w, "{:+}", v),
-                    Pad::Zero => write!(w, "{:+01$}", v, n + 1),
-                    Pad::Space => write!(w, "{:+1$}", v, n + 1),
-                }
-            } else {
-                match pad {
-                    Pad::None => write!(w, "{}", v),
-                    Pad::Zero => write!(w, "{:01$}", v, n),
-                    Pad::Space => write!(w, "{:1$}", v, n),
-                }
-            }
-        }
-
-        match (spec, self.date, self.time) {
-            (Year, Some(d), _) => write_year(w, d.year(), pad),
-            (YearDiv100, Some(d), _) => write_two(w, d.year().div_euclid(100) as u8, pad),
-            (YearMod100, Some(d), _) => write_two(w, d.year().rem_euclid(100) as u8, pad),
-            (IsoYear, Some(d), _) => write_year(w, d.iso_week().year(), pad),
-            (IsoYearDiv100, Some(d), _) => {
-                write_two(w, d.iso_week().year().div_euclid(100) as u8, pad)
-            }
-            (IsoYearMod100, Some(d), _) => {
-                write_two(w, d.iso_week().year().rem_euclid(100) as u8, pad)
-            }
-            (Quarter, Some(d), _) => write_one(w, d.quarter() as u8),
-            (Month, Some(d), _) => write_two(w, d.month() as u8, pad),
-            (Day, Some(d), _) => write_two(w, d.day() as u8, pad),
-            (WeekFromSun, Some(d), _) => write_two(w, d.weeks_from(Weekday::Sun) as u8, pad),
-            (WeekFromMon, Some(d), _) => write_two(w, d.weeks_from(Weekday::Mon) as u8, pad),
-            (IsoWeek, Some(d), _) => write_two(w, d.iso_week().week() as u8, pad),
-            (NumDaysFromSun, Some(d), _) => write_one(w, d.weekday().num_days_from_sunday() as u8),
-            (WeekdayFromMon, Some(d), _) => write_one(w, d.weekday().number_from_monday() as u8),
-            (Ordinal, Some(d), _) => write_n(w, 3, d.ordinal() as i64, pad, false),
-            (Hour, _, Some(t)) => write_two(w, t.hour() as u8, pad),
-            (Hour12, _, Some(t)) => write_two(w, t.hour12().1 as u8, pad),
-            (Minute, _, Some(t)) => write_two(w, t.minute() as u8, pad),
+        let (value, default_pad_width, is_year) = match (spec, self.date, self.time) {
+            (Year, Some(d), _) => (d.year() as i64, 4, true),
+            (YearDiv100, Some(d), _) => (d.year().div_euclid(100) as i64, 2, false),
+            (YearMod100, Some(d), _) => (d.year().rem_euclid(100) as i64, 2, false),
+            (IsoYear, Some(d), _) => (d.iso_week().year() as i64, 4, true),
+            (IsoYearDiv100, Some(d), _) => (d.iso_week().year().div_euclid(100) as i64, 2, false),
+            (IsoYearMod100, Some(d), _) => (d.iso_week().year().rem_euclid(100) as i64, 2, false),
+            (Quarter, Some(d), _) => (d.quarter() as i64, 1, false),
+            (Month, Some(d), _) => (d.month() as i64, 2, false),
+            (Day, Some(d), _) => (d.day() as i64, 2, false),
+            (WeekFromSun, Some(d), _) => (d.weeks_from(Weekday::Sun) as i64, 2, false),
+            (WeekFromMon, Some(d), _) => (d.weeks_from(Weekday::Mon) as i64, 2, false),
+            (IsoWeek, Some(d), _) => (d.iso_week().week() as i64, 2, false),
+            (NumDaysFromSun, Some(d), _) => (d.weekday().num_days_from_sunday() as i64, 1, false),
+            (WeekdayFromMon, Some(d), _) => (d.weekday().number_from_monday() as i64, 1, false),
+            (Ordinal, Some(d), _) => (d.ordinal() as i64, 3, false),
+            (Hour, _, Some(t)) => (t.hour() as i64, 2, false),
+            (Hour12, _, Some(t)) => (t.hour12().1 as i64, 2, false),
+            (Minute, _, Some(t)) => (t.minute() as i64, 2, false),
             (Second, _, Some(t)) => {
-                write_two(w, (t.second() + t.nanosecond() / 1_000_000_000) as u8, pad)
+                ((t.second() + t.nanosecond() / 1_000_000_000) as i64, 2, false)
             }
-            (Nanosecond, _, Some(t)) => {
-                write_n(w, 9, (t.nanosecond() % 1_000_000_000) as i64, pad, false)
-            }
+            (Nanosecond, _, Some(t)) => ((t.nanosecond() % 1_000_000_000) as i64, 9, false),
             (Timestamp, Some(d), Some(t)) => {
                 let offset = self.off.as_ref().map(|(_, o)| i64::from(o.local_minus_utc()));
-                let timestamp = d.and_time(t).and_utc().timestamp() - offset.unwrap_or(0);
-                write_n(w, 9, timestamp, pad, false)
+                (d.and_time(t).and_utc().timestamp() - offset.unwrap_or(0), 9, false)
             }
-            (Internal(_), _, _) => Ok(()), // for future expansion
-            _ => Err(fmt::Error),          // insufficient arguments for given format
+            (Internal(_), _, _) => return Ok(()), // for future expansion
+            (Padded { .. }, _, _) => return Err(fmt::Error), // should be unwrapped above
+            _ => return Err(fmt::Error),          // insufficient arguments for given format
+        };
+
+        if pad_width == 0 {
+            pad_width = default_pad_width;
+        }
+
+        let always_sign = is_year && !(0..10_000).contains(&value);
+        if always_sign {
+            match pad {
+                Pad::None => write!(w, "{:+}", value),
+                Pad::Zero => write!(w, "{:+01$}", value, pad_width + 1),
+                Pad::Space => write!(w, "{:+1$}", value, pad_width + 1),
+            }
+        } else {
+            match pad {
+                Pad::None => write!(w, "{}", value),
+                Pad::Zero => write!(w, "{:01$}", value, pad_width),
+                Pad::Space => write!(w, "{:1$}", value, pad_width),
+            }
         }
     }
 
