@@ -580,6 +580,9 @@ mod weekday;
 pub use weekday::ParseWeekdayError;
 pub use weekday::Weekday;
 
+mod weekdays;
+pub use weekdays::WeekdaySet;
+
 mod month;
 #[doc(no_inline)]
 pub use month::ParseMonthError;
