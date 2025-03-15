@@ -580,6 +580,11 @@ mod weekday;
 pub use weekday::ParseWeekdayError;
 pub use weekday::Weekday;
 
+#[cfg(feature = "experimental_weekdays")]
+mod weekdays;
+#[cfg(feature = "experimental_weekdays")]
+pub use weekdays::Weekdays;
+
 mod month;
 #[doc(no_inline)]
 pub use month::ParseMonthError;
