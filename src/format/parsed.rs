@@ -93,7 +93,7 @@ use crate::{DateTime, Datelike, TimeDelta, Timelike, Weekday};
 /// # Ok::<(), chrono::ParseError>(())
 /// ```
 ///
-/// The same using chrono's build-in parser for RFC 2822 (the [RFC2822 formatting item]) and
+/// The same using chrono's built-in parser for RFC 2822 (the [RFC2822 formatting item]) and
 /// [`format::parse()`] showing how to inspect a field on failure.
 ///
 /// [RFC2822 formatting item]: crate::format::Fixed::RFC2822
