@@ -976,7 +976,7 @@ impl DateTime<FixedOffset> {
     ///   [Appendix A.5]
     /// - Single letter 'military' time zone names are parsed as a `-0000` offset.
     ///   They were defined with the wrong sign in RFC 822 and corrected in RFC 2822. But because
-    ///   the meaning is now ambiguous, the standard says they should be be considered as `-0000`
+    ///   the meaning is now ambiguous, the standard says they should be considered as `-0000`
     ///   unless there is out-of-band information confirming their meaning.
     ///   The exception is `Z`, which remains identical to `+0000`.
     ///

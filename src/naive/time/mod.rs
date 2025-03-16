@@ -95,7 +95,7 @@ mod tests;
 /// Practically speaking, though, by the time of the first leap second on 1972-06-30,
 /// every time zone offset around the world has standardized to the 5-minute alignment.
 ///
-/// ## Date And Time Arithmetics
+/// ## Date And Time Arithmetic
 ///
 /// As a concrete example, let's assume that `03:00:60` and `04:00:60` are leap seconds.
 /// In reality, of course, leap seconds are separated by at least 6 months.
