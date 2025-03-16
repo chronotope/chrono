@@ -368,6 +368,12 @@ impl Weekdays {
         WeekdaysIterFrom { days: self, start }
     }
 
+    /// Convert the collection into a `Vec<Weekday>`.
+    #[cfg(feature = "std")]
+    pub fn to_vec(self) -> Vec<Weekday> {
+        self.iter().collect()
+    }
+
     /// Iterate over all 128 possible sets, from `EMPTY` to `ALL`.
     pub fn iter_all() -> impl Iterator<Item = Self> {
         (0b0000_0000..0b1000_0000).map(Self)
