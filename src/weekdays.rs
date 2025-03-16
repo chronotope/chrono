@@ -6,14 +6,19 @@ use core::{
 
 use crate::Weekday;
 
-/// A set of `Weekday`s.
+/// A collection of `Weekday`s stored as a single byte.
+///
+/// This type is `Copy` and provides efficient set-like and slice-like operations.
+/// Many operations are `const` as well.
+///
+/// Implemented as a bitmask where bits 1-7 correspond to Monday-Sunday.
 #[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Weekdays(
     // Invariant: the 8-th bit is always 0.
     u8,
 );
 
-/// Print the underlying bit pattern as a binary number, padded to exactly 7 bits.
+/// Print the underlying bitmask, padded to 7 bits.
 ///
 /// # Example
 /// ```
@@ -54,7 +59,7 @@ impl Weekdays {
     /// A `Weekdays` containing only Sunday.
     pub const SUN: Self = Self(0b100_0000);
 
-    /// Create a `Weekdays` from a bit pattern.
+    /// Create a `Weekdays` from a bitmask.
     ///
     /// If present, the 8-th bit is ignored.
     ///
@@ -93,7 +98,7 @@ impl Weekdays {
         }
     }
 
-    /// Returns the number of days in the set.
+    /// Returns the number of days in the collection.
     ///
     /// # Example
     /// ```
@@ -105,7 +110,7 @@ impl Weekdays {
     pub const fn len(self) -> u8 {
         self.0.count_ones() as u8
     }
-    /// Returns `true` if the set is empty.
+    /// Returns `true` if the collection is empty.
     ///
     /// # Example
     /// ```
@@ -117,7 +122,7 @@ impl Weekdays {
         self.len() == 0
     }
 
-    /// Returns `Some(day)` if this set contains exactly one day.
+    /// Returns `Some(day)` if this collection contains exactly one day.
     ///
     /// Returns `None` otherwise.
     ///
@@ -142,7 +147,7 @@ impl Weekdays {
         }
     }
 
-    /// Returns `true` if the set contains the given day.
+    /// Returns `true` if the collection contains the given day.
     ///
     /// # Example
     /// ```
@@ -155,7 +160,62 @@ impl Weekdays {
         self.0 & Self::from_one(day).0 != 0
     }
 
-    /// Returns the set of days that are in `self` but not in `other`.
+    /// Returns the collection with all days inverted.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::Weekdays;
+    /// assert_eq!(Weekdays::MON.inverse(), Weekdays::ALL & !Weekdays::MON);
+    /// assert_eq!(Weekdays::ALL.inverse(), Weekdays::EMPTY);
+    /// assert_eq!(Weekdays::EMPTY.inverse(), Weekdays::ALL);
+    /// ```
+    pub const fn inverse(self) -> Self {
+        Self(self.0 ^ 0b0111_1111)
+    }
+
+    /// Returns days that are in both `self` and `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::Weekdays;
+    /// assert_eq!(Weekdays::MON.intersection(Weekdays::MON), Weekdays::MON);
+    /// assert_eq!(Weekdays::MON.intersection(Weekdays::TUE), Weekdays::EMPTY);
+    /// assert_eq!(Weekdays::ALL.intersection(Weekdays::MON), Weekdays::MON);
+    /// assert_eq!(Weekdays::ALL.intersection(Weekdays::EMPTY), Weekdays::EMPTY);
+    /// ```
+    pub const fn intersection(self, other: Self) -> Self {
+        Self(self.0 & other.0)
+    }
+
+    /// Returns days that are in either `self` or `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::Weekdays;
+    /// assert_eq!(Weekdays::MON.union(Weekdays::MON), Weekdays::MON);
+    /// assert_eq!(Weekdays::MON.union(Weekdays::TUE), Weekdays::MON | Weekdays::TUE);
+    /// assert_eq!(Weekdays::ALL.union(Weekdays::MON), Weekdays::ALL);
+    /// assert_eq!(Weekdays::ALL.union(Weekdays::EMPTY), Weekdays::ALL);
+    /// ```
+    pub const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
+
+    /// Returns days that are in `self` or `other` but not in both.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::Weekdays;
+    /// assert_eq!(Weekdays::MON.symmetric_difference(Weekdays::MON), Weekdays::EMPTY);
+    /// assert_eq!(Weekdays::MON.symmetric_difference(Weekdays::TUE), Weekdays::MON | Weekdays::TUE);
+    /// assert_eq!(Weekdays::ALL.symmetric_difference(Weekdays::MON), Weekdays::ALL & !Weekdays::MON);
+    /// assert_eq!(Weekdays::ALL.symmetric_difference(Weekdays::EMPTY), Weekdays::ALL);
+    /// ```
+    pub const fn symmetric_difference(self, other: Self) -> Self {
+        Self(self.0 ^ other.0)
+    }
+
+    /// Returns days that are in `self` but not in `other`.
     ///
     /// # Example
     /// ```
@@ -168,9 +228,9 @@ impl Weekdays {
         Self(self.0 & !other.0)
     }
 
-    /// Adds a day to the set.
+    /// Adds a day to the collection.
     ///
-    /// Returns `true` if the day was new to the set.
+    /// Returns `true` if the day was new to the collection.
     ///
     /// # Example
     /// ```
@@ -188,9 +248,9 @@ impl Weekdays {
         }
     }
 
-    /// Removes a day from the set.
+    /// Removes a day from the collection.
     ///
-    /// Returns `true` if the set did contain the day.
+    /// Returns `true` if the collection did contain the day.
     ///
     /// # Example
     /// ```
@@ -208,7 +268,7 @@ impl Weekdays {
         }
     }
 
-    /// Iterate over the `Weekday`s in the set.
+    /// Iterate over the `Weekday`s in the collection.
     ///
     /// Starting from Monday, in ascending order.
     ///
@@ -226,6 +286,88 @@ impl Weekdays {
         WeekdaysIter(self)
     }
 
+    /// Get the first day in the collection, starting from Monday.
+    ///
+    /// Returns `None` if the collection is empty.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::{Weekday, Weekdays};
+    /// assert_eq!(Weekdays::MON.first(), Some(Weekday::Mon));
+    /// assert_eq!(Weekdays::TUE.first(), Some(Weekday::Tue));
+    /// assert_eq!(Weekdays::ALL.first(), Some(Weekday::Mon));
+    /// assert_eq!(Weekdays::EMPTY.first(), None);
+    /// ```
+    pub const fn first(self) -> Option<Weekday> {
+        if self.is_empty() {
+            return None;
+        }
+
+        // Find the first non-zero bit.
+        let bit = 1 << self.0.trailing_zeros();
+
+        Self(bit).single_day()
+    }
+
+    /// Get the last day in the collection, starting from Sunday.
+    ///
+    /// Returns `None` if the collection is empty.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::{Weekday, Weekdays};
+    /// assert_eq!(Weekdays::MON.last(), Some(Weekday::Mon));
+    /// assert_eq!(Weekdays::SUN.last(), Some(Weekday::Sun));
+    /// assert_eq!((Weekdays::MON | Weekdays::TUE).last(), Some(Weekday::Tue));
+    /// assert_eq!(Weekdays::EMPTY.last(), None);
+    /// ```
+    pub fn last(self) -> Option<Weekday> {
+        if self.is_empty() {
+            return None;
+        }
+
+        // Find the last non-zero bit.
+        let bit = 1 << (7 - self.0.leading_zeros());
+
+        Self(bit).single_day()
+    }
+
+    /// Split the collection in two at the given day.
+    ///
+    /// Returns a tuple `(before, after)`. `before` contains all days starting from Monday
+    /// up to but __not__ including `weekday`. `after` contains all days starting from `weekday`
+    /// up to and including Sunday.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::{Weekday, Weekdays};
+    /// let weekdays = Weekdays::MON | Weekdays::WED | Weekdays::FRI;
+    /// let (before, after) = weekdays.split_at(Weekday::Wed);
+    /// assert_eq!(before, Weekdays::MON);
+    /// assert_eq!(after, Weekdays::WED | Weekdays::FRI);
+    /// ```
+    pub const fn split_at(self, weekday: Weekday) -> (Self, Self) {
+        let days_after = Self(0b1000_0000 - Self::from_one(weekday).0);
+        (self.intersection(days_after.inverse()), self.intersection(days_after))
+    }
+
+    /// Iterate over the `Weekday`s in the collection, starting from a given day
+    /// and wrapping around from Sunday to Monday.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::{Weekday, Weekdays};
+    /// let weekdays = Weekdays::MON | Weekdays::WED | Weekdays::FRI;
+    /// let mut iter = weekdays.iter_from(Weekday::Wed);
+    /// assert_eq!(iter.next(), Some(Weekday::Wed));
+    /// assert_eq!(iter.next(), Some(Weekday::Fri));
+    /// assert_eq!(iter.next(), Some(Weekday::Mon));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub const fn iter_from(self, start: Weekday) -> WeekdaysIterFrom {
+        WeekdaysIterFrom { days: self, start }
+    }
+
     /// Iterate over all 128 possible sets, from `EMPTY` to `ALL`.
     pub fn iter_all() -> impl Iterator<Item = Self> {
         (0b0000_0000..0b1000_0000).map(Self)
@@ -237,7 +379,7 @@ impl Weekdays {
     }
 }
 
-/// An iterator over a set of weekdays.
+/// An iterator over a collection of weekdays.
 ///
 /// See `Weekdays::iter`.
 #[derive(Debug, Clone)]
@@ -250,20 +392,9 @@ impl Iterator for WeekdaysIter {
             return None;
         }
 
-        // Get the first day from the set.
-        let day = Weekdays(1 << self.0.0.trailing_zeros());
-
-        // Convert the day into a `Weekday`.
-        let day = if let Some(day) = day.single_day() {
-            day
-        } else {
-            unreachable!("expected {day:?} to contain exactly one day");
-        };
-
-        // Remove the day from the set.
-        self.0.remove(day);
-
-        Some(day)
+        let next = self.0.first().expect("the collection is not empty");
+        self.0.remove(next);
+        Some(next)
     }
 }
 impl DoubleEndedIterator for WeekdaysIter {
@@ -272,21 +403,9 @@ impl DoubleEndedIterator for WeekdaysIter {
             return None;
         }
 
-        // Get the last day from the set.
-        // TODO: use `ilog2` instead once MSRV is >= 1.67.0
-        let day = Weekdays(1 << (8 - self.0.0.leading_zeros()));
-
-        // Convert the day into a `Weekday`.
-        let day = if let Some(day) = day.single_day() {
-            day
-        } else {
-            unreachable!("expected {day:?} to contain exactly one day");
-        };
-
-        // Remove the day from the set.
-        self.0.remove(day);
-
-        Some(day)
+        let next_back = self.0.last().expect("the collection is not empty");
+        self.0.remove(next_back);
+        Some(next_back)
     }
 }
 impl ExactSizeIterator for WeekdaysIter {
@@ -295,6 +414,57 @@ impl ExactSizeIterator for WeekdaysIter {
     }
 }
 impl FusedIterator for WeekdaysIter {}
+
+/// An iterator over a collection of weekdays, starting from a given day.
+///
+/// See `Weekdays::iter_from`.
+#[derive(Debug, Clone)]
+pub struct WeekdaysIterFrom {
+    pub days: Weekdays,
+    pub start: Weekday,
+}
+impl Iterator for WeekdaysIterFrom {
+    type Item = Weekday;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.days.is_empty() {
+            return None;
+        }
+
+        // Split the collection in two at `start`.
+        // Look for the first day among the days after `start` first, including `start` itself.
+        // If there are no days after `start`, look for the first day among the days before `start`.
+        let (before, after) = self.days.split_at(self.start);
+        let days = if after.is_empty() { before } else { after };
+
+        let next = days.first().expect("the collection is not empty");
+        self.days.remove(next);
+        Some(next)
+    }
+}
+impl DoubleEndedIterator for WeekdaysIterFrom {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.days.is_empty() {
+            return None;
+        }
+
+        // Split the collection in two at `start`.
+        // Look for the last day among the days before `start` first, NOT including `start` itself.
+        // If there are no days before `start`, look for the last day among the days after `start`.
+        let (before, after) = self.days.split_at(self.start);
+        let days = if before.is_empty() { after } else { before };
+
+        let next_back = days.last().expect("the collection is not empty");
+        self.days.remove(next_back);
+        Some(next_back)
+    }
+}
+impl ExactSizeIterator for WeekdaysIterFrom {
+    fn len(&self) -> usize {
+        self.days.len().into()
+    }
+}
+impl FusedIterator for WeekdaysIterFrom {}
 
 impl fmt::Display for Weekdays {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -316,21 +486,21 @@ impl BitOr for Weekdays {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
+        self.union(rhs)
     }
 }
 impl BitAnd for Weekdays {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
+        self.intersection(rhs)
     }
 }
 impl BitXor for Weekdays {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
+        self.symmetric_difference(rhs)
     }
 }
 #[cfg(test)]
@@ -366,7 +536,7 @@ impl Not for Weekdays {
     type Output = Self;
 
     fn not(self) -> Self::Output {
-        self ^ Self::ALL
+        self.inverse()
     }
 }
 #[cfg(test)]
@@ -430,7 +600,7 @@ impl BitXor<Weekday> for Weekdays {
     }
 }
 
-/// Can be used to check the presence of a day in a set.
+/// Can be used to check the presence of a day in the collection.
 ///
 /// # Example
 /// ```
