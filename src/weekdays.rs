@@ -374,7 +374,8 @@ impl Weekdays {
     }
 
     /// Panics if the 8-th bit of `self` is not 0.
-    pub fn assert_8th_bit_invariant(self) {
+    #[cfg(test)]
+    fn assert_8th_bit_invariant(self) {
         assert!(self.0 & 0b1000_0000 == 0, "the 8-th bit of {self:?} is not 0");
     }
 }
