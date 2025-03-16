@@ -102,8 +102,8 @@ impl Weekdays {
     /// assert_eq!((Weekdays::MON | Weekdays::WED | Weekdays::FRI).len(), 3);
     /// assert_eq!(Weekdays::ALL.len(), 7);
     /// ```
-    pub const fn len(self) -> usize {
-        self.0.count_ones() as usize
+    pub const fn len(self) -> u8 {
+        self.0.count_ones() as u8
     }
     /// Returns `true` if the set is empty.
     ///
@@ -291,7 +291,7 @@ impl DoubleEndedIterator for WeekdaysIter {
 }
 impl ExactSizeIterator for WeekdaysIter {
     fn len(&self) -> usize {
-        self.0.len()
+        self.0.len().into()
     }
 }
 impl FusedIterator for WeekdaysIter {}
