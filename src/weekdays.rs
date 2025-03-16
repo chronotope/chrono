@@ -228,6 +228,32 @@ impl Weekdays {
         Self(self.0 & !other.0)
     }
 
+    /// Returns `true` if `other` contains all days in `self`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::Weekdays;
+    /// assert!(Weekdays::MON.is_subset(Weekdays::ALL));
+    /// assert!(!Weekdays::MON.is_subset(Weekdays::EMPTY));
+    /// assert!(Weekdays::EMPTY.is_subset(Weekdays::MON));
+    /// ```
+    pub const fn is_subset(self, other: Self) -> bool {
+        self.intersection(other).0 == self.0
+    }
+
+    /// Returns `true` if `self` contains all days in `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::Weekdays;
+    /// assert!(Weekdays::ALL.is_superset(Weekdays::MON));
+    /// assert!(Weekdays::MON.is_superset(Weekdays::EMPTY));
+    /// assert!(!Weekdays::MON.is_superset(Weekdays::TUE));
+    /// ```
+    pub const fn is_superset(self, other: Self) -> bool {
+        self.intersection(other).0 == other.0
+    }
+
     /// Adds a day to the collection.
     ///
     /// Returns `true` if the day was new to the collection.
