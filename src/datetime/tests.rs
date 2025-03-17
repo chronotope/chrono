@@ -1900,3 +1900,47 @@ fn nano_roundrip() {
         assert_eq!(nanos, nanos2);
     }
 }
+
+#[cfg(feature = "alloc")]
+#[test]
+fn try_to_rfc2822() {
+    let ndt = NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(9999, 12, 31).unwrap(),
+            NaiveTime::from_hms_nano_opt(
+                60,
+                60,
+                60,
+                999999999,
+            )
+            .or(NaiveTime::from_hms_opt(
+                60,
+                60,
+                60,
+            ))
+            .unwrap_or_default(),
+    ).and_utc();
+    let res = ndt.to_rfc2822();
+    assert_eq!(res, "Fri, 31 Dec 9999 00:00:00 +0000");
+}
+
+
+#[cfg(feature = "alloc")]
+#[should_panic]
+#[test]
+fn try_to_rfc2822_panics_year_greater_than_9999() {
+    assert!(NaiveDateTime::new(
+            NaiveDate::from_ymd_opt(10000, 12, 31).unwrap(),
+            NaiveTime::from_hms_nano_opt(
+                60,
+                60,
+                60,
+                999999999,
+            )
+            .or(NaiveTime::from_hms_opt(
+                60,
+                60,
+                60,
+            ))
+            .unwrap_or_default(),
+    ).and_utc().to_rfc2822() == "")
+}
