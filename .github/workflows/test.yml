@@ -2,7 +2,7 @@ name: All Tests and Builds
 
 env:
   # It's really `--all-features`, but not adding the mutually exclusive features from rkyv
-  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-32 rkyv-validation serde arbitrary"
+  ALL_NON_EXCLUSIVE_FEATURES: --features "default unstable-locales rkyv-32 rkyv-validation serde arbitrary experimental_weekdays"
 
 on:
   push:

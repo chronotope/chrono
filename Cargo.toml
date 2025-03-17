@@ -28,6 +28,7 @@ now = ["std"]
 oldtime = []
 wasmbind = ["wasm-bindgen", "js-sys"]
 unstable-locales = ["pure-rust-locales"]
+experimental_weekdays = []
 # Note that rkyv-16, rkyv-32, and rkyv-64 are mutually exclusive.
 rkyv = ["dep:rkyv", "rkyv/size_32"]
 rkyv-16 = ["dep:rkyv", "rkyv?/size_16"]
