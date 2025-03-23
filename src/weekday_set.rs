@@ -206,14 +206,14 @@ impl WeekdaySet {
     /// # use chrono::WeekdaySet;
     /// use chrono::Weekday::*;
     /// let weekdays = WeekdaySet::from_array([Mon, Wed, Fri]);
-    /// let mut iter = weekdays.iter_from(Wed);
+    /// let mut iter = weekdays.iter(Wed);
     /// assert_eq!(iter.next(), Some(Wed));
     /// assert_eq!(iter.next(), Some(Fri));
     /// assert_eq!(iter.next(), Some(Mon));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub const fn iter_from(self, start: Weekday) -> WeekdaySetIterFrom {
-        WeekdaySetIterFrom { days: self, start }
+    pub const fn iter(self, start: Weekday) -> WeekdaySetIter {
+        WeekdaySetIter { days: self, start }
     }
 
     /// Returns days that are in both `self` and `other`.
@@ -341,14 +341,14 @@ impl Debug for WeekdaySet {
 
 /// An iterator over a collection of weekdays, starting from a given day.
 ///
-/// See `WeekdaySet::iter_from`.
+/// See [`WeekdaySet::iter()`].
 #[derive(Debug, Clone)]
-pub struct WeekdaySetIterFrom {
+pub struct WeekdaySetIter {
     pub days: WeekdaySet,
     pub start: Weekday,
 }
 
-impl Iterator for WeekdaySetIterFrom {
+impl Iterator for WeekdaySetIter {
     type Item = Weekday;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -368,7 +368,7 @@ impl Iterator for WeekdaySetIterFrom {
     }
 }
 
-impl DoubleEndedIterator for WeekdaySetIterFrom {
+impl DoubleEndedIterator for WeekdaySetIter {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.days.is_empty() {
             return None;
@@ -386,13 +386,13 @@ impl DoubleEndedIterator for WeekdaySetIterFrom {
     }
 }
 
-impl ExactSizeIterator for WeekdaySetIterFrom {
+impl ExactSizeIterator for WeekdaySetIter {
     fn len(&self) -> usize {
         self.days.len().into()
     }
 }
 
-impl FusedIterator for WeekdaySetIterFrom {}
+impl FusedIterator for WeekdaySetIter {}
 
 /// Print the collection as a slice-like list of weekdays.
 ///
@@ -407,7 +407,7 @@ impl FusedIterator for WeekdaySetIterFrom {}
 impl fmt::Display for WeekdaySet {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "[")?;
-        let mut iter = self.iter_from(Weekday::Mon);
+        let mut iter = self.iter(Weekday::Mon);
         if let Some(first) = iter.next() {
             write!(f, "{first}")?;
         }
@@ -463,8 +463,8 @@ mod tests {
     fn split_at_is_equivalent_to_iterating() {
         use Weekday::*;
 
-        // `split_at` is used in `iter_from`, so we must not iterate
-        // over all days with `WeekdaySet::ALL.iter_from(Mon)`.
+        // `split_at()` is used in `iter()`, so we must not iterate
+        // over all days with `WeekdaySet::ALL.iter(Mon)`.
         const WEEK: [Weekday; 7] = [Mon, Tue, Wed, Thu, Fri, Sat, Sun];
 
         for weekdays in WeekdaySet::iter_all() {
