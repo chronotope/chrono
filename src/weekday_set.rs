@@ -5,7 +5,7 @@ use core::{
 
 use crate::Weekday;
 
-/// A collection of `Weekday`s stored as a single byte.
+/// A collection of [`Weekday`]s stored as a single byte.
 ///
 /// This type is `Copy` and provides efficient set-like and slice-like operations.
 /// Many operations are `const` as well.
@@ -15,7 +15,7 @@ use crate::Weekday;
 pub struct WeekdaySet(u8); // Invariant: the 8-th bit is always 0.
 
 impl WeekdaySet {
-    /// Create a `WeekdaySet` from an array of `Weekday`s.
+    /// Create a `WeekdaySet` from an array of [`Weekday`]s.
     ///
     /// # Example
     /// ```
@@ -35,7 +35,7 @@ impl WeekdaySet {
         acc
     }
 
-    /// Create a `WeekdaySet` from a single `Weekday`.
+    /// Create a `WeekdaySet` from a single [`Weekday`].
     pub const fn single(weekday: Weekday) -> Self {
         match weekday {
             Weekday::Mon => Self(0b000_0001),
@@ -183,23 +183,15 @@ impl WeekdaySet {
     /// Returns a tuple `(before, after)`. `before` contains all days starting from Monday
     /// up to but __not__ including `weekday`. `after` contains all days starting from `weekday`
     /// up to and including Sunday.
-    ///
-    /// # Example
-    /// ```ignore
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// let (before, after) = WeekdaySet::ALL.split_at(Fri);
-    /// assert_eq!(before, WeekdaySet::from_array([Mon, Tue, Wed, Thu]));
-    /// assert_eq!(after, WeekdaySet::from_array([Fri, Sat, Sun]));
-    /// ```
     const fn split_at(self, weekday: Weekday) -> (Self, Self) {
         let days_after = 0b1000_0000 - Self::single(weekday).0;
         let days_before = days_after ^ 0b0111_1111;
         (Self(self.0 & days_before), Self(self.0 & days_after))
     }
 
-    /// Iterate over the `Weekday`s in the collection, starting from a given day
-    /// and wrapping around from Sunday to Monday.
+    /// Iterate over the [`Weekday`]s in the collection starting from a given day.
+    ///
+    /// Wraps around from Sunday to Monday if necessary.
     ///
     /// # Example
     /// ```
