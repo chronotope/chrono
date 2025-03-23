@@ -1,7 +1,6 @@
 use core::{
     fmt::{self, Debug},
     iter::FusedIterator,
-    ops::Not,
 };
 
 use crate::Weekday;
@@ -419,25 +418,9 @@ impl fmt::Display for WeekdaySet {
     }
 }
 
-impl Not for WeekdaySet {
-    type Output = Self;
-
-    fn not(self) -> Self::Output {
-        Self(self.0 ^ 0b0111_1111)
-    }
-}
-
 impl FromIterator<Weekday> for WeekdaySet {
     fn from_iter<T: IntoIterator<Item = Weekday>>(iter: T) -> Self {
         iter.into_iter().map(Self::single).fold(Self::EMPTY, Self::union)
-    }
-}
-
-impl Not for Weekday {
-    type Output = WeekdaySet;
-
-    fn not(self) -> Self::Output {
-        !WeekdaySet::single(self)
     }
 }
 
@@ -472,13 +455,6 @@ mod tests {
                 assert_8th_bit_invariant(set1.intersection(set2));
                 assert_8th_bit_invariant(set1.symmetric_difference(set2));
             }
-        }
-    }
-
-    #[test]
-    fn not_operation_preserves_8th_bit_invariant() {
-        for days in WeekdaySet::iter_all() {
-            assert_8th_bit_invariant(!days);
         }
     }
 
