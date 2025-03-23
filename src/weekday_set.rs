@@ -344,8 +344,8 @@ impl Debug for WeekdaySet {
 /// See [`WeekdaySet::iter()`].
 #[derive(Debug, Clone)]
 pub struct WeekdaySetIter {
-    pub days: WeekdaySet,
-    pub start: Weekday,
+    days: WeekdaySet,
+    start: Weekday,
 }
 
 impl Iterator for WeekdaySetIter {
