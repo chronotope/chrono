@@ -74,20 +74,6 @@ impl WeekdaySet {
         }
     }
 
-    /// Returns `true` if `other` contains all days in `self`.
-    ///
-    /// # Example
-    /// ```
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// assert!(WeekdaySet::single(Mon).is_subset(WeekdaySet::ALL));
-    /// assert!(!WeekdaySet::single(Mon).is_subset(WeekdaySet::EMPTY));
-    /// assert!(WeekdaySet::EMPTY.is_subset(WeekdaySet::single(Mon)));
-    /// ```
-    pub const fn is_subset(self, other: Self) -> bool {
-        self.intersection(other).0 == self.0
-    }
-
     /// Adds a day to the collection.
     ///
     /// Returns `true` if the day was new to the collection.
@@ -128,6 +114,82 @@ impl WeekdaySet {
         }
 
         false
+    }
+
+    /// Returns `true` if `other` contains all days in `self`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert!(WeekdaySet::single(Mon).is_subset(WeekdaySet::ALL));
+    /// assert!(!WeekdaySet::single(Mon).is_subset(WeekdaySet::EMPTY));
+    /// assert!(WeekdaySet::EMPTY.is_subset(WeekdaySet::single(Mon)));
+    /// ```
+    pub const fn is_subset(self, other: Self) -> bool {
+        self.intersection(other).0 == self.0
+    }
+
+    /// Returns days that are in both `self` and `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Tue)), WeekdaySet::EMPTY);
+    /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::EMPTY), WeekdaySet::EMPTY);
+    /// ```
+    pub const fn intersection(self, other: Self) -> Self {
+        Self(self.0 & other.0)
+    }
+
+    /// Returns days that are in either `self` or `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
+    /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::single(Mon)), WeekdaySet::ALL);
+    /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::EMPTY), WeekdaySet::ALL);
+    /// ```
+    pub const fn union(self, other: Self) -> Self {
+        Self(self.0 | other.0)
+    }
+
+    /// Returns days that are in `self` or `other` but not in both.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
+    /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
+    /// assert_eq!(
+    ///     WeekdaySet::ALL.symmetric_difference(WeekdaySet::single(Mon)),
+    ///     WeekdaySet::from_array([Tue, Wed, Thu, Fri, Sat, Sun]),
+    /// );
+    /// assert_eq!(WeekdaySet::ALL.symmetric_difference(WeekdaySet::EMPTY), WeekdaySet::ALL);
+    /// ```
+    pub const fn symmetric_difference(self, other: Self) -> Self {
+        Self(self.0 ^ other.0)
+    }
+
+    /// Returns days that are in `self` but not in `other`.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
+    /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Tue)), WeekdaySet::single(Mon));
+    /// assert_eq!(WeekdaySet::EMPTY.difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
+    /// ```
+    pub const fn difference(self, other: Self) -> Self {
+        Self(self.0 & !other.0)
     }
 
     /// Get the first day in the collection, starting from Monday.
@@ -206,68 +268,6 @@ impl WeekdaySet {
     /// ```
     pub const fn iter(self, start: Weekday) -> WeekdaySetIter {
         WeekdaySetIter { days: self, start }
-    }
-
-    /// Returns days that are in both `self` and `other`.
-    ///
-    /// # Example
-    /// ```
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
-    /// assert_eq!(WeekdaySet::single(Mon).intersection(WeekdaySet::single(Tue)), WeekdaySet::EMPTY);
-    /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
-    /// assert_eq!(WeekdaySet::ALL.intersection(WeekdaySet::EMPTY), WeekdaySet::EMPTY);
-    /// ```
-    pub const fn intersection(self, other: Self) -> Self {
-        Self(self.0 & other.0)
-    }
-
-    /// Returns days that are in either `self` or `other`.
-    ///
-    /// # Example
-    /// ```
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Mon)), WeekdaySet::single(Mon));
-    /// assert_eq!(WeekdaySet::single(Mon).union(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
-    /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::single(Mon)), WeekdaySet::ALL);
-    /// assert_eq!(WeekdaySet::ALL.union(WeekdaySet::EMPTY), WeekdaySet::ALL);
-    /// ```
-    pub const fn union(self, other: Self) -> Self {
-        Self(self.0 | other.0)
-    }
-
-    /// Returns days that are in `self` or `other` but not in both.
-    ///
-    /// # Example
-    /// ```
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
-    /// assert_eq!(WeekdaySet::single(Mon).symmetric_difference(WeekdaySet::single(Tue)), WeekdaySet::from_array([Mon, Tue]));
-    /// assert_eq!(
-    ///     WeekdaySet::ALL.symmetric_difference(WeekdaySet::single(Mon)),
-    ///     WeekdaySet::from_array([Tue, Wed, Thu, Fri, Sat, Sun]),
-    /// );
-    /// assert_eq!(WeekdaySet::ALL.symmetric_difference(WeekdaySet::EMPTY), WeekdaySet::ALL);
-    /// ```
-    pub const fn symmetric_difference(self, other: Self) -> Self {
-        Self(self.0 ^ other.0)
-    }
-
-    /// Returns days that are in `self` but not in `other`.
-    ///
-    /// # Example
-    /// ```
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
-    /// assert_eq!(WeekdaySet::single(Mon).difference(WeekdaySet::single(Tue)), WeekdaySet::single(Mon));
-    /// assert_eq!(WeekdaySet::EMPTY.difference(WeekdaySet::single(Mon)), WeekdaySet::EMPTY);
-    /// ```
-    pub const fn difference(self, other: Self) -> Self {
-        Self(self.0 & !other.0)
     }
 
     /// Returns `true` if the collection contains the given day.
