@@ -16,6 +16,39 @@ use crate::Weekday;
 pub struct WeekdaySet(u8); // Invariant: the 8-th bit is always 0.
 
 impl WeekdaySet {
+    /// Create a `WeekdaySet` from an array of `Weekday`s.
+    ///
+    /// # Example
+    /// ```
+    /// # use chrono::WeekdaySet;
+    /// use chrono::Weekday::*;
+    /// assert_eq!(WeekdaySet::EMPTY, WeekdaySet::from_array([]));
+    /// assert_eq!(WeekdaySet::single(Mon), WeekdaySet::from_array([Mon]));
+    /// assert_eq!(WeekdaySet::ALL, WeekdaySet::from_array([Mon, Tue, Wed, Thu, Fri, Sat, Sun]));
+    /// ```
+    pub const fn from_array<const C: usize>(days: [Weekday; C]) -> Self {
+        let mut acc = Self::EMPTY;
+        let mut idx = 0;
+        while idx < days.len() {
+            acc.0 |= Self::single(days[idx]).0;
+            idx += 1;
+        }
+        acc
+    }
+
+    /// Create a `WeekdaySet` from a single `Weekday`.
+    pub const fn single(weekday: Weekday) -> Self {
+        match weekday {
+            Weekday::Mon => Self(0b000_0001),
+            Weekday::Tue => Self(0b000_0010),
+            Weekday::Wed => Self(0b000_0100),
+            Weekday::Thu => Self(0b000_1000),
+            Weekday::Fri => Self(0b001_0000),
+            Weekday::Sat => Self(0b010_0000),
+            Weekday::Sun => Self(0b100_0000),
+        }
+    }
+
     /// Returns `Some(day)` if this collection contains exactly one day.
     ///
     /// Returns `None` otherwise.
@@ -283,39 +316,6 @@ impl WeekdaySet {
     /// ```
     pub const fn len(self) -> u8 {
         self.0.count_ones() as u8
-    }
-
-    /// Create a `WeekdaySet` from a single `Weekday`.
-    pub const fn single(weekday: Weekday) -> Self {
-        match weekday {
-            Weekday::Mon => Self(0b000_0001),
-            Weekday::Tue => Self(0b000_0010),
-            Weekday::Wed => Self(0b000_0100),
-            Weekday::Thu => Self(0b000_1000),
-            Weekday::Fri => Self(0b001_0000),
-            Weekday::Sat => Self(0b010_0000),
-            Weekday::Sun => Self(0b100_0000),
-        }
-    }
-
-    /// Create a `WeekdaySet` from an array of `Weekday`s.
-    ///
-    /// # Example
-    /// ```
-    /// # use chrono::WeekdaySet;
-    /// use chrono::Weekday::*;
-    /// assert_eq!(WeekdaySet::EMPTY, WeekdaySet::from_array([]));
-    /// assert_eq!(WeekdaySet::single(Mon), WeekdaySet::from_array([Mon]));
-    /// assert_eq!(WeekdaySet::ALL, WeekdaySet::from_array([Mon, Tue, Wed, Thu, Fri, Sat, Sun]));
-    /// ```
-    pub const fn from_array<const C: usize>(days: [Weekday; C]) -> Self {
-        let mut acc = Self::EMPTY;
-        let mut idx = 0;
-        while idx < days.len() {
-            acc.0 |= Self::single(days[idx]).0;
-            idx += 1;
-        }
-        acc
     }
 
     /// An empty `WeekdaySet`.
